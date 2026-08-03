@@ -1,11 +1,17 @@
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
-function readEnv(key: string, fallback = ""): string {
-  return (process.env[key] ?? fallback).replace(/\/+$/, "");
+/**
+ * NEXT_PUBLIC_* must be read via direct property access so Next.js can
+ * inline them into the client bundle at build time.
+ * Dynamic `process.env[key]` leaves lookups empty in the browser and
+ * falls back to local defaults (wrong for Azure Dev).
+ */
+function trimUrl(value: string | undefined, fallback = ""): string {
+  return (value ?? fallback).replace(/\/+$/, "");
 }
 
 function resolveAppEnv(): AppEnv {
-  const value = readEnv("NEXT_PUBLIC_APP_ENV", "local");
+  const value = trimUrl(process.env.NEXT_PUBLIC_APP_ENV, "local");
   if (
     value === "local" ||
     value === "dev" ||
@@ -20,23 +26,26 @@ function resolveAppEnv(): AppEnv {
 const APP_ENV = resolveAppEnv();
 
 const API_BASE_BY_ENV: Record<AppEnv, string> = {
-  local: readEnv(
-    "NEXT_PUBLIC_LOCAL_API_BASE_URL",
-    "http://192.168.18.143:3000",
+  local: trimUrl(
+    process.env.NEXT_PUBLIC_LOCAL_API_BASE_URL,
+    "http://localhost:3000",
   ),
-  dev: readEnv(
-    "NEXT_PUBLIC_DEV_API_BASE_URL",
+  dev: trimUrl(
+    process.env.NEXT_PUBLIC_DEV_API_BASE_URL,
     "https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
   ),
-  staging: readEnv("NEXT_PUBLIC_STAGING_API_BASE_URL"),
-  production: readEnv("NEXT_PUBLIC_PRODUCTION_API_BASE_URL"),
+  staging: trimUrl(process.env.NEXT_PUBLIC_STAGING_API_BASE_URL),
+  production: trimUrl(process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL),
 };
 
 const RETURN_URL_BY_ENV: Record<AppEnv, string> = {
-  local: readEnv("NEXT_PUBLIC_LOCAL_RETURN_URL", "http://localhost:3000"),
-  dev: readEnv("NEXT_PUBLIC_DEV_RETURN_URL"),
-  staging: readEnv("NEXT_PUBLIC_STAGING_RETURN_URL"),
-  production: readEnv("NEXT_PUBLIC_PRODUCTION_RETURN_URL"),
+  local: trimUrl(process.env.NEXT_PUBLIC_LOCAL_RETURN_URL, "http://localhost:3000"),
+  dev: trimUrl(
+    process.env.NEXT_PUBLIC_DEV_RETURN_URL,
+    "https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
+  ),
+  staging: trimUrl(process.env.NEXT_PUBLIC_STAGING_RETURN_URL),
+  production: trimUrl(process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL),
 };
 
 export const env = {
@@ -45,11 +54,12 @@ export const env = {
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",
   flags: {
-    mfa: readEnv("NEXT_PUBLIC_ENABLE_MFA") === "true",
-    passwordReset: readEnv("NEXT_PUBLIC_ENABLE_PASSWORD_RESET", "true") === "true",
-    oauth: readEnv("NEXT_PUBLIC_ENABLE_OAUTH") === "true",
+    mfa: process.env.NEXT_PUBLIC_ENABLE_MFA === "true",
+    passwordReset:
+      (process.env.NEXT_PUBLIC_ENABLE_PASSWORD_RESET ?? "true") === "true",
+    oauth: process.env.NEXT_PUBLIC_ENABLE_OAUTH === "true",
     useDevSession:
-      readEnv("NEXT_PUBLIC_USE_DEV_SESSION") === "true" &&
+      process.env.NEXT_PUBLIC_USE_DEV_SESSION === "true" &&
       process.env.NODE_ENV === "development",
   },
 } as const;
