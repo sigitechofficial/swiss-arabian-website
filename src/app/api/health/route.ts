@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+export function GET() {
+  const environment = (process.env.NEXT_PUBLIC_APP_ENV ?? "dev").trim() || "dev";
+
   return NextResponse.json({
-    success: true,
-    data: { status: "ok", service: "swiss-arabian-website" },
+    status: "ok",
+    service: "swiss-arabian-website",
+    environment,
   });
 }
