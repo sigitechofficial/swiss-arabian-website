@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+/* Theme toggle uses html.dark — not prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Light: white page; cream only on section surfaces */
+  --sa-bg-page: #ffffff;
+  --sa-bg-section-soft: #fbf7f0;
+  --sa-bg-surface: #ffffff;
+  --sa-bg-default: #ffffff;
+  --sa-bg-paper: #ffffff;
+  --sa-bg-muted: #f6f0e6;
+  --sa-bg-inverse: #2c241d;
+  --sa-text-primary: #2c241d;
+  --sa-text-secondary: #857565;
+  --sa-text-muted: #857565;
+  --sa-text-inverse: #fbf7f0;
+  --sa-text-link: #b46e57;
+  --sa-border-default: #dfd3bf;
+  --sa-border-input: #dfd3bf;
+  --sa-border-strong: #d4cec4;
+  --sa-border-focus: #b46e57;
+  --sa-action-primary: #b46e57;
+  --sa-action-primary-hover: #a25e48;
+  --sa-accent-gold: #cda766;
+  --sa-action-danger: #c0392b;
+  --sa-action-success: #2e7d4f;
+  --sa-action-warning: #b5883e;
+  --sa-bg-ash: #f5f5f5;
+  --sa-scrollbar-size: 6px;
+  --sa-scrollbar-radius: 3px;
+  --sa-scrollbar-track: transparent;
+  --sa-scrollbar-thumb: color-mix(in srgb, var(--sa-text-muted) 55%, transparent);
+  --sa-scrollbar-thumb-hover: var(--sa-action-primary);
+  --sa-scrollbar-thumb-active: var(--sa-action-primary-hover);
+  --background: var(--sa-bg-page);
+  --foreground: var(--sa-text-primary);
+}
+
+html.dark {
+  /* Figma Home Page · Dark — 02 Semantic / Dark */
+  --sa-bg-page: #1b1512;
+  --sa-bg-section-soft: #241d18;
+  --sa-bg-surface: #332a22;
+  --sa-bg-default: #1b1512;
+  --sa-bg-paper: #332a22;
+  --sa-bg-muted: #2a221c;
+  --sa-bg-inverse: #241d18;
+  --sa-bg-ash: #2a221c;
+  --sa-text-primary: #f6f0e6;
+  --sa-text-secondary: #b8a896;
+  --sa-text-muted: #857565;
+  --sa-text-inverse: #2c241d;
+  --sa-text-link: #cda766;
+  --sa-border-default: #453a30;
+  --sa-border-input: #4f4237;
+  --sa-border-strong: #4a433c;
+  --sa-border-focus: #b46e57;
+  --sa-action-primary: #b46e57;
+  --sa-action-primary-hover: #a25e48;
+  --sa-accent-gold: #cda766;
+  --sa-scrollbar-thumb: color-mix(in srgb, var(--sa-text-secondary) 40%, transparent);
+  --sa-scrollbar-thumb-hover: var(--sa-action-primary);
+  --sa-scrollbar-thumb-active: #cda766;
+  --background: var(--sa-bg-page);
+  --foreground: var(--sa-text-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-page: var(--sa-bg-page);
+  --color-section-soft: var(--sa-bg-section-soft);
+  --color-surface: var(--sa-bg-surface);
+  --color-inverse: var(--sa-bg-inverse);
+  --color-terra: #b46e57;
+  --color-ink: #2c241d;
+  --color-cream: #fbf7f0;
+  --color-paper: #f6f0e6;
+  --color-bone: #dfd3bf;
+  --color-gold: #b5883e;
+  --color-gold-light: #cda766;
+  --color-ash: var(--sa-bg-ash);
+  --color-sa-primary: var(--sa-text-primary);
+  --color-sa-secondary: var(--sa-text-secondary);
+  --color-sa-muted: var(--sa-text-muted);
+  --color-sa-border: var(--sa-border-default);
+  --color-sa-input: var(--sa-border-input);
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Home landing utilities — Landing Page 001 */
+.sa-grad-house {
+  background: linear-gradient(135deg, #5e3826 0%, #3a2218 56%, #1d110b 100%);
+}
+/* Figma 254:1999 — House band radial wash */
+.sa-grad-house-band {
+  background-image: radial-gradient(
+    ellipse 120% 70% at 50% 18%,
+    #5e3826 0%,
+    #3a2218 56%,
+    #1d110b 100%
+  );
+}
+/* Figma 254:2136 — Our Story art panel */
+.sa-grad-story-art {
+  background-image: radial-gradient(
+    ellipse 120% 70% at 50% 26%,
+    #5e3826 0%,
+    #3a2218 56%,
+    #241510 100%
+  );
+}
+.sa-grad-shaghaf {
+  background: linear-gradient(160deg, #e08a96 0%, #7d2f3c 100%);
+}
+.sa-grad-tile {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.18),
+    rgba(0, 0, 0, 0) 32%,
+    rgba(0, 0, 0, 0) 66%,
+    rgba(0, 0, 0, 0.14)
+  );
+}
+.sa-grad-bento {
+  background: linear-gradient(
+    to top,
+    rgba(20, 12, 8, 0.82),
+    rgba(20, 12, 8, 0.25) 55%,
+    rgba(20, 12, 8, 0.05)
+  );
+}
+.sa-art-fade {
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    #000 38%,
+    rgba(0, 0, 0, 0.55) 56%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    #000 38%,
+    rgba(0, 0, 0, 0.55) 56%,
+    transparent 70%
+  );
+}
+.sa-card-media {
+  background: linear-gradient(to bottom, #ffffff, #fbf7f0);
+}
+html.dark .sa-card-media {
+  background: linear-gradient(to bottom, #3e332a, #332a22);
+}
+
+/* Rust logo → cream on dark pages (prototype site-logo) */
+html.dark .site-logo {
+  filter: brightness(0) invert(0.93) sepia(0.12);
+}
+
+/* Always cream — footer / inverse surfaces (dark in both themes) */
+.site-logo-on-dark {
+  filter: brightness(0) invert(0.93) sepia(0.12);
+}
+
+@keyframes sa-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.sa-marquee-track {
+  animation: sa-marquee 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sa-marquee-track {
+    animation: none;
+  }
+}
+
+html,
+body {
+  background: var(--sa-bg-page);
+  color: var(--sa-text-primary);
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Scrollbar system ───────────────────────────────────────────────
+   Thin enterprise rail: soft track, terra thumb on hover/active.
+   Use `.sa-scrollbar` (+ optional `.sa-scrollbar-panel`) on overflow panels.
+*/
+html,
+.sa-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sa-scrollbar-thumb) var(--sa-scrollbar-track);
+}
+
+html::-webkit-scrollbar,
+.sa-scrollbar::-webkit-scrollbar {
+  width: var(--sa-scrollbar-size);
+  height: var(--sa-scrollbar-size);
+}
+
+html::-webkit-scrollbar-track,
+.sa-scrollbar::-webkit-scrollbar-track {
+  background: var(--sa-scrollbar-track);
+  margin-block: 4px;
+}
+
+html::-webkit-scrollbar-thumb,
+.sa-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sa-scrollbar-thumb);
+  border-radius: var(--sa-scrollbar-radius);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 160ms ease;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+.sa-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--sa-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:active,
+.sa-scrollbar::-webkit-scrollbar-thumb:active {
+  background: var(--sa-scrollbar-thumb-active);
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-corner,
+.sa-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.sa-scrollbar-panel {
+  scrollbar-gutter: stable;
+}
+
+.sa-scrollbar-panel::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--sa-border-default) 35%, transparent);
+  border-radius: var(--sa-scrollbar-radius);
+  margin-block: 8px;
+  margin-inline-end: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html::-webkit-scrollbar-thumb,
+  .sa-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}

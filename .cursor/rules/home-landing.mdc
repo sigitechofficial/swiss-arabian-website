@@ -1,0 +1,46 @@
+---
+description: Home landing section order, assets, and feature conventions
+globs:
+  - "src/features/home/**/*"
+alwaysApply: false
+---
+
+# Home landing
+
+Compose in `HomePageView.tsx`. Thin route: `src/app/(shop)/page.tsx` → `HomePageView`.
+
+## Section order
+
+1. Hero  
+2. Why Swiss Arabian  
+3. Shop by gender  
+4. New launches  
+5. Best sellers  
+6. Collections  
+7. House band (`HouseBandSection` — radial + gold frame)  
+8. Trending  
+9. Shaghaf  
+10. Reviews  
+11. Our Story (`#our-story` + `StoryArtPanel` seal)  
+12. Newsletter  
+
+Shell chrome (announcement, header, footer, mobile nav) lives in `StorefrontShell` — not in home features.
+
+## Assets & data
+
+- Images: `public/assets/home/` — register paths in `constants/homeAssets.ts`
+- Static copy/products: `data/homeContent.ts`
+- Shared product tile: `ProductCard` + Zustand cart add
+
+## Gradients / utilities (`globals.css`)
+
+- `.sa-grad-house` — tiles (linear)
+- `.sa-grad-house-band` — house band (radial)
+- `.sa-grad-story-art` — Our Story seal panel
+- `.sa-grad-shaghaf`, `.sa-grad-tile`, `.sa-grad-bento`, `.sa-art-fade` — as named
+
+## Do not
+
+- Fake successful API responses when endpoints are missing
+- Put domain business logic in `src/components/ui/`
+- Reorder sections without an explicit product/design request
