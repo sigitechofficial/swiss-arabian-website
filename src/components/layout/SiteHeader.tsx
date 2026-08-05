@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/stores/useCartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useColorMode } from "@/providers/ThemeProvider";
 import { useUiStore } from "@/stores/useUiStore";
 import { homeAssets } from "@/features/home/constants/homeAssets";
@@ -23,6 +24,7 @@ export function SiteHeader() {
   const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
   const cartOpen = useUiStore((s) => s.cartOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-sa-border bg-page text-sa-primary">
@@ -55,12 +57,12 @@ export function SiteHeader() {
           </label>
 
           <Link
-            href="/login"
+            href={isAuthenticated ? "/account" : "/login"}
             className="hidden items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide sm:flex"
-            aria-label="Login"
+            aria-label={isAuthenticated ? "Account" : "Login"}
           >
             <IconUser />
-            Login
+            {isAuthenticated ? "Account" : "Login"}
           </Link>
 
           <Link

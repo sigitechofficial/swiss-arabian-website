@@ -4,6 +4,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "@/components/ui/Toaster";
+import { env } from "@/lib/config/env";
+import {
+  DEFAULT_ZONE_CODE,
+  toAuthSalesChannelCode,
+  toAuthZoneCode,
+} from "@/lib/storefront/context";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { useMarket } from "@/providers/MarketProvider";
+import {
+  registerCustomer,
+  requestPhoneVerification,
+  splitFullName,
+  toE164Phone,
+} from "../api/auth.service";
+import { applyAuthResult } from "../lib/applyAuthSession";
 import {
   registerSchema,
   type RegisterFormValues,
@@ -15,6 +31,9 @@ import { AuthSubmitButton } from "./AuthSubmitButton";
 
 export function RegisterPageView() {
   const router = useRouter();
+  const { marketId } = useMarket();
+  const zoneCode = toAuthZoneCode(marketId || DEFAULT_ZONE_CODE);
+  const salesChannelCode = toAuthSalesChannelCode(zoneCode);
 
   const {
     register,
@@ -32,9 +51,36 @@ export function RegisterPageView() {
       <form
         className="flex w-full flex-col gap-5"
         onSubmit={handleSubmit(async (values) => {
-          // Register API not wired yet — continue to OTP step with phone in query.
-          const phone = encodeURIComponent(values.mobile.trim());
-          router.push(`/verify?phone=${phone}`);
+          try {
+            const { firstName, lastName } = splitFullName(values.fullName);
+            const phone = toE164Phone(values.mobile);
+            const result = await registerCustomer({
+              zoneCode,
+              email: values.email.trim(),
+              phone,
+              password: values.password,
+              firstName,
+              lastName,
+              salesChannelCode,
+            });
+            applyAuthResult(result);
+
+            if (env.flags.verification) {
+              try {
+                await requestPhoneVerification(phone);
+              } catch {
+                // Verification may be disabled on BE — still continue
+              }
+              toast("Account created. Enter the code we sent.", "success");
+              router.push(`/verify?phone=${encodeURIComponent(phone)}`);
+              return;
+            }
+
+            toast("Account created", "success");
+            router.push("/account");
+          } catch (error) {
+            toast(getUserFacingErrorMessage(error), "error");
+          }
         })}
       >
         <div className="flex w-full flex-col gap-4">
@@ -58,7 +104,11 @@ export function RegisterPageView() {
             type="tel"
             placeholder="+971 50 123 4567"
             autoComplete="tel"
-            hint="We'll send a verification code."
+            hint={
+              env.flags.verification
+                ? "We'll send a verification code."
+                : "Include country code (e.g. +971)."
+            }
             {...register("mobile")}
             error={errors.mobile?.message}
           />

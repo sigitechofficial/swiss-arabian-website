@@ -37,7 +37,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="flex min-h-full flex-col bg-page font-sans text-sa-primary">
+      <body className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

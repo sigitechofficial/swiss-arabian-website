@@ -113,6 +113,34 @@ html.dark {
     #241510 100%
   );
 }
+/* Figma 1236:9655 — My Subscription next-delivery panel */
+.sa-grad-subscription {
+  background-image: linear-gradient(
+    39.9deg,
+    #3a2716 32%,
+    #6b4a2e 72%,
+    #b46e57 105%
+  );
+}
+.sa-grad-card-mastercard {
+  background-image: linear-gradient(
+    to right,
+    #2a1b10 0%,
+    #5a3f28 52%,
+    #c19a55 100%
+  );
+}
+.sa-grad-card-visa {
+  background-image: linear-gradient(
+    to right,
+    #1d2a3a 0%,
+    #2f4a68 52%,
+    #7fa6cc 100%
+  );
+}
+.sa-grad-card-chip {
+  background-image: linear-gradient(to right, #f0dca6 0%, #c9a24e 100%);
+}
 .sa-grad-shaghaf {
   background: linear-gradient(160deg, #e08a96 0%, #7d2f3c 100%);
 }

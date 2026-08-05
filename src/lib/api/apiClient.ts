@@ -7,7 +7,8 @@ type ApiEnvelope<T> = {
   success: boolean;
   data?: T;
   error?: ApiErrorBody;
-  meta?: unknown;
+  errors?: unknown[];
+  meta?: { requestId?: string; path?: string; timestamp?: string };
 };
 
 type RequestOptions = {
@@ -18,6 +19,9 @@ type RequestOptions = {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
+const PUBLIC_AUTH_PATH =
+  /^\/storefront\/auth\/(login|register|refresh|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
+
 async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
 
@@ -26,18 +30,26 @@ async function tryRefresh(): Promise<boolean> {
     if (!refreshToken) return false;
 
     try {
-      const res = await fetch(`${env.apiBaseUrl}/store/auth/refresh`, {
+      const res = await fetch(`${env.apiBaseUrl}/storefront/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });
       if (!res.ok) return false;
       const json = (await res.json()) as ApiEnvelope<{
-        accessToken: string;
+        token?: {
+          accessToken: string;
+          refreshToken?: string;
+        };
+        accessToken?: string;
         refreshToken?: string;
       }>;
-      if (!json.success || !json.data?.accessToken) return false;
-      setTokens(json.data.accessToken, json.data.refreshToken);
+      const access =
+        json.data?.token?.accessToken ?? json.data?.accessToken;
+      const nextRefresh =
+        json.data?.token?.refreshToken ?? json.data?.refreshToken;
+      if (!json.success || !access) return false;
+      setTokens(access, nextRefresh);
       return true;
     } catch {
       return false;
@@ -73,13 +85,22 @@ async function request<T>(
     signal: options.signal,
   });
 
-  if (res.status === 401 && !options.skipAuth && !retried) {
+  const canRefresh =
+    res.status === 401 &&
+    !options.skipAuth &&
+    !retried &&
+    !PUBLIC_AUTH_PATH.test(path);
+
+  if (canRefresh) {
     const refreshed = await tryRefresh();
     if (refreshed) {
       return request<T>(method, path, body, options, true);
     }
     endSession();
-    throw new ApiClientError(401, "Your session has expired. Please sign in again.");
+    throw new ApiClientError(
+      401,
+      "Your session has expired. Please sign in again.",
+    );
   }
 
   let json: ApiEnvelope<T> | null = null;
@@ -120,4 +141,9 @@ export function apiPut<T>(path: string, body?: unknown, options?: RequestOptions
 
 export function apiDelete<T>(path: string, options?: RequestOptions) {
   return request<T>("DELETE", path, undefined, options);
+}
+
+/** Expose refresh for session bootstrap (single-flight). */
+export function refreshAccessToken(): Promise<boolean> {
+  return tryRefresh();
 }

@@ -1,81 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { AppButton, AppCard } from "@/components/ui";
-import { brandColors, semanticColors } from "@/theme/designTokens";
-
-const COLLECTIONS = [
-  {
-    slug: "oud-essentials",
-    title: "Oud Essentials",
-    description: "Signature oud compositions for collectors and everyday wear.",
-  },
-  {
-    slug: "modern-musk",
-    title: "Modern Musk",
-    description: "Clean, luminous musks with a contemporary finish.",
-  },
-  {
-    slug: "gift-edit",
-    title: "Gift Edit",
-    description: "Curated sets ready for celebrations and hospitality.",
-  },
-];
+import { useApiQuery } from "@/lib/api/queryHooks";
+import { PageLoading } from "@/components/ui";
+import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { useMarket } from "@/providers/MarketProvider";
+import {
+  catalogKeys,
+  fetchCollections,
+} from "@/features/catalog/api/catalog.service";
+import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
 
 export function CollectionsPageView() {
-  return (
-    <Box sx={{ maxWidth: 1280, mx: "auto", px: { xs: 2, md: 4 }, py: { xs: 4, md: 6 } }}>
-      <Typography
-        variant="h3"
-        sx={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          mb: 1,
-          fontSize: { xs: "1.75rem", md: "2.25rem" },
-        }}
-      >
-        Collections
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 480 }}>
-        Explore curated fragrance worlds from Swiss Arabian.
-      </Typography>
+  const { marketId } = useMarket();
+  const zoneCode = marketId || DEFAULT_ZONE_CODE;
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
-          gap: 3,
-        }}
-      >
-        {COLLECTIONS.map((collection) => (
-          <AppCard key={collection.slug} noPadding>
-            <Box
-              sx={{
-                height: 160,
-                bgcolor: brandColors.paper,
-                borderBottom: "1px solid",
-                borderColor: semanticColors.border.default,
-              }}
-            />
-            <Box sx={{ p: 2.5 }}>
-              <Typography sx={{ fontWeight: 700, mb: 1 }}>{collection.title}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {collection.description}
-              </Typography>
-              <AppButton
-                component={Link}
+  const { data, isLoading, isError } = useApiQuery(
+    catalogKeys.collections(zoneCode),
+    () => fetchCollections(zoneCode),
+  );
+
+  if (isLoading) {
+    return <PageLoading label="Loading collections…" fill />;
+  }
+
+  if (isError || !data?.length) {
+    return (
+      <CatalogEmptyState
+        title="No collections found"
+        description="Collections will appear here once they are published for this market."
+      />
+    );
+  }
+
+  return (
+    <section
+      className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-16"
+      aria-label="Collections"
+    >
+      <header className="mb-8 max-w-[640px] border-b border-sa-border pb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">
+          Curated
+        </p>
+        <h1 className="mt-2 font-sans text-[32px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[44px] sm:leading-[52px]">
+          Collections
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-sa-muted">
+          Explore curated fragrance worlds from Swiss Arabian.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.map((collection) => (
+          <article
+            key={collection.id}
+            className="flex flex-col border border-sa-border bg-surface"
+          >
+            <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-b from-page to-cream p-6 dark:to-section-soft">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
+                {collection.productCount != null
+                  ? `${collection.productCount} products`
+                  : "Collection"}
+              </span>
+            </div>
+            <div className="flex flex-1 flex-col p-5">
+              <h2 className="font-sans text-[20px] font-medium tracking-[-0.01em] text-sa-primary">
+                {collection.name}
+              </h2>
+              {collection.description ? (
+                <p className="mt-2 line-clamp-3 text-[14px] leading-relaxed text-sa-muted">
+                  {collection.description}
+                </p>
+              ) : null}
+              <Link
                 href={`/collections/${collection.slug}`}
-                dsVariant="secondary"
-                dsSize="sm"
+                className="mt-auto inline-flex h-[42px] cursor-pointer items-center justify-center border border-sa-border px-4 text-[12px] font-semibold uppercase tracking-[0.1em] text-sa-primary transition-colors hover:border-terra hover:text-terra"
               >
                 Explore
-              </AppButton>
-            </Box>
-          </AppCard>
+              </Link>
+            </div>
+          </article>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </section>
   );
 }

@@ -19,20 +19,33 @@ function AccordionGroup({
 
   return (
     <li className="border-b border-sa-border">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between py-4 uppercase"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        {item.label}
-        <span
-          className={`text-[11px] text-sa-muted transition-transform ${open ? "rotate-180" : ""}`}
-          aria-hidden
+      <div className="flex w-full items-center justify-between py-4 uppercase">
+        {item.href ? (
+          <Link
+            href={item.href}
+            className="flex-1"
+            onClick={onNavigate}
+          >
+            {item.label}
+          </Link>
+        ) : (
+          <span className="flex-1">{item.label}</span>
+        )}
+        <button
+          type="button"
+          className="flex size-8 items-center justify-center"
+          aria-expanded={open}
+          aria-label={`${open ? "Collapse" : "Expand"} ${item.label}`}
+          onClick={() => setOpen((v) => !v)}
         >
-          ▾
-        </span>
-      </button>
+          <span
+            className={`text-[11px] text-sa-muted transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          >
+            ▾
+          </span>
+        </button>
+      </div>
       {open ? (
         <ul className="pb-3 pl-4 text-[13.5px] font-medium normal-case tracking-normal text-sa-muted">
           {item.children.map((child) =>

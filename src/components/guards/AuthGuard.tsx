@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { getAccessToken } from "@/lib/auth/token";
-import { apiGet } from "@/lib/api/apiClient";
+import { useRouter, usePathname } from "next/navigation";
 import { PageLoading } from "@/components/ui";
-import { useAuthStore, type StoreUser } from "@/stores/useAuthStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function AuthGuard({
   children,
@@ -15,51 +13,24 @@ export function AuthGuard({
   requireAuth?: boolean;
 }) {
   const router = useRouter();
-  const { isAuthenticated, bootstrapped, setUser, setBootstrapped } =
-    useAuthStore();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function bootstrap() {
-      const token = getAccessToken();
-      if (!token) {
-        if (!cancelled) {
-          setUser(null);
-          setBootstrapped(true);
-        }
-        return;
-      }
-
-      try {
-        const me = await apiGet<StoreUser>("/store/auth/me");
-        if (!cancelled) setUser(me);
-      } catch {
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setBootstrapped(true);
-      }
-    }
-
-    void bootstrap();
-    return () => {
-      cancelled = true;
-    };
-  }, [setBootstrapped, setUser]);
+  const pathname = usePathname();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const bootstrapped = useAuthStore((s) => s.bootstrapped);
 
   useEffect(() => {
     if (!bootstrapped || !requireAuth) return;
     if (!isAuthenticated) {
-      router.replace("/login");
+      const returnTo = pathname ? `?returnTo=${encodeURIComponent(pathname)}` : "";
+      router.replace(`/login${returnTo}`);
     }
-  }, [bootstrapped, isAuthenticated, requireAuth, router]);
+  }, [bootstrapped, isAuthenticated, requireAuth, router, pathname]);
 
   if (!bootstrapped) {
-    return <PageLoading label="Checking session…" />;
+    return <PageLoading label="Checking session…" fill />;
   }
 
   if (requireAuth && !isAuthenticated) {
-    return <PageLoading label="Redirecting…" />;
+    return <PageLoading label="Redirecting…" fill />;
   }
 
   return children;
