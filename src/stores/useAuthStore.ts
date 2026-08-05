@@ -7,6 +7,10 @@ export type StoreUser = {
   email: string;
   firstName?: string;
   lastName?: string;
+  fullName?: string;
+  phoneE164?: string;
+  zoneId?: string;
+  isEmailVerified?: boolean;
 };
 
 type AuthState = {

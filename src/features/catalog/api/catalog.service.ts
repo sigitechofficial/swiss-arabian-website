@@ -2,12 +2,44 @@ import { apiGet } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ProductDetail, ProductSummary } from "../types/product";
 
+export const CATALOG_PAGE_SIZE = 24;
+
+export type CatalogPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ProductListResult = {
+  products: ProductSummary[];
+  pagination: CatalogPagination;
+};
+
 export const catalogKeys = {
   all: ["catalog"] as const,
-  list: (zoneCode?: string | null) =>
-    [...catalogKeys.all, "list", zoneCode ?? "default"] as const,
+  list: (zoneCode?: string | null, page = 1, limit = CATALOG_PAGE_SIZE) =>
+    [...catalogKeys.all, "list", zoneCode ?? "default", page, limit] as const,
   detail: (slug: string, zoneCode?: string | null) =>
     [...catalogKeys.all, "detail", slug, zoneCode ?? "default"] as const,
+  collections: (zoneCode?: string | null) =>
+    [...catalogKeys.all, "collections", zoneCode ?? "default"] as const,
+  collection: (slug: string, zoneCode?: string | null) =>
+    [...catalogKeys.all, "collection", slug, zoneCode ?? "default"] as const,
+  collectionProducts: (
+    slug: string,
+    zoneCode?: string | null,
+    page = 1,
+    limit = CATALOG_PAGE_SIZE,
+  ) =>
+    [
+      ...catalogKeys.all,
+      "collection-products",
+      slug,
+      zoneCode ?? "default",
+      page,
+      limit,
+    ] as const,
 };
 
 type ApiPriceSummary = {
@@ -95,15 +127,22 @@ function contextQs(zoneCode?: string | null) {
 export async function fetchProducts(
   zoneCode?: string | null,
   options?: { page?: number; limit?: number },
-): Promise<ProductSummary[]> {
-  const page = options?.page ?? 1;
-  const limit = options?.limit ?? 24;
+): Promise<ProductListResult> {
+  const page = Math.max(1, options?.page ?? 1);
+  const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
   const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/products?${qs}`,
     { skipAuth: true },
   );
-  return (data.products ?? []).map(mapProduct);
+  const products = (data.products ?? []).map(mapProduct);
+  const pagination: CatalogPagination = data.pagination ?? {
+    page,
+    limit,
+    total: products.length,
+    totalPages: 1,
+  };
+  return { products, pagination };
 }
 
 export async function fetchProductBySlug(
@@ -150,3 +189,65 @@ export async function fetchProductBySlug(
 
   return null;
 }
+
+export type CatalogCollection = {
+  id: string;
+  code?: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  sortOrder?: number;
+  productCount?: number;
+};
+
+type ApiCollectionListData = {
+  items: CatalogCollection[];
+};
+
+export async function fetchCollections(
+  zoneCode?: string | null,
+): Promise<CatalogCollection[]> {
+  const data = await apiGet<ApiCollectionListData>(
+    `/storefront/catalog/collections?${contextQs(zoneCode)}`,
+    { skipAuth: true },
+  );
+  return data.items ?? [];
+}
+
+export async function fetchCollectionBySlug(
+  slug: string,
+  zoneCode?: string | null,
+): Promise<CatalogCollection | null> {
+  try {
+    const data = await apiGet<CatalogCollection>(
+      `/storefront/catalog/collections/${encodeURIComponent(slug)}?${contextQs(zoneCode)}`,
+      { skipAuth: true },
+    );
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCollectionProducts(
+  slug: string,
+  zoneCode?: string | null,
+  options?: { page?: number; limit?: number },
+): Promise<ProductListResult> {
+  const page = Math.max(1, options?.page ?? 1);
+  const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
+  const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
+  const data = await apiGet<ApiProductListData>(
+    `/storefront/catalog/collections/${encodeURIComponent(slug)}/products?${qs}`,
+    { skipAuth: true },
+  );
+  const products = (data.products ?? []).map(mapProduct);
+  const pagination: CatalogPagination = data.pagination ?? {
+    page,
+    limit,
+    total: products.length,
+    totalPages: 1,
+  };
+  return { products, pagination };
+}
+

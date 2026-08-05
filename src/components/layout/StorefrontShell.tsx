@@ -7,10 +7,10 @@ import { SiteHeader } from "./SiteHeader";
 
 export function StorefrontShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-full flex-col bg-page font-sans text-sa-primary">
+    <div className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary">
       <AnnouncementBar />
       <SiteHeader />
-      <main className="flex-1 bg-page">{children}</main>
+      <main className="flex flex-1 flex-col bg-page">{children}</main>
       <SiteFooter />
       <MobileNav />
       <CartSideSheet />

@@ -1,27 +1,31 @@
 "use client";
 
-import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
 import { brandColors } from "@/theme/designTokens";
 
-export function PageLoading({ label = "Loading…" }: { label?: string }) {
+type PageLoadingProps = {
+  label?: string;
+  /** Fill parent flex area and center vertically (sticky-footer layouts). */
+  fill?: boolean;
+};
+
+export function PageLoading({
+  label = "Loading…",
+  fill = false,
+}: PageLoadingProps) {
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 2,
-        minHeight: 240,
-        py: 6,
-      }}
+    <div
+      className={
+        fill
+          ? "flex flex-1 flex-col items-center justify-center gap-4 px-4 py-10"
+          : "flex min-h-[240px] flex-col items-center justify-center gap-4 py-12"
+      }
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
       <CircularProgress size={32} sx={{ color: brandColors.terra }} />
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Box>
+      <p className="text-[14px] text-sa-muted">{label}</p>
+    </div>
   );
 }

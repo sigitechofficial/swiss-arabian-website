@@ -3,7 +3,7 @@ import { z } from "zod";
 const phoneLike = /^[+]?[\d\s()-]{7,20}$/;
 
 export const loginSchema = z.object({
-  email: z
+  identifier: z
     .string()
     .min(1, "Enter your email or phone")
     .refine(

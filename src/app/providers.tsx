@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { EmotionCacheProvider } from "@/providers/EmotionCacheProvider";
+import { AuthSessionProvider } from "@/providers/AuthSessionProvider";
 import { LocaleProvider } from "@/providers/LocaleProvider";
 import { MarketProvider } from "@/providers/MarketProvider";
 import { MuiProvider } from "@/providers/MuiProvider";
@@ -17,8 +18,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <QueryProvider>
             <LocaleProvider>
               <MarketProvider>
-                {children}
-                <Toaster />
+                <AuthSessionProvider>
+                  {children}
+                  <Toaster />
+                </AuthSessionProvider>
               </MarketProvider>
             </LocaleProvider>
           </QueryProvider>

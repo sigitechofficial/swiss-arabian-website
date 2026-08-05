@@ -1,17 +1,24 @@
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
+const AZURE_DEV_API =
+  "https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io";
+
+const LOCAL_LAN_API = "http://192.168.18.143:3000";
+
+function stripSlash(value: string): string {
+  return value.replace(/\/+$/, "");
+}
+
 /**
- * NEXT_PUBLIC_* must be read via direct property access so Next.js can
- * inline them into the client bundle at build time.
- * Dynamic `process.env[key]` leaves lookups empty in the browser and
- * falls back to local defaults (wrong for Azure Dev).
+ * Next.js only inlines NEXT_PUBLIC_* when accessed as static property paths
+ * (`process.env.NEXT_PUBLIC_FOO`). Dynamic `process.env[key]` breaks the toggle.
  */
-function trimUrl(value: string | undefined, fallback = ""): string {
-  return (value ?? fallback).replace(/\/+$/, "");
+function readPublic(value: string | undefined, fallback = ""): string {
+  return stripSlash(value ?? fallback);
 }
 
 function resolveAppEnv(): AppEnv {
-  const value = trimUrl(process.env.NEXT_PUBLIC_APP_ENV, "local");
+  const value = readPublic(process.env.NEXT_PUBLIC_APP_ENV, "dev");
   if (
     value === "local" ||
     value === "dev" ||
@@ -20,46 +27,75 @@ function resolveAppEnv(): AppEnv {
   ) {
     return value;
   }
-  return "local";
+  return "dev";
 }
 
 const APP_ENV = resolveAppEnv();
 
+/** `true` → LAN local API; otherwise Azure Dev. */
+const USE_LOCAL_API =
+  readPublic(process.env.NEXT_PUBLIC_USE_LOCAL_API) === "true";
+
+const LOCAL_API_BASE = readPublic(
+  process.env.NEXT_PUBLIC_LOCAL_API_BASE_URL,
+  LOCAL_LAN_API,
+);
+const DEV_API_BASE = readPublic(
+  process.env.NEXT_PUBLIC_DEV_API_BASE_URL,
+  AZURE_DEV_API,
+);
+
 const API_BASE_BY_ENV: Record<AppEnv, string> = {
-  local: trimUrl(
-    process.env.NEXT_PUBLIC_LOCAL_API_BASE_URL,
-    "http://localhost:3000",
+  local: LOCAL_API_BASE,
+  dev: DEV_API_BASE,
+  staging: readPublic(
+    process.env.NEXT_PUBLIC_STAGING_API_BASE_URL,
+    AZURE_DEV_API,
   ),
-  dev: trimUrl(
-    process.env.NEXT_PUBLIC_DEV_API_BASE_URL,
-    "https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
+  production: readPublic(
+    process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL,
+    AZURE_DEV_API,
   ),
-  staging: trimUrl(process.env.NEXT_PUBLIC_STAGING_API_BASE_URL),
-  production: trimUrl(process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL),
 };
 
 const RETURN_URL_BY_ENV: Record<AppEnv, string> = {
-  local: trimUrl(process.env.NEXT_PUBLIC_LOCAL_RETURN_URL, "http://localhost:3000"),
-  dev: trimUrl(
-    process.env.NEXT_PUBLIC_DEV_RETURN_URL,
-    "https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
+  local: readPublic(
+    process.env.NEXT_PUBLIC_LOCAL_RETURN_URL,
+    "http://localhost:3000",
   ),
-  staging: trimUrl(process.env.NEXT_PUBLIC_STAGING_RETURN_URL),
-  production: trimUrl(process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL),
+  dev: readPublic(
+    process.env.NEXT_PUBLIC_DEV_RETURN_URL,
+    "http://localhost:3000",
+  ),
+  staging: readPublic(process.env.NEXT_PUBLIC_STAGING_RETURN_URL),
+  production: readPublic(process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL),
 };
+
+const resolvedApiBase = USE_LOCAL_API
+  ? LOCAL_API_BASE
+  : API_BASE_BY_ENV[APP_ENV] || DEV_API_BASE;
+
+const resolvedApiBase = USE_LOCAL_API
+  ? LOCAL_API_BASE
+  : API_BASE_BY_ENV[APP_ENV] || DEV_API_BASE;
 
 export const env = {
   appEnv: APP_ENV,
-  apiBaseUrl: API_BASE_BY_ENV[APP_ENV],
+  apiBaseUrl: resolvedApiBase,
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",
   flags: {
-    mfa: process.env.NEXT_PUBLIC_ENABLE_MFA === "true",
+    /** Toggle LAN backend vs Azure Dev via NEXT_PUBLIC_USE_LOCAL_API */
+    useLocalApi: USE_LOCAL_API,
+    mfa: readPublic(process.env.NEXT_PUBLIC_ENABLE_MFA) === "true",
     passwordReset:
-      (process.env.NEXT_PUBLIC_ENABLE_PASSWORD_RESET ?? "true") === "true",
-    oauth: process.env.NEXT_PUBLIC_ENABLE_OAUTH === "true",
+      readPublic(process.env.NEXT_PUBLIC_ENABLE_PASSWORD_RESET, "true") ===
+      "true",
+    verification:
+      readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
+    oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
     useDevSession:
-      process.env.NEXT_PUBLIC_USE_DEV_SESSION === "true" &&
+      readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
   },
 } as const;

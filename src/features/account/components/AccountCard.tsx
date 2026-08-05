@@ -1,0 +1,68 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+import { toast } from "@/components/ui/Toaster";
+
+type AccountCardProps = {
+  icon: string;
+  title: string;
+  description: string;
+  /** Omit for destinations that do not exist yet. */
+  href?: string;
+};
+
+const CARD_CLASS =
+  "group relative flex flex-col gap-3 border border-sa-border bg-surface p-6 text-left transition-colors hover:border-terra";
+
+/** Figma · Account Card (1155:412) */
+export function AccountCard({
+  icon,
+  title,
+  description,
+  href,
+}: AccountCardProps) {
+  const inner: ReactNode = (
+    <>
+      <Image
+        src={icon}
+        alt=""
+        width={28}
+        height={28}
+        className="h-7 w-7 shrink-0"
+      />
+      <p className="text-[18px] font-bold leading-[1.2] text-sa-primary">
+        {title}
+      </p>
+      <p className="text-[13.5px] leading-[1.65] text-sa-secondary">
+        {description}
+      </p>
+      <span
+        className="absolute right-6 top-[23px] text-[16px] text-terra transition-transform group-hover:translate-x-1"
+        aria-hidden
+      >
+        →
+      </span>
+    </>
+  );
+
+  if (!href) {
+    return (
+      <button
+        type="button"
+        className={CARD_CLASS}
+        onClick={() => toast(`${title} will be available soon.`, "info")}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={CARD_CLASS}>
+      {inner}
+    </Link>
+  );
+}

@@ -1,75 +1,92 @@
+/**
+ * Storefront nav — every shop entry is a catalog collection route:
+ * `/collections/{slug}` → GET /storefront/catalog/collections/:slug[/products]
+ */
+
 /** Flat desktop labels (legacy) — prefer MOBILE_NAV / DesktopNav for hierarchy */
 export const MAIN_NAV = [
-  { label: "Minis", href: "/products" },
+  { label: "Minis", href: "/collections/minis" },
   { label: "Bundles", href: "/products" },
-  { label: "New Launches", href: "/#new-launches" },
-  { label: "Best Sellers", href: "/#best-sellers" },
-  { label: "Perfumes", href: "/products" },
-  { label: "Perfume Oils", href: "/products" },
-  { label: "Incense", href: "/products" },
-  { label: "Gift Sets", href: "/gift-box" },
+  { label: "New Launches", href: "/collections/new-launches" },
+  { label: "Best Sellers", href: "/collections/best-sellers" },
+  { label: "Perfumes", href: "/collections/perfumes" },
+  { label: "Perfume Oils", href: "/collections/perfume-oils" },
+  { label: "Incense", href: "/collections/incense" },
+  { label: "Gift Sets", href: "/collections/gift-sets" },
   { label: "Subscription", href: "/subscriptions" },
 ] as const;
 
 export type MobileNavLink = { label: string; href: string };
 export type MobileNavGroup = {
   label: string;
+  /** Parent collection when the group label itself is a link */
+  href?: string;
   children: Array<MobileNavLink | { label: string; kind: "heading" }>;
 };
 export type MobileNavItem =
   | ({ type: "link" } & MobileNavLink)
   | ({ type: "group" } & MobileNavGroup);
 
-/** Full-page mobile menu — matches prototype nav sheet */
+/** Full-page mobile menu + desktop nav — all shop paths are collections */
 export const MOBILE_NAV: MobileNavItem[] = [
-  { type: "link", label: "Minis", href: "/products" },
+  { type: "link", label: "Minis", href: "/collections/minis" },
   { type: "link", label: "Bundles", href: "/products" },
-  { type: "link", label: "New Launches", href: "/#new-launches" },
+  { type: "link", label: "New Launches", href: "/collections/new-launches" },
   {
     type: "group",
     label: "Best Sellers",
+    href: "/collections/best-sellers",
     children: [
-      { label: "Trending", href: "/#best-sellers" },
-      { label: "Perfume Best Sellers", href: "/#best-sellers" },
-      { label: "Perfume Oil Best Sellers", href: "/#best-sellers" },
-      { label: "Incense Best Sellers", href: "/#best-sellers" },
+      { label: "Trending", href: "/collections/trending" },
+      { label: "Perfume Best Sellers", href: "/collections/perfume-best-sellers" },
+      {
+        label: "Perfume Oil Best Sellers",
+        href: "/collections/perfume-oil-best-sellers",
+      },
+      { label: "Incense Best Sellers", href: "/collections/incense-best-sellers" },
     ],
   },
   {
     type: "group",
     label: "Perfumes",
+    href: "/collections/perfumes",
     children: [
       { label: "Type", kind: "heading" },
-      { label: "Men", href: "/products?gender=men" },
-      { label: "Women", href: "/products?gender=women" },
-      { label: "Unisex", href: "/products?gender=unisex" },
+      { label: "Men", href: "/collections/men" },
+      { label: "Women", href: "/collections/women" },
+      { label: "Unisex", href: "/collections/unisex" },
       { label: "Collections", kind: "heading" },
-      { label: "Cities", href: "/collections" },
-      { label: "Heritage", href: "/collections" },
+      { label: "Cities", href: "/collections/cities" },
+      { label: "Heritage", href: "/collections/heritage-collection" },
       { label: "Shaghaf", href: "/collections/shaghaf" },
-      { label: "Love", href: "/collections" },
-      { label: "Wild", href: "/collections" },
-      { label: "Harmony", href: "/collections" },
-      { label: "Sawalef", href: "/collections" },
-      { label: "Hair Mist", href: "/collections" },
+      { label: "Love", href: "/collections/love" },
+      { label: "Wild", href: "/collections/wild" },
+      { label: "Harmony", href: "/collections/harmony" },
+      { label: "Sawalef", href: "/collections/sawalef" },
+      { label: "Hair Mist", href: "/collections/hair-mist" },
     ],
   },
   {
     type: "group",
     label: "Perfume Oils",
+    href: "/collections/perfume-oils",
     children: [
-      { label: "Concentrated Perfume Oils", href: "/products" },
-      { label: "Dehn El Oud", href: "/products" },
-      { label: "Malaki", href: "/products" },
-      { label: "Private", href: "/products" },
+      {
+        label: "Concentrated Perfume Oils",
+        href: "/collections/concentrated-perfume-oils",
+      },
+      { label: "Dehn El Oud", href: "/collections/dehn-el-oud" },
+      { label: "Malaki", href: "/collections/malaki" },
+      { label: "Private", href: "/collections/private" },
     ],
   },
   {
     type: "group",
     label: "Incense",
-    children: [{ label: "Oud Muattar", href: "/products" }],
+    href: "/collections/incense",
+    children: [{ label: "Oud Muattar", href: "/collections/oud-muattar" }],
   },
-  { type: "link", label: "Gift Sets", href: "/gift-box" },
+  { type: "link", label: "Gift Sets", href: "/collections/gift-sets" },
   { type: "link", label: "Subscription", href: "/subscriptions" },
 ];
 

@@ -3,6 +3,15 @@ export const DEFAULT_ZONE_CODE = "UAE";
 export const DEFAULT_LANGUAGE_CODE = "en";
 export const DEFAULT_CURRENCY_CODE = "AED";
 
+/** Auth / register: zone lowercase + `platform_{zone}` sales channel. */
+export function toAuthZoneCode(zoneCode?: string | null): string {
+  return (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
+}
+
+export function toAuthSalesChannelCode(zoneCode?: string | null): string {
+  return `platform_${toAuthZoneCode(zoneCode)}`;
+}
+
 export type StorefrontContextInput = {
   zoneCode?: string | null;
   languageCode?: string | null;

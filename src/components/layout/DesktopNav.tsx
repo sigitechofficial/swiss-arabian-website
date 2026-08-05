@@ -43,19 +43,34 @@ function DesktopNavDropdown({ item }: { item: MobileNavGroup }) {
 
   return (
     <li className="group relative">
-      <button
-        type="button"
-        className="inline-flex items-center gap-1.5 opacity-70 transition-opacity hover:opacity-100"
-        aria-haspopup="true"
-      >
-        {item.label}
-        <span
-          className="text-[10px] text-sa-muted transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
-          aria-hidden
+      {item.href ? (
+        <Link
+          href={item.href}
+          className="inline-flex items-center gap-1.5 opacity-70 transition-opacity hover:opacity-100"
         >
-          ▾
-        </span>
-      </button>
+          {item.label}
+          <span
+            className="text-[10px] text-sa-muted transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+            aria-hidden
+          >
+            ▾
+          </span>
+        </Link>
+      ) : (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 opacity-70 transition-opacity hover:opacity-100"
+          aria-haspopup="true"
+        >
+          {item.label}
+          <span
+            className="text-[10px] text-sa-muted transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+            aria-hidden
+          >
+            ▾
+          </span>
+        </button>
+      )}
 
       <div
         role="region"

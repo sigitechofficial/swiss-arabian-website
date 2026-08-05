@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
+import { env } from "@/lib/config/env";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import {
+  confirmPhoneVerification,
+  fetchCustomerMe,
+  resendOtp,
+  toE164Phone,
+} from "../api/auth.service";
+import { applyCustomerProfile } from "../lib/applyAuthSession";
 import { verifySchema, type VerifyFormValues } from "../schemas/verifySchema";
 import { AuthCard } from "./AuthCard";
 import { AuthOtpInput } from "./AuthOtpInput";
@@ -13,7 +22,7 @@ import { AuthSubmitButton } from "./AuthSubmitButton";
 
 function maskPhone(phone: string) {
   const trimmed = phone.trim();
-  if (!trimmed) return "+971 50 xxx 34";
+  if (!trimmed) return "your phone";
   const digits = trimmed.replace(/\D/g, "");
   if (digits.length < 4) return trimmed;
   const last2 = digits.slice(-2);
@@ -24,8 +33,10 @@ function maskPhone(phone: string) {
 }
 
 export function VerifyPageView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const phone = searchParams.get("phone") ?? "";
+  const phoneRaw = searchParams.get("phone") ?? "";
+  const phone = phoneRaw ? toE164Phone(phoneRaw) : "";
   const [seconds, setSeconds] = useState(30);
 
   const subtitle = useMemo(
@@ -48,15 +59,44 @@ export function VerifyPageView() {
     return () => window.clearTimeout(id);
   }, [seconds]);
 
+  if (!env.flags.verification) {
+    return (
+      <AuthCard
+        subtitle="Verification is turned off for this environment."
+        title="Verify your number"
+      >
+        <Link
+          href="/account"
+          className="text-center text-[13px] font-semibold text-[var(--sa-action-primary)]"
+        >
+          Continue to account
+        </Link>
+      </AuthCard>
+    );
+  }
+
   return (
     <AuthCard subtitle={subtitle} title="Verify your number">
       <form
         className="flex w-full flex-col gap-5"
-        onSubmit={handleSubmit(async () => {
-          toast(
-            "Phone verification isn’t available yet. Please try again later.",
-            "error",
-          );
+        onSubmit={handleSubmit(async (values) => {
+          if (!phone) {
+            toast("Missing phone number. Register again.", "error");
+            return;
+          }
+          try {
+            await confirmPhoneVerification(phone, values.code);
+            try {
+              const me = await fetchCustomerMe();
+              applyCustomerProfile(me);
+            } catch {
+              // optional hydrate
+            }
+            toast("Phone verified", "success");
+            router.push("/account");
+          } catch (error) {
+            toast(getUserFacingErrorMessage(error), "error");
+          }
         })}
       >
         <Controller
@@ -81,12 +121,18 @@ export function VerifyPageView() {
             <button
               type="button"
               className="font-semibold text-[var(--sa-action-primary)] hover:text-[var(--sa-action-primary-hover)]"
-              onClick={() => {
-                setSeconds(30);
-                toast(
-                  "Resend isn’t available until verification is connected.",
-                  "error",
-                );
+              onClick={async () => {
+                if (!phone) return;
+                try {
+                  await resendOtp(phone, "VERIFY_PHONE");
+                  setSeconds(30);
+                  toast(
+                    "If the account exists, a verification code has been sent.",
+                    "success",
+                  );
+                } catch (error) {
+                  toast(getUserFacingErrorMessage(error), "error");
+                }
               }}
             >
               Resend code
@@ -101,7 +147,7 @@ export function VerifyPageView() {
           Use a different number
         </Link>
 
-        <AuthSubmitButton disabled={isSubmitting}>
+        <AuthSubmitButton disabled={isSubmitting || !phone}>
           Verify and continue
         </AuthSubmitButton>
       </form>
