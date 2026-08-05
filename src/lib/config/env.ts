@@ -75,10 +75,6 @@ const resolvedApiBase = USE_LOCAL_API
   ? LOCAL_API_BASE
   : API_BASE_BY_ENV[APP_ENV] || DEV_API_BASE;
 
-const resolvedApiBase = USE_LOCAL_API
-  ? LOCAL_API_BASE
-  : API_BASE_BY_ENV[APP_ENV] || DEV_API_BASE;
-
 export const env = {
   appEnv: APP_ENV,
   apiBaseUrl: resolvedApiBase,
