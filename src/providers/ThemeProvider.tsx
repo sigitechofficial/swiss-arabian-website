@@ -34,9 +34,7 @@ function subscribe(onStoreChange: () => void) {
 function getSnapshot(): ColorMode {
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === "dark" || stored === "light") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return "light";
 }
 
 function getServerSnapshot(): ColorMode {

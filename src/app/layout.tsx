@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 /** Avoid flash: apply saved theme before paint (matches ThemeProvider key). */
-const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mode');if(!t)t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');}catch(e){}})();`;
+const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mode');if(t!=='dark'&&t!=='light')t='light';if(t==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');}catch(e){}})();`;
 
 export default function RootLayout({
   children,
