@@ -19,7 +19,7 @@ export function TrendingSection() {
         href="/products"
         linkLabel="View all 32"
       />
-      <Stagger className="-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
+      <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {trendingProducts.map((product) => (
           <StaggerItem key={product.id}>
             <ProductCard product={product} />

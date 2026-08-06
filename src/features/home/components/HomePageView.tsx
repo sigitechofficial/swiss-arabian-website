@@ -17,7 +17,6 @@ export function HomePageView() {
   return (
     <div className="bg-page">
       <h1 className="sr-only">Swiss Arabian — Luxury Oriental Perfumes</h1>
-      <div className="h-1 w-full bg-page" aria-hidden />
       <Reveal fade>
         <HeroSection />
       </Reveal>

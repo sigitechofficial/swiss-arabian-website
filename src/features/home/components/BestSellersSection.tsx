@@ -29,7 +29,7 @@ export function BestSellersSection() {
           href="/products"
           linkLabel="View all 48"
         />
-        <Stagger className="-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
+        <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <StaggerItem className="col-span-2">
             <article className="sa-grad-house relative flex h-full flex-col justify-end overflow-hidden p-6 text-white">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-light">
@@ -68,7 +68,7 @@ export function BestSellersSection() {
                   }
                   className="bg-white px-4 py-2.5 text-[12.5px] font-semibold text-ink transition-colors hover:bg-cream sm:px-6"
                 >
-                  Add to cart
+                  Add
                 </button>
               </div>
             </article>

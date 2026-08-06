@@ -24,25 +24,40 @@ type ProductCardProps = {
   product: ProductCardModel;
   /** Disable ATC (e.g. out of stock / price missing) */
   addDisabled?: boolean;
+  /** Compact — cart / narrow grids */
+  density?: "default" | "compact";
 };
 
 export function ProductCard({
   product,
   addDisabled = false,
+  density = "default",
 }: ProductCardProps) {
   const addToCart = useAddToCart();
   const currency = product.currency ?? "USD";
-  const canAdd =
-    !addDisabled && product.price != null && product.price >= 0;
+  const canAdd = !addDisabled && product.price != null && product.price >= 0;
   const href = `/products/${product.slug}`;
+  const compact = density === "compact";
 
   const badge =
     product.badge === "new" ? (
-      <span className="absolute left-3 top-3 z-[1] bg-gold px-[11px] py-[6px] text-[10px] font-bold uppercase tracking-[0.12em] text-paper">
+      <span
+        className={`absolute z-[1] bg-gold font-bold uppercase tracking-[0.12em] text-paper ${
+          compact
+            ? "left-2 top-2 px-1.5 py-0.5 text-[8px]"
+            : "left-3 top-3 px-[11px] py-[6px] text-[10px]"
+        }`}
+      >
         New
       </span>
     ) : product.badge === "trending" ? (
-      <span className="absolute left-3 top-3 z-[1] bg-terra px-[11px] py-[6px] text-[10px] font-bold uppercase tracking-[0.12em] text-paper">
+      <span
+        className={`absolute z-[1] bg-terra font-bold uppercase tracking-[0.12em] text-paper ${
+          compact
+            ? "left-2 top-2 px-1.5 py-0.5 text-[8px]"
+            : "left-3 top-3 px-[11px] py-[6px] text-[10px]"
+        }`}
+      >
         ↗ Trending
       </span>
     ) : null;
@@ -50,39 +65,61 @@ export function ProductCard({
   return (
     <article className="flex flex-col overflow-hidden">
       <Link href={href} className="flex flex-1 cursor-pointer flex-col">
-        <div className="relative flex aspect-square items-center justify-center p-3">
+        <div
+          className={`relative flex aspect-square items-center justify-center ${
+            compact ? "p-1.5" : "p-3"
+          }`}
+        >
           {badge}
           {product.image ? (
             <Image
               src={product.image}
               alt={product.name}
-              width={200}
-              height={200}
+              width={compact ? 140 : 200}
+              height={compact ? 140 : 200}
               className="max-h-full w-auto object-contain"
-              sizes="(max-width: 768px) 50vw, 287px"
+              sizes={
+                compact
+                  ? "(max-width: 480px) 40vw, 160px"
+                  : "(max-width: 768px) 50vw, 287px"
+              }
             />
           ) : (
             <div
               className="flex h-full w-full items-center justify-center text-center"
               aria-hidden
             >
-              <span className="max-w-[8rem] text-[11px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
+              <span className="max-w-[8rem] text-[10px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
                 Image coming soon
               </span>
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col px-1 pt-3">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
+        <div
+          className={`flex flex-1 flex-col ${compact ? "px-0.5 pt-2" : "px-1 pt-3"}`}
+        >
+          <p
+            className={`truncate font-semibold uppercase text-sa-muted ${
+              compact
+                ? "text-[9px] tracking-[0.12em]"
+                : "text-[11px] tracking-[0.14em]"
+            }`}
+          >
             {product.family}
           </p>
-          <h3 className="mt-1 line-clamp-2 min-h-[2.6em] font-sans text-[20.5px] font-medium leading-snug tracking-[-0.01em] text-sa-primary transition-opacity group-hover:opacity-80 hover:opacity-80">
+          <h3
+            className={`font-sans text-sa-primary transition-opacity hover:opacity-80 ${
+              compact
+                ? "mt-0.5 line-clamp-2 text-[13px] font-semibold leading-snug tracking-[-0.01em]"
+                : "mt-1 line-clamp-2 min-h-[2.6em] text-[20.5px] font-medium leading-snug tracking-[-0.01em]"
+            }`}
+          >
             {product.name}
           </h3>
           <p
-            className={`mt-2 font-sans text-base font-bold ${
-              product.price == null ? "text-sa-muted" : "text-sa-primary"
-            }`}
+            className={`font-sans font-bold tabular-nums ${
+              compact ? "mt-1 text-[13px]" : "mt-2 text-base"
+            } ${product.price == null ? "text-sa-muted" : "text-sa-primary"}`}
           >
             {product.price == null
               ? "Price unavailable"
@@ -90,7 +127,7 @@ export function ProductCard({
           </p>
         </div>
       </Link>
-      <div className="px-1 pb-1 pt-3">
+      <div className={compact ? "pt-2" : "px-1 pb-1 pt-3"}>
         <button
           type="button"
           disabled={!canAdd}
@@ -107,9 +144,13 @@ export function ProductCard({
               notes: notesFromFamily(product.family),
             });
           }}
-          className="flex h-[42px] w-full cursor-pointer items-center justify-center bg-terra text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted"
+          className={`flex w-full cursor-pointer items-center justify-center bg-terra font-semibold uppercase text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted ${
+            compact
+              ? "h-8 text-[10px] tracking-[0.08em]"
+              : "h-[42px] text-[12px] tracking-[0.1em]"
+          }`}
         >
-          Add to cart
+          Add
         </button>
       </div>
     </article>

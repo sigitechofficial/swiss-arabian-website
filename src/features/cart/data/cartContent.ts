@@ -23,6 +23,13 @@ export const cartUpsells: HomeProduct[] = [
   },
 ];
 
+/** Empty-cart suggestions — best-of lineup */
+export const cartEmptySuggestions: HomeProduct[] = [
+  ...cartUpsells,
+  newLaunches.find((p) => p.slug === "vanilla-01")!,
+  newLaunches.find((p) => p.slug === "incense-01")!,
+].filter(Boolean);
+
 export function notesFromFamily(family?: string): string[] {
   if (!family) return [];
   return family

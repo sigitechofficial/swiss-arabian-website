@@ -5,6 +5,7 @@ export { AccountPageTitle } from "./components/AccountPageTitle";
 export { AccountPageView } from "./components/AccountPageView";
 export { AccountPlaceholderPageView } from "./components/AccountPlaceholderPageView";
 export { AccountProfilePageView } from "./components/AccountProfilePageView";
+export { AccountRewardsPageView } from "./components/AccountRewardsPageView";
 export { AccountSectionHead } from "./components/AccountSectionHead";
 export { AccountSectionHeading } from "./components/AccountSectionHeading";
 export {

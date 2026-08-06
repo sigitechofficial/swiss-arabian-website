@@ -102,4 +102,8 @@ export const env = {
     process.env.NODE_ENV === "development"
       ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
       : "",
+  /** Google Maps JavaScript API — enables multi-marker store locator. */
+  googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
+  /** Optional Map ID for Advanced Markers (Cloud console). */
+  googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
 } as const;

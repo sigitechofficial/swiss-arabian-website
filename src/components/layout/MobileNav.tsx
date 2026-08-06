@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MOBILE_NAV,
   type MobileNavItem,
 } from "@/features/home/constants/homeAssets";
+import { performLogout } from "@/features/auth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
 
 function AccordionGroup({
@@ -21,11 +24,7 @@ function AccordionGroup({
     <li className="border-b border-sa-border">
       <div className="flex w-full items-center justify-between py-4 uppercase">
         {item.href ? (
-          <Link
-            href={item.href}
-            className="flex-1"
-            onClick={onNavigate}
-          >
+          <Link href={item.href} className="flex-1" onClick={onNavigate}>
             {item.label}
           </Link>
         ) : (
@@ -78,6 +77,9 @@ function AccordionGroup({
 export function MobileNav() {
   const open = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -95,6 +97,18 @@ export function MobileNav() {
 
   function close() {
     setMobileNavOpen(false);
+  }
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await performLogout();
+      close();
+      router.push("/");
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -138,6 +152,32 @@ export function MobileNav() {
           )}
         </ul>
       </nav>
+
+      <div className="mt-auto border-t border-sa-border px-6 py-6">
+        <ul className="flex flex-col gap-1 text-[15px] font-semibold uppercase tracking-wide">
+          <li>
+            <Link
+              href="/stores"
+              className="block py-3 text-sa-primary"
+              onClick={close}
+            >
+              Stores
+            </Link>
+          </li>
+          {isAuthenticated ? (
+            <li>
+              <button
+                type="button"
+                disabled={loggingOut}
+                onClick={() => void handleLogout()}
+                className="block w-full py-3 text-left text-sa-secondary transition-colors hover:text-terra disabled:opacity-60"
+              >
+                {loggingOut ? "Signing out…" : "Logout"}
+              </button>
+            </li>
+          ) : null}
+        </ul>
+      </div>
     </aside>
   );
 }

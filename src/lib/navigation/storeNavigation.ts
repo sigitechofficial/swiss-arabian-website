@@ -25,6 +25,7 @@ export const accountTabNav: NavItem[] = [
   { label: "Dashboard", href: "/account" },
   { label: "Purchase History", href: "/account/orders" },
   { label: "Profile", href: "/account/profile" },
+  { label: "Rewards", href: "/account/rewards" },
   { label: "Membership Benefits", href: "/account/membership" },
   { label: "Wishlist", href: "/account/wishlist" },
   { label: "Saved Items", href: "/account/saved" },
@@ -33,7 +34,7 @@ export const accountTabNav: NavItem[] = [
 export const footerNav = {
   shop: primaryNav,
   help: [
-    { label: "Contact", href: "/search" },
+    { label: "Contact", href: "/stores" },
     { label: "Account", href: "/account" },
   ],
 } as const;

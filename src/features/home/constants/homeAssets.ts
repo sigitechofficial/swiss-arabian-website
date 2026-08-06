@@ -92,7 +92,7 @@ export const MOBILE_NAV: MobileNavItem[] = [
 
 const home = "/assets/home" as const;
 
-/** Home hero carousel — baked-in creative banners at 3840×1000 */
+/** Home hero carousel — desktop 3840×1000; mobile uses portrait creatives */
 export const HERO_SLIDE_MS = 6000;
 
 export const HERO_SLIDES = [
@@ -131,6 +131,40 @@ export const HERO_SLIDES = [
     src: `${home}/hero-gift-sets.jpg`,
     alt: "Unbox happiness — elevate every occasion with a perfect gift set. Shop now.",
     href: "/gift-box",
+  },
+] as const;
+
+/** Portrait banners (≈535×690) — mobile carousel only */
+export const HERO_SLIDES_MOBILE = [
+  {
+    id: "summer-icons",
+    src: `${home}/hero-mobile-summer-icons.jpg`,
+    alt: "Meet the new icons of summer — Shop now. Terms and conditions apply.",
+    href: "/#new-launches",
+  },
+  {
+    id: "bundle-offers",
+    src: `${home}/hero-mobile-bundle-offers.jpg`,
+    alt: "Exclusive bundle offers up to 25% off — Shop now. Terms and conditions apply.",
+    href: "/products",
+  },
+  {
+    id: "shaghaf-free",
+    src: `${home}/hero-mobile-shaghaf-free.jpg`,
+    alt: "Get a free Shaghaf miniature on purchases of $200 and above — Shop now.",
+    href: "/products",
+  },
+  {
+    id: "gift-sets",
+    src: `${home}/hero-mobile-gift-sets.jpg`,
+    alt: "Unbox happiness — elevate every occasion with a perfect gift set. Shop now.",
+    href: "/gift-box",
+  },
+  {
+    id: "summer-essentials",
+    src: `${home}/hero-mobile-summer-essentials.jpg`,
+    alt: "Summer essentials — get a free Shaghaf miniature on purchases of $200 and above. Shop now.",
+    href: "/products",
   },
 ] as const;
 
@@ -179,6 +213,7 @@ export const homeAssets = {
     shaghafOudAhmar: `${home}/product-shaghaf-oud-ahmar.png`,
   },
   shaghaf: {
+    panel: `${home}/shaghaf-nectar-blush.jpg`,
     oudTonka: `${home}/shaghaf-oud-tonka.png`,
     oudAhmar: `${home}/shaghaf-oud-ahmar.png`,
     amberInfusion: `${home}/shaghaf-amber-infusion.png`,

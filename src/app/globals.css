@@ -303,3 +303,93 @@ html::-webkit-scrollbar-corner,
     transition: none;
   }
 }
+
+/* Hairline borders — ~0.5px on retina (cart rows, steppers) */
+.sa-hairline {
+  border: 0.5px solid var(--sa-border-default);
+}
+.sa-hairline-x {
+  border-left: 0.5px solid var(--sa-border-default);
+  border-right: 0.5px solid var(--sa-border-default);
+}
+.sa-hairline-b {
+  border-bottom: 0.5px solid var(--sa-border-default);
+}
+.sa-hairline-t {
+  border-top: 0.5px solid var(--sa-border-default);
+}
+.sa-hairline-l {
+  border-left: 0.5px solid var(--sa-border-default);
+}
+
+/* Cart free-shipping unlock — confetti + truck hop + badge pop */
+@keyframes sa-cart-confetti-burst {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+@keyframes sa-cart-truck-hop {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-9px) rotate(-8deg);
+  }
+  55% {
+    transform: translateY(0) rotate(4deg);
+  }
+  75% {
+    transform: translateY(-3px) rotate(-2deg);
+  }
+}
+
+@keyframes sa-cart-badge-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes sa-cart-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 107, 74, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(47, 107, 74, 0);
+  }
+}
+
+.sa-cart-truck-hop {
+  animation: sa-cart-truck-hop 700ms ease-in-out;
+}
+
+.sa-cart-badge-pop {
+  animation: sa-cart-badge-pop 400ms ease-out;
+}
+
+.sa-cart-glow-pulse {
+  animation: sa-cart-glow-pulse 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-cart-truck-hop,
+  .sa-cart-badge-pop,
+  .sa-cart-glow-pulse {
+    animation: none;
+  }
+}

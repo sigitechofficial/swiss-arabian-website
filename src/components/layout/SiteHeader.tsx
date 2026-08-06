@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCartStore } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -29,9 +30,25 @@ export function SiteHeader() {
   const cartOpen = useUiStore((s) => s.cartOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [elevated, setElevated] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setElevated(window.scrollY > 4);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-sa-border bg-page text-sa-primary">
+    <header
+      className={`sticky top-0 z-40 w-full bg-page text-sa-primary transition-shadow duration-300 ${
+        elevated
+          ? "shadow-[0_1px_0_rgba(44,36,29,0.06),0_8px_20px_rgba(44,36,29,0.06)] dark:shadow-[0_1px_0_rgba(0,0,0,0.35),0_8px_20px_rgba(0,0,0,0.25)]"
+          : "shadow-none"
+      }`}
+    >
       <div className="mx-auto flex max-w-[1280px] items-center gap-5 px-4 py-3.5 sm:px-6 lg:px-10">
         <Link
           href="/"
@@ -62,7 +79,7 @@ export function SiteHeader() {
 
           <Link
             href={isAuthenticated ? "/account" : "/login"}
-            className="hidden items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide sm:flex"
+            className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide"
             aria-label={isAuthenticated ? "Account" : "Login"}
           >
             <IconUser />
@@ -70,8 +87,8 @@ export function SiteHeader() {
           </Link>
 
           <Link
-            href="/search"
-            className="hidden items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide sm:flex"
+            href="/stores"
+            className="hidden items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide lg:flex"
             aria-label="Stores"
           >
             <IconPin />

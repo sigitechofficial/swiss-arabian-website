@@ -14,18 +14,66 @@ import {
 import {
   HERO_SLIDE_MS,
   HERO_SLIDES,
+  HERO_SLIDES_MOBILE,
 } from "@/features/home/constants/homeAssets";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { easeOutExpo } from "@/lib/motion/variants";
 
-const ASPECT = "3840 / 1000";
+/** Desktop landscape creatives — slightly taller than source 3840×1000 */
+const ASPECT_DESKTOP = "3840 / 1280";
+/** Mobile portrait creatives (≈535×690) */
+const ASPECT_MOBILE = "535 / 690";
+/** Match Tailwind `md` */
+const MOBILE_BREAKPOINT = 767;
 const FADE_MS = 1.15;
 
+type HeroSlide = {
+  id: string;
+  src: string;
+  alt: string;
+  href: string;
+};
+
 /**
- * Enterprise home hero carousel — same 3840×1000 frame as the original banner.
- * Stacked crossfade; arrows overlay left/right on the image.
+ * Home hero — portrait banners below `md`, landscape from `md` up.
+ * Both frames mount so aspect ratio is correct before JS hydration.
  */
 export function HeroCarousel() {
-  const slides = HERO_SLIDES;
+  const isMobile = useIsMobile(MOBILE_BREAKPOINT);
+
+  return (
+    <>
+      <div className="md:hidden">
+        <HeroCarouselFrame
+          slides={HERO_SLIDES_MOBILE}
+          aspect={ASPECT_MOBILE}
+          sizes="(max-width: 767px) calc(100vw - 32px), 535px"
+          active={isMobile}
+        />
+      </div>
+      <div className="hidden md:block">
+        <HeroCarouselFrame
+          slides={HERO_SLIDES}
+          aspect={ASPECT_DESKTOP}
+          sizes="(max-width: 1280px) calc(100vw - 48px), 1200px"
+          active={!isMobile}
+        />
+      </div>
+    </>
+  );
+}
+
+function HeroCarouselFrame({
+  slides,
+  aspect,
+  sizes,
+  active: frameActive,
+}: {
+  slides: readonly HeroSlide[];
+  aspect: string;
+  sizes: string;
+  active: boolean;
+}) {
   const reduce = useReducedMotion();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -50,10 +98,10 @@ export function HeroCarousel() {
   });
 
   useEffect(() => {
-    if (paused || reduce || slides.length < 2) return;
+    if (!frameActive || paused || reduce || slides.length < 2) return;
     const id = window.setInterval(() => goNext(), HERO_SLIDE_MS);
     return () => window.clearInterval(id);
-  }, [paused, reduce, slides.length, active]);
+  }, [frameActive, paused, reduce, slides.length, active]);
 
   useEffect(() => {
     const node = regionRef.current;
@@ -81,7 +129,8 @@ export function HeroCarousel() {
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured offers"
-      tabIndex={0}
+      tabIndex={frameActive ? 0 : -1}
+      aria-hidden={!frameActive}
       className="group/hero relative outline-none"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -94,7 +143,7 @@ export function HeroCarousel() {
     >
       <div
         className="relative w-full overflow-hidden bg-cream dark:bg-section-soft"
-        style={{ aspectRatio: ASPECT }}
+        style={{ aspectRatio: aspect }}
       >
         {slides.map((item, index) => {
           const isActive = index === active;
@@ -125,7 +174,7 @@ export function HeroCarousel() {
               <Link
                 href={item.href}
                 className="relative block h-full w-full"
-                tabIndex={isActive ? 0 : -1}
+                tabIndex={frameActive && isActive ? 0 : -1}
                 aria-hidden={!isActive}
                 aria-label={item.alt}
               >
@@ -135,7 +184,7 @@ export function HeroCarousel() {
                   fill
                   priority={index < 2}
                   quality={90}
-                  sizes="(max-width: 1280px) calc(100vw - 48px), 1200px"
+                  sizes={sizes}
                   className="object-cover object-center"
                 />
               </Link>
@@ -172,6 +221,7 @@ export function HeroCarousel() {
                 role="tab"
                 aria-selected={isActive}
                 aria-label={`Offer ${index + 1} of ${slides.length}`}
+                tabIndex={frameActive ? undefined : -1}
                 onClick={() => goTo(index)}
                 className={`relative h-1 overflow-hidden transition-[width,background-color] duration-300 ease-out ${
                   isActive
