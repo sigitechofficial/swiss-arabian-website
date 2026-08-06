@@ -48,16 +48,16 @@ export function ProductCard({
     ) : null;
 
   return (
-    <article className="flex flex-col overflow-hidden bg-surface">
+    <article className="flex flex-col overflow-hidden">
       <Link href={href} className="flex flex-1 cursor-pointer flex-col">
-        <div className="sa-card-media relative flex aspect-[287/330] items-center justify-center p-6">
+        <div className="relative flex aspect-square items-center justify-center p-3">
           {badge}
           {product.image ? (
             <Image
               src={product.image}
               alt={product.name}
               width={200}
-              height={260}
+              height={200}
               className="max-h-full w-auto object-contain"
               sizes="(max-width: 768px) 50vw, 287px"
             />
@@ -72,11 +72,11 @@ export function ProductCard({
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col px-5 pt-5">
+        <div className="flex flex-1 flex-col px-1 pt-3">
           <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
             {product.family}
           </p>
-          <h3 className="mt-1 line-clamp-2 min-h-[57px] font-sans text-[20.5px] font-medium leading-snug tracking-[-0.01em] text-sa-primary transition-opacity group-hover:opacity-80 hover:opacity-80">
+          <h3 className="mt-1 line-clamp-2 min-h-[2.6em] font-sans text-[20.5px] font-medium leading-snug tracking-[-0.01em] text-sa-primary transition-opacity group-hover:opacity-80 hover:opacity-80">
             {product.name}
           </h3>
           <p
@@ -90,7 +90,7 @@ export function ProductCard({
           </p>
         </div>
       </Link>
-      <div className="p-5 pt-4">
+      <div className="px-1 pb-1 pt-3">
         <button
           type="button"
           disabled={!canAdd}

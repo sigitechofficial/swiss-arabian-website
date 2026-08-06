@@ -20,6 +20,8 @@ export const catalogKeys = {
   all: ["catalog"] as const,
   list: (zoneCode?: string | null, page = 1, limit = CATALOG_PAGE_SIZE) =>
     [...catalogKeys.all, "list", zoneCode ?? "default", page, limit] as const,
+  infinite: (zoneCode?: string | null, limit = CATALOG_PAGE_SIZE) =>
+    [...catalogKeys.all, "infinite", zoneCode ?? "default", limit] as const,
   detail: (slug: string, zoneCode?: string | null) =>
     [...catalogKeys.all, "detail", slug, zoneCode ?? "default"] as const,
   collections: (zoneCode?: string | null) =>
@@ -124,6 +126,27 @@ function contextQs(zoneCode?: string | null) {
   return storefrontContextQuery({ zoneCode });
 }
 
+function normalizePagination(
+  raw: ApiProductListData["pagination"] | undefined,
+  page: number,
+  limit: number,
+  productCount: number,
+): CatalogPagination {
+  const total = Math.max(0, Number(raw?.total ?? productCount) || productCount);
+  const resolvedLimit = Math.max(1, Number(raw?.limit ?? limit) || limit);
+  const resolvedPage = Math.max(1, Number(raw?.page ?? page) || page);
+  const totalPages = Math.max(
+    1,
+    Number(raw?.totalPages) || Math.ceil(total / resolvedLimit) || 1,
+  );
+  return {
+    page: resolvedPage,
+    limit: resolvedLimit,
+    total,
+    totalPages,
+  };
+}
+
 export async function fetchProducts(
   zoneCode?: string | null,
   options?: { page?: number; limit?: number },
@@ -136,13 +159,10 @@ export async function fetchProducts(
     { skipAuth: true },
   );
   const products = (data.products ?? []).map(mapProduct);
-  const pagination: CatalogPagination = data.pagination ?? {
-    page,
-    limit,
-    total: products.length,
-    totalPages: 1,
+  return {
+    products,
+    pagination: normalizePagination(data.pagination, page, limit, products.length),
   };
-  return { products, pagination };
 }
 
 export async function fetchProductBySlug(
@@ -242,12 +262,9 @@ export async function fetchCollectionProducts(
     { skipAuth: true },
   );
   const products = (data.products ?? []).map(mapProduct);
-  const pagination: CatalogPagination = data.pagination ?? {
-    page,
-    limit,
-    total: products.length,
-    totalPages: 1,
+  return {
+    products,
+    pagination: normalizePagination(data.pagination, page, limit, products.length),
   };
-  return { products, pagination };
 }
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AuthGuard } from "@/components/guards/AuthGuard";
+import { Reveal } from "@/components/motion";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 
 import { AccountTabNav } from "./AccountTabNav";
@@ -20,8 +21,12 @@ export function AccountPageShell({
     <AuthGuard requireAuth>
       <div className="bg-page">
         <AccountTabNav />
-        {children}
-        {newsletter ? <NewsletterSection /> : null}
+        <Reveal fade>{children}</Reveal>
+        {newsletter ? (
+          <Reveal>
+            <NewsletterSection />
+          </Reveal>
+        ) : null}
       </div>
     </AuthGuard>
   );

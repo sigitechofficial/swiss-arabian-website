@@ -94,4 +94,12 @@ export const env = {
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
   },
+  /**
+   * Local QA only — mirrors backend CUSTOMER_MASTER_OTP when enabled.
+   * Never set against production API builds.
+   */
+  masterOtp:
+    process.env.NODE_ENV === "development"
+      ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
+      : "",
 } as const;

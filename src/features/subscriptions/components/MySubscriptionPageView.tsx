@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -16,11 +17,17 @@ export function MySubscriptionPageView() {
       />
 
       <div className={`${accountContainer} flex flex-col gap-6 pb-14 pt-2`}>
-        <SubscriptionStatusCard />
-        <SubscriptionProgressPanel />
-        <div className="pt-4">
-          <SubscriptionHistoryTable />
-        </div>
+        <Reveal>
+          <SubscriptionStatusCard />
+        </Reveal>
+        <Reveal delay={0.05}>
+          <SubscriptionProgressPanel />
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div className="pt-4">
+            <SubscriptionHistoryTable />
+          </div>
+        </Reveal>
       </div>
     </AccountPageShell>
   );

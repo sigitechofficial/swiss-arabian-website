@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { keepPreviousData } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import CircularProgress from "@mui/material/CircularProgress";
 import { PageLoading } from "@/components/ui";
+import { InViewItem } from "@/components/motion";
 import { ProductCard } from "@/features/home/components/ProductCard";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useApiQuery } from "@/lib/api/queryHooks";
+import { brandColors } from "@/theme/designTokens";
 import { useMarket } from "@/providers/MarketProvider";
 import {
   CATALOG_PAGE_SIZE,
@@ -15,7 +16,6 @@ import {
 } from "../api/catalog.service";
 import type { ProductSummary } from "../types/product";
 import { CatalogEmptyState } from "./CatalogEmptyState";
-import { CatalogPagination } from "./CatalogPagination";
 
 function catalogStatus(product: ProductSummary): string | null {
   if (product.price == null || product.sellabilityStatus === "PRICE_MISSING") {
@@ -44,41 +44,57 @@ function toCardModel(product: ProductSummary) {
   };
 }
 
-function parsePage(raw: string | null): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n < 1) return 1;
-  return Math.floor(n);
-}
-
 export function CatalogPageView() {
   const { marketId } = useMarket();
   const zoneCode = marketId || DEFAULT_ZONE_CODE;
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const page = parsePage(searchParams.get("page"));
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, isFetching } = useApiQuery(
-    catalogKeys.list(zoneCode, page, CATALOG_PAGE_SIZE),
-    () => fetchProducts(zoneCode, { page, limit: CATALOG_PAGE_SIZE }),
-    { placeholderData: keepPreviousData },
-  );
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: catalogKeys.infinite(zoneCode, CATALOG_PAGE_SIZE),
+    queryFn: ({ pageParam }) =>
+      fetchProducts(zoneCode, { page: pageParam, limit: CATALOG_PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.pagination;
+      if (!pagination) return undefined;
+      if (pagination.page >= pagination.totalPages) return undefined;
+      return pagination.page + 1;
+    },
+  });
 
-  const products = data?.products ?? [];
-  const pagination = data?.pagination;
-  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
-  const safePage = Math.min(page, totalPages);
+  const products = data?.pages.flatMap((page) => page.products) ?? [];
+  const total = data?.pages[0]?.pagination?.total ?? products.length;
+  const loadedPages = data?.pages.length ?? 0;
 
+  const tryLoadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Native IntersectionObserver — more reliable than Framer useInView for infinite scroll
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page]);
+    const node = loadMoreRef.current;
+    if (!node) return;
 
-  function hrefForPage(nextPage: number) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextPage <= 1) params.delete("page");
-    else params.set("page", String(nextPage));
-    const qs = params.toString();
-    return qs ? `${pathname}?${qs}` : pathname;
-  }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          tryLoadMore();
+        }
+      },
+      { root: null, rootMargin: "320px 0px", threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [tryLoadMore, products.length]);
 
   if (isLoading && !data) {
     return <PageLoading label="Loading fragrances…" fill />;
@@ -92,7 +108,7 @@ export function CatalogPageView() {
     <section
       className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-16"
       aria-label="Shop products"
-      aria-busy={isFetching}
+      aria-busy={isFetchingNextPage}
     >
       <header className="mb-8 max-w-[640px] border-b border-sa-border pb-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">
@@ -106,31 +122,47 @@ export function CatalogPageView() {
         </p>
       </header>
 
-      <div
-        className={`-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4 ${
-          isFetching ? "opacity-70 transition-opacity" : ""
-        }`}
-      >
+      <div className="-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
         {products.map((product) => {
           const status = catalogStatus(product);
           return (
-            <ProductCard
-              key={product.id}
-              product={toCardModel(product)}
-              addDisabled={status != null}
-            />
+            <InViewItem key={product.id}>
+              <ProductCard
+                product={toCardModel(product)}
+                addDisabled={status != null}
+              />
+            </InViewItem>
           );
         })}
       </div>
 
-      {pagination ? (
-        <CatalogPagination
-          page={safePage}
-          totalPages={totalPages}
-          total={pagination.total}
-          hrefForPage={hrefForPage}
-        />
-      ) : null}
+      <div
+        ref={loadMoreRef}
+        className="mt-10 flex min-h-20 flex-col items-center justify-center gap-3 border-t border-sa-border pt-8"
+        aria-live="polite"
+      >
+        <p className="text-[13px] text-sa-muted">
+          Showing {products.length}
+          {total > products.length ? ` of ${total}` : ""} products
+        </p>
+        {isFetchingNextPage ? (
+          <div
+            className="flex flex-col items-center gap-3 py-3"
+            role="status"
+            aria-label="Loading more products"
+          >
+            <CircularProgress size={28} sx={{ color: brandColors.terra }} />
+            <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-terra">
+              Loading…
+            </span>
+          </div>
+        ) : null}
+        {!hasNextPage && loadedPages > 0 ? (
+          <p className="text-[12px] font-medium text-sa-muted">
+            You&apos;ve reached the end
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

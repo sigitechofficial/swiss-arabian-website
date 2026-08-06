@@ -25,6 +25,20 @@ export type AuthResult = {
   customer: CustomerProfileView;
 };
 
+/** Password login when email is unverified (HTTP 200 — not an error). */
+export type EmailVerificationRequired = {
+  status: "EMAIL_VERIFICATION_REQUIRED";
+  email: string;
+};
+
+export type PasswordLoginResult = AuthResult | EmailVerificationRequired;
+
+export type EmailLoginCodeConfirmPayload = {
+  email: string;
+  code: string;
+  guestToken?: string;
+};
+
 export type RegisterPayload = {
   zoneCode: string;
   email?: string;
@@ -56,4 +70,22 @@ export type CustomerSessionView = {
   current: boolean;
 };
 
-export type OtpPurpose = "VERIFY_EMAIL" | "VERIFY_PHONE" | "RESET_PASSWORD";
+export type OtpPurpose =
+  | "VERIFY_EMAIL"
+  | "VERIFY_PHONE"
+  | "RESET_PASSWORD"
+  | "LOGIN";
+
+export function isAuthResult(
+  data: PasswordLoginResult,
+): data is AuthResult {
+  return "token" in data && Boolean(data.token);
+}
+
+export function isEmailVerificationRequired(
+  data: PasswordLoginResult,
+): data is EmailVerificationRequired {
+  return (
+    "status" in data && data.status === "EMAIL_VERIFICATION_REQUIRED"
+  );
+}

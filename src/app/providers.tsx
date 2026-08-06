@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 import { EmotionCacheProvider } from "@/providers/EmotionCacheProvider";
 import { AuthSessionProvider } from "@/providers/AuthSessionProvider";
 import { LocaleProvider } from "@/providers/LocaleProvider";
@@ -14,18 +15,20 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <EmotionCacheProvider>
       <ThemeProvider>
-        <MuiProvider>
-          <QueryProvider>
-            <LocaleProvider>
-              <MarketProvider>
-                <AuthSessionProvider>
-                  {children}
-                  <Toaster />
-                </AuthSessionProvider>
-              </MarketProvider>
-            </LocaleProvider>
-          </QueryProvider>
-        </MuiProvider>
+        <MotionConfig reducedMotion="user">
+          <MuiProvider>
+            <QueryProvider>
+              <LocaleProvider>
+                <MarketProvider>
+                  <AuthSessionProvider>
+                    {children}
+                    <Toaster />
+                  </AuthSessionProvider>
+                </MarketProvider>
+              </LocaleProvider>
+            </QueryProvider>
+          </MuiProvider>
+        </MotionConfig>
       </ThemeProvider>
     </EmotionCacheProvider>
   );

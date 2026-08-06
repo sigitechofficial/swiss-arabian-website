@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Stagger, StaggerItem } from "@/components/motion";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { AccountUnderlineTabs } from "@/features/account/components/AccountTabs";
@@ -32,11 +33,13 @@ function OrdersGroup({
       <h2 className="text-[19px] font-bold text-sa-primary lg:text-[22px]">
         {title}
       </h2>
-      <div className="mt-5 flex flex-col gap-7">
+      <Stagger className="mt-5 flex flex-col gap-7">
         {orders.map((order) => (
-          <OrderCard key={order.id} order={order} />
+          <StaggerItem key={order.id}>
+            <OrderCard order={order} />
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }

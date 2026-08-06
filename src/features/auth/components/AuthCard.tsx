@@ -1,34 +1,44 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { authAssets } from "../constants/authAssets";
 
 type AuthCardProps = {
-  subtitle: string;
   title: string;
+  subtitle: string;
   children: ReactNode;
 };
 
-export function AuthCard({ subtitle, title, children }: AuthCardProps) {
+export function AuthCard({ title, subtitle, children }: AuthCardProps) {
   return (
-    <div className="flex w-full max-w-[480px] flex-col gap-5 border border-sa-border bg-surface p-6 sm:p-12">
-      <div className="flex flex-col items-center gap-3 pb-2 text-center">
-        <div className="relative h-[50px] w-[90px] shrink-0">
+    <div className="flex w-full flex-col items-stretch">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Link
+          href="/"
+          className="relative h-11 w-[100px] shrink-0"
+          aria-label="Swiss Arabian home"
+        >
           <Image
             src={authAssets.logo}
-            alt="Swiss Arabian"
+            alt=""
             fill
+            priority
             className="site-logo object-contain"
-            sizes="90px"
+            sizes="100px"
           />
-        </div>
-        <p className="max-w-[12rem] text-[13px] leading-normal text-sa-secondary">
-          {subtitle}
-        </p>
-        <h1 className="text-[26px] font-bold leading-normal text-sa-primary">
+        </Link>
+      </div>
+
+      <div className="mt-7 flex flex-col items-center gap-2 text-center">
+        <h1 className="font-sans text-[clamp(1.625rem,4vw,1.875rem)] font-medium leading-[1.1] tracking-[-0.02em] text-sa-primary">
           {title}
         </h1>
+        <p className="max-w-sm text-[15px] leading-normal text-sa-secondary">
+          {subtitle}
+        </p>
       </div>
-      {children}
+
+      <div className="mt-6 w-full">{children}</div>
     </div>
   );
 }

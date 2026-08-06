@@ -22,18 +22,18 @@ export function AuthField({
     <div className="flex w-full flex-col gap-1">
       <label
         htmlFor={fieldId}
-        className="text-xs font-semibold leading-normal text-sa-primary"
+        className="text-[13px] font-medium leading-normal text-sa-secondary"
       >
         {label}
       </label>
       <div
-        className={`flex items-center border bg-page px-3 py-[11px] ${
+        className={`flex items-center rounded-[10px] border bg-surface py-3 pl-4 pr-3 ${
           error ? "border-[var(--sa-action-danger)]" : "border-sa-input"
         }`}
       >
         <input
           id={fieldId}
-          className={`min-w-0 flex-1 bg-transparent text-sm text-sa-primary outline-none placeholder:text-sa-secondary ${className}`}
+          className={`min-w-0 flex-1 bg-transparent text-[15px] text-sa-primary outline-none placeholder:text-sa-muted ${className}`}
           {...props}
         />
         {trailing}

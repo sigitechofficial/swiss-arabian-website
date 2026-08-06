@@ -13,12 +13,12 @@ export function AuthCheckbox({ label, id, ...props }: AuthCheckboxProps) {
   return (
     <label
       htmlFor={fieldId}
-      className="flex cursor-pointer items-center gap-2 text-[13px] text-sa-primary"
+      className="flex cursor-pointer items-center gap-2 text-[14px] text-sa-secondary"
     >
       <input
         id={fieldId}
         type="checkbox"
-        className="size-4 shrink-0 appearance-none border-[1.5px] border-sa-border bg-surface checked:border-[var(--sa-action-primary)] checked:bg-[var(--sa-action-primary)]"
+        className="size-[18px] shrink-0 appearance-none rounded-[4px] border border-sa-input bg-surface checked:border-terra checked:bg-terra"
         {...props}
       />
       <span>{label}</span>

@@ -12,7 +12,7 @@ export function AuthSubmitButton({
     <button
       type="submit"
       disabled={disabled}
-      className={`flex h-[50px] w-full items-center justify-center bg-[var(--sa-action-primary)] px-4 text-base font-semibold text-white transition-colors hover:bg-[var(--sa-action-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`flex w-full cursor-pointer items-center justify-center rounded-full bg-terra py-4 text-[15px] font-medium text-white transition-colors hover:bg-[var(--sa-action-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}

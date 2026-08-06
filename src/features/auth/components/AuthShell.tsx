@@ -1,29 +1,15 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { authAssets } from "../constants/authAssets";
+import { Reveal } from "@/components/motion";
+import { AuthBrandPanel } from "./AuthBrandPanel";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-full flex-col bg-page font-sans text-sa-primary">
-      <header className="flex w-full items-center border-b border-sa-border bg-surface px-4 py-3 sm:px-10 lg:px-20">
-        <Link
-          href="/"
-          className="relative h-[50px] w-[90px] shrink-0"
-          aria-label="Swiss Arabian home"
-        >
-          <Image
-            src={authAssets.logo}
-            alt="Swiss Arabian"
-            fill
-            priority
-            className="site-logo object-contain object-left"
-            sizes="90px"
-          />
-        </Link>
-      </header>
-      <main className="flex flex-1 justify-center bg-page px-4 py-10 sm:py-16 lg:py-20">
-        {children}
+    <div className="flex min-h-dvh bg-page font-sans text-sa-primary">
+      <AuthBrandPanel />
+      <main className="flex min-h-dvh w-full flex-col items-center justify-center overflow-y-auto px-5 py-10 sm:px-12 sm:py-12 lg:w-1/2 lg:px-14 xl:px-20">
+        <Reveal className="w-full max-w-[26rem] sm:max-w-[28rem]" fade>
+          {children}
+        </Reveal>
       </main>
     </div>
   );

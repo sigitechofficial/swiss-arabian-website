@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import { SoftFloat } from "@/components/motion";
 import { StoryArtPanel } from "./StoryArtPanel";
 
 export function OurStorySection() {
@@ -55,7 +55,9 @@ export function OurStorySection() {
             Read our story
           </Link>
         </div>
-        <StoryArtPanel />
+        <SoftFloat>
+          <StoryArtPanel />
+        </SoftFloat>
       </div>
     </section>
   );

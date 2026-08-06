@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useColorMode } from "@/providers/ThemeProvider";
@@ -14,8 +15,11 @@ import { IconCart, IconPin, IconSearch, IconTheme, IconUser } from "./HeaderIcon
  * Global header — matches prototype Landing Page 001
  * logo · search · Login · Stores · theme · cart · burger (< lg)
  * desktop nav row from lg+ (with dropdowns matching mobile hierarchy)
+ * Category nav is hidden on /account so account tabs own that chrome.
  */
 export function SiteHeader() {
+  const pathname = usePathname();
+  const isAccountSection = pathname.startsWith("/account");
   const itemCount = useCartStore((s) =>
     s.lines.reduce((sum, line) => sum + line.quantity, 0),
   );
@@ -86,34 +90,36 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="relative"
+            className="relative flex size-9 items-center justify-center pt-1"
             aria-label={`Cart, ${itemCount} items`}
             aria-controls="cart-sheet"
             aria-expanded={cartOpen}
             onClick={() => setCartOpen(true)}
           >
             <IconCart />
-            <span className="absolute -right-2 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-terra px-1 text-[10px] font-bold text-white">
+            <span className="absolute right-0 top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-terra px-1 text-[10px] font-bold text-white">
               {itemCount}
             </span>
           </button>
 
-          <button
-            type="button"
-            className="flex size-9 flex-col items-center justify-center gap-[5px] lg:hidden"
-            aria-label="Open menu"
-            aria-expanded={mobileNavOpen}
-            aria-controls="nav-sheet"
-            onClick={() => setMobileNavOpen(true)}
-          >
-            <span className="h-[2px] w-5 bg-sa-primary" />
-            <span className="h-[2px] w-5 bg-sa-primary" />
-            <span className="h-[2px] w-5 bg-sa-primary" />
-          </button>
+          {!isAccountSection ? (
+            <button
+              type="button"
+              className="flex size-9 flex-col items-center justify-center gap-[5px] lg:hidden"
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              aria-controls="nav-sheet"
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <span className="h-[2px] w-5 bg-sa-primary" />
+              <span className="h-[2px] w-5 bg-sa-primary" />
+              <span className="h-[2px] w-5 bg-sa-primary" />
+            </button>
+          ) : null}
         </div>
       </div>
 
-      <DesktopNav />
+      {!isAccountSection ? <DesktopNav /> : null}
     </header>
   );
 }

@@ -12,7 +12,7 @@ export const MAIN_NAV = [
   { label: "Perfumes", href: "/collections/perfumes" },
   { label: "Perfume Oils", href: "/collections/perfume-oils" },
   { label: "Incense", href: "/collections/incense" },
-  { label: "Gift Sets", href: "/collections/gift-sets" },
+  { label: "Gift Sets", href: "/gift-box" },
   { label: "Subscription", href: "/subscriptions" },
 ] as const;
 
@@ -86,15 +86,58 @@ export const MOBILE_NAV: MobileNavItem[] = [
     href: "/collections/incense",
     children: [{ label: "Oud Muattar", href: "/collections/oud-muattar" }],
   },
-  { type: "link", label: "Gift Sets", href: "/collections/gift-sets" },
+  { type: "link", label: "Gift Sets", href: "/gift-box" },
   { type: "link", label: "Subscription", href: "/subscriptions" },
 ];
 
 const home = "/assets/home" as const;
 
+/** Home hero carousel — baked-in creative banners at 3840×1000 */
+export const HERO_SLIDE_MS = 6000;
+
+export const HERO_SLIDES = [
+  {
+    id: "scents-of-summer",
+    src: `${home}/hero-scents-of-summer.jpg`,
+    alt: "Scents of Summer — Shop now. Terms and conditions apply.",
+    href: "/#new-launches",
+  },
+  {
+    id: "summer-icons",
+    src: `${home}/hero-summer-icons.jpg`,
+    alt: "Meet the new icons of summer — Shop now. Terms and conditions apply.",
+    href: "/#new-launches",
+  },
+  {
+    id: "welcome10",
+    src: `${home}/hero-welcome10.jpg`,
+    alt: "Enjoy 10% off your first purchase with code WELCOME10 — Shop now.",
+    href: "/products",
+  },
+  {
+    id: "bundle-offers",
+    src: `${home}/hero-bundle-offers.jpg`,
+    alt: "Exclusive bundle offers up to 25% off — Shop now. Terms and conditions apply.",
+    href: "/products",
+  },
+  {
+    id: "shaghaf-free",
+    src: `${home}/hero-shaghaf-free.jpg`,
+    alt: "Get a free Shaghaf miniature on purchases of $200 and above — Shop now.",
+    href: "/products",
+  },
+  {
+    id: "gift-sets",
+    src: `${home}/hero-gift-sets.jpg`,
+    alt: "Unbox happiness — elevate every occasion with a perfect gift set. Shop now.",
+    href: "/gift-box",
+  },
+] as const;
+
 export const homeAssets = {
   logo: `${home}/swiss-arabian-logo.png`,
   hero: `${home}/hero-scents-of-summer.jpg`,
+  heroes: HERO_SLIDES.map((slide) => slide.src),
   search: `${home}/icon-search.svg`,
   searchHandle: `${home}/icon-search-handle.svg`,
   truck: `${home}/icon-truck.svg`,

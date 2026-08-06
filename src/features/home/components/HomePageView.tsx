@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion";
 import { BestSellersSection } from "./BestSellersSection";
 import { CollectionsSection } from "./CollectionsSection";
 import { HeroSection } from "./HeroSection";
@@ -17,20 +18,44 @@ export function HomePageView() {
     <div className="bg-page">
       <h1 className="sr-only">Swiss Arabian — Luxury Oriental Perfumes</h1>
       <div className="h-1 w-full bg-page" aria-hidden />
-      <HeroSection />
-      <WhySwissArabianSection />
-      <ShopByGenderSection />
-      <NewLaunchesSection />
-      <BestSellersSection />
-      <CollectionsSection />
-      <HouseBandSection />
-      <TrendingSection />
-      <ShaghafSection />
-      <ReviewsSection />
-      <div id="our-story">
-        <OurStorySection />
-      </div>
-      <NewsletterSection />
+      <Reveal fade>
+        <HeroSection />
+      </Reveal>
+      <Reveal>
+        <WhySwissArabianSection />
+      </Reveal>
+      <Reveal>
+        <ShopByGenderSection />
+      </Reveal>
+      <Reveal>
+        <NewLaunchesSection />
+      </Reveal>
+      <Reveal>
+        <BestSellersSection />
+      </Reveal>
+      <Reveal>
+        <CollectionsSection />
+      </Reveal>
+      <Reveal>
+        <HouseBandSection />
+      </Reveal>
+      <Reveal>
+        <TrendingSection />
+      </Reveal>
+      <Reveal>
+        <ShaghafSection />
+      </Reveal>
+      <Reveal>
+        <ReviewsSection />
+      </Reveal>
+      <Reveal>
+        <div id="our-story">
+          <OurStorySection />
+        </div>
+      </Reveal>
+      <Reveal>
+        <NewsletterSection />
+      </Reveal>
     </div>
   );
 }

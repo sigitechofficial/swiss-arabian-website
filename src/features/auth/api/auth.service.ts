@@ -3,9 +3,11 @@ import type {
   AuthResult,
   CustomerProfileView,
   CustomerSessionView,
+  EmailLoginCodeConfirmPayload,
   IssuedCustomerToken,
   LoginPayload,
   OtpPurpose,
+  PasswordLoginResult,
   RegisterPayload,
 } from "../types/auth";
 
@@ -52,10 +54,29 @@ export async function registerCustomer(
 
 export async function loginCustomer(
   payload: LoginPayload,
-): Promise<AuthResult> {
-  return apiPost<AuthResult>("/storefront/auth/login", payload, {
+): Promise<PasswordLoginResult> {
+  return apiPost<PasswordLoginResult>("/storefront/auth/login", payload, {
     skipAuth: true,
   });
+}
+
+/** Passwordless email sign-in code — existing accounts only (anti-enumeration). */
+export async function requestEmailLoginCode(email: string) {
+  return apiPost<{ success: boolean; message: string }>(
+    "/storefront/auth/login/email-code/request",
+    { email },
+    { skipAuth: true },
+  );
+}
+
+export async function confirmEmailLoginCode(
+  payload: EmailLoginCodeConfirmPayload,
+): Promise<AuthResult> {
+  return apiPost<AuthResult>(
+    "/storefront/auth/login/email-code/confirm",
+    payload,
+    { skipAuth: true },
+  );
 }
 
 export async function refreshCustomerSession(

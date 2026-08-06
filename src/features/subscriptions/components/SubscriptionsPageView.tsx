@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Reveal } from "@/components/motion";
 import { DisclaimerNote } from "@/features/gift-box/components/DisclaimerNote";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { FragrancePickerSection } from "@/features/subscriptions/components/FragrancePickerSection";
@@ -68,38 +69,52 @@ export function SubscriptionsPageView() {
 
   return (
     <div className="bg-page">
-      <SubscriptionHero />
-      <WhySubscribeSection />
-      <HowSubscribeSection />
-      <SubscribePlanSection
-        gender={gender}
-        onGenderChange={setGender}
-        chooseFragrances={chooseFragrances}
-        onChooseFragrancesChange={setChooseFragrances}
-        onSubscribe={handleSubscribe}
-      />
+      <Reveal fade>
+        <SubscriptionHero />
+      </Reveal>
+      <Reveal>
+        <WhySubscribeSection />
+      </Reveal>
+      <Reveal>
+        <HowSubscribeSection />
+      </Reveal>
+      <Reveal>
+        <SubscribePlanSection
+          gender={gender}
+          onGenderChange={setGender}
+          chooseFragrances={chooseFragrances}
+          onChooseFragrancesChange={setChooseFragrances}
+          onSubscribe={handleSubscribe}
+        />
+      </Reveal>
 
       {chooseFragrances ? (
-        <div id="fragrance-picker" className="px-4 sm:px-6 lg:px-10">
-          <FragrancePickerSection
-            queue={queue}
-            onAdd={addToQueue}
-            onRemoveById={removeById}
-          />
-          <QueuePanel
-            queue={queue}
-            onRemoveAt={removeAt}
-            onSubscribe={handleSubscribe}
-          />
-        </div>
+        <Reveal>
+          <div id="fragrance-picker" className="px-4 sm:px-6 lg:px-10">
+            <FragrancePickerSection
+              queue={queue}
+              onAdd={addToQueue}
+              onRemoveById={removeById}
+            />
+            <QueuePanel
+              queue={queue}
+              onRemoveAt={removeAt}
+              onSubscribe={handleSubscribe}
+            />
+          </div>
+        </Reveal>
       ) : null}
 
-      <SubscriptionFaq />
+      <Reveal>
+        <SubscriptionFaq />
+      </Reveal>
 
-      <div className="pt-14">
-        <DisclaimerNote />
-        <NewsletterSection />
-      </div>
+      <Reveal>
+        <div className="pt-14">
+          <DisclaimerNote />
+          <NewsletterSection />
+        </div>
+      </Reveal>
     </div>
   );
 }
