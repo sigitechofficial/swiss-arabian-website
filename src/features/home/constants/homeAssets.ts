@@ -6,7 +6,7 @@
 /** Flat desktop labels (legacy) — prefer MOBILE_NAV / DesktopNav for hierarchy */
 export const MAIN_NAV = [
   { label: "Minis", href: "/collections/minis" },
-  { label: "Bundles", href: "/products" },
+  { label: "Bundles", href: "/collections/bundles" },
   { label: "New Launches", href: "/collections/new-launches" },
   { label: "Best Sellers", href: "/collections/best-sellers" },
   { label: "Perfumes", href: "/collections/perfumes" },
@@ -30,7 +30,7 @@ export type MobileNavItem =
 /** Full-page mobile menu + desktop nav — all shop paths are collections */
 export const MOBILE_NAV: MobileNavItem[] = [
   { type: "link", label: "Minis", href: "/collections/minis" },
-  { type: "link", label: "Bundles", href: "/products" },
+  { type: "link", label: "Bundles", href: "/collections/bundles" },
   { type: "link", label: "New Launches", href: "/collections/new-launches" },
   {
     type: "group",

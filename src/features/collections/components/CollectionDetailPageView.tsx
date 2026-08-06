@@ -1,23 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useParams, usePathname, useSearchParams } from "next/navigation";
-import { keepPreviousData } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import CircularProgress from "@mui/material/CircularProgress";
 import { PageLoading } from "@/components/ui";
+import { InViewItem, Reveal } from "@/components/motion";
 import { ProductCard } from "@/features/home/components/ProductCard";
+import {
+  Accent,
+  CenteredSectionHead,
+} from "@/features/gift-box/components/CenteredSectionHead";
 import {
   CATALOG_PAGE_SIZE,
   catalogKeys,
   fetchCollectionBySlug,
   fetchCollectionProducts,
+  fetchProducts,
 } from "@/features/catalog/api/catalog.service";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
-import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useApiQuery } from "@/lib/api/queryHooks";
+import { brandColors } from "@/theme/designTokens";
 import { useMarket } from "@/providers/MarketProvider";
+import {
+  COLLECTION_PRODUCT_FALLBACK_SLUGS,
+  getCollectionHeroConfig,
+} from "../constants/collectionHero";
+import { CollectionHero } from "./CollectionHero";
 
 function catalogStatus(product: ProductSummary): string | null {
   if (product.price == null || product.sellabilityStatus === "PRICE_MISSING") {
@@ -46,20 +58,13 @@ function toCardModel(product: ProductSummary) {
   };
 }
 
-function parsePage(raw: string | null): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n < 1) return 1;
-  return Math.floor(n);
-}
-
 export function CollectionDetailPageView() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const page = parsePage(searchParams.get("page"));
   const { marketId } = useMarket();
   const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const allowCatalogFallback = COLLECTION_PRODUCT_FALLBACK_SLUGS.has(slug);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const {
     data: collection,
@@ -69,139 +74,220 @@ export function CollectionDetailPageView() {
     fetchCollectionBySlug(slug, zoneCode),
   );
 
-  const {
-    data: productData,
-    isLoading: productsLoading,
-    isError: productsError,
-    isFetching,
-  } = useApiQuery(
-    catalogKeys.collectionProducts(slug, zoneCode, page, CATALOG_PAGE_SIZE),
-    () =>
+  const collectionMissing =
+    !collectionLoading && (collectionError || !collection);
+
+  // Filhal: minis / bundles use the full catalog infinite feed.
+  const usingFallback = allowCatalogFallback;
+  const collectionFeedEnabled = Boolean(collection) && !allowCatalogFallback;
+
+  const catalogFeed = useInfiniteQuery({
+    queryKey: [
+      ...catalogKeys.infinite(zoneCode, CATALOG_PAGE_SIZE),
+      "collection-fallback",
+      slug,
+    ],
+    queryFn: ({ pageParam }) =>
+      fetchProducts(zoneCode, { page: pageParam, limit: CATALOG_PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.pagination;
+      if (!pagination) return undefined;
+      if (pagination.page >= pagination.totalPages) return undefined;
+      return pagination.page + 1;
+    },
+    enabled: allowCatalogFallback,
+  });
+
+  const collectionFeed = useInfiniteQuery({
+    queryKey: catalogKeys.collectionInfinite(slug, zoneCode, CATALOG_PAGE_SIZE),
+    queryFn: ({ pageParam }) =>
       fetchCollectionProducts(slug, zoneCode, {
-        page,
+        page: pageParam,
         limit: CATALOG_PAGE_SIZE,
       }),
-    {
-      enabled: Boolean(collection),
-      placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.pagination;
+      if (!pagination) return undefined;
+      if (pagination.page >= pagination.totalPages) return undefined;
+      return pagination.page + 1;
     },
-  );
+    enabled: collectionFeedEnabled,
+  });
+
+  const feed = usingFallback ? catalogFeed : collectionFeed;
+
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = feed;
+
+  const products = data?.pages.flatMap((page) => page.products) ?? [];
+  const total = data?.pages[0]?.pagination?.total ?? products.length;
+  const loadedPages = data?.pages.length ?? 0;
+
+  const tryLoadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, slug]);
+    const node = loadMoreRef.current;
+    if (!node) return;
 
-  function hrefForPage(nextPage: number) {
-    const next = new URLSearchParams(searchParams.toString());
-    if (nextPage <= 1) next.delete("page");
-    else next.set("page", String(nextPage));
-    const qs = next.toString();
-    return qs ? `${pathname}?${qs}` : pathname;
-  }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          tryLoadMore();
+        }
+      },
+      { root: null, rootMargin: "320px 0px", threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [tryLoadMore, products.length]);
+
+  const hero = getCollectionHeroConfig(slug, collection?.name);
+  const displayName = collection?.name ?? hero.title;
 
   if (collectionLoading) {
-    return <PageLoading label="Loading collection…" fill />;
-  }
-
-  if (collectionError || !collection) {
     return (
-      <CatalogEmptyState
-        title="Collection not found"
-        description="This collection isn’t available for your market yet. Browse the shop or try another collection."
-      />
+      <div className="bg-page">
+        <Reveal fade>
+          <CollectionHero config={hero} />
+        </Reveal>
+        <div className="py-16">
+          <PageLoading label="Loading collection…" />
+        </div>
+      </div>
     );
   }
 
-  const products = productData?.products ?? [];
-  const pagination = productData?.pagination;
-  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
-  const safePage = Math.min(page, totalPages);
-  const loadingProducts = productsLoading && !productData;
+  if (collectionMissing && !allowCatalogFallback) {
+    return (
+      <div className="bg-page">
+        <Reveal fade>
+          <CollectionHero config={hero} />
+        </Reveal>
+        <CatalogEmptyState
+          title="Collection not found"
+          description="This collection isn’t available for your market yet. Browse the shop or try another collection."
+        />
+      </div>
+    );
+  }
 
   return (
-    <section
-      className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-16"
-      aria-label={collection.name}
-      aria-busy={isFetching}
-    >
-      <nav
-        aria-label="Breadcrumb"
-        className="mb-6 flex flex-wrap items-center gap-2 text-[12px]"
-      >
-        <Link href="/" className="font-semibold text-sa-muted hover:text-sa-primary">
-          Home
-        </Link>
-        <span className="text-sa-muted" aria-hidden>
-          /
-        </span>
-        <Link
-          href="/collections"
-          className="font-semibold text-sa-muted hover:text-sa-primary"
-        >
-          Collections
-        </Link>
-        <span className="text-sa-muted" aria-hidden>
-          /
-        </span>
-        <span className="font-semibold text-sa-primary">{collection.name}</span>
-      </nav>
+    <div className="bg-page">
+      <Reveal fade>
+        <CollectionHero config={hero} />
+      </Reveal>
 
-      <header className="mb-8 max-w-[640px] border-b border-sa-border pb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">
-          Collection
-        </p>
-        <h1 className="mt-2 font-sans text-[32px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[44px] sm:leading-[52px]">
-          {collection.name}
-        </h1>
-        {collection.description ? (
-          <p className="mt-3 text-[15px] leading-relaxed text-sa-muted">
-            {collection.description}
-          </p>
-        ) : (
-          <p className="mt-3 text-[15px] leading-relaxed text-sa-muted">
-            {collection.productCount != null
-              ? `${collection.productCount} fragrances in this collection.`
-              : "Discover fragrances in this collection."}
-          </p>
-        )}
-      </header>
+      <div className="pt-10">
+        <Reveal>
+          <CenteredSectionHead
+            eyebrow={hero.sectionEyebrow}
+            title={
+              <>
+                Shop <Accent>{hero.sectionAccent}</Accent>
+              </>
+            }
+          />
+        </Reveal>
+      </div>
 
-      {loadingProducts ? (
-        <PageLoading label="Loading fragrances…" />
-      ) : productsError || products.length === 0 ? (
+      {isLoading && !data ? (
+        <div className="py-16">
+          <PageLoading label="Loading fragrances…" />
+        </div>
+      ) : isError || products.length === 0 ? (
         <CatalogEmptyState
           title="No products found"
           description="This collection has no products available right now."
         />
       ) : (
-        <>
-          <div
-            className={`-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4 ${
-              isFetching ? "opacity-70 transition-opacity" : ""
-            }`}
+        <section
+          className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-10 pt-10 sm:px-6 lg:px-10 lg:pb-14"
+          aria-label={displayName}
+          aria-busy={isFetchingNextPage}
+        >
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-8 flex flex-wrap items-center gap-2 text-[12px]"
           >
+            <Link
+              href="/"
+              className="font-semibold text-sa-muted hover:text-sa-primary"
+            >
+              Home
+            </Link>
+            <span className="text-sa-muted" aria-hidden>
+              /
+            </span>
+            <Link
+              href="/collections"
+              className="font-semibold text-sa-muted hover:text-sa-primary"
+            >
+              Collections
+            </Link>
+            <span className="text-sa-muted" aria-hidden>
+              /
+            </span>
+            <span className="font-semibold text-sa-primary">{displayName}</span>
+          </nav>
+
+          <div className="-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
             {products.map((product) => {
               const status = catalogStatus(product);
               return (
-                <ProductCard
-                  key={product.id}
-                  product={toCardModel(product)}
-                  addDisabled={status != null}
-                />
+                <InViewItem key={product.id}>
+                  <ProductCard
+                    product={toCardModel(product)}
+                    addDisabled={status != null}
+                  />
+                </InViewItem>
               );
             })}
           </div>
 
-          {pagination ? (
-            <CatalogPagination
-              page={safePage}
-              totalPages={totalPages}
-              total={pagination.total}
-              hrefForPage={hrefForPage}
-            />
-          ) : null}
-        </>
+          <div
+            ref={loadMoreRef}
+            className="mt-10 flex min-h-20 flex-col items-center justify-center gap-3 border-t border-sa-border pt-8"
+            aria-live="polite"
+          >
+            <p className="text-[13px] text-sa-muted">
+              Showing {products.length}
+              {total > products.length ? ` of ${total}` : ""} products
+            </p>
+            {isFetchingNextPage ? (
+              <div
+                className="flex flex-col items-center gap-3 py-3"
+                role="status"
+                aria-label="Loading more products"
+              >
+                <CircularProgress
+                  size={28}
+                  sx={{ color: brandColors.terra }}
+                />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-terra">
+                  Loading…
+                </span>
+              </div>
+            ) : null}
+            {!hasNextPage && loadedPages > 0 ? (
+              <p className="text-[12px] font-medium text-sa-muted">
+                You&apos;ve reached the end
+              </p>
+            ) : null}
+          </div>
+        </section>
       )}
-    </section>
+    </div>
   );
 }

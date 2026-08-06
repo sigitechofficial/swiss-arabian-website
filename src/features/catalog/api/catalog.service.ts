@@ -42,6 +42,18 @@ export const catalogKeys = {
       page,
       limit,
     ] as const,
+  collectionInfinite: (
+    slug: string,
+    zoneCode?: string | null,
+    limit = CATALOG_PAGE_SIZE,
+  ) =>
+    [
+      ...catalogKeys.all,
+      "collection-infinite",
+      slug,
+      zoneCode ?? "default",
+      limit,
+    ] as const,
 };
 
 type ApiPriceSummary = {
