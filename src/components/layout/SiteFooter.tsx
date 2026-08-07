@@ -22,9 +22,9 @@ const serviceLinks = [
 ] as const;
 
 const houseLinks = [
-  { label: "Our Story", href: "/#our-story" },
-  { label: "FAQ", href: "/search" },
-  { label: "Blog", href: "/search" },
+  { label: "Our Story", href: "/our-story" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Blog", href: "/blog" },
   { label: "Careers", href: "/search" },
   { label: "Become a Partner", href: "/search" },
 ] as const;

@@ -14,6 +14,63 @@ function lanDevOrigins(): string[] {
   return [...hosts];
 }
 
+type RemotePattern = {
+  protocol: "http" | "https";
+  hostname: string;
+  port?: string;
+  pathname: string;
+};
+
+function remotePatternFromBaseUrl(
+  baseUrl: string | undefined,
+  pathname: string,
+): RemotePattern | null {
+  const raw = baseUrl?.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return {
+      protocol: url.protocol.replace(":", "") as "http" | "https",
+      hostname: url.hostname,
+      ...(url.port ? { port: url.port } : {}),
+      pathname,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const catalogMediaPatterns = [
+  remotePatternFromBaseUrl(
+    process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
+    "/catalog/media/**",
+  ),
+  remotePatternFromBaseUrl(
+    process.env.NEXT_PUBLIC_DEV_API_BASE_URL,
+    "/catalog/media/**",
+  ),
+  remotePatternFromBaseUrl(
+    process.env.NEXT_PUBLIC_LOCAL_API_BASE_URL,
+    "/catalog/media/**",
+  ),
+  remotePatternFromBaseUrl(
+    process.env.NEXT_PUBLIC_STAGING_API_BASE_URL,
+    "/catalog/media/**",
+  ),
+  remotePatternFromBaseUrl(
+    process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL,
+    "/catalog/media/**",
+  ),
+  // Azure Dev default when env not loaded at config time
+  {
+    protocol: "https" as const,
+    hostname:
+      "ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
+    pathname: "/catalog/media/**",
+  },
+].filter(Boolean) as RemotePattern[];
+
 const nextConfig: NextConfig = {
   output: "standalone",
   // Next 16 blocks cross-origin /_next/* from non-localhost unless allowlisted
@@ -31,6 +88,7 @@ const nextConfig: NextConfig = {
         hostname: "stswissarabiandev.blob.core.windows.net",
         pathname: "/catalog-images/**",
       },
+      ...catalogMediaPatterns,
     ],
   },
 };

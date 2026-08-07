@@ -1,13 +1,20 @@
 /** Static hero art + copy per collection slug (filhal until CMS banners). */
 
 export type CollectionHeroConfig = {
+  /** Desktop / landscape creative */
   image: string;
+  /** Portrait creative below `md` — when set, overlay copy is hidden */
+  imageMobile?: string;
   eyebrow: string;
   title: string;
   subtitle: string;
   sectionEyebrow: string;
   sectionAccent: string;
 };
+
+/** Prefer home HD banners (3840×1000) — chat uploads were ~1024px previews. */
+const home = "/assets/home";
+const collections = "/assets/collections";
 
 const DEFAULT_HERO: CollectionHeroConfig = {
   image: "/assets/catalog/hero.jpg",
@@ -20,7 +27,8 @@ const DEFAULT_HERO: CollectionHeroConfig = {
 
 const BY_SLUG: Record<string, CollectionHeroConfig> = {
   minis: {
-    image: "/assets/home/collection-new-in.jpg",
+    image: `${home}/hero-shaghaf-free.jpg`,
+    imageMobile: `${home}/hero-mobile-shaghaf-free.jpg`,
     eyebrow: "Swiss Arabian",
     title: "Minis",
     subtitle: "Travel-size favourites to discover & gift",
@@ -28,7 +36,8 @@ const BY_SLUG: Record<string, CollectionHeroConfig> = {
     sectionAccent: "Minis",
   },
   bundles: {
-    image: "/assets/catalog/hero.jpg",
+    image: `${home}/hero-bundle-offers.jpg`,
+    imageMobile: `${home}/hero-mobile-bundle-offers.jpg`,
     eyebrow: "Swiss Arabian",
     title: "Bundles",
     subtitle: "Curated sets · better value",
@@ -36,7 +45,8 @@ const BY_SLUG: Record<string, CollectionHeroConfig> = {
     sectionAccent: "Bundles",
   },
   "new-launches": {
-    image: "/assets/home/collection-new-in.jpg",
+    image: `${home}/hero-summer-icons.jpg`,
+    imageMobile: `${home}/hero-mobile-summer-icons.jpg`,
     eyebrow: "Swiss Arabian",
     title: "New Launches",
     subtitle: "The latest from the house",
@@ -44,15 +54,27 @@ const BY_SLUG: Record<string, CollectionHeroConfig> = {
     sectionAccent: "New",
   },
   "best-sellers": {
-    image: "/assets/home/collection-best-sellers.jpg",
+    image: `${home}/hero-scents-of-summer.jpg`,
+    imageMobile: `${home}/hero-mobile-summer-essentials.jpg`,
     eyebrow: "Swiss Arabian",
     title: "Best Sellers",
     subtitle: "Most-loved compositions",
     sectionEyebrow: "Customer favourites",
     sectionAccent: "Best Sellers",
   },
+  /** API slug — no HD home twin yet; keep collections asset */
+  perfume: {
+    image: `${collections}/hero-perfumes.jpg`,
+    imageMobile: `${collections}/hero-perfumes-mobile.webp`,
+    eyebrow: "Swiss Arabian",
+    title: "Perfumes",
+    subtitle: "Eau de parfum & signature scents",
+    sectionEyebrow: "The perfume wardrobe",
+    sectionAccent: "Perfumes",
+  },
   perfumes: {
-    image: "/assets/home/collection-for-her.jpg",
+    image: `${collections}/hero-perfumes.jpg`,
+    imageMobile: `${collections}/hero-perfumes-mobile.webp`,
     eyebrow: "Swiss Arabian",
     title: "Perfumes",
     subtitle: "Eau de parfum & signature scents",
@@ -60,7 +82,7 @@ const BY_SLUG: Record<string, CollectionHeroConfig> = {
     sectionAccent: "Perfumes",
   },
   "perfume-oils": {
-    image: "/assets/home/collection-for-him.jpg",
+    image: `${home}/collection-for-him.jpg`,
     eyebrow: "Swiss Arabian",
     title: "Perfume Oils",
     subtitle: "Concentrated oriental oils",
@@ -68,7 +90,7 @@ const BY_SLUG: Record<string, CollectionHeroConfig> = {
     sectionAccent: "Oils",
   },
   incense: {
-    image: "/assets/home/gender-unisex.png",
+    image: `${home}/gender-unisex.png`,
     eyebrow: "Swiss Arabian",
     title: "Incense",
     subtitle: "Oud muattar & home ritual",

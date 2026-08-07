@@ -1,6 +1,7 @@
 import { apiGet } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ProductDetail, ProductSummary } from "../types/product";
+import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
 
 export const CATALOG_PAGE_SIZE = 24;
 
@@ -122,7 +123,7 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
       "Product details will appear once the catalog is fully refreshed.",
     price,
     currency,
-    imageUrl: raw.image ?? null,
+    imageUrl: resolveCatalogImageUrl(raw.image),
     sku: raw.sku ?? undefined,
     variantId: raw.variantId,
     isSellable: Boolean(raw.isSellable) && price != null,

@@ -106,4 +106,11 @@ export const env = {
   googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
   /** Optional Map ID for Advanced Markers (Cloud console). */
   googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
+  /**
+   * Optional absolute base for relative catalog image paths (`/catalog/media/...`).
+   * Defaults to `apiBaseUrl` when unset.
+   */
+  catalogMediaBaseUrl: readPublic(
+    process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
+  ),
 } as const;

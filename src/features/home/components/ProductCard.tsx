@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { notesFromFamily } from "@/features/cart/data/cartContent";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
 import { formatMoney } from "@/features/home/data/homeContent";
@@ -34,10 +35,17 @@ export function ProductCard({
   density = "default",
 }: ProductCardProps) {
   const addToCart = useAddToCart();
+  const [imageFailed, setImageFailed] = useState(false);
   const currency = product.currency ?? "USD";
   const canAdd = !addDisabled && product.price != null && product.price >= 0;
   const href = `/products/${product.slug}`;
   const compact = density === "compact";
+  const imageSrc = product.image;
+  const showImage = Boolean(imageSrc) && !imageFailed;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageSrc]);
 
   const badge =
     product.badge === "new" ? (
@@ -71,9 +79,10 @@ export function ProductCard({
           }`}
         >
           {badge}
-          {product.image ? (
+          {showImage ? (
             <Image
-              src={product.image}
+              key={imageSrc}
+              src={imageSrc!}
               alt={product.name}
               width={compact ? 140 : 200}
               height={compact ? 140 : 200}
@@ -83,6 +92,7 @@ export function ProductCard({
                   ? "(max-width: 480px) 40vw, 160px"
                   : "(max-width: 768px) 50vw, 287px"
               }
+              onError={() => setImageFailed(true)}
             />
           ) : (
             <div

@@ -49,7 +49,7 @@ export function OurStorySection() {
             </div>
           </dl>
           <Link
-            href="/collections"
+            href="/our-story"
             className="mt-8 inline-block bg-terra px-9 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#a25e48]"
           >
             Read our story
