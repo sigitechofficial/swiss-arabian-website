@@ -1,6 +1,11 @@
 import { apiGet } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
-import type { ProductDetail, ProductSummary } from "../types/product";
+import type {
+  ProductCollectionRef,
+  ProductDetail,
+  ProductSummary,
+} from "../types/product";
+import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
 
 export const CATALOG_PAGE_SIZE = 24;
@@ -69,6 +74,13 @@ type ApiInventorySummary = {
   hasAvailableInventory?: boolean;
 };
 
+type ApiProductImage = {
+  url?: string | null;
+  altText?: string | null;
+  sortOrder?: number | null;
+  mediaType?: string | null;
+};
+
 type ApiCatalogProduct = {
   productId: string;
   variantId: string;
@@ -78,11 +90,52 @@ type ApiCatalogProduct = {
   shortDescription?: string | null;
   description?: string | null;
   image?: string | null;
+  images?: ApiProductImage[] | null;
   priceSummary?: ApiPriceSummary | null;
   inventorySummary?: ApiInventorySummary | null;
   isVisible?: boolean;
   isSellable?: boolean;
   sellabilityStatus?: string | null;
+  blockReasons?: string[] | null;
+};
+
+type ApiProductDetailVariant = {
+  variantId: string;
+  sku?: string | null;
+  variantName?: string | null;
+  isDefault?: boolean;
+  isVisible?: boolean;
+  isSellable?: boolean;
+  sellabilityStatus?: string | null;
+  priceSummary?: ApiPriceSummary | null;
+  inventorySummary?: ApiInventorySummary | null;
+  blockReasons?: string[] | null;
+};
+
+type ApiProductDetailData = {
+  product: {
+    productId: string;
+    productCode?: string | null;
+    slug: string;
+    name: string;
+    shortDescription?: string | null;
+    description?: string | null;
+    brandCode?: string | null;
+    brandName?: string | null;
+  };
+  variants?: ApiProductDetailVariant[] | null;
+  media?: ApiProductImage[] | null;
+  collections?: Array<{
+    collectionId?: string;
+    code?: string;
+    name: string;
+    slug: string;
+    isFeatured?: boolean;
+  }> | null;
+  priceSummary?: ApiPriceSummary | null;
+  inventorySummary?: ApiInventorySummary | null;
+  isVisible?: boolean;
+  isSellable?: boolean;
   blockReasons?: string[] | null;
 };
 
@@ -102,6 +155,28 @@ function parseMoney(value: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function mapGalleryUrls(
+  images: ApiProductImage[] | null | undefined,
+  primary?: string | null,
+): string[] {
+  const fromGallery = (images ?? [])
+    .filter((img) => {
+      const type = img.mediaType?.trim().toUpperCase();
+      return !type || type === "IMAGE";
+    })
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((img) => resolveCatalogImageUrl(img.url))
+    .filter((url): url is string => Boolean(url));
+
+  const primaryUrl = resolveCatalogImageUrl(primary);
+  const ordered = primaryUrl
+    ? [primaryUrl, ...fromGallery.filter((url) => url !== primaryUrl)]
+    : fromGallery;
+
+  return [...new Set(ordered)];
+}
+
 function mapProduct(raw: ApiCatalogProduct): ProductDetail {
   const currency = raw.priceSummary?.currencyCode?.trim() || "AED";
   const hasValidPrice = raw.priceSummary?.hasValidPrice !== false;
@@ -111,19 +186,26 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
   const inStock =
     raw.inventorySummary?.hasAvailableInventory === true ||
     (availableQty != null && availableQty > 0);
+  const imageUrls = mapGalleryUrls(raw.images, raw.image);
+  const descriptionHtml = sanitizeCatalogHtml(
+    raw.description || raw.shortDescription,
+  );
+  const descriptionPlain =
+    stripHtml(raw.description) ||
+    stripHtml(raw.shortDescription) ||
+    "Product details will appear once the catalog is fully refreshed.";
 
   return {
     id: raw.productId,
     slug: raw.slug,
     title: raw.name,
-    subtitle: raw.shortDescription ?? raw.sku ?? undefined,
-    description:
-      raw.description?.trim() ||
-      raw.shortDescription?.trim() ||
-      "Product details will appear once the catalog is fully refreshed.",
+    subtitle: stripHtml(raw.shortDescription) || raw.sku || undefined,
+    description: descriptionPlain,
+    descriptionHtml: descriptionHtml || undefined,
     price,
     currency,
-    imageUrl: resolveCatalogImageUrl(raw.image),
+    imageUrl: imageUrls[0] ?? null,
+    imageUrls,
     sku: raw.sku ?? undefined,
     variantId: raw.variantId,
     isSellable: Boolean(raw.isSellable) && price != null,
@@ -132,6 +214,78 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
     inStock,
     availableQty: availableQty ?? undefined,
     blockReasons: raw.blockReasons ?? undefined,
+  };
+}
+
+function pickDefaultVariant(
+  variants: ApiProductDetailVariant[] | null | undefined,
+): ApiProductDetailVariant | undefined {
+  if (!variants?.length) return undefined;
+  return (
+    variants.find((v) => v.isDefault && v.isVisible !== false) ??
+    variants.find((v) => v.isVisible !== false) ??
+    variants[0]
+  );
+}
+
+function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
+  const product = raw.product;
+  if (!product?.productId || !product.slug) return null;
+
+  const variant = pickDefaultVariant(raw.variants);
+  const priceSummary = variant?.priceSummary ?? raw.priceSummary;
+  const inventorySummary = variant?.inventorySummary ?? raw.inventorySummary;
+  const currency = priceSummary?.currencyCode?.trim() || "AED";
+  const hasValidPrice = priceSummary?.hasValidPrice !== false;
+  const price = hasValidPrice ? parseMoney(priceSummary?.price) : null;
+  const availableQty = parseMoney(inventorySummary?.availableQty);
+  const isSellableRoot = raw.isSellable ?? variant?.isSellable;
+  const sellabilityStatus = variant?.sellabilityStatus ?? undefined;
+  const inStock =
+    inventorySummary?.hasAvailableInventory === true ||
+    (availableQty != null && availableQty > 0);
+  const imageUrls = mapGalleryUrls(raw.media);
+  const descriptionSource =
+    product.description || product.shortDescription || "";
+  const descriptionHtml = sanitizeCatalogHtml(descriptionSource);
+  const descriptionPlain =
+    stripHtml(product.description) ||
+    stripHtml(product.shortDescription) ||
+    "Product details will appear once the catalog is fully refreshed.";
+
+  const collections: ProductCollectionRef[] = (raw.collections ?? [])
+    .filter((c) => c.slug && c.name)
+    .map((c) => ({
+      name: c.name,
+      slug: c.slug,
+      isFeatured: c.isFeatured,
+    }));
+
+  const brandName = product.brandName?.trim() || undefined;
+  const featuredCollection =
+    collections.find((c) => c.isFeatured)?.name ?? collections[0]?.name;
+
+  return {
+    id: product.productId,
+    slug: product.slug,
+    title: product.name,
+    subtitle: brandName || featuredCollection || variant?.sku || undefined,
+    description: descriptionPlain,
+    descriptionHtml: descriptionHtml || undefined,
+    price,
+    currency,
+    imageUrl: imageUrls[0] ?? null,
+    imageUrls,
+    sku: variant?.sku ?? undefined,
+    variantId: variant?.variantId ?? product.productId,
+    isSellable: Boolean(isSellableRoot) && price != null,
+    isVisible: Boolean(raw.isVisible ?? true),
+    sellabilityStatus,
+    inStock,
+    availableQty: availableQty ?? undefined,
+    blockReasons: raw.blockReasons ?? variant?.blockReasons ?? undefined,
+    brandName,
+    collections,
   };
 }
 
@@ -184,7 +338,18 @@ export async function fetchProductBySlug(
 ): Promise<ProductDetail | null> {
   const qs = contextQs(zoneCode);
 
-  // Prefer list/sku lookup — detail route 404s for non-visible products today.
+  // Prefer rich detail payload (product + media + variants).
+  try {
+    const data = await apiGet<ApiProductDetailData>(
+      `/storefront/catalog/products/${encodeURIComponent(slug)}?${qs}`,
+      { skipAuth: true },
+    );
+    const mapped = mapProductDetail(data);
+    if (mapped) return mapped;
+  } catch {
+    // continue
+  }
+
   try {
     const bySku = await apiGet<ApiProductListData>(
       `/storefront/catalog/products?${qs}&sku=${encodeURIComponent(slug)}&limit=1`,
@@ -192,16 +357,6 @@ export async function fetchProductBySlug(
     );
     const hit = bySku.products?.[0];
     if (hit) return mapProduct(hit);
-  } catch {
-    // continue
-  }
-
-  try {
-    const data = await apiGet<ApiCatalogProduct>(
-      `/storefront/catalog/products/${encodeURIComponent(slug)}?${qs}`,
-      { skipAuth: true },
-    );
-    return mapProduct(data);
   } catch {
     // continue
   }
@@ -280,4 +435,3 @@ export async function fetchCollectionProducts(
     pagination: normalizePagination(data.pagination, page, limit, products.length),
   };
 }
-

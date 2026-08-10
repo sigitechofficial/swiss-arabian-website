@@ -20,30 +20,9 @@ import {
   fetchProducts,
 } from "../api/catalog.service";
 import { PDP_TRUST } from "../data/pdpContent";
-import type { ProductSummary } from "../types/product";
-
-function notesFromProduct(product: ProductSummary): string[] {
-  const raw = product.subtitle?.trim();
-  if (!raw) return [];
-  return raw
-    .split(/[·,|/]/)
-    .map((n) => n.trim())
-    .filter(Boolean)
-    .slice(0, 6);
-}
-
-function toCardModel(product: ProductSummary) {
-  return {
-    id: product.id,
-    name: product.title,
-    family: product.subtitle?.trim() || product.sku || "Swiss Arabian",
-    price: product.price,
-    image: product.imageUrl ?? null,
-    slug: product.slug,
-    currency: product.currency || "AED",
-    variantId: product.variantId,
-  };
-}
+import { notesFromCatalogHtml } from "../utils/catalogHtml";
+import { toProductCardModel } from "../utils/toProductCardModel";
+import { ProductImageZoom } from "./ProductImageZoom";
 
 export function ProductDetailPageView() {
   const params = useParams<{ slug: string }>();
@@ -68,14 +47,20 @@ export function ProductDetailPageView() {
   );
 
   const gallery = useMemo(() => {
-    if (data?.imageUrl) return [data.imageUrl];
-    return [] as string[];
-  }, [data?.imageUrl]);
+    if (!data) return [] as string[];
+    if (data.imageUrls?.length) return data.imageUrls;
+    if (data.imageUrl) return [data.imageUrl];
+    return [];
+  }, [data]);
 
   useEffect(() => {
     setActiveImage(0);
     setQty(1);
   }, [slug]);
+
+  useEffect(() => {
+    if (activeImage >= gallery.length) setActiveImage(0);
+  }, [gallery.length, activeImage]);
 
   const recommendations = useMemo(() => {
     const items = relatedData?.products ?? [];
@@ -108,19 +93,26 @@ export function ProductDetailPageView() {
   }
 
   const title = data.title;
-  const collection = data.subtitle?.trim()
-    ? `Swiss Arabian · ${data.subtitle}`
-    : data.sku
-      ? `Swiss Arabian · ${data.sku}`
-      : "Swiss Arabian";
+  const brandLine =
+    data.brandName?.trim() ||
+    data.collections?.find((c) => c.isFeatured)?.name ||
+    data.collections?.[0]?.name ||
+    data.sku ||
+    "Swiss Arabian";
   const currency = data.currency || "AED";
   const priceValue = data.price;
-  const description =
+  const descriptionHtml = data.descriptionHtml?.trim();
+  const descriptionPlain =
     data.description?.trim() ||
     "Product details will appear once the catalog is fully refreshed.";
-  const notes = notesFromProduct(data);
+  const notes = notesFromCatalogHtml(
+    descriptionHtml || data.description,
+  );
   const canAdd = Boolean(data.isSellable && data.price != null);
   const mainSrc = gallery[activeImage] ?? gallery[0] ?? null;
+  const collectionLinks = (data.collections ?? []).filter(
+    (c) => c.slug && !c.slug.includes("not-for-sale"),
+  );
 
   const breadcrumbs = [
     { label: "Home", href: "/" },
@@ -137,7 +129,7 @@ export function ProductDetailPageView() {
         {breadcrumbs.map((crumb, index) => {
           const isLast = index === breadcrumbs.length - 1;
           return (
-            <span key={crumb.href} className="flex items-center gap-2">
+            <span key={`${crumb.href}-${index}`} className="flex items-center gap-2">
               {index > 0 ? (
                 <span className="text-sa-muted" aria-hidden>
                   /
@@ -162,25 +154,11 @@ export function ProductDetailPageView() {
 
       <section className="mx-auto grid w-full max-w-[1280px] gap-10 px-4 pb-16 pt-2 sm:px-6 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:gap-16 lg:px-10 xl:gap-20 xl:px-20">
         <div className="flex flex-col gap-4">
-          <div className="relative flex aspect-square items-center justify-center border border-sa-border bg-gradient-to-b from-page to-cream p-6 dark:to-section-soft sm:p-8">
-            {mainSrc ? (
-              <div className="relative h-[70%] w-[75%] max-w-[400px]">
-                <Image
-                  src={mainSrc}
-                  alt={title}
-                  fill
-                  priority
-                  className="object-contain"
-                  sizes="(max-width: 1024px) 90vw, 400px"
-                  unoptimized={mainSrc.endsWith(".svg")}
-                />
-              </div>
-            ) : (
-              <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
-                Image coming soon
-              </span>
-            )}
-          </div>
+          <ProductImageZoom
+            images={gallery}
+            activeIndex={activeImage}
+            alt={title}
+          />
 
           {gallery.length > 1 ? (
             <div className="flex gap-3 overflow-x-auto sm:gap-4">
@@ -188,12 +166,12 @@ export function ProductDetailPageView() {
                 const active = index === activeImage;
                 return (
                   <button
-                    key={`${src}-${index}`}
+                    key={`thumb-${src}-${index}`}
                     type="button"
                     onClick={() => setActiveImage(index)}
                     aria-label={`View image ${index + 1}`}
                     aria-pressed={active}
-                    className={`relative size-[72px] shrink-0 cursor-pointer border bg-cream p-2 dark:bg-section-soft sm:size-[96px] lg:size-[128px] ${
+                    className={`relative size-[72px] shrink-0 cursor-pointer overflow-hidden border bg-page sm:size-[96px] lg:size-[128px] ${
                       active
                         ? "border-[1.5px] border-terra"
                         : "border-sa-border"
@@ -203,7 +181,7 @@ export function ProductDetailPageView() {
                       src={src}
                       alt=""
                       fill
-                      className="object-contain p-2"
+                      className="object-cover"
                       sizes="128px"
                     />
                   </button>
@@ -216,7 +194,7 @@ export function ProductDetailPageView() {
         <div className="flex flex-col gap-8 lg:max-w-[600px]">
           <div className="flex flex-col gap-3">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-sa-muted">
-              {collection}
+              {brandLine}
             </p>
             <h1 className="font-sans text-[32px] font-medium leading-tight tracking-[-0.02em] text-sa-primary sm:text-[42px] sm:leading-[48px]">
               {title}
@@ -240,7 +218,7 @@ export function ProductDetailPageView() {
           {notes.length > 0 ? (
             <div className="flex flex-col gap-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-gold">
-                Fragrance family &amp; key notes
+                In this set
               </p>
               <div className="flex flex-wrap gap-2">
                 {notes.map((note, index) => (
@@ -259,9 +237,33 @@ export function ProductDetailPageView() {
             </div>
           ) : null}
 
-          <p className="text-[14px] leading-relaxed text-sa-primary opacity-90">
-            {description}
-          </p>
+          {descriptionHtml ? (
+            <div
+              className="space-y-3 text-[14px] leading-relaxed text-sa-primary opacity-90 [&_p]:m-0 [&_p+p]:mt-3 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5"
+              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+            />
+          ) : (
+            <p className="whitespace-pre-line text-[14px] leading-relaxed text-sa-primary opacity-90">
+              {descriptionPlain}
+            </p>
+          )}
+
+          {collectionLinks.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sa-muted">
+                Collections
+              </span>
+              {collectionLinks.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/collections/${c.slug}`}
+                  className="border border-sa-border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sa-primary transition-colors hover:border-terra hover:text-terra"
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+          ) : null}
 
           {data.sku ? (
             <>
@@ -362,7 +364,7 @@ export function ProductDetailPageView() {
               {recommendations.map((product) => (
                 <ProductCard
                   key={product.id}
-                  product={toCardModel(product)}
+                  product={toProductCardModel(product)}
                   addDisabled={
                     product.price == null || product.isSellable === false
                   }

@@ -15,6 +15,8 @@ export type ProductCardModel = {
   family: string;
   price: number | null;
   image: string | null;
+  /** Extra gallery URLs; hover swaps to the second when present. */
+  images?: string[];
   slug: string;
   badge?: HomeProductBadge;
   currency?: string;
@@ -35,17 +37,29 @@ export function ProductCard({
   density = "default",
 }: ProductCardProps) {
   const addToCart = useAddToCart();
-  const [imageFailed, setImageFailed] = useState(false);
+  const [primaryFailed, setPrimaryFailed] = useState(false);
+  const [secondaryFailed, setSecondaryFailed] = useState(false);
   const currency = product.currency ?? "USD";
   const canAdd = !addDisabled && product.price != null && product.price >= 0;
   const href = `/products/${product.slug}`;
   const compact = density === "compact";
-  const imageSrc = product.image;
-  const showImage = Boolean(imageSrc) && !imageFailed;
+
+  const gallery =
+    product.images?.length ?
+      product.images
+    : product.image ?
+      [product.image]
+    : [];
+  const primarySrc = gallery[0] ?? null;
+  const secondarySrc = gallery[1] ?? null;
+  const showPrimary = Boolean(primarySrc) && !primaryFailed;
+  const showSecondary =
+    Boolean(secondarySrc) && !secondaryFailed && secondarySrc !== primarySrc;
 
   useEffect(() => {
-    setImageFailed(false);
-  }, [imageSrc]);
+    setPrimaryFailed(false);
+    setSecondaryFailed(false);
+  }, [primarySrc, secondarySrc]);
 
   const badge =
     product.badge === "new" ? (
@@ -71,29 +85,52 @@ export function ProductCard({
     ) : null;
 
   return (
-    <article className="flex flex-col overflow-hidden">
+    <article className="group flex flex-col overflow-hidden">
       <Link href={href} className="flex flex-1 cursor-pointer flex-col">
         <div
-          className={`relative flex aspect-square items-center justify-center ${
+          className={`relative flex aspect-square items-center justify-center overflow-hidden ${
             compact ? "p-1.5" : "p-3"
           }`}
         >
           {badge}
-          {showImage ? (
-            <Image
-              key={imageSrc}
-              src={imageSrc!}
-              alt={product.name}
-              width={compact ? 140 : 200}
-              height={compact ? 140 : 200}
-              className="max-h-full w-auto object-contain"
-              sizes={
-                compact
-                  ? "(max-width: 480px) 40vw, 160px"
-                  : "(max-width: 768px) 50vw, 287px"
-              }
-              onError={() => setImageFailed(true)}
-            />
+          {showPrimary ? (
+            <>
+              <Image
+                key={`primary-${primarySrc}`}
+                src={primarySrc!}
+                alt={product.name}
+                width={compact ? 140 : 200}
+                height={compact ? 140 : 200}
+                className={`max-h-full w-auto object-contain transition-opacity duration-500 ease-out motion-reduce:transition-none ${
+                  showSecondary
+                    ? "opacity-100 group-hover:opacity-0"
+                    : "opacity-100"
+                }`}
+                sizes={
+                  compact
+                    ? "(max-width: 480px) 40vw, 160px"
+                    : "(max-width: 768px) 50vw, 287px"
+                }
+                onError={() => setPrimaryFailed(true)}
+              />
+              {showSecondary ? (
+                <Image
+                  key={`secondary-${secondarySrc}`}
+                  src={secondarySrc!}
+                  alt=""
+                  width={compact ? 140 : 200}
+                  height={compact ? 140 : 200}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 m-auto max-h-full w-auto object-contain opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none"
+                  sizes={
+                    compact
+                      ? "(max-width: 480px) 40vw, 160px"
+                      : "(max-width: 768px) 50vw, 287px"
+                  }
+                  onError={() => setSecondaryFailed(true)}
+                />
+              ) : null}
+            </>
           ) : (
             <div
               className="flex h-full w-full items-center justify-center text-center"

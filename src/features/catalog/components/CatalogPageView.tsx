@@ -19,6 +19,7 @@ import {
   fetchProducts,
 } from "../api/catalog.service";
 import type { ProductSummary } from "../types/product";
+import { toProductCardModel } from "../utils/toProductCardModel";
 import { CatalogEmptyState } from "./CatalogEmptyState";
 import { CatalogHero } from "./CatalogHero";
 
@@ -34,19 +35,6 @@ function catalogStatus(product: ProductSummary): string | null {
   }
   if (!product.isSellable) return "Unavailable";
   return null;
-}
-
-function toCardModel(product: ProductSummary) {
-  return {
-    id: product.id,
-    name: product.title,
-    family: product.subtitle?.trim() || product.sku || "Swiss Arabian",
-    price: product.price,
-    image: product.imageUrl ?? null,
-    slug: product.slug,
-    currency: product.currency || "AED",
-    variantId: product.variantId,
-  };
 }
 
 export function CatalogPageView() {
@@ -137,7 +125,7 @@ export function CatalogPageView() {
               return (
                 <InViewItem key={product.id}>
                   <ProductCard
-                    product={toCardModel(product)}
+                    product={toProductCardModel(product)}
                     addDisabled={status != null}
                   />
                 </InViewItem>

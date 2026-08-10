@@ -21,6 +21,7 @@ import {
 } from "@/features/catalog/api/catalog.service";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
 import type { ProductSummary } from "@/features/catalog/types/product";
+import { toProductCardModel } from "@/features/catalog/utils/toProductCardModel";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { brandColors } from "@/theme/designTokens";
@@ -43,19 +44,6 @@ function catalogStatus(product: ProductSummary): string | null {
   }
   if (!product.isSellable) return "Unavailable";
   return null;
-}
-
-function toCardModel(product: ProductSummary) {
-  return {
-    id: product.id,
-    name: product.title,
-    family: product.subtitle?.trim() || product.sku || "Swiss Arabian",
-    price: product.price,
-    image: product.imageUrl ?? null,
-    slug: product.slug,
-    currency: product.currency || "AED",
-    variantId: product.variantId,
-  };
 }
 
 export function CollectionDetailPageView() {
@@ -248,7 +236,7 @@ export function CollectionDetailPageView() {
               return (
                 <InViewItem key={product.id}>
                   <ProductCard
-                    product={toCardModel(product)}
+                    product={toProductCardModel(product)}
                     addDisabled={status != null}
                   />
                 </InViewItem>

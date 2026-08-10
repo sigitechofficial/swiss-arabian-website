@@ -160,9 +160,20 @@ Used by:
 
 `fetchProductBySlug` tries, in order:
 
-1. `GET …/products?…&sku={slug}&limit=1`
-2. `GET …/products/{slug}?…`
-3. `GET …/search?…&q={slug}&limit=5`
+1. `GET …/products/{slug}?…` — **detail payload** (`product` + `media` + `variants` + collections)
+2. `GET …/products?…&sku={slug}&limit=1` — list-shaped fallback
+3. `GET …/search?…&q={slug}&limit=5` — search fallback
+
+Detail mapping (`mapProductDetail`):
+
+| API | FE |
+|-----|----|
+| `product.name` | `title` |
+| `product.description` / `shortDescription` | `descriptionHtml` (sanitized) + plain `description` |
+| `media[]` | `imageUrls` (IMAGE only, deduped) |
+| default `variants[]` | `variantId`, `sku`, price/inventory when present |
+| root / variant `priceSummary` | `price`, `currency` |
+| `brandName` / collections | eyebrow + collection chips |
 
 ### 4.6 Product image / media
 
@@ -205,7 +216,7 @@ PDP  →  /products/{product.slug}
 | `slug` | `slug` (also used in `/products/{slug}`) |
 | `name` | `title` / card `name` |
 | `shortDescription` / `sku` | `subtitle` / card `family` |
-| `image` | `imageUrl` (resolved) |
+| `image` / `images[]` | `imageUrl` + `imageUrls` (resolved, sorted by `sortOrder`) |
 | `priceSummary.price` | `price` |
 | `priceSummary.currencyCode` | `currency` |
 | `variantId` | `variantId` (cart) |
