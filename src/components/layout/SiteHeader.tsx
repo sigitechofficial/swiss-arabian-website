@@ -9,6 +9,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useColorMode } from "@/providers/ThemeProvider";
 import { useUiStore } from "@/stores/useUiStore";
 import { homeAssets } from "@/features/home/constants/homeAssets";
+import { useNavigation } from "@/features/navigation/hooks/useNavigation";
 import { DesktopNav } from "./DesktopNav";
 import { IconCart, IconPin, IconSearch, IconTheme, IconUser } from "./HeaderIcons";
 
@@ -31,6 +32,7 @@ export function SiteHeader() {
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [elevated, setElevated] = useState(false);
+  const { headerItems } = useNavigation();
 
   useEffect(() => {
     function onScroll() {
@@ -136,7 +138,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {!isAccountSection ? <DesktopNav /> : null}
+      {!isAccountSection ? <DesktopNav items={headerItems} /> : null}
     </header>
   );
 }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { notesFromFamily } from "@/features/cart/data/cartContent";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
 import { formatMoney } from "@/features/home/data/homeContent";
@@ -15,7 +15,6 @@ export type ProductCardModel = {
   family: string;
   price: number | null;
   image: string | null;
-  /** Extra gallery URLs; hover swaps to the second when present. */
   images?: string[];
   slug: string;
   badge?: HomeProductBadge;
@@ -25,11 +24,14 @@ export type ProductCardModel = {
 
 type ProductCardProps = {
   product: ProductCardModel;
-  /** Disable ATC (e.g. out of stock / price missing) */
   addDisabled?: boolean;
-  /** Compact — cart / narrow grids */
   density?: "default" | "compact";
 };
+
+/** Delay before the first image switch on hover (ms). */
+const HOVER_DELAY_MS = 900;
+/** Interval between subsequent image switches (ms). */
+const CYCLE_INTERVAL_MS = 2000;
 
 export function ProductCard({
   product,
@@ -37,8 +39,8 @@ export function ProductCard({
   density = "default",
 }: ProductCardProps) {
   const addToCart = useAddToCart();
-  const [primaryFailed, setPrimaryFailed] = useState(false);
-  const [secondaryFailed, setSecondaryFailed] = useState(false);
+  const [failed, setFailed] = useState<Record<number, boolean>>({});
+  const [active, setActive] = useState(0);
   const currency = product.currency ?? "USD";
   const canAdd = !addDisabled && product.price != null && product.price >= 0;
   const href = `/products/${product.slug}`;
@@ -50,16 +52,51 @@ export function ProductCard({
     : product.image ?
       [product.image]
     : [];
-  const primarySrc = gallery[0] ?? null;
-  const secondarySrc = gallery[1] ?? null;
-  const showPrimary = Boolean(primarySrc) && !primaryFailed;
-  const showSecondary =
-    Boolean(secondarySrc) && !secondaryFailed && secondarySrc !== primarySrc;
+  const hasGallery = gallery.length > 1;
+  const safeIndex = Math.min(active, Math.max(0, gallery.length - 1));
+  const showImage = Boolean(gallery[safeIndex]) && !failed[safeIndex];
 
+  // Timer refs — mutated imperatively, no re-render needed.
+  const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cycleRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function clearTimers() {
+    if (delayRef.current !== null) {
+      clearTimeout(delayRef.current);
+      delayRef.current = null;
+    }
+    if (cycleRef.current !== null) {
+      clearInterval(cycleRef.current);
+      cycleRef.current = null;
+    }
+  }
+
+  function handleMouseEnter() {
+    if (!hasGallery) return;
+    clearTimers();
+    delayRef.current = setTimeout(() => {
+      setActive(1);
+      cycleRef.current = setInterval(() => {
+        setActive((prev) => (prev + 1) % gallery.length);
+      }, CYCLE_INTERVAL_MS);
+    }, HOVER_DELAY_MS);
+  }
+
+  function handleMouseLeave() {
+    clearTimers();
+    setActive(0);
+  }
+
+  // Reset gallery state when the product changes.
   useEffect(() => {
-    setPrimaryFailed(false);
-    setSecondaryFailed(false);
-  }, [primarySrc, secondarySrc]);
+    clearTimers();
+    setFailed({});
+    setActive(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, product.image, product.images?.join("|")]);
+
+  // Cleanup on unmount.
+  useEffect(() => () => clearTimers(), []);
 
   const badge =
     product.badge === "new" ? (
@@ -85,7 +122,11 @@ export function ProductCard({
     ) : null;
 
   return (
-    <article className="group flex flex-col overflow-hidden">
+    <article
+      className="group flex flex-col overflow-hidden"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <Link href={href} className="flex flex-1 cursor-pointer flex-col">
         <div
           className={`relative flex aspect-square items-center justify-center overflow-hidden ${
@@ -93,44 +134,33 @@ export function ProductCard({
           }`}
         >
           {badge}
-          {showPrimary ? (
-            <>
-              <Image
-                key={`primary-${primarySrc}`}
-                src={primarySrc!}
-                alt={product.name}
-                width={compact ? 140 : 200}
-                height={compact ? 140 : 200}
-                className={`max-h-full w-auto object-contain transition-opacity duration-500 ease-out motion-reduce:transition-none ${
-                  showSecondary
-                    ? "opacity-100 group-hover:opacity-0"
-                    : "opacity-100"
-                }`}
-                sizes={
-                  compact
-                    ? "(max-width: 480px) 40vw, 160px"
-                    : "(max-width: 768px) 50vw, 287px"
-                }
-                onError={() => setPrimaryFailed(true)}
-              />
-              {showSecondary ? (
-                <Image
-                  key={`secondary-${secondarySrc}`}
-                  src={secondarySrc!}
-                  alt=""
-                  width={compact ? 140 : 200}
-                  height={compact ? 140 : 200}
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 m-auto max-h-full w-auto object-contain opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none"
-                  sizes={
-                    compact
-                      ? "(max-width: 480px) 40vw, 160px"
-                      : "(max-width: 768px) 50vw, 287px"
-                  }
-                  onError={() => setSecondaryFailed(true)}
-                />
-              ) : null}
-            </>
+          {showImage ? (
+            <div className="relative h-full w-full">
+              {gallery.map((src, index) => {
+                if (failed[index]) return null;
+                const isActive = index === safeIndex;
+                return (
+                  <Image
+                    key={`${product.id}-${src}-${index}`}
+                    src={src}
+                    alt={isActive ? product.name : ""}
+                    fill
+                    aria-hidden={!isActive}
+                    className={`object-contain transition-opacity duration-700 ease-in-out motion-reduce:transition-none ${
+                      isActive ? "opacity-100" : "opacity-0"
+                    }`}
+                    sizes={
+                      compact
+                        ? "(max-width: 480px) 40vw, 160px"
+                        : "(max-width: 768px) 50vw, 287px"
+                    }
+                    onError={() =>
+                      setFailed((prev) => ({ ...prev, [index]: true }))
+                    }
+                  />
+                );
+              })}
+            </div>
           ) : (
             <div
               className="flex h-full w-full items-center justify-center text-center"
@@ -142,6 +172,7 @@ export function ProductCard({
             </div>
           )}
         </div>
+
         <div
           className={`flex flex-1 flex-col ${compact ? "px-0.5 pt-2" : "px-1 pt-3"}`}
         >
@@ -174,6 +205,7 @@ export function ProductCard({
           </p>
         </div>
       </Link>
+
       <div className={compact ? "pt-2" : "px-1 pb-1 pt-3"}>
         <button
           type="button"
@@ -185,7 +217,7 @@ export function ProductCard({
               variantId: product.variantId ?? product.id,
               slug: product.slug,
               title: product.name,
-              imageUrl: product.image ?? undefined,
+              imageUrl: gallery[safeIndex] ?? product.image ?? undefined,
               unitPrice: product.price,
               currency,
               notes: notesFromFamily(product.family),

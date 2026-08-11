@@ -246,15 +246,22 @@ function DesktopNavItem({ item }: { item: MobileNavItem }) {
   return <DesktopNavDropdown item={item} />;
 }
 
+type DesktopNavProps = {
+  /** API-sourced nav items. Falls back to hardcoded MOBILE_NAV when not provided. */
+  items?: MobileNavItem[];
+};
+
 /** Desktop main nav with hover/focus dropdowns — same hierarchy as mobile sheet. */
-export function DesktopNav() {
+export function DesktopNav({ items }: DesktopNavProps) {
+  const navItems = items?.length ? items : MOBILE_NAV;
+
   return (
     <nav
       aria-label="Main"
       className="hidden border-t border-sa-border lg:block"
     >
       <ul className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-center gap-x-7 gap-y-1 px-4 py-3.5 text-[13px] font-semibold uppercase tracking-wide sm:px-6 lg:px-10">
-        {MOBILE_NAV.map((item) => (
+        {navItems.map((item) => (
           <DesktopNavItem key={item.label} item={item} />
         ))}
       </ul>

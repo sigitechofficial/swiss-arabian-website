@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { ProductCard } from "@/features/home/components/ProductCard";
-import { formatUsd } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/features/home/data/homeContent";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { cartEmptySuggestions, cartUpsells } from "../data/cartContent";
+import { useCartMutations } from "../hooks/useCartMutations";
 import { CartLineItem } from "./CartLineItem";
 import { FreeShippingProgress } from "./FreeShippingProgress";
 
@@ -18,11 +19,14 @@ export function CartSideSheet() {
   const open = useUiStore((s) => s.cartOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const lines = useCartStore((s) => s.lines);
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const removeLine = useCartStore((s) => s.removeLine);
-  const subtotal = useCartStore((s) => s.subtotal());
+  const totals = useCartStore((s) => s.totals);
+  const localSubtotal = useCartStore((s) => s.subtotal());
 
-  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const { updateItem, removeItem } = useCartMutations();
+
+  const displaySubtotal = totals?.subtotal ?? localSubtotal;
+  const displayCurrency = totals?.currency ?? "AED";
+  const itemCount = totals?.totalQty ?? lines.reduce((s, l) => s + l.quantity, 0);
   const hasItems = lines.length > 0;
 
   useEffect(() => {
@@ -141,8 +145,8 @@ export function CartSideSheet() {
                   >
                     <CartLineItem
                       line={line}
-                      onUpdateQuantity={updateQuantity}
-                      onRemove={removeLine}
+                      onUpdateQuantity={updateItem}
+                      onRemove={removeItem}
                     />
                   </li>
                 ))}
@@ -174,7 +178,7 @@ export function CartSideSheet() {
         {/* Sticky footer — only when cart has items */}
         {hasItems ? (
           <div className="shrink-0 sa-hairline-t bg-section-soft px-6 py-5 sm:px-8 sm:py-6">
-            <FreeShippingProgress subtotal={subtotal} />
+            <FreeShippingProgress subtotal={displaySubtotal} currency={displayCurrency} />
 
             <Link
               href="/checkout"
@@ -183,7 +187,7 @@ export function CartSideSheet() {
             >
               <span>Checkout</span>
               <span className="tabular-nums tracking-normal">
-                {formatUsd(subtotal)}
+                {formatMoney(displaySubtotal, displayCurrency)}
               </span>
             </Link>
           </div>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { PackageCheck, PartyPopper, Truck } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
-import { formatUsd } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/features/home/data/homeContent";
 import { FREE_SHIPPING_THRESHOLD } from "../data/cartContent";
 
 const TERRA = "#B46E57";
@@ -73,12 +73,13 @@ function ConfettiBurst({ burstId }: { burstId: number }) {
 
 type FreeShippingProgressProps = {
   subtotal: number;
+  currency?: string;
 };
 
 /**
  * Free shipping route progress — truck tracks fill; whoop + confetti on unlock.
  */
-export function FreeShippingProgress({ subtotal }: FreeShippingProgressProps) {
+export function FreeShippingProgress({ subtotal, currency = "AED" }: FreeShippingProgressProps) {
   const reduce = useReducedMotion();
   const [burstId, setBurstId] = useState(0);
   const wasUnlocked = useRef(false);
@@ -126,13 +127,13 @@ export function FreeShippingProgress({ subtotal }: FreeShippingProgressProps) {
           <span className="text-[13px] text-sa-muted">
             Add{" "}
             <strong className="font-semibold text-sa-primary">
-              {formatUsd(remaining)}
+              {formatMoney(remaining, currency)}
             </strong>{" "}
             more for free shipping
           </span>
         ) : (
           <span className="text-[13px] text-sa-muted">
-            Free shipping on orders over {formatUsd(FREE_SHIPPING_THRESHOLD)}
+            Free shipping on orders over {formatMoney(FREE_SHIPPING_THRESHOLD, currency)}
           </span>
         )}
       </div>
@@ -173,7 +174,7 @@ export function FreeShippingProgress({ subtotal }: FreeShippingProgressProps) {
           <span>$0</span>
           <span className="inline-flex items-center gap-1">
             <PackageCheck size={12} aria-hidden />
-            {formatUsd(FREE_SHIPPING_THRESHOLD)}
+            {formatMoney(FREE_SHIPPING_THRESHOLD, currency)}
           </span>
         </div>
       </div>

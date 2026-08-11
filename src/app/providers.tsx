@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { MotionConfig } from "framer-motion";
 import { EmotionCacheProvider } from "@/providers/EmotionCacheProvider";
 import { AuthSessionProvider } from "@/providers/AuthSessionProvider";
+import { CartSessionProvider } from "@/providers/CartSessionProvider";
 import { LocaleProvider } from "@/providers/LocaleProvider";
 import { MarketProvider } from "@/providers/MarketProvider";
 import { MuiProvider } from "@/providers/MuiProvider";
@@ -21,8 +22,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
               <LocaleProvider>
                 <MarketProvider>
                   <AuthSessionProvider>
-                    {children}
-                    <Toaster />
+                    <CartSessionProvider>
+                      {children}
+                      <Toaster />
+                    </CartSessionProvider>
                   </AuthSessionProvider>
                 </MarketProvider>
               </LocaleProvider>

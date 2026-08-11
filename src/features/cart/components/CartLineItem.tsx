@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
-import { formatUsd } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/features/home/data/homeContent";
 import type { CartLine } from "@/stores/useCartStore";
 
 type CartLineItemProps = {
@@ -118,11 +118,11 @@ export function CartLineItem({
 
           <div className="text-right leading-tight">
             <p className="font-sans text-[15px] font-bold tabular-nums tracking-tight text-sa-primary">
-              {formatUsd(lineTotal)}
+              {formatMoney(lineTotal, line.currency)}
             </p>
             {line.quantity > 1 ? (
               <p className="mt-0.5 text-[11px] tabular-nums text-sa-muted">
-                {formatUsd(line.unitPrice)} each
+                {formatMoney(line.unitPrice, line.currency)} each
               </p>
             ) : null}
           </div>

@@ -7,6 +7,7 @@ import {
   MOBILE_NAV,
   type MobileNavItem,
 } from "@/features/home/constants/homeAssets";
+import { useNavigation } from "@/features/navigation/hooks/useNavigation";
 import { performLogout } from "@/features/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -74,7 +75,9 @@ function AccordionGroup({
 }
 
 /** Full-page mobile menu — matches prototype nav sheet */
-export function MobileNav() {
+export function MobileNav({ items }: { items?: MobileNavItem[] }) {
+  const { headerItems } = useNavigation();
+  const navItems = items?.length ? items : headerItems.length ? headerItems : MOBILE_NAV;
   const open = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -135,7 +138,7 @@ export function MobileNav() {
       </div>
       <nav className="flex-1" aria-label="Mobile">
         <ul className="flex flex-col px-6 py-3 text-[16px] font-semibold uppercase tracking-wide">
-          {MOBILE_NAV.map((item) =>
+          {navItems.map((item) =>
             item.type === "link" ? (
               <li key={item.label}>
                 <Link
