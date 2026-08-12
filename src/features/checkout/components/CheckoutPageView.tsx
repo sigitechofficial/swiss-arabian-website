@@ -2,15 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatMoney } from "@/features/home/data/homeContent";
 import { toast } from "@/components/ui/Toaster";
 import { useCartStore } from "@/stores/useCartStore";
 import {
-  CHECKOUT_DISCOUNT_AMOUNT,
-  CHECKOUT_DISCOUNT_CODE,
   UAE_EMIRATES,
   checkoutAssets,
 } from "../data/checkoutContent";
@@ -18,8 +16,10 @@ import {
   checkoutSchema,
   type CheckoutFormValues,
 } from "../schemas/checkout.schema";
+import { useCheckout } from "../hooks/useCheckout";
+import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
 
-type PaymentMethod = CheckoutFormValues["paymentMethod"];
+// ─── Shared UI primitives ─────────────────────────────────────────────────────
 
 const inputClass =
   "h-[45px] w-full border border-sa-input bg-page px-4 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted focus:border-terra";
@@ -47,26 +47,48 @@ function FieldIcon({
   );
 }
 
-function PayBadge({ children }: { children: React.ReactNode }) {
+function Checkbox({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
   return (
-    <span className="inline-flex h-[19px] items-center rounded-[2px] border border-sa-border bg-page px-1 text-[9px] font-bold uppercase tracking-wide text-sa-primary">
-      {children}
-    </span>
+    <label className="flex cursor-pointer items-center gap-2.5 text-[12px] text-sa-muted">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`flex size-[18px] shrink-0 items-center justify-center border ${
+          checked ? "border-terra bg-terra" : "border-sa-input bg-page"
+        }`}
+      >
+        {checked ? (
+          <FieldIcon
+            src={checkoutAssets.check}
+            className="size-2.5 brightness-0 invert"
+          />
+        ) : null}
+      </button>
+      {label}
+    </label>
   );
 }
 
-function RadioRow({
+function RadioOption({
   selected,
   onSelect,
   label,
   trailing,
-  children,
 }: {
   selected: boolean;
   onSelect: () => void;
   label: string;
   trailing?: React.ReactNode;
-  children?: React.ReactNode;
 }) {
   return (
     <div
@@ -85,52 +107,135 @@ function RadioRow({
           }`}
           aria-hidden
         >
-          {selected ? (
-            <span className="size-2.5 rounded-full bg-terra" />
-          ) : null}
+          {selected ? <span className="size-2.5 rounded-full bg-terra" /> : null}
         </span>
-        <span className="flex-1 text-[14px] font-medium text-sa-primary">
-          {label}
-        </span>
+        <span className="flex-1 text-[14px] font-medium text-sa-primary">{label}</span>
         {trailing}
       </button>
-      {selected && children ? (
-        <div className="border-t border-sa-border px-4 pb-4 pt-4">{children}</div>
-      ) : null}
     </div>
   );
 }
 
+// ─── Delivery option row ──────────────────────────────────────────────────────
+
+function DeliveryRow({
+  method,
+  selected,
+  onSelect,
+}: {
+  method: DeliveryMethodOption;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const feeDisplay =
+    !method.estimatedFee || method.estimatedFee === "0.00"
+      ? "Free"
+      : `AED ${Number(method.estimatedFee).toFixed(2)}`;
+
+  return (
+    <RadioOption
+      selected={selected}
+      onSelect={onSelect}
+      label={method.displayName}
+      trailing={
+        <span className="text-[13px] font-semibold text-sa-primary">{feeDisplay}</span>
+      }
+    />
+  );
+}
+
+// ─── Payment option row ───────────────────────────────────────────────────────
+
+function PaymentRow({
+  method,
+  selected,
+  onSelect,
+}: {
+  method: PaymentMethodOption;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <RadioOption
+      selected={selected}
+      onSelect={onSelect}
+      label={method.displayName}
+      trailing={
+        method.methodCode === "COD" ? (
+          <span className="rounded-[2px] border border-sa-border bg-page px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sa-muted">
+            COD
+          </span>
+        ) : (
+          <span className="flex size-4 items-center justify-center">
+            <FieldIcon src={checkoutAssets.lock} />
+          </span>
+        )
+      }
+    />
+  );
+}
+
+// ─── Skeleton loader ─────────────────────────────────────────────────────────
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded bg-sa-border ${className ?? "h-[45px] w-full"}`}
+    />
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 /**
  * Checkout — Figma 475:7363 / section 518:7105
- * Two-column: form (left) + order summary (right)
+ * Two-column: form (left) + order summary (right).
+ * API wired: checkout session, delivery methods, payment methods, order placement.
  */
 export function CheckoutPageView() {
   const lines = useCartStore((s) => s.lines);
-  const subtotal = useCartStore((s) => s.subtotal());
+  const cartTotals = useCartStore((s) => s.totals);
   const itemCount = useCartStore((s) =>
-    s.lines.reduce((sum, line) => sum + line.quantity, 0),
+    s.lines.reduce((sum, l) => sum + l.quantity, 0),
   );
+  const currency = lines[0]?.currency ?? cartTotals?.currency ?? "AED";
 
-  const [discountApplied, setDiscountApplied] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const currency = lines[0]?.currency || "AED";
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   const displayLines = mounted ? lines : [];
-  const displaySubtotal = mounted ? subtotal : 0;
   const displayCount = mounted ? itemCount : 0;
+
+  const {
+    session,
+    deliveryMethods,
+    paymentMethods,
+    selectedDeliveryId,
+    selectedPaymentId,
+    status,
+    errorMsg,
+    chooseDelivery,
+    choosePayment,
+    submitCheckout,
+  } = useCheckout();
+
+  // Display totals — prefer session totals (include shipping) over local cart totals
+  const sessionTotals = session?.totalsEstimate;
+  const displaySubtotal = sessionTotals
+    ? Number(sessionTotals.subtotal)
+    : mounted
+      ? (cartTotals?.subtotal ?? lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0))
+      : 0;
+  const shippingFee = sessionTotals ? Number(sessionTotals.shipping) : 0;
+  const displayTotal = sessionTotals
+    ? Number(sessionTotals.total)
+    : displaySubtotal + shippingFee;
 
   const {
     register,
     handleSubmit,
     control,
     watch,
-    setValue,
-    getValues,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -147,59 +252,37 @@ export function CheckoutPageView() {
       phone: "",
       saveInfo: false,
       smsOffers: false,
-      paymentMethod: "card",
-      cardNumber: "",
-      cardExpiry: "",
-      cardCvc: "",
-      cardName: "",
-      useShippingAsBilling: true,
       discountCode: "",
     },
   });
 
-  const paymentMethod = watch("paymentMethod");
-  const address = watch("address");
-  const city = watch("city");
-  const hasAddress = Boolean(address?.trim() && city?.trim());
-
-  const discount = discountApplied ? CHECKOUT_DISCOUNT_AMOUNT : 0;
-  const total = Math.max(0, displaySubtotal - discount);
-
-  const shippingHint = useMemo(
-    () =>
-      hasAddress ? "Standard · Free" : "Add address to see shipping options",
-    [hasAddress],
-  );
-
-  function applyDiscount() {
-    const code = (getValues("discountCode") || "").trim().toUpperCase();
-    if (code === CHECKOUT_DISCOUNT_CODE) {
-      setDiscountApplied(true);
-      toast(`Discount ${CHECKOUT_DISCOUNT_CODE} applied`, "success");
-      return;
-    }
-    setDiscountApplied(false);
-    toast("Enter a valid discount code", "error");
-  }
-
-  function onSubmit(_data: CheckoutFormValues) {
+  async function onSubmit(data: CheckoutFormValues) {
     if (lines.length === 0) {
       toast("Your cart is empty", "error");
       return;
     }
-    // No checkout API wired yet — do not fake order success
-    toast("Checkout API not connected yet", "error");
+    if (!session) {
+      toast("Checkout session not ready. Please wait.", "error");
+      return;
+    }
+    await submitCheckout(data);
+    if (errorMsg) toast(errorMsg, "error");
   }
+
+  const isLoading = status === "loading";
+  const isSubmittingCheckout = status === "submitting" || isSubmitting;
+  const submitDisabled = isLoading || isSubmittingCheckout || displayLines.length === 0;
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col lg:flex-row">
-      {/* Left — form */}
+      {/* ── Left — form ── */}
       <div className="flex flex-1 justify-center bg-page px-4 py-10 sm:px-8 lg:px-10 lg:py-14">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-full max-w-[420px] lg:max-w-[289px] xl:max-w-[420px]"
           noValidate
         >
+          {/* Brand link */}
           <Link
             href="/"
             className="mb-10 inline-flex items-center gap-3"
@@ -213,7 +296,29 @@ export function CheckoutPageView() {
             </span>
           </Link>
 
-          {/* Contact */}
+          {/* Error banner — session init error OR validation/submit error */}
+          {errorMsg ? (
+            <div className="mb-6 border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+              {errorMsg}
+              {status === "error" ? (
+                <Link href="/" className="ml-2 underline">
+                  Return to shop
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Validation warnings from session */}
+          {session?.validationIssues?.filter((i) => i.severity === "WARNING").map((issue) => (
+            <div
+              key={issue.id ?? issue.code}
+              className="mb-4 border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+            >
+              {issue.message}
+            </div>
+          ))}
+
+          {/* ── Contact ── */}
           <section className="mb-10">
             <div className="mb-4 flex items-baseline justify-between">
               <h2 className="text-[20px] font-bold text-sa-primary">Contact</h2>
@@ -238,39 +343,22 @@ export function CheckoutPageView() {
               name="emailOffers"
               control={control}
               render={({ field }) => (
-                <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-[12px] text-sa-muted">
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={field.value}
-                    onClick={() => field.onChange(!field.value)}
-                    className={`flex size-[18px] items-center justify-center border ${
-                      field.value
-                        ? "border-terra bg-terra"
-                        : "border-sa-input bg-page"
-                    }`}
-                  >
-                    {field.value ? (
-                      <FieldIcon
-                        src={checkoutAssets.check}
-                        className="size-2.5 brightness-0 invert"
-                      />
-                    ) : null}
-                  </button>
-                  Email me with news and offers
-                </label>
+                <div className="mt-4">
+                  <Checkbox
+                    checked={field.value}
+                    onChange={field.onChange}
+                    label="Email me with news and offers"
+                  />
+                </div>
               )}
             />
           </section>
 
-          {/* Delivery */}
+          {/* ── Delivery address ── */}
           <section className="mb-10">
-            <h2 className="mb-4 text-[20px] font-bold text-sa-primary">
-              Delivery
-            </h2>
-            <label className="mb-1 block text-[14px] text-sa-muted">
-              Country/Region
-            </label>
+            <h2 className="mb-4 text-[20px] font-bold text-sa-primary">Delivery</h2>
+
+            <label className="mb-1 block text-[14px] text-sa-muted">Country/Region</label>
             <div className="relative mb-4">
               <select className={selectClass} {...register("country")}>
                 <option>United Arab Emirates</option>
@@ -294,9 +382,7 @@ export function CheckoutPageView() {
                   {...register("firstName")}
                 />
                 {errors.firstName ? (
-                  <p className="mt-1 text-[11px] text-red-600">
-                    {errors.firstName.message}
-                  </p>
+                  <p className="mt-1 text-[11px] text-red-600">{errors.firstName.message}</p>
                 ) : null}
               </div>
               <div>
@@ -307,9 +393,7 @@ export function CheckoutPageView() {
                   {...register("lastName")}
                 />
                 {errors.lastName ? (
-                  <p className="mt-1 text-[11px] text-red-600">
-                    {errors.lastName.message}
-                  </p>
+                  <p className="mt-1 text-[11px] text-red-600">{errors.lastName.message}</p>
                 ) : null}
               </div>
             </div>
@@ -321,9 +405,7 @@ export function CheckoutPageView() {
               {...register("address")}
             />
             {errors.address ? (
-              <p className="-mt-3 mb-3 text-[11px] text-red-600">
-                {errors.address.message}
-              </p>
+              <p className="-mt-3 mb-3 text-[11px] text-red-600">{errors.address.message}</p>
             ) : null}
 
             <input
@@ -341,9 +423,7 @@ export function CheckoutPageView() {
                   {...register("city")}
                 />
                 {errors.city ? (
-                  <p className="mt-1 text-[11px] text-red-600">
-                    {errors.city.message}
-                  </p>
+                  <p className="mt-1 text-[11px] text-red-600">{errors.city.message}</p>
                 ) : null}
               </div>
               <div className="relative">
@@ -359,9 +439,7 @@ export function CheckoutPageView() {
                   <FieldIcon src={checkoutAssets.chevron} />
                 </span>
                 {errors.emirate ? (
-                  <p className="mt-1 text-[11px] text-red-600">
-                    {errors.emirate.message}
-                  </p>
+                  <p className="mt-1 text-[11px] text-red-600">{errors.emirate.message}</p>
                 ) : null}
               </div>
             </div>
@@ -378,220 +456,114 @@ export function CheckoutPageView() {
                 <FieldIcon src={checkoutAssets.info} />
               </span>
               {errors.phone ? (
-                <p className="mt-1 text-[11px] text-red-600">
-                  {errors.phone.message}
-                </p>
+                <p className="mt-1 text-[11px] text-red-600">{errors.phone.message}</p>
               ) : null}
             </div>
 
-            <Controller
-              name="saveInfo"
-              control={control}
-              render={({ field }) => (
-                <label className="mb-3 flex cursor-pointer items-center gap-2.5 text-[12px] text-sa-muted">
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={field.value}
-                    onClick={() => field.onChange(!field.value)}
-                    className={`flex size-[18px] items-center justify-center border ${
-                      field.value
-                        ? "border-terra bg-terra"
-                        : "border-sa-input bg-page"
-                    }`}
-                  >
-                    {field.value ? (
-                      <FieldIcon
-                        src={checkoutAssets.check}
-                        className="size-2.5 brightness-0 invert"
-                      />
-                    ) : null}
-                  </button>
-                  Save this information for next time
-                </label>
-              )}
-            />
-            <Controller
-              name="smsOffers"
-              control={control}
-              render={({ field }) => (
-                <label className="flex cursor-pointer items-center gap-2.5 text-[12px] text-sa-muted">
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={field.value}
-                    onClick={() => field.onChange(!field.value)}
-                    className={`flex size-[18px] items-center justify-center border ${
-                      field.value
-                        ? "border-terra bg-terra"
-                        : "border-sa-input bg-page"
-                    }`}
-                  >
-                    {field.value ? (
-                      <FieldIcon
-                        src={checkoutAssets.check}
-                        className="size-2.5 brightness-0 invert"
-                      />
-                    ) : null}
-                  </button>
-                  Text me with news and offers
-                </label>
-              )}
-            />
-          </section>
-
-          {/* Shipping */}
-          <section className="mb-10">
-            <h2 className="mb-4 text-[20px] font-bold text-sa-primary">
-              Shipping method
-            </h2>
-            <div className="border border-sa-border bg-section-soft px-4 py-4 text-[12px] text-sa-muted">
-              {shippingHint}
+            <div className="flex flex-col gap-3">
+              <Controller
+                name="saveInfo"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onChange={field.onChange}
+                    label="Save this information for next time"
+                  />
+                )}
+              />
+              <Controller
+                name="smsOffers"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onChange={field.onChange}
+                    label="Text me with news and offers"
+                  />
+                )}
+              />
             </div>
           </section>
 
-          {/* Payment */}
+          {/* ── Shipping method ── */}
+          <section className="mb-10">
+            <h2 className="mb-4 text-[20px] font-bold text-sa-primary">Shipping method</h2>
+
+            {isLoading ? (
+              <SkeletonBlock className="h-[54px] w-full" />
+            ) : deliveryMethods.length === 0 ? (
+              <div className="border border-sa-border bg-section-soft px-4 py-4 text-[12px] text-sa-muted">
+                Add address to see shipping options
+              </div>
+            ) : (
+              <div className="overflow-hidden border border-sa-border">
+                {deliveryMethods.map((m) => (
+                  <DeliveryRow
+                    key={m.zoneDeliveryMethodId}
+                    method={m}
+                    selected={selectedDeliveryId === m.zoneDeliveryMethodId}
+                    onSelect={() => chooseDelivery(m.zoneDeliveryMethodId)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── Payment ── */}
           <section className="mb-8">
             <h2 className="text-[20px] font-bold text-sa-primary">Payment</h2>
-            <p className="mt-1 mb-4 text-[12px] text-sa-muted">
+            <p className="mb-4 mt-1 text-[12px] text-sa-muted">
               All transactions are secure and encrypted.
             </p>
 
-            <div className="overflow-hidden border border-sa-border">
-              <RadioRow
-                selected={paymentMethod === "card"}
-                onSelect={() => setValue("paymentMethod", "card")}
-                label="Credit card"
-                trailing={
-                  <span className="flex gap-1">
-                    <PayBadge>VISA</PayBadge>
-                    <PayBadge>MC</PayBadge>
-                    <PayBadge>AMEX</PayBadge>
-                  </span>
-                }
-              >
-                <div className="relative mb-3">
-                  <input
-                    placeholder="Card number"
-                    autoComplete="cc-number"
-                    className={`${inputClass} pr-10`}
-                    {...register("cardNumber")}
+            {isLoading ? (
+              <div className="flex flex-col gap-2">
+                <SkeletonBlock className="h-[54px] w-full" />
+                <SkeletonBlock className="h-[54px] w-full" />
+              </div>
+            ) : paymentMethods.length === 0 ? (
+              <div className="border border-sa-border bg-section-soft px-4 py-4 text-[12px] text-sa-muted">
+                Payment options will appear after session loads
+              </div>
+            ) : (
+              <div className="overflow-hidden border border-sa-border">
+                {paymentMethods.map((m) => (
+                  <PaymentRow
+                    key={m.zonePaymentMethodId}
+                    method={m}
+                    selected={selectedPaymentId === m.zonePaymentMethodId}
+                    onSelect={() => choosePayment(m.zonePaymentMethodId)}
                   />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                    <FieldIcon src={checkoutAssets.lock} />
-                  </span>
-                </div>
-                <div className="mb-3 grid grid-cols-2 gap-3">
-                  <input
-                    placeholder="MM / YY"
-                    autoComplete="cc-exp"
-                    className={inputClass}
-                    {...register("cardExpiry")}
-                  />
-                  <div className="relative">
-                    <input
-                      placeholder="Security code"
-                      autoComplete="cc-csc"
-                      className={`${inputClass} pr-10`}
-                      {...register("cardCvc")}
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                      <FieldIcon src={checkoutAssets.help} />
-                    </span>
-                  </div>
-                </div>
-                <input
-                  placeholder="Name on card"
-                  autoComplete="cc-name"
-                  className={`${inputClass} mb-3`}
-                  {...register("cardName")}
-                />
-                <Controller
-                  name="useShippingAsBilling"
-                  control={control}
-                  render={({ field }) => (
-                    <label className="flex cursor-pointer items-center gap-2.5 text-[12px] text-sa-muted">
-                      <button
-                        type="button"
-                        role="checkbox"
-                        aria-checked={field.value}
-                        onClick={() => field.onChange(!field.value)}
-                        className={`flex size-[18px] items-center justify-center border ${
-                          field.value
-                            ? "border-terra bg-terra"
-                            : "border-sa-input bg-page"
-                        }`}
-                      >
-                        {field.value ? (
-                          <FieldIcon
-                            src={checkoutAssets.check}
-                            className="size-2.5 brightness-0 invert"
-                          />
-                        ) : null}
-                      </button>
-                      Use shipping address as billing address
-                    </label>
-                  )}
-                />
-              </RadioRow>
-
-              <RadioRow
-                selected={paymentMethod === "wallet"}
-                onSelect={() => setValue("paymentMethod", "wallet" as PaymentMethod)}
-                label="Apple Pay / Google Pay"
-                trailing={
-                  <span className="flex gap-1">
-                    <PayBadge>APPLE PAY</PayBadge>
-                    <PayBadge>G PAY</PayBadge>
-                  </span>
-                }
-              />
-              <RadioRow
-                selected={paymentMethod === "tabby"}
-                onSelect={() => setValue("paymentMethod", "tabby")}
-                label="Pay Later with Tabby"
-                trailing={
-                  <span className="rounded-[2px] bg-[#3bffc0] px-1.5 py-0.5 text-[9px] font-bold text-ink">
-                    tabby
-                  </span>
-                }
-              />
-              <RadioRow
-                selected={paymentMethod === "tamara"}
-                onSelect={() => setValue("paymentMethod", "tamara")}
-                label="Tamara - Split in 3 payments"
-                trailing={
-                  <span className="rounded-[2px] bg-[#f7c9b6] px-1.5 py-0.5 text-[9px] font-bold text-ink">
-                    tamara
-                  </span>
-                }
-              />
-              <RadioRow
-                selected={paymentMethod === "cod"}
-                onSelect={() => setValue("paymentMethod", "cod")}
-                label="Cash on Delivery (COD)"
-              />
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
+          {/* ── Submit ── */}
           <button
             type="submit"
-            disabled={isSubmitting || displayLines.length === 0}
-            className="flex h-10 w-full items-center justify-center bg-terra text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={submitDisabled}
+            className="flex h-10 w-full items-center justify-center gap-2 bg-terra text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Pay now
+            {isSubmittingCheckout ? (
+              <>
+                <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Processing…
+              </>
+            ) : (
+              "Pay now"
+            )}
           </button>
         </form>
       </div>
 
-      {/* Right — summary */}
+      {/* ── Right — order summary ── */}
       <aside className="w-full border-t border-sa-border bg-ash lg:w-[50%] lg:max-w-[721px] lg:border-l lg:border-t-0 dark:bg-section-soft">
         <div className="mx-auto w-full max-w-[411px] px-6 py-10 lg:px-[60px] lg:py-14">
           {displayLines.length === 0 ? (
             <div className="mb-8 text-center">
-              <p className="text-[15px] font-semibold text-sa-primary">
-                Your cart is empty
-              </p>
+              <p className="text-[15px] font-semibold text-sa-primary">Your cart is empty</p>
               <Link
                 href="/products"
                 className="mt-3 inline-block text-[13px] text-terra underline"
@@ -641,6 +613,7 @@ export function CheckoutPageView() {
 
           <div className="h-px w-full bg-sa-border" />
 
+          {/* Discount code */}
           <div className="my-6 flex gap-3">
             <input
               placeholder="Discount code"
@@ -649,7 +622,7 @@ export function CheckoutPageView() {
             />
             <button
               type="button"
-              onClick={applyDiscount}
+              onClick={() => toast("Discount codes are applied automatically at checkout", "info")}
               className="h-[45px] shrink-0 bg-terra px-6 text-[14px] font-semibold text-white hover:bg-[#a25e48]"
             >
               Apply
@@ -667,29 +640,31 @@ export function CheckoutPageView() {
                 {formatMoney(displaySubtotal, currency)}
               </span>
             </div>
-            {discountApplied ? (
+
+            {shippingFee > 0 ? (
               <div className="flex justify-between">
-                <span className="text-sa-muted">
-                  Discount ({CHECKOUT_DISCOUNT_CODE})
-                </span>
-                <span className="font-semibold text-terra">
-                  −{formatMoney(discount, currency)}
+                <span className="text-sa-muted">Shipping</span>
+                <span className="font-semibold text-sa-primary">
+                  {formatMoney(shippingFee, currency)}
                 </span>
               </div>
-            ) : null}
-            <div className="flex justify-between">
-              <span className="text-sa-muted">Shipping</span>
-              <span className="text-[12px] text-sa-muted">
-                {hasAddress ? "Free" : "Calculated at next step"}
-              </span>
-            </div>
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-sa-muted">Shipping</span>
+                <span className="text-[12px] text-sa-muted">
+                  {isLoading ? "Calculating…" : "Free"}
+                </span>
+              </div>
+            )}
+
             <div className="my-2 h-px w-full bg-sa-border" />
+
             <div className="flex items-end justify-between pt-1">
               <span className="text-[20px] font-bold text-sa-primary">Total</span>
               <p className="flex items-baseline gap-1.5 text-right">
                 <span className="text-[12px] text-sa-muted">{currency}</span>
                 <span className="text-[28px] font-bold leading-none text-sa-primary">
-                  {total.toFixed(2)}
+                  {displayTotal.toFixed(2)}
                 </span>
               </p>
             </div>
