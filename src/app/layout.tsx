@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AppProviders } from "./providers";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <InsiderScripts />
       </head>
       <body className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary">
         <AppProviders>{children}</AppProviders>

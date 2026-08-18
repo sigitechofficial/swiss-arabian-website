@@ -20,6 +20,7 @@ export type ProductCardModel = {
   badge?: HomeProductBadge;
   currency?: string;
   variantId?: string;
+  sku?: string;
 };
 
 type ProductCardProps = {
@@ -221,6 +222,8 @@ export function ProductCard({
               unitPrice: product.price,
               currency,
               notes: notesFromFamily(product.family),
+              sku: product.sku,
+              category: product.family || null,
             });
           }}
           className={`flex w-full cursor-pointer items-center justify-center bg-terra font-semibold uppercase text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted ${

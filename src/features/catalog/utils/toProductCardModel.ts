@@ -33,5 +33,6 @@ export function toProductCardModel(
     slug: product.slug,
     currency: product.currency || "AED",
     variantId: product.variantId,
+    sku: product.sku,
   };
 }

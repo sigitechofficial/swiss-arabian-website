@@ -1,11 +1,12 @@
 "use client";
 
+import { toast } from "@/components/ui/Toaster";
+import { insiderAddToCart } from "@/lib/insider";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { addCartItem } from "../api/cart.service";
-import { storeCartId } from "../utils/guestToken";
-import { toast } from "@/components/ui/Toaster";
 import { DEFAULT_SIZE_LABEL } from "../data/cartContent";
+import { storeCartId } from "../utils/guestToken";
 
 type AddPayload = Omit<CartLine, "quantity"> & {
   quantity?: number;
@@ -14,7 +15,14 @@ type AddPayload = Omit<CartLine, "quantity"> & {
    * Pass both when available; the service will prefer sku.
    */
   sku?: string;
+  category?: string | null;
+  brand?: string | null;
 };
+
+function productPageUrl(slug: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/products/${slug}`;
+}
 
 /** Adds a product to the cart (optimistic + API sync) and opens the side sheet. */
 export function useAddToCart() {
@@ -25,10 +33,11 @@ export function useAddToCart() {
   const setCartOpen = useUiStore((s) => s.setCartOpen);
 
   return (payload: AddPayload): void => {
+    const { sku, category, brand, quantity, ...cartFields } = payload;
     const line: CartLine = {
       sizeLabel: DEFAULT_SIZE_LABEL,
-      ...payload,
-      quantity: payload.quantity ?? 1,
+      ...cartFields,
+      quantity: quantity ?? 1,
     };
 
     // Optimistic: instant feedback before API responds.
@@ -36,7 +45,7 @@ export function useAddToCart() {
     setCartOpen(true);
 
     void addCartItem({
-      sku: payload.sku,
+      sku,
       variantId: payload.variantId,
       quantity: line.quantity,
       cartId,
@@ -44,6 +53,18 @@ export function useAddToCart() {
       .then((cart) => {
         storeCartId(cart.cartId);
         setCartFromApi(cart);
+        insiderAddToCart({
+          id: payload.variantId,
+          sku: sku || payload.variantId,
+          name: payload.title,
+          price: payload.unitPrice,
+          currency: payload.currency,
+          quantity: line.quantity,
+          imageUrl: payload.imageUrl ?? null,
+          productUrl: productPageUrl(payload.slug),
+          category: category ?? null,
+          brand: brand ?? null,
+        });
       })
       .catch(() => {
         // Revert the optimistic add and notify the user.

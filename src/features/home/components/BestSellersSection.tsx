@@ -64,6 +64,7 @@ export function BestSellersSection() {
                       unitPrice: featured.price,
                       currency: "USD",
                       notes: notesFromFamily(featured.family),
+                      category: featured.family || null,
                     })
                   }
                   className="bg-white px-4 py-2.5 text-[12.5px] font-semibold text-ink transition-colors hover:bg-cream sm:px-6"

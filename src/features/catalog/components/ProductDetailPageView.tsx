@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/Toaster";
 import { ProductCard } from "@/features/home/components/ProductCard";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { formatMoney } from "@/features/home/data/homeContent";
+import { insiderProductViewed } from "@/lib/insider";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import {
@@ -61,6 +62,24 @@ export function ProductDetailPageView() {
   useEffect(() => {
     if (activeImage >= gallery.length) setActiveImage(0);
   }, [gallery.length, activeImage]);
+
+  useEffect(() => {
+    if (!data) return;
+    const category =
+      data.collections?.find((c) => c.isFeatured)?.name ||
+      data.collections?.[0]?.name ||
+      null;
+    insiderProductViewed({
+      id: data.variantId || data.id,
+      sku: data.sku || data.variantId || data.id,
+      name: data.title,
+      price: data.price ?? 0,
+      currency: data.currency || "AED",
+      imageUrl: data.imageUrl ?? data.imageUrls?.[0] ?? null,
+      category,
+      brand: data.brandName ?? null,
+    });
+  }, [data]);
 
   const recommendations = useMemo(() => {
     const items = relatedData?.products ?? [];
@@ -320,6 +339,12 @@ export function ProductDetailPageView() {
                   currency,
                   notes: notes.slice(0, 5),
                   quantity: qty,
+                  sku: data.sku,
+                  category:
+                    data.collections?.find((c) => c.isFeatured)?.name ||
+                    data.collections?.[0]?.name ||
+                    null,
+                  brand: data.brandName ?? null,
                 });
               }}
             >

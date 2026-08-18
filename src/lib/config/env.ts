@@ -113,4 +113,17 @@ export const env = {
   catalogMediaBaseUrl: readPublic(
     process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
   ),
+  /**
+   * Insider Web SDK. Script loads only when enabled AND accountId is set.
+   * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
+   */
+  insider: {
+    enabled:
+      readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",
+    accountId: readPublic(process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID),
+    scriptHost: readPublic(
+      process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
+      "swissarabian.api.useinsider.com",
+    ),
+  },
 } as const;

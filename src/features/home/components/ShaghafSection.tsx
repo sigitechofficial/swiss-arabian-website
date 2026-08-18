@@ -75,6 +75,7 @@ export function ShaghafSection() {
                           unitPrice: item.price,
                           currency: "USD",
                           notes: notesFromFamily(item.family),
+                          category: item.family || null,
                         })
                       }
                       className="border border-sa-primary px-4 py-1.5 text-[12.5px] font-semibold text-sa-primary transition-colors hover:bg-sa-primary hover:text-page"
