@@ -1,0 +1,725 @@
+/* =============================================================
+   PRODUCT DETAIL PAGE — mirrors the `v5/detail.html` design
+   variant ("Ounass split": lit product left on a warm sand
+   stage, identity + purchase right), the tabbed "composition"
+   band, and a "you may also like" row using the same
+   `.products-band .product-card` treatment as the rest of the
+   site. Static content only — no live PDP API yet.
+
+   Class names are namespaced `pdp-*` (rather than reusing the
+   landing homepage's `.hero`/`.hero__*`) since those names are
+   already spoken for by the hero swiper section in
+   `v5-landing.css` / `v5-app.css`.
+   ============================================================= */
+
+/* The footer normally carries a top margin so it breathes below the
+   homepage's last section — but here it just opens a band of bare
+   page background between the related grid's own background and the
+   footer's copper one. `.pdp-related` already ends with generous
+   padding, so the footer can sit flush against it on this page. */
+main:has(> .pdp) + .site-footer {
+  margin-block-start: 0;
+}
+
+.pdp-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-block: clamp(2rem, 5vw, 4rem);
+  overflow: hidden;
+}
+
+/* Width now comes from the shared `.container.container--full` wrapper
+   (same 1200px content max as every other section on the page) instead
+   of its own bespoke max-width — that mismatch was making this section
+   render wider than the composition/related bands below it. */
+.pdp-hero__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  width: 100%;
+}
+
+.pdp-hero__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+
+.pdp-hero__product {
+  --bottle-h: min(62svh, 500px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Static picture-frame — border/radius live here, on a wrapper that
+   never animates, so the "arrive" animation below (rotate/scale/
+   translate on the `<img>` itself) settles into a fixed frame instead
+   of the whole bordered box tumbling in. No background fill — just the
+   hairline border.
+
+   Fixed `width: 100%` (rather than shrink-wrapping to the image's own
+   width) gives this box a definite size independent of the source
+   photo. That's needed because these product photos are exported on a
+   shared oversized canvas (bottle-only shot AND ingredients flat-lay
+   both 1536×1024) with very different amounts of live content vs. dead
+   padding — letting the frame's width track the image directly meant
+   it could get flex-shrunk narrower than the image's natural aspect
+   ratio at this height, which squashed the photo instead of cropping
+   it (the "condensed" look). `object-fit: cover` below fixes that: the
+   image now always scales uniformly to fill this fixed box and crops
+   the overflow, so it can never distort.
+
+   `overflow: hidden` keeps the entrance animation's momentary
+   scale-up/rotate/translate overshoot clipped to this same fixed box,
+   so the photo never spills past the frame's own border while it
+   arrives. */
+.pdp-hero__frame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: var(--bottle-h);
+  overflow: hidden;
+  border: 0.5px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.pdp-hero__bottle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: drop-shadow(0 20px 40px rgb(70 45 25 / 0.28));
+}
+
+.pdp-hero__glow {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--bottle-h) * 1.5);
+  aspect-ratio: 1;
+  margin: calc(var(--bottle-h) * -0.75) 0 0 calc(var(--bottle-h) * -0.75);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 248, 235, 0.55) 0%,
+    rgba(235, 222, 198, 0.22) 40%,
+    rgba(235, 222, 198, 0) 70%);
+  filter: blur(26px);
+  pointer-events: none;
+}
+
+.pdp-hero__floor {
+  position: absolute;
+  z-index: 0;
+  bottom: calc(var(--bottle-h) * -0.03);
+  left: 50%;
+  width: calc(var(--bottle-h) * 0.62);
+  height: calc(var(--bottle-h) * 0.1);
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse,
+    rgb(232 213 174 / 0.26) 0%,
+    rgb(232 213 174 / 0.08) 45%,
+    rgb(232 213 174 / 0) 72%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* --- Atomiser burst on mount ("smell it" reveal) ------------- */
+
+.pdp-hero__mist {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.pdp-hero[data-reveal="play"] .pdp-hero__mist {
+  opacity: 1;
+}
+
+.pdp-hero__puff {
+  position: absolute;
+  top: 1%;
+  left: 49%;
+  width: calc(var(--bottle-h) * 0.55);
+  aspect-ratio: 1;
+  margin: calc(var(--bottle-h) * -0.275) 0 0 calc(var(--bottle-h) * -0.275);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 252, 246, 0.6) 0%,
+    rgba(255, 250, 240, 0.28) 42%,
+    rgba(255, 250, 240, 0) 70%);
+  filter: blur(14px);
+  opacity: 0;
+  transform: scale(0.2);
+}
+
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--a { animation: pdp-puff-a 1300ms cubic-bezier(0, 0, 0.2, 1) forwards; }
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--b { animation: pdp-puff-b 1400ms cubic-bezier(0, 0, 0.2, 1) 40ms forwards; }
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--c { animation: pdp-puff-c 1500ms cubic-bezier(0, 0, 0.2, 1) 20ms forwards; }
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--d { animation: pdp-puff-d 1400ms cubic-bezier(0, 0, 0.2, 1) 60ms forwards; }
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--e { animation: pdp-puff-e 1300ms cubic-bezier(0, 0, 0.2, 1) 30ms forwards; }
+
+.pdp-hero__puff--core {
+  width: calc(var(--bottle-h) * 0.4);
+  margin: calc(var(--bottle-h) * -0.2) 0 0 calc(var(--bottle-h) * -0.2);
+  filter: blur(9px);
+}
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--core { animation: pdp-puff-core 900ms cubic-bezier(0, 0, 0.2, 1) forwards; }
+
+.pdp-hero__puff--veil {
+  top: 55%;
+  width: calc(var(--bottle-h) * 1.25);
+  margin: calc(var(--bottle-h) * -0.625) 0 0 calc(var(--bottle-h) * -0.625);
+  filter: blur(28px);
+}
+.pdp-hero[data-reveal="play"] .pdp-hero__puff--veil { animation: pdp-puff-veil 1900ms cubic-bezier(0, 0, 0.2, 1) 60ms forwards; }
+
+.pdp-hero[data-reveal] .pdp-hero__bottle,
+.pdp-hero[data-reveal] .pdp-hero__glow {
+  opacity: 0;
+}
+.pdp-hero[data-reveal="play"] .pdp-hero__bottle {
+  animation: pdp-bottle-arrive 1500ms cubic-bezier(0.2, 0, 0.2, 1) 240ms forwards;
+}
+.pdp-hero[data-reveal="play"] .pdp-hero__glow {
+  animation: pdp-glow-bloom 1500ms cubic-bezier(0, 0, 0.2, 1) 120ms forwards;
+}
+
+@keyframes pdp-bottle-arrive {
+  0%   { opacity: 0;    transform: perspective(700px) rotateY(32deg) translateY(26px) scale(1.07);
+         filter: blur(16px) drop-shadow(0 20px 40px rgb(70 45 25 / 0)); }
+  18%  { opacity: 0.6;  }
+  40%  { opacity: 0.92; filter: blur(2.5px) drop-shadow(0 20px 40px rgb(70 45 25 / 0.16)); }
+  100% { opacity: 1;    transform: perspective(700px) rotateY(0deg) translateY(0) scale(1);
+         filter: blur(0) drop-shadow(0 20px 40px rgb(70 45 25 / 0.28)); }
+}
+@keyframes pdp-glow-bloom {
+  from { opacity: 0; transform: scale(0.55); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pdp-puff-a {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.2); }
+  10%  { opacity: 0.85; }
+  100% { opacity: 0;    transform: translate(-165%, -115%) scale(2.4); }
+}
+@keyframes pdp-puff-b {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.2); }
+  10%  { opacity: 0.8;  }
+  100% { opacity: 0;    transform: translate(-75%, -190%) scale(2.6); }
+}
+@keyframes pdp-puff-c {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.22); }
+  9%   { opacity: 0.85; }
+  100% { opacity: 0;    transform: translate(8%, -230%) scale(2.8); }
+}
+@keyframes pdp-puff-d {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.2); }
+  10%  { opacity: 0.8;  }
+  100% { opacity: 0;    transform: translate(90%, -185%) scale(2.6); }
+}
+@keyframes pdp-puff-e {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.2); }
+  10%  { opacity: 0.85; }
+  100% { opacity: 0;    transform: translate(180%, -110%) scale(2.4); }
+}
+@keyframes pdp-puff-core {
+  0%   { opacity: 0;   transform: translate(0, 0) scale(0.15); }
+  8%   { opacity: 0.9; }
+  100% { opacity: 0;   transform: translate(0, -65%) scale(2.2); }
+}
+@keyframes pdp-puff-veil {
+  0%   { opacity: 0;   transform: translate(0, 0) scale(0.45); }
+  14%  { opacity: 0.5; }
+  100% { opacity: 0;   transform: translate(0, -18%) scale(1.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdp-hero__mist { display: none; }
+  .pdp-hero[data-reveal] .pdp-hero__bottle,
+  .pdp-hero[data-reveal] .pdp-hero__glow {
+    opacity: 1;
+    animation: none !important;
+    transform: none;
+    filter: drop-shadow(0 20px 40px rgb(70 45 25 / 0.28));
+  }
+}
+
+/* --- Gallery thumbnails --------------------------------------- */
+
+.pdp-hero__thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  max-width: min(100%, 28rem);
+  z-index: 3;
+}
+.pdp-hero__thumb {
+  display: block;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  overflow: hidden;
+  background: #f4ead8;
+  border: 1px solid rgb(36 31 27 / 0.14);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pdp-hero__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pdp-hero__thumb.is-active {
+  border-color: var(--copper);
+  box-shadow: 0 0 0 1px var(--copper);
+}
+.pdp-hero__thumb:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+/* --- Identity + purchase panel -------------------------------- */
+
+.pdp-hero__panel {
+  position: relative;
+  z-index: 3;
+  max-width: 34rem;
+  color: #2a201a;
+}
+
+.pdp-hero__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.pdp-hero__name {
+  margin: var(--sp-2) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 3.7vw, 2.9rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #2a201a;
+}
+.pdp-hero__name-em { font-style: normal; color: inherit; }
+
+.pdp-hero__format {
+  margin: var(--sp-2) 0 0;
+  font-size: 0.9375rem;
+  color: #6f6152;
+}
+
+.pdp-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pdp-hero__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #2a201a;
+  background-color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.pdp-hero__dot { width: 9px; height: 9px; flex: none; border-radius: 50%; }
+
+.pdp-hero__price {
+  margin: var(--sp-6) 0 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #2a201a;
+}
+.pdp-hero__installments {
+  margin: var(--sp-2) 0 0;
+  font-size: 0.8125rem;
+  color: #6f6152;
+}
+.pdp-hero__installments strong { color: #2a201a; }
+
+.pdp-hero__buy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-block-start: var(--sp-6);
+}
+
+.pdp-qty {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  background-color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.pdp-qty__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 48px;
+  color: #2a201a;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.pdp-qty__btn:disabled { color: rgba(42, 32, 26, 0.35); cursor: not-allowed; }
+.pdp-qty__btn svg { width: 18px; height: 18px; }
+.pdp-qty__value {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2a201a;
+}
+
+/* `.pdp-hero__buy` prefix bumps this to two-class specificity (0,2,0) —
+   without it, the plain one-class `.pdp-hero__add` selector (0,1,0) was
+   LOSING its `color: #fff` to the site-wide `.landing button { color:
+   inherit; }` reset (0,1,1, declared later in the cascade), which left
+   the button text rendering in the inherited dark ink color instead of
+   white. */
+.pdp-hero__buy .pdp-hero__add {
+  flex: 1 1 12rem;
+  min-height: 48px;
+  padding-inline: 1.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: #fff;
+  background-color: var(--copper);
+  border: 1px solid var(--copper);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.pdp-hero__buy .pdp-hero__add:hover:not(:disabled) {
+  background-color: var(--copper-deep);
+  border-color: var(--copper-deep);
+}
+.pdp-hero__buy .pdp-hero__add:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.pdp-hero__wish {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #2a201a;
+  background-color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.pdp-hero__wish:hover { border-color: #2a201a; }
+.pdp-hero__wish svg { width: 22px; height: 22px; }
+.pdp-hero__wish[aria-pressed="true"] { color: #d4576f; border-color: #d4576f; }
+.pdp-hero__wish[aria-pressed="true"] svg { fill: currentColor; }
+
+.pdp-hero__promises { margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+.pdp-hero__promise {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding-block: 0.45rem;
+  font-size: 0.8125rem;
+  color: #6f6152;
+}
+.pdp-hero__promise strong { color: #2a201a; }
+.pdp-hero__promise svg { width: 20px; height: 20px; flex: none; color: var(--copper); }
+
+.pdp-hero__status {
+  min-height: 1.25rem;
+  margin: var(--sp-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--copper);
+}
+
+@media (max-width: 1023px) {
+  .pdp-hero__split { grid-template-columns: 1fr; gap: var(--sp-6); }
+  .pdp-hero__panel { max-width: none; }
+}
+
+@media (max-width: 767px) {
+  .pdp-hero__product { --bottle-h: min(52svh, 420px); }
+  .pdp-hero__buy .pdp-hero__add { flex-basis: 100%; }
+}
+
+/* =============================================================
+   COMPOSITION — tabbed on desktop, accordion on mobile (CSS
+   only switches which control is visible; the open/closed state
+   itself is shared, driven by React).
+   ============================================================= */
+
+.pdp-composition {
+  padding-block: clamp(3rem, 6vw, 5.5rem);
+  background-color: var(--cream);
+  color: var(--ink);
+}
+
+.pdp-composition__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.pdp-composition__title {
+  margin-block-start: 0.625rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 3vw, 2.65rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.pdp-composition__em { font-style: normal; color: inherit; }
+
+.pdp-composition__intro {
+  margin-block-start: var(--sp-5);
+  max-width: 58ch;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink-2);
+}
+
+.pdp-comp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.35rem;
+  margin-block: var(--sp-6) var(--sp-6);
+  border-block-end: 1px solid var(--line);
+}
+.pdp-comp-tabs__tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0.65rem 0 0.7rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  border-block-end: 2px solid transparent;
+  margin-block-end: -1px;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.pdp-comp-tabs__tab:hover { color: var(--copper); }
+.pdp-comp-tabs__tab.is-active {
+  color: var(--ink);
+  border-block-end-color: var(--copper);
+}
+
+.pdp-comp-panels { max-width: 42rem; }
+
+.pdp-comp-acc__heading { display: none; margin: 0; }
+.pdp-comp-panel { display: block; }
+.pdp-comp-panel[hidden] { display: none !important; }
+.pdp-comp-panel p { margin: 0; font-size: 1rem; line-height: 1.75; color: var(--ink-2); }
+
+.pdp-notes { margin: 0; padding: 0; list-style: none; }
+.pdp-notes__row {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.25rem var(--sp-5);
+  align-items: baseline;
+  padding-block: var(--sp-3);
+  border-block-start: 1px solid var(--line);
+}
+.pdp-notes__row:first-child { border-block-start: 0; }
+.pdp-notes__level {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.pdp-notes__names {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1.7vw, 1.5rem);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.pdp-notes__bar {
+  grid-column: 2;
+  position: relative;
+  height: 2px;
+  margin-block-start: 0.5rem;
+  background-color: rgb(27 22 16 / 0.1);
+}
+.pdp-notes__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--bar, 50%);
+  background-color: var(--copper);
+}
+.pdp-notes__key {
+  margin-block-start: var(--sp-3);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+.pdp-specs {
+  margin: 0;
+  border: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-4);
+}
+.pdp-specs__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding-block: 0.875rem;
+}
+.pdp-specs__row + .pdp-specs__row { border-block-start: 1px solid var(--line); }
+.pdp-specs dt {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.pdp-specs dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  text-align: end;
+  color: var(--ink);
+}
+
+.pdp-code {
+  margin: var(--sp-6) 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 767px) {
+  .pdp-comp-tabs { display: none; }
+  .pdp-comp-panels { max-width: none; border-block-start: 1px solid var(--line); }
+  .pdp-comp-item { border-block-end: 1px solid var(--line); }
+  .pdp-comp-acc__heading { display: block; }
+  .pdp-comp-acc__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    width: 100%;
+    min-height: 48px;
+    padding: 0.85rem 0;
+    appearance: none;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-mid);
+    text-transform: uppercase;
+    text-align: start;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .pdp-comp-acc__btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .pdp-comp-acc__mark {
+    flex: none;
+    width: 1em;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .pdp-comp-acc__mark::before { content: "+"; }
+  .pdp-comp-acc__btn[aria-expanded="true"] .pdp-comp-acc__mark::before { content: "\2212"; }
+  .pdp-comp-panel { padding-block-end: var(--sp-4); }
+  .pdp-comp-panel:not([hidden]) { display: block; }
+}
+
+/* =============================================================
+   RELATED — "You may also like", reusing the landing strip's
+   product-card treatment (badge-free, 4-up grid).
+   ============================================================= */
+
+.pdp-related {
+  background: var(--cream-2);
+  padding-block: clamp(3rem, 6vw, 5rem) clamp(3.5rem, 7vw, 6rem);
+}
+
+.pdp-related__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  margin-block-end: var(--sp-6);
+}
+.pdp-related__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.pdp-related__em { font-style: normal; color: inherit; }
+.pdp-related__all {
+  flex: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--copper);
+  text-decoration: none;
+  border-block-end: 1px solid rgb(116 83 39 / 0.45);
+  padding-block-end: 2px;
+  transition: border-color var(--dur) var(--ease);
+}
+.pdp-related__all:hover { border-block-end-color: var(--copper); }
+
+.pdp-related__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(2rem, 3vw, 3rem) clamp(1.25rem, 2vw, 2rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pdp-related__grid .product-card { flex: none; }
+
+@media (max-width: 900px) {
+  .pdp-related__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .pdp-related__grid { grid-template-columns: 1fr; max-width: 22rem; margin-inline: auto; }
+}

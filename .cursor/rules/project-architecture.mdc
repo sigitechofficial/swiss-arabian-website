@@ -1,0 +1,36 @@
+---
+description: Swiss Arabian storefront architecture conventions
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Project architecture
+
+Mirror the admin panel patterns, adapted for the customer storefront.
+
+## Structure
+
+- `src/app/**/page.tsx` — thin pages: import a feature view, wrap with guards if needed
+- `src/features/<domain>/` — UI, API services + React Query hooks, schemas, types
+- `src/components/ui/` — reusable DS only; no domain business logic
+- `src/lib/api/` — `apiClient`, `queryClient`, `queryHooks`; unwrap `{ success, data, error }`
+- `src/stores/` — Zustand for auth / UI / cart only — **not** API cache
+- Backend Swagger is source of truth — do not invent API paths; regenerate types
+
+## State
+
+- TanStack Query for server state
+- Zustand for small client state only (`useAuthStore`, `useUiStore`, `useCartStore`)
+- Session end via `endSession()` — clears tokens + Zustand + `queryClient.clear()`
+
+## UI
+
+- Prefer `App*` components + `semanticColors` / `radius` from `@/theme/designTokens`
+- Card shell: `border: 1px solid` + `semanticColors.border.default`, `radius.md`, `boxShadow: none`
+- Brand terra `#B46E57` for primary actions
+- No purple/glow one-off UI; no fake success when APIs missing
+
+## Forms
+
+- `react-hook-form` + Zod + `@hookform/resolvers`

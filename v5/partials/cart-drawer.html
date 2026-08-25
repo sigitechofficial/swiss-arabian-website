@@ -1,0 +1,32 @@
+<div id="cart-drawer" class="cart-drawer" aria-hidden="true">
+  <div class="cart-drawer-backdrop" data-close-cart></div>
+  <aside class="cart-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+    <div class="cart-confetti" id="cart-confetti" aria-hidden="true"></div>
+    <header class="cart-drawer-head">
+      <h2 id="cart-title" data-i18n="cart.title">My Bag</h2>
+      <button type="button" class="cart-close" data-close-cart aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+    <div class="cart-ship-bar" id="cart-ship-bar">
+      <p id="cart-ship-msg"></p>
+      <div class="cart-ship-track"><div class="cart-ship-fill" id="cart-ship-fill"></div></div>
+      <div class="cart-ship-burst" aria-hidden="true"></div>
+    </div>
+    <div class="cart-drawer-body">
+      <div id="cart-items" class="cart-items"></div>
+      <div class="cart-recs">
+        <h3 class="cart-recs-title" id="cart-recs-title" data-i18n="cart.recs">You may also like</h3>
+        <div id="cart-recs"></div>
+      </div>
+    </div>
+    <footer class="cart-drawer-foot">
+      <div class="cart-total-row">
+        <span id="cart-total-label" data-i18n="cart.total">Total</span>
+        <strong id="cart-subtotal" dir="ltr">AED 0.00</strong>
+      </div>
+      <button type="button" class="cart-checkout" id="cart-checkout" data-i18n="cart.checkout">Checkout</button>
+      <a class="cart-view-link" id="cart-view-link" href="cart.html" data-page="cart">View full bag</a>
+    </footer>
+  </aside>
+</div>

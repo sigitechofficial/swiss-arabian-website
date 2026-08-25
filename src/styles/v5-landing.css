@@ -1,0 +1,2616 @@
+/* Generated from v5/_extract/landing-clean.css — tokens, primitives, landing sections. */
+/* landing-tokens.css */
+/* ============================================================
+   tokens.css — Swiss Arabian design tokens (LIGHT THEME)
+   Derived directly from the Swiss Arabian Brand Guidelines.
+   Change a value here, change it everywhere.
+   ============================================================ */
+
+:root {
+  /* --- Brand colours (from guidelines) --------------------- */
+  --copper: #8c4435; /* primary logo colour  R140 G68 B53 */
+  --copper-deep: #6d3428; /* darker copper for hover/press    */
+  --copper-soft: #a75a49; /* lighter copper for accents       */
+  --beige: #e8d8bb; /* primary beige  R232 G216 B187     */
+
+  /* --- Warm neutrals (light theme surfaces) ---------------- */
+  --cream: #faf6ee; /* page background                  */
+  --cream-2: #f3ebda; /* alternating section background   */
+  --sand: #ece0c9; /* card / tint background           */
+  --ink: #241f1b; /* primary warm near-black text     */
+  --ink-2: #5b5148; /* secondary text                   */
+  --line: #d9ccb4; /* hairline borders                 */
+  --gold: #b98a4b; /* fine gold accent (intricate line)*/
+  --white: #ffffff;
+
+  /* --- Typography ------------------------------------------ */
+  /* The real, licensed brand font — Benton Sans Wide — served
+     locally from assets/fonts/ via styles/fonts.css (@font-face). */
+  --font-display: "Benton Sans Wide", "BentonSansWide", sans-serif;
+  --font-sans: "Benton Sans Wide", "BentonSansWide", sans-serif;
+
+  /* ---- RTL / Arabic ---- */
+  html[dir="rtl"] {
+    --font-display: "GE SS", "GE SS", sans-serif;
+    --font-sans: "GE SS", "GE SS", sans-serif;
+  }
+  html[dir="rtl"] body,
+  html[dir="rtl"] button,
+  html[dir="rtl"] input {
+    font-family: "GE SS", "GE SS", sans-serif;
+    letter-spacing: 0;
+  }
+  html[dir="rtl"] .eyebrow,
+  html[dir="rtl"] .topbar__cat,
+  html[dir="rtl"] .topbar__lang,
+  html[dir="rtl"] .topbar__region,
+  html[dir="rtl"] .topbar__change,
+  html[dir="rtl"] .primary-nav__link,
+  html[dir="rtl"] .view-all,
+  html[dir="rtl"] .btn,
+  html[dir="rtl"] .link-underline,
+  html[dir="rtl"] .mega__heading,
+  html[dir="rtl"] .section-head__title,
+  html[dir="rtl"] .display {
+    font-family: "GE SS", "GE SS", sans-serif !important;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+  html[dir="rtl"] .section-head--row {
+    flex-direction: row-reverse;
+  }
+  html[dir="rtl"] .product-strip,
+  html[dir="rtl"] .trending-grid {
+    direction: rtl;
+  }
+
+  /* Type scale tuned for Benton Sans Wide and pulled DOWN overall —
+     the wide face reads larger/heavier than the earlier substitute,
+     so both the display sizes AND body copy step down for a calmer,
+     more refined density. Eyebrow tracking eases too (the font
+     already carries the "wide" character). */
+  --fs-eyebrow: 0.68rem;
+  --fs-body: 0.9375rem;
+  --fs-body-lg: 1rem;
+  --fs-h4: 1.05rem;
+  --fs-h3: clamp(1.2rem, 1.8vw, 1.55rem);
+  --fs-h2: clamp(1.6rem, 3vw, 2.35rem);
+  --fs-h1: clamp(2.05rem, 5vw, 4.05rem);
+
+  --tracking-wide: 0.18em; /* eyebrows / nav — the "wide" feel */
+  --tracking-mid: 0.08em;
+  --leading-body: 1.7;
+
+  /* --- Spacing scale --------------------------------------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+  --sp-9: 6rem;
+  --sp-10: 8rem;
+
+  /* --- Layout ---------------------------------------------- */
+  --container: 1280px;
+  --container-wide: 1440px;
+  --gutter: clamp(1.25rem, 4vw, 4rem);
+  --radius: 2px; /* restrained; luxury reads flat    */
+  --radius-lg: 4px;
+
+  /* --- Motion ---------------------------------------------- */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 0.4s;
+}
+
+/* landing-shared.css */
+/* ============================================================
+   shared.css — cross-page primitives ONLY
+   (containers, base type, buttons, logo, a11y helpers, footer).
+   Page-specific layout lives in each page's own CSS file.
+   ============================================================ */
+
+/* --- Base ------------------------------------------------- */
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--cream);
+  letter-spacing: 0.01em;
+}
+
+/* --- Layout helpers --------------------------------------- */
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.container--wide {
+  max-width: var(--container-wide);
+}
+
+.section {
+  padding-block: clamp(3.5rem, 8vw, 7rem);
+}
+
+/* --- Typography primitives -------------------------------- */
+.eyebrow {
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--copper);
+  font-weight: 600;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+}
+
+.lead {
+  font-size: var(--fs-body-lg);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+/* --- Logo / wordmark -------------------------------------- */
+.wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  line-height: 1;
+  color: var(--copper);
+}
+
+.wordmark__mark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+}
+
+.wordmark__name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.28em;
+  padding-left: 0.28em; /* optically centre the tracked caps */
+  text-transform: uppercase;
+}
+
+.wordmark__since {
+  font-family: var(--font-sans);
+  font-size: 0.5rem;
+  letter-spacing: 0.42em;
+  padding-left: 0.42em;
+  color: var(--copper-soft);
+}
+
+.wordmark--light,
+.wordmark--light .wordmark__since {
+  color: var(--white);
+}
+.wordmark--light .wordmark__since {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- Buttons ---------------------------------------------- */
+.btn {
+  --_bg: var(--copper);
+  --_fg: var(--white);
+  --_bd: var(--copper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 48px;
+  padding: 0.85rem 2rem;
+  background: var(--_bg);
+  color: var(--_fg);
+  border: 1px solid var(--_bd);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+
+.btn:hover {
+  --_bg: var(--copper-deep);
+  --_bd: var(--copper-deep);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--ghost {
+  --_bg: transparent;
+  --_fg: var(--copper);
+  --_bd: var(--copper);
+}
+.btn--ghost:hover {
+  --_bg: var(--copper);
+  --_fg: var(--white);
+}
+
+.btn--light {
+  --_bg: var(--white);
+  --_fg: var(--ink);
+  --_bd: var(--white);
+}
+.btn--light:hover {
+  --_bg: transparent;
+  --_fg: var(--white);
+  --_bd: var(--white);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* Text link with copper underline reveal */
+.link-underline {
+  position: relative;
+  color: var(--copper);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  padding-bottom: 2px;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--copper);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur) var(--ease);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* --- Focus (accessibility) -------------------------------- */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--sp-4);
+  top: -3rem;
+  z-index: 200;
+  background: var(--ink);
+  color: var(--white);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  transition: top 0.2s var(--ease);
+}
+.skip-link:focus {
+  top: var(--sp-4);
+}
+
+.visually-hidden {
+  position: absolute !important; /* a11y utility — justified */
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Decorative gold hairline ----------------------------- */
+.rule-gold {
+  width: 48px;
+  height: 1px;
+  background: var(--gold);
+  border: 0;
+}
+
+/* --- Shared site footer ----------------------------------- */
+.site-footer {
+  background: var(--copper); /* the copper moved here from the sections */
+  color: rgba(255, 255, 255, 0.85);
+  padding-block: clamp(3rem, 6vw, 5rem) var(--sp-6);
+}
+.site-footer a {
+  color: rgba(255, 255, 255, 0.82);
+}
+.site-footer a:hover {
+  color: var(--white);
+}
+
+/* Footer brand lockup — real SA monogram (whitened for the copper
+   ground) + light wordmark so name/since are legible on copper. */
+.site-footer img.wordmark__mark {
+  height: 42px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  margin-bottom: 0.35rem;
+}
+.site-footer .wordmark {
+  align-items: flex-start;
+  color: var(--beige);
+}
+.site-footer .wordmark__name {
+  color: var(--beige);
+}
+.site-footer .wordmark__since {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: var(--sp-7) var(--sp-6);
+}
+.footer-col h3 {
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--beige);
+  margin-bottom: var(--sp-4);
+}
+.footer-col ul {
+  display: grid;
+  gap: var(--sp-3);
+  font-size: 0.9rem;
+}
+.footer-intro p {
+  margin-top: var(--sp-4);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 34ch;
+}
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-5);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 760px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .footer-intro {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 440px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Reusable "product bottle" placeholder art ------------ */
+/* Self-contained CSS art so review files need no remote images. */
+.bottle {
+  --_glass: var(--copper);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      120% 80% at 50% 18%,
+      rgba(255, 255, 255, 0.55),
+      transparent 60%
+    ),
+    linear-gradient(160deg, var(--sand), var(--beige));
+  overflow: hidden;
+}
+.bottle svg {
+  width: 46%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* landing.css */
+/* ============================================================
+   landing.css — Swiss Arabian light-theme landing page
+   Header/nav is repeated per-page per project rules (kept out of
+   shared.css). Hero, collections, story, newsletter are unique here.
+   ============================================================ */
+
+/* ---------- HEADER & NAVIGATION ------------------------------------
+   The header/top bar + mega navigation now live in the shared
+   styles/nav-light.css (loaded after this file) so the landing and
+   catalogue pages share one header. Nothing header-related here. */
+
+/* ------------------------------- HERO -------------------------------- */
+.hero {
+  position: relative;
+  min-height: min(88vh, 760px);
+  display: flex;
+  align-items: flex-end;
+  color: var(--white);
+  overflow: hidden;
+}
+.hero__media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #14100c;
+  /* Contain the swiper's internal z-index layers (arrows/dots) so they
+     never outrank the hero copy, which lives outside this element. */
+  isolation: isolate;
+}
+/* Warm scrim over the sliding photography so the white hero copy stays legible. */
+.hero__media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(24, 16, 11, 0.8) 0%,
+    rgba(24, 16, 11, 0.45) 46%,
+    rgba(24, 16, 11, 0.12) 100%
+  );
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .hero__media::before {
+    background: linear-gradient(
+      0deg,
+      rgba(24, 16, 11, 0.78) 0%,
+      rgba(24, 16, 11, 0.35) 55%,
+      rgba(24, 16, 11, 0.3) 100%
+    );
+  }
+}
+.hero__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      40% 50% at 78% 62%,
+      rgba(255, 190, 120, 0.45),
+      transparent 70%
+    ),
+    linear-gradient(0deg, rgba(20, 14, 10, 0.66), rgba(20, 14, 10, 0.05) 55%);
+}
+
+/* ---- Hero swiper (enterprise-style crossfade + Ken Burns) ---- */
+.hero-swiper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.hero-swiper__slide {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: opacity;
+}
+.hero-swiper__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  image-rendering: -webkit-optimize-contrast;
+}
+.hero-swiper__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  color: #fff;
+  background: rgba(20, 14, 10, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.3s var(--ease),
+    background 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+.hero-swiper__arrow svg {
+  width: 18px;
+  height: 18px;
+}
+.hero-swiper:hover .hero-swiper__arrow,
+.hero-swiper__arrow:focus-visible {
+  opacity: 1;
+}
+.hero-swiper__arrow:hover {
+  background: rgba(20, 14, 10, 0.6);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.hero-swiper__arrow--prev {
+  left: var(--gutter, 1.5rem);
+}
+.hero-swiper__arrow--next {
+  right: var(--gutter, 1.5rem);
+}
+
+@media (max-width: 620px) {
+  .hero-swiper__arrow {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-swiper__img {
+    transition: none !important;
+  }
+}
+.hero__inner {
+  position: relative;
+  z-index: 2;
+  padding-block: clamp(3rem, 8vw, 6rem);
+}
+.hero__eyebrow {
+  color: var(--beige);
+}
+.hero__title {
+  font-size: var(--fs-h1);
+  font-weight: 500;
+  margin: var(--sp-4) 0 var(--sp-5);
+  max-width: 16ch;
+}
+.hero__lead {
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 46ch;
+}
+.hero__cta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
+}
+.hero__link {
+  color: var(--beige);
+}
+.hero__link::after {
+  background: var(--beige);
+}
+
+/* ---- Trust / feature cards (from video-img-v) ---- */
+.feature-cards {
+  margin: 0;
+  padding-block: clamp(1.25rem, 3vw, 2rem);
+  background: var(--cream, #faf6ee);
+}
+/* The trust band already carries its own tight padding — the section
+   right after it doesn't need the full 3.5–7rem top gap on top of that. */
+.feature-cards + .section {
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+.feature-cards-list {
+  display: flex;
+  gap: 16px;
+}
+.feature-card {
+  width: 25%;
+  background: #f7f5f4;
+  border-radius: 8px;
+}
+.feature-card-box {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  min-height: 96px;
+  padding: 14px 16px 16px;
+  border-radius: 8px;
+}
+.feature-card-bg {
+  position: absolute;
+  pointer-events: none;
+}
+.feature-card-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.feature-card--1 .feature-card-bg {
+  width: 240px;
+  top: -90px;
+  right: -100px;
+  transform: rotate(-3deg);
+}
+.feature-card--2 .feature-card-bg {
+  width: 210px;
+  right: -80px;
+  bottom: -70px;
+}
+.feature-card--3 .feature-card-bg {
+  width: 200px;
+  top: -90px;
+  right: -30px;
+  transform: rotate(-20deg);
+}
+.feature-card--4 .feature-card-bg {
+  width: 120px;
+  top: -10px;
+  right: -20px;
+}
+.feature-card-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 70%;
+}
+.feature-card-copy h2 {
+  margin: 0 0 3px;
+  font-family: var(--font-display, inherit);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+  color: var(--ink, #241f1b);
+}
+.feature-card-copy h2 strong {
+  font-weight: 600;
+}
+.feature-card-copy p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  color: var(--ink-2, #5b5148);
+}
+html[dir="rtl"] .feature-card-copy {
+  text-align: right;
+  margin-inline-start: auto;
+}
+html[dir="rtl"] .feature-card--1 .feature-card-bg,
+html[dir="rtl"] .feature-card--2 .feature-card-bg,
+html[dir="rtl"] .feature-card--3 .feature-card-bg,
+html[dir="rtl"] .feature-card--4 .feature-card-bg {
+  right: auto;
+  left: -80px;
+}
+html[dir="rtl"] .feature-card--1 .feature-card-bg {
+  left: -100px;
+}
+html[dir="rtl"] .feature-card--2 .feature-card-bg {
+  left: -80px;
+}
+html[dir="rtl"] .feature-card--3 .feature-card-bg {
+  left: -30px;
+}
+html[dir="rtl"] .feature-card--4 .feature-card-bg {
+  left: -20px;
+}
+
+@media (max-width: 1180px) {
+  .feature-cards-list {
+    flex-wrap: wrap;
+  }
+  .feature-card {
+    width: calc(50% - 8px);
+  }
+}
+@media (max-width: 767px) {
+  .feature-cards-list {
+    gap: 8px;
+  }
+  .feature-card {
+    width: calc(50% - 4px);
+  }
+  .feature-card-box {
+    display: flex;
+    align-items: flex-end;
+    min-height: 146px;
+    padding: 36px 16px 14px;
+  }
+  .feature-card-copy {
+    max-width: 75%;
+  }
+  .feature-card-copy h2 {
+    font-size: 13px;
+    line-height: 18px;
+    margin-bottom: 4px;
+  }
+  .feature-card-copy p {
+    font-size: 9px;
+    line-height: 14px;
+  }
+  .feature-card--1 .feature-card-bg {
+    width: 240px;
+    top: -130px;
+    right: -85px;
+  }
+  .feature-card--2 .feature-card-bg {
+    width: 210px;
+    top: -75px;
+    right: -90px;
+    bottom: auto;
+  }
+  .feature-card--3 .feature-card-bg {
+    width: 130px;
+    top: -76px;
+    right: -50px;
+    transform: rotate(199deg);
+  }
+  .feature-card--4 .feature-card-bg {
+    width: 110px;
+    top: -59px;
+    right: -40px;
+  }
+  html[dir="rtl"] .feature-card--1 .feature-card-bg {
+    right: auto;
+    left: -85px;
+  }
+  html[dir="rtl"] .feature-card--2 .feature-card-bg {
+    right: auto;
+    left: -90px;
+  }
+  html[dir="rtl"] .feature-card--3 .feature-card-bg {
+    right: auto;
+    left: -50px;
+  }
+  html[dir="rtl"] .feature-card--4 .feature-card-bg {
+    right: auto;
+    left: -40px;
+  }
+}
+
+/* ---- Campaign reel collage (from video-img-v) ---- */
+.reel-section {
+  /* Sits between .trending and .reviews (both --cream) — use --cream-2
+     to keep the alternating band rhythm instead of the reference's
+     stark white, which doesn't match this site's warm palette. */
+  background: var(--cream-2);
+  padding: 40px 0 48px;
+}
+.reel-title {
+  max-width: 18ch;
+  margin: 0 auto 32px;
+  padding: 0 20px;
+  color: var(--ink, #241f1b);
+  font-family: var(--font-display, inherit);
+  font-size: clamp(22px, 3.5vw, 36px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  text-align: center;
+}
+.reel-title strong {
+  font-weight: 700;
+  color: inherit;
+}
+html[dir="rtl"] .reel-title {
+  letter-spacing: 0;
+}
+.reel-stage {
+  position: relative;
+  overflow: visible;
+  padding: 8px 0 24px;
+}
+.reel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.28fr 1fr;
+  align-items: start;
+  gap: 12px;
+  width: min(1080px, calc(100% - 24px));
+  margin: 0 auto;
+}
+.reel-tile {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ece7e1;
+  aspect-ratio: 3 / 4;
+}
+.reel-tile video,
+.reel-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+}
+.reel-tile video {
+  z-index: 1;
+}
+.reel-tile--1 {
+  margin-top: 48px;
+}
+.reel-tile--featured {
+  margin-top: 0;
+}
+.reel-tile--3 {
+  margin-top: 32px;
+}
+@media (min-width: 768px) {
+  .reel-section {
+    padding: 56px 0 72px;
+  }
+  .reel-title {
+    margin-bottom: 44px;
+  }
+  .reel-stage {
+    padding: 12px 0 36px;
+  }
+  .reel-grid {
+    gap: 18px;
+    width: min(1040px, calc(100% - 48px));
+  }
+  .reel-tile {
+    border-radius: 20px;
+  }
+  .reel-tile--1 {
+    margin-top: 72px;
+  }
+  .reel-tile--3 {
+    margin-top: 48px;
+  }
+}
+@media (max-width: 600px) {
+  .reel-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .reel-tile--featured {
+    grid-column: 1 / -1;
+    order: -1;
+    aspect-ratio: 4 / 3;
+    margin-top: 0;
+  }
+  .reel-tile--1,
+  .reel-tile--3 {
+    margin-top: 0;
+    aspect-ratio: 3 / 4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel-tile video {
+    opacity: 0;
+  }
+  .reel-tile img {
+    z-index: 2;
+  }
+}
+
+/* ---------------------------- SECTION HEADS -------------------------- */
+.section-head {
+  max-width: 60ch;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+.section-head__title {
+  font-size: var(--fs-h2);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+.section-head--row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  max-width: none;
+}
+.section-head--row .section-head__title {
+  margin-bottom: 0;
+}
+
+/* --------------------------- COLLECTIONS ----------------------------- */
+.collections {
+  background: var(--cream);
+} /* swapped with Our products */
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: calc(600px + var(--sp-4));
+  gap: var(--sp-4);
+}
+.collection-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: flex-end;
+  color: var(--white);
+  isolation: isolate;
+  min-height: 0;
+}
+
+.collection-card__art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  transform: scale(1.38);
+  transform-origin: center bottom;
+  transition: transform 0.8s var(--ease);
+}
+.collection-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    0deg,
+    rgba(30, 18, 12, 0.7),
+    rgba(30, 18, 12, 0.05) 60%
+  );
+}
+.collection-card:hover .collection-card__art {
+  transform: scale(1.46);
+}
+
+.art--oud {
+  background: radial-gradient(120% 80% at 50% 20%, #a9573f, #4a251a);
+}
+.art--musk {
+  background: radial-gradient(120% 90% at 40% 30%, #b9a988, #7d6f52);
+}
+.art--floral {
+  background: radial-gradient(120% 90% at 60% 25%, #c06a5a, #7a2f2c);
+}
+.art--incense {
+  background: radial-gradient(120% 90% at 45% 30%, #c98341, #6d3a1c);
+}
+
+.collection-card__body {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-6);
+}
+.collection-card__eyebrow {
+  color: var(--beige);
+}
+.collection-card__title {
+  font-size: var(--fs-h3);
+}
+.collection-card .link-underline {
+  color: var(--white);
+}
+.collection-card .link-underline::after {
+  background: var(--beige);
+}
+
+/* ------------- OUR PRODUCTS (light, centre-focus strip) ------------- */
+/* Section keeps the page's cream ground (unchanged from before). */
+.products-band {
+  background: var(--cream-2); /* swapped with Collections */
+  padding-block: clamp(2.25rem, 5vw, 3.5rem); /* tighter, fits the viewport */
+}
+.products-band .section-head {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+.products-band .eyebrow {
+  color: var(--copper);
+}
+.products-band .section-head__title em {
+  font-style: normal;
+  color: inherit;
+}
+.view-all {
+  flex: none;
+  color: var(--copper);
+  border: 1px solid var(--copper);
+  border-radius: 999px;
+  padding: 0.7rem 1.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.view-all:hover {
+  background: var(--copper);
+  color: #fff;
+}
+
+/* Simple linear horizontal product row */
+.product-strip {
+  --pcard-w: clamp(190px, 20vw, 260px);
+  display: flex;
+  align-items: stretch;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  scrollbar-width: none;
+}
+.product-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.product-strip .product-card {
+  position: relative;
+  flex: 0 0 var(--pcard-w);
+  scroll-snap-align: start;
+  transform: none !important;
+}
+
+.products-band .product-card__media {
+  position: relative;
+  /* Back to the original 4:5 shape (9:16 zoomed in too far) — the real
+     size fix is `cover` on the img below, which alone takes the bottle
+     from ~23% to ~55-60% of the card width without needing a taller box. */
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-4);
+  /* Padding lives on the frame (not the img) so the cover-fit image
+     shrinks into a smaller inset box, leaving this gradient plate visible
+     as breathing room on all four sides instead of the bottle touching
+     the card edges. */
+  padding: 20%;
+  /* Brighter plate + hairline border + soft lift so the card reads
+     as distinct from the cream page behind it. */
+  background: linear-gradient(180deg, #ffffff 0%, #f1e7d4 100%);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px rgba(60, 40, 25, 0.06);
+}
+.products-band .product-card__media-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Product hover — the base bottle shot fades out while the ingredients
+   `::before` pseudo-element (see below, near each card's own rules) fades
+   in on top of it. No second <img> here anymore — the ingredients art is
+   a CSS background-image so it can escape the card's clipped media box
+   and show the full scene via `background-size: contain`, never cropped. */
+.product-card__media--swap,
+.trend-card__media--swap {
+  isolation: isolate;
+}
+.product-card__media--swap .product-card__media-link,
+.trend-card__media--swap .trend-card__media-link {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+/* `.products-band`/`.trend-card` prefixes here aren't just scoping — they
+   bump specificity above the generic `.products-band .product-card__media
+   img` / `.trend-card__media img` rules below (same 0,2,1 vs 0,1,1-ish
+   weight). Without the extra class, whichever rule comes LATER in the
+   file wins the `transition` shorthand outright and silently drops
+   `opacity` from the transitioned properties (transform-only survives),
+   so this opacity fade was jumping instantly instead of easing — the
+   actual cause of the hover "blink". */
+.products-band .product-card__media--swap .product-card__media-link > img,
+.trend-card__media--swap .trend-card__media-link > img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  /* Promote to its own compositor layer up front — without this, the
+     very first opacity transition can trigger layer promotion mid-
+     animation, dropping a frame that reads as a brief "disappear". */
+  will-change: opacity;
+  /* Plain `ease`, not the steep cubic-bezier(0.76,0,0.24,1) used for
+     slide/scale moves elsewhere — that curve barely moves for most of
+     the duration then snaps through the middle, which made this image
+     fading OUT read as a hard cut rather than a gradual dissolve. */
+  transition: opacity 0.6s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover
+    .product-card__media--swap
+    .product-card__media-link
+    > img,
+  .trend-card:hover .trend-card__media--swap .trend-card__media-link > img {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card__media--swap .product-card__media-link > img,
+  .trend-card__media--swap .trend-card__media-link > img {
+    transition: none;
+  }
+}
+.products-band .product-card {
+  position: relative;
+  /* Clip the ingredients ::before (and its hover zoom) to the card's own
+     box so it never spills onto neighbouring cards. */
+  overflow: hidden;
+}
+
+/* Ingredients hover art — a background-image pseudo-element on the CARD
+   (not `.product-card__media`, which has `overflow: hidden` for the
+   rounded-corner bottle crop and would clip this if it ever grew past the
+   box). Sized/positioned to sit exactly over the media box — same
+   top/left/width/aspect-ratio — so the whole scene stays fully inside the
+   card (no spill onto neighbours). `background-size: cover` (same fitting
+   the base bottle shot uses) keeps the bottle at its exact real size on
+   hover; the trade-off is the outermost ingredients get lightly cropped
+   at the card edges instead of shrinking the whole scene down. */
+.products-band .product-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background-image: var(--ingredients-bg);
+  /* Explicit percentage (not `cover`) — `cover` zooms in enough to crop
+     hard against the card edges, which reads as too big/dense. This
+     keeps the bottle close to its real size while leaving a little
+     breathing room around the ingredients. */
+  background-size: 126% auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 4;
+  opacity: 0;
+  transform: scale(1);
+  transform-origin: center;
+  pointer-events: none;
+  border-radius: var(--radius-lg);
+  will-change: opacity, transform;
+  /* Plain `ease`, not the steep cubic-bezier(0.76,0,0.24,1) — that curve
+     stays near-invisible for most of the fade-in then snaps through the
+     middle in a short burst, which reads as a "blink" rather than a
+     gradual reveal, especially over busy ingredient artwork. */
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .products-band .product-card:hover::before {
+    opacity: 1;
+    /* Subtle zoom-in only — the card now clips overflow, so this can't
+       spill onto neighbours, but keeping it small still reads as a nicer
+       "zoom" than a jarring jump. */
+    transform: scale(1.02);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .products-band .product-card::before {
+    transition: none;
+  }
+}
+
+.products-band .product-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  padding: 0;
+  mix-blend-mode: normal;
+  transition: transform 0.6s var(--ease);
+}
+/* These static cutout PNGs are transparent with a lot of empty canvas
+   around the bottle: cover fill, no inset padding, normal blend (multiply
+   would tint the bottle's own colors against the card's gradient plate). */
+.products-band .product-card__media--swap .product-card__media-link > img {
+  object-fit: cover;
+  padding: 0;
+  mix-blend-mode: normal;
+}
+/* Add-to-bag pill — revealed on hover/focus (no scene-swap). Lives in its
+   own slot that mirrors the media box's exact geometry (top:0, 4:5) but
+   sits as a sibling of it, NOT nested inside it — `.product-card__media`
+   is `isolation: isolate` for the image crossfade, which traps any
+   z-index set on its descendants inside that stacking context. Since the
+   ingredients `::before` (z-index 4) is a pseudo-element of the card
+   itself, it was rendering on top of the whole isolated media box —
+   button included — regardless of the button's own z-index. Keeping the
+   button outside that isolated box lets its z-index compete directly
+   against `::before` at the card level and win. */
+.products-band .product-card__add-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  pointer-events: none;
+}
+.products-band .product-card__add {
+  position: absolute;
+  left: 50%;
+  bottom: 0.6rem;
+  z-index: 5;
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: calc(100% - 1.75rem);
+  padding: 0.7rem 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  color: #2a231c;
+  background: #fffaf3;
+  border: 1px solid rgba(42, 35, 28, 0.08);
+  border-radius: 999px;
+  box-shadow:
+    0 10px 28px rgba(42, 28, 16, 0.14),
+    0 1px 2px rgba(42, 28, 16, 0.05);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.products-band .product-card:hover .product-card__add,
+.products-band .product-card:focus-within .product-card__add {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.products-band .product-card__add:hover,
+.products-band .product-card__add:focus-visible {
+  color: #fff;
+  background: var(--copper);
+  border-color: var(--copper);
+}
+.products-band .product-card__add svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.products-band .product-card__add-check {
+  display: none;
+}
+.products-band .product-card__add[aria-pressed="true"] {
+  color: #fff;
+  background: var(--copper);
+  border-color: var(--copper);
+}
+.products-band .product-card__add[aria-pressed="true"] .product-card__add-plus {
+  display: none;
+}
+.products-band
+  .product-card__add[aria-pressed="true"]
+  .product-card__add-check {
+  display: inline;
+}
+@media (hover: none) {
+  .products-band .product-card__add {
+    opacity: 1;
+    transform: translateX(-50%);
+    pointer-events: auto;
+    bottom: 12px;
+    min-height: 44px;
+    padding: 0.72rem 1.05rem;
+  }
+}
+
+/* Whole card links to the product — a real anchor stretched over the
+   card (not a ::after pseudo-element), sitting below the Add-to-bag
+   button's z-index so that stays independently clickable. */
+.products-band .product-card__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius-lg);
+}
+.products-band .product-card__link:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.products-band .product-card__eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.products-band .product-card__name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: var(--sp-1) 0;
+  color: var(--ink);
+}
+.products-band .product-card:hover .product-card__name {
+  color: var(--copper);
+}
+.products-band .product-card__price {
+  color: var(--copper);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Carousel arrows */
+.strip-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: var(--sp-5);
+}
+.strip-controls__arrows {
+  display: flex;
+  gap: var(--sp-2);
+}
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+.arrow svg {
+  width: 21px;
+  height: 21px;
+}
+.arrow--outline {
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.arrow--outline:hover {
+  border-color: var(--copper);
+  color: var(--copper);
+}
+.arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.arrow:disabled:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-strip .product-card {
+    transform: none !important;
+  }
+}
+
+/* ------------------------------ CAMPAIGN ----------------------------- */
+.campaign {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(440px, 46vw, 620px);
+  overflow: hidden;
+}
+.campaign__picture {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.campaign__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Photo already carries marketing type — hide duplicate HTML copy. */
+.campaign--bundles .campaign__eyebrow,
+.campaign--bundles .campaign__headline,
+.campaign--bundles .campaign__sub {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Desktop: one high-res photo, cover-fill (no tile, no 1024×267 letterbox). */
+@media (min-width: 1024px) {
+  .campaign--bundles {
+    background-color: #e6c9a8;
+    background-image: none;
+    background-repeat: no-repeat;
+    place-items: end center;
+  }
+  .campaign--bundles .campaign__media {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center 38%;
+    transform: scale(1.02);
+    transform-origin: center;
+    translate: none;
+  }
+  .campaign--bundles .campaign__scrim {
+    /* Full-frame wash (not just a bottom fade) — a photo this busy/bright
+       needs some overall toning down to read as "branded background"
+       rather than a raw stock shot, on top of the stronger anchor at the
+       bottom where the pills/glass panel sit. */
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 8, 5, 0.22) 0%,
+      rgba(10, 8, 5, 0.08) 32%,
+      rgba(10, 8, 5, 0.16) 58%,
+      rgba(10, 8, 5, 0.5) 100%
+    );
+  }
+  .campaign--bundles .campaign__content {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding: 0 var(--edge) clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .campaign--bundles .campaign__actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .campaign--bundles .campaign__actions .pill {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    line-height: 1;
+    min-height: 44px;
+    height: 44px;
+    padding: 0.7rem 1.4rem;
+    border-width: 1px;
+    border-style: solid;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  /* Solid fill + outline must share the same 1px border box so they sit on one line. */
+  .campaign--bundles .campaign__actions .pill:first-child {
+    color: var(--ink);
+    background: var(--white);
+    border-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .campaign--bundles .campaign__actions .pill:last-child {
+    color: var(--white);
+    background: transparent;
+    border-color: var(--white);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .campaign--bundles .campaign__actions .pill:first-child:hover {
+    color: var(--ink);
+    background: var(--white);
+    border-color: transparent;
+  }
+  .campaign--bundles .campaign__actions .pill:last-child:hover {
+    color: var(--ink);
+    background: var(--white);
+    border-color: var(--white);
+  }
+}
+.campaign--bundles .campaign__scrim {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 8, 5, 0.22) 0%,
+    rgba(10, 8, 5, 0.08) 32%,
+    rgba(10, 8, 5, 0.16) 58%,
+    rgba(10, 8, 5, 0.5) 100%
+  );
+}
+.campaign__sub {
+  margin: 0.75rem auto 0;
+  max-width: 28rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.3);
+}
+.campaign__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      70% 68% at 50% 46%,
+      rgba(20, 12, 6, 0.55) 0%,
+      rgba(20, 12, 6, 0.24) 55%,
+      rgba(20, 12, 6, 0.05) 100%
+    ),
+    linear-gradient(to bottom, rgba(20, 12, 6, 0.14), rgba(20, 12, 6, 0.26));
+}
+.campaign__content {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  padding: var(--gutter);
+  text-align: center;
+  color: var(--white);
+}
+.campaign__eyebrow {
+  margin-bottom: 0.875rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--beige);
+}
+.campaign__headline {
+  font-size: var(--fs-h1);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: 0.005em;
+  text-shadow: 0 1px 24px rgba(0, 0, 0, 0.35);
+}
+.campaign__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-6);
+}
+.campaign--bundles .campaign__actions .pill {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  line-height: 1;
+  min-height: 44px;
+  padding: 0.7rem 1.4rem;
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* Translucent pills for the image band (Shop Gift Sets / Miniatures). */
+.pill--translucent {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.pill--translucent:hover {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--white);
+}
+
+/* "Shop this set" card — frosted glass, sits directly on the campaign
+   photo so it needs its own light source (backdrop-blur + translucent
+   white) rather than the site's usual opaque card shell. */
+.shop-look {
+  position: absolute;
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: clamp(1.25rem, 3vw, 2.5rem);
+  z-index: 2;
+  width: min(360px, calc(100% - 2rem));
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  /* Outer lift (floats off the photo) + inset top highlight (reads as a
+     glass edge catching light) + inset bottom shade (glass depth). */
+  box-shadow:
+    0 30px 60px -12px rgba(10, 6, 3, 0.5),
+    0 2px 8px rgba(10, 6, 3, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  overflow: hidden;
+}
+.shop-look[hidden] {
+  display: none;
+}
+.shop-look__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 1.15rem 1.85rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.shop-look__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+.shop-look__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.shop-look__close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+.shop-look__close svg {
+  width: 15px;
+  height: 15px;
+}
+.shop-look__list {
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 1.85rem;
+  list-style: none;
+}
+/* The `[role="list"]` a11y attribute on this `<ul>` (kept so screen
+   readers still announce list semantics after `list-style: none`) also
+   trips the global `.landing ul[role="list"]` reset in `v5-app.css`,
+   which is more specific than the plain class rule above and was
+   zeroing this padding back out — leaving the item rows flush against
+   the card edges while the header/CTA above and below kept their
+   inset. Re-declared here with matching specificity (ancestor class +
+   class + attribute + element) so it wins outright. */
+.shop-look .shop-look__list[role="list"] {
+  padding: 0.15rem 1.85rem;
+}
+.shop-look__list > li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.shop-look__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-block: 0.85rem;
+  color: rgba(255, 255, 255, 0.94);
+  text-decoration: none;
+}
+.shop-look__thumb {
+  flex: none;
+  width: 50px;
+  height: 60px;
+  object-fit: contain;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+.shop-look__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.shop-look__name {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.96);
+  transition: color var(--dur) var(--ease);
+}
+.shop-look__item:hover .shop-look__name {
+  color: var(--beige);
+}
+.shop-look__conc {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.shop-look__price {
+  flex: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--beige);
+}
+.shop-look__cta {
+  display: flex;
+  margin: 1rem 1.85rem 1.4rem;
+}
+.shop-look__restore {
+  position: absolute;
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: clamp(1.25rem, 3vw, 2.5rem);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  box-shadow: 0 12px 30px rgba(10, 6, 3, 0.35);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  transition: background var(--dur) var(--ease);
+}
+.shop-look__restore[hidden] {
+  display: none;
+}
+.shop-look__restore:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.shop-look__restore svg {
+  width: 19px;
+  height: 19px;
+}
+
+@media (max-width: 1023px) {
+  /* Bundles hero: mobile image has baked-in copy — overlay CTAs only. */
+  .campaign--bundles {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+  .campaign--bundles .campaign__picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  .campaign--bundles .campaign__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    transform: none;
+    transform-origin: center;
+  }
+  .campaign--bundles .campaign__scrim {
+    display: block;
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 8, 5, 0.22) 0%,
+      rgba(10, 8, 5, 0.08) 32%,
+      rgba(10, 8, 5, 0.18) 58%,
+      rgba(0, 0, 0, 0.52) 100%
+    );
+  }
+  .campaign--bundles .campaign__content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding: 1rem var(--edge);
+    color: var(--white);
+    background: transparent;
+    text-align: start;
+  }
+  .campaign--bundles .campaign__actions {
+    margin-top: 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--sp-3);
+  }
+  .campaign--bundles .campaign__actions .pill--translucent {
+    color: var(--white);
+    background: var(--copper);
+    border: 1px solid var(--copper);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 2px 12px rgba(20, 10, 6, 0.22);
+  }
+  .campaign--bundles .campaign__actions .pill--translucent:hover {
+    color: var(--white);
+    background: var(--copper-deep);
+    border-color: var(--copper-deep);
+  }
+  .campaign--bundles .shop-look {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 120;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    max-height: min(78vh, 520px);
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -12px 40px rgba(10, 6, 3, 0.4);
+  }
+  .campaign--bundles .shop-look__restore {
+    display: inline-flex;
+    position: absolute;
+    right: var(--edge, 1rem);
+    top: var(--edge, 1rem);
+    bottom: auto;
+    z-index: 2;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Full-bleed cover — never shrink into a left card beside empty cream. */
+  .campaign--bundles {
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 16 / 10;
+    max-height: none;
+  }
+  /* Baked-in "EXCLUSIVE…" starts ~11.7% into bundles-hero.jpg (120/1024). */
+  .campaign--bundles .campaign__content {
+    padding-left: 11.7%;
+    padding-right: var(--edge);
+  }
+  .campaign--bundles .campaign__actions {
+    gap: var(--sp-4);
+  }
+  .campaign--bundles .campaign__actions .pill {
+    flex: 0 1 auto;
+    width: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .campaign--bundles {
+    aspect-ratio: 535 / 690;
+    max-height: min(68vh, 620px);
+  }
+  .campaign--bundles .campaign__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+  .campaign--bundles .campaign__actions .pill {
+    width: 100%;
+    justify-content: center;
+  }
+  .campaign__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+  .campaign__actions .pill {
+    width: 100%;
+    justify-content: center;
+  }
+  .campaign__headline {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+}
+
+/* ------------------------------ TRENDING ----------------------------- */
+.trending {
+  background: var(--cream);
+}
+.trending .section-head {
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+/* Eyebrow on its own row. Title + View all share the next row so the
+   link is vertically centered with "Trending perfumes" only — not with
+   the eyebrow+title stack. Dedicated class so shared .section-head--row
+   stacking (1023px / 760px) cannot split this row. */
+.trending__title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
+}
+.trending__title-row .section-head__title {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.trending__title-row > .link-underline {
+  flex-shrink: 0;
+  align-self: center;
+  white-space: nowrap;
+}
+html[dir="rtl"] .trending__title-row {
+  flex-direction: row-reverse;
+}
+/* Same linear horizontal scroll-snap strip as `.product-strip` (Our
+   products) — same card width variable, gap, snap behaviour and hidden
+   native scrollbar, so the two "swiper" rows feel identical. Paired with
+   the `.strip-controls` arrow buttons rendered under the list. */
+.trending-grid {
+  --tcard-w: clamp(190px, 20vw, 260px);
+  display: flex;
+  align-items: stretch;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  scrollbar-width: none;
+}
+.trending-grid::-webkit-scrollbar {
+  display: none;
+}
+.trending-grid .trend-card {
+  flex: 0 0 var(--tcard-w);
+  scroll-snap-align: start;
+}
+.trend-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Clip the ingredients ::before (and its hover zoom) to the card's own
+     box so it never spills onto neighbouring cards — matches
+     `.products-band .product-card`. */
+  overflow: hidden;
+}
+.trend-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  /* Same breathing-room recipe as the "Our products" band: padding on the
+     frame (not the img) so the cover-fit image shrinks into an inset box
+     instead of the bottle touching the card edges. */
+  padding: 20%;
+  background: linear-gradient(180deg, #ffffff 0%, #ece0c9 100%);
+}
+.trend-card__media-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.trend-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  padding: 0;
+  mix-blend-mode: normal;
+  transition: transform 0.5s var(--ease);
+}
+.trend-card:hover .trend-card__media:not(.trend-card__media--swap) img,
+.trend-card:focus-within .trend-card__media:not(.trend-card__media--swap) img {
+  transform: scale(1.1);
+}
+.trend-card__media--swap .trend-card__media-link > img {
+  object-fit: cover;
+  padding: 0;
+  mix-blend-mode: normal;
+}
+
+/* Ingredients hover art — same technique as `.products-band`: a
+   background-image pseudo-element sized/positioned to sit exactly over
+   the media box, so the whole scene stays fully inside the card (no
+   spill onto neighbours). `background-size: cover` keeps the bottle at
+   its exact real size, at the cost of light cropping on the outermost
+   ingredients. */
+.trend-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background-image: var(--ingredients-bg);
+  /* Explicit percentage (not `cover`) — `cover` zooms in enough to crop
+     hard against the card edges, which reads as too big/dense. This
+     keeps the bottle close to its real size while leaving a little
+     breathing room around the ingredients. */
+  background-size: 126% auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 4;
+  opacity: 0;
+  transform: scale(1);
+  transform-origin: center;
+  pointer-events: none;
+  border-radius: var(--radius-lg);
+  will-change: opacity, transform;
+  /* Plain `ease`, not the steep cubic-bezier(0.76,0,0.24,1) — that curve
+     stays near-invisible for most of the fade-in then snaps through the
+     middle in a short burst, which reads as a "blink" rather than a
+     gradual reveal, especially over busy ingredient artwork. */
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .trend-card:hover::before {
+    opacity: 1;
+    /* Subtle zoom-in only — the card clips overflow, so this can't spill
+       onto neighbours, but keeping it small still reads as a nicer "zoom"
+       than a jarring jump. Matches `.products-band .product-card`. */
+    transform: scale(1.02);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trend-card::before {
+    transition: none;
+  }
+}
+
+/* Add-to-bag pill — revealed on hover/focus. Lives in its own slot that
+   mirrors the media box's exact geometry (top:0, 4:5) but sits as a
+   sibling of it, NOT nested inside it — see the matching comment on
+   `.products-band .product-card__add-slot` for why: `isolation: isolate`
+   on the media box traps the button's z-index, letting the ingredients
+   `::before` (z-index 4, a pseudo-element of the card) render on top of
+   the button even though it has a higher z-index of its own. */
+.trend-card {
+  position: relative;
+}
+.trend-card__add-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  pointer-events: none;
+}
+/* `.trending` prefix here isn't just scoping — it bumps this rule's
+   specificity to two classes (0,2,0), same as `.products-band
+   .product-card__add`. Without it, the plain one-class `.trend-card__add`
+   selector (0,1,0) was LOSING to the site-wide `.landing button { font:
+   inherit; color: inherit; }` reset (0,1,1, declared later in the
+   cascade) — silently dropping this button's font-size/color back to
+   the inherited 16px body text, which is why it rendered visibly larger
+   than the "Our products" strip's identical button. */
+.trending .trend-card__add {
+  position: absolute;
+  left: 50%;
+  bottom: 0.6rem;
+  z-index: 5;
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: calc(100% - 1.75rem);
+  padding: 0.7rem 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  color: #2a231c;
+  background: #fffaf3;
+  border: 1px solid rgba(42, 35, 28, 0.08);
+  border-radius: 999px;
+  box-shadow:
+    0 10px 28px rgba(42, 28, 16, 0.14),
+    0 1px 2px rgba(42, 28, 16, 0.05);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.trending .trend-card:hover .trend-card__add,
+.trending .trend-card:focus-within .trend-card__add {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.trending .trend-card__add:hover,
+.trending .trend-card__add:focus-visible {
+  color: #fff;
+  background: var(--copper);
+  border-color: var(--copper);
+}
+.trending .trend-card__add svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.trending .trend-card__add-check {
+  display: none;
+}
+.trending .trend-card__add[aria-pressed="true"] {
+  color: #fff;
+  background: var(--copper);
+  border-color: var(--copper);
+}
+.trending .trend-card__add[aria-pressed="true"] .trend-card__add-plus {
+  display: none;
+}
+.trending .trend-card__add[aria-pressed="true"] .trend-card__add-check {
+  display: inline;
+}
+@media (hover: none) {
+  .trending .trend-card__add {
+    opacity: 1;
+    transform: translateX(-50%);
+    pointer-events: auto;
+    bottom: 12px;
+    min-height: 44px;
+    padding: 0.72rem 1.05rem;
+  }
+}
+/* Whole card links to the product — a real anchor stretched over the
+   card (not a ::after pseudo-element). */
+.trend-card__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius-lg);
+}
+.trend-card__link:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+.trend-card__body {
+  padding-top: var(--sp-4);
+}
+.trend-card__eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.trend-card__name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: var(--sp-1) 0;
+  color: var(--ink);
+}
+.trend-card:hover .trend-card__name {
+  color: var(--copper);
+}
+.trend-card__price {
+  color: var(--copper);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trending-grid .trend-card {
+    transform: none !important;
+  }
+}
+
+/* ------------------------------ REVIEWS ------------------------------ */
+/* New light, boxed testimonial cards on the darker cream band. */
+.reviews {
+  background: var(--cream);
+  text-align: center;
+}
+.reviews__head {
+  max-width: 640px;
+  margin: 0 auto clamp(2rem, 5vw, 3rem);
+}
+.reviews__title {
+  font-size: var(--fs-h2);
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+.reviews__rating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: 0.95rem;
+  color: var(--ink-2);
+}
+.reviews__rating strong {
+  color: var(--ink);
+}
+.stars {
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+.reviews__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-5);
+  align-items: stretch;
+}
+.review-card {
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  box-shadow: 0 10px 30px rgba(60, 40, 25, 0.05);
+}
+.review-card__mark {
+  position: absolute;
+  top: 0.35rem;
+  right: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--sand);
+}
+.review-card .stars {
+  font-size: 1rem;
+}
+.review-card__body {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--ink);
+  flex: 1;
+}
+.review-card__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.review-card__name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.review-card__product {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+@media (max-width: 900px) {
+  .reviews__grid {
+    grid-template-columns: 1fr;
+    max-width: 540px;
+    margin-inline: auto;
+  }
+}
+
+/* ------------------------------ OUR STORY ---------------------------- */
+.story {
+  position: relative;
+  min-height: clamp(460px, 72vh, 640px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  color: #fff;
+  background: #5a3826;
+}
+.story__bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 140%;
+  z-index: 0;
+  background: #5a3826 center / cover no-repeat;
+  background-image: url("https://swissarabian.com/cdn/shop/files/Our-story-banner-for-homepage-_desktop_1024x1024.jpg?v=1706165511");
+  will-change: transform;
+}
+.story__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(40, 16, 8, 0.42),
+    rgba(40, 16, 8, 0.62)
+  );
+}
+.story__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 42rem;
+  padding: clamp(3.5rem, 10vw, 6rem) var(--gutter, 1.5rem);
+}
+.story__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 0 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #f0c4ad;
+}
+.story__eyebrow::before {
+  content: "";
+  width: 34px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.75;
+}
+.story__title {
+  margin: 0 0 1.15rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 500;
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 1px 24px rgba(0, 0, 0, 0.28);
+}
+.story__title em {
+  font-style: italic;
+  font-weight: 400;
+  color: inherit;
+}
+.story__text {
+  margin: 0 auto 1.75rem;
+  max-width: 36rem;
+  color: #f3e6dd;
+  line-height: 1.65;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+}
+.story__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--copper);
+  border: 0;
+  border-radius: 2px;
+  text-decoration: none;
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+.story__cta:hover {
+  background: var(--copper-deep);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .story__bg {
+    top: 0;
+    height: 100%;
+  }
+}
+
+/* ------------------------ SUBSCRIPTION PLANS ------------------------- */
+.plans {
+  background: var(--cream-2);
+}
+.plans__head {
+  max-width: 60ch;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+.plans__title {
+  font-size: var(--fs-h2);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+.plans__lead {
+  color: var(--ink-2);
+}
+
+.plans__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-5);
+  align-items: stretch;
+}
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.25rem, 2.1vw, 1.85rem);
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.plan-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px rgba(60, 40, 25, 0.08);
+}
+/* Featured (middle) plan — copper frame + soft lift. */
+.plan-card--featured {
+  border: 2px solid var(--copper);
+  box-shadow: 0 24px 56px rgba(60, 40, 25, 0.1);
+}
+.plan-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 1.6rem;
+}
+.plan-card__name {
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.plan-card__badge {
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--copper);
+  padding: 0.28rem 0.52rem;
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+.plan-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.plan-card__amount {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.plan-card__per {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+.plan-card__desc {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+}
+.plan-card__rule {
+  width: 100%;
+  height: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: var(--sp-1) 0;
+}
+.plan-card__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+  flex: 1;
+}
+.plan-card__features li {
+  position: relative;
+  padding-left: 1.45rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+.plan-card__features li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.22em;
+  width: 11px;
+  height: 6px;
+  border-left: 1.6px solid var(--copper);
+  border-bottom: 1.6px solid var(--copper);
+  transform: rotate(-45deg);
+}
+.plan-card__cta {
+  margin-top: var(--sp-2);
+}
+
+@media (max-width: 900px) {
+  .plans__grid {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+    margin-inline: auto;
+  }
+  .plan-card--featured {
+    order: -1;
+  } /* surface the popular plan first on mobile */
+}
+
+/* ---------------------------- RESPONSIVE ----------------------------- */
+@media (max-width: 960px) {
+  /* (former story split — now the reviews strip handles its own responsive) */
+}
+@media (max-width: 1100px) {
+  .collection-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 420px;
+  }
+}
+@media (max-width: 760px) {
+  .collection-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 280px;
+  }
+  .section-head--row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+}
+@media (max-width: 480px) {
+  .collection-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: 320px;
+  }
+  .subscribe__form {
+    flex-direction: column;
+  }
+  .subscribe__form .btn {
+    width: 100%;
+  }
+}

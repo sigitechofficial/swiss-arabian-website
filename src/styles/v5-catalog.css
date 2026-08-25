@@ -1,0 +1,386 @@
+/* =============================================================
+   PRODUCT CATALOG — "all products" / collection listing page.
+   Mirrors the `v5/products.html` design variant: breadcrumb +
+   Ounass-style collection banner, sticky filter rail, toolbar
+   with live count + sort, and the same product-card treatment
+   (incl. ingredients ::before hover) already used on the landing
+   page's "Our products" strip — see `.products-band .product-card*`
+   rules further up this stylesheet for the card itself.
+   ============================================================= */
+
+.crumbs {
+  padding-block-start: clamp(1.25rem, 3vh, 2rem);
+}
+.crumbs__list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--ink-2, #6b5f53);
+}
+.crumbs__list li + li::before {
+  content: "/";
+  margin-inline-end: 0.5rem;
+  color: var(--line);
+}
+.crumbs__list a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur) var(--ease);
+}
+.crumbs__list a:hover {
+  color: var(--copper);
+}
+.crumbs__list li[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.collection-head {
+  padding-block-end: clamp(2rem, 4vw, 3rem);
+  background: var(--cream);
+}
+
+.collection-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  margin-top: clamp(1rem, 2.5vh, 1.75rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #fff;
+}
+.collection-hero__media {
+  width: 100%;
+  height: 100%;
+  min-height: clamp(260px, 32vh, 380px);
+  max-height: clamp(300px, 40vh, 420px);
+  object-fit: cover;
+  object-position: center 30%;
+}
+.collection-hero__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.15rem;
+  padding: clamp(2rem, 3.5vw, 3.5rem) clamp(1.5rem, 4vw, 4.5rem);
+  background: var(--ink);
+  color: var(--cream);
+}
+.collection-head__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--beige);
+}
+.collection-head__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3.15rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.collection-head__em {
+  font-style: normal;
+  color: var(--beige);
+}
+.collection-head__intro {
+  margin: 0.9rem 0 0;
+  max-width: 52ch;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: rgba(250, 246, 238, 0.78);
+}
+
+/* --- Catalogue layout: filter rail + toolbar + grid --------- */
+
+.grid-band {
+  padding-block: 0 clamp(3rem, 6vw, 5rem);
+  background: var(--cream);
+}
+
+.catalog {
+  display: grid;
+  grid-template-columns: clamp(200px, 17vw, 250px) minmax(0, 1fr);
+  gap: clamp(2rem, 3.5vw, 4rem);
+  align-items: start;
+}
+
+.filters-rail {
+  position: sticky;
+  top: calc(var(--site-header-h, 9.25rem) + 1rem);
+  align-self: start;
+  padding-block-end: 1.5rem;
+}
+.filters-rail__title {
+  margin: 0 0 var(--sp-3);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.filters-rail__group {
+  margin-block-start: var(--sp-4);
+}
+.filters-rail__group:first-of-type {
+  margin-block-start: 0;
+}
+.filters-rail__label {
+  margin: 0 0 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.filters-rail__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rail-filter {
+  display: block;
+  width: 100%;
+  padding: 0.32rem 0 0.32rem 0.75rem;
+  font-size: 0.84rem;
+  text-align: start;
+  color: var(--ink-2, #6b5f53);
+  background: none;
+  border: none;
+  border-inline-start: 1px solid var(--line);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.rail-filter:hover {
+  color: var(--ink);
+  border-inline-start-color: var(--copper);
+}
+.rail-filter[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+  border-inline-start: 2px solid var(--copper);
+  padding-inline-start: calc(0.75rem - 1px);
+}
+.rail-filter__count {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--ink-2, #a09280);
+}
+
+/* Dual-thumb price slider */
+.price-range {
+  margin-block-start: 0.2rem;
+}
+.price-range__values {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--ink-2, #6b5f53);
+}
+.price-range__values strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.price-range__slider {
+  position: relative;
+  height: 28px;
+}
+.price-range__track,
+.price-range__fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.price-range__track {
+  inset-inline: 0;
+  background: var(--line);
+}
+.price-range__fill {
+  background: var(--copper);
+}
+.price-range__slider input[type="range"] {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.price-range__slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+.price-range__slider input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--copper);
+  box-shadow: 0 0 0 1px var(--copper);
+  cursor: pointer;
+}
+.price-range__slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+.price-range__slider input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--copper);
+  box-shadow: 0 0 0 1px var(--copper);
+  cursor: pointer;
+}
+
+/* --- Toolbar -------------------------------------------------- */
+
+.catalog__main {
+  min-width: 0;
+}
+.catalog__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-block-end: var(--sp-4);
+}
+.catalog__count {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-2, #6b5f53);
+}
+.catalog__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.catalog__sort-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.catalog__sort-select {
+  min-height: 40px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease);
+}
+.catalog__sort-select:hover,
+.catalog__sort-select:focus {
+  border-color: var(--copper);
+}
+
+.app-filters-btn {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* --- Grid: 3 across, reuses `.products-band .product-card` --- */
+
+.products-band .catalog-grid,
+.products-band .product-grid {
+  display: grid;
+  /* Fixed-width tracks (not `1fr`) — 2026-08-25 review: the 3-up cards
+     read too large vs. the landing strip's cards. Sizing the TRACK
+     itself (rather than capping `.product-card`'s own max-width inside
+     a stretchy `1fr` track) keeps the gap between cards to exactly the
+     `gap` value below; capping the card alone left extra "slack" inside
+     every column that stacked on top of the real gap, doubling the
+     visual space between cards. Any leftover row width just becomes a
+     single margin at the row's end instead of being split per-card. */
+  grid-template-columns: repeat(3, minmax(0, 268px));
+  gap: clamp(2rem, 3vw, 3rem) clamp(1.25rem, 2vw, 2rem);
+  margin: 0;
+  padding-block-start: var(--sp-5);
+  list-style: none;
+}
+.products-band .product-grid .product-card {
+  flex: none;
+}
+
+.grid-band__empty {
+  padding: var(--sp-6) 0;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--ink-2, #6b5f53);
+}
+
+@media (max-width: 1080px) {
+  .products-band .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .collection-hero {
+    grid-template-columns: 1fr;
+  }
+  .collection-hero__media {
+    min-height: 220px;
+    max-height: 260px;
+  }
+  .catalog {
+    grid-template-columns: 1fr;
+  }
+  .filters-rail {
+    position: static;
+    display: none;
+  }
+  .filters-rail--open {
+    display: block;
+  }
+  .app-filters-btn {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 560px) {
+  .products-band .product-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 1rem;
+  }
+}

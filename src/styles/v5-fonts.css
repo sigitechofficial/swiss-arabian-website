@@ -1,0 +1,49 @@
+/* Benton Sans Wide — local brand webfont from v5. */
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-200.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-300.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-500.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Benton Sans Wide";
+  src: url("/fonts/benton-sans-wide-900.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}

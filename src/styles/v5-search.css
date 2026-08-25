@@ -1,0 +1,159 @@
+/* Header search overlay — ported from `v5/landing.html` (`.ai-search*`)
+   + `v5/search.js`'s live-filter behaviour, re-themed onto this app's
+   design tokens (`--ink`, `--line`, `--cream`, `--radius-lg`, `--dur`,
+   `--ease`). Static local product data only — no live search API. */
+
+body.is-search-open { overflow: hidden; }
+
+.ai-search {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: auto;
+}
+
+.ai-search-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 20, 17, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+/* Framer Motion (`SearchOverlay`'s `dockVariants`) drives the actual
+   opacity/transform entrance — this just centers the dock; `will-change`
+   keeps the scale+translate animation on the compositor. */
+.ai-search-dock {
+  position: absolute;
+  left: 50%;
+  top: 88px;
+  width: min(720px, calc(100% - 32px));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  will-change: transform, opacity;
+}
+
+.ai-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 56px;
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
+}
+
+.ai-search-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--white);
+  font: inherit;
+  font-size: 0.95rem;
+  -webkit-appearance: none;
+}
+
+.ai-search-bar input::-webkit-search-cancel-button { display: none; }
+.ai-search-bar input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+.ai-search-circle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+
+.ai-search-circle:hover { background: rgba(255, 255, 255, 0.16); }
+.ai-search-circle.ai-search-send { background: var(--copper); }
+.ai-search-circle.ai-search-send:hover { background: var(--copper-deep); }
+.ai-search-circle svg { width: 14px; height: 14px; }
+
+.ai-search-panel {
+  border-radius: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14);
+  max-height: min(62vh, 480px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ai-search-panel::-webkit-scrollbar { display: none; }
+
+.ai-search-kicker {
+  margin: 0;
+  padding: 16px 18px 8px;
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide, 0.08em);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.ai-search-results { list-style: none; margin: 0; padding: 4px 8px 12px; }
+
+.ai-search-hit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s var(--ease);
+}
+
+.ai-search-hit:hover { background: var(--cream-2); }
+
+.ai-search-hit img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: var(--sand);
+  flex-shrink: 0;
+}
+
+.ai-search-hit-copy { min-width: 0; }
+
+.ai-search-hit-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ai-search-hit-meta {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-search-empty {
+  margin: 0;
+  padding: 8px 18px 18px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .ai-search-dock { top: 64px; width: calc(100% - 20px); }
+}

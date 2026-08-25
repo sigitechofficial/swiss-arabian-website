@@ -1,0 +1,303 @@
+<header class="site-header">
+    <div class="topbar">
+      <div class="container topbar__inner">
+        <nav class="topbar__cats" aria-label="Shop by category">
+          <a class="topbar__cat" href="products.html" data-i18n="top.women">Women</a>
+          <a class="topbar__cat" href="products.html" data-i18n="top.men">Men</a>
+          <a class="topbar__cat" href="products.html" data-i18n="top.unisex">Unisex</a>
+        </nav>
+        <div class="topbar__utils">
+          <button class="topbar__region" type="button"><span class="topbar__flag" aria-hidden="true">🇦🇪</span>UAE <span class="topbar__change" data-i18n="top.change">Change</span></button>
+          <span class="topbar__sep" aria-hidden="true"></span>
+          <button class="topbar__lang" type="button" lang="ar" disabled aria-disabled="true" tabindex="-1">العربية</button>
+        </div>
+      </div>
+    </div>
+    <div class="container nav-shell">
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span><span></span><span class="visually-hidden">Open menu</span></button>
+      <a class="brand-link" href="landing.html" data-page="landing" aria-label="Swiss Arabian home">
+        <img src="assets/sa-logo-clear.png" alt="Swiss Arabian">
+      </a>
+      <div class="nav-actions">
+        <button class="icon-btn nav-actions__account" type="button" aria-label="Account">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        </button>
+        <div class="nav-utils">
+          <button class="icon-btn" type="button" id="search-open" aria-label="Search" aria-controls="ai-search-input" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </button>
+          <button class="icon-btn" type="button" id="cart-open" data-open-cart aria-label="Bag" aria-controls="cart-drawer">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+            <span class="bag-count" data-bag-count hidden aria-hidden="true">0</span>
+            <span class="visually-hidden">Bag (<span data-bag-count-sr>0</span> items)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <nav class="primary-nav" aria-label="Primary">
+      <ul class="primary-nav__list" role="list">
+        <li><a class="primary-nav__link" href="products.html" data-i18n="nav.launches">New Launches</a></li>
+        <li class="primary-nav__item" data-nav-item>
+          <a class="primary-nav__link" href="products.html" data-i18n="nav.perfumes">Perfumes</a>
+          <button class="primary-nav__caret" type="button" data-nav-disclosure aria-expanded="false" aria-controls="mega-perfumes">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg><span class="visually-hidden">Perfumes submenu</span>
+          </button>
+          <div class="mega" id="mega-perfumes" hidden>
+            <div class="mega__inner">
+              <div class="mega__cols">
+                <div class="mega__group">
+                  <p class="mega__heading" data-i18n="mega.type">Type</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Men</a></li>
+                    <li><a href="products.html">Women</a></li>
+                    <li><a href="products.html">Unisex</a></li>
+                  </ul>
+                </div>
+                <div class="mega__group">
+                  <p class="mega__heading" data-i18n="mega.collections">Collections</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Cities</a></li>
+                    <li><a href="products.html">Heritage</a></li>
+                    <li><a href="products.html">Shaghaf</a></li>
+                    <li><a href="products.html">Love</a></li>
+                    <li><a href="products.html">Wild</a></li>
+                    <li><a href="products.html">Harmony</a></li>
+                    <li><a href="products.html">Sawalef</a></li>
+                  </ul>
+                </div>
+                <div class="mega__group">
+                  <p class="mega__heading" data-i18n="mega.featured">Featured</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="detail.html">Gharaam</a></li>
+                    <li><a href="detail.html">Rose 01</a></li>
+                    <li><a href="detail.html">Shaghaf Oud</a></li>
+                    <li><a href="detail.html">Musk 07</a></li>
+                    <li><a href="detail.html">Casablanca</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mega__promo">
+                <div class="mega__promo-media">
+                  <img src="" alt="" loading="lazy" />
+                </div>
+                <p class="mega__promo-copy">Extrait de parfum, composed in Dubai since 1974.</p>
+                <a class="pill pill--solid mega__promo-cta" href="products.html">Shop perfumes</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="primary-nav__item" data-nav-item>
+          <a class="primary-nav__link" href="products.html" data-i18n="nav.oils">Perfume Oils</a>
+          <button class="primary-nav__caret" type="button" data-nav-disclosure aria-expanded="false" aria-controls="mega-oils">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg><span class="visually-hidden">Perfume Oils submenu</span>
+          </button>
+          <div class="mega" id="mega-oils" hidden>
+            <div class="mega__inner">
+              <div class="mega__cols">
+                <div class="mega__group">
+                  <p class="mega__heading">Collections</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Concentrated Perfume Oils</a></li>
+                    <li><a href="products.html">Dehn El Oud</a></li>
+                    <li><a href="products.html">Malaki</a></li>
+                    <li><a href="products.html">Private</a></li>
+                    <li><a href="products.html">All perfume oils</a></li>
+                  </ul>
+                </div>
+                <div class="mega__group">
+                  <p class="mega__heading">Popular Oils</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="detail.html">Amaani</a></li>
+                    <li><a href="detail.html">Rasheeqa Rouge</a></li>
+                    <li><a href="detail.html">Layali Noir</a></li>
+                    <li><a href="detail.html">Layali Blanc</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mega__promo">
+                <div class="mega__promo-media">
+                  <img src="" alt="" loading="lazy" />
+                </div>
+                <p class="mega__promo-copy">Concentrated oils in the oldest tradition of the house.</p>
+                <a class="pill pill--solid mega__promo-cta" href="products.html">Shop perfume oils</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="primary-nav__item" data-nav-item>
+          <a class="primary-nav__link" href="products.html" data-i18n="nav.incense">Incense</a>
+          <button class="primary-nav__caret" type="button" data-nav-disclosure aria-expanded="false" aria-controls="mega-incense">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg><span class="visually-hidden">Incense submenu</span>
+          </button>
+          <div class="mega" id="mega-incense" hidden>
+            <div class="mega__inner">
+              <div class="mega__cols">
+                <div class="mega__group">
+                  <p class="mega__heading">Collections</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Oud Muattar</a></li>
+                    <li><a href="products.html">Bakhoor</a></li>
+                    <li><a href="products.html">All incense</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mega__promo">
+                <div class="mega__promo-media">
+                  <img src="" alt="" loading="lazy" />
+                </div>
+                <p class="mega__promo-copy">Oud muattar, prepared for the ritual at home.</p>
+                <a class="pill pill--solid mega__promo-cta" href="products.html">Shop incense</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="primary-nav__item" data-nav-item>
+          <a class="primary-nav__link" href="products.html" data-i18n="nav.bestsellers">Best Sellers</a>
+          <button class="primary-nav__caret" type="button" data-nav-disclosure aria-expanded="false" aria-controls="mega-best">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg><span class="visually-hidden">Best Sellers submenu</span>
+          </button>
+          <div class="mega" id="mega-best" hidden>
+            <div class="mega__inner">
+              <div class="mega__cols">
+                <div class="mega__group">
+                  <p class="mega__heading">Shop by</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Trending</a></li>
+                    <li><a href="products.html">Perfume best sellers</a></li>
+                    <li><a href="products.html">Perfume oil best sellers</a></li>
+                    <li><a href="products.html">Incense best sellers</a></li>
+                    <li><a href="products.html">All best sellers</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mega__promo">
+                <div class="mega__promo-media mega__promo-media--cover">
+                  <img src="" alt="" loading="lazy" />
+                </div>
+                <p class="mega__promo-copy">The signatures our customers keep returning to.</p>
+                <a class="pill pill--solid mega__promo-cta" href="products.html">Shop best sellers</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="primary-nav__item" data-nav-item>
+          <a class="primary-nav__link" href="products.html" data-i18n="nav.collections">Collections</a>
+          <button class="primary-nav__caret" type="button" data-nav-disclosure aria-expanded="false" aria-controls="mega-collections">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg><span class="visually-hidden">Collections submenu</span>
+          </button>
+          <div class="mega" id="mega-collections" hidden>
+            <div class="mega__inner">
+              <div class="mega__cols">
+                <div class="mega__group">
+                  <p class="mega__heading">Houses</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Cities</a></li>
+                    <li><a href="products.html">Heritage</a></li>
+                    <li><a href="products.html">Shaghaf</a></li>
+                    <li><a href="products.html">Love</a></li>
+                    <li><a href="products.html">Wild</a></li>
+                    <li><a href="products.html">Harmony</a></li>
+                  </ul>
+                </div>
+                <div class="mega__group">
+                  <p class="mega__heading">Shop</p>
+                  <ul class="mega__list" role="list">
+                    <li><a href="products.html">Best Sellers</a></li>
+                    <li><a href="products.html">New In</a></li>
+                    <li><a href="products.html">Gift Sets</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mega__promo">
+                <div class="mega__promo-media mega__promo-media--cover">
+                  <img src="" alt="" loading="lazy" />
+                </div>
+                <p class="mega__promo-copy">Curated houses, each with its own character.</p>
+                <a class="pill pill--solid mega__promo-cta" href="products.html">Shop collections</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a class="primary-nav__link" href="products.html" data-i18n="nav.minis">Minis</a></li>
+        <li><a class="primary-nav__link" href="products.html" data-i18n="nav.bundles">Bundles</a></li>
+        <li><a class="primary-nav__link primary-nav__link--accent" href="products.html">Gift Sets</a></li>
+        <li><a class="primary-nav__link" href="products.html" data-i18n="nav.trending">Trending</a></li>
+      </ul>
+    </nav>
+    <div class="mobile-nav" id="mobile-nav" data-mobile-nav hidden>
+      <ul class="mobile-nav__list" role="list">
+        <li><a href="products.html">New Launches</a></li>
+          <li data-mobile-group>
+            <button class="mobile-nav__group-toggle" type="button" aria-expanded="false" aria-controls="msub-perfumes">
+              <span>Perfumes</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>
+            </button>
+            <ul class="mobile-nav__sub" id="msub-perfumes" role="list" hidden>
+              <li><a href="products.html">All perfumes</a></li>
+              <li class="mobile-nav__sub-label">Type</li>
+              <li><a href="products.html">Men</a></li>
+              <li><a href="products.html">Women</a></li>
+              <li><a href="products.html">Unisex</a></li>
+              <li class="mobile-nav__sub-label">Collections</li>
+              <li><a href="products.html">Cities</a></li>
+              <li><a href="products.html">Heritage</a></li>
+              <li><a href="products.html">Shaghaf</a></li>
+              <li><a href="products.html">Love</a></li>
+              <li><a href="products.html">Wild</a></li>
+              <li><a href="products.html">Harmony</a></li>
+            </ul>
+          </li>
+          <li data-mobile-group>
+            <button class="mobile-nav__group-toggle" type="button" aria-expanded="false" aria-controls="msub-oils">
+              <span>Perfume Oils</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>
+            </button>
+            <ul class="mobile-nav__sub" id="msub-oils" role="list" hidden>
+              <li><a href="products.html">Concentrated Perfume Oils</a></li>
+              <li><a href="products.html">Dehn El Oud</a></li>
+              <li><a href="products.html">Malaki</a></li>
+              <li><a href="products.html">Private</a></li>
+              <li><a href="products.html">All perfume oils</a></li>
+            </ul>
+          </li>
+          <li data-mobile-group>
+            <button class="mobile-nav__group-toggle" type="button" aria-expanded="false" aria-controls="msub-incense">
+              <span>Incense</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>
+            </button>
+            <ul class="mobile-nav__sub" id="msub-incense" role="list" hidden>
+              <li><a href="products.html">Oud Muattar</a></li>
+              <li><a href="products.html">Bakhoor</a></li>
+              <li><a href="products.html">All incense</a></li>
+            </ul>
+          </li>
+          <li data-mobile-group>
+            <button class="mobile-nav__group-toggle" type="button" aria-expanded="false" aria-controls="msub-best">
+              <span>Best Sellers</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>
+            </button>
+            <ul class="mobile-nav__sub" id="msub-best" role="list" hidden>
+              <li><a href="products.html">All best sellers</a></li>
+              <li><a href="products.html">Trending</a></li>
+              <li><a href="products.html">Perfume best sellers</a></li>
+              <li><a href="products.html">Perfume oil best sellers</a></li>
+              <li><a href="products.html">Incense best sellers</a></li>
+            </ul>
+          </li>
+          <li data-mobile-group>
+            <button class="mobile-nav__group-toggle" type="button" aria-expanded="false" aria-controls="msub-collections">
+              <span>Collections</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>
+            </button>
+            <ul class="mobile-nav__sub" id="msub-collections" role="list" hidden>
+              <li><a href="products.html">Cities</a></li>
+              <li><a href="products.html">Heritage</a></li>
+              <li><a href="products.html">Shaghaf</a></li>
+              <li><a href="products.html">Love</a></li>
+              <li><a href="products.html">Wild</a></li>
+              <li><a href="products.html">Harmony</a></li>
+              <li><a href="products.html">Gift Sets</a></li>
+            </ul>
+          </li>
+        <li><a href="products.html">Minis</a></li>
+        <li><a href="products.html">Bundles</a></li>
+        <li><a class="mobile-nav__link--accent" href="products.html">Gift Sets</a></li>
+        <li><a href="products.html">Trending</a></li>
+      </ul>
+    </div>
+  </header>

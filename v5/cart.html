@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your Bag · Swiss Arabian</title>
+  <meta name="description" content="Review your Swiss Arabian selections before checkout.">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="checkout.css">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="chrome.css">
+</head>
+<body class="products-b shop-flow">
+  <a class="skip-link visually-hidden" href="#main">Skip to content</a>
+<div data-site-header></div>
+
+  <main id="main" class="shop-main">
+    <section class="collection-head" aria-labelledby="cart-heading">
+      <div class="container container--full">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <ol class="crumbs__list" role="list">
+            <li><a href="landing.html">Home</a></li>
+            <li aria-current="page">Bag</li>
+          </ol>
+        </nav>
+        <header class="cart-page-head">
+          <p class="collection-head__eyebrow">Your bag · <span id="cart-page-count">0 items</span></p>
+          <h1 class="collection-head__title" id="cart-heading">The <em class="collection-head__em">bag.</em></h1>
+          <p class="collection-head__intro cart-page-lede">Review your selections before checkout. Free samples arrive with every order — chosen to match your notes.</p>
+        </header>
+
+        <div class="cart-ship-banner" id="cart-page-ship" aria-live="polite">
+          <p id="cart-page-ship-msg"></p>
+          <div class="cart-ship-track"><div class="cart-ship-fill" id="cart-page-ship-fill"></div></div>
+        </div>
+
+        <div class="cart-layout" id="cart-page-layout">
+          <div class="cart-items-col" id="cart-page-items" aria-live="polite"></div>
+          <aside class="cart-summary" aria-label="Order summary">
+            <h2>Summary</h2>
+            <dl class="cart-totals">
+              <div><dt>Subtotal</dt><dd id="cart-sum-sub" dir="ltr">AED 0.00</dd></div>
+              <div><dt>Shipping</dt><dd id="cart-sum-ship">Calculated below</dd></div>
+              <div class="cart-totals-line"><dt>Total</dt><dd id="cart-sum-total" dir="ltr">AED 0.00</dd></div>
+            </dl>
+            <a class="cart-cta" href="checkout.html" id="cart-page-checkout">
+              <span>Proceed to checkout</span>
+              <b class="arrow" aria-hidden="true">↗</b>
+            </a>
+            <a class="btn-secondary cart-continue" href="products.html">Continue shopping</a>
+            <p class="cart-hint">Complimentary shipping on orders over <strong>AED 250.00</strong>.</p>
+            <p class="cart-hint">30-day fragrance guarantee. Returns are on us.</p>
+            <div class="cart-badges">
+              <span>SSL Secured</span>
+              <i aria-hidden="true">·</i>
+              <span>Ships from Sharjah</span>
+            </div>
+          </aside>
+        </div>
+
+        <section class="cart-empty-state" id="cart-page-empty" hidden>
+          <p class="collection-head__eyebrow">Nothing yet</p>
+          <h2 class="collection-head__title">Your bag is <em class="collection-head__em">empty.</em></h2>
+          <p class="collection-head__intro">Every scent is composed in small lots. Start with a signature.</p>
+          <a class="cart-cta cart-cta--inline" href="products.html">
+            <span>Explore the collection</span>
+            <b class="arrow" aria-hidden="true">↗</b>
+          </a>
+        </section>
+      </div>
+    </section>
+  </main>
+<div data-site-footer></div>
+<script src="shell.js"></script>
+  <script>
+/* ============================================================
+   nav-light.js — shared mega-navigation behaviour
+   Owns: desktop mega panels (hover + click + keyboard) and the
+   mobile drawer's accordion sub-groups. It does NOT own the
+   drawer open/close toggle — each page's own script keeps that,
+   so there is no double-binding.
+   Progressive enhancement: without JS the links still work and
+   nothing is trapped open.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  function qs(sel, scope) { return (scope || document).querySelector(sel); }
+  function qsa(sel, scope) {
+    return Array.prototype.slice.call((scope || document).querySelectorAll(sel));
+  }
+
+  /* ---- Desktop mega panels ---- */
+  function initMega() {
+    var items = qsa("[data-nav-item]");
+    if (!items.length) return;
+
+    var hoverable = window.matchMedia("(hover: hover) and (pointer: fine)");
+    var openItem = null;
+    var closeTimer = null;
+
+    function parts(item) {
+      return { button: qs("[data-nav-disclosure]", item), panel: qs(".mega", item) };
+    }
+    function setState(item, isOpen) {
+      var p = parts(item);
+      if (p.button) p.button.setAttribute("aria-expanded", String(isOpen));
+      if (p.panel) p.panel.hidden = !isOpen;
+      item.classList.toggle("is-open", isOpen);
+    }
+    function close(returnFocus) {
+      if (!openItem) return;
+      var p = parts(openItem);
+      setState(openItem, false);
+      if (returnFocus && p.button) p.button.focus();
+      openItem = null;
+    }
+    function open(item) {
+      if (openItem === item) return;
+      close(false);
+      setState(item, true);
+      openItem = item;
+    }
+
+    items.forEach(function (item) {
+      var p = parts(item);
+      if (!p.button || !p.panel) return;
+
+      p.button.addEventListener("click", function () {
+        if (openItem === item) { close(false); } else { open(item); }
+      });
+      item.addEventListener("mouseenter", function () {
+        if (!hoverable.matches) return;
+        window.clearTimeout(closeTimer);
+        open(item);
+      });
+      item.addEventListener("mouseleave", function () {
+        if (!hoverable.matches) return;
+        window.clearTimeout(closeTimer);
+        closeTimer = window.setTimeout(function () {
+          if (openItem === item) close(false);
+        }, 160);
+      });
+      item.addEventListener("focusout", function (event) {
+        if (openItem === item && !item.contains(event.relatedTarget)) close(false);
+      });
+      setState(item, false);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && openItem) close(true);
+    });
+  }
+
+  /* ---- Mobile accordion sub-groups ---- */
+  function initMobileGroups() {
+    qsa("[data-mobile-group]").forEach(function (group) {
+      var toggle = qs(".mobile-nav__group-toggle", group);
+      var sub = qs(".mobile-nav__sub", group);
+      if (!toggle || !sub) return;
+
+      function setExpanded(isExpanded) {
+        toggle.setAttribute("aria-expanded", String(isExpanded));
+        sub.hidden = !isExpanded;
+      }
+      toggle.addEventListener("click", function () {
+        setExpanded(toggle.getAttribute("aria-expanded") !== "true");
+      });
+      setExpanded(false);
+    });
+  }
+
+  function init() { if (window.__saShellNav) return; initMega(); initMobileGroups(); }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+  <script>
+(function () {
+  "use strict";
+  function qs(s, r) { return (r || document).querySelector(s); }
+  function qsa(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function initMobileNav() { if (window.__saShellNav) return;
+    var toggle = qs(".nav-toggle");
+    var drawer = qs("#mobile-nav");
+    if (!toggle || !drawer) return;
+    var label = qs(".visually-hidden", toggle);
+    function setOpen(open, returnFocus) {
+      toggle.setAttribute("aria-expanded", String(open));
+      drawer.hidden = !open;
+      if (label) label.textContent = open ? "Close menu" : "Open menu";
+      if (!open && returnFocus) toggle.focus();
+    }
+    toggle.addEventListener("click", function () {
+      setOpen(toggle.getAttribute("aria-expanded") !== "true", false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") setOpen(false, true);
+    });
+    qsa("a", drawer).forEach(function (a) {
+      a.addEventListener("click", function () { setOpen(false, false); });
+    });
+    window.matchMedia("(min-width: 1280px)").addEventListener("change", function (e) {
+      if (e.matches) setOpen(false, false);
+    });
+    setOpen(false, false);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initMobileNav);
+  else initMobileNav();
+})();
+</script>
+  <script src="cart.js"></script>
+  <script src="search.js"></script>
+  
+</body>
+</html>
