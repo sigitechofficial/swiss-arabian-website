@@ -71,7 +71,13 @@ const catalogMediaPatterns = [
 ].filter(Boolean) as RemotePattern[];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Next.js 16.3 fails to emit `.next/next-server.js.nft.json` when
+  // `output: "standalone"` is combined with Vercel's build adapter, which
+  // breaks Vercel's `onBuildComplete` step with an ENOENT on that file
+  // (https://github.com/vercel/next.js/issues/96646). Standalone is only
+  // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
+  // already produces its own optimized deployment output.
+  output: process.env.VERCEL ? undefined : "standalone",
   allowedDevOrigins: lanDevOrigins(),
   images: {
     qualities: [75, 90, 95],
