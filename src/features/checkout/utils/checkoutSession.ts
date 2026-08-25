@@ -7,6 +7,11 @@ const ORDER_ID_KEY = "sa_order_id";
 const ORDER_NUMBER_KEY = "sa_order_number";
 const ORDER_ACCESS_TOKEN_KEY = "sa_order_access_token";
 
+// Payment-specific keys (sessionStorage — cleared after payment confirmed)
+const ZONE_PAYMENT_METHOD_ID_KEY = "sa_zone_payment_method_id";
+const PAYMENT_TRANSACTION_ID_KEY = "sa_payment_transaction_id";
+const PAY_ATTEMPT_KEY = "sa_pay_attempt";
+
 // ─── Checkout session (sessionStorage — tab-scoped) ──────────────────────────
 
 export function getStoredCheckoutSessionId(): string | null {
@@ -94,4 +99,52 @@ export function getStoredGuestOrderAccessToken(): string | null {
   } catch {
     return null;
   }
+}
+
+// ─── Payment state (sessionStorage) ──────────────────────────────────────────
+
+function ssGet(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+function ssSet(key: string, value: string): void {
+  if (typeof window === "undefined") return;
+  try { sessionStorage.setItem(key, value); } catch { /* ignore */ }
+}
+function ssRemove(key: string): void {
+  if (typeof window === "undefined") return;
+  try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+}
+
+/** The zonePaymentMethodId chosen during checkout — needed for payment retry. */
+export function storeZonePaymentMethodId(id: string): void {
+  ssSet(ZONE_PAYMENT_METHOD_ID_KEY, id);
+}
+export function getStoredZonePaymentMethodId(): string | null {
+  return ssGet(ZONE_PAYMENT_METHOD_ID_KEY);
+}
+
+/** The paymentTransactionId returned by initiate — useful for logging/debugging. */
+export function storePaymentTransactionId(id: string): void {
+  ssSet(PAYMENT_TRANSACTION_ID_KEY, id);
+}
+export function getStoredPaymentTransactionId(): string | null {
+  return ssGet(PAYMENT_TRANSACTION_ID_KEY);
+}
+
+/** Idempotency attempt counter — increments on each retry. Starts at 1. */
+export function getPayAttempt(): number {
+  return Number(ssGet(PAY_ATTEMPT_KEY) ?? "1");
+}
+export function incrementPayAttempt(): number {
+  const next = getPayAttempt() + 1;
+  ssSet(PAY_ATTEMPT_KEY, String(next));
+  return next;
+}
+
+/** Clear all payment-specific session state after payment is confirmed (success or final failure). */
+export function clearPaymentState(): void {
+  ssRemove(ZONE_PAYMENT_METHOD_ID_KEY);
+  ssRemove(PAYMENT_TRANSACTION_ID_KEY);
+  ssRemove(PAY_ATTEMPT_KEY);
 }

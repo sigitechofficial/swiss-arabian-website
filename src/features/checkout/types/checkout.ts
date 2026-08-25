@@ -139,6 +139,8 @@ export interface OrderLineSummary {
   unitPrice: string;
   lineTotal: string;
   currencyCode: string;
+  /** May be present if the backend includes product image in order line detail */
+  imageUrl?: string | null;
 }
 
 export interface OrderAddressSummary {

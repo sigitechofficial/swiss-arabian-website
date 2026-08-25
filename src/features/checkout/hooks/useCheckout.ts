@@ -23,6 +23,8 @@ import {
   storeOrderId,
   storeOrderNumber,
   storeGuestOrderAccessToken,
+  storePaymentTransactionId,
+  getPayAttempt,
 } from "../utils/checkoutSession";
 import type {
   CheckoutSessionResponse,
@@ -308,13 +310,26 @@ export function useCheckout(): UseCheckoutReturn {
         clearCheckoutSessionId();
 
         // C.7 — Initiate payment
-        const payAttemptKey = `pay-${order.orderId}-1`;
+        // Payment method is already selected on the checkout session — backend reads it from there.
+        // Do NOT send zonePaymentMethodId (forbidNonWhitelisted — causes 400).
+        const attempt = getPayAttempt();
+        const payAttemptKey = `pay-${order.orderId}-${attempt}`;
+
+        const returnUrl = `${window.location.origin}/checkout/payment/success`;
+        const cancelUrl = `${window.location.origin}/checkout/payment/cancel`;
+
         const payment = await initiatePayment(order.orderId, {
           idempotencyKey: payAttemptKey,
+          returnUrl,
+          cancelUrl,
         });
 
         if (payment.paymentAction === "REDIRECT" && payment.redirectUrl) {
-          // Hard redirect to payment gateway
+          // Store transaction ID for debugging
+          if (payment.paymentTransactionId) {
+            storePaymentTransactionId(payment.paymentTransactionId);
+          }
+          // Hard redirect to payment gateway — never use router.push here
           window.location.href = payment.redirectUrl;
           return;
         }

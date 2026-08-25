@@ -62,6 +62,15 @@ export async function getOrder(orderId: string): Promise<OrderResponse> {
 
 type InitiatePaymentDto = {
   idempotencyKey?: string;
+  /** Where Paymob redirects the browser after a successful payment */
+  returnUrl?: string;
+  /** Where Paymob redirects the browser when the customer cancels */
+  cancelUrl?: string;
+  /**
+   * Optional payment method override (use paymentMethodId, NOT zonePaymentMethodId).
+   * Omit entirely when the method was already selected during checkout — backend reads it from the session.
+   */
+  paymentMethodId?: string;
 };
 
 /**

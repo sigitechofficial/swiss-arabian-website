@@ -31,7 +31,7 @@ export function ResetPasswordPageView() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       identifier: presetIdentifier,
-      code: "",
+      code: 0,
       newPassword: "",
       confirmPassword: "",
     },
@@ -64,7 +64,7 @@ export function ResetPasswordPageView() {
           try {
             await resetPassword({
               identifier: toLoginIdentifier(values.identifier),
-              code: values.code.trim(),
+              code: values.code,
               newPassword: values.newPassword,
             });
             // All sessions revoked on BE — clear local tokens

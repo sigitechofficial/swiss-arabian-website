@@ -39,7 +39,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <InsiderScripts />
       </head>
-      <body className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary">
+      <body className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary" suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

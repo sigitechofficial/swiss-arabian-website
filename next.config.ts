@@ -69,6 +69,17 @@ const catalogMediaPatterns = [
       "ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
     pathname: "/catalog/media/**",
   },
+  // All LAN IPs on this machine — covers any 192.168.x.x backend in dev
+  ...lanDevOrigins().map((ip) => ({
+    protocol: "http" as const,
+    hostname: ip,
+    port: "3000",
+    pathname: "/catalog/media/**",
+  })),
+  // Any host on port 3000 in local dev (backend may return its own LAN IP in image URLs)
+  ...(process.env.NODE_ENV === "development"
+    ? [{ protocol: "http" as const, hostname: "**", port: "3000", pathname: "/catalog/media/**" }]
+    : []),
 ].filter(Boolean) as RemotePattern[];
 
 const nextConfig: NextConfig = {
