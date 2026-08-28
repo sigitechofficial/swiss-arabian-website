@@ -1873,28 +1873,9 @@ html[dir="rtl"] .reel-title {
     background: var(--copper-deep);
     border-color: var(--copper-deep);
   }
-  .campaign--bundles .shop-look {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
-    z-index: 120;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    max-height: min(78vh, 520px);
-    overflow-y: auto;
-    border-radius: 14px 14px 0 0;
-    box-shadow: 0 -12px 40px rgba(10, 6, 3, 0.4);
-  }
+  .campaign--bundles .shop-look,
   .campaign--bundles .shop-look__restore {
-    display: inline-flex;
-    position: absolute;
-    right: var(--edge, 1rem);
-    top: var(--edge, 1rem);
-    bottom: auto;
-    z-index: 2;
+    display: none !important;
   }
 }
 
@@ -2589,6 +2570,19 @@ html[dir="rtl"] .trending__title-row {
   .collection-grid {
     grid-template-columns: repeat(2, 1fr);
     grid-auto-rows: 420px;
+  }
+  /* The extra `scale(1.38)` + bottom anchor on `.collection-card__art` is
+     tuned for the desktop grid's very tall, narrow columns (600px rows) —
+     it crops out the baked-in headline near the top while still covering
+     the box. Tablet/mobile rows are much shorter and wider, so that same
+     zoom+bottom-anchor combo crops almost down to the surface/backdrop at
+     the bottom of each shot, cutting the actual bottles out of frame. */
+  .collection-card__art {
+    object-position: center 24%;
+    transform: scale(1.08);
+  }
+  .collection-card:hover .collection-card__art {
+    transform: scale(1.12);
   }
 }
 @media (max-width: 760px) {

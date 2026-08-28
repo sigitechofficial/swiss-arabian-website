@@ -11,7 +11,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(420px, 100vw);
+  /* Fill whatever width the MUI `Drawer`'s `Paper` resolves to (100% up to
+     the `sm` breakpoint, 420px above it — see `CartSideSheet`'s `sx`) rather
+     than re-deriving a width here. The two used to disagree (this was
+     `min(420px, 100vw)`), so on viewports between 420px and 599px — common
+     phones/phablets in that "xs" range — the Paper stretched full-width but
+     this inner panel stayed capped at 420px, leaving an unstyled gap that
+     exposed the page behind the drawer. */
+  width: 100%;
   height: 100%;
   background: var(--cream, #faf6ee);
   color: var(--ink, #1a1512);

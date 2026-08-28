@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useAddToCart } from "@/features/cart";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
@@ -56,17 +56,75 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   const content = (slug && PRODUCT_DETAIL_CONTENT[slug]) || FALLBACK_CONTENT;
 
   const [activeImage, setActiveImage] = useState(0);
-  const [activeTab, setActiveTab] = useState<TabId>("notes");
+  const [activeTab, setActiveTab] = useState<TabId | null>("notes");
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [status, setStatus] = useState("");
+  const [buyDocked, setBuyDocked] = useState(false);
+  const [buyBarHeight, setBuyBarHeight] = useState<number | null>(null);
+  const buySlotRef = useRef<HTMLDivElement>(null);
+  const buyBarRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, isPending } = useAddToCart();
 
+  // Mobile buy dock — same behaviour as v5/detail.html: pin the *same*
+  // Add-to-bag row to the viewport bottom while its natural slot is still
+  // below the fold (so it stays reachable while scrolling the product
+  // image/copy), then release it back into flow the moment the slot
+  // reaches the bottom edge. From there it scrolls up with `.pdp-hero`
+  // and disappears when the next section starts — never a page-wide
+  // permanent fixed bar. Desktop is untouched.
+  useEffect(() => {
+    const slot = buySlotRef.current;
+    const bar = buyBarRef.current;
+    if (!slot || !bar || typeof window === "undefined") return;
+
+    const mq = window.matchMedia("(max-width: 767px)");
+
+    const measure = () => {
+      const h = bar.getBoundingClientRect().height;
+      if (h) setBuyBarHeight(h);
+      return h;
+    };
+
+    const syncDock = () => {
+      if (!mq.matches) {
+        setBuyDocked(false);
+        return;
+      }
+      const h = measure() || 72;
+      setBuyDocked(slot.getBoundingClientRect().top > window.innerHeight - h + 1);
+    };
+
+    syncDock();
+    window.addEventListener("scroll", syncDock, { passive: true });
+    window.addEventListener("resize", syncDock);
+    mq.addEventListener("change", syncDock);
+    const resize = new ResizeObserver(syncDock);
+    resize.observe(bar);
+
+    return () => {
+      window.removeEventListener("scroll", syncDock);
+      window.removeEventListener("resize", syncDock);
+      mq.removeEventListener("change", syncDock);
+      resize.disconnect();
+    };
+  }, [slug]);
+
+  // The composition block renders as tabs on desktop (one panel must stay
+  // open) but collapses into an accordion below 767px (`.pdp-comp-tabs {
+  // display: none }` in v5-detail.css) — on that layout every item should
+  // start closed. `useLayoutEffect` (not `useEffect`) so this resolves
+  // before the first paint and the "Notes" panel never visibly flashes
+  // open first.
+  useLayoutEffect(() => {
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+    setActiveTab(isMobile ? null : "notes");
+  }, [slug]);
+
   useEffect(() => {
     setActiveImage(0);
-    setActiveTab("notes");
     setQuantity(1);
     setWished(false);
     setStatus("");
@@ -80,19 +138,34 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     return () => cancelAnimationFrame(id);
   }, [slug]);
 
+  const otherProducts = useMemo(() => {
+    if (!product) return [];
+    return CATALOG_PRODUCTS.filter((p) => p.slug !== product.slug);
+  }, [product]);
+
+  // "More from the 01 collection." — same collection line as the product
+  // being viewed, prioritised first.
   const related = useMemo(() => {
     if (!product) return [];
-    return CATALOG_PRODUCTS.filter((p) => p.slug !== product.slug)
+    return otherProducts
+      .slice()
       .sort(
         (a, b) =>
           (a.collection === product.collection ? -1 : 0) -
           (b.collection === product.collection ? -1 : 0),
       )
       .slice(0, 4);
-  }, [product]);
+  }, [otherProducts, product]);
+
+  // "You may also like." — a separate, broader pick (kept out of the
+  // collection strip above so the two rows don't repeat the same bottles).
+  const youMayAlsoLike = useMemo(() => {
+    const usedIds = new Set(related.map((item) => item.id));
+    return otherProducts.filter((item) => !usedIds.has(item.id)).slice(0, 4);
+  }, [otherProducts, related]);
 
   useEffect(() => {
-    related.forEach((item) => {
+    [...youMayAlsoLike, ...related].forEach((item) => {
       const hoverImg = item.imageUrls?.[1];
       if (hoverImg && hoverImg !== item.imageUrl) {
         const img = new Image();
@@ -100,7 +173,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         img.decode?.().catch(() => {});
       }
     });
-  }, [related]);
+  }, [youMayAlsoLike, related]);
 
   if (!product) {
     return (
@@ -225,66 +298,75 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 </li>
               </ul>
 
-              <div className="pdp-hero__buy">
-                <div className="pdp-qty">
+              <div
+                ref={buySlotRef}
+                className="pdp-buy-slot"
+                style={buyDocked && buyBarHeight ? { minHeight: buyBarHeight } : undefined}
+              >
+                <div
+                  ref={buyBarRef}
+                  className={`pdp-hero__buy${buyDocked ? " is-docked" : ""}`}
+                >
+                  <div className="pdp-qty">
+                    <button
+                      className="pdp-qty__btn"
+                      type="button"
+                      aria-label="Decrease quantity"
+                      disabled={quantity <= 1}
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                        <path d="M4 10h12" />
+                      </svg>
+                    </button>
+                    <span className="pdp-qty__value" aria-live="polite" aria-label="Quantity">
+                      {quantity}
+                    </span>
+                    <button
+                      className="pdp-qty__btn"
+                      type="button"
+                      aria-label="Increase quantity"
+                      onClick={() => setQuantity((q) => Math.min(9, q + 1))}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                        <path d="M10 4v12M4 10h12" />
+                      </svg>
+                    </button>
+                  </div>
+
                   <button
-                    className="pdp-qty__btn"
+                    className="pdp-hero__add"
                     type="button"
-                    aria-label="Decrease quantity"
-                    disabled={quantity <= 1}
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={isPending}
+                    onClick={async () => {
+                      await addToCart({
+                        sku: product.sku,
+                        variantId: product.variantId,
+                        slug: product.slug,
+                        title: product.title,
+                        imageUrl: product.imageUrl,
+                        price: product.price,
+                        currency: product.currency,
+                        quantity,
+                      });
+                      setStatus(`Added ${product.title} to your bag.`);
+                    }}
                   >
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                      <path d="M4 10h12" />
-                    </svg>
+                    {isPending ? "Adding…" : "Add to bag"}
                   </button>
-                  <span className="pdp-qty__value" aria-live="polite" aria-label="Quantity">
-                    {quantity}
-                  </span>
+
                   <button
-                    className="pdp-qty__btn"
+                    className="pdp-hero__wish"
                     type="button"
-                    aria-label="Increase quantity"
-                    onClick={() => setQuantity((q) => Math.min(9, q + 1))}
+                    aria-pressed={wished}
+                    aria-label={`Add ${product.title} to wishlist`}
+                    onClick={() => setWished((w) => !w)}
                   >
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                      <path d="M10 4v12M4 10h12" />
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                      <path d="M10 17s-6-4.35-6-8.5A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6 2.5c0 4.15-6 8.5-6 8.5z" />
                     </svg>
                   </button>
                 </div>
-
-                <button
-                  className="pdp-hero__add"
-                  type="button"
-                  disabled={isPending}
-                  onClick={async () => {
-                    await addToCart({
-                      sku: product.sku,
-                      variantId: product.variantId,
-                      slug: product.slug,
-                      title: product.title,
-                      imageUrl: product.imageUrl,
-                      price: product.price,
-                      currency: product.currency,
-                      quantity,
-                    });
-                    setStatus(`Added ${product.title} to your bag.`);
-                  }}
-                >
-                  {isPending ? "Adding…" : "Add to bag"}
-                </button>
-
-                <button
-                  className="pdp-hero__wish"
-                  type="button"
-                  aria-pressed={wished}
-                  aria-label={`Add ${product.title} to wishlist`}
-                  onClick={() => setWished((w) => !w)}
-                >
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                    <path d="M10 17s-6-4.35-6-8.5A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6 2.5c0 4.15-6 8.5-6 8.5z" />
-                  </svg>
-                </button>
               </div>
 
               <p className="pdp-hero__status" role="status">
@@ -375,12 +457,33 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {youMayAlsoLike.length ? (
+        <section className="pdp-related" aria-labelledby="also-like-heading">
+          <div className="container container--full">
+            <div className="pdp-related__head">
+              <h2 className="pdp-related__title" id="also-like-heading">
+                You may also <em className="pdp-related__em">like.</em>
+              </h2>
+              <Link className="pdp-related__all" href="/products">
+                See all
+              </Link>
+            </div>
+
+            <ul className="pdp-related__grid products-band" role="list">
+              {youMayAlsoLike.map((item) => (
+                <RelatedCard key={item.id} product={item} />
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+
       {related.length ? (
         <section className="pdp-related" aria-labelledby="related-heading">
           <div className="container container--full">
             <div className="pdp-related__head">
               <h2 className="pdp-related__title" id="related-heading">
-                You may also <em className="pdp-related__em">like.</em>
+                More from the 01 collection.
               </h2>
               <Link className="pdp-related__all" href="/products">
                 See all

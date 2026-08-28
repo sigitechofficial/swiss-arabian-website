@@ -6,6 +6,7 @@ import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { formatMoney } from "../../utils/formatMoney";
 
 export function LandingBundles() {
+  // Desktop-only corner card (hidden below 1024px in v5-landing.css).
   const [open, setOpen] = useState(true);
   const { data } = useLandingProducts(8);
   const bundleItems = (data?.products ?? []).slice(0, 2);

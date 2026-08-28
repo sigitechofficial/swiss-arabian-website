@@ -130,21 +130,47 @@ export function SiteHeader() {
       </div>
 
       <div className="container nav-shell">
-        <button
-          className="nav-toggle"
-          type="button"
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav"
-          onClick={() => setMobileOpen((open) => !open)}
-        >
-          <span />
-          <span />
-          <span />
-          <span className="visually-hidden">
-            {mobileOpen ? "Close menu" : "Open menu"}
-          </span>
-        </button>
+        <div className="nav-start">
+          <button
+            className="nav-toggle"
+            type="button"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            onClick={() => setMobileOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+            <span className="visually-hidden">
+              {mobileOpen ? "Close menu" : "Open menu"}
+            </span>
+          </button>
+          {/* Tablet/mobile-only copy of the search button, rendered right next
+              to the menu toggle — the desktop one further down (inside
+              `.nav-utils`) hides at that breakpoint instead of duplicating
+              visually. Same handler, so either one opens the same overlay. */}
+          <button
+            className="icon-btn nav-start__search"
+            type="button"
+            aria-label="Search"
+            aria-expanded={searchOpen}
+            aria-controls="ai-search"
+            onClick={() => setSearchOpen(true)}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+          </button>
+        </div>
         <Link className="brand-link" href="/" aria-label="Swiss Arabian home">
           <img src="/assets/sa-logo-clear.png" alt="Swiss Arabian" />
         </Link>
@@ -168,7 +194,7 @@ export function SiteHeader() {
           </Link>
           <div className="nav-utils">
             <button
-              className="icon-btn"
+              className="icon-btn nav-utils__search"
               type="button"
               aria-label="Search"
               aria-expanded={searchOpen}
