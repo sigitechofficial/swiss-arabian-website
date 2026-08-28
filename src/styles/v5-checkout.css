@@ -64,8 +64,36 @@
   color: var(--ink);
   cursor: pointer;
 }
+/* Beat `.landing button { color: inherit }` so the label stays readable. */
+.landing .checkout-summary-toggle {
+  color: var(--ink);
+}
 .checkout-summary-toggle[aria-expanded="true"] {
   border-color: var(--copper);
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.checkout-summary-toggle__total {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+.checkout-summary-toggle__chev {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  translate: 0 -0.1em;
+  transition: transform 0.2s ease;
+}
+.checkout-summary-toggle[aria-expanded="true"] .checkout-summary-toggle__chev {
+  transform: rotate(225deg);
+  translate: 0 0.15em;
 }
 
 .checkout-layout {
@@ -74,6 +102,12 @@
   gap: clamp(28px, 4vw, 48px);
   align-items: start;
   padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(3rem, 6vw, 5rem);
+}
+.checkout-layout > .checkout-form {
+  grid-column: 1;
+}
+.checkout-layout > .checkout-summary {
+  grid-column: 2;
 }
 
 .checkout-form {
@@ -279,14 +313,17 @@
   font-style: italic;
 }
 
-.checkout-cta {
+/* `.landing button` reset sets `color: inherit` at (0,1,1) — beat it with
+   a two-part selector so the CTA stays white like `.pill--solid`. */
+.landing .checkout-cta,
+button.checkout-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
   min-height: 56px;
-  border: 0;
+  border: 1px solid var(--copper);
   border-radius: 999px;
   background: var(--copper);
   color: #fff;
@@ -297,10 +334,12 @@
   text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.checkout-cta:hover {
+.landing .checkout-cta:hover,
+button.checkout-cta:hover {
   background: var(--copper-deep);
+  border-color: var(--copper-deep);
   color: #fff;
 }
 .checkout-cta--inline {
@@ -309,6 +348,7 @@
 }
 .checkout-cta .arrow {
   font-weight: 400;
+  color: inherit;
 }
 
 .checkout-legal {
@@ -479,20 +519,43 @@
 /* --- Responsive --- */
 @media (max-width: 860px) {
   .checkout-layout {
-    grid-template-columns: 1fr;
-  }
-  .checkout-summary {
-    position: static;
+    display: flex;
+    flex-direction: column;
+    /* Desktop sets align-items: start for the sticky sidebar grid — that
+       kept the mobile summary/toggle at content-width and narrower than
+       the delivery form. Stretch so all three share the full column. */
+    align-items: stretch;
+    gap: 0;
   }
   .checkout-summary-toggle {
     display: flex;
+    order: 1;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 16px;
   }
+  /* Collapsed by default — opens as a dropdown directly under the toggle. */
   .checkout-summary {
     display: none;
+    position: static;
+    order: 2;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    grid-column: auto;
   }
   .checkout-summary.is-open {
     display: block;
+    margin-top: 0;
     margin-bottom: 20px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-top: 0;
+  }
+  .checkout-form {
+    order: 3;
+    width: 100%;
+    grid-column: auto;
   }
 }
 

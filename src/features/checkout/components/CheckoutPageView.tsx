@@ -3,11 +3,19 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { CATALOG_PRODUCTS } from "@/features/catalog/constants/catalogProducts";
 import { useCartStore } from "@/stores/useCartStore";
 
 /** Matches the `v5/checkout.html` prototype's cart constants. */
 const FREE_SHIPPING_THRESHOLD = 250;
 const SHIP_FLAT = 25;
+
+/** Prefer the static catalog image for known slugs so a stale/wrong
+ *  `imageUrl` persisted in localStorage (older asset paths) doesn't show
+ *  a broken thumb in the order summary. */
+function lineImageUrl(slug: string, fallback?: string) {
+  return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
+}
 
 const EMIRATES = [
   "Dubai",
@@ -102,20 +110,21 @@ export function CheckoutPageView() {
           </header>
 
           {showLayout ? (
-            <button
-              type="button"
-              className="checkout-summary-toggle"
-              aria-expanded={summaryOpen}
-              aria-controls="checkout-summary"
-              onClick={() => setSummaryOpen((v) => !v)}
-            >
-              <span>Order summary</span>
-              <span dir="ltr">{summaryTotalLabel}</span>
-            </button>
-          ) : null}
-
-          {showLayout ? (
             <div className="checkout-layout">
+              <button
+                type="button"
+                className="checkout-summary-toggle"
+                aria-expanded={summaryOpen}
+                aria-controls="checkout-summary"
+                onClick={() => setSummaryOpen((v) => !v)}
+              >
+                <span>Order summary</span>
+                <span className="checkout-summary-toggle__total" dir="ltr">
+                  {summaryTotalLabel}
+                  <i className="checkout-summary-toggle__chev" aria-hidden="true" />
+                </span>
+              </button>
+
               <form className="checkout-form" ref={formRef} noValidate onSubmit={handleSubmit}>
                 <section className="cbox">
                   <header className="cbox__head">
@@ -309,12 +318,14 @@ export function CheckoutPageView() {
               >
                 <h2>Your order</h2>
                 <div className="checkout-lines" id="checkout-lines">
-                  {lines.map((line) => (
+                  {lines.map((line) => {
+                    const thumb = lineImageUrl(line.slug, line.imageUrl);
+                    return (
                     <article className="coline" key={line.cartItemId ?? line.variantId}>
                       <div className="coline__media">
-                        {line.imageUrl ? (
+                        {thumb ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={line.imageUrl} alt={line.title} />
+                          <img src={thumb} alt={line.title} />
                         ) : null}
                         <b>{line.quantity}</b>
                       </div>
@@ -326,7 +337,8 @@ export function CheckoutPageView() {
                         {formatMoney(line.unitPrice * line.quantity, line.currency)}
                       </span>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
                 <dl className="checkout-totals">
                   <div>
