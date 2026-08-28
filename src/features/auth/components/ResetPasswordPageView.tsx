@@ -31,7 +31,7 @@ export function ResetPasswordPageView() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       identifier: presetIdentifier,
-      code: 0,
+      code: "",
       newPassword: "",
       confirmPassword: "",
     },

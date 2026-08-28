@@ -111,6 +111,10 @@ export interface PaymentMethodOption {
   methodCode: string;
   displayName: string;
   isDefault: boolean;
+  /** false for Stripe (inline), true for Paymob (redirect) */
+  requiresRedirect?: boolean;
+  isEnabled?: boolean;
+  isTestMode?: boolean | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -141,6 +145,18 @@ export interface OrderLineSummary {
   currencyCode: string;
   /** May be present if the backend includes product image in order line detail */
   imageUrl?: string | null;
+}
+
+/** Guest / new-address JSON for POST …/address. Shipping and billing share this shape. */
+export interface CheckoutAddressSnapshot {
+  fullName: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  province?: string;
+  postalCode?: string;
+  countryCode: string;
+  phone?: string;
 }
 
 export interface OrderAddressSummary {
@@ -205,6 +221,12 @@ export interface OrderResponse {
 
 // ─── Payment ─────────────────────────────────────────────────────────────────
 
+export interface StripePaymentMetadata {
+  publishableKey?: string;
+  clientSecret?: string;
+  [key: string]: unknown;
+}
+
 export interface PaymentInitiationResponse {
   orderId: string;
   paymentTransactionId: string;
@@ -214,15 +236,17 @@ export interface PaymentInitiationResponse {
   providerCode: string;
   amount: string;
   currency: string;
-  paymentExecutionStatus: string;
-  paymentAction: string | null;
+  paymentExecutionStatus: "SUCCESS" | "PENDING_PROVIDER_EXECUTION" | string;
+  /** REDIRECT = Paymob hosted page · INLINE_CARD = Stripe Elements */
+  paymentAction: "REDIRECT" | "INLINE_CARD" | string | null;
   redirectUrl: string | null;
+  /** Stripe PaymentIntent client secret — only present when paymentAction === "INLINE_CARD" */
   clientSecret: string | null;
   requiresProviderExecution: boolean;
   providerExecutionAvailable: boolean;
   outboxEventId: string | null;
   warnings: string[];
-  metadata?: Record<string, unknown> | null;
+  metadata?: StripePaymentMetadata | null;
 }
 
 export interface OrderPaymentStatusResponse {

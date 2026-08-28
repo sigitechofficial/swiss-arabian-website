@@ -5,7 +5,6 @@
 const CHECKOUT_SESSION_KEY = "sa_checkout_session_id";
 const ORDER_ID_KEY = "sa_order_id";
 const ORDER_NUMBER_KEY = "sa_order_number";
-const ORDER_ACCESS_TOKEN_KEY = "sa_order_access_token";
 
 // Payment-specific keys (sessionStorage — cleared after payment confirmed)
 const ZONE_PAYMENT_METHOD_ID_KEY = "sa_zone_payment_method_id";
@@ -79,23 +78,33 @@ export function getStoredOrderNumber(): string | null {
   }
 }
 
-/** Save guest order access token — issued only once; never overwrite an existing token. */
-export function storeGuestOrderAccessToken(token: string): void {
-  if (typeof window === "undefined") return;
+/** Guest tracking token keyed by order number — never use a global key. */
+function guestTokenKey(orderNumber: string): string {
+  return `sa_order_token_${orderNumber}`;
+}
+
+/**
+ * Save guest order access token for a specific order.
+ * Token is one-time from place-order; key by orderNumber so later orders
+ * do not overwrite earlier ones.
+ */
+export function storeGuestOrderAccessToken(orderNumber: string, token: string): void {
+  if (typeof window === "undefined" || !orderNumber || !token) return;
   try {
-    const existing = localStorage.getItem(ORDER_ACCESS_TOKEN_KEY);
-    if (!existing) {
-      localStorage.setItem(ORDER_ACCESS_TOKEN_KEY, token);
-    }
+    localStorage.setItem(guestTokenKey(orderNumber), token);
   } catch {
     // ignore
   }
 }
 
-export function getStoredGuestOrderAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
+export function getStoredGuestOrderAccessToken(orderNumber: string): string | null {
+  if (typeof window === "undefined" || !orderNumber) return null;
   try {
-    return localStorage.getItem(ORDER_ACCESS_TOKEN_KEY);
+    // Prefer order-scoped key
+    const keyed = localStorage.getItem(guestTokenKey(orderNumber));
+    if (keyed) return keyed;
+    // Legacy fallback (pre-fix global key) — only if it matches current order context
+    return null;
   } catch {
     return null;
   }
@@ -147,4 +156,31 @@ export function clearPaymentState(): void {
   ssRemove(ZONE_PAYMENT_METHOD_ID_KEY);
   ssRemove(PAYMENT_TRANSACTION_ID_KEY);
   ssRemove(PAY_ATTEMPT_KEY);
+  ssRemove("sa_stripe_client_secret");
+  ssRemove("sa_stripe_publishable_key");
+}
+
+// ─── Stripe-specific (sessionStorage — never persist to localStorage) ─────────
+
+/**
+ * Stripe PaymentIntent client secret — kept in memory ideally;
+ * stored in sessionStorage only to survive the stripe page route.
+ * Never store in localStorage or logs.
+ */
+export function storeStripeClientSecret(secret: string): void {
+  ssSet("sa_stripe_client_secret", secret);
+}
+export function getStoredStripeClientSecret(): string | null {
+  return ssGet("sa_stripe_client_secret");
+}
+export function clearStripeClientSecret(): void {
+  ssRemove("sa_stripe_client_secret");
+}
+
+/** Stripe publishable key from initiate response metadata — not a secret. */
+export function storeStripePublishableKey(key: string): void {
+  ssSet("sa_stripe_publishable_key", key);
+}
+export function getStoredStripePublishableKey(): string | null {
+  return ssGet("sa_stripe_publishable_key");
 }

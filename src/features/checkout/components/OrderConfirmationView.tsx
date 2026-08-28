@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatMoney } from "@/features/home/data/homeContent";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
-import type { OrderResponse } from "../types/checkout";
+import { CheckoutStepBar } from "./CheckoutShell";
+import type { OrderAddressSummary, OrderResponse } from "../types/checkout";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -106,6 +107,35 @@ function StatusBadge({ state }: { state: PaymentState }) {
   );
 }
 
+function AddressCard({
+  title,
+  address,
+}: {
+  title: string;
+  address: OrderAddressSummary;
+}) {
+  return (
+    <div className="border border-sa-border px-5 py-4">
+      <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
+        {title}
+      </h2>
+      <address className="space-y-0.5 not-italic text-[13px] leading-6 text-sa-primary">
+        {address.fullName ? (
+          <span className="block font-medium">{address.fullName}</span>
+        ) : null}
+        {address.address1 ? (
+          <span className="block text-sa-muted">{address.address1}</span>
+        ) : null}
+        {address.city ? (
+          <span className="block text-sa-muted">
+            {[address.city, address.countryCode].filter(Boolean).join(", ")}
+          </span>
+        ) : null}
+      </address>
+    </div>
+  );
+}
+
 function SummaryRow({
   label,
   value,
@@ -195,6 +225,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
   }
 
   const shippingAddress = order.addresses?.find((a) => a.addressType === "SHIPPING");
+  const billingAddress = order.addresses?.find((a) => a.addressType === "BILLING");
   const effectiveStatus = paymentStatus ?? order.paymentStatus;
   const state = getPaymentState(effectiveStatus);
   const currency = order.currency;
@@ -202,6 +233,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
 
   return (
     <section className="bg-page py-14">
+      {/* Checkout progress — step 3 Done */}
+      <div className="mb-8 border-b border-sa-border">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <CheckoutStepBar step={3} />
+        </div>
+      </div>
       <div className="mx-auto w-full max-w-170 px-4">
 
         {/* ── Hero status block ── */}
@@ -234,13 +271,28 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             ) : null}
           </div>
 
-          {/* Guest save-your-number notice */}
+          {/* Guest: track via public token URL · Logged-in: account order detail */}
           {isGuest && order.orderNumber ? (
-            <div className="mt-1 w-full max-w-105 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-left text-[12px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-              <strong className="font-semibold">Save your order number</strong>
-              <span className="mx-1 font-mono font-bold">{order.orderNumber}</span>
-              — you'll need it to track your order.
+            <div className="mt-1 flex w-full max-w-105 flex-col gap-3 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-left dark:border-amber-700 dark:bg-amber-900/20">
+              <p className="text-[12px] text-amber-800 dark:text-amber-300">
+                <strong className="font-semibold">Save your order number</strong>
+                <span className="mx-1 font-mono font-bold">{order.orderNumber}</span>
+                — you&apos;ll need it to track your order.
+              </p>
+              <Link
+                href={`/track/${order.orderNumber}`}
+                className="flex h-10 w-full items-center justify-center rounded bg-terra text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
+              >
+                Track Order
+              </Link>
             </div>
+          ) : state === "success" ? (
+            <Link
+              href={`/account/orders/${orderId}`}
+              className="mt-1 flex h-10 items-center justify-center rounded bg-terra px-6 text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
+            >
+              Track Order
+            </Link>
           ) : null}
 
           {/* Failed CTA */}
@@ -353,29 +405,13 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             </div>
           </div>
 
-          {/* Shipping address */}
+          {/* Shipping + billing addresses */}
           <div className="space-y-4">
             {shippingAddress ? (
-              <div className="border border-sa-border px-5 py-4">
-                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-                  Ship to
-                </h2>
-                <address className="space-y-0.5 not-italic text-[13px] leading-6 text-sa-primary">
-                  {shippingAddress.fullName ? (
-                    <span className="block font-medium">{shippingAddress.fullName}</span>
-                  ) : null}
-                  {shippingAddress.address1 ? (
-                    <span className="block text-sa-muted">{shippingAddress.address1}</span>
-                  ) : null}
-                  {shippingAddress.city ? (
-                    <span className="block text-sa-muted">
-                      {[shippingAddress.city, shippingAddress.countryCode]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  ) : null}
-                </address>
-              </div>
+              <AddressCard title="Ship to" address={shippingAddress} />
+            ) : null}
+            {billingAddress ? (
+              <AddressCard title="Bill to" address={billingAddress} />
             ) : null}
 
             {/* Delivery & payment method */}

@@ -3,6 +3,7 @@ import { apiGet, apiPost } from "@/lib/api/apiClient";
 import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
+  CheckoutAddressSnapshot,
   CheckoutSessionResponse,
   DeliveryMethodOption,
   PaymentMethodOption,
@@ -128,15 +129,24 @@ export async function selectPaymentMethod(
   );
 }
 
-type SetAddressDto = {
+export type SetAddressDto = {
+  /** Saved shipping address — shipping only. */
   customerAddressId?: string;
-  addressSnapshot?: Record<string, unknown>;
+  /** Guest/new shipping snapshot — shipping only. */
+  addressSnapshot?: CheckoutAddressSnapshot;
+  /** Copy shipping → billing on the same request. */
+  billingSameAsShipping?: boolean;
+  /** Saved billing address book id. */
+  billingCustomerAddressId?: string;
+  /** Explicit billing snapshot when different from shipping. */
+  billingAddressSnapshot?: CheckoutAddressSnapshot;
 };
 
 /**
  * POST /storefront/checkout/:checkoutSessionId/address
- * Sets the shipping address for this checkout session.
- * Provide either customerAddressId (saved address) or addressSnapshot (raw).
+ * Sets shipping (`customerAddressId` / `addressSnapshot`) and optional billing
+ * (`billingSameAsShipping` / `billingCustomerAddressId` / `billingAddressSnapshot`).
+ * Shipping fields are never used for billing.
  */
 export async function setCheckoutAddress(
   checkoutSessionId: string,

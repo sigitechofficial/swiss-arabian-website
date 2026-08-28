@@ -555,11 +555,23 @@ POST /storefront/checkout/:checkoutSessionId/payment-method
 POST /storefront/checkout/:checkoutSessionId/address
 ```
 
-At least one of `customerAddressId` or `addressSnapshot` is required.
-
 **Query params:** `guestToken` (guest only)
 
-**Option A — Logged-in user selects saved address:**
+`customerAddressId` and `addressSnapshot` are **shipping only**. Billing uses the additive fields below — never overload shipping fields for billing.
+
+**Billing handoff:** [`STOREFRONT_CHECKOUT_BILLING_ADDRESS_FE_HANDOFF.md`](./STOREFRONT_CHECKOUT_BILLING_ADDRESS_FE_HANDOFF.md)
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `customerAddressId` | shipping path | Saved shipping address (unchanged) |
+| `addressSnapshot` | shipping path | Guest/new shipping snapshot (unchanged) |
+| `billingSameAsShipping` | optional | Copy shipping → billing snapshot |
+| `billingCustomerAddressId` | optional | Saved billing address book id |
+| `billingAddressSnapshot` | optional | Explicit billing JSON snapshot |
+
+At least one of: shipping fields **or** billing fields.
+
+**Option A — Logged-in user selects saved shipping address:**
 
 ```json
 {
@@ -567,7 +579,7 @@ At least one of `customerAddressId` or `addressSnapshot` is required.
 }
 ```
 
-**Option B — Guest or new address (raw snapshot):**
+**Option B — Guest or new shipping (raw snapshot) + same billing (recommended):**
 
 ```json
 {
@@ -579,11 +591,29 @@ At least one of `customerAddressId` or `addressSnapshot` is required.
     "countryCode": "AE",
     "postalCode": "00000",
     "phone": "+971501234567"
-  }
+  },
+  "billingSameAsShipping": true
 }
 ```
 
 `addressSnapshot` is a free JSON object — include any address fields the UI collects. Minimum recommended: `fullName`, `address1`, `city`, `countryCode`.
+
+**Option C — Distinct billing:**
+
+```json
+{
+  "addressSnapshot": { "...shipping..." },
+  "billingAddressSnapshot": {
+    "fullName": "Aisha Hassan",
+    "address1": "Office Tower 12",
+    "city": "Abu Dhabi",
+    "countryCode": "AE",
+    "phone": "+971501234567"
+  }
+}
+```
+
+If billing is never sent, place-order clones shipping → `BILLING` on new orders. The storefront still sends `billingSameAsShipping: true` (or an explicit billing address) so intent is clear.
 
 **Success `data`:** Updated `CheckoutSessionResponse`
 
@@ -591,7 +621,9 @@ At least one of `customerAddressId` or `addressSnapshot` is required.
 
 | HTTP | Code | When |
 |------|------|------|
-| `422` | `CHECKOUT_ADDRESS_INPUT_REQUIRED` | Neither `customerAddressId` nor `addressSnapshot` provided |
+| `422` | `CHECKOUT_ADDRESS_INPUT_REQUIRED` | No shipping and no billing fields |
+| `422` | `CHECKOUT_BILLING_REQUIRES_SHIPPING` | `billingSameAsShipping` but no shipping on session/request |
+| `404` | `CHECKOUT_NOT_FOUND` | Unknown `billingCustomerAddressId` / session |
 | `400` | `CHECKOUT_SESSION_NOT_ACTIVE` | Session expired or completed |
 
 ---

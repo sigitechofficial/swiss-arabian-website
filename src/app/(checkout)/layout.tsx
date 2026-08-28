@@ -3,7 +3,5 @@ export default function CheckoutLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-full bg-page font-sans text-sa-primary">{children}</div>
-  );
+  return <div className="font-sans text-sa-primary">{children}</div>;
 }

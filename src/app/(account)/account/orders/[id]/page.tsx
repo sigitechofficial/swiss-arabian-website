@@ -1,23 +1,12 @@
-"use client";
+import { AccountOrderDetailPageView } from "@/features/account/components/AccountOrderDetailPageView";
 
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { useParams } from "next/navigation";
-import { AuthGuard } from "@/components/guards/AuthGuard";
+export const metadata = { title: "Order Detail — Swiss Arabian" };
 
-export default function AccountOrderDetailPage() {
-  const params = useParams<{ id: string }>();
-
-  return (
-    <AuthGuard requireAuth>
-      <Box sx={{ maxWidth: 800, mx: "auto", px: 3, py: 6 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          Order {params.id}
-        </Typography>
-        <Typography color="text.secondary">
-          Order detail view placeholder.
-        </Typography>
-      </Box>
-    </AuthGuard>
-  );
+export default async function AccountOrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <AccountOrderDetailPageView orderId={id} />;
 }

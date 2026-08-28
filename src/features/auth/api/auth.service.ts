@@ -167,7 +167,7 @@ export async function forgotPassword(identifier: string) {
 
 export async function resetPassword(payload: {
   identifier: string;
-  code: number;
+  code: string;
   newPassword: string;
 }) {
   return apiPost<{ success: boolean }>(

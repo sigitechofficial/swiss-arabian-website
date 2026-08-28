@@ -17,10 +17,7 @@ export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export const resetPasswordSchema = z
   .object({
     identifier: z.string().min(1, "Enter your email or phone"),
-    code: z.coerce
-      .number({ invalid_type_error: "Enter a valid code" })
-      .int("Code must be a whole number")
-      .min(1000, "Enter the code"),
+    code: z.string().trim().min(4, "Enter the code"),
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(8, "Confirm your password"),
   })

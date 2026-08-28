@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/stores/useCartStore";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -14,6 +15,7 @@ import {
   selectPaymentMethod,
   setCheckoutAddress,
   validateCheckout,
+  type SetAddressDto,
 } from "../api/checkout.service";
 import { placeOrder, initiatePayment } from "../api/orders.service";
 import {
@@ -25,6 +27,8 @@ import {
   storeGuestOrderAccessToken,
   storePaymentTransactionId,
   getPayAttempt,
+  storeStripeClientSecret,
+  storeStripePublishableKey,
 } from "../utils/checkoutSession";
 import type {
   CheckoutSessionResponse,
@@ -32,21 +36,7 @@ import type {
   PaymentMethodOption,
 } from "../types/checkout";
 import type { CheckoutFormValues } from "../schemas/checkout.schema";
-
-// ─── Country → ISO code ───────────────────────────────────────────────────────
-
-const COUNTRY_CODE_MAP: Record<string, string> = {
-  "United Arab Emirates": "AE",
-  "Saudi Arabia": "SA",
-  Qatar: "QA",
-  Kuwait: "KW",
-  Bahrain: "BH",
-  Oman: "OM",
-};
-
-function toCountryCode(display: string): string {
-  return COUNTRY_CODE_MAP[display] ?? "AE";
-}
+import { buildAddressSnapshot } from "../utils/addressSnapshot";
 
 // ─── Hook types ───────────────────────────────────────────────────────────────
 
@@ -71,6 +61,7 @@ export function useCheckout(): UseCheckoutReturn {
   const cartId = useCartStore((s) => s.cartId);
   const clearCart = useCartStore((s) => s.clear);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [session, setSession] = useState<CheckoutSessionResponse | null>(null);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethodOption[]>([]);
@@ -235,19 +226,33 @@ export function useCheckout(): UseCheckoutReturn {
       const sessionId = session.checkoutSessionId;
 
       try {
-        // C.4 — Set address snapshot
-        const addressSnapshot = {
-          fullName: `${data.firstName} ${data.lastName}`.trim(),
-          address1: data.address,
-          address2: data.apartment || undefined,
+        // C.4 — Set shipping address; billing is additive (never overload shipping fields)
+        const addressSnapshot = buildAddressSnapshot({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          address: data.address,
+          apartment: data.apartment,
           city: data.city,
-          countryCode: toCountryCode(data.country),
-          postalCode: "00000",
+          country: data.country,
           phone: data.phone,
-        };
-        const afterAddress = await setCheckoutAddress(sessionId, {
-          addressSnapshot,
         });
+
+        const addressDto: SetAddressDto = data.billingSameAsShipping
+          ? { addressSnapshot, billingSameAsShipping: true }
+          : {
+              addressSnapshot,
+              billingAddressSnapshot: buildAddressSnapshot({
+                firstName: data.billingFirstName ?? "",
+                lastName: data.billingLastName ?? "",
+                address: data.billingAddress ?? "",
+                apartment: data.billingApartment,
+                city: data.billingCity ?? "",
+                country: data.billingCountry ?? data.country,
+                phone: data.billingPhone ?? "",
+              }),
+            };
+
+        const afterAddress = await setCheckoutAddress(sessionId, addressDto);
         setSession(afterAddress);
 
         // C.5 — Validate
@@ -267,6 +272,9 @@ export function useCheckout(): UseCheckoutReturn {
           VARIANT_INACTIVE: "One or more items are inactive. Please remove them from your cart.",
           CURRENCY_MISMATCH: "Currency mismatch detected. Please refresh and try again.",
           ADDRESS_INVALID: "Your shipping address is incomplete or invalid.",
+          CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",
+          CHECKOUT_BILLING_REQUIRES_SHIPPING:
+            "Add a delivery address before using the same billing address.",
           PAYMENT_METHOD_UNAVAILABLE: "The selected payment method is not available.",
           DELIVERY_METHOD_UNAVAILABLE: "The selected delivery method is not available.",
           MANUAL_REVIEW_REQUIRED: "Your order requires manual review. Please contact support.",
@@ -295,13 +303,20 @@ export function useCheckout(): UseCheckoutReturn {
         storeOrderId(order.orderId);
         if (order.orderNumber) storeOrderNumber(order.orderNumber);
 
-        // Save guest tracking token (one-time, never overwrite)
+        // Refresh account order list so Purchase History shows the new order
+        void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
+
+        // Save guest tracking token keyed by orderNumber (never a global key)
         if (
+          order.orderNumber &&
           order.guestTracking &&
           !order.guestTracking.previouslyIssued &&
           order.guestTracking.orderAccessToken
         ) {
-          storeGuestOrderAccessToken(order.guestTracking.orderAccessToken);
+          storeGuestOrderAccessToken(
+            order.orderNumber,
+            order.guestTracking.orderAccessToken,
+          );
         }
 
         // Clear cart after successful order
@@ -334,6 +349,20 @@ export function useCheckout(): UseCheckoutReturn {
           return;
         }
 
+        if (payment.paymentAction === "INLINE_CARD" && payment.clientSecret) {
+          // Stripe inline flow — store keys and navigate to the Stripe payment page
+          if (payment.paymentTransactionId) {
+            storePaymentTransactionId(payment.paymentTransactionId);
+          }
+          const publishableKey =
+            payment.metadata?.publishableKey ??
+            (payment.metadata?.publishable_key as string | undefined);
+          if (publishableKey) storeStripePublishableKey(publishableKey);
+          storeStripeClientSecret(payment.clientSecret);
+          router.push("/checkout/payment/stripe");
+          return;
+        }
+
         // COD or no action — go straight to confirmation
         if (payment.paymentExecutionStatus === "PENDING_PROVIDER_EXECUTION") {
           console.warn("Payment provider not configured:", payment.warnings);
@@ -341,15 +370,20 @@ export function useCheckout(): UseCheckoutReturn {
 
         router.push(`/order-confirmation/${order.orderId}`);
       } catch (e) {
+        const ADDRESS_ERROR_MESSAGES: Record<string, string> = {
+          CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",
+          CHECKOUT_BILLING_REQUIRES_SHIPPING:
+            "Add a delivery address before using the same billing address.",
+        };
         const msg =
           e instanceof ApiClientError
-            ? e.message
+            ? (e.code && ADDRESS_ERROR_MESSAGES[e.code]) || e.message
             : "Something went wrong. Please try again.";
         setErrorMsg(msg);
         setStatus("ready");
       }
     },
-    [session, cartId, clearCart, router],
+    [session, cartId, clearCart, router, queryClient],
   );
 
   return {
