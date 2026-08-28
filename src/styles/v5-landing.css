@@ -1765,6 +1765,10 @@ html[dir="rtl"] .reel-title {
 }
 .shop-look__cta {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(100% - 3.7rem);
   margin: 1rem 1.85rem 1.4rem;
 }
 .shop-look__restore {
@@ -1873,9 +1877,102 @@ html[dir="rtl"] .reel-title {
     background: var(--copper-deep);
     border-color: var(--copper-deep);
   }
-  .campaign--bundles .shop-look,
-  .campaign--bundles .shop-look__restore {
+  .campaign--bundles .shop-look[hidden] {
     display: none !important;
+  }
+  .campaign--bundles .shop-look {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 120;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    max-height: min(78vh, 520px);
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
+    /* Heavier frost on mobile — the sheet sits over busy photo + CTAs,
+       so light glass let bottle type and “Shop Bundles” pills bleed through. */
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(250, 246, 238, 0.92) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-bottom: 0;
+    box-shadow:
+      0 -16px 48px rgba(10, 6, 3, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(40px) saturate(160%);
+    -webkit-backdrop-filter: blur(40px) saturate(160%);
+  }
+  /* Dark-on-photo type → ink on the light frost sheet. */
+  .campaign--bundles .shop-look__title {
+    color: var(--ink, #241f1b);
+  }
+  .campaign--bundles .shop-look__head {
+    border-bottom-color: rgba(36, 31, 27, 0.12);
+  }
+  .campaign--bundles .shop-look__close {
+    color: rgba(36, 31, 27, 0.7);
+    background: rgba(36, 31, 27, 0.06);
+    border-color: rgba(36, 31, 27, 0.12);
+  }
+  .campaign--bundles .shop-look__close:hover {
+    color: var(--ink, #241f1b);
+    background: rgba(36, 31, 27, 0.12);
+  }
+  .campaign--bundles .shop-look__item {
+    color: var(--ink, #241f1b);
+  }
+  .campaign--bundles .shop-look__name {
+    color: var(--ink, #241f1b);
+  }
+  .campaign--bundles .shop-look__item:hover .shop-look__name {
+    color: var(--copper, #8c4435);
+  }
+  .campaign--bundles .shop-look__conc {
+    color: rgba(36, 31, 27, 0.55);
+  }
+  .campaign--bundles .shop-look__price {
+    color: var(--copper, #8c4435);
+  }
+  .campaign--bundles .shop-look__thumb {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(36, 31, 27, 0.1);
+  }
+  .campaign--bundles .shop-look__list > li + li {
+    border-top-color: rgba(36, 31, 27, 0.1);
+  }
+  /* Hide the campaign’s own pills while the sheet is open so they don’t
+     stack under / show through the frost. */
+  .campaign--bundles:has(.shop-look:not([hidden])) .campaign__actions {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .campaign--bundles .shop-look__restore {
+    display: inline-flex !important;
+    position: absolute;
+    right: var(--edge, 1rem);
+    top: var(--edge, 1rem);
+    bottom: auto;
+    z-index: 10;
+    width: 52px;
+    height: 52px;
+    color: #fff;
+    background: var(--copper, #8c4435);
+    border: 1px solid var(--copper, #8c4435);
+    box-shadow: 0 10px 28px rgba(10, 6, 3, 0.45);
+    pointer-events: auto;
+  }
+  .campaign--bundles .shop-look__restore[hidden] {
+    display: none !important;
+  }
+  .campaign--bundles .shop-look__restore:hover {
+    background: var(--copper-deep, #6d3428);
+    border-color: var(--copper-deep, #6d3428);
   }
 }
 

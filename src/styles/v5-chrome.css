@@ -646,7 +646,6 @@
   max-width: min(180px, 100%);
   object-fit: contain;
   background: transparent;
-  filter: brightness(0) invert(1);
 }
 
 .site-footer__cols {

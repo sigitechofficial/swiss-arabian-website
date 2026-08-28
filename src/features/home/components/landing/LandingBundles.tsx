@@ -1,15 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { formatMoney } from "../../utils/formatMoney";
 
+/** Matches the `@media (max-width: 1023px)` breakpoint in `v5-landing.css`
+ *  where `.shop-look` switches from a corner card to a fixed bottom sheet.
+ *  Auto-opening that sheet on load covers the hero — so on mobile/tablet
+ *  it starts dismissed; desktop opens it after mount. */
+const MOBILE_SHEET_BREAKPOINT = "(max-width: 1023px)";
+
 export function LandingBundles() {
-  // Desktop-only corner card (hidden below 1024px in v5-landing.css).
-  const [open, setOpen] = useState(true);
+  // Start closed so SSR / first paint never flash a fixed bottom sheet
+  // over the hero. Desktop flips open in useLayoutEffect.
+  const [open, setOpen] = useState(false);
   const { data } = useLandingProducts(8);
   const bundleItems = (data?.products ?? []).slice(0, 2);
+
+  useLayoutEffect(() => {
+    const mq = window.matchMedia(MOBILE_SHEET_BREAKPOINT);
+    const sync = () => {
+      // Mobile/tablet: always start (and stay default) closed — the sheet
+      // is fixed over the hero. Desktop: open as a corner card.
+      // Re-run on breakpoint change so resizing from desktop → mobile
+      // does not leave the sheet stuck open.
+      setOpen(!mq.matches);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   return (
     <section

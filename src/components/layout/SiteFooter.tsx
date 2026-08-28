@@ -7,7 +7,7 @@ export function SiteFooter() {
         <Link className="footer-brand" href="/" aria-label="Swiss Arabian home">
           <img
             className="footer-brand__mark"
-            src="/assets/sa-logo-clear.png"
+            src="/assets/sa-logo-footer.png"
             alt="Swiss Arabian"
           />
         </Link>
