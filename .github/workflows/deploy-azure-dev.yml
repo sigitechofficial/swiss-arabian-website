@@ -19,6 +19,7 @@ env:
   AZURE_CONTAINER_APPS_ENV: ${{ vars.AZURE_CONTAINER_APPS_ENV || 'cae-swissarabian-dev' }}
   DEV_API_BASE_URL: https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
   DEV_RETURN_URL: https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
+  AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME || 'kv-swissarabian-dev' }}
 
 jobs:
   deploy:
@@ -67,6 +68,30 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Resolve Insider Web SDK config from Key Vault
+        id: insider
+        run: |
+          set -euo pipefail
+          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
+
+          ENABLED=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-enabled --query value -o tsv 2>/dev/null || true)
+          ACCOUNT_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-account-id --query value -o tsv 2>/dev/null || true)
+          SCRIPT_HOST=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-script-host --query value -o tsv 2>/dev/null || true)
+
+          ENABLED="${ENABLED:-true}"
+          ACCOUNT_ID="${ACCOUNT_ID:-10015366}"
+          SCRIPT_HOST="${SCRIPT_HOST:-swissarabianuatnew.api.useinsider.com}"
+
+          if [ -z "$ACCOUNT_ID" ]; then
+            echo "ERROR: NEXT_PUBLIC_INSIDER_ACCOUNT_ID is empty"
+            exit 1
+          fi
+
+          echo "enabled=${ENABLED}" >> "$GITHUB_OUTPUT"
+          echo "account_id=${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
+          echo "script_host=${SCRIPT_HOST}" >> "$GITHUB_OUTPUT"
+          echo "Insider Web SDK: enabled=${ENABLED} account_id=${ACCOUNT_ID} host=${SCRIPT_HOST}"
+
       - name: Build Docker image
         run: |
           docker build \
@@ -77,6 +102,9 @@ jobs:
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
             --build-arg NEXT_PUBLIC_ENABLE_OAUTH=false \
             --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
+            --build-arg "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
+            --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
+            --build-arg "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
             -t "${{ steps.vars.outputs.image }}" \
             .
 
@@ -148,6 +176,9 @@ jobs:
               "NEXT_PUBLIC_APP_ENV=dev" \
               "NEXT_PUBLIC_DEV_API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
               "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
+              "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
+              "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
+              "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
               "GIT_COMMIT_SHA=${{ github.sha }}" \
               "GIT_SHORT_SHA=${{ steps.vars.outputs.short_sha }}" \
               "GIT_BRANCH=${{ github.ref_name }}" \
