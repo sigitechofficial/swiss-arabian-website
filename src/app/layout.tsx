@@ -40,8 +40,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "window.InsiderQueue=window.InsiderQueue||[];window.InsiderQueue.push({type:'other'});window.InsiderQueue.push({type:'init'});",
+            __html: "window.InsiderQueue=window.InsiderQueue||[];",
           }}
         />
         {env.insider.enabled && env.insider.accountId ? (

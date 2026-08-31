@@ -180,6 +180,16 @@ export function insiderIdentify(user: InsiderIdentifyUser): void {
 }
 
 /**
+ * Non-PDP pages — Other Page View. PDPs must not call this; they send product + init.
+ */
+export function insiderOtherPage(): void {
+  runWhenReady(() => {
+    queue().push({ type: "other" });
+    queue().push({ type: "init" });
+  });
+}
+
+/**
  * Call on logout — clears the Insider session link between browser and customer.
  */
 export function insiderLogout(): void {
