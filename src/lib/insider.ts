@@ -125,6 +125,33 @@ export type InsiderCartItemPayload = InsiderProductPayload & {
   quantity: number;
 };
 
+function productUrl(product: InsiderProductPayload): string {
+  return (
+    product.productUrl ??
+    (typeof window !== "undefined" ? window.location.href : "")
+  );
+}
+
+/** Web SDK product object — same fields for type:'product' and type:'add_to_cart'. */
+function productQueueValue(
+  product: InsiderProductPayload,
+  quantity?: number,
+): Record<string, unknown> {
+  return {
+    id: product.id,
+    name: product.name,
+    taxonomy: product.category ? [product.category] : [],
+    unit_price: product.price,
+    unit_sale_price: product.price,
+    url: productUrl(product),
+    product_image_url: product.imageUrl ?? "",
+    ...(typeof quantity === "number" ? { quantity } : {}),
+    ...(product.sku ? { sku: product.sku } : {}),
+    ...(product.brand ? { brand: product.brand } : {}),
+    ...(product.currency ? { custom: { currency: product.currency } } : {}),
+  };
+}
+
 /**
  * Call after login OR registration — stitches the anonymous browser session
  * to the known platform customer inside Insider.
@@ -162,48 +189,26 @@ export function insiderLogout(): void {
 }
 
 /**
- * SOW event #2 — product detail page viewed.
+ * SOW event #2 — product detail page viewed (`product_detail_page_view`).
  * Fire when a PDP mounts and product data is available.
  */
 export function insiderProductViewed(product: InsiderProductPayload): void {
   runWhenReady(() => {
-    window.Insider?.track?.setItem({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      taxonomy: product.category ? [product.category] : [],
-      currency: product.currency,
-      unit_price: product.price,
-      unit_sale_price: product.price,
-      url:
-        product.productUrl ??
-        (typeof window !== "undefined" ? window.location.href : ""),
-      product_image_url: product.imageUrl ?? "",
-      ...(product.brand ? { brand: product.brand } : {}),
-    });
+    queue().push({ type: "product", value: productQueueValue(product) });
+    queue().push({ type: "init" });
   });
 }
 
 /**
- * SOW event #3 — add to cart.
+ * SOW event #3 — add to cart (`item_added_to_cart`).
  * Fire AFTER the backend cart API returns success — not on button click.
+ * Does not need a following `init` (Insider Web SDK).
  */
 export function insiderAddToCart(item: InsiderCartItemPayload): void {
   runWhenReady(() => {
-    window.Insider?.track?.addItem({
-      id: item.id,
-      name: item.name,
-      sku: item.sku,
-      quantity: item.quantity,
-      currency: item.currency,
-      unit_price: item.price,
-      unit_sale_price: item.price,
-      url:
-        item.productUrl ??
-        (typeof window !== "undefined" ? window.location.href : ""),
-      product_image_url: item.imageUrl ?? "",
-      taxonomy: item.category ? [item.category] : [],
-      ...(item.brand ? { brand: item.brand } : {}),
+    queue().push({
+      type: "add_to_cart",
+      value: productQueueValue(item, item.quantity),
     });
   });
 }
