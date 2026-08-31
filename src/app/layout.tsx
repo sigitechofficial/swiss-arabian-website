@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
+import { env } from "@/lib/config/env";
 import { AppProviders } from "./providers";
 import "./globals.css";
 
@@ -37,9 +38,21 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <InsiderScripts />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.InsiderQueue=window.InsiderQueue||[];window.InsiderQueue.push({type:'other'});window.InsiderQueue.push({type:'init'});",
+          }}
+        />
+        {env.insider.enabled && env.insider.accountId ? (
+          <script
+            async
+            src={`https://${env.insider.scriptHost}/ins.js?id=${encodeURIComponent(env.insider.accountId)}`}
+          />
+        ) : null}
       </head>
       <body className="flex min-h-dvh flex-col bg-page font-sans text-sa-primary" suppressHydrationWarning>
+        <InsiderScripts />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

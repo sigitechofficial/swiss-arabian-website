@@ -2,10 +2,11 @@ import { env } from "@/lib/config/env";
 
 declare global {
   interface Window {
-    insider_object?: string;
-    Insider: {
-      identify: (user: Record<string, unknown>) => void;
-      track: {
+    InsiderQueue?: Array<Record<string, unknown>>;
+    Insider?: {
+      initialized?: boolean;
+      identify?: (user: Record<string, unknown>) => void;
+      track?: {
         setUser: (user: Record<string, unknown>) => void;
         setItem: (item: Record<string, unknown>) => void;
         addItem: (item: Record<string, unknown>) => void;
@@ -18,11 +19,84 @@ declare global {
   }
 }
 
-function isEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  if (!env.insider.enabled || !env.insider.accountId) return false;
-  if (typeof window.Insider === "undefined") return false;
-  return true;
+type InsiderCall = () => void;
+
+const pending: InsiderCall[] = [];
+let sdkReady = false;
+
+function envAllows(): boolean {
+  return env.insider.enabled && Boolean(env.insider.accountId);
+}
+
+function hasRealSdk(): boolean {
+  return typeof window !== "undefined" && typeof window.Insider === "object";
+}
+
+function queue(): NonNullable<Window["InsiderQueue"]> {
+  window.InsiderQueue = window.InsiderQueue || [];
+  return window.InsiderQueue;
+}
+
+/** After ins.js loads, replay identify/track calls that fired first. */
+export function startInsiderSdk(): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  waitUntilInitialized(flushInsiderQueue);
+}
+
+function waitUntilInitialized(done: () => void): void {
+  const deadline = Date.now() + 4000;
+  const tick = () => {
+    if (window.Insider?.initialized === true) {
+      done();
+      return;
+    }
+    if (Date.now() > deadline) {
+      if (process.env.NODE_ENV !== "production") {
+        const partnerHost =
+          (
+            window.Insider as
+              | { partner?: { site?: { host?: string } } }
+              | undefined
+          )?.partner?.site?.host ?? "(unknown)";
+        console.warn(
+          `[Insider] SDK did not initialize on ${window.location.host}. Partner site host is ${partnerHost}. Events will not send until this page is opened on that host (or that host is added in Insider InOne → site / multi-domains). Watch for: "API Init failed. Check site information."`,
+        );
+      }
+      done();
+      return;
+    }
+    window.setTimeout(tick, 50);
+  };
+  tick();
+}
+
+/** Replay queued events after ins.js finishes loading. */
+export function flushInsiderQueue(): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  if (!hasRealSdk()) return;
+  sdkReady = true;
+  const queued = pending.splice(0);
+  for (const call of queued) {
+    try {
+      call();
+    } catch {
+      // Insider must never break app flow
+    }
+  }
+}
+
+function runWhenReady(call: InsiderCall): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  if (sdkReady || hasRealSdk()) {
+    sdkReady = true;
+    try {
+      call();
+    } catch {
+      // silent
+    }
+    return;
+  }
+  pending.push(call);
 }
 
 export type InsiderIdentifyUser = {
@@ -56,34 +130,35 @@ export type InsiderCartItemPayload = InsiderProductPayload & {
  * to the known platform customer inside Insider.
  */
 export function insiderIdentify(user: InsiderIdentifyUser): void {
-  if (!isEnabled()) return;
-  try {
-    window.Insider.identify({
-      uuid: user.uuid,
-      ...(user.email ? { email: user.email } : {}),
-      ...(user.phone ? { phone_number: user.phone } : {}),
-      custom: {
-        ...(user.firstName ? { first_name: user.firstName } : {}),
-        ...(user.lastName ? { last_name: user.lastName } : {}),
-        ...(user.zoneCode ? { zone_code: user.zoneCode } : {}),
-        ...(user.locale ? { locale: user.locale } : {}),
+  runWhenReady(() => {
+    queue().push({
+      type: "user",
+      value: {
+        uuid: user.uuid,
+        ...(user.email ? { email: user.email } : {}),
+        ...(user.phone ? { phone_number: user.phone } : {}),
+        ...(user.firstName ? { name: user.firstName } : {}),
+        ...(user.lastName ? { surname: user.lastName } : {}),
+        language: user.locale || "en",
+        custom: {
+          ...(user.firstName ? { first_name: user.firstName } : {}),
+          ...(user.lastName ? { last_name: user.lastName } : {}),
+          ...(user.zoneCode ? { zone_code: user.zoneCode } : {}),
+          ...(user.locale ? { locale: user.locale } : {}),
+        },
       },
     });
-  } catch {
-    // Insider must never break app flow
-  }
+    queue().push({ type: "init" });
+  });
 }
 
 /**
  * Call on logout — clears the Insider session link between browser and customer.
  */
 export function insiderLogout(): void {
-  if (!isEnabled()) return;
-  try {
-    window.Insider.track.logout();
-  } catch {
-    // silent
-  }
+  runWhenReady(() => {
+    window.Insider?.track?.logout();
+  });
 }
 
 /**
@@ -91,9 +166,8 @@ export function insiderLogout(): void {
  * Fire when a PDP mounts and product data is available.
  */
 export function insiderProductViewed(product: InsiderProductPayload): void {
-  if (!isEnabled()) return;
-  try {
-    window.Insider.track.setItem({
+  runWhenReady(() => {
+    window.Insider?.track?.setItem({
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -107,9 +181,7 @@ export function insiderProductViewed(product: InsiderProductPayload): void {
       product_image_url: product.imageUrl ?? "",
       ...(product.brand ? { brand: product.brand } : {}),
     });
-  } catch {
-    // silent
-  }
+  });
 }
 
 /**
@@ -117,9 +189,8 @@ export function insiderProductViewed(product: InsiderProductPayload): void {
  * Fire AFTER the backend cart API returns success — not on button click.
  */
 export function insiderAddToCart(item: InsiderCartItemPayload): void {
-  if (!isEnabled()) return;
-  try {
-    window.Insider.track.addItem({
+  runWhenReady(() => {
+    window.Insider?.track?.addItem({
       id: item.id,
       name: item.name,
       sku: item.sku,
@@ -134,7 +205,5 @@ export function insiderAddToCart(item: InsiderCartItemPayload): void {
       taxonomy: item.category ? [item.category] : [],
       ...(item.brand ? { brand: item.brand } : {}),
     });
-  } catch {
-    // silent
-  }
+  });
 }

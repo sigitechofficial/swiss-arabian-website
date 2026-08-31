@@ -84,8 +84,9 @@ const catalogMediaPatterns = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  // Next 16 blocks cross-origin /_next/* from non-localhost unless allowlisted
-  allowedDevOrigins: lanDevOrigins(),
+  // Next 16 blocks cross-origin /_next/* from non-localhost unless allowlisted.
+  // uae.swissarabian.com is the Insider partner host — local hosts-file testing.
+  allowedDevOrigins: [...lanDevOrigins(), "uae.swissarabian.com"],
   images: {
     qualities: [75, 90, 95],
     remotePatterns: [
