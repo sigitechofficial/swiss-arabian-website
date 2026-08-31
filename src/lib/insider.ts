@@ -175,7 +175,13 @@ export function insiderIdentify(user: InsiderIdentifyUser): void {
         },
       },
     });
-    queue().push({ type: "init" });
+    // Do not init here on first load — that sends page_type "other" and
+    // Insider ignores a later product+init for the hit. Page views come from
+    // insiderProductViewed / insiderOtherPage. If the SDK is already up
+    // (SPA), init once so user stitch still flushes with the last page type.
+    if (window.Insider?.initialized === true) {
+      queue().push({ type: "init" });
+    }
   });
 }
 
