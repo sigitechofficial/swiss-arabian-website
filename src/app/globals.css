@@ -113,6 +113,26 @@ body {
   font-family: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Auth fields: kill the global `:where(input):focus-visible` copper outline
+   from v5-landing.css — it sat outside the soft field border and looked like
+   a primary-color double border. */
+.auth-field-input:focus,
+.auth-field-input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+/* iOS Safari zooms focused controls when font-size < 16px — keep ≥16 on
+   phones so tapping a field does not pinch-zoom the page. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 html,
 .sa-scrollbar {
   scrollbar-width: thin;

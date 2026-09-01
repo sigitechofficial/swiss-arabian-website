@@ -12,7 +12,7 @@ type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 /** Text input styled to match the reference auth pages' `sa-input` fields —
  *  label above, pill-cornered bordered box, optional hint/error line below. */
 export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function AuthField(
-  { label, error, hint, id, ...props },
+  { label, error, hint, id, className, ...props },
   ref,
 ) {
   return (
@@ -21,14 +21,14 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
         {label}
       </label>
       <div
-        className={`flex items-center rounded-[10px] border bg-surface py-2.5 pl-4 pr-3 ${
+        className={`rounded-[10px] border bg-surface ${
           error ? "border-[var(--sa-action-danger)]" : "border-sa-input"
         }`}
       >
         <input
           ref={ref}
           id={id}
-          className="min-w-0 flex-1 bg-transparent text-[13.5px] font-normal text-sa-primary outline-none placeholder:text-sa-muted"
+          className={`auth-field-input block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-base font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[13.5px] ${className ?? ""}`}
           {...props}
         />
       </div>
@@ -41,7 +41,7 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
 /** Same shell as `AuthField` plus the eye-toggle button that reveals the
  *  password value, matching the reference's `eye-outline.svg` icon button. */
 export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(function AuthPasswordField(
-  { label, error, id, ...props },
+  { label, error, id, className, ...props },
   ref,
 ) {
   const [visible, setVisible] = useState(false);
@@ -52,7 +52,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
         {label}
       </label>
       <div
-        className={`flex items-center rounded-[10px] border bg-surface py-2.5 pl-4 pr-3 ${
+        className={`flex items-center rounded-[10px] border bg-surface ${
           error ? "border-[var(--sa-action-danger)]" : "border-sa-input"
         }`}
       >
@@ -60,12 +60,12 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
           ref={ref}
           id={id}
           type={visible ? "text" : "password"}
-          className="min-w-0 flex-1 bg-transparent text-[13.5px] font-normal text-sa-primary outline-none placeholder:text-sa-muted"
+          className={`auth-field-input min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-base font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[13.5px] ${className ?? ""}`}
           {...props}
         />
         <button
           type="button"
-          className="-m-1.5 ml-1 flex size-[18px] shrink-0 cursor-pointer items-center justify-center text-sa-muted"
+          className="mr-3 flex size-[18px] shrink-0 cursor-pointer items-center justify-center text-sa-muted"
           aria-label={visible ? "Hide password" : "Show password"}
           onClick={() => setVisible((v) => !v)}
         >

@@ -63,6 +63,24 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
     });
   }, []);
 
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const html = document.documentElement;
+    const { body } = document;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.classList.add("is-filters-open");
+    body.classList.add("is-filters-open");
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.classList.remove("is-filters-open");
+      body.classList.remove("is-filters-open");
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, [filtersOpen]);
+
   const fillLeft = ((priceMin - PRICE_FLOOR) / (PRICE_CEIL - PRICE_FLOOR)) * 100;
   const fillRight = 100 - ((priceMax - PRICE_FLOOR) / (PRICE_CEIL - PRICE_FLOOR)) * 100;
 
@@ -107,9 +125,32 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
         </h2>
 
         <div className="catalog container container--full">
-          <aside className={`filters-rail ${filtersOpen ? "filters-rail--open" : ""}`} aria-label="Filters">
-            <p className="filters-rail__title">Filter by</p>
+          <button
+            type="button"
+            className={`filters-backdrop ${filtersOpen ? "is-open" : ""}`}
+            aria-label="Close filters"
+            tabIndex={filtersOpen ? 0 : -1}
+            onClick={() => setFiltersOpen(false)}
+          />
+          <aside
+            className={`filters-rail ${filtersOpen ? "filters-rail--open" : ""}`}
+            aria-label="Filters"
+          >
+            <div className="filters-rail__head">
+              <p className="filters-rail__title">Filter by</p>
+              <button
+                type="button"
+                className="filters-rail__close"
+                aria-label="Close filters"
+                onClick={() => setFiltersOpen(false)}
+              >
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </button>
+            </div>
 
+            <div className="filters-rail__body">
             <div className="filters-rail__group" role="group" aria-label="Price">
               <p className="filters-rail__label">Price</p>
               <div className="price-range">
@@ -246,6 +287,17 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
                   </li>
                 ))}
               </ul>
+            </div>
+            </div>
+
+            <div className="filters-rail__foot">
+              <button
+                type="button"
+                className="filters-rail__apply"
+                onClick={() => setFiltersOpen(false)}
+              >
+                Apply Filters
+              </button>
             </div>
           </aside>
 
