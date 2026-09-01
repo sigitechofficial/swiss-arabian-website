@@ -68,14 +68,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Upsert local API toggle in Key Vault
-        run: |
-          set -euo pipefail
-          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
-          az keyvault secret set --vault-name "$KV" --name next-public-use-local-api --value "true" >/dev/null
-          az keyvault secret set --vault-name "$KV" --name next-public-local-api-base-url --value "http://192.168.18.33:3000" >/dev/null
-          echo "Key Vault: NEXT_PUBLIC_USE_LOCAL_API=true NEXT_PUBLIC_LOCAL_API_BASE_URL=http://192.168.18.33:3000"
-
       - name: Resolve Insider Web SDK config from Key Vault
         id: insider
         run: |
@@ -85,14 +77,10 @@ jobs:
           ENABLED=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-enabled --query value -o tsv 2>/dev/null || true)
           ACCOUNT_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-account-id --query value -o tsv 2>/dev/null || true)
           SCRIPT_HOST=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-script-host --query value -o tsv 2>/dev/null || true)
-          USE_LOCAL_API=$(az keyvault secret show --vault-name "$KV" --name next-public-use-local-api --query value -o tsv 2>/dev/null || true)
-          LOCAL_API_BASE_URL=$(az keyvault secret show --vault-name "$KV" --name next-public-local-api-base-url --query value -o tsv 2>/dev/null || true)
 
           ENABLED="${ENABLED:-true}"
           ACCOUNT_ID="${ACCOUNT_ID:-10015366}"
           SCRIPT_HOST="${SCRIPT_HOST:-swissarabianuatnew.api.useinsider.com}"
-          USE_LOCAL_API="${USE_LOCAL_API:-false}"
-          LOCAL_API_BASE_URL="${LOCAL_API_BASE_URL:-http://192.168.18.33:3000}"
 
           if [ -z "$ACCOUNT_ID" ]; then
             echo "ERROR: NEXT_PUBLIC_INSIDER_ACCOUNT_ID is empty"
@@ -102,10 +90,7 @@ jobs:
           echo "enabled=${ENABLED}" >> "$GITHUB_OUTPUT"
           echo "account_id=${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
           echo "script_host=${SCRIPT_HOST}" >> "$GITHUB_OUTPUT"
-          echo "use_local_api=${USE_LOCAL_API}" >> "$GITHUB_OUTPUT"
-          echo "local_api_base_url=${LOCAL_API_BASE_URL}" >> "$GITHUB_OUTPUT"
           echo "Insider Web SDK: enabled=${ENABLED} account_id=${ACCOUNT_ID} host=${SCRIPT_HOST}"
-          echo "API toggle: USE_LOCAL_API=${USE_LOCAL_API} LOCAL_API_BASE_URL=${LOCAL_API_BASE_URL}"
 
       - name: Build Docker image
         run: |
@@ -117,8 +102,6 @@ jobs:
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
             --build-arg NEXT_PUBLIC_ENABLE_OAUTH=false \
             --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
-            --build-arg "NEXT_PUBLIC_USE_LOCAL_API=${{ steps.insider.outputs.use_local_api }}" \
-            --build-arg "NEXT_PUBLIC_LOCAL_API_BASE_URL=${{ steps.insider.outputs.local_api_base_url }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
@@ -193,8 +176,6 @@ jobs:
               "NEXT_PUBLIC_APP_ENV=dev" \
               "NEXT_PUBLIC_DEV_API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
               "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
-              "NEXT_PUBLIC_USE_LOCAL_API=${{ steps.insider.outputs.use_local_api }}" \
-              "NEXT_PUBLIC_LOCAL_API_BASE_URL=${{ steps.insider.outputs.local_api_base_url }}" \
               "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
               "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
               "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
@@ -304,7 +285,5 @@ jobs:
             echo "| Container App | \`${{ env.AZURE_CONTAINER_APP_WEBSITE }}\` |"
             echo "| FQDN | https://${{ steps.appurl.outputs.fqdn }} |"
             echo "| Backend API | \`${{ env.DEV_API_BASE_URL }}\` |"
-            echo "| USE_LOCAL_API | \`${{ steps.insider.outputs.use_local_api }}\` |"
-            echo "| LOCAL_API_BASE_URL | \`${{ steps.insider.outputs.local_api_base_url }}\` |"
             echo "| Workflow | ${{ steps.vars.outputs.run_url }} |"
           } >> "$GITHUB_STEP_SUMMARY"
