@@ -86,7 +86,7 @@ export function LoginPageView() {
             <input
               id="remember"
               type="checkbox"
-              className="size-[16px] shrink-0 appearance-none rounded-[4px] border border-sa-input bg-surface checked:border-terra checked:bg-terra"
+              className="auth-checkbox size-[16px] shrink-0"
               {...form.register("remember")}
             />
             <span>Remember me</span>

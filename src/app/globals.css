@@ -123,6 +123,27 @@ body {
   box-shadow: none !important;
 }
 
+.auth-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--sa-border-input);
+  border-radius: 4px;
+  background-color: var(--sa-bg-surface);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+  cursor: pointer;
+}
+.auth-checkbox:checked {
+  border-color: var(--sa-action-primary);
+  background-color: var(--sa-action-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.auth-checkbox:focus-visible {
+  outline: 2px solid var(--sa-border-focus);
+  outline-offset: 2px;
+}
+
 /* iOS Safari zooms focused controls when font-size < 16px — keep ≥16 on
    phones so tapping a field does not pinch-zoom the page. */
 @media (max-width: 767px) {
