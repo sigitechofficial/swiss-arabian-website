@@ -273,15 +273,15 @@ Cart page `+/-` / trash uses `useCartMutations` (not local Zustand only).
 
 ## Backend-owned (not this repo)
 
-### `user_register`
+One UCD key (`INSIDER_API_KEY` = `X-REQUEST-TOKEN`) on the **backend**. Not in `NEXT_PUBLIC_*`. Web SDK events do not use this key.
 
-After `POST /storefront/auth/register`. BullMQ → `POST https://unification.useinsider.com/api/user/v1/upsert`.
-
-Frontend identify still runs on register (cookie stitch). Backend upserts profile attributes + the `user_register` event.
-
-### `purchase`
-
-When order payment first becomes `PAID`. BullMQ → Event Collect API. Order confirmation page does **not** call Insider.
+| Event | When |
+|---|---|
+| `user_register` | `POST /storefront/auth/register`. FE sends `marketingConsent` / `smsConsent` → `gdpr_optin` / `sms_optin`. |
+| `checkout_started` | First `POST /storefront/checkout/from-cart`. FE also sends `{ type: "checkout" }` on the page. |
+| `purchase` | First `PAID`, including guests (order email/phone). Confirmation page does **not** fire this. |
+| `order_cancelled` | Real cancel. |
+| `order_refunded` | Admin refund request created. |
 
 ---
 
@@ -313,10 +313,11 @@ Opens /cart
 Login / register
   → user  (+ init only if SDK already initialized)
 Register also
-  → backend user_register (not this repo)
+  → backend user_register (consent flags from register checkboxes)
 
-Refresh while logged in
-  → /me → user
+First checkout from-cart
+  → backend checkout_started
+  → FE checkout page type
 
 Checkout payment confirmed
   → frontend does nothing

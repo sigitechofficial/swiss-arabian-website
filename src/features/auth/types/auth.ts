@@ -47,6 +47,10 @@ export type RegisterPayload = {
   firstName?: string;
   lastName?: string;
   salesChannelCode?: string;
+  /** Maps to Insider `gdpr_optin` on backend user_register upsert. */
+  marketingConsent?: boolean;
+  /** Maps to Insider `sms_optin` on backend user_register upsert. */
+  smsConsent?: boolean;
 };
 
 export type LoginPayload = {

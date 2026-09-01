@@ -23,6 +23,7 @@ import {
   type RegisterFormValues,
 } from "../schemas/registerSchema";
 import { AuthCard } from "./AuthCard";
+import { AuthCheckbox } from "./AuthCheckbox";
 import { AuthField } from "./AuthField";
 import { AuthPasswordField } from "./AuthPasswordField";
 import { AuthOrDivider, AuthSocialButtons } from "./AuthSocialButtons";
@@ -41,6 +42,10 @@ export function RegisterPageView() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      marketingConsent: false,
+      smsConsent: false,
+    },
   });
 
   return (
@@ -62,6 +67,8 @@ export function RegisterPageView() {
               firstName,
               lastName,
               salesChannelCode,
+              marketingConsent: values.marketingConsent,
+              smsConsent: values.smsConsent,
             });
             applyAuthResult(result);
             toast("Account created", "success");
@@ -104,6 +111,17 @@ export function RegisterPageView() {
             autoComplete="new-password"
             {...register("password")}
             error={errors.password?.message}
+          />
+        </div>
+
+        <div className="flex flex-col gap-3 pt-4">
+          <AuthCheckbox
+            label="Email me with news and offers"
+            {...register("marketingConsent")}
+          />
+          <AuthCheckbox
+            label="Text me with news and offers"
+            {...register("smsConsent")}
           />
         </div>
 

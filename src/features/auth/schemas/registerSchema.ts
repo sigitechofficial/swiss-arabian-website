@@ -8,6 +8,8 @@ export const registerSchema = z.object({
     .min(7, "Enter your mobile number")
     .regex(/^[+]?\d[\d\s()-]{6,19}$/, "Enter a valid mobile number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  marketingConsent: z.boolean(),
+  smsConsent: z.boolean(),
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

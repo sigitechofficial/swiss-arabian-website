@@ -11,13 +11,15 @@ This document is the Wave 2 source of truth. Do not follow `INSIDER_FRONTEND_INT
 
 ## 1. How events vs journeys split
 
-| Layer | Owner | What it is |
-|---|---|---|
-| **Events / page types** | SIGI (FE Web SDK + BE BullMQ) | Data Insider can trigger on |
-| **UCD / collection flags** | Insider partner team | Turns payloads into User Profiles + Architect product attributes |
-| **Journeys** | Swiss Arabian CRM in Architect | Welcome, cart abandon, browse abandon, checkout abandon, post-purchase |
+Three layers, three owners:
 
-We do **not** build journey graphs in NestJS. If a journey cannot start, either an event is missing, a page type is wrong (`other` instead of `cart` / `product`), or a partner collection flag is off.
+| Layer | What it is | Who |
+|---|---|---|
+| **Web SDK** (`ins.js` + `InsiderQueue`) | Identify, page types, add/remove cart, logout | Frontend |
+| **Unification API** (`INSIDER_API_KEY` = UCD `X-REQUEST-TOKEN`) | `user_register`, `purchase`, `checkout_started`, cancel, refund | Backend (Wave 2B) |
+| **Architect** | Welcome, abandon, post-purchase journeys | CRM — not code |
+
+**No separate product API key.** One UCD key covers upsert + event collect. It stays in Azure / backend `.env` as `INSIDER_API_KEY`. Never `NEXT_PUBLIC_*`. Product page views and add-to-cart do **not** use this key — they go through the Web SDK.
 
 ---
 
@@ -68,13 +70,13 @@ Blanket `{ type: "other" }` on every non-PDP route also means **no** `home_page_
 
 | Journey (Architect) | Starter | Exit / goal | We send | Blocker today |
 |---|---|---|---|---|
-| **Welcome / onboarding** | `user_register` | First purchase | BE upsert (live) | Consent attrs are `null` (Wave 2B). Channel (email/WhatsApp) is CRM + Insider. |
+| **Welcome / onboarding** | `user_register` | First purchase | BE upsert (live) | FE now sends `marketingConsent` / `smsConsent`. Channel is CRM + Insider. |
 | **Browse abandonment** | `product_detail_page_view` | Add to cart or purchase | FE product + init (live) | **Partner UCD off.** |
-| **Cart abandonment** | `item_added_to_cart` | Purchase | FE add_to_cart (live) | Need **cart page + cart snapshot + remove_from_cart** + partner “Cart/Browsed/Purchased Items from Event Parameters”. |
-| **Checkout abandonment** | Checkout page view | Purchase | FE currently sends `other` | Wave 2A: `{ type: "checkout" }` (or `custom_event` if partner has no checkout page type). Optional BE `checkout_started` later. |
-| **Post-purchase / cross-sell** | `purchase` | Repeat purchase | BE collect (live) | CRM builds the journey. Optional later: shipped / delivered. |
+| **Cart abandonment** | `item_added_to_cart` | Purchase | FE add_to_cart + cart snapshot + remove (Wave 2A live) | Partner “Cart/Browsed/Purchased Items from Event Parameters”. |
+| **Checkout abandonment** | Checkout page view + BE `checkout_started` | Purchase | FE `{ type: "checkout" }` (verified Azure). BE collect on first from-cart. | CRM must register `checkout_started` in Attributes & Events if collect 4xx. |
+| **Post-purchase / cross-sell** | `purchase` | Repeat purchase | BE collect (live, incl. guests) | CRM builds the journey. |
 | **Wishlist reminder** | Wishlist add | Purchase | Not implemented | Wishlist not live on storefront. Skip until the feature ships. |
-| **Win-back / NPS** | Days after purchase | — | `purchase` is enough to start | CRM timing. Optional BE cancel/refund later so we do not message refunded orders. |
+| **Win-back / NPS** | Days after purchase | — | `purchase` is enough to start | CRM timing. BE `order_cancelled` / `order_refunded` stop messaging. |
 
 Insider docs: [Web SDK](https://academy.insiderone.com/docs/insider-web-sdk-integration-guide), [Cart abandon](https://academy.insiderone.com/docs/architect-cart-abandonment), [Browse abandon](https://academy.insiderone.com/docs/architect-use-case-browse-abandonment), [Welcome](https://academy.insiderone.com/docs/architect-welcome-onboarding).
 
@@ -185,19 +187,21 @@ Home Shaghaf / Best Sellers featured add-to-cart still sends mock ids / hardcode
 
 ---
 
-## 6. Wave 2B — backend (after 2A, or in parallel if CRM asks)
+## 6. Wave 2B — live on backend
 
-No new HTTP for storefront. Same BullMQ + `InsiderEventPublisherService` pattern. Never block checkout.
+Fire-and-forget via BullMQ. Register, checkout, and payment never wait on Insider. Website does **not** call Unification APIs.
 
-| Event | When | API | Why |
-|---|---|---|---|
-| Consent on `user_register` | Self-service register if we store marketing/SMS flags | Upsert attrs `gdpr_optin` / `sms_optin` | Today always `null`. Welcome WhatsApp/email needs opt-in. |
-| `checkout_started` | After `POST /storefront/checkout/from-cart` succeeds, if `customerId` exists | Event Collect | Belt-and-suspenders if FE checkout page type is flaky. Skip guests without identifiers unless CRM wants anonymous. |
-| `order_cancelled` | First cancel of a previously paid (or unpaid) order — confirm with CRM | Event Collect | Stop abandon / post-purchase messages. |
-| `refund` / `order_refunded` | Refund recorded | Event Collect | Same. |
-| Guest `purchase` | First `PAID` **without** `customerId` | Event Collect | Today skipped. Only if CRM wants guest revenue in Architect; identify with email/phone from the order snapshot. |
+| Event | When |
+|---|---|
+| `user_register` + optional `gdpr_optin` / `sms_optin` | Storefront register. FE sends `marketingConsent` / `smsConsent` on `POST /storefront/auth/register`. |
+| `checkout_started` | First `POST /storefront/checkout/from-cart` (not a resume). Guests only if email/phone exist on the session. FE still sends Web SDK `{ type: "checkout" }` on the checkout route. |
+| `purchase` | First `PAID`, **including guests** identified by order email/phone (no fake uuid from order id). |
+| `order_cancelled` | Real cancel (unpaid lifecycle **or** 15-minute window). |
+| `order_refunded` | Admin refund **request** created (money may still be pending). |
 
-Do **not** add wishlist, search impressions, or shipment events until the storefront feature exists and CRM names the journey.
+CRM should add custom events in **Attributes & Events** if missing: `checkout_started`, `order_cancelled`, `order_refunded`. Otherwise collect can 4xx.
+
+Azure backend env: `INSIDER_ENABLED=true`, `INSIDER_PARTNER_NAME=swissarabianuatnew`, `INSIDER_API_KEY=<UCD token>`. After deploy, register / checkout / paid order should log `Insider [event] SUCCESS` and `system = INSIDER` in `integration_logs`.
 
 ---
 
@@ -219,7 +223,7 @@ Need from Insider UAE partner (`swissarabianuatnew`):
 
 1. Turn **on** Product Detail Page View collection into UCD (`eventCollectionStatus.productPage`).
 2. Turn **on** **Cart/Browsed/Purchased Items from Event Parameters** (and browse-abandon UCD if separate).
-3. Confirm whether this partner’s Web SDK accepts `{ type: "checkout" }` or we must register a custom event `checkout_started` in Attributes & Events.
+3. Web SDK `{ type: "checkout" }` is live on Azure Dev (`insiderObject.page.type === "Checkout"`). Backend also sends `checkout_started` on first from-cart. CRM still needs the custom event name in Attributes & Events if collect 4xx.
 4. Confirm which **channels** Wave 2 journeys will use (email / WhatsApp / web push) so we know if `gdpr_optin` / `sms_optin` are blocking.
 
 Paste back: screenshot or text of collection flags + checkout page-type answer.
@@ -230,7 +234,7 @@ Ready-to-copy:
 Please enable for partner swissarabianuatnew (id 10015366):
 1) Product Detail Page View → UCD
 2) Cart/Browsed/Purchased Items from Event Parameters
-Confirm: does Web SDK type "checkout" work on this account, or should we send custom_event checkout_started?
+Confirm: Web SDK type "checkout" is already firing on Azure Dev. Please register custom events checkout_started, order_cancelled, order_refunded in Attributes & Events if missing.
 Which channels will you use for welcome / cart abandon / browse abandon (email, WhatsApp, web push)?
 ```
 
@@ -243,8 +247,10 @@ Which channels will you use for welcome / cart abandon / browse abandon (email, 
 | Module | `src/modules/integrations/insider/` |
 | Queue | `insider-events` |
 | Register | `PlatformCustomerRegistrationService` → `publishUserRegister` (self-service only) |
-| Purchase | `OrderLifecycleService` first `PAID` **with** `customerId` → `publishPurchase` |
-| Env | `INSIDER_ENABLED=true`, `INSIDER_PARTNER_NAME`, `INSIDER_API_KEY` |
+| Purchase | `OrderLifecycleService` first `PAID` **with** `customerId` **or** guest email/phone → `publishPurchase` |
+| Checkout started | First `POST /storefront/checkout/from-cart` |
+| Cancel / refund | Order cancel window; admin refund request |
+| Env | `INSIDER_ENABLED=true`, `INSIDER_PARTNER_NAME`, `INSIDER_API_KEY` (UCD token = `X-REQUEST-TOKEN`) |
 | Skip | Missing flag/key, or `REDIS_ENABLED=false` (stub) |
 
 `INSIDER_WORKER_ENABLED` is **unused**; the processor only checks `INSIDER_ENABLED`.
@@ -257,6 +263,6 @@ Which channels will you use for welcome / cart abandon / browse abandon (email, 
 2. Website Wave 2A (this slice): page types + cart snapshot + `remove_from_cart`.
 3. Verify on Azure Dev User Profiles (section 5.6).
 4. CRM: switch on Architect journeys (welcome, browse, cart, checkout, post-purchase).
-5. Backend Wave 2B only when CRM names consent / cancel / guest purchase as blockers.
+5. Backend Wave 2B is live — FE only sends `marketingConsent` / `smsConsent` on register; do not call collect/upsert from the website.
 
 Website implementation chat should attach this file and ignore the old `setItem` / `addItem` guide.
