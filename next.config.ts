@@ -69,6 +69,12 @@ const catalogMediaPatterns = [
       "ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
     pathname: "/catalog/media/**",
   },
+  {
+    protocol: "http" as const,
+    hostname: "192.168.18.33",
+    port: "3000",
+    pathname: "/catalog/media/**",
+  },
   // All LAN IPs on this machine — covers any 192.168.x.x backend in dev
   ...lanDevOrigins().map((ip) => ({
     protocol: "http" as const,
