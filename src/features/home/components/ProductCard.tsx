@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { notesFromFamily } from "@/features/cart/data/cartContent";
+import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
 import { formatMoney } from "@/features/home/data/homeContent";
 import type { HomeProductBadge } from "@/features/home/types/home";
@@ -40,8 +41,10 @@ export function ProductCard({
   density = "default",
 }: ProductCardProps) {
   const addToCart = useAddToCart();
+  const addCatalogProduct = useAddCatalogProduct();
   const [failed, setFailed] = useState<Record<number, boolean>>({});
   const [active, setActive] = useState(0);
+  const [adding, setAdding] = useState(false);
   const currency = product.currency ?? "USD";
   const canAdd = !addDisabled && product.price != null && product.price >= 0;
   const href = `/products/${product.slug}`;
@@ -210,21 +213,33 @@ export function ProductCard({
       <div className={compact ? "pt-2" : "px-1 pb-1 pt-3"}>
         <button
           type="button"
-          disabled={!canAdd}
+          disabled={!canAdd || adding}
           onClick={() => {
-            if (!canAdd || product.price == null) return;
-            addToCart({
-              productId: product.id,
-              variantId: product.variantId ?? product.id,
+            if (!canAdd || product.price == null || adding) return;
+            const imageUrl = gallery[safeIndex] ?? product.image ?? undefined;
+            if (product.variantId || product.sku) {
+              addToCart({
+                productId: product.id,
+                variantId: product.variantId ?? product.id,
+                slug: product.slug,
+                title: product.name,
+                imageUrl,
+                unitPrice: product.price,
+                currency,
+                notes: notesFromFamily(product.family),
+                sku: product.sku,
+                category: product.family || null,
+              });
+              return;
+            }
+            setAdding(true);
+            void addCatalogProduct({
               slug: product.slug,
               title: product.name,
-              imageUrl: gallery[safeIndex] ?? product.image ?? undefined,
-              unitPrice: product.price,
-              currency,
-              notes: notesFromFamily(product.family),
-              sku: product.sku,
-              category: product.family || null,
-            });
+              imageUrl,
+              price: product.price,
+              family: product.family,
+            }).finally(() => setAdding(false));
           }}
           className={`flex w-full cursor-pointer items-center justify-center bg-terra font-semibold uppercase text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted ${
             compact
@@ -232,7 +247,7 @@ export function ProductCard({
               : "h-[42px] text-[12px] tracking-[0.1em]"
           }`}
         >
-          Add
+          {adding ? "Adding…" : "Add"}
         </button>
       </div>
     </article>

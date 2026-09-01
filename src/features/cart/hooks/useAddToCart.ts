@@ -6,6 +6,7 @@ import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { addCartItem } from "../api/cart.service";
 import { DEFAULT_SIZE_LABEL } from "../data/cartContent";
+import { productPageUrl } from "../utils/insiderCartItem";
 import { storeCartId } from "../utils/guestToken";
 
 type AddPayload = Omit<CartLine, "quantity"> & {
@@ -18,11 +19,6 @@ type AddPayload = Omit<CartLine, "quantity"> & {
   category?: string | null;
   brand?: string | null;
 };
-
-function productPageUrl(slug: string): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  return `${window.location.origin}/products/${slug}`;
-}
 
 /** Adds a product to the cart (optimistic + API sync) and opens the side sheet. */
 export function useAddToCart() {
@@ -37,6 +33,9 @@ export function useAddToCart() {
     const line: CartLine = {
       sizeLabel: DEFAULT_SIZE_LABEL,
       ...cartFields,
+      sku,
+      category,
+      brand,
       quantity: quantity ?? 1,
     };
 

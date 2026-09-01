@@ -125,6 +125,16 @@ export type InsiderCartItemPayload = InsiderProductPayload & {
   quantity: number;
 };
 
+export type InsiderCartSnapshot = {
+  total: number;
+  items: InsiderCartItemPayload[];
+};
+
+export type InsiderListingPage = {
+  taxonomy?: string | null;
+  items?: InsiderProductPayload[];
+};
+
 function productUrl(product: InsiderProductPayload): string {
   return (
     product.productUrl ??
@@ -177,22 +187,60 @@ export function insiderIdentify(user: InsiderIdentifyUser): void {
     });
     // Do not init here on first load — that sends page_type "other" and
     // Insider ignores a later product+init for the hit. Page views come from
-    // insiderProductViewed / insiderOtherPage. If the SDK is already up
-    // (SPA), init once so user stitch still flushes with the last page type.
+    // the route helpers below. If the SDK is already up (SPA), init once so
+    // user stitch still flushes with the last page type.
     if (window.Insider?.initialized === true) {
       queue().push({ type: "init" });
     }
   });
 }
 
-/**
- * Non-PDP pages — Other Page View. PDPs must not call this; they send product + init.
- */
-export function insiderOtherPage(): void {
+function pushPage(type: string, value?: Record<string, unknown>): void {
   runWhenReady(() => {
-    queue().push({ type: "other" });
+    if (value) queue().push({ type, value });
+    else queue().push({ type });
     queue().push({ type: "init" });
   });
+}
+
+/** Home — `home_page_view`. */
+export function insiderHomePage(): void {
+  pushPage("home");
+}
+
+/** Listing / collection / search PLP — `listing_page_view`. */
+export function insiderListingPage(page?: InsiderListingPage): void {
+  const value: Record<string, unknown> = {};
+  if (page?.taxonomy) value.taxonomy = [page.taxonomy];
+  if (page?.items?.length) {
+    value.items = page.items.map((item) => productQueueValue(item));
+  }
+  pushPage("category", Object.keys(value).length ? value : undefined);
+}
+
+/** Cart page — `cart_page_view`. Must include the current line items. */
+export function insiderCartPage(cart: InsiderCartSnapshot): void {
+  pushPage("cart", {
+    total: cart.total,
+    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
+  });
+}
+
+/**
+ * Checkout flow — checkout page view.
+ * Partner `ins.js` may ignore `type: "checkout"`; CRM can fall back to a
+ * custom `checkout_started` event later (Wave 2B).
+ */
+export function insiderCheckoutPage(): void {
+  pushPage("checkout");
+}
+
+/**
+ * Account, login, content, confirmation, 404 — Other Page View.
+ * PDPs must not call this; they send product + init.
+ */
+export function insiderOtherPage(): void {
+  pushPage("other");
 }
 
 /**
@@ -224,6 +272,20 @@ export function insiderAddToCart(item: InsiderCartItemPayload): void {
   runWhenReady(() => {
     queue().push({
       type: "add_to_cart",
+      value: productQueueValue(item, item.quantity),
+    });
+  });
+}
+
+/**
+ * Remove from cart (`item_removed_from_cart`).
+ * Fire AFTER the cart DELETE/PATCH success — not on button click.
+ * Does not need a following `init`.
+ */
+export function insiderRemoveFromCart(item: InsiderCartItemPayload): void {
+  runWhenReady(() => {
+    queue().push({
+      type: "remove_from_cart",
       value: productQueueValue(item, item.quantity),
     });
   });

@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  insiderAddToCart,
+  insiderRemoveFromCart,
+} from "@/lib/insider";
 import { useCartStore } from "@/stores/useCartStore";
 import {
   updateCartItem,
@@ -7,12 +11,14 @@ import {
   clearCartItems,
   getActiveCart,
 } from "../api/cart.service";
+import { cartLineToInsiderItem } from "../utils/insiderCartItem";
 import { storeCartId } from "../utils/guestToken";
 import { toast } from "@/components/ui/Toaster";
 
 /**
  * Provides optimistic cart mutations backed by the API.
  * On failure the cart is re-fetched to restore authoritative state.
+ * Insider cart events fire only after the matching API returns 200.
  */
 export function useCartMutations() {
   const lines = useCartStore((s) => s.lines);
@@ -53,6 +59,9 @@ export function useCartMutations() {
       return;
     }
 
+    const previousQty = line.quantity;
+    const delta = quantity - previousQty;
+
     // Optimistic
     updateQuantity(variantId, quantity);
 
@@ -64,6 +73,11 @@ export function useCartMutations() {
       });
       storeCartId(cart.cartId);
       setCartFromApi(cart);
+      if (delta > 0) {
+        insiderAddToCart(cartLineToInsiderItem(line, delta));
+      } else if (delta < 0) {
+        insiderRemoveFromCart(cartLineToInsiderItem(line, -delta));
+      }
     } catch {
       toast("Could not update quantity. Please try again.", "error");
       void refetch();
@@ -90,6 +104,7 @@ export function useCartMutations() {
       });
       storeCartId(cart.cartId);
       setCartFromApi(cart);
+      insiderRemoveFromCart(cartLineToInsiderItem(line, line.quantity));
     } catch {
       toast("Could not remove item. Please try again.", "error");
       void refetch();
@@ -98,6 +113,8 @@ export function useCartMutations() {
 
   /** Clear all cart lines. */
   async function clearCart() {
+    const snapshot = [...lines];
+
     if (!cartId) {
       clear();
       return;
@@ -110,6 +127,9 @@ export function useCartMutations() {
       const cart = await clearCartItems(cartId);
       storeCartId(cart.cartId);
       setCartFromApi(cart);
+      for (const line of snapshot) {
+        insiderRemoveFromCart(cartLineToInsiderItem(line, line.quantity));
+      }
     } catch {
       toast("Could not clear cart. Please try again.", "error");
       void refetch();

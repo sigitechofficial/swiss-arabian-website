@@ -21,6 +21,9 @@ export type CartLine = {
   notes?: string[];
   /** False when API reports item is not sellable (e.g. out of stock). */
   isSellable?: boolean;
+  sku?: string;
+  category?: string | null;
+  brand?: string | null;
 };
 
 type CartTotals = {
@@ -142,6 +145,9 @@ export const useCartStore = create<CartState>()(
               sizeLabel: item.variantName ?? local?.sizeLabel,
               notes: local?.notes,
               isSellable: item.sellabilitySummary?.isSellable ?? true,
+              sku: item.sku || local?.sku,
+              category: local?.category,
+              brand: local?.brand,
             };
           });
 

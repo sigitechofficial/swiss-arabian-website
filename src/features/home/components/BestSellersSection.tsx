@@ -6,14 +6,13 @@ import {
   bestSellers,
   formatUsd,
 } from "@/features/home/data/homeContent";
-import { notesFromFamily } from "@/features/cart/data/cartContent";
-import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
+import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { ProductCard } from "./ProductCard";
 import { Accent, SectionHeader } from "./SectionHeader";
 
 export function BestSellersSection() {
-  const addToCart = useAddToCart();
+  const addCatalogProduct = useAddCatalogProduct();
   const featured = bestSellerFeatured;
 
   return (
@@ -54,19 +53,15 @@ export function BestSellersSection() {
                 </p>
                 <button
                   type="button"
-                  onClick={() =>
-                    addToCart({
-                      productId: featured.id,
-                      variantId: featured.id,
+                  onClick={() => {
+                    void addCatalogProduct({
                       slug: featured.slug,
                       title: featured.name,
                       imageUrl: featured.image,
-                      unitPrice: featured.price,
-                      currency: "USD",
-                      notes: notesFromFamily(featured.family),
-                      category: featured.family || null,
-                    })
-                  }
+                      price: featured.price,
+                      family: featured.family,
+                    });
+                  }}
                   className="bg-white px-4 py-2.5 text-[12.5px] font-semibold text-ink transition-colors hover:bg-cream sm:px-6"
                 >
                   Add

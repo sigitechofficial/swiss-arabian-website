@@ -7,11 +7,10 @@ import {
   shaghafSpotlight,
 } from "@/features/home/data/homeContent";
 import { homeAssets } from "@/features/home/constants/homeAssets";
-import { notesFromFamily } from "@/features/cart/data/cartContent";
-import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
+import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 
 export function ShaghafSection() {
-  const addToCart = useAddToCart();
+  const addCatalogProduct = useAddCatalogProduct();
 
   return (
     <section className="bg-ash py-16" aria-label="The Shaghaf collection">
@@ -65,19 +64,15 @@ export function ShaghafSection() {
                     </p>
                     <button
                       type="button"
-                      onClick={() =>
-                        addToCart({
-                          productId: item.id,
-                          variantId: item.id,
+                      onClick={() => {
+                        void addCatalogProduct({
                           slug: item.slug,
                           title: item.name,
                           imageUrl: item.image,
-                          unitPrice: item.price,
-                          currency: "USD",
-                          notes: notesFromFamily(item.family),
-                          category: item.family || null,
-                        })
-                      }
+                          price: item.price,
+                          family: item.family,
+                        });
+                      }}
                       className="border border-sa-primary px-4 py-1.5 text-[12.5px] font-semibold text-sa-primary transition-colors hover:bg-sa-primary hover:text-page"
                     >
                       Add

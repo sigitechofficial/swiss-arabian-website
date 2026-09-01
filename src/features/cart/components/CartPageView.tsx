@@ -7,13 +7,13 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { AppButton, AppCard } from "@/components/ui";
+import { useCartMutations } from "../hooks/useCartMutations";
 import { useCartStore } from "@/stores/useCartStore";
 import { brandColors } from "@/theme/designTokens";
 
 export function CartPageView() {
   const lines = useCartStore((s) => s.lines);
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const removeLine = useCartStore((s) => s.removeLine);
+  const { updateItem, removeItem } = useCartMutations();
   const subtotal = useCartStore((s) => s.subtotal());
 
   if (lines.length === 0) {
@@ -66,7 +66,7 @@ export function CartPageView() {
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <IconButton
                   aria-label="Decrease quantity"
-                  onClick={() => updateQuantity(line.variantId, line.quantity - 1)}
+                  onClick={() => void updateItem(line.variantId, line.quantity - 1)}
                 >
                   <Minus size={16} />
                 </IconButton>
@@ -75,13 +75,13 @@ export function CartPageView() {
                 </Typography>
                 <IconButton
                   aria-label="Increase quantity"
-                  onClick={() => updateQuantity(line.variantId, line.quantity + 1)}
+                  onClick={() => void updateItem(line.variantId, line.quantity + 1)}
                 >
                   <Plus size={16} />
                 </IconButton>
                 <IconButton
                   aria-label="Remove item"
-                  onClick={() => removeLine(line.variantId)}
+                  onClick={() => void removeItem(line.variantId)}
                   sx={{ color: brandColors.terra }}
                 >
                   <Trash2 size={16} />
