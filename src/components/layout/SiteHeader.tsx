@@ -12,6 +12,7 @@ import { homeAssets } from "@/features/home/constants/homeAssets";
 import { useNavigation } from "@/features/navigation/hooks/useNavigation";
 import { DesktopNav } from "./DesktopNav";
 import { IconCart, IconPin, IconSearch, IconTheme, IconUser } from "./HeaderIcons";
+import { HeaderSearch } from "@/features/search/components/HeaderSearch";
 
 /**
  * Global header — matches prototype Landing Page 001
@@ -68,16 +69,14 @@ export function SiteHeader() {
         </Link>
 
         <div className="ml-auto flex items-center gap-5">
-          <label className="hidden items-center gap-2.5 border border-bone bg-cream px-4 py-2 md:flex dark:bg-section-soft dark:border-sa-input">
+          <HeaderSearch />
+          <Link
+            href="/search"
+            className="flex size-9 items-center justify-center text-sa-primary transition-opacity hover:opacity-70 md:hidden"
+            aria-label="Search products"
+          >
             <IconSearch />
-            <span className="sr-only">Search products</span>
-            <input
-              type="search"
-              placeholder="What are you looking for?"
-              className="w-40 bg-transparent font-sans text-[12.4px] text-sa-muted outline-none placeholder:text-sa-muted"
-              aria-label="Search products"
-            />
-          </label>
+          </Link>
 
           <Link
             href={isAuthenticated ? "/account" : "/login"}

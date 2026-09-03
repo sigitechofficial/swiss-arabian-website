@@ -26,10 +26,15 @@ import {
   storeOrderNumber,
   storeGuestOrderAccessToken,
   storePaymentTransactionId,
+  storeZonePaymentMethodId,
   getPayAttempt,
   storeStripeClientSecret,
   storeStripePublishableKey,
 } from "../utils/checkoutSession";
+import {
+  pickPreferredPaymentMethod,
+  sortPaymentMethodsForDisplay,
+} from "../utils/paymentMethod";
 import type {
   CheckoutSessionResponse,
   DeliveryMethodOption,
@@ -131,7 +136,7 @@ export function useCheckout(): UseCheckoutReturn {
           listPaymentMethods(id),
         ]);
         setDeliveryMethods(delivery);
-        setPaymentMethods(payment);
+        setPaymentMethods(sortPaymentMethodsForDisplay(payment));
 
         // Auto-select default delivery
         const defDelivery = delivery.find((d) => d.isDefault) ?? delivery[0];
@@ -145,10 +150,11 @@ export function useCheckout(): UseCheckoutReturn {
           }
         }
 
-        // Auto-select default payment
-        const defPayment = payment.find((p) => p.isDefault) ?? payment[0];
+        // Prefer Paymob when the zone offers it (otherwise backend default)
+        const defPayment = pickPreferredPaymentMethod(payment);
         if (defPayment) {
           setSelectedPaymentId(defPayment.zonePaymentMethodId);
+          storeZonePaymentMethodId(defPayment.zonePaymentMethodId);
           try {
             const updated = await selectPaymentMethod(id, defPayment.paymentMethodId);
             setSession(updated);
@@ -200,6 +206,7 @@ export function useCheckout(): UseCheckoutReturn {
       );
       if (!method || !session) return;
       setSelectedPaymentId(zonePaymentMethodId);
+      storeZonePaymentMethodId(zonePaymentMethodId);
       try {
         const updated = await selectPaymentMethod(
           session.checkoutSessionId,
@@ -363,11 +370,16 @@ export function useCheckout(): UseCheckoutReturn {
           return;
         }
 
-        // COD or no action — go straight to confirmation
         if (payment.paymentExecutionStatus === "PENDING_PROVIDER_EXECUTION") {
-          console.warn("Payment provider not configured:", payment.warnings);
+          setErrorMsg(
+            payment.warnings?.[0] ??
+              "Card payment is not configured on the server. Paymob was not started.",
+          );
+          setStatus("ready");
+          return;
         }
 
+        // COD or no provider action — confirmation
         router.push(`/order-confirmation/${order.orderId}`);
       } catch (e) {
         const ADDRESS_ERROR_MESSAGES: Record<string, string> = {

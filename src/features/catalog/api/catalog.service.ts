@@ -1,5 +1,8 @@
 import { apiGet } from "@/lib/api/apiClient";
-import { storefrontContextQuery } from "@/lib/storefront/context";
+import {
+  storefrontContextQuery,
+  toAuthSalesChannelCode,
+} from "@/lib/storefront/context";
 import type {
   ProductCollectionRef,
   ProductDetail,
@@ -9,6 +12,7 @@ import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
 
 export const CATALOG_PAGE_SIZE = 24;
+export const CATALOG_SEARCH_PAGE_SIZE = 20;
 
 export type CatalogPagination = {
   page: number;
@@ -59,6 +63,22 @@ export const catalogKeys = {
       slug,
       zoneCode ?? "default",
       limit,
+    ] as const,
+  search: (
+    q: string,
+    zoneCode?: string | null,
+    page = 1,
+    limit = CATALOG_SEARCH_PAGE_SIZE,
+    sort = "newest",
+  ) =>
+    [
+      ...catalogKeys.all,
+      "search",
+      zoneCode ?? "default",
+      q,
+      page,
+      limit,
+      sort,
     ] as const,
 };
 
@@ -311,6 +331,55 @@ function normalizePagination(
     limit: resolvedLimit,
     total,
     totalPages,
+  };
+}
+
+export type CatalogSearchSort =
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "name_asc"
+  | "name_desc"
+  | "availability"
+  | "sort_order";
+
+export type CatalogSearchOptions = {
+  q: string;
+  page?: number;
+  limit?: number;
+  sort?: CatalogSearchSort;
+  onlySellable?: boolean;
+};
+
+export async function fetchCatalogSearch(
+  zoneCode: string | null | undefined,
+  options: CatalogSearchOptions,
+): Promise<ProductListResult> {
+  const q = options.q.trim();
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.max(1, options.limit ?? CATALOG_SEARCH_PAGE_SIZE);
+  const sort = options.sort ?? "newest";
+  const onlySellable = options.onlySellable !== false;
+  const qs = new URLSearchParams(
+    storefrontContextQuery({
+      zoneCode,
+      salesChannelCode: toAuthSalesChannelCode(zoneCode),
+    }),
+  );
+  qs.set("q", q);
+  qs.set("onlySellable", onlySellable ? "true" : "false");
+  qs.set("page", String(page));
+  qs.set("limit", String(limit));
+  qs.set("sort", sort);
+
+  const data = await apiGet<ApiProductListData>(
+    `/storefront/catalog/search?${qs.toString()}`,
+    { skipAuth: true },
+  );
+  const products = (data.products ?? []).map(mapProduct);
+  return {
+    products,
+    pagination: normalizePagination(data.pagination, page, limit, products.length),
   };
 }
 

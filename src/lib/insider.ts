@@ -227,12 +227,12 @@ export function insiderCartPage(cart: InsiderCartSnapshot): void {
 }
 
 /**
- * Checkout flow — checkout page view.
- * Partner `ins.js` may ignore `type: "checkout"`; CRM can fall back to a
- * custom `checkout_started` event later (Wave 2B).
+ * Checkout flow — documented Web SDK page view is `other_page_view`
+ * (`type: "other"` + `init`). Do not send `type: "checkout"` unless Insider
+ * confirms this partner accepts it. Funnel start stays backend `checkout_started`.
  */
 export function insiderCheckoutPage(): void {
-  pushPage("checkout");
+  pushPage("other");
 }
 
 /**
