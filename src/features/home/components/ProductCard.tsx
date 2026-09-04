@@ -7,6 +7,8 @@ import { notesFromFamily } from "@/features/cart/data/cartContent";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
 import { formatMoney } from "@/features/home/data/homeContent";
+import { isProductUuid } from "@/features/wishlist/utils/productId";
+import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import type { HomeProductBadge } from "@/features/home/types/home";
 
 /** Landing + catalog card model */
@@ -127,10 +129,17 @@ export function ProductCard({
 
   return (
     <article
-      className="group flex flex-col overflow-hidden"
+      className="group relative flex flex-col overflow-hidden"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      {isProductUuid(product.id) ? (
+        <div
+          className={`absolute z-[2] ${compact ? "right-1.5 top-1.5" : "right-3 top-3"}`}
+        >
+          <WishlistHeartButton productId={product.id} size="card" />
+        </div>
+      ) : null}
       <Link href={href} className="flex flex-1 cursor-pointer flex-col">
         <div
           className={`relative flex aspect-square items-center justify-center overflow-hidden ${

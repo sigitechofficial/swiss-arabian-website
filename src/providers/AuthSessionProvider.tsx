@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { getAccessToken, getRefreshToken } from "@/lib/auth/token";
 import { refreshAccessToken } from "@/lib/api/apiClient";
+import { endSession } from "@/lib/auth/endSession";
 import { fetchCustomerMe } from "@/features/auth/api/auth.service";
 import { applyCustomerProfile } from "@/features/auth/lib/applyAuthSession";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -42,10 +43,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         if (!getAccessToken() && getRefreshToken()) {
           const ok = await refreshAccessToken();
           if (!ok) {
-            if (!cancelled) {
-              setUser(null);
-              setBootstrapped(true);
-            }
+            endSession();
+            if (!cancelled) setBootstrapped(true);
             return;
           }
         }
@@ -53,17 +52,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         const me = await fetchCustomerMe();
         if (!cancelled) applyCustomerProfile(me);
       } catch {
-        const ok = await refreshAccessToken();
-        if (ok) {
-          try {
-            const me = await fetchCustomerMe();
-            if (!cancelled) applyCustomerProfile(me);
-          } catch {
-            if (!cancelled && !useAuthStore.getState().user) setUser(null);
-          }
-        } else if (!cancelled && !useAuthStore.getState().user) {
-          setUser(null);
-        }
+        endSession();
       } finally {
         if (!cancelled) setBootstrapped(true);
       }

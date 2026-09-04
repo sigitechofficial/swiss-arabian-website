@@ -23,6 +23,7 @@ import {
 import { PDP_TRUST } from "../data/pdpContent";
 import { notesFromCatalogHtml } from "../utils/catalogHtml";
 import { toProductCardModel } from "../utils/toProductCardModel";
+import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { ProductImageZoom } from "./ProductImageZoom";
 
 export function ProductDetailPageView() {
@@ -317,6 +318,7 @@ export function ProductDetailPageView() {
               </button>
             </div>
 
+            <WishlistHeartButton productId={data.id} size="pdp" />
             <button
               type="button"
               disabled={!canAdd}

@@ -20,7 +20,7 @@ type RequestOptions = {
 let refreshInFlight: Promise<boolean> | null = null;
 
 const PUBLIC_AUTH_PATH =
-  /^\/storefront\/auth\/(login|register|refresh|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
+  /^\/storefront\/auth\/(login|register|refresh|logout|logout-all|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
 
 async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
@@ -96,6 +96,14 @@ async function request<T>(
     if (refreshed) {
       return request<T>(method, path, body, options, true);
     }
+    endSession();
+    throw new ApiClientError(
+      401,
+      "Your session has expired. Please sign in again.",
+    );
+  }
+
+  if (res.status === 401 && !options.skipAuth) {
     endSession();
     throw new ApiClientError(
       401,

@@ -1,4 +1,6 @@
-import { AccountPlaceholderPageView } from "@/features/account";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/ui";
+import { AccountWishlistPageView } from "@/features/wishlist";
 
 export const metadata = {
   title: "Wishlist",
@@ -6,9 +8,8 @@ export const metadata = {
 
 export default function AccountWishlistPage() {
   return (
-    <AccountPlaceholderPageView
-      title="Wishlist"
-      description="Saved wishlist items will appear here once the storefront wishlist API is available."
-    />
+    <Suspense fallback={<PageLoading label="Loading wishlist…" fill />}>
+      <AccountWishlistPageView title="Wishlist" />
+    </Suspense>
   );
 }
