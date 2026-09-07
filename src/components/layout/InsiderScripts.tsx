@@ -11,7 +11,6 @@ import {
   insiderHomePage,
   insiderListingPage,
   insiderOtherPage,
-  insiderPurchasePage,
   startInsiderSdk,
 } from "@/lib/insider";
 import { useCartStore } from "@/stores/useCartStore";
@@ -48,6 +47,7 @@ export function InsiderScripts() {
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
     if (isProductDetail(pathname) || isCart(pathname)) return;
+    if (isConfirmation(pathname)) return;
     if (consumeHeadInsiderInit(pathname)) return;
 
     if (isHome(pathname)) {
@@ -56,10 +56,6 @@ export function InsiderScripts() {
     }
     if (isListing(pathname)) {
       insiderListingPage({ taxonomy: listingTaxonomy(pathname) });
-      return;
-    }
-    if (isConfirmation(pathname)) {
-      insiderPurchasePage();
       return;
     }
     if (isCheckoutFlow(pathname)) {

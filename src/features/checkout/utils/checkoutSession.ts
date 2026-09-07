@@ -1,5 +1,10 @@
 /** sessionStorage / localStorage keys and helpers for the checkout + order lifecycle. */
 
+import {
+  toInsiderPurchaseValueFromOrder,
+  type InsiderPurchaseValue,
+} from "@/lib/insider";
+
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
 const CHECKOUT_SESSION_KEY = "sa_checkout_session_id";
@@ -67,6 +72,55 @@ export function storeOrderNumber(orderNumber: string): void {
   } catch {
     // ignore
   }
+}
+
+/** Keep in sync with the layout boot script (`sa_insider_purchase`). */
+export const INSIDER_PURCHASE_STORAGE_KEY = "sa_insider_purchase";
+
+export type StoredInsiderPurchasePayload = {
+  order_id: string;
+  total: number;
+  quantity: number;
+  items: unknown[];
+  shipping_cost?: number;
+  /** UUID from the confirmation URL — not sent to InsiderQueue. */
+  matchId?: string;
+};
+
+/** Cached Web SDK purchase value so thank-you can push it before ins.js. */
+export function storeInsiderPurchasePayload(
+  payload: StoredInsiderPurchasePayload,
+): void {
+  if (typeof window === "undefined" || !payload.order_id) return;
+  try {
+    localStorage.setItem(INSIDER_PURCHASE_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore
+  }
+}
+
+export function getStoredInsiderPurchasePayload(): StoredInsiderPurchasePayload | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(INSIDER_PURCHASE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredInsiderPurchasePayload;
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function persistInsiderPurchaseFromOrder(order: {
+  orderId: string;
+  orderNumber?: string | null;
+  totals?: { total?: string; shipping?: string } | null;
+  lines?: Parameters<typeof toInsiderPurchaseValueFromOrder>[0]["lines"];
+}): InsiderPurchaseValue {
+  const value = toInsiderPurchaseValueFromOrder(order);
+  storeInsiderPurchasePayload({ ...value, matchId: order.orderId });
+  return value;
 }
 
 export function getStoredOrderNumber(): string | null {

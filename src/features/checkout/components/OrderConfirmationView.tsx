@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { formatMoney } from "@/features/home/data/homeContent";
+import {
+  consumeHeadInsiderInit,
+  insiderPurchasePage,
+  type InsiderPurchaseValue,
+} from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
+import {
+  getStoredInsiderPurchasePayload,
+  persistInsiderPurchaseFromOrder,
+} from "../utils/checkoutSession";
 import { CheckoutStepBar } from "./CheckoutShell";
 import type { OrderAddressSummary, OrderResponse } from "../types/checkout";
 
@@ -172,13 +181,54 @@ function SummaryRow({
 // ─── Main view ────────────────────────────────────────────────────────────────
 
 export function OrderConfirmationView({ orderId }: { orderId: string }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const shouldVerify = searchParams.get("verify") === "1";
+  const purchaseQueued = useRef(false);
 
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (purchaseQueued.current) return;
+    if (consumeHeadInsiderInit(pathname)) {
+      purchaseQueued.current = true;
+      return;
+    }
+    const stored = getStoredInsiderPurchasePayload();
+    if (
+      !stored ||
+      !Array.isArray(stored.items) ||
+      (stored.matchId !== orderId && stored.order_id !== orderId)
+    ) {
+      return;
+    }
+    const value: InsiderPurchaseValue = {
+      order_id: String(stored.order_id),
+      total: Number(stored.total) || 0,
+      quantity: Number(stored.quantity) || 0,
+      items: stored.items as Record<string, unknown>[],
+    };
+    if (typeof stored.shipping_cost === "number") {
+      value.shipping_cost = stored.shipping_cost;
+    }
+    insiderPurchasePage(value);
+    purchaseQueued.current = true;
+  }, [pathname, orderId]);
+
+  useEffect(() => {
+    if (!order) return;
+    const value = persistInsiderPurchaseFromOrder(order);
+    if (purchaseQueued.current) return;
+    if (consumeHeadInsiderInit(pathname)) {
+      purchaseQueued.current = true;
+      return;
+    }
+    insiderPurchasePage(value);
+    purchaseQueued.current = true;
+  }, [order, pathname]);
 
   useEffect(() => {
     async function load() {

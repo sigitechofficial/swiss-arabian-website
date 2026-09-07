@@ -27,10 +27,10 @@ const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mo
 
 /**
  * Web SDK: page type + init must exist in InsiderQueue *before* ins.js.
- * Confirmation uses type:purchase (onboarding inspector). May duplicate backend PAID collect.
- * PDP/cart skip here (need product/cart payload from the client).
+ * Confirmation sends type:purchase with value (order_id, total, quantity, items[]).
+ * Payload is read from localStorage (saved at place-order / confirmation).
  */
-const insiderQueueBootScript = `(function(){try{window.InsiderQueue=window.InsiderQueue||[];var p=location.pathname||"/";var s=p.split("/").filter(Boolean);if(p.indexOf("/order-confirmation")===0||p.indexOf("/checkout/payment/success")===0){window.InsiderQueue.push({type:"purchase"});window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;return;}var pdp=s.length===2&&s[0]==="products";var cart=s.length===1&&s[0]==="cart";if(pdp||cart)return;var t="other";if(p==="/"||p==="")t="home";else if(s[0]==="products"||s[0]==="search"||s[0]==="collections")t="category";window.InsiderQueue.push({type:t});window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;}catch(e){}})();`;
+const insiderQueueBootScript = `(function(){try{window.InsiderQueue=window.InsiderQueue||[];var p=location.pathname||"/";var s=p.split("/").filter(Boolean);if(p.indexOf("/order-confirmation")===0){var oid=s[1]||"";var val={order_id:oid,total:0,quantity:0,items:[]};try{var raw=localStorage.getItem("sa_insider_purchase");if(raw){var parsed=JSON.parse(raw);if(parsed&&typeof parsed==="object"){var match=String(parsed.matchId||"");var same=!match||match===oid||String(parsed.order_id)===oid;if(same){val.order_id=String(parsed.order_id||oid);val.total=Number(parsed.total);if(!isFinite(val.total))val.total=0;val.quantity=Number(parsed.quantity);if(!isFinite(val.quantity))val.quantity=0;val.items=Array.isArray(parsed.items)?parsed.items:[];if(typeof parsed.shipping_cost==="number")val.shipping_cost=parsed.shipping_cost;}}}}catch(e){}if(!Array.isArray(val.items))val.items=[];if(!val.order_id)val.order_id=oid;window.InsiderQueue.push({type:"purchase",value:val});window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;return;}var pdp=s.length===2&&s[0]==="products";var cart=s.length===1&&s[0]==="cart";if(pdp||cart)return;var t="other";if(p==="/"||p==="")t="home";else if(s[0]==="products"||s[0]==="search"||s[0]==="collections")t="category";window.InsiderQueue.push({type:t});window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;}catch(e){}})();`;
 
 export default function RootLayout({
   children,

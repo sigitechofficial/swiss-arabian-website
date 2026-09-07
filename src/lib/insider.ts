@@ -140,6 +140,88 @@ export type InsiderCartSnapshot = {
   items: InsiderCartItemPayload[];
 };
 
+export type InsiderPurchaseLineInput = {
+  sku: string;
+  productId?: string | null;
+  variantId?: string | null;
+  productName?: string | null;
+  variantName?: string | null;
+  quantity: string | number;
+  unitPrice: string | number;
+  imageUrl?: string | null;
+};
+
+export type InsiderPurchaseOrderInput = {
+  orderId: string;
+  total: string | number;
+  shipping?: string | number;
+  lines: InsiderPurchaseLineInput[];
+};
+
+/** Web SDK purchase `value` — order_id, total, quantity, items[] (array). */
+export type InsiderPurchaseValue = {
+  order_id: string;
+  total: number;
+  quantity: number;
+  items: Record<string, unknown>[];
+  shipping_cost?: number;
+};
+
+export function toInsiderPurchaseValueFromOrder(order: {
+  orderId: string;
+  orderNumber?: string | null;
+  totals?: { total?: string; shipping?: string } | null;
+  lines?: InsiderPurchaseLineInput[] | null;
+}): InsiderPurchaseValue {
+  return toInsiderPurchaseValue({
+    orderId: order.orderNumber || order.orderId,
+    total: order.totals?.total ?? 0,
+    shipping: order.totals?.shipping,
+    lines: order.lines ?? [],
+  });
+}
+
+export function toInsiderPurchaseValue(
+  order: InsiderPurchaseOrderInput,
+): InsiderPurchaseValue {
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const items = order.lines.map((line) => {
+    const qty = Number.parseInt(String(line.quantity), 10);
+    const quantity = Number.isFinite(qty) && qty > 0 ? qty : 1;
+    const price = Number(line.unitPrice);
+    const unitPrice = Number.isFinite(price) ? price : 0;
+    const id = line.variantId || line.productId || line.sku;
+    return {
+      id,
+      name: line.productName?.trim() || line.sku,
+      taxonomy: line.variantName ? [line.variantName] : [],
+      unit_price: unitPrice,
+      unit_sale_price: unitPrice,
+      quantity,
+      url: origin ? `${origin}/products/${encodeURIComponent(line.sku)}` : "",
+      product_image_url: line.imageUrl ?? "",
+      ...(line.sku ? { sku: line.sku } : {}),
+    };
+  });
+  const quantity = items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0,
+  );
+  const total = Number(order.total);
+  const shipping = Number(order.shipping);
+  const value: InsiderPurchaseValue = {
+    order_id: order.orderId,
+    total: Number.isFinite(total) ? total : 0,
+    quantity,
+    items,
+  };
+  if (Number.isFinite(shipping) && shipping > 0) {
+    value.shipping_cost = shipping;
+  }
+  return value;
+}
+
 export type InsiderListingPage = {
   taxonomy?: string | null;
   items?: InsiderProductPayload[];
@@ -249,8 +331,8 @@ export function insiderCheckoutPage(): void {
  * Thank-you / payment success — Web SDK `purchase` + `init` (onboarding inspector).
  * Backend still sends `purchase` on PAID; this can double-count until that is turned off.
  */
-export function insiderPurchasePage(): void {
-  pushPage("purchase");
+export function insiderPurchasePage(value: InsiderPurchaseValue): void {
+  pushPage("purchase", { ...value });
 }
 
 /**

@@ -26,6 +26,7 @@ import {
   storeOrderNumber,
   storeGuestOrderAccessToken,
   storeGuestOrderLines,
+  persistInsiderPurchaseFromOrder,
   storePaymentTransactionId,
   storeZonePaymentMethodId,
   getPayAttempt,
@@ -310,6 +311,7 @@ export function useCheckout(): UseCheckoutReturn {
         // Persist order info immediately
         storeOrderId(order.orderId);
         if (order.orderNumber) storeOrderNumber(order.orderNumber);
+        persistInsiderPurchaseFromOrder(order);
 
         // Refresh account order list so Purchase History shows the new order
         void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
