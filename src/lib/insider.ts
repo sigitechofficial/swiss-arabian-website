@@ -7,6 +7,8 @@ declare global {
     __SA_INSIDER_HEAD_PATH__?: string;
     /** Head already pushed user/currency/language/cart (PDP skips page+init). */
     __SA_INSIDER_HEAD_CONTEXT__?: boolean;
+    /** Access token present — React must flush user+page+init after /me. */
+    __SA_INSIDER_WAIT_AUTH__?: boolean;
     Insider?: {
       initialized?: boolean;
       identify?: (user: Record<string, unknown>) => void;
@@ -31,6 +33,7 @@ let sdkReady = false;
 let flushedPath: string | undefined;
 
 const INSIDER_UUID_KEY = "sa_insider_uuid";
+const INSIDER_USER_KEY = "sa_insider_user";
 const INSIDER_LANGUAGE = "en_US";
 const INSIDER_CURRENCY = "AED";
 
@@ -61,17 +64,27 @@ export function consumeHeadInsiderInit(pathname: string): boolean {
  */
 export function beginInsiderRouteFlush(pathname: string): boolean {
   if (typeof window === "undefined") return false;
+  if (window.__SA_INSIDER_WAIT_AUTH__) {
+    window.__SA_INSIDER_WAIT_AUTH__ = false;
+    flushedPath = pathname;
+    window.InsiderQueue = [];
+    return true;
+  }
   if (consumeHeadInsiderInit(pathname)) {
     flushedPath = pathname;
     return false;
   }
   if (flushedPath === pathname) return false;
   flushedPath = pathname;
+  window.InsiderQueue = [];
   return true;
 }
 
 export function resetInsiderRouteFlushForTests(): void {
   flushedPath = undefined;
+  if (typeof window !== "undefined") {
+    window.__SA_INSIDER_WAIT_AUTH__ = false;
+  }
 }
 
 export function getOrCreateInsiderUuid(): string {
@@ -85,6 +98,40 @@ export function getOrCreateInsiderUuid(): string {
     return created;
   } catch {
     return `anon-${Date.now().toString(16)}`;
+  }
+}
+
+function persistInsiderUserValue(value: Record<string, unknown>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(INSIDER_USER_KEY, JSON.stringify(value));
+    if (typeof value.uuid === "string" && value.uuid) {
+      localStorage.setItem(INSIDER_UUID_KEY, value.uuid);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function readStoredInsiderUserValue(): Record<string, unknown> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(INSIDER_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || !parsed.uuid) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredInsiderUser(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(INSIDER_USER_KEY);
+  } catch {
+    // ignore
   }
 }
 
@@ -326,22 +373,18 @@ function userQueueValue(user?: InsiderIdentifyUser | null): Record<string, unkno
   return value;
 }
 
-function cartQueueValue(
-  cart: InsiderCartSnapshot,
-  omitItems = false,
-): Record<string, unknown> {
-  const quantity = omitItems
-    ? 0
-    : cart.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-  const total = omitItems ? 0 : cart.total;
+function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
+  const quantity = cart.items.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  );
+  const total = cart.total;
   return {
     total,
     subtotal: total,
     shipping_cost: 0,
     quantity,
-    items: omitItems
-      ? []
-      : cart.items.map((item) => productQueueValue(item, item.quantity)),
+    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
   };
 }
 
@@ -353,8 +396,8 @@ export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
   cart?: InsiderCartSnapshot | null;
   currency?: string | null;
-  /** Listing tests treat cart line items as category products — keep items empty. */
-  omitCartItems?: boolean;
+  /** Listing InOne testers treat any cart items as category products — omit type:cart. */
+  skipCart?: boolean;
 }): void {
   runWhenReady(() => {
     const cart = input?.cart ?? { total: 0, items: [] };
@@ -362,24 +405,28 @@ export function pushInsiderUserContext(input?: {
       input?.currency?.trim() ||
       cart.items.find((item) => item.currency)?.currency ||
       INSIDER_CURRENCY;
-    queue().push({ type: "user", value: userQueueValue(input?.user) });
+    const userValue = input?.user
+      ? userQueueValue(input.user)
+      : (readStoredInsiderUserValue() ?? userQueueValue(null));
+    if (input?.user) persistInsiderUserValue(userValue);
+    queue().push({ type: "user", value: userValue });
     queue().push({ type: "currency", value: currency });
-    queue().push({
-      type: "cart",
-      value: cartQueueValue(cart, input?.omitCartItems === true),
-    });
+    if (input?.skipCart !== true) {
+      queue().push({
+        type: "cart",
+        value: cartQueueValue(cart),
+      });
+    }
   });
 }
 
 /**
- * Call after login OR registration — stitches the anonymous browser session
- * to the known platform customer inside Insider.
- * Do not push `init` here — a second init fails InOne "once per page" checks.
+ * Persist logged-in identifiers for the next hard reload (head script).
+ * Do not push `user` after `init` — InOne rejects that on Home when the
+ * session bootstrap (`/me`) finishes after the first page flush.
  */
 export function insiderIdentify(user: InsiderIdentifyUser): void {
-  runWhenReady(() => {
-    queue().push({ type: "user", value: userQueueValue(user) });
-  });
+  persistInsiderUserValue(userQueueValue(user));
 }
 
 function pushPage(type: string, value?: Record<string, unknown>): void {
@@ -441,6 +488,7 @@ export function insiderOtherPage(name = "Page"): void {
  * Call on logout — clears the Insider session link between browser and customer.
  */
 export function insiderLogout(): void {
+  clearStoredInsiderUser();
   runWhenReady(() => {
     window.Insider?.track?.logout();
   });

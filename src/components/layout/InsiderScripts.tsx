@@ -24,6 +24,7 @@ import { useCartStore } from "@/stores/useCartStore";
  */
 export function InsiderScripts() {
   const pathname = usePathname();
+  const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const [cartHydrated, setCartHydrated] = useState(false);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function InsiderScripts() {
 
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
+    if (!bootstrapped) return;
     if (isProductDetail(pathname) || isConfirmation(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
     if (!beginInsiderRouteFlush(pathname)) return;
@@ -68,7 +70,7 @@ export function InsiderScripts() {
           }
         : null,
       cart: snapshot,
-      omitCartItems: isListing(pathname),
+      skipCart: isListing(pathname),
     });
 
     if (isHome(pathname)) {
@@ -89,7 +91,7 @@ export function InsiderScripts() {
       return;
     }
     insiderOtherPage(otherPageName(pathname));
-  }, [pathname, cartHydrated]);
+  }, [pathname, cartHydrated, bootstrapped]);
 
   return null;
 }

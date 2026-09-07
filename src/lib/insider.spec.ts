@@ -78,9 +78,9 @@ describe("Insider page-view queues", () => {
     expect(others[1]?.value).toEqual({ name: "Page" });
   });
 
-  it("keeps cart line items off listing so category is not sent with products", () => {
+  it("keeps cart off listing so category is not sent with products", () => {
     pushInsiderUserContext({
-      omitCartItems: true,
+      skipCart: true,
       cart: {
         total: 50,
         items: [
@@ -96,12 +96,21 @@ describe("Insider page-view queues", () => {
       },
     });
     insiderListingPage({ breadcrumb: "Shop" });
-    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
-    expect((cart?.value as { items: unknown[] }).items).toEqual([]);
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "category", "init"]);
+    expect(types).not.toContain("cart");
     const listing = (window.InsiderQueue ?? []).find(
       (row) => row.type === "category",
     );
     expect(listing?.value).toEqual({ breadcrumb: ["Shop"] });
+    expect(
+      (listing?.value as { items?: unknown }).items,
+    ).toBeUndefined();
+    const productShaped = (window.InsiderQueue ?? []).some((row) => {
+      const value = row.value as { items?: unknown } | undefined;
+      return Array.isArray(value?.items);
+    });
+    expect(productShaped).toBe(false);
   });
 
   it("sends user, currency, and basket cart before a page init", () => {
@@ -137,7 +146,7 @@ describe("Insider page-view queues", () => {
     );
   });
 
-  it("does not push a second init when identifying a logged-in user", () => {
+  it("does not push user after init (logged-in /me bootstrap)", () => {
     insiderHomePage();
     insiderIdentify({ uuid: "cust-1", email: "a@b.com" });
     expect(
@@ -145,7 +154,26 @@ describe("Insider page-view queues", () => {
     ).toHaveLength(1);
     expect(
       (window.InsiderQueue ?? []).some((row) => row.type === "user"),
-    ).toBe(true);
+    ).toBe(false);
+    expect(JSON.parse(localStorage.getItem("sa_insider_user") ?? "{}").email).toBe(
+      "a@b.com",
+    );
+  });
+
+  it("re-flushes after WAIT_AUTH so logged-in user lands before init", () => {
+    window.__SA_INSIDER_WAIT_AUTH__ = true;
+    window.InsiderQueue = [{ type: "home" }];
+    expect(beginInsiderRouteFlush("/")).toBe(true);
+    expect(window.InsiderQueue).toEqual([]);
+    pushInsiderUserContext({
+      user: { uuid: "cust-1", email: "a@b.com" },
+    });
+    insiderHomePage();
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "cart", "home", "init"]);
+    const user = (window.InsiderQueue ?? []).find((row) => row.type === "user");
+    expect((user?.value as { email?: string }).email).toBe("a@b.com");
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
   });
 
   it("allows only one route flush per pathname", () => {

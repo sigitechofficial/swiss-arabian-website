@@ -12,7 +12,8 @@ import { ProductCard } from "@/features/home/components/ProductCard";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { formatMoney } from "@/features/home/data/homeContent";
 import { insiderProductViewed, beginInsiderRouteFlush, pushInsiderUserContext } from "@/lib/insider";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { DEFAULT_LANGUAGE_CODE, DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useMarket } from "@/providers/MarketProvider";
 import {
   CATALOG_PAGE_SIZE,
@@ -36,6 +37,7 @@ export function ProductDetailPageView() {
   const addToCart = useAddToCart();
   const { marketId } = useMarket();
   const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const bootstrapped = useAuthStore((s) => s.bootstrapped);
 
   const [activeImage, setActiveImage] = useState(0);
   const [qty, setQty] = useState(1);
@@ -69,13 +71,25 @@ export function ProductDetailPageView() {
   }, [gallery.length, activeImage]);
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || !bootstrapped) return;
     if (!beginInsiderRouteFlush(window.location.pathname)) return;
     const category =
       data.collections?.find((c) => c.isFeatured)?.name ||
       data.collections?.[0]?.name ||
       null;
-    pushInsiderUserContext();
+    const authUser = useAuthStore.getState().user;
+    pushInsiderUserContext({
+      user: authUser
+        ? {
+            uuid: authUser.id,
+            email: authUser.email,
+            phone: authUser.phoneE164,
+            firstName: authUser.firstName,
+            lastName: authUser.lastName,
+            locale: DEFAULT_LANGUAGE_CODE,
+          }
+        : null,
+    });
     insiderProductViewed({
       id: data.variantId || data.id,
       sku: data.sku || data.variantId || data.id,
@@ -89,7 +103,7 @@ export function ProductDetailPageView() {
       size: data.subtitle ?? undefined,
       groupcode: data.id,
     });
-  }, [data]);
+  }, [data, bootstrapped]);
 
   const recommendations = useMemo(() => {
     const items = relatedData?.products ?? [];
