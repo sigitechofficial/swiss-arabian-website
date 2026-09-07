@@ -31,12 +31,12 @@
 
 ## 1. Environment
 
-| Item | Value |
-|------|--------|
-| Public read | No auth |
-| Write / helpful | `Authorization: Bearer <accessToken>` |
-| Swagger | `customer-bearer` · **Storefront Product Reviews** |
-| Context | `zoneCode` + `salesChannelCode` (same as catalog) |
+| Item            | Value                                              |
+| --------------- | -------------------------------------------------- |
+| Public read     | No auth                                            |
+| Write / helpful | `Authorization: Bearer <accessToken>`              |
+| Swagger         | `customer-bearer` · **Storefront Product Reviews** |
+| Context         | `zoneCode` + `salesChannelCode` (same as catalog)  |
 
 Hidden / not-visible product in this zone → public reviews **404**.
 
@@ -59,8 +59,14 @@ GET /storefront/catalog/products/:productIdOrSlug/reviews/summary
 interface StorefrontReviewSummaryView {
   productId: string;
   averageRating: number; // 0 if none; one decimal when count > 0
-  reviewCount: number;   // APPROVED only
-  ratingBreakdown: { '1': number; '2': number; '3': number; '4': number; '5': number };
+  reviewCount: number; // APPROVED only
+  ratingBreakdown: {
+    "1": number;
+    "2": number;
+    "3": number;
+    "4": number;
+    "5": number;
+  };
   verifiedPurchaseCount: number;
 }
 ```
@@ -77,11 +83,11 @@ GET /storefront/catalog/products/:productIdOrSlug/reviews
   &offset=0
 ```
 
-| Query | Default | Notes |
-|-------|---------|--------|
-| `sort` | `newest` | `newest` \| `rating_high` \| `rating_low` \| `helpful` |
-| `limit` | `20` | Max `50` |
-| `offset` | `0` | Not page |
+| Query    | Default  | Notes                                                  |
+| -------- | -------- | ------------------------------------------------------ |
+| `sort`   | `newest` | `newest` \| `rating_high` \| `rating_low` \| `helpful` |
+| `limit`  | `20`     | Max `50`                                               |
+| `offset` | `0`      | Not page                                               |
 
 **Success `data`:**
 
@@ -96,12 +102,12 @@ interface StorefrontPublicReviewListView {
 
 interface StorefrontPublicReviewView {
   reviewId: string;
-  rating: number;              // 1–5
+  rating: number; // 1–5
   title: string | null;
   body: string | null;
   displayName: string | null;
   verifiedPurchase: boolean;
-  createdAt: string;           // ISO
+  createdAt: string; // ISO
   helpfulCount: number;
   variant: {
     variantId: string;
@@ -125,12 +131,12 @@ HTTP **200**.
 **POST `data`:** `{ reviewId, helpfulCount, alreadyMarked }`  
 **DELETE `data`:** `{ reviewId, helpfulCount, removed }`
 
-| Case | UX |
-|------|-----|
-| `alreadyMarked: true` | Keep heart on — not an error |
-| `removed: false` | Heart off — not an error |
-| Guest | Login redirect |
-| `404` | Review not approved / missing |
+| Case                  | UX                            |
+| --------------------- | ----------------------------- |
+| `alreadyMarked: true` | Keep heart on — not an error  |
+| `removed: false`      | Heart off — not an error      |
+| Guest                 | Login redirect                |
+| `404`                 | Review not approved / missing |
 
 ### 2.4 Create — JWT
 
@@ -148,15 +154,15 @@ POST /storefront/customer/reviews?zoneCode=UAE&salesChannelCode=platform_uae
 }
 ```
 
-| Field | Required | Notes |
-|-------|----------|--------|
-| `productId` **or** `productSlug` | One required | Prefer `productId` UUID from PDP |
-| `rating` | Yes | Integer 1–5 |
-| `title` | No | Max 120 |
-| `body` | No | Max 4000 |
-| `displayName` | No | Max 80 — **not** email/phone |
-| `variantId` | No | Must belong to the product |
-| `orderId` / `orderLineId` | No | Optional hints; server still verifies purchase |
+| Field                            | Required     | Notes                                          |
+| -------------------------------- | ------------ | ---------------------------------------------- |
+| `productId` **or** `productSlug` | One required | Prefer `productId` UUID from PDP               |
+| `rating`                         | Yes          | Integer 1–5                                    |
+| `title`                          | No           | Max 120                                        |
+| `body`                           | No           | Max 4000                                       |
+| `displayName`                    | No           | Max 80 — **not** email/phone                   |
+| `variantId`                      | No           | Must belong to the product                     |
+| `orderId` / `orderLineId`        | No           | Optional hints; server still verifies purchase |
 
 HTTP **200**. Success `data` is `StorefrontCustomerReviewView` with `status: "PENDING"`.
 
@@ -184,13 +190,22 @@ interface StorefrontCustomerReviewView {
   title: string | null;
   body: string | null;
   displayName: string | null;
-  status: string;              // PENDING | APPROVED | REJECTED | HIDDEN | DELETED
+  status: string; // PENDING | APPROVED | REJECTED | HIDDEN | DELETED
   verifiedPurchase: boolean;
   helpfulCount: number;
   createdAt: string;
   updatedAt: string;
-  product: { productId: string; slug: string | null; name: string | null; image: string | null } | null;
-  variant: { variantId: string; variantName: string | null; sku: string | null } | null;
+  product: {
+    productId: string;
+    slug: string | null;
+    name: string | null;
+    image: string | null;
+  } | null;
+  variant: {
+    variantId: string;
+    variantName: string | null;
+    sku: string | null;
+  } | null;
 }
 ```
 
@@ -202,13 +217,13 @@ interface StorefrontCustomerReviewView {
 
 ## 3. Errors
 
-| HTTP | When | UX |
-|------|------|-----|
-| `400` | Validation (rating not 1–5, bad UUID) | Field errors / toast `message` |
-| `401` | Write/helpful without JWT | Refresh → login |
-| `404` | Hidden product, missing review, other user’s review | Empty / not found |
-| `409` | Already reviewed this product | “You already reviewed this product” — offer edit of own review |
-| `422` | No eligible purchase; missing productId/slug; bad variantId | “You can only review products from your completed orders.” |
+| HTTP  | When                                                        | UX                                                             |
+| ----- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| `400` | Validation (rating not 1–5, bad UUID)                       | Field errors / toast `message`                                 |
+| `401` | Write/helpful without JWT                                   | Refresh → login                                                |
+| `404` | Hidden product, missing review, other user’s review         | Empty / not found                                              |
+| `409` | Already reviewed this product                               | “You already reviewed this product” — offer edit of own review |
+| `422` | No eligible purchase; missing productId/slug; bad variantId | “You can only review products from your completed orders.”     |
 
 Eligible purchase ≈ order not draft/checkout/cancelled/failed, and status/fulfillment is delivered, shipped, in transit, or similar completed path. Payment-pending only is **not** enough.
 
@@ -292,13 +307,13 @@ reviewsApi.remove(reviewId)
 
 ## 7. Explicitly not this phase
 
-| Topic | Why |
-|-------|-----|
-| Preferences `GET/PATCH /preferences` | FE leftover from Phase 2 — separate tiny PR |
-| Checkout `customerAddressId` | FE leftover — separate tiny PR |
-| Dashboard recent order | Already have `GET /customer/orders` — FE only |
-| Returns / support / recently viewed | Next modules after reviews |
-| Coupons / newsletter / markets | No customer API yet |
+| Topic                                | Why                                           |
+| ------------------------------------ | --------------------------------------------- |
+| Preferences `GET/PATCH /preferences` | FE leftover from Phase 2 — separate tiny PR   |
+| Checkout `customerAddressId`         | FE leftover — separate tiny PR                |
+| Dashboard recent order               | Already have `GET /customer/orders` — FE only |
+| Returns / support / recently viewed  | Next modules after reviews                    |
+| Coupons / newsletter / markets       | No customer API yet                           |
 
 ---
 
