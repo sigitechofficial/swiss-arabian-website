@@ -64,7 +64,7 @@ export function WishlistHeartButton({
             ? "Remove from wishlist"
             : "Add to wishlist"
       }
-      className={`flex cursor-pointer items-center justify-center border bg-page/90 text-sa-primary transition-colors hover:border-terra hover:text-terra disabled:cursor-wait ${
+      className={`flex cursor-pointer items-center justify-center rounded-full border bg-page/90 text-sa-primary transition-colors hover:border-terra hover:text-terra disabled:cursor-wait ${
         compact
           ? "size-8 border-sa-border"
           : "size-[42px] border-sa-input"

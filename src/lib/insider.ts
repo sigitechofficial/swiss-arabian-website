@@ -3,6 +3,8 @@ import { env } from "@/lib/config/env";
 declare global {
   interface Window {
     InsiderQueue?: Array<Record<string, unknown>>;
+    /** Pathname already flushed with type+init in <head> (before ins.js). */
+    __SA_INSIDER_HEAD_PATH__?: string;
     Insider?: {
       initialized?: boolean;
       identify?: (user: Record<string, unknown>) => void;
@@ -35,6 +37,14 @@ function hasRealSdk(): boolean {
 function queue(): NonNullable<Window["InsiderQueue"]> {
   window.InsiderQueue = window.InsiderQueue || [];
   return window.InsiderQueue;
+}
+
+/** True when <head> already pushed this route's page type + init before ins.js. */
+export function consumeHeadInsiderInit(pathname: string): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.__SA_INSIDER_HEAD_PATH__ !== pathname) return false;
+  window.__SA_INSIDER_HEAD_PATH__ = undefined;
+  return true;
 }
 
 /** After ins.js loads, replay identify/track calls that fired first. */
@@ -236,8 +246,16 @@ export function insiderCheckoutPage(): void {
 }
 
 /**
- * Account, login, content, confirmation, 404 — Other Page View.
- * PDPs must not call this; they send product + init.
+ * Thank-you / payment success — Web SDK `purchase` + `init` (onboarding inspector).
+ * Backend still sends `purchase` on PAID; this can double-count until that is turned off.
+ */
+export function insiderPurchasePage(): void {
+  pushPage("purchase");
+}
+
+/**
+ * Account, login, content, 404 — Other Page View.
+ * Thank-you uses `insiderPurchasePage`. PDPs must not call this.
  */
 export function insiderOtherPage(): void {
   pushPage("other");

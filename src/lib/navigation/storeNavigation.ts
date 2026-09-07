@@ -28,6 +28,8 @@ export const accountTabNav: NavItem[] = [
   { label: "Rewards", href: "/account/rewards" },
   { label: "Membership Benefits", href: "/account/membership" },
   { label: "Wishlist", href: "/account/wishlist" },
+  { label: "Reviews", href: "/account/reviews" },
+  { label: "Returns", href: "/account/returns" },
   { label: "Saved Items", href: "/account/saved" },
 ];
 

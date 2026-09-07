@@ -44,5 +44,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# recovered Cursor transcripts (may contain payloads / PII)
+/docs/recovered/
+
 # local phase / audit docs (keep PROJECT_OVERVIEW committed if desired — override below)
 # /docs

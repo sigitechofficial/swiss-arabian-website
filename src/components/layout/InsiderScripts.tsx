@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import { cartSnapshotFromLines } from "@/features/cart/utils/insiderCartItem";
 import { env } from "@/lib/config/env";
 import {
+  consumeHeadInsiderInit,
   insiderCartPage,
   insiderCheckoutPage,
   insiderHomePage,
   insiderListingPage,
   insiderOtherPage,
+  insiderPurchasePage,
   startInsiderSdk,
 } from "@/lib/insider";
 import { useCartStore } from "@/stores/useCartStore";
@@ -46,6 +48,7 @@ export function InsiderScripts() {
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
     if (isProductDetail(pathname) || isCart(pathname)) return;
+    if (consumeHeadInsiderInit(pathname)) return;
 
     if (isHome(pathname)) {
       insiderHomePage();
@@ -53,6 +56,10 @@ export function InsiderScripts() {
     }
     if (isListing(pathname)) {
       insiderListingPage({ taxonomy: listingTaxonomy(pathname) });
+      return;
+    }
+    if (isConfirmation(pathname)) {
+      insiderPurchasePage();
       return;
     }
     if (isCheckoutFlow(pathname)) {
@@ -107,6 +114,12 @@ function listingTaxonomy(pathname: string): string | undefined {
 function isCart(pathname: string): boolean {
   const parts = pathSegments(pathname);
   return parts.length === 1 && parts[0] === "cart";
+}
+
+function isConfirmation(pathname: string): boolean {
+  if (pathname.startsWith("/order-confirmation")) return true;
+  if (pathname.startsWith("/checkout/payment/success")) return true;
+  return false;
 }
 
 function isCheckoutFlow(pathname: string): boolean {

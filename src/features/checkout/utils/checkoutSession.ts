@@ -110,6 +110,60 @@ export function getStoredGuestOrderAccessToken(orderNumber: string): string | nu
   }
 }
 
+type StoredGuestOrderLine = {
+  orderLineId: string;
+  sku: string;
+  productName: string | null;
+  variantName: string | null;
+  quantity: number;
+};
+
+function guestLinesKey(orderNumber: string): string {
+  return `sa_order_lines_${orderNumber}`;
+}
+
+/** Cache place-order line UUIDs so guest returns/exchanges can use them on /track. */
+export function storeGuestOrderLines(
+  orderNumber: string,
+  lines: StoredGuestOrderLine[],
+): void {
+  if (typeof window === "undefined" || !orderNumber || lines.length === 0) return;
+  try {
+    localStorage.setItem(guestLinesKey(orderNumber), JSON.stringify(lines));
+  } catch {
+    // ignore
+  }
+}
+
+export function getStoredGuestOrderLines(
+  orderNumber: string,
+): StoredGuestOrderLine[] {
+  if (typeof window === "undefined" || !orderNumber) return [];
+  try {
+    const raw = localStorage.getItem(guestLinesKey(orderNumber));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as Partial<StoredGuestOrderLine>;
+      if (!row.orderLineId || !row.sku) return [];
+      const quantity = Number(row.quantity);
+      return [
+        {
+          orderLineId: row.orderLineId,
+          sku: row.sku,
+          productName: row.productName ?? null,
+          variantName: row.variantName ?? null,
+          quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
+}
+
 // ─── Payment state (sessionStorage) ──────────────────────────────────────────
 
 function ssGet(key: string): string | null {

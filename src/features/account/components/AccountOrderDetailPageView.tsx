@@ -14,6 +14,8 @@ import {
 } from "@/features/account/api/customerOrders.service";
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
 import type { OrderStatus, CancellationWindow } from "@/features/account/api/customerOrders.service";
+import { OrderAfterSalesSection } from "@/features/afterSales";
+import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 
 // ─── Status display ───────────────────────────────────────────────────────────
 
@@ -221,6 +223,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
               ))}
             </ul>
           </SectionCard>
+
+          <OrderAfterSalesSection
+            orderId={order.orderId}
+            status={order.status}
+            fulfillmentStatus={order.fulfillmentStatus}
+            lines={mapOrderLinesForAfterSales(order.lines)}
+          />
 
           {/* Two column: totals + address */}
           <div className="grid gap-5 sm:grid-cols-2">

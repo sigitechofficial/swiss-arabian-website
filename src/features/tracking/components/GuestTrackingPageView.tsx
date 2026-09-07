@@ -11,6 +11,8 @@ import {
   type GuestOrderTrackingSummaryResponse,
 } from "../api/orderTracking.service";
 import { getStoredGuestOrderAccessToken } from "@/features/checkout/utils/checkoutSession";
+import { GuestAfterSalesSection } from "@/features/afterSales";
+import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
 
 // ─── Display maps ─────────────────────────────────────────────────────────────
 
@@ -513,6 +515,16 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
                   ))}
                 </div>
               </SectionCard>
+            ) : null}
+
+            {token ? (
+              <GuestAfterSalesSection
+                orderNumber={orderData.orderNumber}
+                orderAccessToken={token}
+                status={orderData.status}
+                fulfillmentStatus={orderData.fulfillmentStatus}
+                lines={guestAfterSalesLines(orderData)}
+              />
             ) : null}
 
             {/* Timeline */}

@@ -30,7 +30,13 @@ export interface GuestShipmentSummary {
   estimatedDeliveryAt: string | null;
   deliveredAt: string | null;
   itemCount: number;
-  items: { sku: string; productName: string | null; quantity: string }[];
+  items: {
+    sku: string;
+    productName: string | null;
+    quantity: string;
+    orderLineId?: string | null;
+    variantName?: string | null;
+  }[];
   latestTrackingEvent: TrackingEvent | null;
 }
 
@@ -61,6 +67,13 @@ export interface GuestOrderTrackingSummaryResponse {
     title: string | null;
     description: string | null;
     occurredAt: string;
+  }[];
+  lines?: {
+    orderLineId: string;
+    sku: string;
+    productName: string | null;
+    variantName?: string | null;
+    quantity: string;
   }[];
 }
 

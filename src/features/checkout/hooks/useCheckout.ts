@@ -25,6 +25,7 @@ import {
   storeOrderId,
   storeOrderNumber,
   storeGuestOrderAccessToken,
+  storeGuestOrderLines,
   storePaymentTransactionId,
   storeZonePaymentMethodId,
   getPayAttempt,
@@ -323,6 +324,18 @@ export function useCheckout(): UseCheckoutReturn {
           storeGuestOrderAccessToken(
             order.orderNumber,
             order.guestTracking.orderAccessToken,
+          );
+        }
+        if (order.orderNumber && order.lines?.length) {
+          storeGuestOrderLines(
+            order.orderNumber,
+            order.lines.map((line) => ({
+              orderLineId: line.orderLineId,
+              sku: line.sku,
+              productName: line.productName,
+              variantName: line.variantName,
+              quantity: Number.parseInt(line.quantity, 10) || 1,
+            })),
           );
         }
 

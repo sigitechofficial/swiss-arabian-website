@@ -24,6 +24,10 @@ import { PDP_TRUST } from "../data/pdpContent";
 import { notesFromCatalogHtml } from "../utils/catalogHtml";
 import { toProductCardModel } from "../utils/toProductCardModel";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
+import {
+  ProductRatingBadge,
+  ProductReviewsSection,
+} from "@/features/reviews";
 import { ProductImageZoom } from "./ProductImageZoom";
 
 export function ProductDetailPageView() {
@@ -219,6 +223,7 @@ export function ProductDetailPageView() {
             <h1 className="font-sans text-[32px] font-medium leading-tight tracking-[-0.02em] text-sa-primary sm:text-[42px] sm:leading-[48px]">
               {title}
             </h1>
+            <ProductRatingBadge productKey={data.id} />
             <p
               className={`text-base font-bold ${
                 priceValue == null ? "text-sa-muted" : "text-sa-primary"
@@ -371,6 +376,12 @@ export function ProductDetailPageView() {
           </div>
         </div>
       </section>
+
+      <ProductReviewsSection
+        key={data.id}
+        productId={data.id}
+        variantId={data.variantId}
+      />
 
       {recommendations.length > 0 ? (
         <section

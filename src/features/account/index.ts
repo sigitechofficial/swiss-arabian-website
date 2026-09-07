@@ -1,3 +1,4 @@
+export { AccountAddressesPageView } from "./components/AccountAddressesPageView";
 export { AccountBreadcrumb } from "./components/AccountBreadcrumb";
 export { AccountCard } from "./components/AccountCard";
 export { AccountPageShell } from "./components/AccountPageShell";

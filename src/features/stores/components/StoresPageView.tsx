@@ -3,7 +3,11 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Reveal } from "@/components/motion";
 import { toast } from "@/components/ui/Toaster";
-import { STORE_LOCATIONS, type StoreLocation } from "../data/storesContent";
+import {
+  STORE_LOCATIONS,
+  nearestStore,
+  type StoreLocation,
+} from "../data/storesContent";
 import { StoreMapPanel } from "./StoreMapPanel";
 
 /**
@@ -12,9 +16,7 @@ import { StoreMapPanel } from "./StoreMapPanel";
  */
 export function StoresPageView() {
   const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(
-    STORE_LOCATIONS[0]?.id ?? null,
-  );
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -46,9 +48,16 @@ export function StoresPageView() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      () => {
-        toast("Nearest shops highlighted for your area.", "success");
-        setActiveId(STORE_LOCATIONS[0]?.id ?? null);
+      (position) => {
+        const nearest = nearestStore(
+          position.coords.latitude,
+          position.coords.longitude,
+          filtered.length ? filtered : STORE_LOCATIONS,
+        );
+        if (!nearest) return;
+        setActiveId(nearest.id);
+        setExpandedId(nearest.id);
+        toast(`Closest shop: ${nearest.name}`, "success");
       },
       () => {
         toast("Couldn’t access your location. Search by city instead.", "error");
@@ -69,7 +78,7 @@ export function StoresPageView() {
               Find a Swiss Arabian shop
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-sa-secondary">
-              Discover our fragrances in person across the GCC — sample the
+              Discover our fragrances in person across the UAE — sample the
               collections, meet our fragrance advisors, and take home something
               wrapped by hand.
             </p>
@@ -115,13 +124,14 @@ export function StoresPageView() {
               {filtered.length === 1 ? "shop" : "shops"}
             </p>
 
-            <ul className="mt-4 border-t border-sa-border">
+            <ul className="mt-4 max-h-[420px] overflow-y-auto border-t border-sa-border lg:max-h-[550px]">
               {filtered.map((store, index) => {
                 const isActive = store.id === activeId;
                 const isExpanded = store.id === expandedId;
                 return (
                   <li
                     key={store.id}
+                    id={`store-${store.id}`}
                     className={`border-b transition-colors ${
                       isActive ? "border-terra/50" : "border-sa-border"
                     }`}
@@ -152,8 +162,12 @@ export function StoresPageView() {
                         </span>
                         <span className="mt-1 block text-[12.5px] leading-relaxed text-sa-muted">
                           {store.address}
-                          <span className="text-sa-muted/50"> · </span>
-                          {store.hours}
+                          {store.hours ? (
+                            <>
+                              <span className="text-sa-muted/50"> · </span>
+                              {store.hours}
+                            </>
+                          ) : null}
                         </span>
                         {isExpanded && store.phone ? (
                           <span className="mt-2.5 block text-[12.5px] text-sa-secondary">
@@ -193,7 +207,13 @@ export function StoresPageView() {
             <StoreMapPanel
               stores={filtered}
               activeId={activeId}
-              onSelect={setActiveId}
+              onSelect={(id) => {
+                setActiveId(id);
+                setExpandedId(id);
+                document
+                  .getElementById(`store-${id}`)
+                  ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+              }}
             />
           </Reveal>
         </div>

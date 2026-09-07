@@ -17,6 +17,7 @@ import {
   insiderListingPage,
   insiderOtherPage,
   insiderProductViewed,
+  insiderPurchasePage,
 } from "@/lib/insider";
 
 describe("Insider page-view queues", () => {
@@ -55,7 +56,14 @@ describe("Insider page-view queues", () => {
       "init",
     ]);
     expect(types).not.toContain("checkout");
-    expect(types).not.toContain("purchase");
     expect(types).not.toContain("user_register");
+  });
+
+  it("sends purchase + init on the thank-you page helper", () => {
+    insiderPurchasePage();
+    expect((window.InsiderQueue ?? []).map((row) => row.type)).toEqual([
+      "purchase",
+      "init",
+    ]);
   });
 });
