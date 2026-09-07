@@ -78,6 +78,32 @@ describe("Insider page-view queues", () => {
     expect(others[1]?.value).toEqual({ name: "Page" });
   });
 
+  it("keeps cart line items off listing so category is not sent with products", () => {
+    pushInsiderUserContext({
+      omitCartItems: true,
+      cart: {
+        total: 50,
+        items: [
+          {
+            id: "var-1",
+            sku: "SKU-1",
+            name: "Oud",
+            price: 50,
+            currency: "AED",
+            quantity: 1,
+          },
+        ],
+      },
+    });
+    insiderListingPage({ breadcrumb: "Shop" });
+    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
+    expect((cart?.value as { items: unknown[] }).items).toEqual([]);
+    const listing = (window.InsiderQueue ?? []).find(
+      (row) => row.type === "category",
+    );
+    expect(listing?.value).toEqual({ breadcrumb: ["Shop"] });
+  });
+
   it("sends user, currency, and basket cart before a page init", () => {
     pushInsiderUserContext({
       cart: { total: 0, items: [] },
@@ -100,6 +126,12 @@ describe("Insider page-view queues", () => {
       (window.InsiderQueue ?? []).find((row) => row.type === "currency")?.value,
     ).toBe("AED");
     const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
+    expect(cart?.value).toMatchObject({
+      total: 0,
+      subtotal: 0,
+      shipping_cost: 0,
+      quantity: 0,
+    });
     expect(Array.isArray((cart?.value as { items?: unknown }).items)).toBe(
       true,
     );

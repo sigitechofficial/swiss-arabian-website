@@ -68,6 +68,7 @@ export function InsiderScripts() {
           }
         : null,
       cart: snapshot,
+      omitCartItems: isListing(pathname),
     });
 
     if (isHome(pathname)) {

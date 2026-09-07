@@ -326,10 +326,22 @@ function userQueueValue(user?: InsiderIdentifyUser | null): Record<string, unkno
   return value;
 }
 
-function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
+function cartQueueValue(
+  cart: InsiderCartSnapshot,
+  omitItems = false,
+): Record<string, unknown> {
+  const quantity = omitItems
+    ? 0
+    : cart.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  const total = omitItems ? 0 : cart.total;
   return {
-    total: cart.total,
-    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
+    total,
+    subtotal: total,
+    shipping_cost: 0,
+    quantity,
+    items: omitItems
+      ? []
+      : cart.items.map((item) => productQueueValue(item, item.quantity)),
   };
 }
 
@@ -341,6 +353,8 @@ export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
   cart?: InsiderCartSnapshot | null;
   currency?: string | null;
+  /** Listing tests treat cart line items as category products — keep items empty. */
+  omitCartItems?: boolean;
 }): void {
   runWhenReady(() => {
     const cart = input?.cart ?? { total: 0, items: [] };
@@ -350,7 +364,10 @@ export function pushInsiderUserContext(input?: {
       INSIDER_CURRENCY;
     queue().push({ type: "user", value: userQueueValue(input?.user) });
     queue().push({ type: "currency", value: currency });
-    queue().push({ type: "cart", value: cartQueueValue(cart) });
+    queue().push({
+      type: "cart",
+      value: cartQueueValue(cart, input?.omitCartItems === true),
+    });
   });
 }
 
@@ -392,10 +409,7 @@ export function insiderListingPage(page?: InsiderListingPage): void {
 
 /** Cart page — `cart_page_view`. Must include the current line items. */
 export function insiderCartPage(cart: InsiderCartSnapshot): void {
-  pushPage("cart", {
-    total: cart.total,
-    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
-  });
+  pushPage("cart", cartQueueValue(cart));
 }
 
 /**
