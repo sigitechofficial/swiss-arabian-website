@@ -50,10 +50,34 @@ function queue(): NonNullable<Window["InsiderQueue"]> {
   return window.InsiderQueue;
 }
 
+function normalizeInsiderPath(pathname: string): string {
+  if (!pathname || pathname === "/") return "/";
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
+/** Same array instance — InOne testers hook the head-created InsiderQueue. */
+function resetInsiderQueueInPlace(): void {
+  if (typeof window === "undefined") return;
+  const existing = window.InsiderQueue;
+  if (Array.isArray(existing)) {
+    existing.length = 0;
+    return;
+  }
+  window.InsiderQueue = [];
+}
+
+function queueHasInit(): boolean {
+  const rows = window.InsiderQueue;
+  if (!Array.isArray(rows)) return false;
+  return rows.some((row) => row?.type === "init");
+}
+
 /** True when <head> already pushed this route's page type + init before ins.js. */
 export function consumeHeadInsiderInit(pathname: string): boolean {
   if (typeof window === "undefined") return false;
-  if (window.__SA_INSIDER_HEAD_PATH__ !== pathname) return false;
+  const path = normalizeInsiderPath(pathname);
+  const head = window.__SA_INSIDER_HEAD_PATH__;
+  if (!head || normalizeInsiderPath(head) !== path) return false;
   window.__SA_INSIDER_HEAD_PATH__ = undefined;
   return true;
 }
@@ -61,22 +85,28 @@ export function consumeHeadInsiderInit(pathname: string): boolean {
 /**
  * First caller for this pathname may flush page type + init.
  * Later callers (Strict Mode, cart-line rerenders) must not push another init.
+ * Replaces must stay in-place so testers still see React's init on the
+ * array created in <head>. If head claimed init but the queue no longer
+ * has it (ins.js drained, or WAIT_AUTH never inited), React flushes once.
  */
 export function beginInsiderRouteFlush(pathname: string): boolean {
   if (typeof window === "undefined") return false;
+  const path = normalizeInsiderPath(pathname);
   if (window.__SA_INSIDER_WAIT_AUTH__) {
     window.__SA_INSIDER_WAIT_AUTH__ = false;
-    flushedPath = pathname;
-    window.InsiderQueue = [];
+    flushedPath = path;
+    resetInsiderQueueInPlace();
     return true;
   }
-  if (consumeHeadInsiderInit(pathname)) {
-    flushedPath = pathname;
-    return false;
+  if (consumeHeadInsiderInit(path)) {
+    flushedPath = path;
+    if (queueHasInit()) return false;
+    resetInsiderQueueInPlace();
+    return true;
   }
-  if (flushedPath === pathname) return false;
-  flushedPath = pathname;
-  window.InsiderQueue = [];
+  if (flushedPath === path) return false;
+  flushedPath = path;
+  resetInsiderQueueInPlace();
   return true;
 }
 
@@ -84,6 +114,7 @@ export function resetInsiderRouteFlushForTests(): void {
   flushedPath = undefined;
   if (typeof window !== "undefined") {
     window.__SA_INSIDER_WAIT_AUTH__ = false;
+    window.__SA_INSIDER_HEAD_PATH__ = undefined;
   }
 }
 

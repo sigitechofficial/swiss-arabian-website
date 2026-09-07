@@ -50,7 +50,8 @@ export function InsiderScripts() {
     if (!bootstrapped) return;
     if (isProductDetail(pathname) || isConfirmation(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
-    if (!beginInsiderRouteFlush(pathname)) return;
+    const routePath = window.location.pathname || pathname;
+    if (!beginInsiderRouteFlush(routePath)) return;
 
     const cartState = useCartStore.getState();
     const snapshot = cartSnapshotFromLines(
@@ -70,27 +71,28 @@ export function InsiderScripts() {
           }
         : null,
       cart: snapshot,
-      skipCart: isListing(pathname),
+      skipCart: isListing(routePath),
     });
 
-    if (isHome(pathname)) {
+    if (isHome(routePath)) {
       insiderHomePage();
       return;
     }
-    if (isListing(pathname)) {
-      insiderListingPage({ breadcrumb: listingBreadcrumb(pathname) });
+    if (isListing(routePath)) {
+      // category { breadcrumb } + init — no type:cart, no second init.
+      insiderListingPage({ breadcrumb: listingBreadcrumb(routePath) });
       return;
     }
-    if (isCart(pathname)) {
+    if (isCart(routePath)) {
       // Basket `cart` is already in user context — do not push type:cart again.
       insiderInit();
       return;
     }
-    if (isCheckoutFlow(pathname)) {
+    if (isCheckoutFlow(routePath)) {
       insiderCheckoutPage();
       return;
     }
-    insiderOtherPage(otherPageName(pathname));
+    insiderOtherPage(otherPageName(routePath));
   }, [pathname, cartHydrated, bootstrapped]);
 
   return null;

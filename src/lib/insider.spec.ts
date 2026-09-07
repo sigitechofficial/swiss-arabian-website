@@ -79,6 +79,9 @@ describe("Insider page-view queues", () => {
   });
 
   it("keeps cart off listing so category is not sent with products", () => {
+    expect(beginInsiderRouteFlush("/collections/discontinued-items")).toBe(
+      true,
+    );
     pushInsiderUserContext({
       skipCart: true,
       cart: {
@@ -95,14 +98,19 @@ describe("Insider page-view queues", () => {
         ],
       },
     });
-    insiderListingPage({ breadcrumb: "Shop" });
+    insiderListingPage({
+      breadcrumb: ["Collections", "discontinued-items"],
+    });
     const types = (window.InsiderQueue ?? []).map((row) => row.type);
     expect(types).toEqual(["user", "currency", "category", "init"]);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
     expect(types).not.toContain("cart");
     const listing = (window.InsiderQueue ?? []).find(
       (row) => row.type === "category",
     );
-    expect(listing?.value).toEqual({ breadcrumb: ["Shop"] });
+    expect(listing?.value).toEqual({
+      breadcrumb: ["Collections", "discontinued-items"],
+    });
     expect(
       (listing?.value as { items?: unknown }).items,
     ).toBeUndefined();
@@ -111,6 +119,61 @@ describe("Insider page-view queues", () => {
       return Array.isArray(value?.items);
     });
     expect(productShaped).toBe(false);
+  });
+
+  it("re-flushes listing after WAIT_AUTH on the same queue array", () => {
+    const hooked = (window.InsiderQueue = [
+      { type: "user" },
+      { type: "currency" },
+      { type: "category" },
+    ]);
+    window.__SA_INSIDER_WAIT_AUTH__ = true;
+    expect(beginInsiderRouteFlush("/collections/discontinued-items")).toBe(
+      true,
+    );
+    expect(window.InsiderQueue).toBe(hooked);
+    expect(window.InsiderQueue).toEqual([]);
+    pushInsiderUserContext({ skipCart: true });
+    insiderListingPage({
+      breadcrumb: ["Collections", "discontinued-items"],
+    });
+    expect(window.InsiderQueue).toBe(hooked);
+    const types = hooked.map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "category", "init"]);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
+    expect(types).not.toContain("cart");
+  });
+
+  it("re-flushes listing when head claimed init but the queue has none", () => {
+    window.__SA_INSIDER_HEAD_PATH__ = "/collections/discontinued-items";
+    window.InsiderQueue = [];
+    expect(beginInsiderRouteFlush("/collections/discontinued-items")).toBe(
+      true,
+    );
+    pushInsiderUserContext({ skipCart: true });
+    insiderListingPage({
+      breadcrumb: ["Collections", "discontinued-items"],
+    });
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "category", "init"]);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
+    expect(types).not.toContain("cart");
+  });
+
+  it("skips a second listing init when head init is still in the queue", () => {
+    window.__SA_INSIDER_HEAD_PATH__ = "/collections/discontinued-items";
+    window.InsiderQueue = [
+      { type: "user" },
+      { type: "currency" },
+      { type: "category", value: { breadcrumb: ["Collections"] } },
+      { type: "init" },
+    ];
+    expect(beginInsiderRouteFlush("/collections/discontinued-items")).toBe(
+      false,
+    );
+    expect(
+      (window.InsiderQueue ?? []).filter((row) => row.type === "init"),
+    ).toHaveLength(1);
   });
 
   it("sends user, currency, and basket cart before a page init", () => {
