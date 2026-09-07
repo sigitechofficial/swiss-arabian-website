@@ -8,6 +8,7 @@ import { formatMoney } from "@/features/home/data/homeContent";
 import {
   consumeHeadInsiderInit,
   insiderPurchasePage,
+  pushInsiderUserContext,
   type InsiderPurchaseValue,
 } from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
@@ -214,6 +215,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     if (typeof stored.shipping_cost === "number") {
       value.shipping_cost = stored.shipping_cost;
     }
+    pushInsiderUserContext();
     insiderPurchasePage(value);
     purchaseQueued.current = true;
   }, [pathname, orderId]);
@@ -226,6 +228,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
       purchaseQueued.current = true;
       return;
     }
+    pushInsiderUserContext();
     insiderPurchasePage(value);
     purchaseQueued.current = true;
   }, [order, pathname]);

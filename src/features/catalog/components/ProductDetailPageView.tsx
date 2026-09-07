@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/Toaster";
 import { ProductCard } from "@/features/home/components/ProductCard";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { formatMoney } from "@/features/home/data/homeContent";
-import { insiderProductViewed } from "@/lib/insider";
+import { insiderProductViewed, beginInsiderRouteFlush, pushInsiderUserContext } from "@/lib/insider";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import {
@@ -70,10 +70,12 @@ export function ProductDetailPageView() {
 
   useEffect(() => {
     if (!data) return;
+    if (!beginInsiderRouteFlush(window.location.pathname)) return;
     const category =
       data.collections?.find((c) => c.isFeatured)?.name ||
       data.collections?.[0]?.name ||
       null;
+    pushInsiderUserContext();
     insiderProductViewed({
       id: data.variantId || data.id,
       sku: data.sku || data.variantId || data.id,
@@ -83,6 +85,9 @@ export function ProductDetailPageView() {
       imageUrl: data.imageUrl ?? data.imageUrls?.[0] ?? null,
       category,
       brand: data.brandName ?? null,
+      stock: data.availableQty ?? (data.inStock === false ? 0 : 1),
+      size: data.subtitle ?? undefined,
+      groupcode: data.id,
     });
   }, [data]);
 

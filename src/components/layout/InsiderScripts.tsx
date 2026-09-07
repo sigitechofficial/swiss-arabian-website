@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cartSnapshotFromLines } from "@/features/cart/utils/insiderCartItem";
 import { env } from "@/lib/config/env";
+import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
 import {
-  consumeHeadInsiderInit,
-  insiderCartPage,
+  beginInsiderRouteFlush,
   insiderCheckoutPage,
   insiderHomePage,
+  insiderInit,
   insiderListingPage,
   insiderOtherPage,
+  pushInsiderUserContext,
   startInsiderSdk,
 } from "@/lib/insider";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 
 /**
@@ -21,9 +24,6 @@ import { useCartStore } from "@/stores/useCartStore";
  */
 export function InsiderScripts() {
   const pathname = usePathname();
-  const lines = useCartStore((s) => s.lines);
-  const totals = useCartStore((s) => s.totals);
-  const localSubtotal = useCartStore((s) => s.subtotal());
   const [cartHydrated, setCartHydrated] = useState(false);
 
   useEffect(() => {
@@ -46,32 +46,49 @@ export function InsiderScripts() {
 
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
-    if (isProductDetail(pathname) || isCart(pathname)) return;
-    if (isConfirmation(pathname)) return;
-    if (consumeHeadInsiderInit(pathname)) return;
+    if (isProductDetail(pathname) || isConfirmation(pathname)) return;
+    if (isCart(pathname) && !cartHydrated) return;
+    if (!beginInsiderRouteFlush(pathname)) return;
+
+    const cartState = useCartStore.getState();
+    const snapshot = cartSnapshotFromLines(
+      cartState.lines,
+      cartState.totals?.total ?? cartState.subtotal(),
+    );
+    const authUser = useAuthStore.getState().user;
+    pushInsiderUserContext({
+      user: authUser
+        ? {
+            uuid: authUser.id,
+            email: authUser.email,
+            phone: authUser.phoneE164,
+            firstName: authUser.firstName,
+            lastName: authUser.lastName,
+            locale: DEFAULT_LANGUAGE_CODE,
+          }
+        : null,
+      cart: snapshot,
+    });
 
     if (isHome(pathname)) {
       insiderHomePage();
       return;
     }
     if (isListing(pathname)) {
-      insiderListingPage({ taxonomy: listingTaxonomy(pathname) });
+      insiderListingPage({ breadcrumb: listingBreadcrumb(pathname) });
+      return;
+    }
+    if (isCart(pathname)) {
+      // Basket `cart` is already in user context — do not push type:cart again.
+      insiderInit();
       return;
     }
     if (isCheckoutFlow(pathname)) {
       insiderCheckoutPage();
       return;
     }
-    insiderOtherPage();
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!env.insider.enabled || !env.insider.accountId) return;
-    if (!isCart(pathname) || !cartHydrated) return;
-    insiderCartPage(
-      cartSnapshotFromLines(lines, totals?.total ?? localSubtotal),
-    );
-  }, [pathname, lines, totals, localSubtotal, cartHydrated]);
+    insiderOtherPage(otherPageName(pathname));
+  }, [pathname, cartHydrated]);
 
   return null;
 }
@@ -97,14 +114,15 @@ function isListing(pathname: string): boolean {
   return false;
 }
 
-function listingTaxonomy(pathname: string): string | undefined {
+function listingBreadcrumb(pathname: string): string[] {
   const parts = pathSegments(pathname);
-  if (parts[0] === "products") return "products";
-  if (parts[0] === "search") return "search";
+  if (parts[0] === "search") return ["Search"];
   if (parts[0] === "collections") {
-    return parts[1] ? decodeURIComponent(parts[1]) : "collections";
+    return parts[1]
+      ? ["Collections", decodeURIComponent(parts[1])]
+      : ["Collections"];
   }
-  return undefined;
+  return ["Shop"];
 }
 
 function isCart(pathname: string): boolean {
@@ -123,4 +141,14 @@ function isCheckoutFlow(pathname: string): boolean {
   if (pathname.startsWith("/checkout/payment/success")) return false;
   if (pathname.startsWith("/checkout/payment/cancel")) return false;
   return pathname.startsWith("/checkout/");
+}
+
+function otherPageName(pathname: string): string {
+  if (pathname.startsWith("/account")) return "Account";
+  if (pathname.startsWith("/login")) return "Login";
+  if (pathname.startsWith("/register")) return "Register";
+  if (pathname.startsWith("/track")) return "Order tracking";
+  const first = pathSegments(pathname)[0];
+  if (!first) return "Page";
+  return first.charAt(0).toUpperCase() + first.slice(1);
 }

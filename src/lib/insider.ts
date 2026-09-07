@@ -5,6 +5,8 @@ declare global {
     InsiderQueue?: Array<Record<string, unknown>>;
     /** Pathname already flushed with type+init in <head> (before ins.js). */
     __SA_INSIDER_HEAD_PATH__?: string;
+    /** Head already pushed user/currency/language/cart (PDP skips page+init). */
+    __SA_INSIDER_HEAD_CONTEXT__?: boolean;
     Insider?: {
       initialized?: boolean;
       identify?: (user: Record<string, unknown>) => void;
@@ -25,6 +27,12 @@ type InsiderCall = () => void;
 
 const pending: InsiderCall[] = [];
 let sdkReady = false;
+/** Survives React Strict Mode remounts — one page type + init per path. */
+let flushedPath: string | undefined;
+
+const INSIDER_UUID_KEY = "sa_insider_uuid";
+const INSIDER_LANGUAGE = "en_US";
+const INSIDER_CURRENCY = "AED";
 
 function envAllows(): boolean {
   return env.insider.enabled && Boolean(env.insider.accountId);
@@ -45,6 +53,39 @@ export function consumeHeadInsiderInit(pathname: string): boolean {
   if (window.__SA_INSIDER_HEAD_PATH__ !== pathname) return false;
   window.__SA_INSIDER_HEAD_PATH__ = undefined;
   return true;
+}
+
+/**
+ * First caller for this pathname may flush page type + init.
+ * Later callers (Strict Mode, cart-line rerenders) must not push another init.
+ */
+export function beginInsiderRouteFlush(pathname: string): boolean {
+  if (typeof window === "undefined") return false;
+  if (consumeHeadInsiderInit(pathname)) {
+    flushedPath = pathname;
+    return false;
+  }
+  if (flushedPath === pathname) return false;
+  flushedPath = pathname;
+  return true;
+}
+
+export function resetInsiderRouteFlushForTests(): void {
+  flushedPath = undefined;
+}
+
+export function getOrCreateInsiderUuid(): string {
+  if (typeof window === "undefined") return "anon";
+  try {
+    const existing = localStorage.getItem(INSIDER_UUID_KEY);
+    if (existing) return existing;
+    const created =
+      window.crypto?.randomUUID?.() ?? `anon-${Date.now().toString(16)}`;
+    localStorage.setItem(INSIDER_UUID_KEY, created);
+    return created;
+  } catch {
+    return `anon-${Date.now().toString(16)}`;
+  }
 }
 
 /** After ins.js loads, replay identify/track calls that fired first. */
@@ -129,6 +170,10 @@ export type InsiderProductPayload = {
   productUrl?: string;
   category?: string | null;
   brand?: string | null;
+  stock?: number;
+  color?: string;
+  size?: string;
+  groupcode?: string;
 };
 
 export type InsiderCartItemPayload = InsiderProductPayload & {
@@ -195,13 +240,12 @@ export function toInsiderPurchaseValue(
     return {
       id,
       name: line.productName?.trim() || line.sku,
-      taxonomy: line.variantName ? [line.variantName] : [],
+      taxonomy: ["Shop"],
       unit_price: unitPrice,
       unit_sale_price: unitPrice,
       quantity,
       url: origin ? `${origin}/products/${encodeURIComponent(line.sku)}` : "",
       product_image_url: line.imageUrl ?? "",
-      ...(line.sku ? { sku: line.sku } : {}),
     };
   });
   const quantity = items.reduce(
@@ -223,9 +267,18 @@ export function toInsiderPurchaseValue(
 }
 
 export type InsiderListingPage = {
-  taxonomy?: string | null;
-  items?: InsiderProductPayload[];
+  breadcrumb?: string | string[] | null;
 };
+
+function listingBreadcrumb(page?: InsiderListingPage): string[] {
+  const raw = page?.breadcrumb;
+  if (Array.isArray(raw)) {
+    const parts = raw.map((part) => part.trim()).filter(Boolean);
+    return parts.length ? parts : ["Shop"];
+  }
+  const single = raw?.trim();
+  return single ? [single] : ["Shop"];
+}
 
 function productUrl(product: InsiderProductPayload): string {
   return (
@@ -239,51 +292,76 @@ function productQueueValue(
   product: InsiderProductPayload,
   quantity?: number,
 ): Record<string, unknown> {
-  return {
+  const value: Record<string, unknown> = {
     id: product.id,
     name: product.name,
-    taxonomy: product.category ? [product.category] : [],
+    taxonomy: product.category?.trim() ? [product.category.trim()] : ["Shop"],
     unit_price: product.price,
     unit_sale_price: product.price,
     url: productUrl(product),
     product_image_url: product.imageUrl ?? "",
-    ...(typeof quantity === "number" ? { quantity } : {}),
-    ...(product.sku ? { sku: product.sku } : {}),
-    ...(product.brand ? { brand: product.brand } : {}),
-    ...(product.currency ? { custom: { currency: product.currency } } : {}),
   };
+  if (typeof quantity === "number") value.quantity = quantity;
+  if (typeof product.stock === "number") value.stock = product.stock;
+  if (product.color?.trim()) value.color = product.color.trim();
+  if (product.size?.trim()) value.size = product.size.trim();
+  if (product.groupcode?.trim()) value.groupcode = product.groupcode.trim();
+  return value;
+}
+
+function userQueueValue(user?: InsiderIdentifyUser | null): Record<string, unknown> {
+  const value: Record<string, unknown> = {
+    uuid: user?.uuid || getOrCreateInsiderUuid(),
+    language: INSIDER_LANGUAGE,
+    gdpr_optin: true,
+  };
+  const email = user?.email?.trim();
+  if (email) value.email = email;
+  const phone = user?.phone?.trim();
+  if (phone) value.phone_number = phone;
+  const name = user?.firstName?.trim();
+  if (name) value.name = name;
+  const surname = user?.lastName?.trim();
+  if (surname) value.surname = surname;
+  return value;
+}
+
+function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
+  return {
+    total: cart.total,
+    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
+  };
+}
+
+/**
+ * User + currency + basket. Must land in InsiderQueue *before* page type + init.
+ * Language is a default *user* attribute (`en_US`), not a separate queue type.
+ */
+export function pushInsiderUserContext(input?: {
+  user?: InsiderIdentifyUser | null;
+  cart?: InsiderCartSnapshot | null;
+  currency?: string | null;
+}): void {
+  runWhenReady(() => {
+    const cart = input?.cart ?? { total: 0, items: [] };
+    const currency =
+      input?.currency?.trim() ||
+      cart.items.find((item) => item.currency)?.currency ||
+      INSIDER_CURRENCY;
+    queue().push({ type: "user", value: userQueueValue(input?.user) });
+    queue().push({ type: "currency", value: currency });
+    queue().push({ type: "cart", value: cartQueueValue(cart) });
+  });
 }
 
 /**
  * Call after login OR registration — stitches the anonymous browser session
  * to the known platform customer inside Insider.
+ * Do not push `init` here — a second init fails InOne "once per page" checks.
  */
 export function insiderIdentify(user: InsiderIdentifyUser): void {
   runWhenReady(() => {
-    queue().push({
-      type: "user",
-      value: {
-        uuid: user.uuid,
-        ...(user.email ? { email: user.email } : {}),
-        ...(user.phone ? { phone_number: user.phone } : {}),
-        ...(user.firstName ? { name: user.firstName } : {}),
-        ...(user.lastName ? { surname: user.lastName } : {}),
-        language: user.locale || "en",
-        custom: {
-          ...(user.firstName ? { first_name: user.firstName } : {}),
-          ...(user.lastName ? { last_name: user.lastName } : {}),
-          ...(user.zoneCode ? { zone_code: user.zoneCode } : {}),
-          ...(user.locale ? { locale: user.locale } : {}),
-        },
-      },
-    });
-    // Do not init here on first load — that sends page_type "other" and
-    // Insider ignores a later product+init for the hit. Page views come from
-    // the route helpers below. If the SDK is already up (SPA), init once so
-    // user stitch still flushes with the last page type.
-    if (window.Insider?.initialized === true) {
-      queue().push({ type: "init" });
-    }
+    queue().push({ type: "user", value: userQueueValue(user) });
   });
 }
 
@@ -295,19 +373,21 @@ function pushPage(type: string, value?: Record<string, unknown>): void {
   });
 }
 
+/** Last push on a route when page type is already in the queue (cart-on-every-page). */
+export function insiderInit(): void {
+  runWhenReady(() => {
+    queue().push({ type: "init" });
+  });
+}
+
 /** Home — `home_page_view`. */
 export function insiderHomePage(): void {
   pushPage("home");
 }
 
-/** Listing / collection / search PLP — `listing_page_view`. */
+/** Listing / collection / search PLP — `listing_page_view`. Partner schema: breadcrumb[]. */
 export function insiderListingPage(page?: InsiderListingPage): void {
-  const value: Record<string, unknown> = {};
-  if (page?.taxonomy) value.taxonomy = [page.taxonomy];
-  if (page?.items?.length) {
-    value.items = page.items.map((item) => productQueueValue(item));
-  }
-  pushPage("category", Object.keys(value).length ? value : undefined);
+  pushPage("category", { breadcrumb: listingBreadcrumb(page) });
 }
 
 /** Cart page — `cart_page_view`. Must include the current line items. */
@@ -324,7 +404,7 @@ export function insiderCartPage(cart: InsiderCartSnapshot): void {
  * confirms this partner accepts it. Funnel start stays backend `checkout_started`.
  */
 export function insiderCheckoutPage(): void {
-  pushPage("other");
+  pushPage("other", { name: "Checkout" });
 }
 
 /**
@@ -339,8 +419,8 @@ export function insiderPurchasePage(value: InsiderPurchaseValue): void {
  * Account, login, content, 404 — Other Page View.
  * Thank-you uses `insiderPurchasePage`. PDPs must not call this.
  */
-export function insiderOtherPage(): void {
-  pushPage("other");
+export function insiderOtherPage(name = "Page"): void {
+  pushPage("other", { name });
 }
 
 /**

@@ -11,13 +11,17 @@ vi.mock("@/lib/config/env", () => ({
 }));
 
 import {
+  beginInsiderRouteFlush,
   insiderCartPage,
   insiderCheckoutPage,
   insiderHomePage,
+  insiderIdentify,
   insiderListingPage,
   insiderOtherPage,
   insiderProductViewed,
   insiderPurchasePage,
+  pushInsiderUserContext,
+  resetInsiderRouteFlushForTests,
   toInsiderPurchaseValue,
 } from "@/lib/insider";
 
@@ -25,11 +29,13 @@ describe("Insider page-view queues", () => {
   beforeEach(() => {
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
+    resetInsiderRouteFlushForTests();
+    localStorage.clear();
   });
 
   it("sends documented page types, with checkout as other + init", () => {
     insiderHomePage();
-    insiderListingPage({ taxonomy: "bundles" });
+    insiderListingPage({ breadcrumb: "bundles" });
     insiderProductViewed({
       id: "var-1",
       sku: "SKU-1",
@@ -58,6 +64,84 @@ describe("Insider page-view queues", () => {
     ]);
     expect(types).not.toContain("checkout");
     expect(types).not.toContain("user_register");
+    const listing = (window.InsiderQueue ?? []).find(
+      (row) => row.type === "category",
+    );
+    expect(listing?.value).toEqual({ breadcrumb: ["bundles"] });
+    expect(
+      (listing?.value as { items?: unknown }).items,
+    ).toBeUndefined();
+    const others = (window.InsiderQueue ?? []).filter(
+      (row) => row.type === "other",
+    );
+    expect(others[0]?.value).toEqual({ name: "Checkout" });
+    expect(others[1]?.value).toEqual({ name: "Page" });
+  });
+
+  it("sends user, currency, and basket cart before a page init", () => {
+    pushInsiderUserContext({
+      cart: { total: 0, items: [] },
+    });
+    insiderHomePage();
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual([
+      "user",
+      "currency",
+      "cart",
+      "home",
+      "init",
+    ]);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
+    expect(types).not.toContain("language");
+    const user = (window.InsiderQueue ?? []).find((row) => row.type === "user");
+    expect((user?.value as { language?: string }).language).toBe("en_US");
+    expect((user?.value as { custom?: unknown }).custom).toBeUndefined();
+    expect(
+      (window.InsiderQueue ?? []).find((row) => row.type === "currency")?.value,
+    ).toBe("AED");
+    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
+    expect(Array.isArray((cart?.value as { items?: unknown }).items)).toBe(
+      true,
+    );
+  });
+
+  it("does not push a second init when identifying a logged-in user", () => {
+    insiderHomePage();
+    insiderIdentify({ uuid: "cust-1", email: "a@b.com" });
+    expect(
+      (window.InsiderQueue ?? []).filter((row) => row.type === "init"),
+    ).toHaveLength(1);
+    expect(
+      (window.InsiderQueue ?? []).some((row) => row.type === "user"),
+    ).toBe(true);
+  });
+
+  it("allows only one route flush per pathname", () => {
+    expect(beginInsiderRouteFlush("/")).toBe(true);
+    expect(beginInsiderRouteFlush("/")).toBe(false);
+    expect(beginInsiderRouteFlush("/products")).toBe(true);
+  });
+
+  it("omits empty optional product fields and defaults taxonomy", () => {
+    insiderProductViewed({
+      id: "var-1",
+      sku: "SKU-1",
+      name: "Oud",
+      price: 199,
+      currency: "AED",
+      stock: 4,
+      size: "75 ml",
+      groupcode: "prod-1",
+    });
+    const product = (window.InsiderQueue ?? []).find(
+      (row) => row.type === "product",
+    )?.value as Record<string, unknown>;
+    expect(product.taxonomy).toEqual(["Shop"]);
+    expect(product.stock).toBe(4);
+    expect(product.size).toBe("75 ml");
+    expect(product.groupcode).toBe("prod-1");
+    expect(product.color).toBeUndefined();
+    expect(product.sku).toBeUndefined();
   });
 
   it("sends purchase + init with Web SDK value fields", () => {
