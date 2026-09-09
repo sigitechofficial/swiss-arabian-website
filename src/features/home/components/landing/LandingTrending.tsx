@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
+import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { cardEyebrow, formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
@@ -75,6 +76,7 @@ export function LandingTrending() {
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
                 />
+                <ProductCardTags slug={product.slug} />
                 {/* Ingredients hover art — a ::before background pseudo-
                     element on `.trend-card`, not `.trend-card__media`
                     (which has overflow:hidden for the bottle crop), so it

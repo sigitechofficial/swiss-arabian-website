@@ -18,7 +18,16 @@ export function MobileNav() {
       anchor="left"
       open={open}
       onClose={() => setMobileNavOpen(false)}
-      slotProps={{ paper: { sx: { width: "min(100%, 360px)" } } }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(24, 20, 17, 0.4)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          },
+        },
+        paper: { sx: { width: "min(100%, 360px)" } },
+      }}
     >
       <div className="flex h-full flex-col bg-page px-5 py-4">
         <div className="mb-6 flex items-center justify-between">

@@ -317,7 +317,7 @@
 .cart-line-meta {
   margin: 2px 0 10px;
   font-size: 0.78rem;
-  color: rgb(33 33 33 / 0.55);
+  color: var(--ink, #241f1b);
 }
 .cart-line-qty {
   display: inline-flex;
@@ -368,58 +368,108 @@
   text-decoration: underline;
 }
 
-/* --- Recommendations --------------------------------------------- */
+/* --- Recommendations — Kayali-style “Layer your scents” swiper --- */
 
 .cart-recs {
-  padding: 8px 22px 0;
-  border-top: 1px solid rgb(33 33 33 / 0.06);
+  padding: 16px 0 4px;
 }
 .cart-recs-title {
-  margin: 12px 0 8px;
-  font-size: 0.8rem;
+  margin: 0 22px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgb(33 33 33 / 0.5);
+  color: var(--ink, #241f1b);
+}
+.cart-recs-swiper {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 22px 8px;
+  scrollbar-width: none;
+}
+.cart-recs-swiper::-webkit-scrollbar {
+  display: none;
 }
 .cart-rec {
+  position: relative;
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 92px 1fr;
+  flex: 0 0 min(78%, 280px);
+  scroll-snap-align: start;
+  min-height: 108px;
+  padding: 10px 10px 10px 10px;
+  background: var(--cream, #faf6ee);
+  border: 1px solid rgb(33 33 33 / 0.06);
   gap: 10px;
-  align-items: center;
-  padding: 8px 0;
+  align-items: stretch;
 }
-.cart-rec img {
-  width: 48px;
-  height: 48px;
+.cart-rec img,
+.cart-rec-ph {
+  width: 92px;
+  height: 92px;
   object-fit: contain;
+  background: #fff;
+  border-radius: 0;
+  align-self: center;
+}
+.cart-rec-ph {
+  display: block;
   background: #f3ebe0;
-  border-radius: 8px;
+}
+.cart-rec-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-right: 36px;
 }
 .cart-rec-name {
   margin: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
   color: var(--ink, #1a1512);
 }
 .cart-rec-price {
-  margin: 0;
-  font-size: 0.75rem;
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--ink, #1a1512);
+}
+.cart-rec-size {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: rgb(33 33 33 / 0.55);
 }
 .cart-rec-add {
-  border: 1px solid rgb(33 33 33 / 0.18);
-  background: #fff;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 0.72rem;
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ink, #241f1b);
+  background: transparent;
+  border-radius: 0;
+  color: var(--ink, #241f1b);
   cursor: pointer;
-  transition: background-color var(--dur, 0.2s) var(--ease, ease), color var(--dur, 0.2s) var(--ease, ease);
+}
+.cart-rec-add:hover {
+  background: var(--ink, #241f1b);
+  color: #fff;
 }
 .cart-rec-add[aria-pressed="true"] {
   background: var(--copper, #8c4435);
-  color: #fff;
   border-color: var(--copper, #8c4435);
+  color: #fff;
 }
 
 /* --- Footer ------------------------------------------------------- */
@@ -497,6 +547,10 @@
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.08em;
+  color: var(--ink, #241f1b);
+}
+.cart-head-section .collection-head__em {
+  color: var(--ink, #241f1b);
 }
 
 .cart-page-head {

@@ -124,7 +124,7 @@ export function CartSideSheet() {
 
   const recs = useMemo(() => {
     const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
-    return STATIC_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 3);
+    return STATIC_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 6);
   }, [lines]);
 
   return (
@@ -133,6 +133,13 @@ export function CartSideSheet() {
       open={open}
       onClose={() => setCartOpen(false)}
       slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(24, 20, 17, 0.4)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          },
+        },
         paper: {
           sx: {
             width: { xs: "100%", sm: 420 },
@@ -277,52 +284,60 @@ export function CartSideSheet() {
 
           {recs.length ? (
             <div className="cart-recs">
-              <h3 className="cart-recs-title">You may also like</h3>
-              {recs.map((product) => {
-                const canAdd = Boolean(product.variantId || product.sku);
-                const pressed = addedRecs.has(product.id);
-                return (
-                  <article className="cart-rec" key={product.id}>
-                    {product.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.imageUrl} alt={product.title} />
-                    ) : (
-                      <span />
-                    )}
-                    <div>
-                      <p className="cart-rec-name">{product.title}</p>
-                      <p className="cart-rec-price">{formatMoney(product.price, product.currency)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="cart-rec-add"
-                      aria-pressed={pressed}
-                      onClick={async () => {
-                        if (canAdd) {
-                          await add.mutateAsync({
-                            sku: product.sku,
-                            variantId: product.variantId,
-                            quantity: 1,
-                          });
-                        } else {
-                          addLocalLine({
-                            variantId: product.slug,
-                            slug: product.slug,
-                            title: product.title,
-                            imageUrl: product.imageUrl ?? undefined,
-                            unitPrice: product.price ?? 0,
-                            currency: product.currency,
-                            quantity: 1,
-                          });
-                        }
-                        setAddedRecs((prev) => new Set(prev).add(product.id));
-                      }}
-                    >
-                      {pressed ? "Added" : "+ Add"}
-                    </button>
-                  </article>
-                );
-              })}
+              <h3 className="cart-recs-title">Layer your scents</h3>
+              <div className="cart-recs-swiper" role="list">
+                {recs.map((product) => {
+                  const canAdd = Boolean(product.variantId || product.sku);
+                  const pressed = addedRecs.has(product.id);
+                  return (
+                    <article className="cart-rec" key={product.id} role="listitem">
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt="" />
+                      ) : (
+                        <span className="cart-rec-ph" aria-hidden="true" />
+                      )}
+                      <div className="cart-rec-copy">
+                        <p className="cart-rec-name">{product.title}</p>
+                        <p className="cart-rec-price">{formatMoney(product.price, product.currency)}</p>
+                        <p className="cart-rec-size">50 ml</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="cart-rec-add"
+                        aria-label={pressed ? `${product.title} added` : `Add ${product.title}`}
+                        aria-pressed={pressed}
+                        onClick={async () => {
+                          if (canAdd) {
+                            await add.mutateAsync({
+                              sku: product.sku,
+                              variantId: product.variantId,
+                              quantity: 1,
+                            });
+                          } else {
+                            addLocalLine({
+                              variantId: product.slug,
+                              slug: product.slug,
+                              title: product.title,
+                              imageUrl: product.imageUrl ?? undefined,
+                              unitPrice: product.price ?? 0,
+                              currency: product.currency,
+                              quantity: 1,
+                            });
+                          }
+                          setAddedRecs((prev) => new Set(prev).add(product.id));
+                        }}
+                      >
+                        {pressed ? (
+                          <span aria-hidden="true">✓</span>
+                        ) : (
+                          <Plus size={14} strokeWidth={1.6} />
+                        )}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
         </div>

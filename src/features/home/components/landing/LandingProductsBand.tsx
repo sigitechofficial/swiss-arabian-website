@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
+import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { cardEyebrow, formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
@@ -16,6 +17,8 @@ const DISPLAY_ORDER = [
   "incense-01",
   "tobacco-01",
 ];
+
+const HIDE_BADGE = new Set(["incense-01", "shaghaf-oud-ahmar"]);
 
 function withDisplayOrder<T extends { slug: string }>(items: T[]): T[] {
   const bySlug = new Map(items.map((item) => [item.slug, item]));
@@ -61,7 +64,7 @@ export function LandingProductsBand() {
         <header className="section-head section-head--row">
           <div>
             <h2 className="display section-head__title" id="prodTitle">
-              Our <em>products.</em>
+              Our <em>best sellers.</em>
             </h2>
           </div>
           <Link className="link-underline" href="/products">
@@ -73,7 +76,7 @@ export function LandingProductsBand() {
           className="product-strip"
           role="list"
           tabIndex={0}
-          aria-label="Our products, scrollable"
+          aria-label="Our best sellers, scrollable"
           ref={stripRef}
         >
           {products.map((product) => {
@@ -99,6 +102,7 @@ export function LandingProductsBand() {
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
                 />
+                {HIDE_BADGE.has(product.slug) ? null : <ProductCardTags slug={product.slug} />}
                 {/* Ingredients hover art — rendered as a ::before background
                     on `.product-card` (not `.product-card__media`, which
                     has overflow:hidden for the rounded-corner bottle crop),

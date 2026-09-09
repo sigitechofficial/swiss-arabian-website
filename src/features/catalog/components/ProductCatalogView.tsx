@@ -14,6 +14,7 @@ import {
   type Concentration,
   type SortOption,
 } from "../constants/catalogProducts";
+import { ProductCardTags } from "./ProductCardTags";
 import { getCollectionMeta } from "../constants/collectionMeta";
 
 const ALL_PRICES = CATALOG_PRODUCTS.map((p) => p.price ?? 0);
@@ -361,6 +362,7 @@ function CatalogProductCard({ product }: { product: CatalogProduct }) {
       }
     >
       <Link className="product-card__link" href={`/products/${product.slug}`} aria-label={product.title} />
+      <ProductCardTags slug={product.slug} />
       <div
         className={
           hasIngredientsHover ? "product-card__media product-card__media--swap" : "product-card__media"
