@@ -27,32 +27,72 @@ export const FEATURE_CARDS = [
 
 export const SIGNATURE_COLLECTIONS = [
   {
-    href: "/collections/best-sellers",
+    href: "/collections/perfumes",
     image: "/assets/collection-1.jpg",
-    alt: "Swiss Arabian best-selling fragrances",
-    eyebrow: "Most loved",
-    title: "Best Sellers",
+    alt: "Swiss Arabian perfumes",
+    title: "Perfumes",
   },
   {
-    href: "/collections/new-launches",
-    image: "/assets/collection-2.jpg",
-    alt: "Newly launched Swiss Arabian fragrances",
-    eyebrow: "Latest",
-    title: "New In",
+    href: "/collections/incense",
+    image: "/assets/collection-incense.png",
+    alt: "Swiss Arabian incense",
+    title: "Incense",
   },
   {
-    href: "/collections/for-her",
-    image: "/assets/collection-3.jpg",
-    alt: "Swiss Arabian fragrances for her",
-    eyebrow: "The feminine",
-    title: "For Her",
+    href: "/gift-box",
+    image: "/assets/collection-gift-sets.png",
+    alt: "Swiss Arabian gift sets",
+    title: "Gift sets",
   },
   {
-    href: "/collections/for-him",
-    image: "/assets/collection-4.jpg",
-    alt: "Swiss Arabian fragrances for him",
-    eyebrow: "The masculine",
-    title: "For Him",
+    href: "/collections/perfume-oils",
+    image: "/assets/collection-oils.png",
+    alt: "Swiss Arabian perfume oils",
+    title: "Oils",
+    frame: "product",
+  },
+] as const;
+
+export const FRAGRANCE_NOTES = [
+  {
+    href: "/collections/fresh-citrus",
+    image: "/assets/notes/fresh-citrus.png",
+    label: "Fresh / Citrus",
+  },
+  {
+    href: "/collections/aromatic",
+    image: "/assets/notes/aromatic.png",
+    label: "Aromatic",
+  },
+  {
+    href: "/collections/woody",
+    image: "/assets/notes/woody.png",
+    label: "Woody",
+  },
+  {
+    href: "/collections/gourmand",
+    image: "/assets/notes/gourmand.png",
+    label: "Gourmand",
+  },
+  {
+    href: "/collections/floral",
+    image: "/assets/notes/floral.png",
+    label: "Floral",
+  },
+  {
+    href: "/collections/spicy",
+    image: "/assets/notes/spicy.png",
+    label: "Spicy",
+  },
+  {
+    href: "/collections/fruity",
+    image: "/assets/notes/fruity.png",
+    label: "Fruity",
+  },
+  {
+    href: "/collections/oriental",
+    image: "/assets/notes/oriental.png",
+    label: "Oriental",
   },
 ] as const;
 
@@ -101,20 +141,61 @@ export const PLAN_FEATURES = [
   "Members-only launches & samples",
 ] as const;
 
-export const REEL_STILLS = [
+export const COMMUNITY_STORIES = [
   {
-    className: "reel-tile--1",
-    poster: "/assets/collection-2.jpg",
-    video: "/assets/video/reel-tile-1.mp4",
+    id: "f4086dcd53294bb29467fce023fdcd41",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/f4086dcd53294bb29467fce023fdcd41/f4086dcd53294bb29467fce023fdcd41.HD-1080p-4.8Mbps-90206768.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/f4086dcd53294bb29467fce023fdcd41.thumbnail.0000000000.jpg?v=1785320680&width=720",
+    productSlug: "patchouli-01",
   },
   {
-    className: "reel-tile--featured",
-    poster: "/assets/collection-3.jpg",
-    video: "/assets/video/hero-bg.mp4",
+    id: "6f700d6073944a9a9cb5037ef59925cc",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/6f700d6073944a9a9cb5037ef59925cc/6f700d6073944a9a9cb5037ef59925cc.HD-1080p-7.2Mbps-90206767.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/6f700d6073944a9a9cb5037ef59925cc.thumbnail.0000000000.jpg?v=1785320686&width=720",
+    productSlug: "shaghaf-oud-ahmar",
   },
   {
-    className: "reel-tile--3",
-    poster: "/assets/collection-1.jpg",
-    video: "/assets/video/reel-tile-3.mp4",
+    id: "a74fab309a494416bf6b2ea5a9a4699e",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/a74fab309a494416bf6b2ea5a9a4699e/a74fab309a494416bf6b2ea5a9a4699e.HD-1080p-4.8Mbps-90206766.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/a74fab309a494416bf6b2ea5a9a4699e.thumbnail.0000000000.jpg?v=1785320695&width=720",
+    productSlug: "shaghaf-oud-elixir",
+  },
+  {
+    id: "71e6c1da2be6450fbc127b638f82ea25",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/71e6c1da2be6450fbc127b638f82ea25/71e6c1da2be6450fbc127b638f82ea25.HD-1080p-4.8Mbps-90206764.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/71e6c1da2be6450fbc127b638f82ea25.thumbnail.0000000000.jpg?v=1785320690&width=720",
+    productSlug: "rose-01",
+  },
+  {
+    id: "d8d0aba52a6f45adb8df747d3f7ebd16",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/d8d0aba52a6f45adb8df747d3f7ebd16/d8d0aba52a6f45adb8df747d3f7ebd16.HD-1080p-4.8Mbps-90206759.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/d8d0aba52a6f45adb8df747d3f7ebd16.thumbnail.0000000000.jpg?v=1785320704&width=720",
+    productSlug: "vanilla-01",
+  },
+  {
+    id: "c9c8d360c20f4cf9b8ed04333021c765",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/c9c8d360c20f4cf9b8ed04333021c765/c9c8d360c20f4cf9b8ed04333021c765.HD-1080p-7.2Mbps-90206761.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/c9c8d360c20f4cf9b8ed04333021c765.thumbnail.0000000000.jpg?v=1785320701&width=720",
+    productSlug: "tobacco-01",
+  },
+  {
+    id: "caaabca0675f4d73b21a42dfa19a3b6d",
+    video:
+      "https://uae.sapil.com/cdn/shop/videos/c/vp/caaabca0675f4d73b21a42dfa19a3b6d/caaabca0675f4d73b21a42dfa19a3b6d.HD-1080p-4.8Mbps-90206762.mp4?v=0",
+    poster:
+      "https://uae.sapil.com/cdn/shop/files/preview_images/caaabca0675f4d73b21a42dfa19a3b6d.thumbnail.0000000000.jpg?v=1785320692&width=720",
+    productSlug: "incense-01",
   },
 ] as const;

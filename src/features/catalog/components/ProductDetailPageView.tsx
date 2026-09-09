@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useAddToCart } from "@/features/cart";
-import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import {
   CATALOG_PRODUCTS,
@@ -11,6 +11,7 @@ import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "../constants/catalogProducts";
+import { PdpReviews } from "./PdpReviews";
 import {
   PRODUCT_DETAIL_CONTENT,
   noteDotColor,
@@ -57,6 +58,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
 
   const [activeImage, setActiveImage] = useState(0);
   const [activeTab, setActiveTab] = useState<TabId | null>("notes");
+  const [tabsPaused, setTabsPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
   const [reveal, setReveal] = useState(false);
@@ -128,7 +130,27 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     setQuantity(1);
     setWished(false);
     setStatus("");
+    setTabsPaused(false);
   }, [slug]);
+
+  useEffect(() => {
+    if (tabsPaused || typeof window === "undefined") return;
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!desktop.matches || reduce.matches) return;
+
+    const tick = () => {
+      if (!desktop.matches) return;
+      setActiveTab((current) => {
+        const index = TABS.findIndex((tab) => tab.id === current);
+        const next = TABS[(index < 0 ? 0 : index + 1) % TABS.length];
+        return next.id;
+      });
+    };
+
+    const id = window.setInterval(tick, 5000);
+    return () => window.clearInterval(id);
+  }, [tabsPaused, slug]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -246,7 +268,14 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
             </div>
 
             <div className="pdp-hero__panel">
-              <p className="pdp-hero__eyebrow">{cardEyebrow(product.subtitle)}</p>
+              <a className="pdp-hero__rating" href="#pdp-reviews">
+                <span className="stars" aria-hidden="true">
+                  ★★★★★
+                </span>
+                <span>
+                  <strong>4.9</strong> · Verified reviews
+                </span>
+              </a>
               <h1 className="pdp-hero__name" id="product-name">
                 {product.title}
               </h1>
@@ -392,7 +421,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 className={`pdp-comp-tabs__tab ${activeTab === tab.id ? "is-active" : ""}`}
                 role="tab"
                 aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setTabsPaused(true);
+                  setActiveTab(tab.id);
+                }}
               >
                 {tab.label}
               </button>
@@ -405,7 +437,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 key={tab.id}
                 label={tab.label}
                 open={activeTab === tab.id}
-                onToggle={() => setActiveTab((current) => (current === tab.id ? current : tab.id))}
+                onToggle={() => {
+                  setTabsPaused(true);
+                  setActiveTab((current) => (current === tab.id ? current : tab.id));
+                }}
               >
                 {tab.id === "story" ? <p className="pdp-composition__intro">{content.story}</p> : null}
                 {tab.id === "notes" ? (
@@ -456,6 +491,8 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
           <p className="pdp-code">Product code: {productCode(product)}</p>
         </div>
       </section>
+
+      <PdpReviews productTitle={product.title} />
 
       {youMayAlsoLike.length ? (
         <section className="pdp-related" aria-labelledby="also-like-heading">
@@ -563,7 +600,6 @@ function RelatedCard({ product }: { product: CatalogProduct }) {
         <AddToBagButton product={product} variant="product" />
       </div>
       <div className="product-card__body">
-        <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
         <h3 className="product-card__name">{product.title}</h3>
         <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
       </div>

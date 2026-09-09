@@ -60,13 +60,12 @@ export function LandingProductsBand() {
       <div className="container">
         <header className="section-head section-head--row">
           <div>
-            <p className="eyebrow">The collection</p>
             <h2 className="display section-head__title" id="prodTitle">
               Our <em>products.</em>
             </h2>
           </div>
-          <Link className="view-all" href="/products">
-            View all fragrances
+          <Link className="link-underline" href="/products">
+            View all
           </Link>
         </header>
 

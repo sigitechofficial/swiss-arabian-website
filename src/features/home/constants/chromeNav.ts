@@ -12,11 +12,36 @@ export type ChromeNavItem =
   | { type: "link"; label: string; href: string; accent?: boolean }
   | ({ type: "mega" } & ChromeMega);
 
-export const TOPBAR_CATS: ChromeLink[] = [
-  { label: "Women", href: "/collections/for-her" },
-  { label: "Men", href: "/collections/for-him" },
-  { label: "Unisex", href: "/collections/unisex" },
-];
+export const TOPBAR_CATS: ChromeLink[] = [];
+
+export const TOPBAR_REGIONS = [
+  { id: "UAE", label: "UAE", flag: "🇦🇪" },
+  { id: "KSA", label: "KSA", flag: "🇸🇦" },
+  { id: "KWT", label: "Kuwait", flag: "🇰🇼" },
+  { id: "QAT", label: "Qatar", flag: "🇶🇦" },
+  { id: "BHR", label: "Bahrain", flag: "🇧🇭" },
+  { id: "OMN", label: "Oman", flag: "🇴🇲" },
+] as const;
+
+export const TOPBAR_LANGUAGES = [
+  { id: "en", label: "English" },
+  { id: "ar", label: "العربية", lang: "ar" },
+] as const;
+
+export const TOPBAR_CURRENCIES = [
+  { id: "AED", label: "AED" },
+  { id: "SAR", label: "SAR" },
+  { id: "KWD", label: "KWD" },
+  { id: "QAR", label: "QAR" },
+  { id: "BHD", label: "BHD" },
+  { id: "OMR", label: "OMR" },
+] as const;
+
+export const TOPBAR_TICKER = [
+  "Orders will be delivered within 3-7 working days",
+  "Complimentary delivery on selected orders",
+  "Easy 7-day returns, no questions asked",
+] as const;
 
 export const PRIMARY_NAV: ChromeNavItem[] = [
   { type: "link", label: "New Launches", href: "/collections/new-launches" },
@@ -26,14 +51,6 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
     label: "Perfumes",
     href: "/collections/perfumes",
     groups: [
-      {
-        heading: "Type",
-        links: [
-          { label: "Men", href: "/collections/for-him" },
-          { label: "Women", href: "/collections/for-her" },
-          { label: "Unisex", href: "/collections/unisex" },
-        ],
-      },
       {
         heading: "Collections",
         links: [
@@ -179,7 +196,6 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
     },
   },
   { type: "link", label: "Minis", href: "/collections/minis" },
-  { type: "link", label: "Bundles", href: "/collections/bundles" },
   { type: "link", label: "Gift Sets", href: "/gift-box", accent: true },
-  { type: "link", label: "Trending", href: "/products" },
+  { type: "link", label: "Landing pages", href: "/landing-pages" },
 ];

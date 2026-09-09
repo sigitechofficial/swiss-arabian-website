@@ -118,7 +118,8 @@ body.is-search-open { overflow: hidden; }
   transition: background 0.15s var(--ease);
 }
 
-.ai-search-hit:hover { background: var(--cream-2); }
+.ai-search-hit:hover,
+.ai-search-hit.is-active { background: var(--cream-2); }
 
 .ai-search-hit img {
   width: 52px;
@@ -156,4 +157,16 @@ body.is-search-open { overflow: hidden; }
 
 @media (max-width: 640px) {
   .ai-search-dock { top: 64px; width: calc(100% - 20px); }
+}
+
+.search-page-head {
+  max-width: 720px;
+  margin-bottom: clamp(24px, 4vw, 40px);
+}
+.search-page-head .collection-head__title {
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+  font-weight: 400;
+}
+.search-page-grid {
+  padding-block-start: 0;
 }

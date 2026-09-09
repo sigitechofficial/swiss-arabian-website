@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import {
+  CATALOG_PRODUCTS,
+  CONCENTRATION_LABELS,
+  type CatalogProduct,
+} from "@/features/catalog/constants/catalogProducts";
 import { useCartStore } from "@/stores/useCartStore";
+import { COMPLIMENTARY_SAMPLES } from "../constants/complimentarySamples";
 import { useCartMutations } from "../hooks/useCartMutations";
+import { MissThisSwiper } from "./MissThisSwiper";
 
 /** Matches the `v5/cart.html` prototype's `FREE` / `SHIP_FLAT` constants. */
 const FREE_SHIPPING_THRESHOLD = 250;
@@ -15,15 +22,25 @@ function itemsLabel(n: number) {
   return n === 1 ? "1 item" : `${n} items`;
 }
 
+function lineImageUrl(slug: string, fallback?: string) {
+  return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
+}
+
+function sizeLabelFor(product: CatalogProduct) {
+  return `${CONCENTRATION_LABELS[product.concentration]} · 50 ml`;
+}
+
 export function CartPageView() {
   const persistedLines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const cartId = useCartStore((s) => s.cartId);
   const persistedSubtotal = useCartStore((s) => s.subtotal());
   const persistedItemCount = useCartStore((s) => s.itemCount());
-  const { update, remove } = useCartMutations();
+  const { add, update, remove } = useCartMutations();
+  const addLocalLine = useCartStore((s) => s.addLine);
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
+  const [addingSlug, setAddingSlug] = useState<string | null>(null);
 
   // The cart is persisted to localStorage, invisible to the server — so the
   // very first client render must still report an empty bag (matching SSR)
@@ -47,9 +64,42 @@ export function CartPageView() {
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIP_FLAT;
   const total = subtotal + shipping;
 
+  const missThis = useMemo(() => {
+    const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
+    return CATALOG_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 4);
+  }, [lines]);
+
+  async function addFromCart(product: CatalogProduct) {
+    setAddingSlug(product.slug);
+    try {
+      if (product.sku || product.variantId) {
+        await add.mutateAsync({
+          sku: product.sku,
+          variantId: product.variantId,
+          quantity: 1,
+        });
+      } else {
+        addLocalLine({
+          variantId: product.slug,
+          slug: product.slug,
+          title: product.title,
+          imageUrl: product.imageUrl ?? undefined,
+          unitPrice: product.price ?? 0,
+          currency: product.currency,
+          quantity: 1,
+          sizeLabel: sizeLabelFor(product),
+        });
+      }
+    } catch {
+      /* `useCartMutations` already toasts API errors. */
+    } finally {
+      setAddingSlug(null);
+    }
+  }
+
   return (
     <div className="landing">
-      <section className="collection-head" aria-labelledby="cart-heading">
+      <section className="collection-head cart-head-section" aria-labelledby="cart-heading">
         <div className="container container--full">
           <nav className="crumbs" aria-label="Breadcrumb">
             <ol className="crumbs__list" role="list">
@@ -89,6 +139,16 @@ export function CartPageView() {
           {!isEmpty ? (
             <div className="cart-layout" id="cart-page-layout">
               <div className="cart-items-col" aria-live="polite">
+                {missThis.length ? (
+                  <div className="cart-miss">
+                    <MissThisSwiper
+                      products={missThis}
+                      addingSlug={addingSlug}
+                      onAdd={(p) => void addFromCart(p)}
+                    />
+                  </div>
+                ) : null}
+
                 {lines.map((line) => (
                   <article className="cline" key={line.cartItemId ?? line.variantId}>
                     <Link className="cline__media" href={line.slug ? `/products/${line.slug}` : "#"}>
@@ -156,6 +216,31 @@ export function CartPageView() {
                     </div>
                   </article>
                 ))}
+
+                {COMPLIMENTARY_SAMPLES.map((sample) => {
+                  const thumb = lineImageUrl(sample.slug);
+                  return (
+                    <article className="cline cline--gift" key={`gift-${sample.slug}`}>
+                      <div className="cline__media">
+                        {thumb ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={thumb} alt="" />
+                        ) : null}
+                      </div>
+                      <div className="cline__body">
+                        <div className="cline__row">
+                          <h3>{sample.title}</h3>
+                          <span className="cline__price cline__price--gift" dir="ltr">
+                            <s>{formatMoney(sample.value, currency)}</s>
+                            <strong>Free</strong>
+                          </span>
+                        </div>
+                        <p className="cline__meta">{sample.sizeLabel}</p>
+                        <p className="cline__gift-tag">Selected free sample (−{formatMoney(sample.value, currency)})</p>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               <aside className="cart-summary" aria-label="Order summary">

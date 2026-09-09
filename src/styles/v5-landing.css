@@ -42,9 +42,8 @@
   }
   html[dir="rtl"] .eyebrow,
   html[dir="rtl"] .topbar__cat,
-  html[dir="rtl"] .topbar__lang,
-  html[dir="rtl"] .topbar__region,
-  html[dir="rtl"] .topbar__change,
+  html[dir="rtl"] .topbar__menu-trigger,
+  html[dir="rtl"] .topbar__menu-option,
   html[dir="rtl"] .primary-nav__link,
   html[dir="rtl"] .view-all,
   html[dir="rtl"] .btn,
@@ -60,7 +59,8 @@
     flex-direction: row-reverse;
   }
   html[dir="rtl"] .product-strip,
-  html[dir="rtl"] .trending-grid {
+  html[dir="rtl"] .trending-grid,
+  html[dir="rtl"] .notes-shop__strip {
     direction: rtl;
   }
 
@@ -328,11 +328,11 @@ body {
   border: 0;
 }
 
-/* --- Shared site footer ----------------------------------- */
+/* --- Shared site footer (layout lives in v5-chrome.css) --- */
 .site-footer {
-  background: var(--copper); /* the copper moved here from the sections */
-  color: rgba(255, 255, 255, 0.85);
-  padding-block: clamp(3rem, 6vw, 5rem) var(--sp-6);
+  background: var(--copper);
+  color: rgba(255, 255, 255, 0.88);
+  padding-block: clamp(2.75rem, 6vw, 4.5rem) var(--sp-6);
 }
 .site-footer a {
   color: rgba(255, 255, 255, 0.82);
@@ -459,7 +459,7 @@ body {
 /* ------------------------------- HERO -------------------------------- */
 .hero {
   position: relative;
-  min-height: min(88vh, 760px);
+  min-height: min(80vh, 760px);
   display: flex;
   align-items: flex-end;
   color: var(--white);
@@ -796,124 +796,329 @@ html[dir="rtl"] .feature-card--4 .feature-card-bg {
   }
 }
 
-/* ---- Campaign reel collage (from video-img-v) ---- */
+/* ---- Community stories reel (Sapil-style peaked carousel) ---- */
 .reel-section {
-  /* Sits between .trending and .reviews (both --cream) — use --cream-2
-     to keep the alternating band rhythm instead of the reference's
-     stark white, which doesn't match this site's warm palette. */
-  background: var(--cream-2);
-  padding: 40px 0 48px;
+  background: var(--cream);
+  padding: clamp(2.75rem, 6vw, 4.5rem) 0 8px;
+  overflow: hidden;
 }
-.reel-title {
-  max-width: 18ch;
-  margin: 0 auto 32px;
-  padding: 0 20px;
-  color: var(--ink, #241f1b);
-  font-family: var(--font-display, inherit);
-  font-size: clamp(22px, 3.5vw, 36px);
-  font-weight: 400;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+.reel-section .cs-container {
   text-align: center;
 }
-.reel-title strong {
-  font-weight: 700;
-  color: inherit;
+.reel-section .cs-heading {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.12;
+  text-transform: none;
 }
-html[dir="rtl"] .reel-title {
-  letter-spacing: 0;
+.reel-section .cs-svg-wrap {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: -4px auto 4px auto;
 }
-.reel-stage {
+.reel-section .cs-heading-svg {
+  display: block;
+  width: 160px;
+  max-width: 70%;
+  margin-left: auto;
+  margin-right: 0;
+  overflow: visible;
+}
+.reel-section .cs-heading-path {
+  fill: none;
+  stroke: var(--gold, #b98a4b);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-miterlimit: 10;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: csDrawLine 1s ease 0.3s forwards;
+}
+@keyframes csDrawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.reel-section .cs-slider-wrap {
   position: relative;
   overflow: visible;
-  padding: 8px 0 24px;
 }
-.reel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.28fr 1fr;
-  align-items: start;
-  gap: 12px;
-  width: min(1080px, calc(100% - 24px));
-  margin: 0 auto;
-}
-.reel-tile {
-  position: relative;
-  margin: 0;
-  overflow: hidden;
-  border-radius: 16px;
-  background: #ece7e1;
-  aspect-ratio: 3 / 4;
-}
-.reel-tile video,
-.reel-tile img {
+.reel-section .cs-slider-wrap::before,
+.reel-section .cs-slider-wrap::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  object-fit: cover;
-  object-position: center center;
+  top: 0;
+  bottom: 0;
+  width: clamp(20px, 3vw, 36px);
+  z-index: 4;
   pointer-events: none;
 }
-.reel-tile video {
-  z-index: 1;
+.reel-section .cs-slider-wrap::before {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--cream) 0%,
+    rgb(250 246 238 / 0.35) 45%,
+    rgb(250 246 238 / 0) 100%
+  );
 }
-.reel-tile--1 {
-  margin-top: 48px;
+.reel-section .cs-slider-wrap::after {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--cream) 0%,
+    rgb(250 246 238 / 0.35) 45%,
+    rgb(250 246 238 / 0) 100%
+  );
 }
-.reel-tile--featured {
-  margin-top: 0;
+.reel-section .cs-slider {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 36px 0 28px;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
 }
-.reel-tile--3 {
-  margin-top: 32px;
+.reel-section .cs-slider::-webkit-scrollbar {
+  display: none;
 }
-@media (min-width: 768px) {
+.reel-section .cs-card {
+  flex: 0 0 74%;
+  overflow: visible;
+  scroll-snap-align: center;
+}
+.reel-section .cs-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.2;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #f5f2ec;
+  transform: scale(1);
+  transform-origin: center bottom;
+  transition: transform 0.45s ease;
+}
+.reel-section .cs-card.is-active .cs-media {
+  transform: scale(1.1);
+}
+.reel-section .cs-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+}
+.reel-section .cs-controls {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.reel-section .cs-card.is-active .cs-controls,
+.reel-section .cs-media:hover .cs-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reel-section .cs-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #202124;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+.reel-section .cs-control svg {
+  width: 46%;
+  height: 46%;
+}
+.reel-section .cs-play-pause .cs-icon-pause,
+.reel-section .cs-play-pause.is-playing .cs-icon-play {
+  display: none;
+}
+.reel-section .cs-play-pause .cs-icon-play,
+.reel-section .cs-play-pause.is-playing .cs-icon-pause {
+  display: block;
+}
+.reel-section .cs-mute .cs-icon-sound-off,
+.reel-section .cs-mute.is-muted .cs-icon-sound-on {
+  display: none;
+}
+.reel-section .cs-mute .cs-icon-sound-on,
+.reel-section .cs-mute.is-muted .cs-icon-sound-off {
+  display: block;
+}
+.reel-section .cs-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
+  color: var(--ink);
+  text-align: start;
+  text-decoration: none;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 18px;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.reel-section .cs-product:hover {
+  transform: translateY(-3px);
+  border-color: var(--copper);
+}
+.reel-section .cs-product-img {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #f5f2ec;
+}
+.reel-section .cs-product-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.reel-section .cs-product-title,
+.reel-section .cs-product-price {
+  display: block;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.reel-section .cs-product-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.reel-section .cs-product-price {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.reel-section .cs-arrow {
+  position: absolute;
+  top: 42%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: #202124;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.reel-section .cs-arrow svg {
+  display: block;
+  width: 48%;
+  height: 48%;
+}
+.reel-section .cs-arrow-prev {
+  left: 8px;
+}
+.reel-section .cs-arrow-next {
+  right: 8px;
+}
+@media (min-width: 750px) {
   .reel-section {
-    padding: 56px 0 72px;
+    padding-bottom: 12px;
   }
-  .reel-title {
-    margin-bottom: 44px;
+  .reel-section .cs-svg-wrap {
+    margin-bottom: 8px;
   }
-  .reel-stage {
-    padding: 12px 0 36px;
+  .reel-section .cs-heading-svg {
+    width: 220px;
   }
-  .reel-grid {
-    gap: 18px;
-    width: min(1040px, calc(100% - 48px));
+  .reel-section .cs-heading-path {
+    stroke-width: 4;
   }
-  .reel-tile {
-    border-radius: 20px;
+  .reel-section .cs-slider {
+    gap: 28px;
+    padding: 40px 0 20px;
   }
-  .reel-tile--1 {
-    margin-top: 72px;
+  .reel-section .cs-card {
+    flex: 0 0 248px;
+    max-width: 248px;
   }
-  .reel-tile--3 {
-    margin-top: 48px;
+  .reel-section .cs-card.is-active .cs-media {
+    transform: scale(1.14);
   }
-}
-@media (max-width: 600px) {
-  .reel-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .reel-section .cs-media {
+    border-radius: 18px;
   }
-  .reel-tile--featured {
-    grid-column: 1 / -1;
-    order: -1;
-    aspect-ratio: 4 / 3;
-    margin-top: 0;
+  .reel-section .cs-control {
+    width: 34px;
+    height: 34px;
   }
-  .reel-tile--1,
-  .reel-tile--3 {
-    margin-top: 0;
-    aspect-ratio: 3 / 4;
+  .reel-section .cs-controls {
+    opacity: 1;
+    transform: none;
+  }
+  .reel-section .cs-product {
+    gap: 14px;
+    margin-top: 18px;
+    padding: 14px;
+  }
+  .reel-section .cs-product-img {
+    flex-basis: 66px;
+    width: 66px;
+    height: 66px;
+  }
+  .reel-section .cs-product-title {
+    font-size: 0.875rem;
+  }
+  .reel-section .cs-product-price {
+    font-size: 0.8125rem;
+  }
+  .reel-section .cs-arrow {
+    width: 54px;
+    height: 54px;
+  }
+  .reel-section .cs-arrow-prev {
+    left: 36px;
+  }
+  .reel-section .cs-arrow-next {
+    right: 36px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .reel-tile video {
-    opacity: 0;
+  .reel-section .cs-heading-path,
+  .reel-section .cs-card,
+  .reel-section .cs-media,
+  .reel-section .cs-controls,
+  .reel-section .cs-product {
+    animation: none;
+    transition: none;
   }
-  .reel-tile img {
-    z-index: 2;
+  .reel-section .cs-slider {
+    scroll-behavior: auto;
   }
 }
 
@@ -940,7 +1145,7 @@ html[dir="rtl"] .reel-title {
 /* --------------------------- COLLECTIONS ----------------------------- */
 .collections {
   background: var(--cream);
-} /* swapped with Our products */
+}
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -984,6 +1189,14 @@ html[dir="rtl"] .reel-title {
 .collection-card:hover .collection-card__art {
   transform: scale(1.46);
 }
+.collection-card__art--product {
+  object-position: center 18%;
+  transform: scale(1.04);
+  transform-origin: center 18%;
+}
+.collection-card:hover .collection-card__art--product {
+  transform: scale(1.1);
+}
 
 .art--oud {
   background: radial-gradient(120% 80% at 50% 20%, #a9573f, #4a251a);
@@ -1016,40 +1229,96 @@ html[dir="rtl"] .reel-title {
   background: var(--beige);
 }
 
+/* ------------- SHOP BY FRAGRANCE NOTES ----------------------------- */
+.notes-shop {
+  background: var(--cream);
+  padding-block: clamp(1.25rem, 3vw, 2rem) clamp(2.5rem, 5vw, 4rem);
+}
+.collections:has(+ .notes-shop) {
+  padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+.notes-shop .section-head {
+  max-width: none;
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+.notes-shop .section-head__title {
+  margin-top: 0;
+}
+.notes-shop__strip {
+  --ncard-w: clamp(96px, 14vw, 128px);
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(1rem, 2vw, 1.75rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  scrollbar-width: none;
+}
+.notes-shop__strip::-webkit-scrollbar {
+  display: none;
+}
+.notes-shop__strip > li {
+  flex: 0 0 var(--ncard-w);
+  scroll-snap-align: start;
+}
+.notes-shop__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  color: var(--ink);
+  text-decoration: none;
+}
+.notes-shop__art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #f4ece0;
+}
+.notes-shop__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+.notes-shop__item:hover .notes-shop__art img {
+  transform: scale(1.06);
+}
+.notes-shop__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
 /* ------------- OUR PRODUCTS (light, centre-focus strip) ------------- */
-/* Section keeps the page's cream ground (unchanged from before). */
 .products-band {
-  background: var(--cream-2); /* swapped with Collections */
-  padding-block: clamp(2.25rem, 5vw, 3.5rem); /* tighter, fits the viewport */
+  background: none;
+  padding-block: clamp(2.25rem, 5vw, 3.5rem) clamp(1rem, 2.5vw, 1.5rem);
+}
+.products-band + .collections {
+  padding-top: clamp(1.25rem, 3vw, 2rem);
 }
 .products-band .section-head {
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
-}
-.products-band .eyebrow {
-  color: var(--copper);
 }
 .products-band .section-head__title em {
   font-style: normal;
   color: inherit;
 }
-.view-all {
-  flex: none;
-  color: var(--copper);
-  border: 1px solid var(--copper);
-  border-radius: 999px;
-  padding: 0.7rem 1.4rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: none;
+.products-band .section-head--row > .link-underline {
+  flex-shrink: 0;
   white-space: nowrap;
-  transition:
-    background var(--dur) var(--ease),
-    color var(--dur) var(--ease);
-}
-.view-all:hover {
-  background: var(--copper);
-  color: #fff;
 }
 
 /* Simple linear horizontal product row */
@@ -1091,10 +1360,9 @@ html[dir="rtl"] .reel-title {
      as breathing room on all four sides instead of the bottle touching
      the card edges. */
   padding: 20%;
-  /* Brighter plate + hairline border + soft lift so the card reads
-     as distinct from the cream page behind it. */
+  /* Brighter plate + soft lift so the card reads as distinct from
+     the cream page behind it. */
   background: linear-gradient(180deg, #ffffff 0%, #f1e7d4 100%);
-  border: 1px solid var(--line);
   box-shadow: 0 6px 20px rgba(60, 40, 25, 0.06);
 }
 .products-band .product-card__media-link {
@@ -2028,7 +2296,7 @@ html[dir="rtl"] .reel-title {
 
 /* ------------------------------ TRENDING ----------------------------- */
 .trending {
-  background: var(--cream);
+  background: var(--cream-2);
 }
 .trending .section-head {
   max-width: none;
@@ -2036,9 +2304,8 @@ html[dir="rtl"] .reel-title {
   flex-direction: column;
   align-items: stretch;
 }
-/* Eyebrow on its own row. Title + View all share the next row so the
-   link is vertically centered with "Trending perfumes" only — not with
-   the eyebrow+title stack. Dedicated class so shared .section-head--row
+/* Title + View all share one row so the link is vertically centered
+   with the heading. Dedicated class so shared .section-head--row
    stacking (1023px / 760px) cannot split this row. */
 .trending__title-row {
   display: flex;
@@ -2046,7 +2313,6 @@ html[dir="rtl"] .reel-title {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  margin-top: var(--sp-3);
 }
 .trending__title-row .section-head__title {
   margin-top: 0;
@@ -2099,7 +2365,6 @@ html[dir="rtl"] .trending__title-row {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--line);
   /* Same breathing-room recipe as the "Our products" band: padding on the
      frame (not the img) so the cover-fit image shrinks into an inset box
      instead of the bottle touching the card edges. */
@@ -2327,6 +2592,9 @@ html[dir="rtl"] .trending__title-row {
   background: var(--cream);
   text-align: center;
 }
+.reel-section + .reviews {
+  padding-block-start: clamp(1.25rem, 3vw, 2rem);
+}
 .reviews__head {
   max-width: 640px;
   margin: 0 auto clamp(2rem, 5vw, 3rem);
@@ -2365,7 +2633,7 @@ html[dir="rtl"] .trending__title-row {
   flex-direction: column;
   gap: var(--sp-3);
   background: var(--white);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: var(--radius-lg);
   padding: clamp(1.5rem, 3vw, 2.25rem);
   box-shadow: 0 10px 30px rgba(60, 40, 25, 0.05);
@@ -2504,13 +2772,13 @@ html[dir="rtl"] .trending__title-row {
   min-height: 48px;
   padding: 0 1.6rem;
   font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #fff;
   background: var(--copper);
   border: 0;
-  border-radius: 2px;
+  border-radius: 999px;
   text-decoration: none;
   transition:
     background 0.25s ease,
@@ -2554,9 +2822,10 @@ html[dir="rtl"] .trending__title-row {
   flex-direction: column;
   gap: var(--sp-2);
   background: var(--white);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: var(--radius-lg);
   padding: clamp(1.25rem, 2.1vw, 1.85rem);
+  box-shadow: 0 10px 30px rgba(60, 40, 25, 0.05);
   transition:
     transform var(--dur) var(--ease),
     box-shadow var(--dur) var(--ease);
@@ -2565,9 +2834,8 @@ html[dir="rtl"] .trending__title-row {
   transform: translateY(-4px);
   box-shadow: 0 20px 44px rgba(60, 40, 25, 0.08);
 }
-/* Featured (middle) plan — copper frame + soft lift. */
+/* Featured (middle) plan — soft lift. */
 .plan-card--featured {
-  border: 2px solid var(--copper);
   box-shadow: 0 24px 56px rgba(60, 40, 25, 0.1);
 }
 .plan-card__head {
@@ -2680,6 +2948,13 @@ html[dir="rtl"] .trending__title-row {
   }
   .collection-card:hover .collection-card__art {
     transform: scale(1.12);
+  }
+  .collection-card__art--product {
+    object-position: center 18%;
+    transform: scale(1.02);
+  }
+  .collection-card:hover .collection-card__art--product {
+    transform: scale(1.08);
   }
 }
 @media (max-width: 760px) {

@@ -6,11 +6,10 @@ export function LandingCollections() {
     <section className="section collections" aria-labelledby="collTitle">
       <div className="container">
         <header className="section-head">
-          <p className="eyebrow">The Maison</p>
           <h2 className="display section-head__title" id="collTitle">
-            Signature collections
+            Shop by Categories
           </h2>
-          <p className="lead">Four ways into the world of Swiss Arabian.</p>
+          <p className="lead">Enter the World of Swiss Arabian</p>
         </header>
 
         <div className="collection-grid">
@@ -21,15 +20,16 @@ export function LandingCollections() {
               href={collection.href}
             >
               <img
-                className="collection-card__art"
+                className={
+                  "frame" in collection && collection.frame === "product"
+                    ? "collection-card__art collection-card__art--product"
+                    : "collection-card__art"
+                }
                 src={collection.image}
                 alt={collection.alt}
                 loading="lazy"
               />
               <span className="collection-card__body">
-                <span className="eyebrow collection-card__eyebrow">
-                  {collection.eyebrow}
-                </span>
                 <span className="display collection-card__title">
                   {collection.title}
                 </span>

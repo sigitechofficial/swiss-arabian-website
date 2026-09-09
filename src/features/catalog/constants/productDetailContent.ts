@@ -10,6 +10,12 @@ export type NoteRow = {
   bar: number; // 0-100, decorative "longevity" bar length
 };
 
+export type ProductReview = {
+  name: string;
+  body: string;
+  rating?: number;
+};
+
 export type ProductDetailContent = {
   story: string;
   notes: NoteRow[];
@@ -17,6 +23,29 @@ export type ProductDetailContent = {
   shipping: string;
   authenticity: string;
 };
+
+export const FALLBACK_REVIEWS: ProductReview[] = [
+  {
+    name: "Amira K.",
+    body: "Long-wearing and beautifully balanced — I keep getting asked what I’m wearing. It feels like a signature, not a trend.",
+  },
+  {
+    name: "Daniyal R.",
+    body: "On in the morning, still there at night. Rich without being heavy, and it sits on skin rather than shouting across the room.",
+  },
+  {
+    name: "Sara M.",
+    body: "Elegant from the first spray. I’ve stopped reaching for bottles that cost three times as much — this is the one I finish.",
+  },
+  {
+    name: "Layla H.",
+    body: "Soft at first, then the oud comes through clean. I wear it to dinner and still catch it on my scarf the next day.",
+  },
+  {
+    name: "Omar F.",
+    body: "Compliment magnet without the sweetness I usually avoid. Projects for an hour, then sits close — exactly how I like it.",
+  },
+];
 
 const SHARED_WEAR =
   "Apply to pulse points — wrists, the base of the throat, behind the ears. An extrait is concentrated: two touches carry through the day.";

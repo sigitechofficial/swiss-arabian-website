@@ -38,10 +38,9 @@ export function LandingTrending() {
     <section className="section trending" aria-labelledby="trendTitle">
       <div className="container">
         <header className="section-head">
-          <p className="eyebrow">Right now</p>
           <div className="trending__title-row">
             <h2 className="display section-head__title" id="trendTitle">
-              Trending perfumes
+              Trending Now
             </h2>
             <Link className="link-underline" href="/products">
               View all
@@ -52,7 +51,7 @@ export function LandingTrending() {
           className="trending-grid"
           role="list"
           tabIndex={0}
-          aria-label="Trending perfumes, scrollable"
+          aria-label="Trending now, scrollable"
           ref={stripRef}
         >
           {products.map((product) => {

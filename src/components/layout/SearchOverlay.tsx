@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { STATIC_PRODUCTS } from "@/features/home/constants/staticProducts";
+import { previewCatalog, searchCatalog } from "@/features/search";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -40,81 +40,23 @@ const dockVariants: Variants = {
   },
 };
 
-/** Mirrors `v5/search.js`'s stopword list — short filler words that would
- *  otherwise dilute every query's token match score. */
-const STOPWORDS = new Set([
-  "i",
-  "im",
-  "i'm",
-  "looking",
-  "for",
-  "a",
-  "an",
-  "the",
-  "to",
-  "of",
-  "and",
-  "or",
-  "with",
-  "scent",
-  "fragrance",
-  "perfume",
-  "something",
-  "some",
-  "my",
-  "me",
-  "want",
-  "need",
-  "like",
-  "please",
-  "that",
-  "this",
-  "in",
-  "on",
-  "at",
-  "is",
-  "it",
-]);
+const OVERLAY_LIMIT = 8;
 
-function tokensOf(query: string): string[] {
-  return query
-    .trim()
-    .toLowerCase()
-    .split(/[\s,./·]+/)
-    .filter((tok) => tok.length > 1 && !STOPWORDS.has(tok));
-}
-
-function blobOf(p: (typeof STATIC_PRODUCTS)[number]): string {
-  return [p.title, p.subtitle, p.id].filter(Boolean).join(" ").toLowerCase();
-}
-
-function filterCatalog(query: string) {
-  const tokens = tokensOf(query);
-  if (!tokens.length) return STATIC_PRODUCTS.slice();
-
-  const andHits: typeof STATIC_PRODUCTS = [];
-  const orHits: typeof STATIC_PRODUCTS = [];
-  for (const product of STATIC_PRODUCTS) {
-    const blob = blobOf(product);
-    const score = tokens.reduce((acc, tok) => acc + (blob.includes(tok) ? 1 : 0), 0);
-    if (score === tokens.length) andHits.push(product);
-    else if (score > 0) orHits.push(product);
-  }
-  return andHits.length ? andHits : orHits;
-}
-
-/** Header search — a centered, dark "AI search" dock over a translucent
- *  scrim with a live-filtered results panel underneath, matching
- *  `v5/landing.html` + `v5/search.js` pixel-for-pixel (ported to React /
- *  static local product data instead of a live catalog fetch). */
+/** Header search — live predictive hits (name-first, typo-tolerant) over a
+ *  translucent scrim. Submit opens `/search?q=` so the same matcher runs on
+ *  a dedicated results URL. */
 export function SearchOverlay() {
   const open = useUiStore((s) => s.searchOpen);
   const setOpen = useUiStore((s) => s.setSearchOpen);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const hits = useMemo(() => filterCatalog(query), [query]);
+  const hits = useMemo(
+    () => (query.trim() ? searchCatalog(query, { limit: OVERLAY_LIMIT }) : previewCatalog(OVERLAY_LIMIT)),
+    [query],
+  );
   const hasQuery = query.trim().length > 0;
 
   useEffect(() => {
@@ -135,6 +77,26 @@ export function SearchOverlay() {
   useEffect(() => {
     if (!open) setQuery("");
   }, [open]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  function goToResults() {
+    const q = query.trim();
+    setOpen(false);
+    router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
+  }
+
+  function goToHit(index: number) {
+    const hit = hits[index];
+    if (!hit) {
+      goToResults();
+      return;
+    }
+    setOpen(false);
+    router.push(`/products/${hit.slug}`);
+  }
 
   return (
     <AnimatePresence>
@@ -161,11 +123,7 @@ export function SearchOverlay() {
               role="search"
               onSubmit={(e) => {
                 e.preventDefault();
-                const first = hits[0];
-                if (first) {
-                  setOpen(false);
-                  router.push(`/products/${first.slug}`);
-                }
+                goToResults();
               }}
             >
               <button
@@ -187,10 +145,30 @@ export function SearchOverlay() {
                 type="search"
                 name="q"
                 maxLength={140}
-                placeholder="I'm looking for a scent for an elegant dinner"
+                placeholder="Search by name, note, or mood"
                 enterKeyHint="search"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-controls="ai-search-results"
+                aria-activedescendant={hits[activeIndex] ? `ai-search-hit-${hits[activeIndex].id}` : undefined}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (!hits.length) return;
+                    setActiveIndex((i) => (i + 1) % hits.length);
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    if (!hits.length) return;
+                    setActiveIndex((i) => (i - 1 + hits.length) % hits.length);
+                  } else if (e.key === "Enter" && hasQuery && hits.length && !e.metaKey && !e.ctrlKey) {
+                    if (document.activeElement === inputRef.current && hits[activeIndex]) {
+                      e.preventDefault();
+                      goToHit(activeIndex);
+                    }
+                  }
+                }}
               />
               <button type="submit" className="ai-search-circle ai-search-send" aria-label="Search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -201,15 +179,19 @@ export function SearchOverlay() {
             </form>
 
             <div className="ai-search-panel">
-              <p className="ai-search-kicker" hidden={hasQuery}>
-                Try a note, a name, or a mood
+              <p className="ai-search-kicker" hidden={hasQuery && hits.length === 0}>
+                {hasQuery ? "Suggestions" : "Try a note, a name, or a mood"}
               </p>
-              <ul className="ai-search-results" role="list">
-                {hits.map((product) => (
-                  <li key={product.id}>
+              <ul className="ai-search-results" id="ai-search-results" role="listbox">
+                {hits.map((product, index) => (
+                  <li key={product.id} role="presentation">
                     <Link
-                      className="ai-search-hit"
+                      id={`ai-search-hit-${product.id}`}
+                      className={`ai-search-hit${index === activeIndex ? " is-active" : ""}`}
                       href={`/products/${product.slug}`}
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      onMouseEnter={() => setActiveIndex(index)}
                       onClick={() => setOpen(false)}
                     >
                       {product.imageUrl ? (
@@ -229,8 +211,8 @@ export function SearchOverlay() {
                   </li>
                 ))}
               </ul>
-              <p className="ai-search-empty" hidden={hits.length > 0}>
-                No matches
+              <p className="ai-search-empty" hidden={!hasQuery || hits.length > 0}>
+                No matches — try another spelling
               </p>
             </div>
           </motion.div>

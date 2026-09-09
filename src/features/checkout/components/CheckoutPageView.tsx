@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { CATALOG_PRODUCTS } from "@/features/catalog/constants/catalogProducts";
+import {
+  CATALOG_PRODUCTS,
+  CONCENTRATION_LABELS,
+  type CatalogProduct,
+} from "@/features/catalog/constants/catalogProducts";
+import { CheckoutAddonRow, MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
+import { COMPLIMENTARY_SAMPLES } from "@/features/cart/constants/complimentarySamples";
+import { useCartMutations } from "@/features/cart/hooks/useCartMutations";
 import { useCartStore } from "@/stores/useCartStore";
 
 /** Matches the `v5/checkout.html` prototype's cart constants. */
@@ -15,6 +22,10 @@ const SHIP_FLAT = 25;
  *  a broken thumb in the order summary. */
 function lineImageUrl(slug: string, fallback?: string) {
   return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
+}
+
+function sizeLabelFor(product: CatalogProduct) {
+  return `${CONCENTRATION_LABELS[product.concentration]} · 50 ml`;
 }
 
 const EMIRATES = [
@@ -34,6 +45,9 @@ export function CheckoutPageView() {
   const persistedSubtotal = useCartStore((s) => s.subtotal());
   const totals = useCartStore((s) => s.totals);
   const clearCart = useCartStore((s) => s.clear);
+  const addLocalLine = useCartStore((s) => s.addLine);
+  const { add } = useCartMutations();
+  const [addingSlug, setAddingSlug] = useState<string | null>(null);
 
   // The cart is persisted to localStorage, invisible to the server — so the
   // very first client render must still report an empty bag (matching SSR)
@@ -54,8 +68,18 @@ export function CheckoutPageView() {
   const [order, setOrder] = useState<{ firstName: string; orderNo: string } | null>(null);
 
   const currency = totals?.currency ?? "AED";
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const progressPct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const isFreeShip = subtotal > 0 && remaining <= 0;
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIP_FLAT;
   const total = subtotal + shipping;
+
+  const upsells = useMemo(() => {
+    const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
+    return CATALOG_PRODUCTS.filter((p) => !inCart.has(p.slug));
+  }, [lines]);
+  const addOns = upsells.slice(0, 3);
+  const missThis = upsells.slice(0, 4);
 
   const isEmpty = lines.length === 0 && !order;
   const isDone = Boolean(order);
@@ -78,6 +102,34 @@ export function CheckoutPageView() {
     clearCart();
     setOrder({ firstName, orderNo });
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function addFromCheckout(product: CatalogProduct) {
+    setAddingSlug(product.slug);
+    try {
+      if (product.sku || product.variantId) {
+        await add.mutateAsync({
+          sku: product.sku,
+          variantId: product.variantId,
+          quantity: 1,
+        });
+      } else {
+        addLocalLine({
+          variantId: product.slug,
+          slug: product.slug,
+          title: product.title,
+          imageUrl: product.imageUrl ?? undefined,
+          unitPrice: product.price ?? 0,
+          currency: product.currency,
+          quantity: 1,
+          sizeLabel: sizeLabelFor(product),
+        });
+      }
+    } catch {
+      /* `useCartMutations` already toasts API errors. */
+    } finally {
+      setAddingSlug(null);
+    }
   }
 
   return (
@@ -126,9 +178,15 @@ export function CheckoutPageView() {
               </button>
 
               <form className="checkout-form" ref={formRef} noValidate onSubmit={handleSubmit}>
+                {missThis.length ? (
+                  <MissThisSwiper
+                    products={missThis}
+                    addingSlug={addingSlug}
+                    onAdd={(p) => void addFromCheckout(p)}
+                  />
+                ) : null}
                 <section className="cbox">
                   <header className="cbox__head">
-                    <span className="cbox__num">01</span>
                     <h2>Delivery</h2>
                   </header>
                   <div className="cbox__grid">
@@ -177,7 +235,6 @@ export function CheckoutPageView() {
 
                 <section className="cbox">
                   <header className="cbox__head">
-                    <span className="cbox__num">02</span>
                     <h2>Billing information</h2>
                   </header>
                   <div className="cbox__body">
@@ -230,7 +287,6 @@ export function CheckoutPageView() {
 
                 <section className="cbox">
                   <header className="cbox__head">
-                    <span className="cbox__num">03</span>
                     <h2>Payment method</h2>
                   </header>
                   <div className="pay-options" role="radiogroup" aria-label="Payment methods">
@@ -317,6 +373,18 @@ export function CheckoutPageView() {
                 aria-label="Order summary"
               >
                 <h2>Your order</h2>
+                {subtotal > 0 ? (
+                  <div className={`checkout-ship ${isFreeShip ? "is-free" : ""}`} aria-live="polite">
+                    <p>
+                      {isFreeShip
+                        ? "You qualify for free shipping!"
+                        : `Spend ${formatMoney(remaining, currency)} more for free shipping.`}
+                    </p>
+                    <div className="cart-ship-track">
+                      <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
+                    </div>
+                  </div>
+                ) : null}
                 <div className="checkout-lines" id="checkout-lines">
                   {lines.map((line) => {
                     const thumb = lineImageUrl(line.slug, line.imageUrl);
@@ -339,7 +407,43 @@ export function CheckoutPageView() {
                     </article>
                     );
                   })}
+                  {COMPLIMENTARY_SAMPLES.map((sample) => {
+                    const thumb = lineImageUrl(sample.slug);
+                    return (
+                      <article className="coline coline--gift" key={`gift-${sample.slug}`}>
+                        <div className="coline__media">
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt={sample.title} />
+                          ) : null}
+                          <b>1</b>
+                        </div>
+                        <div className="coline__body">
+                          <h3>{sample.title}</h3>
+                          <p>{sample.sizeLabel}</p>
+                          <p className="coline__gift-tag">Selected free sample (−{formatMoney(sample.value, currency)})</p>
+                        </div>
+                        <span className="coline__price coline__price--gift" dir="ltr">
+                          <s>{formatMoney(sample.value, currency)}</s>
+                          <strong>Free</strong>
+                        </span>
+                      </article>
+                    );
+                  })}
                 </div>
+                {addOns.length ? (
+                  <div className="checkout-addons">
+                    <h3 className="checkout-addons__title">Add-ons</h3>
+                    {addOns.map((product) => (
+                      <CheckoutAddonRow
+                        key={product.id}
+                        product={product}
+                        adding={addingSlug === product.slug}
+                        onAdd={(p) => void addFromCheckout(p)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 <dl className="checkout-totals">
                   <div>
                     <dt>Subtotal</dt>

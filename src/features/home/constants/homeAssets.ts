@@ -1,6 +1,5 @@
 export const MAIN_NAV = [
   { label: "Minis", href: "/collections/minis" },
-  { label: "Bundles", href: "/collections/bundles" },
   { label: "New Launches", href: "/collections/new-launches" },
   { label: "Best Sellers", href: "/collections/best-sellers" },
   { label: "Perfumes", href: "/collections/perfumes" },
@@ -22,7 +21,6 @@ export type MobileNavItem =
 
 export const MOBILE_NAV: MobileNavItem[] = [
   { type: "link", label: "Minis", href: "/collections/minis" },
-  { type: "link", label: "Bundles", href: "/collections/bundles" },
   { type: "link", label: "New Launches", href: "/collections/new-launches" },
   { type: "link", label: "Best Sellers", href: "/collections/best-sellers" },
   { type: "link", label: "Perfumes", href: "/collections/perfumes" },

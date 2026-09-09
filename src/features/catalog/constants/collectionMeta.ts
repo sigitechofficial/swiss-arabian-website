@@ -93,6 +93,62 @@ export const COLLECTION_META: Record<string, CollectionMeta> = {
     intro: "Paired signatures, priced better together.",
     heroImage: "/assets/collection-4.jpg",
   },
+  "fresh-citrus": {
+    eyebrow: "Shop by note",
+    title: "Fresh /",
+    titleEm: "citrus.",
+    intro: "Bright bergamot, lemon and green openings — the lightest way into the house.",
+    heroImage: "/assets/collection-1.jpg",
+  },
+  aromatic: {
+    eyebrow: "Shop by note",
+    title: "Aromatic",
+    titleEm: "notes.",
+    intro: "Lavender, herbs and cool greens — composed for clarity and lift.",
+    heroImage: "/assets/collection-2.jpg",
+  },
+  woody: {
+    eyebrow: "Shop by note",
+    title: "Woody",
+    titleEm: "notes.",
+    intro: "Cedar, sandalwood and moss — the dry, lasting heart of the catalogue.",
+    heroImage: "/assets/collection-4.jpg",
+  },
+  gourmand: {
+    eyebrow: "Shop by note",
+    title: "Gourmand",
+    titleEm: "notes.",
+    intro: "Vanilla, tonka and cacao — warm, edible accords for evening wear.",
+    heroImage: "/assets/collection-2.jpg",
+  },
+  floral: {
+    eyebrow: "Shop by note",
+    title: "Floral",
+    titleEm: "notes.",
+    intro: "Rose, peony and white flowers — the house's most romantic signatures.",
+    heroImage: "/assets/collection-3.jpg",
+  },
+  spicy: {
+    eyebrow: "Shop by note",
+    title: "Spicy",
+    titleEm: "notes.",
+    intro: "Cinnamon, pepper and anise — heat woven through oud and amber.",
+    heroImage: "/assets/collection-4.jpg",
+  },
+  fruity: {
+    eyebrow: "Shop by note",
+    title: "Fruity",
+    titleEm: "notes.",
+    intro: "Fig, berry and orchard accords — ripe openings over a musky base.",
+    heroImage: "/assets/collection-3.jpg",
+  },
+  oriental: {
+    eyebrow: "Shop by note",
+    title: "Oriental",
+    titleEm: "notes.",
+    intro: "Oud, amber, incense and resin — the drama and grandeur of the Orient.",
+    heroImage: "/assets/collection-4.jpg",
+  },
 };
 
 export function getCollectionMeta(slug?: string): CollectionMeta {
