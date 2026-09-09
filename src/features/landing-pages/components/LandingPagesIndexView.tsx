@@ -169,8 +169,9 @@ export function LandingPagesIndexView() {
           >
             Landing pages
           </Typography>
-          <Typography sx={{ color: semanticColors.text.secondary, mx: "auto", maxWidth: 440 }}>
-            Same homepage, six navbar treatments. Open a card to preview.
+          <Typography sx={{ color: semanticColors.text.secondary, mx: "auto", maxWidth: 520 }}>
+            Same homepage, six navbar treatments. Each card notes logo placement and whether we use the
+            full lockup, drop SINCE 1974, or text only.
           </Typography>
         </Box>
 
@@ -237,8 +238,22 @@ export function LandingPagesIndexView() {
                 >
                   {card.title}
                 </Typography>
-                <Typography sx={{ color: semanticColors.text.secondary, fontSize: "0.9rem", mb: 2, flex: 1 }}>
+                <Typography sx={{ color: semanticColors.text.secondary, fontSize: "0.9rem", mb: 1.25 }}>
                   {card.description}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.78rem",
+                    lineHeight: 1.5,
+                    color: semanticColors.text.primary,
+                    mb: 2,
+                    flex: 1,
+                    pt: 1.25,
+                    borderTop: "1px solid",
+                    borderColor: semanticColors.border.default,
+                  }}
+                >
+                  {card.logoUsage}
                 </Typography>
                 <Typography
                   className="lp-card-open"
