@@ -105,13 +105,30 @@ export async function selectDeliveryMethod(
  * GET /storefront/checkout/:checkoutSessionId/payment-methods
  * Returns available payment options for this checkout.
  */
+type PaymentMethodsPayload =
+  | PaymentMethodOption[]
+  | {
+      items?: PaymentMethodOption[];
+      paymentMethods?: PaymentMethodOption[];
+    };
+
+function unwrapPaymentMethods(data: PaymentMethodsPayload | undefined): PaymentMethodOption[] {
+  if (Array.isArray(data)) return data;
+  if (data?.items && Array.isArray(data.items)) return data.items;
+  if (data?.paymentMethods && Array.isArray(data.paymentMethods)) {
+    return data.paymentMethods;
+  }
+  return [];
+}
+
 export async function listPaymentMethods(
   checkoutSessionId: string,
 ): Promise<PaymentMethodOption[]> {
   const params = buildGuestParam();
-  return apiGet<PaymentMethodOption[]>(
+  const data = await apiGet<PaymentMethodsPayload>(
     `/storefront/checkout/${checkoutSessionId}/payment-methods?${params.toString()}`,
   );
+  return unwrapPaymentMethods(data);
 }
 
 /**

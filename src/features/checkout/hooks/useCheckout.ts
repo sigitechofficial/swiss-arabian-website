@@ -29,6 +29,7 @@ import {
   persistInsiderPurchaseFromOrder,
   storePaymentTransactionId,
   storeZonePaymentMethodId,
+  storePaymentMethodId,
   getPayAttempt,
   storeStripeClientSecret,
   storeStripePublishableKey,
@@ -157,6 +158,7 @@ export function useCheckout(): UseCheckoutReturn {
         if (defPayment) {
           setSelectedPaymentId(defPayment.zonePaymentMethodId);
           storeZonePaymentMethodId(defPayment.zonePaymentMethodId);
+          storePaymentMethodId(defPayment.paymentMethodId);
           try {
             const updated = await selectPaymentMethod(id, defPayment.paymentMethodId);
             setSession(updated);
@@ -209,6 +211,7 @@ export function useCheckout(): UseCheckoutReturn {
       if (!method || !session) return;
       setSelectedPaymentId(zonePaymentMethodId);
       storeZonePaymentMethodId(zonePaymentMethodId);
+      storePaymentMethodId(method.paymentMethodId);
       try {
         const updated = await selectPaymentMethod(
           session.checkoutSessionId,
@@ -263,6 +266,25 @@ export function useCheckout(): UseCheckoutReturn {
 
         const afterAddress = await setCheckoutAddress(sessionId, addressDto);
         setSession(afterAddress);
+
+        const selectedMethod =
+          paymentMethods.find(
+            (p) => p.zonePaymentMethodId === selectedPaymentId,
+          ) ?? pickPreferredPaymentMethod(paymentMethods);
+
+        if (selectedMethod) {
+          storeZonePaymentMethodId(selectedMethod.zonePaymentMethodId);
+          storePaymentMethodId(selectedMethod.paymentMethodId);
+          try {
+            const afterPayment = await selectPaymentMethod(
+              sessionId,
+              selectedMethod.paymentMethodId,
+            );
+            setSession(afterPayment);
+          } catch {
+            // Session may already have this method — initiate still sends paymentMethodId
+          }
+        }
 
         // C.5 — Validate
         // NOTE: HTTP 200 from validate does NOT mean isValid=true — always check the body.
@@ -359,6 +381,9 @@ export function useCheckout(): UseCheckoutReturn {
           idempotencyKey: payAttemptKey,
           returnUrl,
           cancelUrl,
+          ...(selectedMethod?.paymentMethodId
+            ? { paymentMethodId: selectedMethod.paymentMethodId }
+            : {}),
         });
 
         if (payment.paymentAction === "REDIRECT" && payment.redirectUrl) {
@@ -410,7 +435,15 @@ export function useCheckout(): UseCheckoutReturn {
         setStatus("ready");
       }
     },
-    [session, cartId, clearCart, router, queryClient],
+    [
+      session,
+      cartId,
+      clearCart,
+      router,
+      queryClient,
+      paymentMethods,
+      selectedPaymentId,
+    ],
   );
 
   return {

@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { initiatePayment } from "../api/orders.service";
-import { getStoredOrderId, incrementPayAttempt, storePaymentTransactionId } from "../utils/checkoutSession";
+import {
+  getStoredOrderId,
+  getStoredPaymentMethodId,
+  incrementPayAttempt,
+  storePaymentTransactionId,
+} from "../utils/checkoutSession";
 import { CheckoutShell } from "./CheckoutShell";
 
 export function PaymentCancelView() {
@@ -19,10 +24,12 @@ export function PaymentCancelView() {
     setError(null);
     try {
       const attempt = incrementPayAttempt();
+      const paymentMethodId = getStoredPaymentMethodId();
       const payment = await initiatePayment(orderId, {
         returnUrl: `${window.location.origin}/checkout/payment/success`,
         cancelUrl: `${window.location.origin}/checkout/payment/cancel`,
         idempotencyKey: `pay-${orderId}-${attempt}`,
+        ...(paymentMethodId ? { paymentMethodId } : {}),
       });
       if (payment.paymentAction === "REDIRECT" && payment.redirectUrl) {
         if (payment.paymentTransactionId) storePaymentTransactionId(payment.paymentTransactionId);

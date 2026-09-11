@@ -13,6 +13,7 @@ const ORDER_NUMBER_KEY = "sa_order_number";
 
 // Payment-specific keys (sessionStorage — cleared after payment confirmed)
 const ZONE_PAYMENT_METHOD_ID_KEY = "sa_zone_payment_method_id";
+const PAYMENT_METHOD_ID_KEY = "sa_payment_method_id";
 const PAYMENT_TRANSACTION_ID_KEY = "sa_payment_transaction_id";
 const PAY_ATTEMPT_KEY = "sa_pay_attempt";
 
@@ -233,12 +234,20 @@ function ssRemove(key: string): void {
   try { sessionStorage.removeItem(key); } catch { /* ignore */ }
 }
 
-/** The zonePaymentMethodId chosen during checkout — needed for payment retry. */
+/** The zonePaymentMethodId chosen during checkout — UI selection key. */
 export function storeZonePaymentMethodId(id: string): void {
   ssSet(ZONE_PAYMENT_METHOD_ID_KEY, id);
 }
 export function getStoredZonePaymentMethodId(): string | null {
   return ssGet(ZONE_PAYMENT_METHOD_ID_KEY);
+}
+
+/** Catalog paymentMethodId — send on initiate / retry (not zonePaymentMethodId). */
+export function storePaymentMethodId(id: string): void {
+  ssSet(PAYMENT_METHOD_ID_KEY, id);
+}
+export function getStoredPaymentMethodId(): string | null {
+  return ssGet(PAYMENT_METHOD_ID_KEY);
 }
 
 /** The paymentTransactionId returned by initiate — useful for logging/debugging. */
@@ -262,6 +271,7 @@ export function incrementPayAttempt(): number {
 /** Clear all payment-specific session state after payment is confirmed (success or final failure). */
 export function clearPaymentState(): void {
   ssRemove(ZONE_PAYMENT_METHOD_ID_KEY);
+  ssRemove(PAYMENT_METHOD_ID_KEY);
   ssRemove(PAYMENT_TRANSACTION_ID_KEY);
   ssRemove(PAY_ATTEMPT_KEY);
   ssRemove("sa_stripe_client_secret");
