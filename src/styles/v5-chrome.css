@@ -1824,7 +1824,9 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 
 .topbar--boutique {
   position: relative;
-  overflow: hidden;
+  /* Not `hidden`: the pattern ::before/::after already sit inside the bar,
+     and clipping cut off the UAE / AED / EN dropdown panels below it. */
+  overflow: visible;
   /* Primary logo copper — the same token the hero's solid CTA and the site
      footer use, so the top of the page matches the buttons. */
   background: var(--copper, #8c4435);
@@ -1855,7 +1857,10 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 .topbar--boutique::after { right: 0; }
 .topbar--boutique .topbar__inner {
   position: relative;
-  z-index: 1;
+  /* Above `.nav-actions` (z 5) so the UAE / AED / EN dropdown panels paint
+     over the account / wishlist / bag icons instead of merging with them;
+     still below the search dropdown (z 320). */
+  z-index: 10;
   min-height: 36px;
 }
 .topbar__ticker--controls {
@@ -1863,10 +1868,6 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-}
-.topbar__ticker-icon {
-  display: inline-flex;
-  color: #fff;
 }
 .topbar__ticker-btn {
   appearance: none;
@@ -1879,10 +1880,14 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   padding: 0 0.15rem;
   cursor: pointer;
 }
+/* Fixed-width stage: the ‹ › buttons stay put and only the line inside
+   changes — a content-sized stage made them jump with every message. */
 .topbar__ticker-stage {
   display: grid;
+  justify-items: center;
+  flex: none;
+  width: min(52vw, 420px);
   min-width: 0;
-  max-width: min(52vw, 420px);
 }
 .topbar--boutique .topbar__menu-trigger {
   /* Full white, not 92% — on the primary terracotta the extra 8% is the

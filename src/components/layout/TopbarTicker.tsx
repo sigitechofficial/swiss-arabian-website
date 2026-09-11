@@ -6,17 +6,6 @@ import { TOPBAR_TICKER } from "@/features/home/constants/chromeNav";
 
 const INTERVAL_MS = 3500;
 
-function TruckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <path d="M3 7h11v8H3z" />
-      <path d="M14 10h4l3 3v2h-7" />
-      <circle cx="7" cy="17" r="1.5" />
-      <circle cx="17" cy="17" r="1.5" />
-    </svg>
-  );
-}
-
 export function TopbarTicker({ controls = false }: { controls?: boolean }) {
   const [index, setIndex] = useState(0);
 
@@ -59,9 +48,6 @@ export function TopbarTicker({ controls = false }: { controls?: boolean }) {
 
   return (
     <div className="topbar__ticker topbar__ticker--controls" aria-live="polite">
-      <span className="topbar__ticker-icon">
-        <TruckIcon />
-      </span>
       <button type="button" className="topbar__ticker-btn" aria-label="Previous announcement" onClick={() => step(-1)}>
         ‹
       </button>
