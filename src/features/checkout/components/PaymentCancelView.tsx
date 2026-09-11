@@ -13,8 +13,11 @@ import {
   incrementPayAttempt,
   storeOrderId,
 } from "../utils/checkoutSession";
-import { startPayment } from "../utils/startPayment";
+import { PaymentGatewayError, startPayment } from "../utils/startPayment";
 import { CheckoutStateShell } from "./CheckoutStateShell";
+
+const GATEWAY_ERROR =
+  "Card payment couldn’t be started right now. Your order is saved — please try again in a moment, or contact us if it keeps happening.";
 
 /**
  * Gateway cancel URL, and the retry screen for any placed-but-unpaid order.
@@ -30,7 +33,10 @@ export function PaymentCancelView() {
   const orderNumber = isStoredOrder ? getStoredOrderNumber() : null;
 
   const [retrying, setRetrying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Sent here straight from checkout when the gateway returned no payment page.
+  const [error, setError] = useState<string | null>(
+    searchParams.get("reason") === "gateway" ? GATEWAY_ERROR : null,
+  );
 
   async function retry() {
     if (!orderId) return;
@@ -55,7 +61,9 @@ export function PaymentCancelView() {
       );
     } catch (e) {
       setError(
-        checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),
+        e instanceof PaymentGatewayError
+          ? GATEWAY_ERROR
+          : checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),
       );
       setRetrying(false);
     }

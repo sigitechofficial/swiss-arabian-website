@@ -109,28 +109,44 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
   const searchParams = useSearchParams();
   const verify = searchParams.get("verify") === "1";
 
-  const settle = useQuery({
-    queryKey: ["order-payment-settle", orderId],
-    queryFn: () => pollUntilPaymentSettles(orderId),
-    enabled: verify,
-    staleTime: Infinity,
-    retry: false,
-  });
-
   const orderQuery = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrder(orderId),
-    // With ?verify=1, read the order only after payment has settled.
-    enabled: !verify || !settle.isPending,
     retry: 1,
   });
 
-  if ((verify && settle.isPending) || orderQuery.isPending) {
+  const loadedOrder = orderQuery.data;
+  const method = loadedOrder?.selectedPaymentMethod;
+  // Cash on delivery has no gateway step to wait for.
+  const payOffline = /\bcod\b|cash/i.test(`${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`);
+
+  // Gateways (Paymob, Stripe 3DS) send the shopper here straight after paying —
+  // that proves nothing. While an online payment still reads pending, poll
+  // payment-status until the webhook settles it (or we time out).
+  const shouldPoll =
+    Boolean(loadedOrder) &&
+    !payOffline &&
+    (verify || paymentState(loadedOrder?.paymentStatus) === "pending");
+
+  const settle = useQuery({
+    queryKey: ["order-payment-settle", orderId],
+    queryFn: () => pollUntilPaymentSettles(orderId),
+    enabled: shouldPoll,
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+  });
+  const polling = shouldPoll && !settle.data && !settle.isError;
+
+  if (orderQuery.isPending || polling) {
     return (
       <CheckoutStateShell current="Order confirmation">
         <CheckoutSpinnerState
-          title={verify ? "Checking your payment…" : "Loading your order…"}
-          body={verify ? "This usually takes a few seconds." : undefined}
+          eyebrow={polling ? "Payment" : undefined}
+          title={polling ? "Confirming your payment…" : "Loading your order…"}
+          body={
+            polling ? "This usually takes a few seconds. Please don’t close or refresh this page." : undefined
+          }
         />
       </CheckoutStateShell>
     );
@@ -153,7 +169,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     );
   }
 
-  const state = paymentState(settle.data?.status ?? order.paymentStatus);
+  const rawState = paymentState(settle.data?.status ?? order.paymentStatus);
+  // A cash-on-delivery order is confirmed on placement; payment comes later.
+  const state: PaymentState = payOffline && rawState === "pending" ? "success" : rawState;
   const currency = order.currency;
   const shippingAddress = order.addresses?.find((a) => a.addressType === "SHIPPING");
   const billingAddress = order.addresses?.find((a) => a.addressType === "BILLING");
@@ -182,7 +200,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
       <section className="oc-hero" aria-labelledby="order-heading">
         <StatusBadge state={state} />
         <p className="collection-head__eyebrow">
-          {state === "success" ? "Order confirmed" : state === "failed" ? "Payment unsuccessful" : "Order received"}
+          {state === "success" ? "Order confirmed" : state === "failed" ? "Payment unsuccessful" : "Payment processing"}
         </p>
         <h1 className="collection-head__title" id="order-heading">
           {state === "failed" ? (
@@ -215,7 +233,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           ) : state === "failed" ? (
             "Your order is saved, but the payment wasn’t completed. You can try again below."
           ) : (
-            "We’ve received your order and are waiting for payment confirmation."
+            "Your payment is still processing — check again shortly. We’ll email you as soon as it’s confirmed, so there’s no need to pay again."
           )}
         </p>
 
@@ -268,10 +286,18 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             </>
           ) : (
             <>
-              <Link className="checkout-cta" href={`/order-confirmation/${order.orderId}?verify=1`}>
-                <span>Refresh status</span>
+              <button
+                type="button"
+                className="checkout-cta"
+                disabled={settle.isFetching}
+                onClick={() => {
+                  void settle.refetch();
+                  void orderQuery.refetch();
+                }}
+              >
+                <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
                 <b className="arrow" aria-hidden="true">↗</b>
-              </Link>
+              </button>
               <Link className="checkout-cta checkout-cta--ghost" href={retryHref}>
                 <span>Pay now</span>
               </Link>

@@ -61,13 +61,16 @@ export function ProductCatalogView({
   // the designed hero exactly as it is today.
   const bannerImage = banner?.image;
   const bannerDescription = banner?.description;
+  const bannerTitle = banner?.title;
   const meta = useMemo(
     () => ({
       ...staticMeta,
       ...(bannerImage ? { heroImage: bannerImage } : {}),
       ...(bannerDescription ? { intro: bannerDescription } : {}),
+      // Pages without a designed hero (e.g. categories) name themselves.
+      ...(bannerTitle ? { title: bannerTitle, titleEm: "" } : {}),
     }),
-    [staticMeta, bannerImage, bannerDescription],
+    [staticMeta, bannerImage, bannerDescription, bannerTitle],
   );
   const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
 

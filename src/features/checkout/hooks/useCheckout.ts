@@ -37,7 +37,7 @@ import {
   storeZonePaymentMethodId,
 } from "../utils/checkoutSession";
 import { pickDefaultPaymentMethod } from "../utils/methodLabels";
-import { startPayment } from "../utils/startPayment";
+import { PaymentGatewayError, startPayment } from "../utils/startPayment";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -363,8 +363,13 @@ export function useCheckout() {
       } catch (e) {
         if (placedOrderId) {
           // The order exists and the bag is gone — send the shopper to the retry
-          // screen instead of stranding them on an empty checkout.
-          router.push("/checkout/payment/cancel");
+          // screen instead of stranding them on an empty checkout. A gateway
+          // that couldn't open its payment page gets an explicit message there.
+          router.push(
+            e instanceof PaymentGatewayError
+              ? "/checkout/payment/cancel?reason=gateway"
+              : "/checkout/payment/cancel",
+          );
           return;
         }
         setErrorMsg(checkoutErrorMessage(e));

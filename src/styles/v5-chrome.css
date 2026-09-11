@@ -2003,13 +2003,36 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 }
 .nav-search-drop__popular a {
   display: grid;
-  grid-template-columns: 1fr 10px;
+  grid-template-columns: 44px minmax(0, 1fr) 10px;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.62rem 0;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
   color: #241f1b;
   text-decoration: none;
   font-size: 0.75rem;
+}
+/* Small product thumbnail — the beige plate doubles as the placeholder when a
+   product has no image or its URL fails to load. */
+.nav-search-drop__thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f3ebe0;
+}
+.nav-search-drop__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nav-search-drop__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
 }
 .nav-search-drop__popular a:hover {
   color: #8c4435;

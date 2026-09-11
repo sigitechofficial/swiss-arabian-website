@@ -35,6 +35,22 @@ export const catalogKeys = {
     [...catalogKeys.all, "collections", zoneCode ?? "default"] as const,
   collection: (slug: string, zoneCode?: string | null) =>
     [...catalogKeys.all, "collection", slug, zoneCode ?? "default"] as const,
+  category: (slug: string, zoneCode?: string | null) =>
+    [...catalogKeys.all, "category", slug, zoneCode ?? "default"] as const,
+  categoryProducts: (
+    slug: string,
+    zoneCode?: string | null,
+    page = 1,
+    limit = CATALOG_PAGE_SIZE,
+  ) =>
+    [
+      ...catalogKeys.all,
+      "category-products",
+      slug,
+      zoneCode ?? "default",
+      page,
+      limit,
+    ] as const,
   search: (
     q: string,
     zoneCode?: string | null,
@@ -466,6 +482,55 @@ export async function fetchCollections(
     { skipAuth: true },
   );
   return data.items ?? [];
+}
+
+/** A catalog category — what navigation `CATEGORY` items (`/categories/:slug`) point at. */
+export type CatalogCategory = {
+  id: string;
+  code?: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  parentId?: string | null;
+  sortOrder?: number;
+  productCount?: number;
+  image?: string | null;
+  imageAlt?: string | null;
+};
+
+/** GET /storefront/catalog/categories/:slug — `null` when it doesn't resolve. */
+export async function fetchCategoryBySlug(
+  slug: string,
+  zoneCode?: string | null,
+): Promise<CatalogCategory | null> {
+  try {
+    return await apiGet<CatalogCategory>(
+      `/storefront/catalog/categories/${encodeURIComponent(slug)}?${contextQs(zoneCode)}`,
+      { skipAuth: true },
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** GET /storefront/catalog/categories/:slug/products */
+export async function fetchCategoryProducts(
+  slug: string,
+  zoneCode?: string | null,
+  options?: { page?: number; limit?: number },
+): Promise<ProductListResult> {
+  const page = Math.max(1, options?.page ?? 1);
+  const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
+  const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
+  const data = await apiGet<ApiProductListData>(
+    `/storefront/catalog/categories/${encodeURIComponent(slug)}/products?${qs}`,
+    { skipAuth: true },
+  );
+  const products = (data.products ?? []).map(mapProduct);
+  return {
+    products,
+    pagination: normalizePagination(data.pagination, page, limit, products.length),
+  };
 }
 
 export async function fetchCollectionBySlug(

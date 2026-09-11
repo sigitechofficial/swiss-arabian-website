@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   type ReactNode,
 } from "react";
@@ -18,6 +19,12 @@ const MarketContext = createContext<MarketContextValue | null>(null);
 export function MarketProvider({ children }: { children: ReactNode }) {
   const marketId = useUiStore((s) => s.selectedMarketId);
   const setMarketId = useUiStore((s) => s.setSelectedMarketId);
+
+  // Restore the shopper's saved country once mounted — the store skips
+  // hydration so the server-rendered first paint stays consistent.
+  useEffect(() => {
+    void useUiStore.persist.rehydrate();
+  }, []);
 
   const value = useMemo(
     () => ({ marketId, setMarketId }),

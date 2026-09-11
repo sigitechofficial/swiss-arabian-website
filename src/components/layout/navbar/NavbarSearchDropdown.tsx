@@ -111,7 +111,24 @@ export function NavbarSearchDropdown({
               {popular.map((product) => (
                 <li key={product.id}>
                   <Link href={`/products/${product.slug}`} onClick={() => setOpen(false)}>
-                    <span>{product.title}</span>
+                    {/* Small thumbnail; the plate stays as a placeholder when the
+                        product has no image or its URL is broken. */}
+                    <span className="nav-search-drop__thumb" aria-hidden="true">
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={product.imageUrl}
+                          alt=""
+                          width={44}
+                          height={44}
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.style.visibility = "hidden";
+                          }}
+                        />
+                      ) : null}
+                    </span>
+                    <span className="nav-search-drop__name">{product.title}</span>
                     <ChevronGlyph />
                   </Link>
                 </li>

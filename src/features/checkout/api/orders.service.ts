@@ -84,12 +84,14 @@ const TERMINAL_SUCCESS = new Set(["PAID", "AUTHORIZED"]);
 const TERMINAL_FAILURE = new Set(["FAILED", "DECLINED", "CANCELLED"]);
 
 /**
- * Payment is confirmed by the provider webhook, never by the browser redirect,
- * so poll the backend. Defaults follow the Stripe guide: every 2s, up to 30s.
+ * Payment is confirmed by the provider webhook, never by the browser redirect
+ * (or a gateway's `success=true` query param), so poll the backend. Defaults
+ * follow the Paymob brief: every ~2.5s, up to 12 times (~30s, same window the
+ * Stripe guide uses).
  */
 export async function pollUntilPaymentSettles(
   orderId: string,
-  { attempts = 15, delayMs = 2000 }: { attempts?: number; delayMs?: number } = {},
+  { attempts = 12, delayMs = 2500 }: { attempts?: number; delayMs?: number } = {},
 ): Promise<{ success: boolean; status: string }> {
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {

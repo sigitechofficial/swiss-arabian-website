@@ -436,10 +436,46 @@ button.checkout-cta:hover {
   flex-direction: column;
   gap: 14px;
   margin-bottom: 16px;
-  padding: 6px 6px 16px 0;
+  padding: 6px 10px 16px 0;
   border-bottom: 1px solid var(--line);
   max-height: 300px;
   overflow: auto;
+  overscroll-behavior: contain;
+  /* `scrollbar-color` is inherited from the page-wide scrollbar style; any
+     non-auto value makes Chrome ignore the ::-webkit-scrollbar rules below
+     (default 15px bar with arrows). Reset both so the hairline bar applies. */
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+/* Hairline brand scrollbar (Chromium / Safari): a 3px copper pill on a
+   transparent track, no arrow buttons. `scrollbar-width` / `scrollbar-color`
+   must NOT be set for these engines — modern Chrome lets them override the
+   ::-webkit-scrollbar rules and falls back to its default bar with arrows. */
+.checkout-lines::-webkit-scrollbar {
+  width: 3px;
+}
+.checkout-lines::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 4px;
+}
+.checkout-lines::-webkit-scrollbar-thumb {
+  background: rgba(140, 68, 53, 0.22);
+  border-radius: 999px;
+}
+.checkout-lines:hover::-webkit-scrollbar-thumb {
+  background: rgba(140, 68, 53, 0.45);
+}
+.checkout-lines::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+/* Firefox has no ::-webkit-scrollbar — use its standard thin bar instead. */
+@supports not selector(::-webkit-scrollbar) {
+  .checkout-lines {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 68, 53, 0.3) transparent;
+  }
 }
 
 .coline {
