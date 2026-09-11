@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { PRIMARY_NAV, TOPBAR_CURRENCIES, TOPBAR_LANGUAGES, TOPBAR_REGIONS, type ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import { MegaShowcase } from "../MegaShowcase";
 import { TopbarMenu } from "../TopbarMenu";
 import { TopbarTicker } from "../TopbarTicker";
@@ -519,7 +520,9 @@ const LP5_NAV: ChromeNavItem[] = [
 
 export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
   const chrome = useNavbarChrome();
-  const { chromeItems } = useNavigation();
+  // Selected country → its own menu (refetches when the country changes).
+  const { marketId } = useMarket();
+  const { chromeItems } = useNavigation(marketId || undefined);
   const boutique = variant === "minimal";
   const navInShell = variant === "inline" || variant === "inline-locale";
 

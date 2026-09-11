@@ -5,12 +5,15 @@ import Drawer from "@mui/material/Drawer";
 import { X } from "lucide-react";
 import { MOBILE_NAV } from "@/features/home/constants/homeAssets";
 import { useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import { useUiStore } from "@/stores/useUiStore";
 
 export function MobileNav() {
   const open = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
-  const { headerItems } = useNavigation();
+  // Selected country → its own menu (refetches when the country changes).
+  const { marketId } = useMarket();
+  const { headerItems } = useNavigation(marketId || undefined);
   const items = headerItems.length ? headerItems : MOBILE_NAV;
 
   return (
