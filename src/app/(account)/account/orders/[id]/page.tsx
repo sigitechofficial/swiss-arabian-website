@@ -1,4 +1,10 @@
-import { OrderDetailPageView } from "@/features/orders";
+import type { Metadata } from "next";
+import { AccountOrderDetailPageView } from "@/features/orders";
+
+export const metadata: Metadata = {
+  title: "Order details",
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountOrderDetailPage({
   params,
@@ -6,5 +12,5 @@ export default async function AccountOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <OrderDetailPageView id={id} />;
+  return <AccountOrderDetailPageView orderId={id} />;
 }

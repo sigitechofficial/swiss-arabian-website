@@ -1,10 +1,16 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import type { Metadata } from "next";
+import { FaqPageView } from "@/features/faq";
 
-export default function FaqPage() {
-  return (
-    <FeaturePlaceholder
-      title="FAQ"
-      description="Static help content will live in the FAQ feature module."
-    />
-  );
+export const metadata: Metadata = {
+  title: "FAQ",
+  description: "Answers about orders, delivery, payments, samples and Swiss Arabian scents.",
+};
+
+export default async function FaqPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topic?: string }>;
+}) {
+  const { topic } = await searchParams;
+  return <FaqPageView initialDrawer={topic} />;
 }

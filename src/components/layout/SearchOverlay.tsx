@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { previewCatalog, searchCatalog } from "@/features/search";
+import { useCatalogSearch } from "@/features/search";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -53,10 +53,12 @@ export function SearchOverlay() {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const hits = useMemo(
-    () => (query.trim() ? searchCatalog(query, { limit: OVERLAY_LIMIT }) : previewCatalog(OVERLAY_LIMIT)),
-    [query],
-  );
+  // Live catalog search, debounced and gated by the shared hook. An empty box
+  // previews the products list instead of firing a blank-`q` search.
+  const { products: hits } = useCatalogSearch(query, {
+    limit: OVERLAY_LIMIT,
+    previewWhenEmpty: true,
+  });
   const hasQuery = query.trim().length > 0;
 
   useEffect(() => {

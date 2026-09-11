@@ -11,7 +11,7 @@ export function AddToBagButton({
   product: ProductSummary;
   variant?: "product" | "trend";
 }) {
-  const { addToCart, isPending } = useAddToCart();
+  const { addToCart } = useAddToCart();
   const [pressed, setPressed] = useState(false);
   const prefix = variant === "trend" ? "trend-card" : "product-card";
 
@@ -21,11 +21,12 @@ export function AddToBagButton({
       type="button"
       aria-pressed={pressed}
       aria-label={`Add ${product.title} to bag`}
-      disabled={isPending}
-      onClick={async (event) => {
+      onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        await addToCart({
+        // Instant: the bag updates and opens now; the API syncs behind.
+        setPressed(true);
+        void addToCart({
           sku: product.sku,
           variantId: product.variantId,
           slug: product.slug,
@@ -35,7 +36,6 @@ export function AddToBagButton({
           currency: product.currency,
           quantity: 1,
         });
-        setPressed(true);
       }}
     >
       <svg
@@ -58,7 +58,7 @@ export function AddToBagButton({
       >
         <path d="M4 10.5l4 4 8-9.5" />
       </svg>
-      <span>{isPending ? "Adding…" : "Add to bag"}</span>
+      <span>Add to bag</span>
     </button>
   );
 }

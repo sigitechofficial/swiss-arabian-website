@@ -8,7 +8,8 @@ import { STATIC_PRODUCTS } from "@/features/home/constants/staticProducts";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { useCartMutations } from "../hooks/useCartMutations";
+import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
+import { useAddToCart } from "../hooks/useAddToCart";
 
 /** Matches the `v5/landing.html` cart drawer prototype's `FREE` constant. */
 const FREE_SHIPPING_THRESHOLD = 250;
@@ -27,10 +28,10 @@ export function CartSideSheet() {
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
-  const cartId = useCartStore((s) => s.cartId);
+  const syncing = useCartStore((s) => s.syncing);
   const subtotal = useCartStore((s) => s.subtotal());
   const itemCount = useCartStore((s) => s.itemCount());
-  const { add, update, remove } = useCartMutations();
+  const { addToCart } = useAddToCart();
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
   const addLocalLine = useCartStore((s) => s.addLine);
@@ -225,14 +226,11 @@ export function CartSideSheet() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (line.cartItemId && cartId) {
-                            void update.mutateAsync({
-                              cartItemId: line.cartItemId,
-                              cartId,
-                              quantity: Math.max(1, line.quantity - 1),
-                            });
+                          const next = Math.max(1, line.quantity - 1);
+                          if (line.remote || line.cartItemId) {
+                            setQuantityOptimistic(line.variantId, next);
                           } else {
-                            updateLocalQuantity(line.variantId, Math.max(1, line.quantity - 1));
+                            updateLocalQuantity(line.variantId, next);
                           }
                         }}
                         aria-label="Decrease quantity"
@@ -243,12 +241,8 @@ export function CartSideSheet() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (line.cartItemId && cartId) {
-                            void update.mutateAsync({
-                              cartItemId: line.cartItemId,
-                              cartId,
-                              quantity: line.quantity + 1,
-                            });
+                          if (line.remote || line.cartItemId) {
+                            setQuantityOptimistic(line.variantId, line.quantity + 1);
                           } else {
                             updateLocalQuantity(line.variantId, line.quantity + 1);
                           }
@@ -267,8 +261,8 @@ export function CartSideSheet() {
                       type="button"
                       className="cart-line-remove"
                       onClick={() => {
-                        if (line.cartItemId && cartId) {
-                          void remove.mutateAsync({ cartItemId: line.cartItemId, cartId });
+                        if (line.remote || line.cartItemId) {
+                          removeItemOptimistic(line.variantId);
                         } else {
                           removeLocalLine(line.variantId);
                         }
@@ -307,11 +301,16 @@ export function CartSideSheet() {
                         className="cart-rec-add"
                         aria-label={pressed ? `${product.title} added` : `Add ${product.title}`}
                         aria-pressed={pressed}
-                        onClick={async () => {
+                        onClick={() => {
                           if (canAdd) {
-                            await add.mutateAsync({
+                            void addToCart({
                               sku: product.sku,
                               variantId: product.variantId,
+                              slug: product.slug,
+                              title: product.title,
+                              imageUrl: product.imageUrl,
+                              price: product.price,
+                              currency: product.currency,
                               quantity: 1,
                             });
                           } else {
@@ -347,19 +346,21 @@ export function CartSideSheet() {
             <span>Total</span>
             <strong>{formatMoney(subtotal, currency)}</strong>
           </div>
+          {/* Checkout reads the server cart, so hold it for the second or two
+              a background sync is still writing the latest bag changes. */}
           <Link
             className="cart-checkout"
             href="/checkout"
-            aria-disabled={lines.length === 0}
+            aria-disabled={lines.length === 0 || syncing}
             onClick={(event) => {
-              if (lines.length === 0) {
+              if (lines.length === 0 || syncing) {
                 event.preventDefault();
                 return;
               }
               setCartOpen(false);
             }}
           >
-            Checkout
+            {syncing ? "Updating bag…" : "Checkout"}
           </Link>
           <Link className="cart-view-link" href="/cart" onClick={() => setCartOpen(false)}>
             View bag

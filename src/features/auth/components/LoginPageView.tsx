@@ -61,8 +61,12 @@ export function LoginPageView() {
   return (
     <AuthShell heading="Welcome back" subtitle="Sign in to your account to purchase and check out.">
       <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
-        <AuthSocialButtons />
-        <AuthDivider />
+        {env.flags.oauth ? (
+          <>
+            <AuthSocialButtons />
+            <AuthDivider />
+          </>
+        ) : null}
         <div className="flex w-full flex-col gap-4">
           <AuthField
             id="identifier"

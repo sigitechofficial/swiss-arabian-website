@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastApiError } from "@/lib/api/toastApiError";
+import { env } from "@/lib/config/env";
 import {
   DEFAULT_ZONE_CODE,
   toAuthSalesChannelCode,
@@ -45,8 +46,12 @@ export function RegisterPageView() {
   return (
     <AuthShell heading="Create an account" subtitle="Join Swiss Arabian to check out faster and save your favourites.">
       <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
-        <AuthSocialButtons />
-        <AuthDivider />
+        {env.flags.oauth ? (
+          <>
+            <AuthSocialButtons />
+            <AuthDivider />
+          </>
+        ) : null}
         <div className="flex w-full flex-col gap-4">
           <AuthField
             id="fullName"

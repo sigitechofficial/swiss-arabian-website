@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
@@ -12,6 +13,15 @@ import {
 import { useCartStore } from "@/stores/useCartStore";
 import { COMPLIMENTARY_SAMPLES } from "../constants/complimentarySamples";
 import { useCartMutations } from "../hooks/useCartMutations";
+import {
+  addItemOptimistic,
+  removeItemOptimistic,
+  setQuantityOptimistic,
+} from "../api/optimisticCart";
+import {
+  PRICE_CHANGED,
+  cartErrorMessage,
+} from "../constants/validationMessages";
 import { MissThisSwiper } from "./MissThisSwiper";
 
 /** Matches the `v5/cart.html` prototype's `FREE` / `SHIP_FLAT` constants. */
@@ -36,11 +46,36 @@ export function CartPageView() {
   const cartId = useCartStore((s) => s.cartId);
   const persistedSubtotal = useCartStore((s) => s.subtotal());
   const persistedItemCount = useCartStore((s) => s.itemCount());
-  const { add, update, remove } = useCartMutations();
+  const { validate } = useCartMutations();
+  const syncing = useCartStore((s) => s.syncing);
+  const validation = useCartStore((s) => s.validation);
   const addLocalLine = useCartStore((s) => s.addLine);
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
-  const [addingSlug, setAddingSlug] = useState<string | null>(null);
+  const router = useRouter();
+
+  const blockingErrors = validation?.isValid === false ? validation.errors : [];
+  const priceChanged = Boolean(
+    validation?.warnings?.some((w) => w.type === PRICE_CHANGED),
+  );
+
+  /**
+   * Guide: always re-validate before checkout, and block the button when the
+   * cart comes back invalid rather than letting checkout fail later.
+   */
+  async function goToCheckout() {
+    if (!cartId) {
+      router.push("/checkout");
+      return;
+    }
+    try {
+      const cart = await validate.mutateAsync(cartId);
+      if (cart.validation && cart.validation.isValid === false) return;
+      router.push("/checkout");
+    } catch {
+      /* `useCartMutations` already surfaces the API error. */
+    }
+  }
 
   // The cart is persisted to localStorage, invisible to the server — so the
   // very first client render must still report an empty bag (matching SSR)
@@ -69,31 +104,33 @@ export function CartPageView() {
     return CATALOG_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 4);
   }, [lines]);
 
-  async function addFromCart(product: CatalogProduct) {
-    setAddingSlug(product.slug);
-    try {
-      if (product.sku || product.variantId) {
-        await add.mutateAsync({
-          sku: product.sku,
-          variantId: product.variantId,
-          quantity: 1,
-        });
-      } else {
-        addLocalLine({
-          variantId: product.slug,
+  // Instant: the line lands in the bag now; the API sync runs behind.
+  function addFromCart(product: CatalogProduct) {
+    if (product.sku || product.variantId) {
+      addItemOptimistic({
+        sku: product.sku,
+        variantId: product.variantId,
+        quantity: 1,
+        line: {
           slug: product.slug,
           title: product.title,
           imageUrl: product.imageUrl ?? undefined,
           unitPrice: product.price ?? 0,
           currency: product.currency,
-          quantity: 1,
           sizeLabel: sizeLabelFor(product),
-        });
-      }
-    } catch {
-      /* `useCartMutations` already toasts API errors. */
-    } finally {
-      setAddingSlug(null);
+        },
+      });
+    } else {
+      addLocalLine({
+        variantId: product.slug,
+        slug: product.slug,
+        title: product.title,
+        imageUrl: product.imageUrl ?? undefined,
+        unitPrice: product.price ?? 0,
+        currency: product.currency,
+        quantity: 1,
+        sizeLabel: sizeLabelFor(product),
+      });
     }
   }
 
@@ -143,8 +180,8 @@ export function CartPageView() {
                   <div className="cart-miss">
                     <MissThisSwiper
                       products={missThis}
-                      addingSlug={addingSlug}
-                      onAdd={(p) => void addFromCart(p)}
+                      addingSlug={null}
+                      onAdd={(p) => addFromCart(p)}
                     />
                   </div>
                 ) : null}
@@ -174,8 +211,8 @@ export function CartPageView() {
                             aria-label="Decrease"
                             onClick={() => {
                               const next = Math.max(1, line.quantity - 1);
-                              if (line.cartItemId && cartId) {
-                                void update.mutateAsync({ cartItemId: line.cartItemId, cartId, quantity: next });
+                              if (line.remote || line.cartItemId) {
+                                setQuantityOptimistic(line.variantId, next);
                               } else {
                                 updateLocalQuantity(line.variantId, next);
                               }
@@ -189,8 +226,8 @@ export function CartPageView() {
                             aria-label="Increase"
                             onClick={() => {
                               const next = line.quantity + 1;
-                              if (line.cartItemId && cartId) {
-                                void update.mutateAsync({ cartItemId: line.cartItemId, cartId, quantity: next });
+                              if (line.remote || line.cartItemId) {
+                                setQuantityOptimistic(line.variantId, next);
                               } else {
                                 updateLocalQuantity(line.variantId, next);
                               }
@@ -203,8 +240,8 @@ export function CartPageView() {
                           type="button"
                           className="cline__remove"
                           onClick={() => {
-                            if (line.cartItemId && cartId) {
-                              void remove.mutateAsync({ cartItemId: line.cartItemId, cartId });
+                            if (line.remote || line.cartItemId) {
+                              removeItemOptimistic(line.variantId);
                             } else {
                               removeLocalLine(line.variantId);
                             }
@@ -259,12 +296,37 @@ export function CartPageView() {
                     <dd dir="ltr">{formatMoney(total, currency)}</dd>
                   </div>
                 </dl>
-                <Link className="cart-cta" href="/checkout">
-                  <span>Proceed to checkout</span>
+                {priceChanged ? (
+                  <p className="cart-hint" role="status">
+                    Prices have been updated since you added these items.
+                  </p>
+                ) : null}
+                {blockingErrors.length ? (
+                  <ul className="cart-hint" role="alert">
+                    {blockingErrors.map((issue, index) => (
+                      <li key={`${issue.type}-${issue.cartItemId ?? index}`}>
+                        {cartErrorMessage(issue.type, issue.message)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <button
+                  type="button"
+                  className="cart-cta"
+                  onClick={goToCheckout}
+                  disabled={syncing || validate.isPending || blockingErrors.length > 0}
+                >
+                  <span>
+                    {syncing
+                      ? "Updating bag…"
+                      : validate.isPending
+                        ? "Checking availability…"
+                        : "Proceed to checkout"}
+                  </span>
                   <b className="arrow" aria-hidden="true">
                     ↗
                   </b>
-                </Link>
+                </button>
                 <Link className="btn-secondary cart-continue" href="/products">
                   Continue shopping
                 </Link>

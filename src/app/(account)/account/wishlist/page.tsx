@@ -1,10 +1,15 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/ui";
+import { AccountWishlistPageView } from "@/features/wishlist";
 
-export default function WishlistPage() {
+export const metadata = {
+  title: "Wishlist",
+};
+
+export default function AccountWishlistPage() {
   return (
-    <FeaturePlaceholder
-      title="Wishlist"
-      description="Wishlist CRUD is waiting on the backend."
-    />
+    <Suspense fallback={<PageLoading label="Loading wishlist…" fill />}>
+      <AccountWishlistPageView title="Wishlist" />
+    </Suspense>
   );
 }

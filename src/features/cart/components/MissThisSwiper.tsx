@@ -9,12 +9,16 @@ export function CheckoutAddonRow({
   adding,
   onAdd,
   compact = false,
+  disabled = false,
 }: {
   product: CatalogProduct;
   adding: boolean;
   onAdd: (product: CatalogProduct) => void;
   compact?: boolean;
+  /** Shown but not addable (e.g. static items with no live SKU yet). */
+  disabled?: boolean;
 }) {
+  const unavailableLabel = `${product.title} can’t be added yet`;
   return (
     <article className="checkout-addon">
       {product.imageUrl ? (
@@ -30,9 +34,12 @@ export function CheckoutAddonRow({
       <button
         type="button"
         className="checkout-addon__add"
-        disabled={adding}
+        disabled={adding || disabled}
         onClick={() => onAdd(product)}
-        aria-label={adding ? `Adding ${product.title}` : `Add ${product.title}`}
+        title={disabled ? unavailableLabel : undefined}
+        aria-label={
+          disabled ? unavailableLabel : adding ? `Adding ${product.title}` : `Add ${product.title}`
+        }
       >
         {compact ? (adding ? "…" : "+") : adding ? "Adding" : "+ Add"}
       </button>
@@ -44,10 +51,13 @@ export function MissThisSwiper({
   products,
   addingSlug,
   onAdd,
+  canAdd,
 }: {
   products: CatalogProduct[];
   addingSlug: string | null;
   onAdd: (product: CatalogProduct) => void;
+  /** Omit to allow adding every product (cart page behaviour). */
+  canAdd?: (product: CatalogProduct) => boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -88,6 +98,7 @@ export function MissThisSwiper({
             product={product}
             adding={addingSlug === product.slug}
             onAdd={onAdd}
+            disabled={canAdd ? !canAdd(product) : false}
             compact
           />
         ))}

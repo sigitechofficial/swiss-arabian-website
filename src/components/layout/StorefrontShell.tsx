@@ -7,7 +7,13 @@ import { SiteHeader } from "./SiteHeader";
 
 export function StorefrontShell({
   children,
-  navbarVariant = "classic",
+  /**
+   * Finalized site header — the LP5 "boutique" chrome: chocolate ticker,
+   * pill search, centered full lockup, labeled account / wishlist / bag.
+   * `/lp/[id]` still passes its own variant so the header showcase keeps
+   * rendering every option.
+   */
+  navbarVariant = "minimal",
 }: {
   children: ReactNode;
   navbarVariant?: NavbarVariant;

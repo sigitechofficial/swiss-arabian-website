@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { previewCatalog, searchCatalog } from "@/features/search";
+import { useRouter } from "next/navigation";
+import { useCatalogSearch } from "@/features/search";
 
 function SearchGlyph() {
   return (
@@ -28,14 +29,32 @@ export function NavbarSearchDropdown({
 } = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const popular = useMemo(
-    () => (query.trim() ? searchCatalog(query, { limit: 6 }) : previewCatalog(6)),
-    [query],
-  );
-  const newest = useMemo(() => previewCatalog(4), []);
+  // Live catalog search; an empty box falls back to a browse preview rather
+  // than a blank-`q` search, which the API answers with the whole catalog.
+  const { products: popular } = useCatalogSearch(query, {
+    limit: 6,
+    previewWhenEmpty: true,
+  });
+  const { products: newest } = useCatalogSearch("", {
+    limit: 4,
+    previewWhenEmpty: true,
+  });
+
+  const trimmed = query.trim();
+  const seeAllHref = trimmed
+    ? `/search?q=${encodeURIComponent(trimmed)}`
+    : "/products";
+
+  function submit() {
+    if (!trimmed) return;
+    setOpen(false);
+    inputRef.current?.blur();
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -75,6 +94,12 @@ export function NavbarSearchDropdown({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submit();
+            }
+          }}
         />
       </label>
 
@@ -94,10 +119,10 @@ export function NavbarSearchDropdown({
             </ul>
             <Link
               className="nav-search-drop__all"
-              href="/products"
+              href={seeAllHref}
               onClick={() => setOpen(false)}
             >
-              See all fragrances
+              {trimmed ? "See all results" : "See all fragrances"}
             </Link>
           </div>
 

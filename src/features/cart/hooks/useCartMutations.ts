@@ -3,8 +3,10 @@
 import { useMutation } from "@tanstack/react-query";
 import {
   addCartItem,
+  clearCartItems,
   removeCartItem,
   updateCartItem,
+  validateCart,
 } from "../api/cart.service";
 import { storeCartId } from "../utils/guestToken";
 import { useCartStore } from "@/stores/useCartStore";
@@ -38,5 +40,22 @@ export function useCartMutations() {
     onError: toastApiError,
   });
 
-  return { add, update, remove };
+  const clear = useMutation({
+    mutationFn: clearCartItems,
+    onSuccess: sync,
+    onError: toastApiError,
+  });
+
+  /**
+   * Re-checks every line against live pricing and stock. The guide requires
+   * this before checkout; `sync` also writes the returned `validation` block
+   * into the store so the bag can render per-item errors.
+   */
+  const validate = useMutation({
+    mutationFn: validateCart,
+    onSuccess: sync,
+    onError: toastApiError,
+  });
+
+  return { add, update, remove, clear, validate };
 }

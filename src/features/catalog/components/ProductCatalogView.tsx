@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
+import { PageLoading } from "@/components/ui/PageLoading";
+import { useLoadedImages } from "../hooks/useLoadedImages";
+import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
+import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
 import {
   CATALOG_PRODUCTS,
   COLLECTION_LABELS,
@@ -17,12 +21,60 @@ import {
 import { ProductCardTags } from "./ProductCardTags";
 import { getCollectionMeta } from "../constants/collectionMeta";
 
-const ALL_PRICES = CATALOG_PRODUCTS.map((p) => p.price ?? 0);
-const PRICE_FLOOR = Math.floor(Math.min(...ALL_PRICES));
-const PRICE_CEIL = Math.ceil(Math.max(...ALL_PRICES));
+function priceBounds(products: readonly CatalogProduct[]) {
+  const prices = products.map((p) => p.price ?? 0);
+  if (!prices.length) return { floor: 0, ceil: 0 };
+  return {
+    floor: Math.floor(Math.min(...prices)),
+    ceil: Math.ceil(Math.max(...prices)),
+  };
+}
 
-export function ProductCatalogView({ slug }: { slug?: string }) {
-  const meta = useMemo(() => getCollectionMeta(slug), [slug]);
+/** Banner supplied by the collections API; falls back to the static hero. */
+export type CatalogBanner = {
+  image?: string | null;
+  imageAlt?: string | null;
+  description?: string | null;
+  title?: string | null;
+};
+
+export function ProductCatalogView({
+  slug,
+  products: productsProp,
+  banner,
+  loading = false,
+}: {
+  slug?: string;
+  /**
+   * Live catalog products. Omitted → the static catalog (unchanged). An empty
+   * array is a real "this collection has no products" and shows the empty state.
+   */
+  products?: CatalogProduct[];
+  banner?: CatalogBanner | null;
+  /** Live products are still loading — keep the hero, hold the grid. */
+  loading?: boolean;
+}) {
+  const staticMeta = useMemo(() => getCollectionMeta(slug), [slug]);
+  const products = productsProp ?? CATALOG_PRODUCTS;
+
+  // Only override the parts the API actually supplies — an empty banner keeps
+  // the designed hero exactly as it is today.
+  const bannerImage = banner?.image;
+  const bannerDescription = banner?.description;
+  const meta = useMemo(
+    () => ({
+      ...staticMeta,
+      ...(bannerImage ? { heroImage: bannerImage } : {}),
+      ...(bannerDescription ? { intro: bannerDescription } : {}),
+    }),
+    [staticMeta, bannerImage, bannerDescription],
+  );
+  const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
+
+  const { floor: PRICE_FLOOR, ceil: PRICE_CEIL } = useMemo(
+    () => priceBounds(products),
+    [products],
+  );
 
   const [concentration, setConcentration] = useState<"all" | Concentration>("all");
   const [collection, setCollection] = useState<string>(meta.filterCollection ?? "all");
@@ -32,8 +84,18 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
   const [sort, setSort] = useState<SortOption>("featured");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Live products arrive after mount, so the price slider's bounds change
+  // under it — re-seed the range whenever the bounds move (during render,
+  // not in an effect, so there's no extra cascading render).
+  const [seededBounds, setSeededBounds] = useState({ floor: PRICE_FLOOR, ceil: PRICE_CEIL });
+  if (seededBounds.floor !== PRICE_FLOOR || seededBounds.ceil !== PRICE_CEIL) {
+    setSeededBounds({ floor: PRICE_FLOOR, ceil: PRICE_CEIL });
+    setPriceMin(PRICE_FLOOR);
+    setPriceMax(PRICE_CEIL);
+  }
+
   const filtered = useMemo(() => {
-    const byFacets = CATALOG_PRODUCTS.filter((p) => {
+    const byFacets = products.filter((p) => {
       if (concentration !== "all" && p.concentration !== concentration) return false;
       if (collection !== "all" && p.collection !== collection) return false;
       if (note !== "all" && p.note !== note) return false;
@@ -42,27 +104,14 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
       return true;
     });
     return sortCatalogProducts(byFacets, sort);
-  }, [concentration, collection, note, priceMin, priceMax, sort]);
+  }, [products, concentration, collection, note, priceMin, priceMax, sort]);
 
   const countFor = (predicate: (p: CatalogProduct) => boolean) =>
-    CATALOG_PRODUCTS.filter(predicate).length;
+    products.filter(predicate).length;
 
   const notesPresent = Object.keys(NOTE_LABELS).filter((key) =>
-    CATALOG_PRODUCTS.some((p) => p.note === key),
+    products.some((p) => p.note === key),
   );
-
-  // Preload + decode every ingredients hover image up front so the first
-  // hover crossfade doesn't blink (same fix as the landing product strip).
-  useEffect(() => {
-    CATALOG_PRODUCTS.forEach((product) => {
-      const hover = product.imageUrls?.[1];
-      if (hover && hover !== product.imageUrl) {
-        const img = new Image();
-        img.src = hover;
-        img.decode?.().catch(() => {});
-      }
-    });
-  }, []);
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -104,7 +153,7 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
             <img
               className="collection-hero__media"
               src={meta.heroImage}
-              alt=""
+              alt={heroAlt}
               width={720}
               height={1040}
               fetchPriority="high"
@@ -125,6 +174,31 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
           Products
         </h2>
 
+        {loading ? (
+          <div className="container container--full">
+            <PageLoading label="Loading fragrances…" />
+          </div>
+        ) : productsProp && productsProp.length === 0 ? (
+          <div className="container container--full">
+            <div className="catalog-empty" role="status">
+              <img
+                className="catalog-empty__art"
+                src="/assets/catalog/empty-products.svg"
+                alt=""
+                width={180}
+                height={180}
+              />
+              <p className="catalog-empty__eyebrow">Coming soon</p>
+              <h3 className="catalog-empty__title">No fragrances here yet</h3>
+              <p className="catalog-empty__text">
+                We’re still filling this collection. Explore the rest of the house in the meantime.
+              </p>
+              <Link className="catalog-empty__cta" href="/products">
+                Browse all fragrances
+              </Link>
+            </div>
+          </div>
+        ) : (
         <div className="catalog container container--full">
           <button
             type="button"
@@ -207,7 +281,7 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
                     aria-pressed={concentration === "all"}
                     onClick={() => setConcentration("all")}
                   >
-                    All <span className="rail-filter__count">({CATALOG_PRODUCTS.length})</span>
+                    All <span className="rail-filter__count">({products.length})</span>
                   </button>
                 </li>
                 {(Object.keys(CONCENTRATION_LABELS) as Concentration[]).map((key) => (
@@ -313,7 +387,7 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
                 Filters
               </button>
               <p className="catalog__count" aria-live="polite">
-                Showing {filtered.length} of {CATALOG_PRODUCTS.length}
+                Showing {filtered.length} of {products.length}
               </p>
               <label className="catalog__sort">
                 <span className="catalog__sort-label">Sort by</span>
@@ -335,22 +409,48 @@ export function ProductCatalogView({ slug }: { slug?: string }) {
             {filtered.length === 0 ? (
               <p className="grid-band__empty">No products match these filters.</p>
             ) : (
-              <ul className="product-grid" role="list">
-                {filtered.map((product) => (
-                  <CatalogProductCard key={product.id} product={product} />
-                ))}
-              </ul>
+              // One batched wishlist-status request for the whole grid, not one per card.
+              <WishlistStatusScope>
+                <ul className="product-grid" role="list">
+                  {filtered.map((product) => (
+                    <CatalogProductCard key={product.id} product={product} />
+                  ))}
+                </ul>
+              </WishlistStatusScope>
             )}
           </div>
         </div>
+        )}
       </section>
     </div>
   );
 }
 
-function CatalogProductCard({ product }: { product: CatalogProduct }) {
-  const hover = product.imageUrls?.[1] ?? product.imageUrl;
-  const hasIngredientsHover = Boolean(hover && hover !== product.imageUrl);
+export function CatalogProductCard({
+  product,
+  action,
+  hideAdd = false,
+  note,
+}: {
+  product: CatalogProduct;
+  /** Top-right control above the card link (e.g. the wishlist heart). */
+  action?: ReactNode;
+  /** Unsellable products keep the card but lose the add-to-bag pill. */
+  hideAdd?: boolean;
+  note?: string;
+}) {
+  // Live catalog media 404s for some products, which would otherwise render a
+  // broken-image icon and its alt text. Fall back to the same bottle
+  // placeholder the card already uses when a product has no image at all.
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(product.imageUrl) && !imageFailed;
+
+  // Only swap to the hover image once it has really loaded — a broken hover
+  // URL would otherwise fade the bottle out onto a blank card.
+  const hoverCandidate = product.imageUrls?.[1];
+  const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
+  const loadedImages = useLoadedImages([hover]);
+  const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
 
   return (
     <li
@@ -374,20 +474,34 @@ function CatalogProductCard({ product }: { product: CatalogProduct }) {
           tabIndex={-1}
           aria-hidden="true"
         >
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.title} width={600} height={600} loading="lazy" />
+          {showImage ? (
+            <img
+              src={product.imageUrl as string}
+              alt={product.title}
+              width={600}
+              height={600}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
           ) : (
             <span className="bottle" aria-hidden="true" />
           )}
         </Link>
       </div>
-      <div className="product-card__add-slot">
-        <AddToBagButton product={product} variant="product" />
+      <div className="product-card__action">
+        {/* Wishlist heart by default; renders nothing for non-live (static) ids. */}
+        {action ?? <WishlistHeartButton productId={product.id} />}
       </div>
+      {hideAdd ? null : (
+        <div className="product-card__add-slot">
+          <AddToBagButton product={product} variant="product" />
+        </div>
+      )}
       <div className="product-card__body">
         <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
         <h3 className="product-card__name">{product.title}</h3>
         <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
+        {note ? <p className="product-card__note">{note}</p> : null}
       </div>
     </li>
   );

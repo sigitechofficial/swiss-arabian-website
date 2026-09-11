@@ -2,6 +2,7 @@
 
 import { forwardRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
 import { toast } from "@/components/ui/Toaster";
+import { env } from "@/lib/config/env";
 
 type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -28,7 +29,7 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
         <input
           ref={ref}
           id={id}
-          className={`auth-field-input block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-base font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[13.5px] ${className ?? ""}`}
+          className={`auth-field-input block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
           {...props}
         />
       </div>
@@ -60,7 +61,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
           ref={ref}
           id={id}
           type={visible ? "text" : "password"}
-          className={`auth-field-input min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-base font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[13.5px] ${className ?? ""}`}
+          className={`auth-field-input min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
           {...props}
         />
         <button
@@ -78,9 +79,10 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
   );
 });
 
-/** Google/Apple buttons — social sign-in isn't wired to the backend yet, so
- *  these surface an honest "not connected" toast instead of faking success. */
+/** Google/Apple buttons. Gated behind NEXT_PUBLIC_ENABLE_OAUTH — while OAuth is
+ *  off (default) social sign-in stays unwired, so the buttons are not rendered. */
 export function AuthSocialButtons() {
+  if (!env.flags.oauth) return null;
   return (
     <div className="flex w-full flex-col gap-2">
       <button

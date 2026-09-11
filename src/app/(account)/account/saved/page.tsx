@@ -1,10 +1,15 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/ui";
+import { AccountWishlistPageView } from "@/features/wishlist";
 
-export default function SavedPage() {
+export const metadata = {
+  title: "Saved Items",
+};
+
+export default function AccountSavedPage() {
   return (
-    <FeaturePlaceholder
-      title="Saved items"
-      description="Saved items will share wishlist APIs when they land."
-    />
+    <Suspense fallback={<PageLoading label="Loading saved items…" fill />}>
+      <AccountWishlistPageView title="Saved Items" />
+    </Suspense>
   );
 }

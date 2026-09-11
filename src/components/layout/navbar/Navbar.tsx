@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { PRIMARY_NAV, TOPBAR_CURRENCIES, TOPBAR_LANGUAGES, TOPBAR_REGIONS, type ChromeNavItem } from "@/features/home/constants/chromeNav";
+import { useNavigation } from "@/features/navigation";
 import { MegaShowcase } from "../MegaShowcase";
 import { TopbarMenu } from "../TopbarMenu";
 import { TopbarTicker } from "../TopbarTicker";
@@ -507,7 +508,7 @@ function NavbarShell({
   );
 }
 
-const LP2_HIDDEN_MENUS = new Set(["Minis", "Landing pages"]);
+const LP2_HIDDEN_MENUS = new Set(["Minis"]);
 
 const LP5_NAV: ChromeNavItem[] = [
   ...PRIMARY_NAV.map((item) =>
@@ -518,14 +519,23 @@ const LP5_NAV: ChromeNavItem[] = [
 
 export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
   const chrome = useNavbarChrome();
+  const { chromeItems } = useNavigation();
   const boutique = variant === "minimal";
   const navInShell = variant === "inline" || variant === "inline-locale";
-  const navItems =
-    variant === "inline" || variant === "inline-locale"
-      ? PRIMARY_NAV.filter((item) => !LP2_HIDDEN_MENUS.has(item.label))
-      : boutique
-        ? LP5_NAV
-        : PRIMARY_NAV;
+
+  // Menus come from `/storefront/navigation`; the static menu is the fallback
+  // for the first paint and for any API failure, so the header is never bare.
+  // The synthetic "Offers" entry only applies to that fallback — once the CMS
+  // is driving the nav, its own list is the source of truth.
+  const base = chromeItems.length
+    ? chromeItems
+    : boutique
+      ? LP5_NAV
+      : PRIMARY_NAV;
+
+  const navItems = navInShell
+    ? base.filter((item) => !LP2_HIDDEN_MENUS.has(item.label))
+    : base;
 
   return (
     <header className="site-header" data-navbar={variant} ref={chrome.headerRef}>

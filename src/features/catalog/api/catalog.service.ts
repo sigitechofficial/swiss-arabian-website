@@ -1,5 +1,8 @@
 import { apiGet } from "@/lib/api/apiClient";
-import { storefrontContextQuery } from "@/lib/storefront/context";
+import {
+  storefrontContextQuery,
+  toAuthSalesChannelCode,
+} from "@/lib/storefront/context";
 import type {
   ProductCollectionRef,
   ProductDetail,
@@ -32,6 +35,22 @@ export const catalogKeys = {
     [...catalogKeys.all, "collections", zoneCode ?? "default"] as const,
   collection: (slug: string, zoneCode?: string | null) =>
     [...catalogKeys.all, "collection", slug, zoneCode ?? "default"] as const,
+  search: (
+    q: string,
+    zoneCode?: string | null,
+    page = 1,
+    limit = 20,
+    sort = "newest",
+  ) =>
+    [
+      ...catalogKeys.all,
+      "search",
+      q,
+      zoneCode ?? "default",
+      page,
+      limit,
+      sort,
+    ] as const,
   collectionProducts: (
     slug: string,
     zoneCode?: string | null,
@@ -299,6 +318,76 @@ function normalizePagination(
   };
 }
 
+export const CATALOG_SEARCH_PAGE_SIZE = 20;
+
+export type CatalogSearchSort =
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "name_asc"
+  | "name_desc";
+
+export type CatalogSearchOptions = {
+  q: string;
+  page?: number;
+  limit?: number;
+  sort?: CatalogSearchSort;
+  onlySellable?: boolean;
+};
+
+/**
+ * `GET /storefront/catalog/search` — public, market-scoped catalog search.
+ *
+ * Sends `salesChannelCode` alongside the usual context, per the search guide.
+ * Callers must not pass a blank `q`: the endpoint answers it with the entire
+ * catalog (474 rows), which is a dump, not a search result.
+ */
+export async function fetchCatalogSearch(
+  zoneCode: string | null | undefined,
+  options: CatalogSearchOptions,
+): Promise<ProductListResult> {
+  const q = options.q.trim();
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.max(1, options.limit ?? CATALOG_SEARCH_PAGE_SIZE);
+  const sort = options.sort ?? "newest";
+  const onlySellable = options.onlySellable !== false;
+
+  const qs = new URLSearchParams(
+    storefrontContextQuery({
+      zoneCode,
+      salesChannelCode: toAuthSalesChannelCode(zoneCode),
+    }),
+  );
+  qs.set("q", q);
+  qs.set("onlySellable", onlySellable ? "true" : "false");
+  qs.set("page", String(page));
+  qs.set("limit", String(limit));
+  qs.set("sort", sort);
+
+  const data = await apiGet<ApiProductListData>(
+    `/storefront/catalog/search?${qs.toString()}`,
+    { skipAuth: true },
+  );
+  const products = (data.products ?? []).map(mapProduct);
+  const pagination = normalizePagination(
+    data.pagination,
+    page,
+    limit,
+    products.length,
+  );
+
+  return {
+    products,
+    // The endpoint under-reports `total` on some queries (e.g. `q=SOAH`
+    // returns 4 products but `total: 1`), so never claim fewer results than
+    // we are about to render.
+    pagination: {
+      ...pagination,
+      total: Math.max(pagination.total, products.length),
+    },
+  };
+}
+
 export async function fetchProducts(
   zoneCode?: string | null,
   options?: { page?: number; limit?: number },
@@ -359,6 +448,10 @@ export type CatalogCollection = {
   description?: string | null;
   sortOrder?: number;
   productCount?: number;
+  /** Collection banner. Supported by the API but unset on every collection
+   *  today — the storefront falls back to its designed hero when null. */
+  image?: string | null;
+  imageAlt?: string | null;
 };
 
 type ApiCollectionListData = {

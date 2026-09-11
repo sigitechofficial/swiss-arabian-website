@@ -17,6 +17,8 @@ export type CartLine = {
   sizeLabel?: string;
   notes?: string[];
   isSellable?: boolean;
+  /** Backed by the server cart (real sku/variantId) — edits sync to the API. */
+  remote?: boolean;
 };
 
 type CartTotals = {
@@ -33,6 +35,9 @@ type CartState = {
   cartId: string | null;
   totals: CartTotals | null;
   validation: CartValidation | null;
+  /** Optimistic edits are still being written to the API in the background. */
+  syncing: boolean;
+  setSyncing: (syncing: boolean) => void;
   addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeLine: (variantId: string) => void;
@@ -51,7 +56,13 @@ export const useCartStore = create<CartState>()(
       cartId: null,
       totals: null,
       validation: null,
+      syncing: false,
 
+      setSyncing: (syncing) => set({ syncing }),
+
+      // Local edits clear the server `totals` — they're stale the moment a
+      // line changes, so counts and subtotal fall back to the lines until the
+      // next server cart lands.
       addLine: (line) =>
         set((state) => {
           const existing = state.lines.find(
@@ -59,6 +70,7 @@ export const useCartStore = create<CartState>()(
           );
           if (existing) {
             return {
+              totals: null,
               lines: state.lines.map((item) =>
                 item.variantId === line.variantId
                   ? {
@@ -67,18 +79,21 @@ export const useCartStore = create<CartState>()(
                       imageUrl: line.imageUrl ?? item.imageUrl,
                       sizeLabel: line.sizeLabel ?? item.sizeLabel,
                       notes: line.notes?.length ? line.notes : item.notes,
+                      remote: line.remote ?? item.remote,
                     }
                   : item,
               ),
             };
           }
           return {
+            totals: null,
             lines: [...state.lines, { ...line, quantity: line.quantity ?? 1 }],
           };
         }),
 
       updateQuantity: (variantId, quantity) =>
         set((state) => ({
+          totals: null,
           lines:
             quantity <= 0
               ? state.lines.filter((item) => item.variantId !== variantId)
@@ -89,6 +104,7 @@ export const useCartStore = create<CartState>()(
 
       removeLine: (variantId) =>
         set((state) => ({
+          totals: null,
           lines: state.lines.filter((item) => item.variantId !== variantId),
         })),
 
@@ -124,6 +140,7 @@ export const useCartStore = create<CartState>()(
               sizeLabel: item.variantName ?? local?.sizeLabel,
               notes: local?.notes,
               isSellable: item.sellabilitySummary?.isSellable ?? true,
+              remote: true,
             };
           });
 

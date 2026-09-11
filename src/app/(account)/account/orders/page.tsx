@@ -1,5 +1,9 @@
-import { OrdersPageView } from "@/features/orders";
+import { PurchaseHistoryPageView } from "@/features/orders";
+
+export const metadata = {
+  title: "Purchase History",
+};
 
 export default function AccountOrdersPage() {
-  return <OrdersPageView />;
+  return <PurchaseHistoryPageView />;
 }

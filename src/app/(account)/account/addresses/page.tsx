@@ -1,10 +1,10 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import type { Metadata } from "next";
+import { AccountAddressesPageView } from "@/features/account/components/AccountAddressesPageView";
+
+export const metadata: Metadata = {
+  title: "Addresses",
+};
 
 export default function AddressesPage() {
-  return (
-    <FeaturePlaceholder
-      title="Addresses"
-      description="Address CRUD waits on /storefront/customer/addresses."
-    />
-  );
+  return <AccountAddressesPageView />;
 }

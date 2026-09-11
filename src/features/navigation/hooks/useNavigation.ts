@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import type { MobileNavItem, MobileNavLink } from "@/features/home/constants/homeAssets";
+import type { ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { fetchNavigation } from "../api/navigation.service";
+import { apiNavToChromeNav } from "../utils/toChromeNav";
 import type { NavItem } from "../types/navigation";
 
 type MobileNavHeading = { label: string; kind: "heading" };
@@ -49,7 +51,11 @@ export function apiNavToMobileNav(items: NavItem[]): MobileNavItem[] {
 }
 
 type UseNavigationReturn = {
+  /** Drawer/mobile shape. */
   headerItems: MobileNavItem[];
+  /** Desktop chrome shape, incl. mega panels. Empty until loaded — callers
+   *  fall back to the static menu so the header never renders bare. */
+  chromeItems: ChromeNavItem[];
   footerItems: NavItem[];
   isLoading: boolean;
   isCatalogFallback: boolean;
@@ -68,6 +74,7 @@ export function useNavigation(
 
   return {
     headerItems: data ? apiNavToMobileNav(data.header) : [],
+    chromeItems: data ? apiNavToChromeNav(data.header) : [],
     footerItems: data?.footer ?? [],
     isLoading,
     isCatalogFallback: data?.metadata.source === "catalog_categories",

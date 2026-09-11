@@ -1,10 +1,14 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { AccountPlaceholderPageView } from "@/features/account";
 
-export default function MembershipPage() {
+export const metadata = {
+  title: "Membership Benefits",
+};
+
+export default function AccountMembershipPage() {
   return (
-    <FeaturePlaceholder
-      title="Membership"
-      description="Membership benefits are client-only until loyalty APIs exist."
+    <AccountPlaceholderPageView
+      title="Membership Benefits"
+      description="Your tier, points and member perks will appear here. Your active plan is already visible under My Subscription."
     />
   );
 }

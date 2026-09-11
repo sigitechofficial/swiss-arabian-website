@@ -79,6 +79,16 @@ const nextConfig: NextConfig = {
   // already produces its own optimized deployment output.
   output: process.env.VERCEL ? undefined : "standalone",
   allowedDevOrigins: lanDevOrigins(),
+  // Stripe Elements renders in a js.stripe.com iframe and fetches our brand
+  // font cross-origin, which browsers only allow with a CORS header.
+  async headers() {
+    return [
+      {
+        source: "/fonts/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
+  },
   images: {
     qualities: [75, 90, 95],
     remotePatterns: [

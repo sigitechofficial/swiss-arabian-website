@@ -1,10 +1,9 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { AccountRewardsPageView } from "@/features/account";
 
-export default function RewardsPage() {
-  return (
-    <FeaturePlaceholder
-      title="Rewards"
-      description="Rewards math is client-only today."
-    />
-  );
+export const metadata = {
+  title: "Rewards & loyalty",
+};
+
+export default function AccountRewardsPage() {
+  return <AccountRewardsPageView />;
 }

@@ -1,15 +1,14 @@
 "use client";
 
-import { useCartMutations } from "./useCartMutations";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
+import { addItemOptimistic } from "../api/optimisticCart";
 
 export type AddToCartInput = {
   sku?: string;
   variantId?: string;
   quantity?: number;
-  /** Needed only for the local-cart fallback below (static catalog
-   *  products with no live backend sku/variantId yet). */
+  /** Shown in the bag straight away, before the server cart comes back. */
   slug?: string;
   title?: string;
   imageUrl?: string | null;
@@ -19,23 +18,34 @@ export type AddToCartInput = {
 };
 
 export function useAddToCart() {
-  const { add } = useCartMutations();
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const addLocalLine = useCartStore((s) => s.addLine);
+  const syncing = useCartStore((s) => s.syncing);
 
   return {
-    isPending: add.isPending,
+    /** The API sync is still running — the bag already shows the change. */
+    isPending: syncing,
+    /** Resolves immediately: the line is added locally and the drawer opens now. */
     addToCart: async (opts: AddToCartInput) => {
       const quantity = opts.quantity ?? 1;
 
       if (opts.sku || opts.variantId) {
-        await add.mutateAsync({ sku: opts.sku, variantId: opts.variantId, quantity });
+        addItemOptimistic({
+          sku: opts.sku,
+          variantId: opts.variantId,
+          quantity,
+          line: {
+            slug: opts.slug ?? "",
+            title: opts.title ?? "",
+            imageUrl: opts.imageUrl ?? undefined,
+            unitPrice: opts.price ?? 0,
+            currency: opts.currency ?? "AED",
+            sizeLabel: opts.sizeLabel,
+          },
+        });
       } else if (opts.slug && opts.title) {
-        // No live backend variant for this product yet — the storefront's
-        // cart state is still real (persisted client-side, shown in the
-        // drawer/bag page, quantity + totals all work off it), it just
-        // isn't synced to the backend cart API for catalog items that
-        // don't have a real sku/variantId.
+        // No live backend variant for this product yet — kept client-side
+        // only (persisted, shown in the drawer/bag page), never synced.
         addLocalLine({
           variantId: opts.slug,
           slug: opts.slug,

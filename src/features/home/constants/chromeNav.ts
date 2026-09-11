@@ -197,5 +197,4 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
   },
   { type: "link", label: "Minis", href: "/collections/minis" },
   { type: "link", label: "Gift Sets", href: "/gift-box", accent: true },
-  { type: "link", label: "Landing pages", href: "/landing-pages" },
 ];

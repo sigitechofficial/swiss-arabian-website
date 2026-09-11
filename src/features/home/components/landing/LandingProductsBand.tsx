@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
+import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { cardEyebrow, formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
@@ -35,24 +36,14 @@ export function LandingProductsBand() {
   const { data } = useLandingProducts(8);
   const products = withDisplayOrder(data?.products ?? []);
 
-  // Preload AND fully decode every ingredients hover image up front.
-  // Fetching alone isn't enough — the browser can still decode a
-  // background-image lazily on its first paint, and that decode (not the
-  // network fetch) is what showed as a "blink" on the first fade-in: the
-  // opacity transition starts, but the bitmap isn't ready to paint yet,
-  // so it pops in partway through instead of ramping up smoothly.
-  // `decode()` forces the bitmap to be fully rasterized ahead of time so
-  // the browser can reuse it instantly when the `::before` needs it.
-  useEffect(() => {
-    products.forEach((product) => {
-      const hover = product.imageUrls?.[1];
-      if (hover && hover !== product.imageUrl) {
-        const img = new Image();
-        img.src = hover;
-        img.decode?.().catch(() => {});
-      }
-    });
-  }, [products]);
+  // Preload AND fully decode every ingredients hover image up front (so the
+  // first fade-in doesn't blink), and only swap to the ones that actually
+  // loaded — a broken hover URL would fade the bottle out onto a blank card.
+  const loadedHovers = useLoadedImages(
+    products.map((product) =>
+      product.imageUrls?.[1] !== product.imageUrl ? product.imageUrls?.[1] : null,
+    ),
+  );
 
   const scrollBy = (direction: number) => {
     stripRef.current?.scrollBy({ left: direction * 280, behavior: "smooth" });
@@ -80,8 +71,8 @@ export function LandingProductsBand() {
           ref={stripRef}
         >
           {products.map((product) => {
-            const hover = product.imageUrls?.[1] ?? product.imageUrl;
-            const hasIngredientsHover = Boolean(hover && hover !== product.imageUrl);
+            const hover = product.imageUrls?.[1];
+            const hasIngredientsHover = Boolean(hover && loadedHovers.has(hover));
             return (
               <li
                 className="product-card"

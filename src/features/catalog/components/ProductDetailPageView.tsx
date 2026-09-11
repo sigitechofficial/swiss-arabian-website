@@ -2,9 +2,16 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useAddToCart } from "@/features/cart";
+import { PageLoading } from "@/components/ui";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
+import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { useMarket } from "@/providers/MarketProvider";
+import { catalogKeys, fetchProductBySlug } from "../api/catalog.service";
+import { toCatalogProduct } from "../utils/toCatalogProduct";
+import { useLoadedImages } from "../hooks/useLoadedImages";
 import {
   CATALOG_PRODUCTS,
   COLLECTION_LABELS,
@@ -50,13 +57,44 @@ function productCode(product: CatalogProduct): string {
 }
 
 export function ProductDetailPageView({ slug }: { slug: string }) {
-  const product = useMemo(
+  const { marketId } = useMarket();
+  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+
+  // Live catalog slugs are SKUs (e.g. `SOAH098501`), so the PDP has to resolve
+  // them through the API. `fetchProductBySlug` already falls back from the
+  // detail payload to a SKU lookup and then to search.
+  const { data: apiProduct, isLoading } = useQuery({
+    queryKey: catalogKeys.detail(slug, zoneCode),
+    queryFn: () => fetchProductBySlug(slug, zoneCode),
+    enabled: Boolean(slug),
+  });
+
+  const staticProduct = useMemo(
     () => CATALOG_PRODUCTS.find((p) => p.slug === slug),
     [slug],
   );
-  const content = (slug && PRODUCT_DETAIL_CONTENT[slug]) || FALLBACK_CONTENT;
+
+  // Prefer live data; keep the static entry as the fallback so the designed
+  // house products keep rendering exactly as they do today.
+  const product = useMemo(
+    () => (apiProduct ? toCatalogProduct(apiProduct) : staticProduct),
+    [apiProduct, staticProduct],
+  );
+
+  const authoredContent = (slug && PRODUCT_DETAIL_CONTENT[slug]) || null;
+  const content = useMemo<ProductDetailContent>(() => {
+    const base = authoredContent ?? FALLBACK_CONTENT;
+    // Nothing authored for this slug → use whatever real copy the API carries
+    // rather than the generic house blurb.
+    if (authoredContent) return base;
+    const apiStory = apiProduct?.description?.trim();
+    return apiStory ? { ...base, story: apiStory } : base;
+  }, [authoredContent, apiProduct]);
 
   const [activeImage, setActiveImage] = useState(0);
+  // Live catalog media 404s for some products; drop those sources so the hero
+  // and thumbs never render a broken-image icon.
+  const [failedImages, setFailedImages] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabId | null>("notes");
   const [tabsPaused, setTabsPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -68,7 +106,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   const buySlotRef = useRef<HTMLDivElement>(null);
   const buyBarRef = useRef<HTMLDivElement>(null);
 
-  const { addToCart, isPending } = useAddToCart();
+  const { addToCart } = useAddToCart();
 
   // Mobile buy dock — same behaviour as v5/detail.html: pin the *same*
   // Add-to-bag row to the viewport bottom while its natural slot is still
@@ -148,7 +186,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
       });
     };
 
-    const id = window.setInterval(tick, 5000);
+    const id = window.setInterval(tick, 3000);
     return () => window.clearInterval(id);
   }, [tabsPaused, slug]);
 
@@ -197,6 +235,16 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     });
   }, [youMayAlsoLike, related]);
 
+  if (!product && isLoading) {
+    return (
+      <div className="landing">
+        <section className="section container">
+          <PageLoading label="Loading product…" />
+        </section>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="landing">
@@ -212,9 +260,13 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     );
   }
 
-  const gallery = [product.imageUrl, product.imageUrls?.[1]].filter(
-    (src, index, arr): src is string => Boolean(src) && arr.indexOf(src) === index,
-  );
+  const gallery = [product.imageUrl, product.imageUrls?.[1]]
+    .filter(
+      (src, index, arr): src is string =>
+        Boolean(src) && arr.indexOf(src) === index,
+    )
+    .filter((src) => !failedImages.includes(src));
+  const heroSrc = gallery[activeImage] ?? gallery[0];
   const chips = (product.subtitle ?? "").split("·").map((s) => s.trim()).filter(Boolean).slice(0, 3);
 
   return (
@@ -230,12 +282,21 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
               <div className="pdp-hero__product">
                 <div className="pdp-hero__glow" aria-hidden="true" />
                 <div className="pdp-hero__frame">
-                  <img
-                    key={gallery[activeImage]}
-                    className="pdp-hero__bottle"
-                    src={gallery[activeImage] ?? product.imageUrl ?? undefined}
-                    alt={product.title}
-                  />
+                  {heroSrc ? (
+                    <img
+                      key={heroSrc}
+                      className="pdp-hero__bottle"
+                      src={heroSrc}
+                      alt={product.title}
+                      onError={() =>
+                        setFailedImages((prev) =>
+                          prev.includes(heroSrc) ? prev : [...prev, heroSrc],
+                        )
+                      }
+                    />
+                  ) : (
+                    <span className="bottle" aria-hidden="true" />
+                  )}
                 </div>
                 <div className="pdp-hero__floor" aria-hidden="true" />
                 <div className="pdp-hero__mist" aria-hidden="true">
@@ -366,9 +427,9 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   <button
                     className="pdp-hero__add"
                     type="button"
-                    disabled={isPending}
-                    onClick={async () => {
-                      await addToCart({
+                    onClick={() => {
+                      // Instant: the bag updates and opens now; the API syncs behind.
+                      void addToCart({
                         sku: product.sku,
                         variantId: product.variantId,
                         slug: product.slug,
@@ -381,7 +442,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                       setStatus(`Added ${product.title} to your bag.`);
                     }}
                   >
-                    {isPending ? "Adding…" : "Add to bag"}
+                    Add to bag
                   </button>
 
                   <button
@@ -565,8 +626,13 @@ function CompItem({
 }
 
 function RelatedCard({ product }: { product: CatalogProduct }) {
-  const hover = product.imageUrls?.[1] ?? product.imageUrl;
-  const hasIngredientsHover = Boolean(hover && hover !== product.imageUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(product.imageUrl) && !imageFailed;
+
+  const hoverCandidate = product.imageUrls?.[1];
+  const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
+  const loadedImages = useLoadedImages([hover]);
+  const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
 
   return (
     <li
@@ -589,8 +655,15 @@ function RelatedCard({ product }: { product: CatalogProduct }) {
           tabIndex={-1}
           aria-hidden="true"
         >
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.title} width={600} height={600} loading="lazy" />
+          {showImage ? (
+            <img
+              src={product.imageUrl as string}
+              alt={product.title}
+              width={600}
+              height={600}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
           ) : (
             <span className="bottle" aria-hidden="true" />
           )}
