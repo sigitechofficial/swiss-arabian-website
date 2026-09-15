@@ -12,7 +12,7 @@ import {
   type ResetPasswordFormValues,
 } from "../schemas/auth.schema";
 import { AuthShell } from "./AuthShell";
-import { AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
+import { AuthField, AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
 
 export function ResetPasswordPageView() {
