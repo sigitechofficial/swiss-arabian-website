@@ -3,14 +3,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useAddToCart } from "@/features/cart";
+import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
 import { PageLoading } from "@/components/ui";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
-import { catalogKeys, fetchProductBySlug } from "../api/catalog.service";
+import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
 import { toCatalogProduct } from "../utils/toCatalogProduct";
+import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
 import { useLoadedImages } from "../hooks/useLoadedImages";
 import {
   CATALOG_PRODUCTS,
@@ -19,6 +21,12 @@ import {
   type CatalogProduct,
 } from "../constants/catalogProducts";
 import { PdpReviews } from "./PdpReviews";
+import { ProductCardTags } from "./ProductCardTags";
+import {
+  familyChips,
+  notesSectionTitle,
+  pyramidFromMetafields,
+} from "../utils/pdpMetafields";
 import {
   PRODUCT_DETAIL_CONTENT,
   noteDotColor,
@@ -51,9 +59,22 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 function productCode(product: CatalogProduct): string {
+  if (product.sku?.trim()) return product.sku.trim();
   const base = product.title.replace(/\s+/g, "").toUpperCase();
   const size = product.concentration === "extrait" ? "EXT50" : "EDP100";
   return `SA-${base}-${size}`;
+}
+
+function cartLineForProduct(
+  lines: CartLine[],
+  product: CatalogProduct,
+): CartLine | undefined {
+  const keys = [product.variantId, product.sku, product.slug].filter(
+    (key): key is string => Boolean(key?.trim()),
+  );
+  return lines.find(
+    (line) => keys.includes(line.variantId) || line.slug === product.slug,
+  );
 }
 
 export function ProductDetailPageView({ slug }: { slug: string }) {
@@ -82,22 +103,39 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   );
 
   const authoredContent = (slug && PRODUCT_DETAIL_CONTENT[slug]) || null;
+  const livePyramid = useMemo(
+    () => pyramidFromMetafields(apiProduct?.pdpMetafields),
+    [apiProduct],
+  );
+  const metafields = apiProduct?.pdpMetafields;
+  const compositionTabs = useMemo(() => {
+    const showNotes =
+      livePyramid.length > 0 || Boolean(authoredContent?.notes.length);
+    return TABS.filter((tab) => tab.id !== "notes" || showNotes);
+  }, [authoredContent, livePyramid.length]);
+
   const content = useMemo<ProductDetailContent>(() => {
     const base = authoredContent ?? FALLBACK_CONTENT;
-    // Nothing authored for this slug → use whatever real copy the API carries
-    // rather than the generic house blurb.
     if (authoredContent) return base;
     const apiStory = apiProduct?.description?.trim();
     return apiStory ? { ...base, story: apiStory } : base;
   }, [authoredContent, apiProduct]);
 
   const [activeImage, setActiveImage] = useState(0);
+  const thumbsRef = useRef<HTMLDivElement>(null);
   // Live catalog media 404s for some products; drop those sources so the hero
   // and thumbs never render a broken-image icon.
   const [failedImages, setFailedImages] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabId | null>("notes");
   const [tabsPaused, setTabsPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const lines = useCartStore((s) => s.lines);
+  const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
+  const cartLine = useMemo(
+    () => (product ? cartLineForProduct(lines, product) : undefined),
+    [lines, product],
+  );
+  const displayQty = cartLine ? cartLine.quantity : quantity;
   const [wished, setWished] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [status, setStatus] = useState("");
@@ -160,8 +198,8 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   // open first.
   useLayoutEffect(() => {
     const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-    setActiveTab(isMobile ? null : "notes");
-  }, [slug]);
+    setActiveTab(isMobile ? null : compositionTabs[0]?.id ?? "story");
+  }, [slug, compositionTabs]);
 
   useEffect(() => {
     setActiveImage(0);
@@ -172,6 +210,13 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   }, [slug]);
 
   useEffect(() => {
+    const thumb = thumbsRef.current?.querySelector<HTMLElement>(
+      `[data-thumb-index="${activeImage}"]`,
+    );
+    thumb?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [activeImage]);
+
+  useEffect(() => {
     if (tabsPaused || typeof window === "undefined") return;
     const desktop = window.matchMedia("(min-width: 768px)");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -180,15 +225,16 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     const tick = () => {
       if (!desktop.matches) return;
       setActiveTab((current) => {
-        const index = TABS.findIndex((tab) => tab.id === current);
-        const next = TABS[(index < 0 ? 0 : index + 1) % TABS.length];
-        return next.id;
+        const index = compositionTabs.findIndex((tab) => tab.id === current);
+        const next =
+          compositionTabs[(index < 0 ? 0 : index + 1) % Math.max(compositionTabs.length, 1)];
+        return next?.id ?? current ?? "story";
       });
     };
 
     const id = window.setInterval(tick, 3000);
     return () => window.clearInterval(id);
-  }, [tabsPaused, slug]);
+  }, [tabsPaused, slug, compositionTabs]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -198,31 +244,47 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     return () => cancelAnimationFrame(id);
   }, [slug]);
 
-  const otherProducts = useMemo(() => {
-    if (!product) return [];
-    return CATALOG_PRODUCTS.filter((p) => p.slug !== product.slug);
-  }, [product]);
+  const youMayAlsoLikeRail = useMerchRail(
+    MERCH_RAIL_SLUGS.pdpAlsoLike,
+    product?.id ? [product.id] : [],
+  );
 
-  // "More from the 01 collection." — same collection line as the product
-  // being viewed, prioritised first.
+  const moreFromCollection = pickMoreFromCollection(apiProduct?.collections);
+  const { data: moreFromFeed } = useQuery({
+    queryKey: catalogKeys.collectionProducts(
+      moreFromCollection?.slug ?? "",
+      zoneCode,
+      1,
+      12,
+      true,
+    ),
+    queryFn: () =>
+      fetchCollectionProducts(moreFromCollection!.slug, zoneCode, {
+        page: 1,
+        limit: 12,
+        onlySellable: true,
+      }),
+    enabled: Boolean(moreFromCollection?.slug),
+    retry: false,
+  });
+
   const related = useMemo(() => {
     if (!product) return [];
-    return otherProducts
-      .slice()
-      .sort(
-        (a, b) =>
-          (a.collection === product.collection ? -1 : 0) -
-          (b.collection === product.collection ? -1 : 0),
-      )
+    const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
+    return (moreFromFeed?.products ?? [])
+      .filter((item) => item.id !== product.id && item.slug !== product.slug)
+      .filter((item) => item.isSellable !== false)
+      .filter((item) => !inCart.has(item.slug))
+      .map((product) => toCatalogProduct(product))
       .slice(0, 4);
-  }, [otherProducts, product]);
+  }, [moreFromFeed, product, lines]);
 
-  // "You may also like." — a separate, broader pick (kept out of the
-  // collection strip above so the two rows don't repeat the same bottles).
   const youMayAlsoLike = useMemo(() => {
     const usedIds = new Set(related.map((item) => item.id));
-    return otherProducts.filter((item) => !usedIds.has(item.id)).slice(0, 4);
-  }, [otherProducts, related]);
+    return youMayAlsoLikeRail.filter((item) => !usedIds.has(item.id)).slice(0, 4);
+  }, [youMayAlsoLikeRail, related]);
+
+  const moreFromHeading = moreFromCollection?.name.replace(/\.$/, "") ?? "";
 
   useEffect(() => {
     [...youMayAlsoLike, ...related].forEach((item) => {
@@ -260,14 +322,38 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     );
   }
 
-  const gallery = [product.imageUrl, product.imageUrls?.[1]]
+  const gallery = (product.imageUrls?.length
+    ? product.imageUrls
+    : product.imageUrl
+      ? [product.imageUrl]
+      : []
+  )
     .filter(
       (src, index, arr): src is string =>
         Boolean(src) && arr.indexOf(src) === index,
     )
     .filter((src) => !failedImages.includes(src));
   const heroSrc = gallery[activeImage] ?? gallery[0];
-  const chips = (product.subtitle ?? "").split("·").map((s) => s.trim()).filter(Boolean).slice(0, 3);
+  const family = familyChips(metafields);
+  const chips = family.length
+    ? family
+    : (product.subtitle ?? "")
+        .split("·")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+  const formatLabel =
+    metafields?.size?.trim() ||
+    `${product.concentration ? CONCENTRATION_LABELS[product.concentration] : "Fragrance"} · 50 ml`;
+  const notesHeading = notesSectionTitle(metafields);
+  const notesRows =
+    livePyramid.length > 0
+      ? livePyramid
+      : authoredContent
+        ? authoredContent.notes
+        : [];
+  const notesBlurb = metafields?.fragrance_notes?.trim();
+  const showLongevityBars = livePyramid.length === 0 && notesRows.length > 0;
 
   return (
     <div className="landing pdp">
@@ -279,6 +365,49 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         <div className="container container--full">
           <div className="pdp-hero__split">
             <div className="pdp-hero__stage">
+              {gallery.length > 1 ? (
+                <div className="pdp-hero__thumbs-col">
+                  <div
+                    ref={thumbsRef}
+                    className="pdp-hero__thumbs"
+                    role="tablist"
+                    aria-label="Product images"
+                  >
+                    {gallery.map((src, index) => (
+                      <button
+                        key={src}
+                        type="button"
+                        data-thumb-index={index}
+                        className={`pdp-hero__thumb ${index === activeImage ? "is-active" : ""}`}
+                        role="tab"
+                        aria-selected={index === activeImage}
+                        onClick={() => setActiveImage(index)}
+                      >
+                        <img src={src} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="pdp-hero__thumbs-next"
+                    aria-label="Next product image"
+                    onClick={() =>
+                      setActiveImage((current) => (current + 1) % gallery.length)
+                    }
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M5 7.5 10 12.5 15 7.5"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : null}
+
               <div className="pdp-hero__product">
                 <div className="pdp-hero__glow" aria-hidden="true" />
                 <div className="pdp-hero__frame">
@@ -309,23 +438,6 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   <span className="pdp-hero__puff pdp-hero__puff--veil" />
                 </div>
               </div>
-
-              {gallery.length > 1 ? (
-                <div className="pdp-hero__thumbs" role="tablist" aria-label="Product images">
-                  {gallery.map((src, index) => (
-                    <button
-                      key={src}
-                      type="button"
-                      className={`pdp-hero__thumb ${index === activeImage ? "is-active" : ""}`}
-                      role="tab"
-                      aria-selected={index === activeImage}
-                      onClick={() => setActiveImage(index)}
-                    >
-                      <img src={src} alt="" />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
 
             <div className="pdp-hero__panel">
@@ -340,9 +452,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
               <h1 className="pdp-hero__name" id="product-name">
                 {product.title}
               </h1>
-              <p className="pdp-hero__format">
-                {CONCENTRATION_LABELS[product.concentration]} · 50&nbsp;ml
-              </p>
+              <p className="pdp-hero__format">{formatLabel}</p>
 
               {chips.length ? (
                 <ul className="pdp-hero__chips" role="list" aria-label="Featured notes">
@@ -402,21 +512,43 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                       className="pdp-qty__btn"
                       type="button"
                       aria-label="Decrease quantity"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      disabled={displayQty <= 1}
+                      onClick={() => {
+                        if (cartLine) {
+                          const next = Math.max(1, cartLine.quantity - 1);
+                          if (cartLine.remote || cartLine.cartItemId) {
+                            setQuantityOptimistic(cartLine.variantId, next);
+                          } else {
+                            updateLocalQuantity(cartLine.variantId, next);
+                          }
+                          return;
+                        }
+                        setQuantity((q) => Math.max(1, q - 1));
+                      }}
                     >
                       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                         <path d="M4 10h12" />
                       </svg>
                     </button>
                     <span className="pdp-qty__value" aria-live="polite" aria-label="Quantity">
-                      {quantity}
+                      {displayQty}
                     </span>
                     <button
                       className="pdp-qty__btn"
                       type="button"
                       aria-label="Increase quantity"
-                      onClick={() => setQuantity((q) => Math.min(9, q + 1))}
+                      onClick={() => {
+                        if (cartLine) {
+                          const next = Math.min(9, cartLine.quantity + 1);
+                          if (cartLine.remote || cartLine.cartItemId) {
+                            setQuantityOptimistic(cartLine.variantId, next);
+                          } else {
+                            updateLocalQuantity(cartLine.variantId, next);
+                          }
+                          return;
+                        }
+                        setQuantity((q) => Math.min(9, q + 1));
+                      }}
                     >
                       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                         <path d="M10 4v12M4 10h12" />
@@ -437,7 +569,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                         imageUrl: product.imageUrl,
                         price: product.price,
                         currency: product.currency,
-                        quantity,
+                        quantity: cartLine ? 1 : quantity,
                       });
                       setStatus(`Added ${product.title} to your bag.`);
                     }}
@@ -475,7 +607,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
           </h2>
 
           <div className="pdp-comp-tabs" role="tablist" aria-label="Composition details">
-            {TABS.map((tab) => (
+            {compositionTabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -487,16 +619,16 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   setActiveTab(tab.id);
                 }}
               >
-                {tab.label}
+                {tab.id === "notes" ? notesHeading : tab.label}
               </button>
             ))}
           </div>
 
           <div className="pdp-comp-panels">
-            {TABS.map((tab) => (
+            {compositionTabs.map((tab) => (
               <CompItem
                 key={tab.id}
-                label={tab.label}
+                label={tab.id === "notes" ? notesHeading : tab.label}
                 open={activeTab === tab.id}
                 onToggle={() => {
                   setTabsPaused(true);
@@ -507,30 +639,45 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 {tab.id === "notes" ? (
                   <>
                     <ul className="pdp-notes" role="list">
-                      {content.notes.map((row) => (
+                      {notesRows.map((row) => (
                         <li className="pdp-notes__row" key={row.level}>
                           <p className="pdp-notes__level">{row.level}</p>
                           <p className="pdp-notes__names">{row.names}</p>
-                          <div
-                            className="pdp-notes__bar"
-                            aria-hidden="true"
-                            style={{ "--bar": `${row.bar}%` } as CSSProperties}
-                          />
+                          {showLongevityBars && "bar" in row ? (
+                            <div
+                              className="pdp-notes__bar"
+                              aria-hidden="true"
+                              style={{ "--bar": `${row.bar}%` } as CSSProperties}
+                            />
+                          ) : null}
                         </li>
                       ))}
                     </ul>
-                    <p className="pdp-notes__key">Bar length — how long each layer stays on skin.</p>
+                    {notesBlurb ? (
+                      <p className="pdp-composition__intro">{notesBlurb}</p>
+                    ) : null}
+                    {showLongevityBars ? (
+                      <p className="pdp-notes__key">
+                        Bar length — how long each layer stays on skin.
+                      </p>
+                    ) : null}
                   </>
                 ) : null}
                 {tab.id === "details" ? (
                   <dl className="pdp-specs">
+                    {metafields?.fragrance_family_text?.trim() ? (
+                      <div className="pdp-specs__row">
+                        <dt>Family</dt>
+                        <dd>{metafields.fragrance_family_text.trim()}</dd>
+                      </div>
+                    ) : null}
                     <div className="pdp-specs__row">
                       <dt>Perfumer</dt>
                       <dd>Not published</dd>
                     </div>
                     <div className="pdp-specs__row">
                       <dt>Format</dt>
-                      <dd>{CONCENTRATION_LABELS[product.concentration]} · 50&nbsp;ml</dd>
+                      <dd>{formatLabel}</dd>
                     </div>
                     <div className="pdp-specs__row">
                       <dt>Collection</dt>
@@ -562,7 +709,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
               <h2 className="pdp-related__title" id="also-like-heading">
                 You may also <em className="pdp-related__em">like.</em>
               </h2>
-              <Link className="pdp-related__all" href="/products">
+              <Link
+                className="pdp-related__all"
+                href={`/collections/${MERCH_RAIL_SLUGS.pdpAlsoLike}`}
+              >
                 See all
               </Link>
             </div>
@@ -576,21 +726,25 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         </section>
       ) : null}
 
-      {related.length ? (
+      {related.length && moreFromCollection ? (
         <section className="pdp-related" aria-labelledby="related-heading">
           <div className="container container--full">
             <div className="pdp-related__head">
               <h2 className="pdp-related__title" id="related-heading">
-                More from the 01 collection.
+                More from {moreFromHeading}.
               </h2>
-              <Link className="pdp-related__all" href="/products">
+              <Link className="pdp-related__all" href={`/collections/${moreFromCollection.slug}`}>
                 See all
               </Link>
             </div>
 
             <ul className="pdp-related__grid products-band" role="list">
               {related.map((item) => (
-                <RelatedCard key={item.id} product={item} />
+                <RelatedCard
+                  key={item.id}
+                  product={item}
+                  collectionSlug={moreFromCollection.slug}
+                />
               ))}
             </ul>
           </div>
@@ -625,7 +779,13 @@ function CompItem({
   );
 }
 
-function RelatedCard({ product }: { product: CatalogProduct }) {
+function RelatedCard({
+  product,
+  collectionSlug,
+}: {
+  product: CatalogProduct;
+  collectionSlug?: string;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(product.imageUrl) && !imageFailed;
 
@@ -644,6 +804,11 @@ function RelatedCard({ product }: { product: CatalogProduct }) {
       }
     >
       <Link className="product-card__link" href={`/products/${product.slug}`} aria-label={product.title} />
+      <ProductCardTags
+        slug={product.slug}
+        tags={product.tags ?? []}
+        collectionSlug={collectionSlug}
+      />
       <div
         className={
           hasIngredientsHover ? "product-card__media product-card__media--swap" : "product-card__media"
@@ -673,6 +838,7 @@ function RelatedCard({ product }: { product: CatalogProduct }) {
         <AddToBagButton product={product} variant="product" />
       </div>
       <div className="product-card__body">
+        <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
         <h3 className="product-card__name">{product.title}</h3>
         <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
       </div>

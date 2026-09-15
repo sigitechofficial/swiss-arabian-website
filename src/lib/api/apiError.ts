@@ -2,12 +2,14 @@ export type ApiErrorBody = {
   code?: string;
   message?: string;
   details?: unknown;
+  context?: Record<string, unknown>;
 };
 
 export class ApiClientError extends Error {
   status: number;
   code?: string;
   details?: unknown;
+  context?: Record<string, unknown>;
 
   constructor(status: number, body?: ApiErrorBody | string) {
     const message =
@@ -20,6 +22,7 @@ export class ApiClientError extends Error {
     if (typeof body === "object" && body) {
       this.code = body.code;
       this.details = body.details;
+      this.context = body.context;
     }
   }
 }

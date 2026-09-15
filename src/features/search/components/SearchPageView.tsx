@@ -1,21 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
+import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
+import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
 import type { ProductSummary } from "@/features/catalog/types/product";
-import { SEARCH_MIN_QUERY_LENGTH } from "../constants";
+import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
+import { SEARCH_MIN_QUERY_LENGTH, SEARCH_SORT_OPTIONS } from "../constants";
 import { useCatalogSearch } from "../hooks/useCatalogSearch";
 
-export function SearchPageView({ query }: { query: string }) {
+function searchHref(input: {
+  q: string;
+  page?: number;
+  sort?: CatalogSearchSort;
+}): string {
+  const params = new URLSearchParams();
+  if (input.q) params.set("q", input.q);
+  if (input.sort && input.sort !== "newest") params.set("sort", input.sort);
+  if (input.page && input.page > 1) params.set("page", String(input.page));
+  const qs = params.toString();
+  return qs ? `/search?${qs}` : "/search";
+}
+
+export function SearchPageView({
+  query,
+  page = 1,
+  sort = "newest",
+}: {
+  query: string;
+  page?: number;
+  sort?: CatalogSearchSort;
+}) {
+  const router = useRouter();
   const trimmed = query.trim();
   const hasQuery = trimmed.length > 0;
-  const { products, total, tooShort, isLoading, isError, refetch } =
-    useCatalogSearch(trimmed);
+  const { products, total, totalPages, tooShort, isLoading, isError, refetch } =
+    useCatalogSearch(trimmed, { page, sort });
 
   const subtitle = () => {
     if (!hasQuery) return "Type a product name, note, or SKU to search the catalog.";
@@ -65,6 +91,32 @@ export function SearchPageView({ query }: { query: string }) {
           v5-catalog.css — without it the results stack full-width. */}
       <section className="grid-band products-band search-page-grid">
         <div className="container container--full">
+          {hasQuery && !tooShort && products.length ? (
+            <div className="catalog__toolbar" style={{ marginBottom: "1.25rem" }}>
+              <label className="catalog__sort">
+                <span className="catalog__sort-label">Sort</span>
+                <select
+                  className="catalog__sort-select"
+                  value={sort}
+                  onChange={(event) => {
+                    router.push(
+                      searchHref({
+                        q: trimmed,
+                        page: 1,
+                        sort: event.target.value as CatalogSearchSort,
+                      }),
+                    );
+                  }}
+                >
+                  {SEARCH_SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
           {products.length ? (
             <WishlistStatusScope>
               <ul className="product-grid" role="list">
@@ -87,6 +139,16 @@ export function SearchPageView({ query }: { query: string }) {
             <p className="grid-band__empty">
               Use the search icon in the header to find a scent by name.
             </p>
+          ) : null}
+          {hasQuery && !tooShort && totalPages > 1 ? (
+            <CatalogPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              hrefForPage={(nextPage) =>
+                searchHref({ q: trimmed, page: nextPage, sort })
+              }
+            />
           ) : null}
         </div>
       </section>
@@ -113,6 +175,7 @@ function SearchProductCard({ product }: { product: ProductSummary }) {
       }
     >
       <Link className="product-card__link" href={`/products/${product.slug}`} aria-label={product.title} />
+      <ProductCardTags slug={product.slug} tags={product.tags ?? []} />
       <div className="product-card__action">
         <WishlistHeartButton productId={product.id} />
       </div>

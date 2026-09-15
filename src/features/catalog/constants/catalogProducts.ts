@@ -10,7 +10,7 @@ import type { ProductSummary } from "../types/product";
 export type Concentration = "extrait" | "edp";
 
 export type CatalogProduct = ProductSummary & {
-  concentration: Concentration;
+  concentration: Concentration | null;
   collection: string;
   note: string;
   rating: number;
@@ -90,9 +90,9 @@ export function sortCatalogProducts(
     case "price-desc":
       return sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
     case "rating":
-      return sorted.sort((a, b) => b.rating - a.rating);
+      return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     case "bestselling":
-      return sorted.sort((a, b) => b.sales - a.sales);
+      return sorted.sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0));
     case "featured":
     default:
       return sorted;

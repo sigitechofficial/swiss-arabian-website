@@ -24,14 +24,14 @@ export function TopbarTicker({ controls = false }: { controls?: boolean }) {
   };
 
   const line = (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence initial={false}>
       <motion.p
         className="topbar__ticker-line"
         key={TOPBAR_TICKER[index]}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       >
         {TOPBAR_TICKER[index]}
       </motion.p>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   CATALOG_PRODUCTS,
   CONCENTRATION_LABELS,
@@ -22,10 +23,11 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
+import { CouponForm, AppliedCampaigns, PromotionUnlockNote, shippingDiscountAmount } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
+import { freeShippingProgress } from "../utils/freeShipping";
 
-/** Matches the `v5/cart.html` prototype's `FREE` / `SHIP_FLAT` constants. */
-const FREE_SHIPPING_THRESHOLD = 250;
+/** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
 const SHIP_FLAT = 25;
 
 function itemsLabel(n: number) {
@@ -37,7 +39,10 @@ function lineImageUrl(slug: string, fallback?: string) {
 }
 
 function sizeLabelFor(product: CatalogProduct) {
-  return `${CONCENTRATION_LABELS[product.concentration]} · 50 ml`;
+  const concentration = product.concentration
+    ? CONCENTRATION_LABELS[product.concentration]
+    : "Fragrance";
+  return `${concentration} · 50 ml`;
 }
 
 export function CartPageView() {
@@ -49,7 +54,6 @@ export function CartPageView() {
   const { validate } = useCartMutations();
   const syncing = useCartStore((s) => s.syncing);
   const validation = useCartStore((s) => s.validation);
-  const addLocalLine = useCartStore((s) => s.addLine);
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
   const router = useRouter();
@@ -90,48 +94,34 @@ export function CartPageView() {
   const subtotal = mounted ? persistedSubtotal : 0;
   const itemCount = mounted ? persistedItemCount : 0;
 
-  const currency = totals?.currency ?? "AED";
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const progressPct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const isFree = subtotal > 0 && remaining <= 0;
+  const promotions = useCartStore((s) => s.promotions);
+  const currency = totals?.currency ?? promotions?.context.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIP_FLAT;
-  const total = subtotal + shipping;
+  const shipping = totals ? totals.shipping : subtotal === 0 ? 0 : SHIP_FLAT;
+  const discount = totals?.discount ?? 0;
+  const shipDiscount = shippingDiscountAmount(promotions);
+  const { isFree, remaining, progressPct } = freeShippingProgress(subtotal, shipDiscount > 0);
+  const total = totals ? totals.total : subtotal + shipping;
 
-  const missThis = useMemo(() => {
-    const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
-    return CATALOG_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 4);
-  }, [lines]);
+  const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
 
   // Instant: the line lands in the bag now; the API sync runs behind.
   function addFromCart(product: CatalogProduct) {
-    if (product.sku || product.variantId) {
-      addItemOptimistic({
-        sku: product.sku,
-        variantId: product.variantId,
-        quantity: 1,
-        line: {
-          slug: product.slug,
-          title: product.title,
-          imageUrl: product.imageUrl ?? undefined,
-          unitPrice: product.price ?? 0,
-          currency: product.currency,
-          sizeLabel: sizeLabelFor(product),
-        },
-      });
-    } else {
-      addLocalLine({
-        variantId: product.slug,
+    if (!product.sku && !product.variantId) return;
+    addItemOptimistic({
+      sku: product.sku,
+      variantId: product.variantId,
+      quantity: 1,
+      line: {
         slug: product.slug,
         title: product.title,
         imageUrl: product.imageUrl ?? undefined,
         unitPrice: product.price ?? 0,
         currency: product.currency,
-        quantity: 1,
         sizeLabel: sizeLabelFor(product),
-      });
-    }
+      },
+    });
   }
 
   return (
@@ -160,18 +150,20 @@ export function CartPageView() {
             </p>
           </header>
 
-          <div className={`cart-ship-banner ${isFree ? "is-free" : ""}`} aria-live="polite">
-            <p>
-              {subtotal === 0
-                ? ""
-                : isFree
+          {!isEmpty ? (
+            <div className={`cart-ship-banner ${isFree ? "is-free" : ""}`} aria-live="polite">
+              <p>
+                {isFree
                   ? "You qualify for free shipping!"
                   : `Spend ${formatMoney(remaining, currency)} more for free shipping.`}
-            </p>
-            <div className="cart-ship-track">
-              <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
+              </p>
+              <div className="cart-ship-track">
+                <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
+              </div>
             </div>
-          </div>
+          ) : null}
+
+          <PromotionUnlockNote />
 
           {!isEmpty ? (
             <div className="cart-layout" id="cart-page-layout">
@@ -282,15 +274,29 @@ export function CartPageView() {
 
               <aside className="cart-summary" aria-label="Order summary">
                 <h2>Summary</h2>
+                <AppliedCampaigns />
+                <CouponForm />
                 <dl className="cart-totals">
                   <div>
                     <dt>Subtotal</dt>
                     <dd dir="ltr">{formatMoney(subtotal, currency)}</dd>
                   </div>
+                  {discount > 0 ? (
+                    <div>
+                      <dt>Discount</dt>
+                      <dd dir="ltr">−{formatMoney(discount, currency)}</dd>
+                    </div>
+                  ) : null}
                   <div>
                     <dt>Shipping</dt>
                     <dd dir="ltr">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd>
                   </div>
+                  {shipDiscount > 0 ? (
+                    <div>
+                      <dt>Shipping discount</dt>
+                      <dd dir="ltr">−{formatMoney(shipDiscount, currency)}</dd>
+                    </div>
+                  ) : null}
                   <div className="cart-totals-line">
                     <dt>Total</dt>
                     <dd dir="ltr">{formatMoney(total, currency)}</dd>
@@ -323,16 +329,13 @@ export function CartPageView() {
                         ? "Checking availability…"
                         : "Proceed to checkout"}
                   </span>
-                  <b className="arrow" aria-hidden="true">
+                  <span className="cart-cta__glyph" aria-hidden="true">
                     ↗
-                  </b>
+                  </span>
                 </button>
                 <Link className="btn-secondary cart-continue" href="/products">
                   Continue shopping
                 </Link>
-                <p className="cart-hint">
-                  Complimentary shipping on orders over <strong>{formatMoney(FREE_SHIPPING_THRESHOLD, currency)}</strong>.
-                </p>
                 <p className="cart-hint">30-day fragrance guarantee. Returns are on us.</p>
                 <div className="cart-badges">
                   <span>SSL Secured</span>

@@ -1,5 +1,7 @@
 /** Checkout + orders API types — mirrors `/storefront/checkout` and `/storefront/orders`. */
 
+import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+
 // ─── Checkout session ────────────────────────────────────────────────────────
 
 export interface CheckoutContextSummary {
@@ -96,6 +98,8 @@ export interface CheckoutSessionResponse {
     status: string;
   };
   metadata?: Record<string, unknown> | null;
+  /** Same v1 shape as cart `promotions` after snapshot rebuild. */
+  promotionSnapshot?: PromotionSnapshotV1 | null;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────

@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { env } from "@/lib/config/env";
 import {
-  DEFAULT_ZONE_CODE,
   toAuthSalesChannelCode,
   toAuthZoneCode,
 } from "@/lib/storefront/context";
-import { registerCustomer, splitFullName, toE164Phone } from "../api/auth.service";
+import { useUiStore } from "@/stores/useUiStore";
+import { registerCustomer, splitFullName } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
 import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
 import { AuthShell } from "./AuthShell";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
 
 export function RegisterPageView() {
@@ -27,11 +28,16 @@ export function RegisterPageView() {
   async function onSubmit(values: RegisterFormValues) {
     try {
       const { firstName, lastName } = splitFullName(values.fullName);
+      const marketId = useUiStore.getState().selectedMarketId;
+      const catalogContext = useUiStore.getState().catalogContext;
       const result = await registerCustomer({
-        zoneCode: toAuthZoneCode(DEFAULT_ZONE_CODE),
-        salesChannelCode: toAuthSalesChannelCode(DEFAULT_ZONE_CODE),
+        zoneCode: toAuthZoneCode(marketId),
+        salesChannelCode:
+          catalogContext?.salesChannelCode?.trim() ||
+          toAuthSalesChannelCode(marketId),
         email: values.email,
-        phone: toE164Phone(values.phone),
+        // Already E.164 from the phone field.
+        phone: values.phone,
         password: values.password,
         firstName,
         lastName,
@@ -70,15 +76,19 @@ export function RegisterPageView() {
             {...form.register("email")}
             error={form.formState.errors.email?.message}
           />
-          <AuthField
-            id="mobile"
-            label="Mobile number"
-            type="tel"
-            placeholder="+971 50 123 4567"
-            autoComplete="tel"
-            hint="Include country code (e.g. +971)."
-            {...form.register("phone")}
-            error={form.formState.errors.phone?.message}
+          <Controller
+            name="phone"
+            control={form.control}
+            render={({ field }) => (
+              <PhoneNumberField
+                id="mobile"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                hint="Choose your country, then enter the number without the code."
+                error={form.formState.errors.phone?.message}
+              />
+            )}
           />
           <AuthPasswordField
             id="password"

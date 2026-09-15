@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const loginSchema = z.object({
   identifier: z.string().min(1, "Email or phone is required"),
@@ -9,7 +10,11 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   email: z.string().email("Enter a valid email"),
-  phone: z.string().min(8, "Enter a valid phone"),
+  // The phone field emits E.164 (`+971501234567`) — validate per country.
+  phone: z
+    .string()
+    .min(1, "Mobile number is required")
+    .refine((value) => isValidPhoneNumber(value), "Enter a valid mobile number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 

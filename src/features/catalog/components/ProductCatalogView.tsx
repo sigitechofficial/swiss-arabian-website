@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { PageLoading } from "@/components/ui/PageLoading";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useLoadedImages } from "../hooks/useLoadedImages";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
@@ -18,8 +20,18 @@ import {
   type Concentration,
   type SortOption,
 } from "../constants/catalogProducts";
+import { CatalogPagination } from "./CatalogPagination";
 import { ProductCardTags } from "./ProductCardTags";
 import { getCollectionMeta } from "../constants/collectionMeta";
+import {
+  catalogListingHasActiveFilters,
+  catalogListingHref,
+  type CatalogListingQuery,
+  type CatalogListingSort,
+  type StorefrontCatalogFacets,
+  type StorefrontFacetOption,
+} from "../types/catalogFacets";
+import type { CatalogPagination as CatalogPaginationMeta } from "../api/catalog.service";
 
 function priceBounds(products: readonly CatalogProduct[]) {
   const prices = products.map((p) => p.price ?? 0);
@@ -30,9 +42,24 @@ function priceBounds(products: readonly CatalogProduct[]) {
   };
 }
 
+function listingSortToUi(sort?: CatalogListingSort): SortOption {
+  if (sort === "newest") return "newest";
+  if (sort === "price_asc") return "price-asc";
+  if (sort === "price_desc") return "price-desc";
+  return "featured";
+}
+
+function uiSortToListing(sort: SortOption): CatalogListingSort | undefined {
+  if (sort === "newest") return "newest";
+  if (sort === "price-asc") return "price_asc";
+  if (sort === "price-desc") return "price_desc";
+  return undefined;
+}
+
 /** Banner supplied by the collections API; falls back to the static hero. */
 export type CatalogBanner = {
   image?: string | null;
+  mobileImage?: string | null;
   imageAlt?: string | null;
   description?: string | null;
   title?: string | null;
@@ -43,6 +70,10 @@ export function ProductCatalogView({
   products: productsProp,
   banner,
   loading = false,
+  listingQuery,
+  facets = null,
+  pagination = null,
+  serverFiltered = false,
 }: {
   slug?: string;
   /**
@@ -53,12 +84,17 @@ export function ProductCatalogView({
   banner?: CatalogBanner | null;
   /** Live products are still loading — keep the hero, hold the grid. */
   loading?: boolean;
+  listingQuery?: CatalogListingQuery;
+  facets?: StorefrontCatalogFacets | null;
+  pagination?: CatalogPaginationMeta | null;
+  serverFiltered?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const urlDriven = Boolean(listingQuery);
   const staticMeta = useMemo(() => getCollectionMeta(slug), [slug]);
   const products = productsProp ?? CATALOG_PRODUCTS;
 
-  // Only override the parts the API actually supplies — an empty banner keeps
-  // the designed hero exactly as it is today.
   const bannerImage = banner?.image;
   const bannerDescription = banner?.description;
   const bannerTitle = banner?.title;
@@ -67,37 +103,135 @@ export function ProductCatalogView({
       ...staticMeta,
       ...(bannerImage ? { heroImage: bannerImage } : {}),
       ...(bannerDescription ? { intro: bannerDescription } : {}),
-      // Pages without a designed hero (e.g. categories) name themselves.
       ...(bannerTitle ? { title: bannerTitle, titleEm: "" } : {}),
     }),
     [staticMeta, bannerImage, bannerDescription, bannerTitle],
   );
   const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
 
-  const { floor: PRICE_FLOOR, ceil: PRICE_CEIL } = useMemo(
-    () => priceBounds(products),
-    [products],
-  );
+  const facetPrice = facets?.price;
+  const { floor: PRICE_FLOOR, ceil: PRICE_CEIL } = useMemo(() => {
+    if (facetPrice) {
+      const floor = Math.floor(Number(facetPrice.min));
+      const ceil = Math.ceil(Number(facetPrice.max));
+      if (Number.isFinite(floor) && Number.isFinite(ceil) && ceil >= floor) {
+        return { floor, ceil };
+      }
+    }
+    return priceBounds(products);
+  }, [facetPrice, products]);
 
-  const [concentration, setConcentration] = useState<"all" | Concentration>("all");
-  const [collection, setCollection] = useState<string>(meta.filterCollection ?? "all");
-  const [note, setNote] = useState<string>("all");
+  const currency =
+    facetPrice?.currencyCode || products.find((p) => p.currency)?.currency || "AED";
+
+  const [localConcentration, setLocalConcentration] = useState<"all" | Concentration>("all");
+  const [localCollection, setLocalCollection] = useState<string>(
+    meta.filterCollection ?? "all",
+  );
+  const [localNote, setLocalNote] = useState<string>("all");
+  const [localSort, setLocalSort] = useState<SortOption>("featured");
   const [priceMin, setPriceMin] = useState(PRICE_FLOOR);
   const [priceMax, setPriceMax] = useState(PRICE_CEIL);
-  const [sort, setSort] = useState<SortOption>("featured");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const skipPriceSync = useRef(true);
 
-  // Live products arrive after mount, so the price slider's bounds change
-  // under it — re-seed the range whenever the bounds move (during render,
-  // not in an effect, so there's no extra cascading render).
-  const [seededBounds, setSeededBounds] = useState({ floor: PRICE_FLOOR, ceil: PRICE_CEIL });
+  const concentration = urlDriven
+    ? (listingQuery?.concentration as Concentration | undefined) ?? "all"
+    : localConcentration;
+  const collection = urlDriven
+    ? listingQuery?.houseCollection ?? "all"
+    : localCollection;
+  const note = urlDriven ? listingQuery?.featuredNote ?? "all" : localNote;
+  const sort: SortOption = urlDriven
+    ? listingSortToUi(listingQuery?.sort)
+    : localSort;
+
+  const [seededBounds, setSeededBounds] = useState({
+    floor: PRICE_FLOOR,
+    ceil: PRICE_CEIL,
+  });
   if (seededBounds.floor !== PRICE_FLOOR || seededBounds.ceil !== PRICE_CEIL) {
+    skipPriceSync.current = true;
     setSeededBounds({ floor: PRICE_FLOOR, ceil: PRICE_CEIL });
-    setPriceMin(PRICE_FLOOR);
-    setPriceMax(PRICE_CEIL);
+    const urlMin = listingQuery?.minPrice ? Number(listingQuery.minPrice) : PRICE_FLOOR;
+    const urlMax = listingQuery?.maxPrice ? Number(listingQuery.maxPrice) : PRICE_CEIL;
+    setPriceMin(
+      Number.isFinite(urlMin) ? Math.min(Math.max(urlMin, PRICE_FLOOR), PRICE_CEIL) : PRICE_FLOOR,
+    );
+    setPriceMax(
+      Number.isFinite(urlMax) ? Math.max(Math.min(urlMax, PRICE_CEIL), PRICE_FLOOR) : PRICE_CEIL,
+    );
   }
 
+  const pushListing = (next: CatalogListingQuery) => {
+    router.push(catalogListingHref(pathname, next), { scroll: false });
+  };
+
+  const patchListing = (patch: Partial<CatalogListingQuery>) => {
+    if (!listingQuery) return;
+    pushListing({
+      ...listingQuery,
+      ...patch,
+      page: 1,
+    });
+  };
+
+  const setConcentration = (value: "all" | Concentration | string) => {
+    if (urlDriven) {
+      patchListing({
+        concentration: value === "all" ? undefined : String(value),
+      });
+      return;
+    }
+    setLocalConcentration(value === "all" ? "all" : (value as Concentration));
+  };
+
+  const setCollection = (value: string) => {
+    if (urlDriven) {
+      patchListing({
+        houseCollection: value === "all" ? undefined : value,
+      });
+      return;
+    }
+    setLocalCollection(value);
+  };
+
+  const setNote = (value: string) => {
+    if (urlDriven) {
+      patchListing({ featuredNote: value === "all" ? undefined : value });
+      return;
+    }
+    setLocalNote(value);
+  };
+
+  const setSort = (value: SortOption) => {
+    if (urlDriven) {
+      const apiSort = uiSortToListing(value);
+      patchListing({ sort: apiSort });
+      return;
+    }
+    setLocalSort(value);
+  };
+
+  const debouncedMin = useDebounce(priceMin, 400);
+  const debouncedMax = useDebounce(priceMax, 400);
+  useEffect(() => {
+    if (!urlDriven || !listingQuery) return;
+    if (skipPriceSync.current) {
+      skipPriceSync.current = false;
+      return;
+    }
+    const atBounds = debouncedMin === PRICE_FLOOR && debouncedMax === PRICE_CEIL;
+    const minPrice = atBounds ? undefined : String(debouncedMin);
+    const maxPrice = atBounds ? undefined : String(debouncedMax);
+    if (minPrice === listingQuery.minPrice && maxPrice === listingQuery.maxPrice) {
+      return;
+    }
+    pushListing({ ...listingQuery, minPrice, maxPrice, page: 1 });
+  }, [debouncedMin, debouncedMax, PRICE_FLOOR, PRICE_CEIL]);
+
   const filtered = useMemo(() => {
+    if (serverFiltered) return products;
     const byFacets = products.filter((p) => {
       if (concentration !== "all" && p.concentration !== concentration) return false;
       if (collection !== "all" && p.collection !== collection) return false;
@@ -107,14 +241,69 @@ export function ProductCatalogView({
       return true;
     });
     return sortCatalogProducts(byFacets, sort);
-  }, [products, concentration, collection, note, priceMin, priceMax, sort]);
+  }, [
+    serverFiltered,
+    products,
+    concentration,
+    collection,
+    note,
+    priceMin,
+    priceMax,
+    sort,
+  ]);
+
+  const allCount = serverFiltered
+    ? (pagination?.total ?? products.length)
+    : products.length;
 
   const countFor = (predicate: (p: CatalogProduct) => boolean) =>
     products.filter(predicate).length;
 
-  const notesPresent = Object.keys(NOTE_LABELS).filter((key) =>
-    products.some((p) => p.note === key),
-  );
+  const concentrationOptions: StorefrontFacetOption[] = serverFiltered
+    ? (facets?.concentration ?? [])
+    : (Object.keys(CONCENTRATION_LABELS) as Concentration[]).map((code) => ({
+        code,
+        label: CONCENTRATION_LABELS[code],
+        count: countFor((p) => p.concentration === code),
+      }));
+
+  const collectionOptions: StorefrontFacetOption[] = serverFiltered
+    ? (facets?.houseCollection ?? [])
+    : Object.keys(COLLECTION_LABELS).map((code) => ({
+        code,
+        label: COLLECTION_LABELS[code] ?? code,
+        count: countFor((p) => p.collection === code),
+      }));
+
+  const noteOptions: StorefrontFacetOption[] = serverFiltered
+    ? (facets?.featuredNote ?? [])
+    : Object.keys(NOTE_LABELS)
+        .filter((key) => products.some((p) => p.note === key))
+        .map((code) => ({
+          code,
+          label: NOTE_LABELS[code] ?? code,
+          count: countFor((p) => p.note === code),
+        }));
+
+  const showPrice = !serverFiltered || Boolean(facetPrice);
+  const showConcentration = concentrationOptions.length > 0;
+  const showCollection = collectionOptions.length > 0;
+  const showNotes = noteOptions.length > 0;
+
+  const hasActiveFilters = listingQuery
+    ? catalogListingHasActiveFilters(listingQuery) ||
+      priceMin > PRICE_FLOOR ||
+      priceMax < PRICE_CEIL
+    : concentration !== "all" ||
+      collection !== "all" ||
+      note !== "all" ||
+      priceMin > PRICE_FLOOR ||
+      priceMax < PRICE_CEIL;
+
+  const emptyCollection =
+    Boolean(productsProp) &&
+    productsProp!.length === 0 &&
+    !hasActiveFilters;
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -134,8 +323,9 @@ export function ProductCatalogView({
     };
   }, [filtersOpen]);
 
-  const fillLeft = ((priceMin - PRICE_FLOOR) / (PRICE_CEIL - PRICE_FLOOR)) * 100;
-  const fillRight = 100 - ((priceMax - PRICE_FLOOR) / (PRICE_CEIL - PRICE_FLOOR)) * 100;
+  const span = PRICE_CEIL - PRICE_FLOOR || 1;
+  const fillLeft = ((priceMin - PRICE_FLOOR) / span) * 100;
+  const fillRight = 100 - ((priceMax - PRICE_FLOOR) / span) * 100;
 
   return (
     <div className="landing">
@@ -181,7 +371,7 @@ export function ProductCatalogView({
           <div className="container container--full">
             <PageLoading label="Loading fragrances…" />
           </div>
-        ) : productsProp && productsProp.length === 0 ? (
+        ) : emptyCollection ? (
           <div className="container container--full">
             <div className="catalog-empty" role="status">
               <img
@@ -229,15 +419,16 @@ export function ProductCatalogView({
             </div>
 
             <div className="filters-rail__body">
+            {showPrice ? (
             <div className="filters-rail__group" role="group" aria-label="Price">
               <p className="filters-rail__label">Price</p>
               <div className="price-range">
                 <div className="price-range__values">
                   <span>
-                    AED <strong>{priceMin.toFixed(0)}</strong>
+                    {currency} <strong>{priceMin.toFixed(0)}</strong>
                   </span>
                   <span>
-                    AED <strong>{priceMax.toFixed(0)}</strong>
+                    {currency} <strong>{priceMax.toFixed(0)}</strong>
                   </span>
                 </div>
                 <div className="price-range__slider">
@@ -273,7 +464,9 @@ export function ProductCatalogView({
                 </div>
               </div>
             </div>
+            ) : null}
 
+            {showConcentration ? (
             <div className="filters-rail__group" role="group" aria-label="Concentration">
               <p className="filters-rail__label">Concentration</p>
               <ul className="filters-rail__list" role="list">
@@ -284,27 +477,27 @@ export function ProductCatalogView({
                     aria-pressed={concentration === "all"}
                     onClick={() => setConcentration("all")}
                   >
-                    All <span className="rail-filter__count">({products.length})</span>
+                    All <span className="rail-filter__count">({allCount})</span>
                   </button>
                 </li>
-                {(Object.keys(CONCENTRATION_LABELS) as Concentration[]).map((key) => (
-                  <li key={key}>
+                {concentrationOptions.map((option) => (
+                  <li key={option.code}>
                     <button
                       className="rail-filter"
                       type="button"
-                      aria-pressed={concentration === key}
-                      onClick={() => setConcentration(key)}
+                      aria-pressed={concentration === option.code}
+                      onClick={() => setConcentration(option.code)}
                     >
-                      {CONCENTRATION_LABELS[key]}{" "}
-                      <span className="rail-filter__count">
-                        ({countFor((p) => p.concentration === key)})
-                      </span>
+                      {option.label}{" "}
+                      <span className="rail-filter__count">({option.count})</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
+            ) : null}
 
+            {showCollection ? (
             <div className="filters-rail__group" role="group" aria-label="Collection">
               <p className="filters-rail__label">Collection</p>
               <ul className="filters-rail__list" role="list">
@@ -316,26 +509,29 @@ export function ProductCatalogView({
                     onClick={() => setCollection("all")}
                   >
                     All collections
+                    {serverFiltered ? (
+                      <span className="rail-filter__count"> ({allCount})</span>
+                    ) : null}
                   </button>
                 </li>
-                {Object.keys(COLLECTION_LABELS).map((key) => (
-                  <li key={key}>
+                {collectionOptions.map((option) => (
+                  <li key={option.code}>
                     <button
                       className="rail-filter"
                       type="button"
-                      aria-pressed={collection === key}
-                      onClick={() => setCollection(key)}
+                      aria-pressed={collection === option.code}
+                      onClick={() => setCollection(option.code)}
                     >
-                      {COLLECTION_LABELS[key]}{" "}
-                      <span className="rail-filter__count">
-                        ({countFor((p) => p.collection === key)})
-                      </span>
+                      {option.label}{" "}
+                      <span className="rail-filter__count">({option.count})</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
+            ) : null}
 
+            {showNotes ? (
             <div className="filters-rail__group" role="group" aria-label="Featured note">
               <p className="filters-rail__label">Featured note</p>
               <ul className="filters-rail__list" role="list">
@@ -347,32 +543,46 @@ export function ProductCatalogView({
                     onClick={() => setNote("all")}
                   >
                     All notes
+                    {serverFiltered ? (
+                      <span className="rail-filter__count"> ({allCount})</span>
+                    ) : null}
                   </button>
                 </li>
-                {notesPresent.map((key) => (
-                  <li key={key}>
+                {noteOptions.map((option) => (
+                  <li key={option.code}>
                     <button
                       className="rail-filter"
                       type="button"
-                      aria-pressed={note === key}
-                      onClick={() => setNote(key)}
+                      aria-pressed={note === option.code}
+                      onClick={() => setNote(option.code)}
                     >
-                      {NOTE_LABELS[key]}{" "}
-                      <span className="rail-filter__count">
-                        ({countFor((p) => p.note === key)})
-                      </span>
+                      {option.label}{" "}
+                      <span className="rail-filter__count">({option.count})</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
+            ) : null}
             </div>
 
             <div className="filters-rail__foot">
               <button
                 type="button"
                 className="filters-rail__apply"
-                onClick={() => setFiltersOpen(false)}
+                onClick={() => {
+                  if (urlDriven && listingQuery) {
+                    const atBounds =
+                      priceMin === PRICE_FLOOR && priceMax === PRICE_CEIL;
+                    pushListing({
+                      ...listingQuery,
+                      minPrice: atBounds ? undefined : String(priceMin),
+                      maxPrice: atBounds ? undefined : String(priceMax),
+                      page: 1,
+                    });
+                  }
+                  setFiltersOpen(false);
+                }}
               >
                 Apply Filters
               </button>
@@ -390,7 +600,7 @@ export function ProductCatalogView({
                 Filters
               </button>
               <p className="catalog__count" aria-live="polite">
-                Showing {filtered.length} of {products.length}
+                Showing {filtered.length} of {allCount}
               </p>
               <label className="catalog__sort">
                 <span className="catalog__sort-label">Sort by</span>
@@ -403,8 +613,12 @@ export function ProductCatalogView({
                   <option value="newest">Newest</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
-                  <option value="rating">Customer Ratings</option>
-                  <option value="bestselling">Best Selling</option>
+                  {serverFiltered ? null : (
+                    <>
+                      <option value="rating">Customer Ratings</option>
+                      <option value="bestselling">Best Selling</option>
+                    </>
+                  )}
                 </select>
               </label>
             </div>
@@ -412,15 +626,28 @@ export function ProductCatalogView({
             {filtered.length === 0 ? (
               <p className="grid-band__empty">No products match these filters.</p>
             ) : (
-              // One batched wishlist-status request for the whole grid, not one per card.
               <WishlistStatusScope>
                 <ul className="product-grid" role="list">
                   {filtered.map((product) => (
-                    <CatalogProductCard key={product.id} product={product} />
+                    <CatalogProductCard
+                      key={product.id}
+                      product={product}
+                      collectionSlug={slug}
+                    />
                   ))}
                 </ul>
               </WishlistStatusScope>
             )}
+            {serverFiltered && listingQuery && pagination && pagination.totalPages > 1 ? (
+              <CatalogPagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                hrefForPage={(page) =>
+                  catalogListingHref(pathname, listingQuery, page)
+                }
+              />
+            ) : null}
           </div>
         </div>
         )}
@@ -434,6 +661,7 @@ export function CatalogProductCard({
   action,
   hideAdd = false,
   note,
+  collectionSlug,
 }: {
   product: CatalogProduct;
   /** Top-right control above the card link (e.g. the wishlist heart). */
@@ -441,6 +669,7 @@ export function CatalogProductCard({
   /** Unsellable products keep the card but lose the add-to-bag pill. */
   hideAdd?: boolean;
   note?: string;
+  collectionSlug?: string;
 }) {
   // Live catalog media 404s for some products, which would otherwise render a
   // broken-image icon and its alt text. Fall back to the same bottle
@@ -465,7 +694,11 @@ export function CatalogProductCard({
       }
     >
       <Link className="product-card__link" href={`/products/${product.slug}`} aria-label={product.title} />
-      <ProductCardTags slug={product.slug} />
+      <ProductCardTags
+        slug={product.slug}
+        tags={product.tags ?? []}
+        collectionSlug={collectionSlug}
+      />
       <div
         className={
           hasIngredientsHover ? "product-card__media product-card__media--swap" : "product-card__media"

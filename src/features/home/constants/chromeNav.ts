@@ -15,12 +15,12 @@ export type ChromeNavItem =
 export const TOPBAR_CATS: ChromeLink[] = [];
 
 export const TOPBAR_REGIONS = [
-  { id: "UAE", label: "UAE", flag: "🇦🇪" },
-  { id: "KSA", label: "KSA", flag: "🇸🇦" },
-  { id: "KWT", label: "Kuwait", flag: "🇰🇼" },
-  { id: "QAT", label: "Qatar", flag: "🇶🇦" },
-  { id: "BHR", label: "Bahrain", flag: "🇧🇭" },
-  { id: "OMN", label: "Oman", flag: "🇴🇲" },
+  { id: "UAE", label: "UAE", flag: "🇦🇪", countryCode: "AE" },
+  { id: "KSA", label: "KSA", flag: "🇸🇦", countryCode: "SA" },
+  { id: "KWT", label: "Kuwait", flag: "🇰🇼", countryCode: "KW" },
+  { id: "QAT", label: "Qatar", flag: "🇶🇦", countryCode: "QA" },
+  { id: "BHR", label: "Bahrain", flag: "🇧🇭", countryCode: "BH" },
+  { id: "OMN", label: "Oman", flag: "🇴🇲", countryCode: "OM" },
 ] as const;
 
 export const TOPBAR_LANGUAGES = [

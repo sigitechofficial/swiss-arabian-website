@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Country flag sprites (phone country picker) — real SVGs: Windows renders no flag emoji. */
+@import "flag-icons/css/flag-icons.min.css";
 @import "../styles/v5-fonts.css";
 @import "../styles/v5-landing.css";
 @import "../styles/v5-chrome.css";
@@ -117,7 +119,9 @@ body {
    from v5-landing.css — it sat outside the soft field border and looked like
    a primary-color double border. */
 .auth-field-input:focus,
-.auth-field-input:focus-visible {
+.auth-field-input:focus-visible,
+.sa-field-input:focus,
+.sa-field-input:focus-visible {
   outline: none !important;
   outline-offset: 0 !important;
   box-shadow: none !important;

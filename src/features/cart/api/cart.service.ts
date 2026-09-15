@@ -1,6 +1,6 @@
 import { getAccessToken } from "@/lib/auth/token";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api/apiClient";
-import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ApiCart } from "../types/cart";
 import { getOrCreateGuestToken, getStoredCartId } from "../utils/guestToken";
 
@@ -10,10 +10,7 @@ type CartParamOpts = {
 };
 
 function buildCartParams(opts: CartParamOpts = {}): URLSearchParams {
-  const params = new URLSearchParams({
-    zoneCode: DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(),
-  });
+  const params = new URLSearchParams(storefrontContextQuery());
 
   if (opts.cartId) {
     params.set("cartId", opts.cartId);
@@ -26,6 +23,11 @@ function buildCartParams(opts: CartParamOpts = {}): URLSearchParams {
   }
 
   return params;
+}
+
+/** Same zone + guest query as other cart routes. */
+export function storefrontCartQuery(opts: CartParamOpts = {}): URLSearchParams {
+  return buildCartParams(opts);
 }
 
 export async function createOrResolveCart(
@@ -94,4 +96,19 @@ export async function validateCart(cartId: string): Promise<ApiCart> {
   return apiPost<ApiCart>(`/storefront/cart/validate?${params.toString()}`, {
     cartId,
   });
+}
+
+export async function applyCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/coupons?${params.toString()}`,
+    { code: code.trim() },
+  );
+}
+
+export async function removeCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiDelete<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/coupons/${encodeURIComponent(code.trim())}?${params.toString()}`,
+  );
 }

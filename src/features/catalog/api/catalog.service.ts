@@ -1,13 +1,18 @@
 import { apiGet } from "@/lib/api/apiClient";
-import {
-  storefrontContextQuery,
-  toAuthSalesChannelCode,
-} from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import type {
   ProductCollectionRef,
   ProductDetail,
   ProductSummary,
 } from "../types/product";
+import {
+  applyCatalogListingParams,
+  catalogListingCacheKey,
+  parseCatalogFacets,
+  type CatalogListingFilters,
+  type StorefrontCatalogFacets,
+} from "../types/catalogFacets";
+import { pickPdpMetafields } from "../utils/pdpMetafields";
 import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
 
@@ -23,6 +28,8 @@ export type CatalogPagination = {
 export type ProductListResult = {
   products: ProductSummary[];
   pagination: CatalogPagination;
+  /** Present once the listing API ships `data.facets`. */
+  facets: StorefrontCatalogFacets | null;
 };
 
 export const catalogKeys = {
@@ -42,14 +49,30 @@ export const catalogKeys = {
     zoneCode?: string | null,
     page = 1,
     limit = CATALOG_PAGE_SIZE,
+    filters?: CatalogListingFilters,
   ) =>
     [
       ...catalogKeys.all,
       "category-products",
       slug,
       zoneCode ?? "default",
-      page,
-      limit,
+      ...(filters
+        ? catalogListingCacheKey(filters)
+        : ([page, limit, "all"] as const)),
+    ] as const,
+  listing: (
+    kind: "products" | "collection" | "category",
+    slug: string | null,
+    zoneCode: string | null | undefined,
+    filters: CatalogListingFilters,
+  ) =>
+    [
+      ...catalogKeys.all,
+      "listing",
+      kind,
+      slug ?? "",
+      zoneCode ?? "default",
+      ...catalogListingCacheKey(filters),
     ] as const,
   search: (
     q: string,
@@ -72,14 +95,17 @@ export const catalogKeys = {
     zoneCode?: string | null,
     page = 1,
     limit = CATALOG_PAGE_SIZE,
+    onlySellable?: boolean,
+    filters?: CatalogListingFilters,
   ) =>
     [
       ...catalogKeys.all,
       "collection-products",
       slug,
       zoneCode ?? "default",
-      page,
-      limit,
+      ...(filters
+        ? catalogListingCacheKey(filters)
+        : ([page, limit, onlySellable ? "sellable" : "all"] as const)),
     ] as const,
 };
 
@@ -117,6 +143,10 @@ type ApiCatalogProduct = {
   isSellable?: boolean;
   sellabilityStatus?: string | null;
   blockReasons?: string[] | null;
+  tags?: string[] | null;
+  concentration?: string | null;
+  houseCollection?: string | null;
+  featuredNote?: string | null;
 };
 
 type ApiProductDetailVariant = {
@@ -142,7 +172,9 @@ type ApiProductDetailData = {
     description?: string | null;
     brandCode?: string | null;
     brandName?: string | null;
+    pdpMetafields?: Record<string, unknown> | null;
   };
+  pdpMetafields?: Record<string, unknown> | null;
   variants?: ApiProductDetailVariant[] | null;
   media?: ApiProductImage[] | null;
   collections?: Array<{
@@ -167,6 +199,7 @@ type ApiProductListData = {
     total: number;
     totalPages: number;
   };
+  facets?: unknown;
 };
 
 function parseMoney(value: number | string | null | undefined): number | null {
@@ -234,7 +267,31 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
     inStock,
     availableQty: availableQty ?? undefined,
     blockReasons: raw.blockReasons ?? undefined,
+    tags: Array.isArray(raw.tags) ? raw.tags : undefined,
+    ...mapListingFacetFields(raw),
   };
+}
+
+function mapListingFacetFields(
+  raw: ApiCatalogProduct,
+): Pick<ProductSummary, "concentration" | "houseCollection" | "featuredNote"> {
+  const fields: Pick<
+    ProductSummary,
+    "concentration" | "houseCollection" | "featuredNote"
+  > = {};
+  if ("concentration" in raw) {
+    const code = raw.concentration?.trim().toLowerCase() ?? null;
+    fields.concentration = code === "edp" || code === "extrait" ? code : null;
+  }
+  if ("houseCollection" in raw) {
+    const code = raw.houseCollection?.trim().toLowerCase() || null;
+    fields.houseCollection = code;
+  }
+  if ("featuredNote" in raw) {
+    const code = raw.featuredNote?.trim().toLowerCase() || null;
+    fields.featuredNote = code;
+  }
+  return fields;
 }
 
 function pickDefaultVariant(
@@ -306,6 +363,7 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     blockReasons: raw.blockReasons ?? variant?.blockReasons ?? undefined,
     brandName,
     collections,
+    pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
   };
 }
 
@@ -331,6 +389,19 @@ function normalizePagination(
     limit: resolvedLimit,
     total,
     totalPages,
+  };
+}
+
+function mapProductList(
+  data: ApiProductListData,
+  page: number,
+  limit: number,
+): ProductListResult {
+  const products = (data.products ?? []).map(mapProduct);
+  return {
+    products,
+    pagination: normalizePagination(data.pagination, page, limit, products.length),
+    facets: parseCatalogFacets(data.facets),
   };
 }
 
@@ -371,7 +442,6 @@ export async function fetchCatalogSearch(
   const qs = new URLSearchParams(
     storefrontContextQuery({
       zoneCode,
-      salesChannelCode: toAuthSalesChannelCode(zoneCode),
     }),
   );
   qs.set("q", q);
@@ -384,42 +454,29 @@ export async function fetchCatalogSearch(
     `/storefront/catalog/search?${qs.toString()}`,
     { skipAuth: true },
   );
-  const products = (data.products ?? []).map(mapProduct);
-  const pagination = normalizePagination(
-    data.pagination,
-    page,
-    limit,
-    products.length,
-  );
-
+  const mapped = mapProductList(data, page, limit);
   return {
-    products,
-    // The endpoint under-reports `total` on some queries (e.g. `q=SOAH`
-    // returns 4 products but `total: 1`), so never claim fewer results than
-    // we are about to render.
+    ...mapped,
     pagination: {
-      ...pagination,
-      total: Math.max(pagination.total, products.length),
+      ...mapped.pagination,
+      total: Math.max(mapped.pagination.total, mapped.products.length),
     },
   };
 }
 
 export async function fetchProducts(
   zoneCode?: string | null,
-  options?: { page?: number; limit?: number },
+  options?: CatalogListingFilters,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
+  const qs = new URLSearchParams(contextQs(zoneCode));
+  applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/products?${qs}`,
     { skipAuth: true },
   );
-  const products = (data.products ?? []).map(mapProduct);
-  return {
-    products,
-    pagination: normalizePagination(data.pagination, page, limit, products.length),
-  };
+  return mapProductList(data, page, limit);
 }
 
 export async function fetchProductBySlug(
@@ -468,7 +525,35 @@ export type CatalogCollection = {
    *  today — the storefront falls back to its designed hero when null. */
   image?: string | null;
   imageAlt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  customMetafields?: Record<string, unknown> | null;
 };
+
+type ApiCollectionDetailData = CatalogCollection & {
+  item?: CatalogCollection | null;
+};
+
+function mapCollectionDetail(
+  raw: ApiCollectionDetailData | null | undefined,
+): CatalogCollection | null {
+  const item = raw?.item ?? raw;
+  if (!item?.slug) return null;
+  return {
+    id: item.id,
+    code: item.code,
+    slug: item.slug,
+    name: item.name,
+    description: item.description,
+    sortOrder: item.sortOrder,
+    productCount: item.productCount,
+    image: item.image,
+    imageAlt: item.imageAlt,
+    seoTitle: item.seoTitle ?? raw?.seoTitle,
+    seoDescription: item.seoDescription ?? raw?.seoDescription,
+    customMetafields: item.customMetafields ?? raw?.customMetafields ?? null,
+  };
+}
 
 type ApiCollectionListData = {
   items: CatalogCollection[];
@@ -517,20 +602,17 @@ export async function fetchCategoryBySlug(
 export async function fetchCategoryProducts(
   slug: string,
   zoneCode?: string | null,
-  options?: { page?: number; limit?: number },
+  options?: CatalogListingFilters,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
+  const qs = new URLSearchParams(contextQs(zoneCode));
+  applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/categories/${encodeURIComponent(slug)}/products?${qs}`,
     { skipAuth: true },
   );
-  const products = (data.products ?? []).map(mapProduct);
-  return {
-    products,
-    pagination: normalizePagination(data.pagination, page, limit, products.length),
-  };
+  return mapProductList(data, page, limit);
 }
 
 export async function fetchCollectionBySlug(
@@ -538,10 +620,11 @@ export async function fetchCollectionBySlug(
   zoneCode?: string | null,
 ): Promise<CatalogCollection | null> {
   try {
-    return await apiGet<CatalogCollection>(
+    const data = await apiGet<ApiCollectionDetailData>(
       `/storefront/catalog/collections/${encodeURIComponent(slug)}?${contextQs(zoneCode)}`,
       { skipAuth: true },
     );
+    return mapCollectionDetail(data);
   } catch {
     return null;
   }
@@ -550,18 +633,15 @@ export async function fetchCollectionBySlug(
 export async function fetchCollectionProducts(
   slug: string,
   zoneCode?: string | null,
-  options?: { page?: number; limit?: number },
+  options?: CatalogListingFilters,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = `${contextQs(zoneCode)}&page=${page}&limit=${limit}`;
+  const qs = new URLSearchParams(contextQs(zoneCode));
+  applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/collections/${encodeURIComponent(slug)}/products?${qs}`,
     { skipAuth: true },
   );
-  const products = (data.products ?? []).map(mapProduct);
-  return {
-    products,
-    pagination: normalizePagination(data.pagination, page, limit, products.length),
-  };
+  return mapProductList(data, page, limit);
 }

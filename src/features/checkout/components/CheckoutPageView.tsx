@@ -1,21 +1,35 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
 import { CheckoutAddonRow, MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { COMPLIMENTARY_SAMPLES } from "@/features/cart/constants/complimentarySamples";
 import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
+import { freeShippingProgress } from "@/features/cart/utils/freeShipping";
 import {
   CATALOG_PRODUCTS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
+import {
+  AppliedCampaigns,
+  CouponForm,
+  PromotionUnlockNote,
+  shippingDiscountAmount,
+} from "@/features/promotions";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
+import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/features/account/data/regionsByCountry";
+import { useMarket } from "@/providers/MarketProvider";
 import { useCheckout } from "../hooks/useCheckout";
+import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
+import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
+import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import type { AddressFields } from "../utils/addressSnapshot";
 import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import {
@@ -25,23 +39,9 @@ import {
   paymentMethodNote,
 } from "../utils/methodLabels";
 
-/** Matches the `v5/checkout.html` prototype's free-shipping threshold. */
-const FREE_SHIPPING_THRESHOLD = 250;
-
-/** Prefer the static catalog image for known slugs (stale persisted paths). */
 function lineImageUrl(slug: string, fallback?: string) {
   return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
 }
-
-const EMIRATES = [
-  "Dubai",
-  "Abu Dhabi",
-  "Sharjah",
-  "Ajman",
-  "Umm Al Quwain",
-  "Ras Al Khaimah",
-  "Fujairah",
-];
 
 const EMPTY_ADDRESS: AddressFields = {
   fullName: "",
@@ -53,10 +53,23 @@ const EMPTY_ADDRESS: AddressFields = {
   postalCode: "",
 };
 
-function matchEmirate(value?: string | null): string {
-  if (!value) return "";
-  const needle = value.trim().toLowerCase();
-  return EMIRATES.find((e) => e.toLowerCase() === needle) ?? "";
+function applyGooglePlace(
+  setter: (update: (prev: AddressFields) => AddressFields) => void,
+  parsed: ParsedStreetAddress,
+  countryCode: string,
+) {
+  const country = parsed.countryCode || countryCode;
+  setter((prev) => ({
+    ...prev,
+    address1: parsed.address1 || prev.address1,
+    address2: parsed.address2 || prev.address2,
+    city: parsed.city || prev.city,
+    emirate:
+      matchCountryRegion(country, parsed.province, parsed.city) ||
+      parsed.province ||
+      prev.emirate,
+    postalCode: parsed.postalCode || prev.postalCode,
+  }));
 }
 
 export function CheckoutPageView() {
@@ -64,15 +77,45 @@ export function CheckoutPageView() {
   const lines = useCartStore((s) => s.lines);
   const cartSubtotal = useCartStore((s) => s.subtotal());
   const cartCurrency = useCartStore((s) => s.totals?.currency);
+  const cartPromotions = useCartStore((s) => s.promotions);
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkout = useCheckout();
+  const dontMissRail = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss);
+  const { catalogContext } = useMarket();
+  const countryCode =
+    normalizeCountryCode(catalogContext?.countryCode) ||
+    normalizeCountryCode(checkout.session?.context?.countryCode) ||
+    "AE";
+  const regionSet = regionsForCountry(countryCode);
+  const countryKeyRef = useRef(countryCode);
 
   const [email, setEmail] = useState("");
   const [shipping, setShipping] = useState<AddressFields>(EMPTY_ADDRESS);
   const [billing, setBilling] = useState<AddressFields>(EMPTY_ADDRESS);
   const [billingSame, setBillingSame] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
+
+  // Header/market country changed — drop the previous country's city/region
+  // so the emirate dropdown never keeps e.g. Doha on UAE.
+  useEffect(() => {
+    if (countryKeyRef.current === countryCode) return;
+    countryKeyRef.current = countryCode;
+    const resetLocation = (prev: AddressFields): AddressFields => {
+      const emirate = matchCountryRegion(countryCode, prev.emirate);
+      if (emirate) return { ...prev, emirate };
+      return {
+        ...prev,
+        address1: "",
+        address2: "",
+        city: "",
+        emirate: "",
+        postalCode: "",
+      };
+    };
+    setShipping(resetLocation);
+    setBilling(resetLocation);
+  }, [countryCode]);
 
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkout", "saved-addresses", user?.id ?? "guest"],
@@ -82,6 +125,19 @@ export function CheckoutPageView() {
   });
   const defaultAddress =
     savedAddresses?.find((a) => a.isDefaultShipping) ?? savedAddresses?.[0];
+
+  if (shipping.emirate && regionSet && !regionSet.regions.includes(shipping.emirate)) {
+    setShipping((prev) => ({
+      ...prev,
+      emirate: matchCountryRegion(countryCode, prev.emirate),
+    }));
+  }
+  if (billing.emirate && regionSet && !regionSet.regions.includes(billing.emirate)) {
+    setBilling((prev) => ({
+      ...prev,
+      emirate: matchCountryRegion(countryCode, prev.emirate),
+    }));
+  }
 
   // Prefill from the signed-in profile and default address, once per
   // combination — during render rather than in an effect, and never over
@@ -101,7 +157,7 @@ export function CheckoutPageView() {
       address1: prev.address1 || defaultAddress?.address1 || "",
       address2: prev.address2 || defaultAddress?.address2 || "",
       city: prev.city || defaultAddress?.city || "",
-      emirate: prev.emirate || matchEmirate(defaultAddress?.province),
+      emirate: prev.emirate || matchCountryRegion(countryCode, defaultAddress?.province),
       postalCode: prev.postalCode || defaultAddress?.postalCode || "",
     }));
   }
@@ -116,7 +172,7 @@ export function CheckoutPageView() {
   // live SKU or variant can join the checkout session, so the rest stay visible
   // with a disabled add button — never added locally and silently left out.
   const inCart = new Set(visibleLines.map((l) => l.slug).filter(Boolean));
-  const upsells = CATALOG_PRODUCTS.filter((p) => !inCart.has(p.slug));
+  const upsells = dontMissRail.filter((p) => !inCart.has(p.slug));
   const canAddToOrder = (p: CatalogProduct) => Boolean(p.sku || p.variantId);
   const addOns = upsells.slice(0, 3);
   const missThis = upsells.slice(0, 4);
@@ -129,14 +185,14 @@ export function CheckoutPageView() {
   const discount = estimate ? Number(estimate.discount) : 0;
   const tax = estimate ? Number(estimate.tax) : 0;
   const total = estimate ? Number(estimate.total) : cartSubtotal;
+  const promoSnapshot = session?.promotionSnapshot ?? cartPromotions;
+  const shipDiscount = shippingDiscountAmount(promoSnapshot);
+  const {
+    isFree: shipIsFree,
+    remaining: shipRemaining,
+    progressPct: shipProgressPct,
+  } = freeShippingProgress(subtotal, shipDiscount > 0);
   const warnings = checkoutWarningMessages(session?.validationIssues);
-
-  // The backend owns the shipping fee; the threshold only drives the progress copy.
-  const isFreeShip = subtotal > 0 && (shippingFee === 0 || subtotal >= FREE_SHIPPING_THRESHOLD);
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const progressPct = isFreeShip
-    ? 100
-    : Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   const selectedPayment = checkout.paymentMethods.find(
     (m) => m.zonePaymentMethodId === checkout.selectedPaymentId,
@@ -245,6 +301,7 @@ export function CheckoutPageView() {
                 </span>
               </button>
 
+              <GooglePlacesProvider>
               <form className="checkout-form" noValidate onSubmit={handleSubmit}>
                 {missThis.length ? (
                   <MissThisSwiper
@@ -285,26 +342,31 @@ export function CheckoutPageView() {
                     </label>
                     <label className="fld fld--full">
                       <span>Phone</span>
-                      <input
-                        type="tel"
+                      <PhoneNumberField
+                        variant="checkout"
+                        renderLabel={false}
+                        id="delPhone"
                         name="delPhone"
                         required
-                        minLength={7}
-                        autoComplete="tel"
-                        placeholder="+971 50 000 0000"
-                        {...bindShipping("phone")}
+                        value={shipping.phone}
+                        onChange={(phone) => setShipping((prev) => ({ ...prev, phone }))}
                       />
                     </label>
                     <label className="fld fld--full">
                       <span>Address line 1</span>
-                      <input
-                        type="text"
+                      <PlacesAddressInput
                         name="delAddr1"
                         required
                         minLength={3}
-                        autoComplete="address-line1"
-                        placeholder="Street and building"
-                        {...bindShipping("address1")}
+                        placeholder="Start typing your street address"
+                        value={shipping.address1}
+                        countryCode={countryCode}
+                        onChange={(value) =>
+                          setShipping((prev) => ({ ...prev, address1: value }))
+                        }
+                        onResolved={(parsed) =>
+                          applyGooglePlace(setShipping, parsed, countryCode)
+                        }
                       />
                     </label>
                     <label className="fld fld--full">
@@ -330,12 +392,14 @@ export function CheckoutPageView() {
                       />
                     </label>
                     <label className="fld">
-                      <span>Emirate</span>
+                      <span>{regionSet?.label ?? "Region"}</span>
                       <div className="fld__select">
                         <select name="delEmirate" required autoComplete="address-level1" {...bindShipping("emirate")}>
-                          <option value="">Select emirate</option>
-                          {EMIRATES.map((e) => (
-                            <option key={e}>{e}</option>
+                          <option value="">{regionSet?.placeholder ?? "Select region"}</option>
+                          {(regionSet?.regions ?? []).map((region) => (
+                            <option key={region} value={region}>
+                              {region}
+                            </option>
                           ))}
                         </select>
                         <b aria-hidden="true">▾</b>
@@ -420,13 +484,19 @@ export function CheckoutPageView() {
                         </label>
                         <label className="fld fld--full">
                           <span>Billing address line 1</span>
-                          <input
-                            type="text"
+                          <PlacesAddressInput
                             name="billAddr1"
                             required
                             minLength={3}
-                            autoComplete="billing address-line1"
-                            {...bindBilling("address1")}
+                            placeholder="Start typing your street address"
+                            value={billing.address1}
+                            countryCode={countryCode}
+                            onChange={(value) =>
+                              setBilling((prev) => ({ ...prev, address1: value }))
+                            }
+                            onResolved={(parsed) =>
+                              applyGooglePlace(setBilling, parsed, countryCode)
+                            }
                           />
                         </label>
                         <label className="fld fld--full">
@@ -440,12 +510,14 @@ export function CheckoutPageView() {
                           <input type="text" name="billCity" required autoComplete="billing address-level2" {...bindBilling("city")} />
                         </label>
                         <label className="fld">
-                          <span>Emirate</span>
+                          <span>{regionSet?.label ?? "Region"}</span>
                           <div className="fld__select">
                             <select name="billEmirate" required autoComplete="billing address-level1" {...bindBilling("emirate")}>
-                              <option value="">Select emirate</option>
-                              {EMIRATES.map((e) => (
-                                <option key={e}>{e}</option>
+                              <option value="">{regionSet?.placeholder ?? "Select region"}</option>
+                              {(regionSet?.regions ?? []).map((region) => (
+                                <option key={region} value={region}>
+                                  {region}
+                                </option>
                               ))}
                             </select>
                             <b aria-hidden="true">▾</b>
@@ -537,6 +609,7 @@ export function CheckoutPageView() {
                   is encrypted.
                 </p>
               </form>
+              </GooglePlacesProvider>
 
               <aside
                 className={`checkout-summary ${summaryOpen ? "is-open" : ""}`}
@@ -545,17 +618,18 @@ export function CheckoutPageView() {
               >
                 <h2>Your order</h2>
                 {subtotal > 0 ? (
-                  <div className={`checkout-ship ${isFreeShip ? "is-free" : ""}`} aria-live="polite">
+                  <div className={`checkout-ship ${shipIsFree ? "is-free" : ""}`} aria-live="polite">
                     <p>
-                      {isFreeShip
+                      {shipIsFree
                         ? "You qualify for free shipping!"
-                        : `Spend ${formatMoney(remaining, currency)} more for free shipping.`}
+                        : `Spend ${formatMoney(shipRemaining, currency)} more for free shipping.`}
                     </p>
                     <div className="cart-ship-track">
-                      <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
+                      <div className="cart-ship-fill" style={{ width: `${shipProgressPct}%` }} />
                     </div>
                   </div>
                 ) : null}
+                {subtotal > 0 ? <PromotionUnlockNote className="checkout-ship" /> : null}
                 <div className="checkout-lines" id="checkout-lines">
                   {orderableLines.map((line) => {
                     const thumb = lineImageUrl(line.slug, line.imageUrl);
@@ -628,6 +702,8 @@ export function CheckoutPageView() {
                     ))}
                   </div>
                 ) : null}
+                <AppliedCampaigns snapshot={promoSnapshot} />
+                <CouponForm />
                 <dl className="checkout-totals">
                   <div>
                     <dt>Subtotal</dt>
@@ -643,6 +719,12 @@ export function CheckoutPageView() {
                     <dt>Shipping</dt>
                     <dd dir="ltr">{shippingFee === 0 ? "Free" : formatMoney(shippingFee, currency)}</dd>
                   </div>
+                  {shipDiscount > 0 ? (
+                    <div>
+                      <dt>Shipping discount</dt>
+                      <dd dir="ltr">−{formatMoney(shipDiscount, currency)}</dd>
+                    </div>
+                  ) : null}
                   {tax > 0 ? (
                     <div>
                       <dt>Tax</dt>

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
+import { getActiveCart } from "@/features/cart/api/cart.service";
+import { appliedCoupon, shippingDiscountAmount } from "@/features/promotions/types/promotions";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import {
   cancelCheckout,
@@ -24,6 +26,7 @@ import type {
   PaymentMethodOption,
 } from "../types/checkout";
 import { buildAddressSnapshot, type AddressFields } from "../utils/addressSnapshot";
+import { ApiClientError } from "@/lib/api/apiError";
 import { checkoutErrorMessage, checkoutIssueMessage } from "../utils/checkoutIssues";
 import {
   clearCheckoutSessionId,
@@ -56,13 +59,32 @@ export type CheckoutSubmitValues = {
   billing?: AddressFields;
 };
 
-/** `cartItemId:qty` for every API-backed line — changes whenever the bag does. */
-function cartSignature(lines: CartLine[]): string {
+function lineSignature(lines: CartLine[]): string {
   return lines
     .filter((l) => l.cartItemId)
     .map((l) => `${l.cartItemId}:${l.quantity}`)
     .sort()
     .join("|");
+}
+
+/** Lines plus coupon/discount so a promo change rebuilds checkout snapshots. */
+function cartSignature(
+  lines: CartLine[],
+  couponCode = "",
+  discount = 0,
+  shippingDiscount = 0,
+): string {
+  return `${lineSignature(lines)}|c:${couponCode}|d:${discount}|s:${shippingDiscount}`;
+}
+
+function commerceSignature(lines: CartLine[]): string {
+  const state = useCartStore.getState();
+  return cartSignature(
+    lines,
+    appliedCoupon(state.promotions)?.code ?? "",
+    state.totals?.discount ?? 0,
+    shippingDiscountAmount(state.promotions),
+  );
 }
 
 /** Whether a session was built from exactly this bag; `null` when it can't be told. */
@@ -76,7 +98,7 @@ function sessionMatchesCart(
     .map((i) => `${i.cartItemId}:${Number.parseInt(i.quantity ?? "0", 10) || 0}`)
     .sort()
     .join("|");
-  return sessionSig === cartSignature(lines);
+  return sessionSig === lineSignature(lines);
 }
 
 /**
@@ -126,8 +148,12 @@ async function resolveSession(
 export function useCheckout() {
   const cartId = useCartStore((s) => s.cartId);
   const lines = useCartStore((s) => s.lines);
+  const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
+  const discountTotal = useCartStore((s) => s.totals?.discount ?? 0);
+  const shippingDiscount = useCartStore((s) => shippingDiscountAmount(s.promotions));
   const clearCart = useCartStore((s) => s.clear);
   const setCartId = useCartStore((s) => s.setCartId);
+  const setCartFromApi = useCartStore((s) => s.setCartFromApi);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -156,7 +182,7 @@ export function useCheckout() {
     async (id: string, currentLines: CartLine[]) => {
       try {
         const next = await resolveSession(id, currentLines);
-        sessionSigRef.current = cartSignature(currentLines);
+        sessionSigRef.current = commerceSignature(currentLines);
         adopt(next);
       } catch (e) {
         setErrorMsg(checkoutErrorMessage(e, "We couldn’t start checkout. Please try again."));
@@ -177,7 +203,7 @@ export function useCheckout() {
   // another tab…). Rebuild it so the placed order matches what's on screen.
   useEffect(() => {
     if (!cartId || !session || sessionSigRef.current === null) return;
-    const sig = cartSignature(lines);
+    const sig = cartSignature(lines, couponCode, discountTotal, shippingDiscount);
     if (sig === sessionSigRef.current) return;
     sessionSigRef.current = sig;
     const stale = session;
@@ -190,7 +216,7 @@ export function useCheckout() {
         setErrorMsg(checkoutErrorMessage(e));
       }
     })();
-  }, [cartId, lines, session, adopt]);
+  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, session, adopt]);
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
@@ -374,6 +400,20 @@ export function useCheckout() {
         }
         setErrorMsg(checkoutErrorMessage(e));
         setStatus("ready");
+        if (
+          e instanceof ApiClientError &&
+          (e.code === "PRICING_CHANGED" || e.code === "REDEMPTION_EXPIRED") &&
+          cartId
+        ) {
+          try {
+            setCartFromApi(await getActiveCart(cartId));
+            const next = await rebuildSession(cartId, session);
+            sessionSigRef.current = commerceSignature(useCartStore.getState().lines);
+            adopt(next);
+          } catch {
+            // Copy from checkoutErrorMessage is enough.
+          }
+        }
       }
     },
     [
@@ -385,6 +425,9 @@ export function useCheckout() {
       queryClient,
       clearCart,
       setCartId,
+      cartId,
+      setCartFromApi,
+      adopt,
       router,
     ],
   );

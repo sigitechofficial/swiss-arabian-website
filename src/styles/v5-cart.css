@@ -55,7 +55,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 20px 22px 12px;
-  border-bottom: 1px solid rgb(33 33 33 / 0.08);
+  border-bottom: 1px solid rgba(33, 33, 33, 0.08);
 }
 .cart-drawer-head h2 {
   margin: 0;
@@ -778,6 +778,10 @@
 .cart-summary {
   position: sticky;
   top: calc(var(--site-header-h, 9.25rem) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
   padding: 28px;
   background: #fff;
   border: 1px solid var(--line);
@@ -788,9 +792,10 @@
   margin: 0 0 18px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink);
 }
@@ -803,9 +808,11 @@
 .cart-totals > div {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  padding: 7px 0;
-  font-size: 0.82rem;
+  padding: 8px 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 .cart-totals dt {
   margin: 0;
@@ -816,54 +823,60 @@
   margin: 0;
   font-weight: 600;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 .cart-totals-line {
   padding-top: 12px;
   margin-top: 4px;
   border-top: 1px solid var(--line);
-  font-size: 0.95rem;
 }
 .cart-totals-line dt {
-  font-family: var(--font-display);
-  font-size: 0.66rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink);
   font-weight: 600;
 }
 .cart-totals-line dd {
-  font-size: 1.05rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
 }
 
-/* `font-size` + `letter-spacing` kept low on purpose: "PROCEED TO
-   CHECKOUT" set in the wide display face was overflowing this
-   ~284px-wide button onto two lines. `white-space: nowrap` is the
-   backstop so it never wraps again even at the narrower end of the
-   summary column's `minmax(280px, …)` range. */
-.cart-cta {
+/* Beat `.landing button { font: inherit }` (0,1,1) so this pill stays
+   full-width and the label stays inside it. */
+.landing .cart-summary .cart-cta,
+.cart-summary button.cart-cta {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
   gap: 8px;
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-height: 48px;
+  margin-top: 4px;
   margin-bottom: 12px;
-  padding-inline: 12px;
+  padding: 0 1.25rem;
   border-radius: 999px;
   background: var(--copper);
   color: #fff;
-  font-family: var(--font-display);
-  font-size: 0.66rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
+  overflow: hidden;
   border: 0;
   cursor: pointer;
   transition: background var(--dur, 0.2s) var(--ease);
 }
-.cart-cta:hover {
+.landing .cart-summary .cart-cta:hover,
+.cart-summary button.cart-cta:hover {
   background: var(--copper-deep);
   color: #fff;
 }
@@ -875,14 +888,20 @@
   max-width: 320px;
   margin-inline: auto;
 }
-.cart-cta .arrow {
+.cart-cta__glyph {
+  flex: 0 0 auto;
   font-weight: 400;
+  font-size: 0.95em;
+  line-height: 1;
 }
 
-.btn-secondary {
+.landing .cart-summary .btn-secondary,
+.cart-summary .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
+  box-sizing: border-box;
   width: 100%;
   min-height: 44px;
   padding: 0 1rem;
@@ -890,10 +909,11 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ink);
-  font: inherit;
-  font-size: 0.72rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
 }
@@ -907,7 +927,8 @@
 
 .cart-hint {
   margin: 6px 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--ink-2);
 }
 .cart-hint strong {
@@ -917,12 +938,13 @@
 .cart-badges {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-2);
 }
@@ -938,6 +960,137 @@
   margin: 0 0 24px;
   max-width: 52ch;
   margin-inline: auto;
+}
+
+.coupon-box {
+  margin: 0 0 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.coupon-box__label {
+  margin: 0 0 8px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.coupon-form {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+.coupon-form input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+}
+.coupon-form input:focus {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+  border-color: var(--copper);
+}
+.coupon-form input.is-err {
+  border-color: #b42318;
+}
+.landing .coupon-form button,
+.coupon-form button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--copper);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.coupon-form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.coupon-applied {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+.coupon-applied__name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.coupon-applied__code {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.coupon-applied__amt {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--copper);
+}
+.coupon-applied__remove {
+  grid-column: span 2;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.coupon-box__error {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: #b42318;
+}
+
+.promo-applied-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.promo-applied-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.promo-conflict {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+.cart-ship-bar.cart-ship-banner,
+.checkout-ship.cart-ship-banner {
+  margin: 0;
 }
 
 @media (max-width: 860px) {

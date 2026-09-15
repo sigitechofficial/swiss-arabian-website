@@ -41,11 +41,12 @@ main:has(.pdp) + .site-footer {
 }
 
 .pdp-hero__stage {
+  --bottle-h: min(62svh, 500px);
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: stretch;
   justify-content: center;
-  gap: var(--sp-5);
+  gap: 0.75rem;
   min-width: 0;
   /* Clip glow/mist/puff bleed to this column only — never on `.pdp-hero`
      or `.pdp-hero__panel`, which would create a scrollport and break the
@@ -54,12 +55,13 @@ main:has(.pdp) + .site-footer {
 }
 
 .pdp-hero__product {
-  --bottle-h: min(62svh, 500px);
+  --bottle-h: inherit;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 0;
 }
 
 /* Static picture-frame — border/radius live here, on a wrapper that
@@ -258,18 +260,42 @@ main:has(.pdp) + .site-footer {
   }
 }
 
-/* --- Gallery thumbnails --------------------------------------- */
+/* --- Gallery thumbnails (vertical rail, left of hero) --------- */
+
+.pdp-hero__thumbs-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 56px;
+  max-height: var(--bottle-h, min(62svh, 500px));
+  z-index: 3;
+}
 
 .pdp-hero__thumbs {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex: 1 1 auto;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 0.45rem;
-  max-width: min(100%, 28rem);
-  z-index: 3;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Fade only the last visible thumb, not the whole rail. */
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 52px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 52px), transparent 100%);
 }
+.pdp-hero__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
 .pdp-hero__thumb {
   display: block;
+  flex: none;
   width: 52px;
   height: 52px;
   padding: 0;
@@ -278,6 +304,7 @@ main:has(.pdp) + .site-footer {
   border: 1px solid rgb(36 31 27 / 0.14);
   border-radius: 6px;
   cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .pdp-hero__thumb img {
   display: block;
@@ -290,6 +317,35 @@ main:has(.pdp) + .site-footer {
   box-shadow: 0 0 0 1px var(--copper);
 }
 .pdp-hero__thumb:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.pdp-hero__thumbs-next {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-block-start: -0.35rem;
+  padding: 0;
+  color: var(--ink, #241f1b);
+  background: rgb(255 252 247 / 0.72);
+  border: 1px solid rgb(36 31 27 / 0.12);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgb(70 45 25 / 0.08);
+}
+.pdp-hero__thumbs-next svg {
+  width: 16px;
+  height: 16px;
+}
+.pdp-hero__thumbs-next:hover {
+  color: var(--copper);
+  border-color: var(--copper);
+}
+.pdp-hero__thumbs-next:focus-visible {
   outline: 2px solid var(--copper);
   outline-offset: 2px;
 }
@@ -472,7 +528,7 @@ main:has(.pdp) + .site-footer {
 }
 
 @media (max-width: 767px) {
-  .pdp-hero__product { --bottle-h: min(52svh, 420px); }
+  .pdp-hero__stage { --bottle-h: min(52svh, 420px); }
 
   /* Keep quantity + add-to-bag + wishlist on a single row instead of the
      add button wrapping to its own line — shrink the fixed-width controls a

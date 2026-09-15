@@ -2,7 +2,6 @@ import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
 import {
   DEFAULT_ZONE_CODE,
   storefrontContextQuery,
-  toAuthSalesChannelCode,
 } from "@/lib/storefront/context";
 import type {
   StorefrontWishlistAddResult,
@@ -19,7 +18,6 @@ import {
 function wishlistContextQuery(zoneCode?: string | null): string {
   return storefrontContextQuery({
     zoneCode: zoneCode?.trim() || DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(zoneCode),
   });
 }
 

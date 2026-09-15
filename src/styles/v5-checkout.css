@@ -221,6 +221,27 @@
   font-size: 0.875rem;
   font-weight: 400;
 }
+/* Phone row: the country button mirrors the .fld input styling; the number
+   input takes the remaining width. */
+.fld .phone-cc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.fld .phone-num {
+  flex: 1;
+  min-width: 0;
+}
+
 .fld input:focus,
 .fld select:focus,
 .fld textarea:focus {
@@ -562,6 +583,9 @@ button.checkout-cta:hover {
   color: var(--ink);
 }
 
+.checkout-summary .coupon-box {
+  margin-top: 4px;
+}
 .checkout-totals {
   margin: 0 0 12px;
 }
@@ -1450,4 +1474,29 @@ button.checkout-cta:hover {
   .fld textarea {
     font-size: 16px;
   }
+}
+
+/* Google Places dropdown is appended to `body` — keep it above checkout chrome. */
+.pac-container {
+  z-index: 10000;
+  margin-top: 4px;
+  border: 1px solid var(--line, #dfd3bf);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(44, 36, 29, 0.12);
+  font-family: inherit;
+  overflow: hidden;
+}
+.pac-item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.pac-item:hover,
+.pac-item-selected {
+  background: #fbf7f0;
+}
+.pac-item-query {
+  color: #2c241d;
+}
+.pac-matched {
+  color: #b46e57;
 }

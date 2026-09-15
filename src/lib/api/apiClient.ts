@@ -84,8 +84,24 @@ async function request<T>(
     signal: options.signal,
   });
 
+  let json: ApiEnvelope<T> | null = null;
+  const text = await res.text();
+  if (text) {
+    try {
+      json = JSON.parse(text) as ApiEnvelope<T>;
+    } catch {
+      throw new ApiClientError(res.status, "Unexpected response from server.");
+    }
+  }
+
+  const errorCode =
+    json?.error && typeof json.error === "object" ? json.error.code : undefined;
+  /** Business 401 (e.g. coupon needs login) — not a dead session. */
+  const isBusinessUnauthorized = errorCode === "COUPON_REQUIRES_LOGIN";
+
   const canRefresh =
     res.status === 401 &&
+    !isBusinessUnauthorized &&
     !options.skipAuth &&
     !retried &&
     !PUBLIC_AUTH_PATH.test(path);
@@ -100,16 +116,6 @@ async function request<T>(
       401,
       "Your session has expired. Please sign in again.",
     );
-  }
-
-  let json: ApiEnvelope<T> | null = null;
-  const text = await res.text();
-  if (text) {
-    try {
-      json = JSON.parse(text) as ApiEnvelope<T>;
-    } catch {
-      throw new ApiClientError(res.status, "Unexpected response from server.");
-    }
   }
 
   if (!res.ok || json?.success === false) {

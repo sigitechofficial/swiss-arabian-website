@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toE164Phone } from "@/features/auth/api/auth.service";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -25,6 +26,7 @@ export function AccountPhonesSection() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -99,26 +101,29 @@ export function AccountPhonesSection() {
           className="mt-4 rounded-lg border border-sa-border p-4"
           onSubmit={handleSubmit(async (values) => {
             await create.unwrap({
-              phone: toE164Phone(values.phone),
-              countryCode: "AE",
+              phone: values.phone,
+              countryCode: parsePhoneNumberFromString(values.phone)?.country ?? "AE",
               isPrimary: values.isPrimary || phones.length === 0,
             });
             reset();
             setAdding(false);
           })}
         >
-          <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-            Phone number
-          </label>
-          <input
-            type="tel"
-            className={accountInputClass}
-            placeholder="+971501234567"
-            {...register("phone")}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <PhoneNumberField
+                variant="account"
+                id="new-phone"
+                label="Phone number"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                error={errors.phone?.message}
+              />
+            )}
           />
-          {errors.phone ? (
-            <p className="mt-1 text-[11px] text-red-600">{errors.phone.message}</p>
-          ) : null}
           <label className="mt-3 flex items-center gap-2 text-[12px] text-sa-primary">
             <input type="checkbox" {...register("isPrimary")} />
             Set as primary

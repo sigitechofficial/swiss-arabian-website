@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { PRIMARY_NAV, TOPBAR_CURRENCIES, TOPBAR_LANGUAGES, TOPBAR_REGIONS, type ChromeNavItem } from "@/features/home/constants/chromeNav";
+import { PRIMARY_NAV, TOPBAR_LANGUAGES, TOPBAR_REGIONS, type ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { useNavigation } from "@/features/navigation";
 import { useMarket } from "@/providers/MarketProvider";
 import { MegaShowcase } from "../MegaShowcase";
@@ -91,9 +91,17 @@ function NavbarTopbar({
   hideUtils?: boolean;
   boutique?: boolean;
 }) {
-  const regionOptions = boutique
-    ? TOPBAR_REGIONS.map(({ id, label }) => ({ id, label }))
-    : TOPBAR_REGIONS;
+  const regionOptions =
+    chrome.regionOptions.length > 0
+      ? chrome.regionOptions
+      : boutique
+        ? TOPBAR_REGIONS.map(({ id, label, flag, countryCode }) => ({
+            id,
+            label,
+            flag,
+            countryCode,
+          }))
+        : TOPBAR_REGIONS;
   const languageOptions = boutique
     ? TOPBAR_LANGUAGES.map((option) => ({
         ...option,
@@ -117,21 +125,6 @@ function NavbarTopbar({
               onChange={chrome.setMarketId}
             />
             <span className="topbar__sep" aria-hidden="true" />
-            {boutique ? (
-              <>
-                <TopbarMenu
-                  label="Currency"
-                  value={chrome.currencyId}
-                  options={TOPBAR_CURRENCIES}
-                  open={chrome.openUtil === "currency"}
-                  onOpenChange={(open) => chrome.setOpenUtil(open ? "currency" : null)}
-                  onChange={(id) =>
-                    chrome.setCurrencyId(id as (typeof TOPBAR_CURRENCIES)[number]["id"])
-                  }
-                />
-                <span className="topbar__sep" aria-hidden="true" />
-              </>
-            ) : null}
             <TopbarMenu
               label="Language"
               value={chrome.languageId}
@@ -334,7 +327,11 @@ function NavbarPrimary({
               className={isOpen ? "primary-nav__item is-open" : "primary-nav__item"}
               onMouseEnter={() => chrome.setOpenMega(item.id)}
             >
-              <Link className="primary-nav__link" href={item.href}>
+              <Link
+                className="primary-nav__link"
+                href={item.href}
+                onClick={() => chrome.setOpenMega(null)}
+              >
                 {item.label}
               </Link>
               <button
@@ -356,6 +353,11 @@ function NavbarPrimary({
                     initial="hidden"
                     animate="visible"
                     exit="exit"
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest("a")) {
+                        chrome.setOpenMega(null);
+                      }
+                    }}
                   >
                     <div className="mega__inner">
                       <div className="mega__cols">
@@ -541,7 +543,12 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
     : base;
 
   return (
-    <header className="site-header" data-navbar={variant} ref={chrome.headerRef}>
+    <header
+      className="site-header"
+      data-navbar={variant}
+      data-scrolled={chrome.scrolled ? "true" : "false"}
+      ref={chrome.headerRef}
+    >
       <NavbarTopbar
         chrome={chrome}
         boutique={boutique}

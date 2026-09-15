@@ -1,11 +1,13 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const phoneBookSchema = z.object({
+  // The phone field emits E.164 (`+971501234567`) — validate per country.
   phone: z
     .string()
     .trim()
-    .min(8, "Enter a valid phone number")
-    .max(32, "Phone number is too long"),
+    .min(1, "Phone number is required")
+    .refine((value) => isValidPhoneNumber(value), "Enter a valid phone number"),
   isPrimary: z.boolean(),
 });
 

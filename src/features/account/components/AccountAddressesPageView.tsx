@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageLoading } from "@/components/ui/PageLoading";
-import { toE164Phone } from "@/features/auth/api/auth.service";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 
 import {
@@ -19,9 +19,12 @@ import {
   ADDRESS_COUNTRIES,
   addressBookSchema,
   countryNameForCode,
-  UAE_EMIRATES,
   type AddressBookFormValues,
 } from "../schemas/addressBook.schema";
+import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
+import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
+import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
+import { matchCountryRegion, normalizeCountryCode, regionsForCountry } from "../data/regionsByCountry";
 import type {
   CreateCustomerAddressDto,
   StorefrontCustomerAddressView,
@@ -61,7 +64,7 @@ function toDto(values: AddressBookFormValues): CreateCustomerAddressDto {
     province: values.province?.trim() || undefined,
     country: countryNameForCode(values.countryCode),
     countryCode: values.countryCode,
-    phone: phone ? toE164Phone(phone) : undefined,
+    phone: phone || undefined,
     isDefaultShipping: values.isDefaultShipping,
     isDefaultBilling: values.isDefaultBilling,
   };
@@ -96,15 +99,22 @@ function AddressForm({
 
   const {
     register,
+    control,
     handleSubmit,
+    setValue,
+    getValues,
+    watch,
     formState: { errors },
   } = useForm<AddressBookFormValues>({
     resolver: zodResolver(addressBookSchema),
     defaultValues: defaults,
   });
   const [countryCode, setCountryCode] = useState(defaults.countryCode);
+  const regionSet = regionsForCountry(countryCode);
+  const address1 = watch("address1");
 
   return (
+    <GooglePlacesProvider>
     <form
       className="rounded-lg border border-terra/40 bg-surface p-5 shadow-[0_10px_30px_-20px_rgba(140,68,53,0.5)] sm:p-6 md:col-span-2"
       onSubmit={handleSubmit(async (values) => {
@@ -125,11 +135,49 @@ function AddressForm({
         </Field>
         <div className="sm:col-span-2">
           <Field label="Address" error={errors.address1?.message}>
-            <input
+            <PlacesAddressInput
               className={accountInputClass}
-              autoComplete="address-line1"
-              placeholder="Street, building, villa"
-              {...register("address1")}
+              placeholder="Start typing your street address"
+              value={address1}
+              countryCode={countryCode}
+              onChange={(value) =>
+                setValue("address1", value, { shouldValidate: true, shouldDirty: true })
+              }
+              onResolved={(parsed: ParsedStreetAddress) => {
+                if (parsed.address1) {
+                  setValue("address1", parsed.address1, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+                if (parsed.address2) {
+                  setValue("address2", parsed.address2, { shouldDirty: true });
+                }
+                if (parsed.city) {
+                  setValue("city", parsed.city, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+                const googleCountry = normalizeCountryCode(parsed.countryCode);
+                const nextCountry = ADDRESS_COUNTRIES.some(
+                  (item) => item.code === googleCountry,
+                )
+                  ? googleCountry
+                  : countryCode;
+                if (nextCountry !== countryCode) {
+                  setCountryCode(nextCountry);
+                  setValue("countryCode", nextCountry, { shouldDirty: true });
+                }
+                const region = matchCountryRegion(
+                  nextCountry,
+                  parsed.province,
+                  parsed.city,
+                );
+                if (region) {
+                  setValue("province", region, { shouldDirty: true });
+                }
+              }}
             />
           </Field>
         </div>
@@ -143,7 +191,16 @@ function AddressForm({
             className={accountSelectClass}
             autoComplete="country"
             {...register("countryCode", {
-              onChange: (e) => setCountryCode(e.target.value),
+              onChange: (e) => {
+                const next = e.target.value;
+                setCountryCode(next);
+                const nextSet = regionsForCountry(next);
+                const current = getValues("province") ?? "";
+                const stillValid = nextSet?.regions.some(
+                  (region) => region.toLowerCase() === current.trim().toLowerCase(),
+                );
+                if (!stillValid) setValue("province", "");
+              },
             })}
           >
             {ADDRESS_COUNTRIES.map((c) => (
@@ -153,13 +210,13 @@ function AddressForm({
             ))}
           </select>
         </Field>
-        <Field label={countryCode === "AE" ? "Emirate" : "Region"}>
-          {countryCode === "AE" ? (
+        <Field label={regionSet?.label ?? "Region"}>
+          {regionSet ? (
             <select className={accountSelectClass} autoComplete="address-level1" {...register("province")}>
-              <option value="">Select emirate</option>
-              {UAE_EMIRATES.map((e) => (
-                <option key={e} value={e}>
-                  {e}
+              <option value="">{regionSet.placeholder}</option>
+              {regionSet.regions.map((region) => (
+                <option key={region} value={region}>
+                  {region}
                 </option>
               ))}
             </select>
@@ -171,12 +228,19 @@ function AddressForm({
           <input className={accountInputClass} autoComplete="address-level2" {...register("city")} />
         </Field>
         <Field label="Phone (optional)" error={errors.phone?.message}>
-          <input
-            type="tel"
-            className={accountInputClass}
-            autoComplete="tel"
-            placeholder="+971501234567"
-            {...register("phone")}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <PhoneNumberField
+                variant="account"
+                renderLabel={false}
+                id="address-phone"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
         </Field>
       </div>
@@ -201,6 +265,7 @@ function AddressForm({
         </button>
       </div>
     </form>
+    </GooglePlacesProvider>
   );
 }
 

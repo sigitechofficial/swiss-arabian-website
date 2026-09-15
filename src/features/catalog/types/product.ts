@@ -1,3 +1,5 @@
+import type { StorefrontPdpMetafields } from "./pdpMetafields";
+
 export type ProductSummary = {
   id: string;
   slug: string;
@@ -15,6 +17,11 @@ export type ProductSummary = {
   inStock?: boolean;
   availableQty?: number;
   blockReasons?: string[];
+  /** Raw catalog tags. UI maps a shopper allowlist — see productBadges.ts. */
+  tags?: string[];
+  concentration?: "extrait" | "edp" | null;
+  houseCollection?: string | null;
+  featuredNote?: string | null;
 };
 
 export type ProductCollectionRef = {
@@ -29,4 +36,5 @@ export type ProductDetail = ProductSummary & {
   variantId: string;
   brandName?: string;
   collections?: ProductCollectionRef[];
+  pdpMetafields?: StorefrontPdpMetafields;
 };

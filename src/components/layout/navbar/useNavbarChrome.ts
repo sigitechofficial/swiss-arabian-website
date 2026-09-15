@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { TOPBAR_CURRENCIES, TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
 import { useMarket } from "@/providers/MarketProvider";
 
 export function useNavbarChrome() {
@@ -21,12 +22,48 @@ export function useNavbarChrome() {
   const [openMega, setOpenMega] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState<string | null>(null);
-  const [openUtil, setOpenUtil] = useState<"region" | "lang" | "currency" | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setOpenMega(null);
+    setMobileOpen(false);
+    setMobileGroup(null);
+  }, [pathname]);
+  const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
   const [languageId, setLanguageId] = useState<(typeof TOPBAR_LANGUAGES)[number]["id"]>("en");
-  const [currencyId, setCurrencyId] = useState<(typeof TOPBAR_CURRENCIES)[number]["id"]>("AED");
-  const { marketId, setMarketId } = useMarket();
-  const regionId = TOPBAR_REGIONS.find((region) => region.id === marketId)?.id ?? "UAE";
+  const { marketId, setMarketId, regionOptions } = useMarket();
+  const regionId =
+    marketId ||
+    regionOptions[0]?.id ||
+    TOPBAR_REGIONS[0].id;
   const headerRef = useRef<HTMLElement>(null);
+  // Past this many pixels the header condenses: ticker bar out, logo smaller.
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const SHRINK_AT = 40;
+    const RESTORE_AT = 8;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      const y = window.scrollY;
+      // Hysteresis: the header changes height, so a single threshold would
+      // flip-flop as the page reflows under it.
+      setScrolled((current) => (current ? y > RESTORE_AT : y > SHRINK_AT));
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(read);
+    };
+    // Deferred, not called inline: a sync setState in an effect body
+    // triggers a cascading render.
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const header = headerRef.current;
@@ -48,18 +85,28 @@ export function useNavbarChrome() {
       );
     };
 
+    let debounce = 0;
+    const syncAfterMotion = () => {
+      window.clearTimeout(debounce);
+      debounce = window.setTimeout(syncHeaderHeight, 80);
+    };
+
     syncHeaderHeight();
-    const observer = new ResizeObserver(syncHeaderHeight);
+    const observer = new ResizeObserver(syncAfterMotion);
     observer.observe(header);
+    header.addEventListener("transitionend", syncAfterMotion);
     window.addEventListener("resize", syncHeaderHeight);
     return () => {
       observer.disconnect();
+      header.removeEventListener("transitionend", syncAfterMotion);
       window.removeEventListener("resize", syncHeaderHeight);
+      window.clearTimeout(debounce);
     };
-  }, []);
+  }, [scrolled]);
 
   return {
     headerRef,
+    scrolled,
     isAuthenticated,
     itemCount,
     setCartOpen,
@@ -75,9 +122,8 @@ export function useNavbarChrome() {
     setOpenUtil,
     languageId,
     setLanguageId,
-    currencyId,
-    setCurrencyId,
     regionId,
+    regionOptions,
     setMarketId,
   };
 }

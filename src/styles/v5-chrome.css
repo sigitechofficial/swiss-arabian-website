@@ -62,20 +62,19 @@
   align-items: center;
   justify-items: center;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 .topbar__ticker-line {
   grid-area: 1 / 1;
   margin: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   color: #fff;
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.08em;
   line-height: 1.2;
   text-align: center;
-  text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -101,7 +100,23 @@
 }
 .topbar__menu-trigger:hover,
 .topbar__menu.is-open .topbar__menu-trigger { color: #fff; }
-.topbar__flag { font-size: 0.75rem; line-height: 1; }
+.topbar__flag {
+  font-size: 1rem;
+  line-height: 1;
+  flex: none;
+}
+.topbar__flag-img {
+  width: 16px;
+  height: 12px;
+  flex: none;
+  display: block;
+  object-fit: cover;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(36, 31, 27, 0.16);
+}
+.topbar__menu-trigger .topbar__flag-img {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
 .topbar__caret {
   width: 8px;
   height: 8px;
@@ -183,7 +198,6 @@
   .topbar__cat { padding: 0 0.3rem; letter-spacing: 0.05em; }
   .topbar__utils { gap: 0.5rem; }
   .topbar__menu-trigger { gap: 0.3rem; }
-  .topbar__flag { display: none; }
 }
 
 /* Very narrow phones (≤360px) — drop the divider to keep both menus. */
@@ -192,11 +206,47 @@
   .topbar__sep { display: none; }
 }
 
+/* --- Condensed header on scroll --------------------------- */
+/* One duration + ease for the whole chrome. Topbar collapses via
+   grid-template-rows (smoother than max-height). Layout-heavy props
+   like search width are not animated. */
+.site-header {
+  --header-condense-dur: 0.52s;
+  --header-condense-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-anchor: none;
+}
+.site-header .nav-shell {
+  transition: min-height var(--header-condense-dur) var(--header-condense-ease),
+    padding-block var(--header-condense-dur) var(--header-condense-ease),
+    gap var(--header-condense-dur) var(--header-condense-ease);
+}
+.site-header[data-scrolled="true"] .nav-shell {
+  min-height: 64px;
+  padding-block: 0.3rem;
+}
+.site-header .brand-link img {
+  transition: height var(--header-condense-dur) var(--header-condense-ease),
+    max-height var(--header-condense-dur) var(--header-condense-ease);
+}
+@media (max-width: 860px) {
+  .site-header[data-scrolled="true"] .brand-link img {
+    max-height: 38px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .nav-shell,
+  .site-header .brand-link img,
+  .site-header .primary-nav__list {
+    transition: none;
+  }
+}
+
 /* --- Sticky header shell ---------------------------------- */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 200;
+  overflow-anchor: none;
   background: color-mix(in srgb, #faf6ee 92%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -1557,9 +1607,10 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    width: min(34vw, 340px);
+    width: min(42vw, 420px);
     min-height: 42px;
-    padding: 0 1rem 0 1.05rem;
+    padding: 0.35rem 1.05rem;
+    overflow: visible;
     color: #6f6152;
     background: #fff;
     border: 1px solid #d4c7b2;
@@ -1574,12 +1625,19 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   .site-header[data-navbar="minimal"] .nav-search-field input {
     flex: 1;
     min-width: 0;
+    height: auto;
+    min-height: 1.4em;
+    padding: 0;
     border: 0;
     background: none;
     font: inherit;
     font-size: 0.72rem;
+    line-height: 1.4;
     color: inherit;
     outline: none;
+    overflow: visible;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .site-header[data-navbar="minimal"] .nav-search-field input::placeholder {
     color: #9a8d7c;
@@ -1885,8 +1943,10 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 .topbar__ticker-stage {
   display: grid;
   justify-items: center;
-  flex: none;
-  width: min(52vw, 420px);
+  align-items: center;
+  flex: 1 1 auto;
+  width: auto;
+  max-width: min(72vw, 640px);
   min-width: 0;
 }
 .topbar--boutique .topbar__menu-trigger {
@@ -2092,4 +2152,79 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 .nav-search-drop__cards span {
   font-size: 0.65rem;
   line-height: 1.3;
+}
+
+/* Condensed header: beat the per-variant logo sizes defined further up.
+   Needs both attributes to outrank `.site-header[data-navbar=...] .brand-link img`. */
+.site-header[data-navbar][data-scrolled="true"] .brand-link img {
+  max-height: 55px;
+}
+.site-header[data-navbar][data-scrolled="true"] .brand-link--crop {
+  height: 55px;
+}
+.site-header[data-navbar][data-scrolled="true"] .brand-link--crop img {
+  height: 55px;
+}
+@media (max-width: 860px) {
+  .site-header[data-navbar][data-scrolled="true"] .brand-link img {
+    max-height: 38px;
+  }
+}
+
+/* --- Condensed header: proportions ------------------------
+   Everything in the sticky row scales with the smaller logo — row height,
+   search pill, action icons and the menu row — so the header reads as one
+   piece rather than a big bar with a small logo in it. Placed last, and
+   keyed on both attributes, to outrank the per-variant sizes above. */
+.site-header .nav-search-field,
+.site-header .nav-tool,
+.site-header .nav-tool svg,
+.site-header .primary-nav,
+.site-header .primary-nav__link {
+  transition: min-height var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    width var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    padding var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    height var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.site-header[data-navbar][data-scrolled="true"] .nav-shell {
+  min-height: 64px;
+  padding-block: 0.3rem;
+  gap: 1rem;
+}
+.site-header[data-navbar][data-scrolled="true"] .nav-search-field {
+  width: min(36vw, 360px);
+  min-height: 38px;
+  padding: 0.28rem 0.95rem;
+}
+.site-header[data-navbar][data-scrolled="true"] .nav-tool {
+  min-width: 56px;
+  padding: 0.15rem 0.4rem;
+  gap: 0.18rem;
+}
+.site-header[data-navbar][data-scrolled="true"] .nav-tool svg {
+  width: 21px;
+  height: 21px;
+}
+.site-header[data-navbar][data-scrolled="true"] .nav-tool__label {
+  font-size: 0.55rem;
+}
+.site-header[data-navbar][data-scrolled="true"] .primary-nav {
+  padding-top: 0;
+}
+.site-header[data-navbar][data-scrolled="true"] .primary-nav__link {
+  padding-block: 0.5rem;
+}
+@media (max-width: 860px) {
+  .site-header[data-navbar][data-scrolled="true"] .nav-shell {
+    min-height: 54px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .nav-search-field,
+  .site-header .nav-tool,
+  .site-header .nav-tool svg,
+  .site-header .primary-nav,
+  .site-header .primary-nav__link {
+    transition: none;
+  }
 }

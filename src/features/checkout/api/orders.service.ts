@@ -1,6 +1,6 @@
 import { getAccessToken } from "@/lib/auth/token";
 import { apiGet, apiPost } from "@/lib/api/apiClient";
-import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
   OrderPaymentStatusResponse,
@@ -9,10 +9,7 @@ import type {
 } from "../types/checkout";
 
 function buildContextParams(): URLSearchParams {
-  const params = new URLSearchParams({
-    zoneCode: DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(),
-  });
+  const params = new URLSearchParams(storefrontContextQuery());
   if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);

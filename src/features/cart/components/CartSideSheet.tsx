@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Drawer from "@mui/material/Drawer";
 import { Minus, Plus, X } from "lucide-react";
-import { STATIC_PRODUCTS } from "@/features/home/constants/staticProducts";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
+import { shippingDiscountAmount } from "@/features/promotions";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
 import { useAddToCart } from "../hooks/useAddToCart";
-
-/** Matches the `v5/landing.html` cart drawer prototype's `FREE` constant. */
-const FREE_SHIPPING_THRESHOLD = 250;
+import { freeShippingProgress } from "../utils/freeShipping";
 
 const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
 const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
@@ -34,7 +33,6 @@ export function CartSideSheet() {
   const { addToCart } = useAddToCart();
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
-  const addLocalLine = useCartStore((s) => s.addLine);
 
   const [addedRecs, setAddedRecs] = useState<Set<string>>(new Set());
   const [isWhoop, setIsWhoop] = useState(false);
@@ -45,10 +43,12 @@ export function CartSideSheet() {
   const shipBarRef = useRef<HTMLDivElement>(null);
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
+  const promotions = useCartStore((s) => s.promotions);
   const currency = totals?.currency ?? "AED";
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const progressPct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const isFree = subtotal > 0 && remaining <= 0;
+  const { isFree, remaining, progressPct } = freeShippingProgress(
+    subtotal,
+    shippingDiscountAmount(promotions) > 0,
+  );
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
   // glow + panel flash + a confetti burst from the bar's fill — the first
@@ -123,10 +123,7 @@ export function CartSideSheet() {
     };
   }, [isFree]);
 
-  const recs = useMemo(() => {
-    const inCart = new Set(lines.map((l) => l.slug).filter(Boolean));
-    return STATIC_PRODUCTS.filter((p) => !inCart.has(p.slug)).slice(0, 6);
-  }, [lines]);
+  const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
 
   return (
     <Drawer
@@ -184,6 +181,7 @@ export function CartSideSheet() {
           <div
             className={`cart-ship-bar ${isFree ? "is-free" : ""} ${isWhoop ? "is-whoop" : ""}`}
             ref={shipBarRef}
+            aria-live="polite"
           >
             <p>
               {isFree ? (
@@ -299,31 +297,21 @@ export function CartSideSheet() {
                       <button
                         type="button"
                         className="cart-rec-add"
+                        disabled={!canAdd}
                         aria-label={pressed ? `${product.title} added` : `Add ${product.title}`}
                         aria-pressed={pressed}
                         onClick={() => {
-                          if (canAdd) {
-                            void addToCart({
-                              sku: product.sku,
-                              variantId: product.variantId,
-                              slug: product.slug,
-                              title: product.title,
-                              imageUrl: product.imageUrl,
-                              price: product.price,
-                              currency: product.currency,
-                              quantity: 1,
-                            });
-                          } else {
-                            addLocalLine({
-                              variantId: product.slug,
-                              slug: product.slug,
-                              title: product.title,
-                              imageUrl: product.imageUrl ?? undefined,
-                              unitPrice: product.price ?? 0,
-                              currency: product.currency,
-                              quantity: 1,
-                            });
-                          }
+                          if (!canAdd) return;
+                          void addToCart({
+                            sku: product.sku,
+                            variantId: product.variantId,
+                            slug: product.slug,
+                            title: product.title,
+                            imageUrl: product.imageUrl,
+                            price: product.price,
+                            currency: product.currency,
+                            quantity: 1,
+                          });
                           setAddedRecs((prev) => new Set(prev).add(product.id));
                         }}
                       >

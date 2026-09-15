@@ -40,6 +40,9 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   ORDER_NOT_PAYABLE: "This order can’t be paid — it may already be paid or cancelled.",
   PAYMENT_METHOD_VALIDATION_FAILED:
     "That payment method is unavailable. Please refresh and try again.",
+  PRICING_CHANGED:
+    "Prices have changed. We’ve refreshed your bag — check the total before placing the order.",
+  REDEMPTION_EXPIRED: "That offer expired. Apply the code again.",
   FORBIDDEN: "This checkout belongs to another session. Please start again from your bag.",
 };
 

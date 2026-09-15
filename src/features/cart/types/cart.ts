@@ -1,5 +1,7 @@
 /** API types for the cart module — mirrors backend Cart response shape. */
 
+import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+
 export type CartContext = {
   zoneId: string;
   zoneCode: string;
@@ -67,6 +69,7 @@ export type ApiCart = {
   shippingEstimate: string;
   totalEstimate: string;
   currency: string;
+  promotions?: PromotionSnapshotV1 | null;
   validation: CartValidation | null;
   updatedAt: string;
   metadata: Record<string, unknown> | null;

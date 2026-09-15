@@ -1,13 +1,42 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { flagImageSrc } from "@/features/markets/utils/flagForMarket";
 
 export type TopbarMenuOption = {
   id: string;
   label: string;
   flag?: string;
   lang?: string;
+  countryCode?: string;
 };
+
+function TopbarFlag({
+  flag,
+  countryCode,
+}: {
+  flag?: string;
+  countryCode?: string;
+}) {
+  if (countryCode) {
+    return (
+      <img
+        className="topbar__flag-img"
+        src={flagImageSrc(countryCode)}
+        width={16}
+        height={12}
+        alt=""
+        aria-hidden="true"
+      />
+    );
+  }
+  if (!flag) return null;
+  return (
+    <span className="topbar__flag" aria-hidden="true">
+      {flag}
+    </span>
+  );
+}
 
 export function TopbarMenu({
   label,
@@ -48,6 +77,8 @@ export function TopbarMenu({
     };
   }, [open, onOpenChange]);
 
+  if (!selected) return null;
+
   return (
     <div
       className={open ? "topbar__menu is-open" : "topbar__menu"}
@@ -63,11 +94,7 @@ export function TopbarMenu({
         lang={selected.lang}
         onClick={() => onOpenChange(!open)}
       >
-        {selected.flag ? (
-          <span className="topbar__flag" aria-hidden="true">
-            {selected.flag}
-          </span>
-        ) : null}
+        <TopbarFlag flag={selected.flag} countryCode={selected.countryCode} />
         <span>{selected.label}</span>
         <svg
           className="topbar__caret"
@@ -100,11 +127,7 @@ export function TopbarMenu({
                   onOpenChange(false);
                 }}
               >
-                {option.flag ? (
-                  <span className="topbar__flag" aria-hidden="true">
-                    {option.flag}
-                  </span>
-                ) : null}
+                <TopbarFlag flag={option.flag} countryCode={option.countryCode} />
                 {option.label}
               </button>
             </li>

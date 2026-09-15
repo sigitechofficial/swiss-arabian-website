@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
+import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
 
 export type CartLine = {
   cartItemId?: string;
@@ -25,6 +26,8 @@ type CartTotals = {
   subtotal: number;
   total: number;
   discount: number;
+  shipping: number;
+  tax: number;
   currency: string;
   itemCount: number;
   totalQty: number;
@@ -34,6 +37,7 @@ type CartState = {
   lines: CartLine[];
   cartId: string | null;
   totals: CartTotals | null;
+  promotions: PromotionSnapshotV1 | null;
   validation: CartValidation | null;
   /** Optimistic edits are still being written to the API in the background. */
   syncing: boolean;
@@ -55,6 +59,7 @@ export const useCartStore = create<CartState>()(
       lines: [],
       cartId: null,
       totals: null,
+      promotions: null,
       validation: null,
       syncing: false,
 
@@ -108,7 +113,7 @@ export const useCartStore = create<CartState>()(
           lines: state.lines.filter((item) => item.variantId !== variantId),
         })),
 
-      clear: () => set({ lines: [], totals: null, validation: null }),
+      clear: () => set({ lines: [], totals: null, promotions: null, validation: null }),
 
       setCartId: (id) => set({ cartId: id }),
 
@@ -148,6 +153,8 @@ export const useCartStore = create<CartState>()(
             subtotal: Number(cart.subtotalEstimate ?? "0"),
             total: Number(cart.totalEstimate ?? "0"),
             discount: Number(cart.discountEstimate ?? "0"),
+            shipping: Number(cart.shippingEstimate ?? "0"),
+            tax: Number(cart.taxEstimate ?? "0"),
             currency: cart.currency ?? "AED",
             itemCount: cart.itemCount ?? lines.length,
             totalQty:
@@ -158,6 +165,7 @@ export const useCartStore = create<CartState>()(
           return {
             lines,
             totals,
+            promotions: cart.promotions ?? null,
             cartId: cart.cartId,
             validation: cart.validation ?? null,
           };
