@@ -28,7 +28,9 @@
   }
 }
 
-/* Hero + header occupy 80vh so the feature-cards band is in the first viewport. */
+/* Hero + header occupy 80vh so the feature-cards band is in the first viewport.
+   Height is locked to the expanded header offset so scroll-up restore cannot
+   resize this block. */
 .landing > .hero {
   height: calc(80vh - var(--site-header-h));
   height: calc(80dvh - var(--site-header-h));
@@ -37,6 +39,7 @@
   max-height: calc(80vh - var(--site-header-h));
   max-height: calc(80dvh - var(--site-header-h));
   align-items: center;
+  overflow-anchor: none;
 }
 
 .landing .hero__inner {

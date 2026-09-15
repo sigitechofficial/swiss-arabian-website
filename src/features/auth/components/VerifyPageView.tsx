@@ -17,10 +17,11 @@ import {
 } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
 import { AuthShell } from "./AuthShell";
-import { AuthField, AuthSubmitButton } from "./AuthFormControls";
+import { AuthSubmitButton } from "./AuthFormControls";
+import { AuthOtpField } from "./AuthOtpField";
 
 const verifySchema = z.object({
-  code: z.string().min(4, "Enter the code we sent you"),
+  code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code we sent you"),
 });
 
 type VerifyFormValues = z.infer<typeof verifySchema>;
@@ -89,13 +90,12 @@ export function VerifyPageView() {
       subtitle={email ? `Enter the code we sent to ${email}.` : "Enter the verification code you received."}
     >
       <form className="flex w-full flex-col gap-5" onSubmit={form.handleSubmit(onSubmit)}>
-        <AuthField
+        <AuthOtpField
           id="code"
           label="Verification code"
-          placeholder="6-digit code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          {...form.register("code")}
+          autoFocus
+          value={form.watch("code")}
+          onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
           error={form.formState.errors.code?.message}
         />
         <AuthSubmitButton disabled={form.formState.isSubmitting}>

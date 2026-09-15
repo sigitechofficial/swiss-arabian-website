@@ -37,76 +37,132 @@ export function useNavbarChrome() {
     regionOptions[0]?.id ||
     TOPBAR_REGIONS[0].id;
   const headerRef = useRef<HTMLElement>(null);
-  // Past this many pixels the header condenses: ticker bar out, logo smaller.
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
     const SHRINK_AT = 40;
-    const RESTORE_AT = 8;
+    const RESTORE_AT = 0;
+    const TOPBAR_HIDE_AFTER = 48;
+    const DIR_DELTA = 8;
+    let condensed = false;
+    let topbarHidden = false;
+    let lastY = window.scrollY;
+    let overHero = header.getAttribute("data-home") === "true";
     let frame = 0;
+
+    const apply = (next: boolean) => {
+      if (next === condensed) return;
+      condensed = next;
+      header.dataset.scrolled = next ? "true" : "false";
+    };
+
+    const applyTopbarHidden = (next: boolean) => {
+      if (next === topbarHidden) return;
+      topbarHidden = next;
+      header.dataset.topbarHidden = next ? "true" : "false";
+    };
+
+    const applyOverHero = (next: boolean) => {
+      if (next === overHero) return;
+      overHero = next;
+      header.dataset.overHero = next ? "true" : "false";
+    };
+
+    const syncTopbarHeight = () => {
+      if (topbarHidden) return;
+      const topbar = header.querySelector(".topbar");
+      const height = topbar?.getBoundingClientRect().height ?? 0;
+      if (height) header.style.setProperty("--topbar-h", `${Math.round(height)}px`);
+    };
+
     const read = () => {
       frame = 0;
-      const y = window.scrollY;
-      // Hysteresis: the header changes height, so a single threshold would
-      // flip-flop as the page reflows under it.
-      setScrolled((current) => (current ? y > RESTORE_AT : y > SHRINK_AT));
+      const y = Math.max(0, window.scrollY);
+      apply(condensed ? y > RESTORE_AT : y > SHRINK_AT);
+      const goingDown = y > lastY + DIR_DELTA;
+      const goingUp = y < lastY - DIR_DELTA;
+      if (y <= RESTORE_AT) applyTopbarHidden(false);
+      else if (goingDown && y > TOPBAR_HIDE_AFTER) applyTopbarHidden(true);
+      else if (goingUp) applyTopbarHidden(false);
+      lastY = y;
+      if (header.getAttribute("data-home") !== "true") {
+        applyOverHero(false);
+        return;
+      }
+      const hero = document.querySelector(".landing > .hero");
+      if (!(hero instanceof HTMLElement)) {
+        applyOverHero(y <= RESTORE_AT);
+        return;
+      }
+      applyOverHero(hero.getBoundingClientRect().bottom > header.getBoundingClientRect().bottom);
     };
+
     const onScroll = () => {
       if (frame) return;
       frame = window.requestAnimationFrame(read);
     };
-    // Deferred, not called inline: a sync setState in an effect body
-    // triggers a cascading render.
-    onScroll();
+
+    header.dataset.overHero = overHero ? "true" : "false";
+    header.dataset.topbarHidden = "false";
+    syncTopbarHeight();
+    apply(window.scrollY > SHRINK_AT);
+    read();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       if (frame) window.cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [pathname]);
 
   useLayoutEffect(() => {
     const header = headerRef.current;
     if (!header) return;
 
-    const syncHeaderHeight = () => {
+    let frozen = 0;
+
+    const measureExpanded = (allowShrink = false) => {
+      // Never sample the condensed/mid-transition header. Writing those
+      // heights into --site-header-h resizes the spacer + hero and the
+      // page jumps when scrolling back to the top.
+      if (header.getAttribute("data-scrolled") === "true") return;
       const topbar = header.querySelector(".topbar");
       const shell = header.querySelector(".nav-shell");
       const nav = header.querySelector(".primary-nav");
       const navVisible =
         nav instanceof HTMLElement && getComputedStyle(nav).display !== "none";
-      const height =
+      const height = Math.round(
         (topbar?.getBoundingClientRect().height ?? 0) +
-        (shell?.getBoundingClientRect().height ?? 0) +
-        (navVisible ? nav.getBoundingClientRect().height : 0);
-      document.documentElement.style.setProperty(
-        "--site-header-h",
-        `${Math.round(height)}px`,
+          (shell?.getBoundingClientRect().height ?? 0) +
+          (navVisible ? nav.getBoundingClientRect().height : 0),
       );
+      if (!height) return;
+      if (!allowShrink && frozen && height < frozen - 1) return;
+      if (height === frozen) return;
+      frozen = height;
+      document.documentElement.style.setProperty("--site-header-h", `${frozen}px`);
     };
 
-    let debounce = 0;
-    const syncAfterMotion = () => {
-      window.clearTimeout(debounce);
-      debounce = window.setTimeout(syncHeaderHeight, 80);
-    };
-
-    syncHeaderHeight();
-    const observer = new ResizeObserver(syncAfterMotion);
-    observer.observe(header);
-    header.addEventListener("transitionend", syncAfterMotion);
-    window.addEventListener("resize", syncHeaderHeight);
+    measureExpanded(true);
+    const onResize = () => measureExpanded(true);
+    window.addEventListener("resize", onResize);
+    void document.fonts?.ready.then(() => measureExpanded(true));
+    const images = header.querySelectorAll("img");
+    images.forEach((img) => {
+      if (!img.complete) img.addEventListener("load", onResize, { once: true });
+    });
     return () => {
-      observer.disconnect();
-      header.removeEventListener("transitionend", syncAfterMotion);
-      window.removeEventListener("resize", syncHeaderHeight);
-      window.clearTimeout(debounce);
+      window.removeEventListener("resize", onResize);
+      images.forEach((img) => img.removeEventListener("load", onResize));
     };
-  }, [scrolled]);
+  }, []);
 
   return {
     headerRef,
-    scrolled,
+    pathname,
     isAuthenticated,
     itemCount,
     setCartOpen,

@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCatalogSearch } from "@/features/search";
+import { useCatalogSearch, SEARCH_IDLE_SHORTCUTS, SEARCH_MIN_QUERY_LENGTH } from "@/features/search";
+import { useNewLaunchesPreview } from "@/features/search/hooks/useNewLaunchesPreview";
+import { useRecentSearches } from "@/features/search/hooks/useRecentSearches";
+import type { ProductSummary } from "@/features/catalog/types/product";
 
 function SearchGlyph() {
   return (
@@ -22,6 +25,38 @@ function ChevronGlyph() {
   );
 }
 
+function ProductRow({
+  product,
+  onPick,
+}: {
+  product: ProductSummary;
+  onPick: () => void;
+}) {
+  return (
+    <li>
+      <Link href={`/products/${product.slug}`} onClick={onPick}>
+        <span className="nav-search-drop__thumb" aria-hidden="true">
+          {product.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageUrl}
+              alt=""
+              width={44}
+              height={44}
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.style.visibility = "hidden";
+              }}
+            />
+          ) : null}
+        </span>
+        <span className="nav-search-drop__name">{product.title}</span>
+        <ChevronGlyph />
+      </Link>
+    </li>
+  );
+}
+
 export function NavbarSearchDropdown({
   placeholder = "Search fragrances",
 }: {
@@ -32,28 +67,28 @@ export function NavbarSearchDropdown({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-
-  // Live catalog search; an empty box falls back to a browse preview rather
-  // than a blank-`q` search, which the API answers with the whole catalog.
-  const { products: popular } = useCatalogSearch(query, {
-    limit: 6,
-    previewWhenEmpty: true,
-  });
-  const { products: newest } = useCatalogSearch("", {
-    limit: 4,
-    previewWhenEmpty: true,
-  });
+  const { items: recents, remember } = useRecentSearches();
 
   const trimmed = query.trim();
-  const seeAllHref = trimmed
-    ? `/search?q=${encodeURIComponent(trimmed)}`
-    : "/products";
+  const isIdle = trimmed.length < SEARCH_MIN_QUERY_LENGTH;
+  const { products: hits } = useCatalogSearch(query, { limit: 6 });
+  const newest = useNewLaunchesPreview(open);
 
-  function submit() {
-    if (!trimmed) return;
+  const close = () => {
     setOpen(false);
     inputRef.current?.blur();
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  function goToSearch(nextQuery: string) {
+    const q = nextQuery.trim();
+    if (q.length < SEARCH_MIN_QUERY_LENGTH) return;
+    remember(q);
+    close();
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  }
+
+  function submit() {
+    goToSearch(trimmed);
   }
 
   useEffect(() => {
@@ -75,6 +110,8 @@ export function NavbarSearchDropdown({
     };
   }, [open]);
 
+  const idleKicker = recents.length ? "Recent" : "Popular";
+
   return (
     <div className="nav-search" ref={rootRef}>
       <label className="nav-search-field" htmlFor="nav-search-input">
@@ -83,6 +120,7 @@ export function NavbarSearchDropdown({
         <input
           id="nav-search-input"
           ref={inputRef}
+          className="nav-search-input"
           type="search"
           placeholder={placeholder}
           autoComplete="off"
@@ -106,63 +144,77 @@ export function NavbarSearchDropdown({
       {open ? (
         <div className="nav-search-drop" id="nav-search-drop" role="dialog" aria-label="Search suggestions">
           <div className="nav-search-drop__popular">
-            <p className="nav-search-drop__kicker">Results</p>
-            <ul role="list">
-              {popular.map((product) => (
-                <li key={product.id}>
-                  <Link href={`/products/${product.slug}`} onClick={() => setOpen(false)}>
-                    {/* Small thumbnail; the plate stays as a placeholder when the
-                        product has no image or its URL is broken. */}
-                    <span className="nav-search-drop__thumb" aria-hidden="true">
-                      {product.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={product.imageUrl}
-                          alt=""
-                          width={44}
-                          height={44}
-                          loading="lazy"
-                          onError={(event) => {
-                            event.currentTarget.style.visibility = "hidden";
-                          }}
-                        />
-                      ) : null}
-                    </span>
-                    <span className="nav-search-drop__name">{product.title}</span>
-                    <ChevronGlyph />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link
-              className="nav-search-drop__all"
-              href={seeAllHref}
-              onClick={() => setOpen(false)}
-            >
-              {trimmed ? "See all results" : "See all fragrances"}
-            </Link>
+            <p className="nav-search-drop__kicker">{isIdle ? idleKicker : "Results"}</p>
+            {isIdle ? (
+              recents.length ? (
+                <ul className="nav-search-drop__queries" role="list">
+                  {recents.map((item) => (
+                    <li key={item}>
+                      <button type="button" onClick={() => goToSearch(item)}>
+                        <span>{item}</span>
+                        <ChevronGlyph />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="nav-search-drop__queries" role="list">
+                  {SEARCH_IDLE_SHORTCUTS.map((item) => (
+                    <li key={item.href}>
+                      <Link href={item.href} onClick={close}>
+                        <span>{item.label}</span>
+                        <ChevronGlyph />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : hits.length ? (
+              <ul role="list">
+                {hits.map((product) => (
+                  <ProductRow
+                    key={product.id}
+                    product={product}
+                    onPick={() => {
+                      remember(trimmed);
+                      close();
+                    }}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <p className="nav-search-drop__empty">No matches yet — keep typing or browse new in.</p>
+            )}
+            {isIdle ? null : (
+              <button type="button" className="nav-search-drop__all" onClick={submit}>
+                See all results
+              </button>
+            )}
           </div>
 
-          <div className="nav-search-drop__new">
-            <div className="nav-search-drop__new-head">
-              <p className="nav-search-drop__kicker">New in</p>
-              <Link href="/collections/new-launches" onClick={() => setOpen(false)}>
-                See all
-              </Link>
+          {newest.length ? (
+            <div className="nav-search-drop__new">
+              <div className="nav-search-drop__new-head">
+                <p className="nav-search-drop__kicker">New in</p>
+                <Link href="/collections/new-launches" onClick={close}>
+                  See all
+                </Link>
+              </div>
+              <ul className="nav-search-drop__cards" role="list">
+                {newest.map((product) => (
+                  <li key={product.id}>
+                    <Link href={`/products/${product.slug}`} onClick={close}>
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt={product.title} width={120} height={150} />
+                      ) : null}
+                      <span>{product.title}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="nav-search-drop__cards" role="list">
-              {newest.map((product) => (
-                <li key={product.id}>
-                  <Link href={`/products/${product.slug}`} onClick={() => setOpen(false)}>
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.title} width={120} height={150} />
-                    ) : null}
-                    <span>{product.title}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </div>

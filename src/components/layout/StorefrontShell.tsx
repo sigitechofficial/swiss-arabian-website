@@ -24,6 +24,7 @@ export function StorefrontShell({
         Skip to content
       </a>
       <SiteHeader key="site-header" variant={navbarVariant} />
+      <div className="site-header-spacer" aria-hidden="true" />
       <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>

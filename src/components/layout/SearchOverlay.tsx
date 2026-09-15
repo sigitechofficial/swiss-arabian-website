@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { useCatalogSearch } from "@/features/search";
+import { SEARCH_MIN_QUERY_LENGTH, useCatalogSearch } from "@/features/search";
+import { rememberSearchQuery } from "@/features/search/utils/recentSearches";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -57,7 +58,6 @@ export function SearchOverlay() {
   // previews the products list instead of firing a blank-`q` search.
   const { products: hits } = useCatalogSearch(query, {
     limit: OVERLAY_LIMIT,
-    previewWhenEmpty: true,
   });
   const hasQuery = query.trim().length > 0;
 
@@ -86,12 +86,15 @@ export function SearchOverlay() {
 
   function goToResults() {
     const q = query.trim();
+    if (q.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(q);
     setOpen(false);
     router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
   }
 
   function goToHit(index: number) {
     const hit = hits[index];
+    const q = query.trim();
+    if (q.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(q);
     if (!hit) {
       goToResults();
       return;

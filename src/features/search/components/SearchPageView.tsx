@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type CSSProperties } from "react";
-import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
-import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
+import { useEffect } from "react";
+import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
-import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
-import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
-import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
-import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
-import type { ProductSummary } from "@/features/catalog/types/product";
+import { toCatalogProducts } from "@/features/catalog/utils/toCatalogProduct";
 import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
-import { SEARCH_MIN_QUERY_LENGTH, SEARCH_SORT_OPTIONS } from "../constants";
+import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
+import {
+  SEARCH_IDLE_SHORTCUTS,
+  SEARCH_MIN_QUERY_LENGTH,
+  SEARCH_SORT_OPTIONS,
+} from "../constants";
 import { useCatalogSearch } from "../hooks/useCatalogSearch";
+import { useNewLaunchesPreview } from "../hooks/useNewLaunchesPreview";
+import { rememberSearchQuery } from "../utils/recentSearches";
 
 function searchHref(input: {
   q: string;
@@ -40,179 +42,210 @@ export function SearchPageView({
   const router = useRouter();
   const trimmed = query.trim();
   const hasQuery = trimmed.length > 0;
-  const { products, total, totalPages, tooShort, isLoading, isError, refetch } =
-    useCatalogSearch(trimmed, { page, sort });
+  const tooShortQuery = hasQuery && trimmed.length < SEARCH_MIN_QUERY_LENGTH;
+  const {
+    products,
+    total,
+    totalPages,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useCatalogSearch(trimmed, { page, sort, immediate: true });
 
-  const subtitle = () => {
-    if (!hasQuery) return "Type a product name, note, or SKU to search the catalog.";
-    if (tooShort)
-      return `Type at least ${SEARCH_MIN_QUERY_LENGTH} characters to search.`;
-    if (isLoading) return "Searching the catalog…";
-    if (isError) return "We couldn’t reach the catalog. Please try again.";
-    if (!products.length)
-      return "No products matched that search. Try a note, a shorter spelling, or browse the collection.";
-    return `${total} ${total === 1 ? "match" : "matches"} — names, brands, and SKUs.`;
-  };
+  const showDiscover = !hasQuery || tooShortQuery || (!isLoading && !isError && !products.length);
+  const newest = useNewLaunchesPreview(showDiscover, 4);
+  const cards = toCatalogProducts(products, { guessFacets: false });
+
+  useEffect(() => {
+    if (trimmed.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(trimmed);
+  }, [trimmed]);
+
+  const countLabel =
+    total === 1 ? "1 product" : `${total.toLocaleString()} products`;
 
   return (
-    <div className="landing">
-      <section className="collection-head" aria-labelledby="search-heading">
-        <div className="container container--full">
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <ol className="crumbs__list" role="list">
-              <li>
-                <Link href="/">Home</Link>
-              </li>
+    <div className="landing search-plp">
+      <div className="container container--full">
+        <nav className="crumbs" aria-label="Breadcrumb">
+          <ol className="crumbs__list" role="list">
+            <li>
+              <Link href="/">Home</Link>
+            </li>
+            {hasQuery ? (
+              <>
+                <li>
+                  <Link href="/search">Search</Link>
+                </li>
+                <li aria-current="page">“{trimmed}”</li>
+              </>
+            ) : (
               <li aria-current="page">Search</li>
-            </ol>
-          </nav>
+            )}
+          </ol>
+        </nav>
 
-          <header className="search-page-head">
-            <p className="collection-head__eyebrow">Catalog search</p>
-            <h1 className="collection-head__title" id="search-heading">
+        <header className="search-plp__head">
+          <div>
+            <p className="search-plp__eyebrow">Search</p>
+            <h1 className="search-plp__title" id="search-heading">
               {hasQuery ? (
                 <>
-                  Results for <em className="collection-head__em">“{trimmed}”</em>
+                  Results for <em className="search-plp__query">“{trimmed}”</em>
                 </>
               ) : (
-                <>
-                  Search the <em className="collection-head__em">collection.</em>
-                </>
+                "Find a fragrance"
               )}
             </h1>
-            <p className="collection-head__intro" aria-live="polite">
-              {subtitle()}
+            <p className="search-plp__meta" aria-live="polite">
+              {tooShortQuery
+                ? `Type at least ${SEARCH_MIN_QUERY_LENGTH} characters.`
+                : isError
+                  ? "We couldn’t reach the catalog."
+                  : hasQuery && !isLoading
+                    ? products.length
+                      ? countLabel
+                      : "No products matched."
+                    : hasQuery && isLoading
+                      ? "Searching…"
+                      : "Search by name, note, or SKU."}
             </p>
-          </header>
-        </div>
-      </section>
-
-      {/* `products-band` is what scopes the `.product-grid` columns in
-          v5-catalog.css — without it the results stack full-width. */}
-      <section className="grid-band products-band search-page-grid">
-        <div className="container container--full">
-          {hasQuery && !tooShort && products.length ? (
-            <div className="catalog__toolbar" style={{ marginBottom: "1.25rem" }}>
-              <label className="catalog__sort">
-                <span className="catalog__sort-label">Sort</span>
-                <select
-                  className="catalog__sort-select"
-                  value={sort}
-                  onChange={(event) => {
-                    router.push(
-                      searchHref({
-                        q: trimmed,
-                        page: 1,
-                        sort: event.target.value as CatalogSearchSort,
-                      }),
-                    );
-                  }}
-                >
-                  {SEARCH_SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+          </div>
+          {hasQuery ? (
+            <Link className="search-plp__clear" href="/search">
+              Clear
+            </Link>
           ) : null}
-          {products.length ? (
+        </header>
+
+        {hasQuery && !tooShortQuery && (products.length || isFetching) ? (
+          <div className="catalog__toolbar search-plp__toolbar">
+            <p className="catalog__count" aria-live="polite">
+              {isLoading ? "Searching the catalog…" : `Showing ${countLabel}`}
+            </p>
+            <label className="catalog__sort">
+              <span className="catalog__sort-label">Sort</span>
+              <select
+                className="catalog__sort-select"
+                value={sort}
+                onChange={(event) => {
+                  router.push(
+                    searchHref({
+                      q: trimmed,
+                      page: 1,
+                      sort: event.target.value as CatalogSearchSort,
+                    }),
+                  );
+                }}
+              >
+                {SEARCH_SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
+
+        {isError ? (
+          <div className="catalog-empty">
+            <p className="catalog-empty__eyebrow">Unavailable</p>
+            <h2 className="catalog-empty__title">Search didn’t load.</h2>
+            <p className="catalog-empty__text">Check your connection, then try again.</p>
+            <button type="button" className="catalog-empty__cta" onClick={() => void refetch()}>
+              Try again
+            </button>
+          </div>
+        ) : isLoading && hasQuery && !tooShortQuery ? (
+          <p className="search-plp__status" role="status">
+            Searching the catalog…
+          </p>
+        ) : cards.length ? (
+          <section className="products-band" aria-labelledby="search-heading">
             <WishlistStatusScope>
               <ul className="product-grid" role="list">
-                {products.map((product) => (
-                  <SearchProductCard key={product.id} product={product} />
+                {cards.map((product) => (
+                  <CatalogProductCard
+                    key={product.id}
+                    product={product}
+                    hideAdd={product.isSellable === false}
+                  />
                 ))}
               </ul>
             </WishlistStatusScope>
-          ) : isError ? (
-            <p className="grid-band__empty">
-              <button type="button" onClick={refetch}>
-                Try again
-              </button>
-            </p>
-          ) : hasQuery && !isLoading ? (
-            <p className="grid-band__empty">
-              <Link href="/products">Explore the collection</Link>
-            </p>
-          ) : !hasQuery ? (
-            <p className="grid-band__empty">
-              Use the search icon in the header to find a scent by name.
-            </p>
-          ) : null}
-          {hasQuery && !tooShort && totalPages > 1 ? (
-            <CatalogPagination
-              page={page}
-              totalPages={totalPages}
-              total={total}
-              hrefForPage={(nextPage) =>
-                searchHref({ q: trimmed, page: nextPage, sort })
-              }
-            />
-          ) : null}
-        </div>
-      </section>
+            {totalPages > 1 ? (
+              <CatalogPagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                hrefForPage={(nextPage) => searchHref({ q: trimmed, page: nextPage, sort })}
+              />
+            ) : null}
+          </section>
+        ) : (
+          <SearchDiscover
+            query={tooShortQuery || !hasQuery ? "" : trimmed}
+            newest={newest}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-function SearchProductCard({ product }: { product: ProductSummary }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(product.imageUrl) && !imageFailed;
-
-  const hoverCandidate = product.imageUrls?.[1];
-  const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
-  const loadedImages = useLoadedImages([hover]);
-  const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
-
+function SearchDiscover({
+  query,
+  newest,
+}: {
+  query: string;
+  newest: ReturnType<typeof useNewLaunchesPreview>;
+}) {
   return (
-    <li
-      className="product-card"
-      style={
-        hasIngredientsHover
-          ? ({ "--ingredients-bg": `url(${hover})` } as CSSProperties)
-          : undefined
-      }
-    >
-      <Link className="product-card__link" href={`/products/${product.slug}`} aria-label={product.title} />
-      <ProductCardTags slug={product.slug} tags={product.tags ?? []} />
-      <div className="product-card__action">
-        <WishlistHeartButton productId={product.id} />
-      </div>
-      <div
-        className={
-          hasIngredientsHover ? "product-card__media product-card__media--swap" : "product-card__media"
-        }
-      >
-        <Link
-          className="product-card__media-link"
-          href={`/products/${product.slug}`}
-          tabIndex={-1}
-          aria-hidden="true"
-        >
-          {showImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={product.imageUrl as string}
-              alt={product.title}
-              width={600}
-              height={600}
-              loading="lazy"
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <span className="bottle" aria-hidden="true" />
-          )}
+    <div className="search-plp__discover">
+      <div className="catalog-empty search-plp__empty">
+        <p className="catalog-empty__eyebrow">{query ? "No matches" : "Start here"}</p>
+        <h2 className="catalog-empty__title">
+          {query ? `Nothing matched “${query}”.` : "Search the collection."}
+        </h2>
+        <p className="catalog-empty__text">
+          {query
+            ? "Try a shorter spelling, a note, or a SKU. Or browse what’s new."
+            : "Type a name, note, or SKU in the header, or jump to a destination below."}
+        </p>
+        <ul className="search-plp__chips" role="list">
+          {SEARCH_IDLE_SHORTCUTS.map((item) => (
+            <li key={item.href}>
+              <Link href={item.href}>{item.label}</Link>
+            </li>
+          ))}
+        </ul>
+        <Link className="catalog-empty__cta" href="/products">
+          Browse all fragrances
         </Link>
       </div>
-      <div className="product-card__add-slot">
-        <AddToBagButton product={product} variant="product" />
-      </div>
-      <div className="product-card__body">
-        <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
-        <h3 className="product-card__name">{product.title}</h3>
-        <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
-      </div>
-    </li>
+
+      {newest.length ? (
+        <section className="products-band search-plp__new" aria-labelledby="search-new-in">
+          <div className="search-plp__new-head">
+            <h2 className="search-plp__new-title" id="search-new-in">
+              New in
+            </h2>
+            <Link href="/collections/new-launches">See all</Link>
+          </div>
+          <WishlistStatusScope>
+            <ul className="product-grid" role="list">
+              {toCatalogProducts(newest, { guessFacets: false }).map((product) => (
+                <CatalogProductCard
+                  key={product.id}
+                  product={product}
+                  hideAdd={product.isSellable === false}
+                />
+              ))}
+            </ul>
+          </WishlistStatusScope>
+        </section>
+      ) : null}
+    </div>
   );
 }

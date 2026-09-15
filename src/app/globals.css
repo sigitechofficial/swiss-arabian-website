@@ -120,11 +120,16 @@ body {
    a primary-color double border. */
 .auth-field-input:focus,
 .auth-field-input:focus-visible,
+.auth-otp-input:focus,
+.auth-otp-input:focus-visible,
 .sa-field-input:focus,
-.sa-field-input:focus-visible {
+.sa-field-input:focus-visible,
+.nav-search-input:focus,
+.nav-search-input:focus-visible {
   outline: none !important;
   outline-offset: 0 !important;
   box-shadow: none !important;
+  border-color: transparent !important;
 }
 
 .auth-checkbox {

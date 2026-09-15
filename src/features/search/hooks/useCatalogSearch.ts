@@ -24,6 +24,8 @@ type UseCatalogSearchOptions = {
    * preview comes from the products list instead.
    */
   previewWhenEmpty?: boolean;
+  /** Skip debounce — use for `/search?q=` where the query is already committed. */
+  immediate?: boolean;
 };
 
 export type CatalogSearchState = {
@@ -35,6 +37,7 @@ export type CatalogSearchState = {
   /** Results shown are the browse preview, not matches for a query. */
   isPreview: boolean;
   isLoading: boolean;
+  isFetching: boolean;
   isError: boolean;
   refetch: () => void;
 };
@@ -53,9 +56,10 @@ export function useCatalogSearch(
   const page = options.page ?? 1;
   const sort = options.sort ?? "newest";
   const previewWhenEmpty = options.previewWhenEmpty ?? false;
+  const immediate = options.immediate ?? false;
 
   const debounced = useDebounce(rawQuery.trim(), SEARCH_DEBOUNCE_MS);
-  const query = debounced.trim();
+  const query = (immediate ? rawQuery : debounced).trim();
   const tooShort = query.length < SEARCH_MIN_QUERY_LENGTH;
   const isPreview = tooShort && previewWhenEmpty;
 
@@ -85,6 +89,7 @@ export function useCatalogSearch(
     tooShort: tooShort && !previewWhenEmpty,
     isPreview,
     isLoading: active.isLoading && (isPreview || !tooShort),
+    isFetching: active.isFetching,
     isError: active.isError,
     refetch: () => void active.refetch(),
   };

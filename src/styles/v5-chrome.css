@@ -207,44 +207,61 @@
 }
 
 /* --- Condensed header on scroll --------------------------- */
-/* One duration + ease for the whole chrome. Topbar collapses via
-   grid-template-rows (smoother than max-height). Layout-heavy props
-   like search width are not animated. */
+/* Scroll flag is set on the header DOM node (no React re-render). Visual
+   condense uses transform + padding only — never width/height on icons. */
 .site-header {
-  --header-condense-dur: 0.52s;
+  --header-condense-dur: 0.45s;
   --header-condense-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --topbar-h: 40px;
   overflow-anchor: none;
 }
+/* Ticker slides off-screen on scroll-down, returns on scroll-up.
+   Transform only — spacer/hero stay put. */
+.site-header[data-navbar] {
+  transition: transform var(--header-condense-dur) var(--header-condense-ease);
+  will-change: transform;
+}
+.site-header[data-topbar-hidden="true"] {
+  transform: translate3d(0, calc(-1 * var(--topbar-h, 40px)), 0);
+}
 .site-header .nav-shell {
-  transition: min-height var(--header-condense-dur) var(--header-condense-ease),
-    padding-block var(--header-condense-dur) var(--header-condense-ease),
+  transition: padding-block var(--header-condense-dur) var(--header-condense-ease),
+    min-height var(--header-condense-dur) var(--header-condense-ease),
     gap var(--header-condense-dur) var(--header-condense-ease);
 }
 .site-header[data-scrolled="true"] .nav-shell {
-  min-height: 64px;
-  padding-block: 0.3rem;
+  padding-block: 0.28rem;
 }
 .site-header .brand-link img {
-  transition: height var(--header-condense-dur) var(--header-condense-ease),
-    max-height var(--header-condense-dur) var(--header-condense-ease);
+  transform: translateZ(0) scale(1);
+  transform-origin: center center;
+  transition: transform var(--header-condense-dur) var(--header-condense-ease);
+  backface-visibility: hidden;
+}
+.site-header[data-scrolled="true"] .brand-link img {
+  transform: translateZ(0) scale(0.94);
 }
 @media (max-width: 860px) {
   .site-header[data-scrolled="true"] .brand-link img {
-    max-height: 38px;
+    transform: translateZ(0) scale(0.92);
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .site-header[data-navbar],
   .site-header .nav-shell,
   .site-header .brand-link img,
+  .site-header .brand-link--crop,
   .site-header .primary-nav__list {
     transition: none;
   }
 }
 
-/* --- Sticky header shell ---------------------------------- */
+/* --- Header shell: fixed so shrink never reflows the page --- */
 .site-header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 200;
   overflow-anchor: none;
   background: color-mix(in srgb, #faf6ee 92%, transparent);
@@ -252,6 +269,21 @@
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #d9ccb4;
   color: #241f1b;
+}
+/* Home, at the top: no hairline under the menu. Transparent still
+   shows the dark hero through the 1px gap and reads as a border. */
+.site-header[data-home="true"]:not([data-scrolled="true"]),
+.site-header[data-over-hero="true"] {
+  border-bottom: none;
+}
+/* Holds the expanded header height in document flow. Visual chrome
+   shrinks inside the fixed bar; this spacer does not, so the hero
+   does not jump. */
+.site-header-spacer {
+  flex: none;
+  height: var(--site-header-h, 9.25rem);
+  pointer-events: none;
+  overflow-anchor: none;
 }
 .site-header .container { max-width: 1320px; }
 
@@ -577,7 +609,7 @@
 /* --- Mobile toggle / drawer ------------------------------- */
 .site-header .nav-toggle { display: none; }
 .site-header .mobile-nav { display: none; }
-.site-header :focus-visible { outline: 2px solid #8c4435; outline-offset: 2px; }
+.site-header :focus-visible:not(.nav-search-input) { outline: 2px solid #8c4435; outline-offset: 2px; }
 
 /* ============================================================
    Mobile
@@ -1638,6 +1670,13 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
     overflow: visible;
     appearance: none;
     -webkit-appearance: none;
+    box-shadow: none;
+  }
+  .site-header[data-navbar="minimal"] .nav-search-field input:focus,
+  .site-header[data-navbar="minimal"] .nav-search-field input:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border: 0;
   }
   .site-header[data-navbar="minimal"] .nav-search-field input::placeholder {
     color: #9a8d7c;
@@ -2094,16 +2133,51 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   overflow: hidden;
   line-height: 1.35;
 }
-.nav-search-drop__popular a:hover {
+.nav-search-drop__popular a:hover,
+.nav-search-drop__queries button:hover {
   color: #8c4435;
 }
-.nav-search-drop__popular a.nav-search-drop__all {
+.nav-search-drop__queries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nav-search-drop__queries li + li {
+  border-top: 1px solid #f0e8da;
+}
+.nav-search-drop__queries a,
+.nav-search-drop__queries button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0;
+  border: 0;
+  background: none;
+  color: #241f1b;
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-search-drop__empty {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #8a7d70;
+}
+.nav-search-drop__popular a.nav-search-drop__all,
+.nav-search-drop__popular button.nav-search-drop__all {
   display: inline-block;
   width: auto;
   grid-template-columns: none;
   gap: 0;
   margin-top: 0.35rem;
   padding: 0;
+  border: 0;
+  background: none;
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -2111,6 +2185,8 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   color: #8c4435;
   text-decoration: underline;
   text-underline-offset: 3px;
+  cursor: pointer;
+  font-family: inherit;
 }
 .nav-search-drop__new-head {
   display: flex;
@@ -2154,77 +2230,34 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   line-height: 1.3;
 }
 
-/* Condensed header: beat the per-variant logo sizes defined further up.
-   Needs both attributes to outrank `.site-header[data-navbar=...] .brand-link img`. */
-.site-header[data-navbar][data-scrolled="true"] .brand-link img {
-  max-height: 55px;
+/* Condensed header: compositing-only scale. Menu bar padding stays
+   the same on scroll — do not animate icon width/height. */
+.site-header .nav-search-field {
+  transition: transform var(--header-condense-dur, 0.45s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.site-header[data-navbar][data-scrolled="true"] .brand-link--crop {
-  height: 55px;
-}
-.site-header[data-navbar][data-scrolled="true"] .brand-link--crop img {
-  height: 55px;
-}
-@media (max-width: 860px) {
-  .site-header[data-navbar][data-scrolled="true"] .brand-link img {
-    max-height: 38px;
-  }
-}
-
-/* --- Condensed header: proportions ------------------------
-   Everything in the sticky row scales with the smaller logo — row height,
-   search pill, action icons and the menu row — so the header reads as one
-   piece rather than a big bar with a small logo in it. Placed last, and
-   keyed on both attributes, to outrank the per-variant sizes above. */
-.site-header .nav-search-field,
-.site-header .nav-tool,
-.site-header .nav-tool svg,
-.site-header .primary-nav,
 .site-header .primary-nav__link {
-  transition: min-height var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    width var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    padding var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    height var(--header-condense-dur, 0.52s) var(--header-condense-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: color 0.3s ease;
 }
-.site-header[data-navbar][data-scrolled="true"] .nav-shell {
-  min-height: 64px;
-  padding-block: 0.3rem;
-  gap: 1rem;
+.site-header .nav-search-field {
+  transform: translateZ(0) scale(1);
+  transform-origin: left center;
+  backface-visibility: hidden;
 }
 .site-header[data-navbar][data-scrolled="true"] .nav-search-field {
-  width: min(36vw, 360px);
-  min-height: 38px;
-  padding: 0.28rem 0.95rem;
+  transform: translateZ(0) scale(0.96);
 }
-.site-header[data-navbar][data-scrolled="true"] .nav-tool {
-  min-width: 56px;
-  padding: 0.15rem 0.4rem;
-  gap: 0.18rem;
-}
-.site-header[data-navbar][data-scrolled="true"] .nav-tool svg {
-  width: 21px;
-  height: 21px;
-}
-.site-header[data-navbar][data-scrolled="true"] .nav-tool__label {
-  font-size: 0.55rem;
-}
-.site-header[data-navbar][data-scrolled="true"] .primary-nav {
-  padding-top: 0;
-}
-.site-header[data-navbar][data-scrolled="true"] .primary-nav__link {
-  padding-block: 0.5rem;
+.site-header[data-navbar="minimal"][data-scrolled="true"] .nav-shell {
+  padding-block: 0.28rem;
+  min-height: 72px;
 }
 @media (max-width: 860px) {
   .site-header[data-navbar][data-scrolled="true"] .nav-shell {
-    min-height: 54px;
+    padding-block: 0.22rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-header .nav-search-field,
-  .site-header .nav-tool,
-  .site-header .nav-tool svg,
-  .site-header .primary-nav,
-  .site-header .primary-nav__link {
+  .site-header .nav-search-field {
     transition: none;
+    transform: none;
   }
 }

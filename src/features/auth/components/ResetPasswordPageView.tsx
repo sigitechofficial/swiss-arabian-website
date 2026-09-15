@@ -12,7 +12,8 @@ import {
   type ResetPasswordFormValues,
 } from "../schemas/auth.schema";
 import { AuthShell } from "./AuthShell";
-import { AuthField, AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
+import { AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
+import { AuthOtpField } from "./AuthOtpField";
 
 export function ResetPasswordPageView() {
   const router = useRouter();
@@ -51,13 +52,11 @@ export function ResetPasswordPageView() {
           {...form.register("identifier")}
           error={form.formState.errors.identifier?.message}
         />
-        <AuthField
+        <AuthOtpField
           id="code"
           label="Reset code"
-          placeholder="6-digit code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          {...form.register("code")}
+          value={form.watch("code")}
+          onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
           error={form.formState.errors.code?.message}
         />
         <AuthPasswordField

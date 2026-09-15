@@ -546,7 +546,8 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
     <header
       className="site-header"
       data-navbar={variant}
-      data-scrolled={chrome.scrolled ? "true" : "false"}
+      data-home={chrome.pathname === "/" ? "true" : undefined}
+      data-over-hero={chrome.pathname === "/" ? "true" : undefined}
       ref={chrome.headerRef}
     >
       <NavbarTopbar

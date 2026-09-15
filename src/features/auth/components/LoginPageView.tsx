@@ -21,6 +21,7 @@ import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
 import { loginSchema, type LoginFormValues } from "../schemas/auth.schema";
 import { AuthShell } from "./AuthShell";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
+import { AuthOtpField } from "./AuthOtpField";
 
 /** Seconds before "Resend code" becomes available again. */
 const RESEND_SECONDS = 30;
@@ -31,7 +32,10 @@ const emailOnlySchema = z.object({
 type EmailOnlyValues = z.infer<typeof emailOnlySchema>;
 
 const codeSchema = z.object({
-  code: z.string().trim().min(4, "Enter the code we emailed you"),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code we emailed you"),
 });
 type CodeValues = z.infer<typeof codeSchema>;
 
@@ -257,13 +261,12 @@ export function LoginPageView() {
 
       {step.kind === "email-code-confirm" ? (
         <form className="flex w-full flex-col gap-5" onSubmit={codeForm.handleSubmit(onConfirmCode)}>
-          <AuthField
+          <AuthOtpField
             id="login-code"
             label="Sign-in code"
-            placeholder="6-digit code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            {...codeForm.register("code")}
+            autoFocus
+            value={codeForm.watch("code")}
+            onChange={(code) => codeForm.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
             error={codeForm.formState.errors.code?.message}
           />
           <AuthSubmitButton disabled={codeForm.formState.isSubmitting}>
