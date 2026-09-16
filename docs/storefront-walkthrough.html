@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Swiss Arabian Storefront Walkthrough</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #000;
+      background: #fff;
+      font-size: 12pt;
+      line-height: 1.5;
+    }
+    .page {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 16mm 18mm;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: 18pt;
+      font-weight: 700;
+    }
+    h2 {
+      margin: 18px 0 6px;
+      font-size: 13.5pt;
+      font-weight: 700;
+    }
+    section {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .overview {
+      margin: 0 0 8px;
+    }
+    ul {
+      margin: 0 0 4px;
+      padding-left: 22px;
+    }
+    li {
+      margin: 0 0 6px;
+    }
+    @page {
+      size: A4;
+      margin: 16mm 18mm;
+    }
+    @media print {
+      .page { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Swiss Arabian storefront — walkthrough</h1>
+
+    <section>
+    <h2>Home page</h2>
+    <p class="overview">Overview of the landing page — hero, collections, best sellers, and merch rails. This is where the shopper starts.</p>
+    <ul>
+      <li><strong>Navigation</strong> — comes from admin, according to the country. The menu updates when the market changes.</li>
+      <li><strong>Products in navigation</strong> — best sellers of that collection. Live catalog sort, not static cutouts.</li>
+      <li><strong>Search</strong> — predictive search. Empty field shows recent searches and an advertising collection (new launches), not a full catalog dump.</li>
+      <li><strong>Advertising collections</strong> — merch rails on home (and later on PDP and cart). Insider is in progress.</li>
+      <li><strong>Country change</strong> — products, currency, delivery fee and ETA follow the selected market.</li>
+    </ul>
+    </section>
+
+    <section>
+    <h2>Listing page</h2>
+    <p class="overview">Product listing for all products, a collection, or a category.</p>
+    <ul>
+      <li><strong>Infinite scroll</strong> — more products load as you scroll. No page buttons.</li>
+      <li><strong>Filters</strong> — price, concentration, house / collection, notes, and sort (newest, price, bestselling where the API supports it).</li>
+      <li><strong>Tags</strong> — live catalog tags on cards (Best Seller, New, and others). Not guessed from the product name.</li>
+      <li><strong>Wishlist</strong> — heart on the card, for logged-in customers.</li>
+    </ul>
+    </section>
+
+    <section>
+    <h2>Product detail page</h2>
+    <p class="overview">Full product view from the catalog API.</p>
+    <ul>
+      <li><strong>Dynamic details</strong> — name, price, images, size, and notes / family from product metafields.</li>
+      <li><strong>Shipping promise</strong> — delivery days and free-shipping threshold from the market. Not hardcoded copy.</li>
+      <li><strong>Reviews</strong> — stars and carousel from that product’s approved reviews. Empty state hides the block — no fake ratings. Write a review after login (verified purchase).</li>
+      <li><strong>You may like</strong> — advertising collection on the product page.</li>
+    </ul>
+    </section>
+
+    <section>
+    <h2>Cart</h2>
+    <p class="overview">What happens after add to bag.</p>
+    <ul>
+      <li><strong>Free shipping</strong> — progress bar toward the free-shipping threshold.</li>
+      <li><strong>Layer your scents</strong> — advertising collection in the mini bag.</li>
+      <li><strong>View bag</strong> — full cart page.</li>
+      <li><strong>Don’t miss add-ons</strong> — advertising collection on the cart page.</li>
+      <li><strong>Discount + promo code</strong> — applied campaigns and coupon on cart and checkout. Totals come from the server.</li>
+    </ul>
+    </section>
+
+    <section>
+    <h2>Checkout page</h2>
+    <p class="overview">Place the order.</p>
+    <ul>
+      <li><strong>Address</strong> — Google Places autocomplete.</li>
+      <li><strong>Shipping method</strong> — live delivery options for the market.</li>
+      <li><strong>Billing information</strong> — same as shipping, or a separate billing address.</li>
+      <li><strong>Payment method</strong> — Paymob (hosted page) and Stripe (inline card).</li>
+      <li><strong>Order placement</strong> — confirmation and tracking after payment.</li>
+    </ul>
+    </section>
+
+    <section>
+    <h2>Account section</h2>
+    <p class="overview">Logged-in customer area.</p>
+    <ul>
+      <li><strong>Auth</strong> — register, login, and forgot / reset password.</li>
+      <li><strong>Order history</strong> — past and current orders.</li>
+      <li><strong>Order tracking</strong> — status and track-by-order.</li>
+      <li><strong>Addresses</strong> — address book with Places autocomplete.</li>
+      <li><strong>Profile</strong> — name, email, and security (password / sessions).</li>
+    </ul>
+    </section>
+  </div>
+</body>
+</html>

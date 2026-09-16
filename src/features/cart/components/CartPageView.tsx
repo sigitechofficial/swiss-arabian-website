@@ -23,9 +23,8 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, PromotionUnlockNote, shippingDiscountAmount } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, GiftCardForm, MoneySummary, PromotionUnlockNote, amountPayableFrom, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
-import { freeShippingProgress } from "../utils/freeShipping";
 
 /** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
 const SHIP_FLAT = 25;
@@ -101,7 +100,10 @@ export function CartPageView() {
   const shipping = totals ? totals.shipping : subtotal === 0 ? 0 : SHIP_FLAT;
   const discount = totals?.discount ?? 0;
   const shipDiscount = shippingDiscountAmount(promotions);
-  const { isFree, remaining, progressPct } = freeShippingProgress(subtotal, shipDiscount > 0);
+  const giftCards = visibleGiftCards(promotions);
+  const amountPayable = amountPayableFrom(promotions, [
+    totals?.amountPayable != null ? String(totals.amountPayable) : null,
+  ]);
   const total = totals ? totals.total : subtotal + shipping;
 
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
@@ -145,23 +147,9 @@ export function CartPageView() {
               The <em className="collection-head__em">bag.</em>
             </h1>
             <p className="collection-head__intro cart-page-lede">
-              Review your selections before checkout. Free samples arrive with every order — chosen to match your
-              notes.
+              Review your selections before checkout.
             </p>
           </header>
-
-          {!isEmpty ? (
-            <div className={`cart-ship-banner ${isFree ? "is-free" : ""}`} aria-live="polite">
-              <p>
-                {isFree
-                  ? "You qualify for free shipping!"
-                  : `Spend ${formatMoney(remaining, currency)} more for free shipping.`}
-              </p>
-              <div className="cart-ship-track">
-                <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
-              </div>
-            </div>
-          ) : null}
 
           <PromotionUnlockNote />
 
@@ -276,32 +264,18 @@ export function CartPageView() {
                 <h2>Summary</h2>
                 <AppliedCampaigns />
                 <CouponForm />
-                <dl className="cart-totals">
-                  <div>
-                    <dt>Subtotal</dt>
-                    <dd dir="ltr">{formatMoney(subtotal, currency)}</dd>
-                  </div>
-                  {discount > 0 ? (
-                    <div>
-                      <dt>Discount</dt>
-                      <dd dir="ltr">−{formatMoney(discount, currency)}</dd>
-                    </div>
-                  ) : null}
-                  <div>
-                    <dt>Shipping</dt>
-                    <dd dir="ltr">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd>
-                  </div>
-                  {shipDiscount > 0 ? (
-                    <div>
-                      <dt>Shipping discount</dt>
-                      <dd dir="ltr">−{formatMoney(shipDiscount, currency)}</dd>
-                    </div>
-                  ) : null}
-                  <div className="cart-totals-line">
-                    <dt>Total</dt>
-                    <dd dir="ltr">{formatMoney(total, currency)}</dd>
-                  </div>
-                </dl>
+                <GiftCardForm />
+                <MoneySummary
+                  className="cart-totals"
+                  currency={currency}
+                  subtotal={subtotal}
+                  discount={discount}
+                  shipping={shipping}
+                  shippingDiscount={shipDiscount}
+                  total={total}
+                  amountPayable={amountPayable}
+                  giftCards={giftCards}
+                />
                 {priceChanged ? (
                   <p className="cart-hint" role="status">
                     Prices have been updated since you added these items.

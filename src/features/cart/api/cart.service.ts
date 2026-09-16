@@ -112,3 +112,24 @@ export async function removeCartCoupon(cartId: string, code: string): Promise<Ap
     `/storefront/cart/${encodeURIComponent(cartId)}/coupons/${encodeURIComponent(code.trim())}?${params.toString()}`,
   );
 }
+
+export async function applyCartGiftCard(
+  cartId: string,
+  code: string,
+  amount?: string,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  const body: Record<string, string> = { code: code.trim() };
+  if (amount?.trim()) body.amount = amount.trim();
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gift-cards?${params.toString()}`,
+    body,
+  );
+}
+
+export async function removeCartGiftCards(cartId: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiDelete<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gift-cards?${params.toString()}`,
+  );
+}

@@ -7,7 +7,6 @@ import { listCustomerAddresses } from "@/features/account/api/customerAccount.se
 import { CheckoutAddonRow, MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { COMPLIMENTARY_SAMPLES } from "@/features/cart/constants/complimentarySamples";
 import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
-import { freeShippingProgress } from "@/features/cart/utils/freeShipping";
 import {
   CATALOG_PRODUCTS,
   type CatalogProduct,
@@ -18,8 +17,12 @@ import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   AppliedCampaigns,
   CouponForm,
+  GiftCardForm,
+  MoneySummary,
   PromotionUnlockNote,
+  amountPayableFrom,
   shippingDiscountAmount,
+  visibleGiftCards,
 } from "@/features/promotions";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -187,11 +190,8 @@ export function CheckoutPageView() {
   const total = estimate ? Number(estimate.total) : cartSubtotal;
   const promoSnapshot = session?.promotionSnapshot ?? cartPromotions;
   const shipDiscount = shippingDiscountAmount(promoSnapshot);
-  const {
-    isFree: shipIsFree,
-    remaining: shipRemaining,
-    progressPct: shipProgressPct,
-  } = freeShippingProgress(subtotal, shipDiscount > 0);
+  const giftCards = visibleGiftCards(promoSnapshot, session?.giftCards);
+  const amountPayable = amountPayableFrom(promoSnapshot, [estimate?.amountPayable]);
   const warnings = checkoutWarningMessages(session?.validationIssues);
 
   const selectedPayment = checkout.paymentMethods.find(
@@ -296,7 +296,7 @@ export function CheckoutPageView() {
               >
                 <span>Order summary</span>
                 <span className="checkout-summary-toggle__total" dir="ltr">
-                  {formatMoney(total, currency)}
+                  {formatMoney(amountPayable ?? total, currency)}
                   <i className="checkout-summary-toggle__chev" aria-hidden="true" />
                 </span>
               </button>
@@ -617,18 +617,6 @@ export function CheckoutPageView() {
                 aria-label="Order summary"
               >
                 <h2>Your order</h2>
-                {subtotal > 0 ? (
-                  <div className={`checkout-ship ${shipIsFree ? "is-free" : ""}`} aria-live="polite">
-                    <p>
-                      {shipIsFree
-                        ? "You qualify for free shipping!"
-                        : `Spend ${formatMoney(shipRemaining, currency)} more for free shipping.`}
-                    </p>
-                    <div className="cart-ship-track">
-                      <div className="cart-ship-fill" style={{ width: `${shipProgressPct}%` }} />
-                    </div>
-                  </div>
-                ) : null}
                 {subtotal > 0 ? <PromotionUnlockNote className="checkout-ship" /> : null}
                 <div className="checkout-lines" id="checkout-lines">
                   {orderableLines.map((line) => {
@@ -704,38 +692,24 @@ export function CheckoutPageView() {
                 ) : null}
                 <AppliedCampaigns snapshot={promoSnapshot} />
                 <CouponForm />
-                <dl className="checkout-totals">
-                  <div>
-                    <dt>Subtotal</dt>
-                    <dd dir="ltr">{formatMoney(subtotal, currency)}</dd>
-                  </div>
-                  {discount > 0 ? (
-                    <div>
-                      <dt>Discount</dt>
-                      <dd dir="ltr">−{formatMoney(discount, currency)}</dd>
-                    </div>
-                  ) : null}
-                  <div>
-                    <dt>Shipping</dt>
-                    <dd dir="ltr">{shippingFee === 0 ? "Free" : formatMoney(shippingFee, currency)}</dd>
-                  </div>
-                  {shipDiscount > 0 ? (
-                    <div>
-                      <dt>Shipping discount</dt>
-                      <dd dir="ltr">−{formatMoney(shipDiscount, currency)}</dd>
-                    </div>
-                  ) : null}
-                  {tax > 0 ? (
-                    <div>
-                      <dt>Tax</dt>
-                      <dd dir="ltr">{formatMoney(tax, currency)}</dd>
-                    </div>
-                  ) : null}
-                  <div className="checkout-totals-line">
-                    <dt>Total</dt>
-                    <dd dir="ltr">{formatMoney(total, currency)}</dd>
-                  </div>
-                </dl>
+                <GiftCardForm
+                  snapshot={promoSnapshot}
+                  extraGiftCards={session?.giftCards}
+                  checkoutSessionId={session?.checkoutSessionId}
+                  onCheckoutSession={checkout.adoptSession}
+                />
+                <MoneySummary
+                  className="checkout-totals"
+                  currency={currency}
+                  subtotal={subtotal}
+                  discount={discount}
+                  shipping={shippingFee}
+                  shippingDiscount={shipDiscount}
+                  tax={tax}
+                  total={total}
+                  amountPayable={amountPayable}
+                  giftCards={giftCards}
+                />
                 {warnings.map((warning) => (
                   <p className="checkout-note" key={warning} role="status">
                     {warning}

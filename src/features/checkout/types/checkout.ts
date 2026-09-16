@@ -76,6 +76,7 @@ export interface CheckoutTotalsEstimate {
   shipping: string;
   tax: string;
   total: string;
+  amountPayable?: string | null;
 }
 
 export interface CheckoutSessionResponse {
@@ -100,6 +101,7 @@ export interface CheckoutSessionResponse {
   metadata?: Record<string, unknown> | null;
   /** Same v1 shape as cart `promotions` after snapshot rebuild. */
   promotionSnapshot?: PromotionSnapshotV1 | null;
+  giftCards?: unknown;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────

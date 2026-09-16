@@ -102,28 +102,27 @@ export function CouponForm() {
             {remove.isPending ? "Removing…" : "Remove"}
           </button>
         </div>
-      ) : (
-        <form className="coupon-form" onSubmit={(e) => void onApply(e)}>
-          <input
-            className={fieldError ? "is-err" : undefined}
-            name="coupon"
-            autoComplete="off"
-            spellCheck={false}
-            aria-label="Promo code"
-            aria-invalid={Boolean(fieldError)}
-            placeholder="Enter code"
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              if (fieldError) setFieldError(null);
-            }}
-            disabled={busy || !cartId}
-          />
-          <button type="submit" disabled={busy || !cartId || !code.trim()}>
-            {apply.isPending ? "Applying…" : "Apply"}
-          </button>
-        </form>
-      )}
+      ) : null}
+      <form className="coupon-form" onSubmit={(e) => void onApply(e)}>
+        <input
+          className={fieldError ? "is-err" : undefined}
+          name="coupon"
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Promo code"
+          aria-invalid={Boolean(fieldError)}
+          placeholder={applied?.code ? "Replace with another code" : "Enter code"}
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+            if (fieldError) setFieldError(null);
+          }}
+          disabled={busy || !cartId}
+        />
+        <button type="submit" disabled={busy || !cartId || !code.trim()}>
+          {apply.isPending ? "Applying…" : applied?.code ? "Replace" : "Apply"}
+        </button>
+      </form>
       {fieldError ? (
         <p className="coupon-box__error" role="alert">
           {fieldError}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { getActiveCart } from "@/features/cart/api/cart.service";
-import { appliedCoupon, shippingDiscountAmount } from "@/features/promotions/types/promotions";
+import { appliedCoupon, giftCardSignature, shippingDiscountAmount } from "@/features/promotions/types/promotions";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import {
   cancelCheckout,
@@ -67,14 +67,15 @@ function lineSignature(lines: CartLine[]): string {
     .join("|");
 }
 
-/** Lines plus coupon/discount so a promo change rebuilds checkout snapshots. */
+/** Lines plus coupon/discount/tender so a promo change rebuilds checkout snapshots. */
 function cartSignature(
   lines: CartLine[],
   couponCode = "",
   discount = 0,
   shippingDiscount = 0,
+  giftCards = "",
 ): string {
-  return `${lineSignature(lines)}|c:${couponCode}|d:${discount}|s:${shippingDiscount}`;
+  return `${lineSignature(lines)}|c:${couponCode}|d:${discount}|s:${shippingDiscount}|g:${giftCards}`;
 }
 
 function commerceSignature(lines: CartLine[]): string {
@@ -84,6 +85,7 @@ function commerceSignature(lines: CartLine[]): string {
     appliedCoupon(state.promotions)?.code ?? "",
     state.totals?.discount ?? 0,
     shippingDiscountAmount(state.promotions),
+    giftCardSignature(state.promotions),
   );
 }
 
@@ -151,6 +153,7 @@ export function useCheckout() {
   const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
   const discountTotal = useCartStore((s) => s.totals?.discount ?? 0);
   const shippingDiscount = useCartStore((s) => shippingDiscountAmount(s.promotions));
+  const giftCardsSig = useCartStore((s) => giftCardSignature(s.promotions));
   const clearCart = useCartStore((s) => s.clear);
   const setCartId = useCartStore((s) => s.setCartId);
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
@@ -178,6 +181,21 @@ export function useCheckout() {
     setSession(next);
   }, []);
 
+  const adoptSession = useCallback(
+    async (next: CheckoutSessionResponse) => {
+      adopt(next);
+      if (cartId) {
+        try {
+          setCartFromApi(await getActiveCart(cartId));
+        } catch {
+          // Session already has the tender.
+        }
+      }
+      sessionSigRef.current = commerceSignature(useCartStore.getState().lines);
+    },
+    [adopt, cartId, setCartFromApi],
+  );
+
   const start = useCallback(
     async (id: string, currentLines: CartLine[]) => {
       try {
@@ -203,7 +221,7 @@ export function useCheckout() {
   // another tab…). Rebuild it so the placed order matches what's on screen.
   useEffect(() => {
     if (!cartId || !session || sessionSigRef.current === null) return;
-    const sig = cartSignature(lines, couponCode, discountTotal, shippingDiscount);
+    const sig = cartSignature(lines, couponCode, discountTotal, shippingDiscount, giftCardsSig);
     if (sig === sessionSigRef.current) return;
     sessionSigRef.current = sig;
     const stale = session;
@@ -216,7 +234,7 @@ export function useCheckout() {
         setErrorMsg(checkoutErrorMessage(e));
       }
     })();
-  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, session, adopt]);
+  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, session, adopt]);
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
@@ -454,5 +472,6 @@ export function useCheckout() {
     choosePayment,
     submitCheckout,
     retry,
+    adoptSession,
   };
 }

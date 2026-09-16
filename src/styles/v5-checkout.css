@@ -243,11 +243,13 @@
 }
 
 .fld input:focus,
+.fld input:focus-visible,
 .fld select:focus,
-.fld textarea:focus {
-  outline: 2px solid var(--copper);
-  outline-offset: 1px;
-  border-color: var(--copper);
+.fld select:focus-visible,
+.fld textarea:focus,
+.fld textarea:focus-visible {
+  outline: none;
+  border-color: var(--line);
 }
 .fld input.is-err,
 .fld select.is-err {

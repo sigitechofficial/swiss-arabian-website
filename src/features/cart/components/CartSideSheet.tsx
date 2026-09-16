@@ -6,12 +6,11 @@ import Drawer from "@mui/material/Drawer";
 import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { shippingDiscountAmount } from "@/features/promotions";
+import { PromotionUnlockNote, amountPayableFrom, shippingDiscountAmount } from "@/features/promotions";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
 import { useAddToCart } from "../hooks/useAddToCart";
-import { freeShippingProgress } from "../utils/freeShipping";
 
 const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
 const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
@@ -35,20 +34,19 @@ export function CartSideSheet() {
   const removeLocalLine = useCartStore((s) => s.removeLine);
 
   const [addedRecs, setAddedRecs] = useState<Set<string>>(new Set());
-  const [isWhoop, setIsWhoop] = useState(false);
   const [isPanelFlash, setIsPanelFlash] = useState(false);
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
   const wasFreeRef = useRef<boolean | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const shipBarRef = useRef<HTMLDivElement>(null);
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
   const promotions = useCartStore((s) => s.promotions);
   const currency = totals?.currency ?? "AED";
-  const { isFree, remaining, progressPct } = freeShippingProgress(
-    subtotal,
-    shippingDiscountAmount(promotions) > 0,
-  );
+  const isFree = shippingDiscountAmount(promotions) > 0;
+  const amountDue =
+    amountPayableFrom(promotions, [
+      totals?.amountPayable != null ? String(totals.amountPayable) : null,
+    ]) ?? subtotal;
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
   // glow + panel flash + a confetti burst from the bar's fill — the first
@@ -60,9 +58,7 @@ export function CartSideSheet() {
     if (!isFree || previouslyFree !== false) return;
 
     setIsPanelFlash(false);
-    setIsWhoop(false);
     const restart = requestAnimationFrame(() => {
-      setIsWhoop(true);
       setIsPanelFlash(true);
     });
 
@@ -72,7 +68,7 @@ export function CartSideSheet() {
 
     let clearConfetti: ReturnType<typeof setTimeout> | undefined;
     if (!reduce) {
-      const bar = shipBarRef.current;
+      const bar = panelRef.current;
       const layer = confettiLayerRef.current;
       let ox = 78;
       let oy = 22;
@@ -177,27 +173,7 @@ export function CartSideSheet() {
           </button>
         </header>
 
-        {lines.length > 0 ? (
-          <div
-            className={`cart-ship-bar ${isFree ? "is-free" : ""} ${isWhoop ? "is-whoop" : ""}`}
-            ref={shipBarRef}
-            aria-live="polite"
-          >
-            <p>
-              {isFree ? (
-                <>
-                  <span className="ship-whoop-check" aria-hidden="true" />
-                  You qualify for free shipping!
-                </>
-              ) : (
-                `Spend ${formatMoney(remaining, currency)} more for free shipping.`
-              )}
-            </p>
-            <div className="cart-ship-track">
-              <div className="cart-ship-fill" style={{ width: `${progressPct}%` }} />
-            </div>
-          </div>
-        ) : null}
+        {lines.length > 0 ? <PromotionUnlockNote className="cart-ship-bar" /> : null}
 
         <div className="cart-drawer-body">
           <div className="cart-items">
@@ -332,7 +308,7 @@ export function CartSideSheet() {
         <footer className="cart-drawer-foot">
           <div className="cart-total-row">
             <span>Total</span>
-            <strong>{formatMoney(subtotal, currency)}</strong>
+            <strong>{formatMoney(amountDue, currency)}</strong>
           </div>
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}

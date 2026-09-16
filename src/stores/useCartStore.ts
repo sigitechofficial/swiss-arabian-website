@@ -28,6 +28,7 @@ type CartTotals = {
   discount: number;
   shipping: number;
   tax: number;
+  amountPayable: number | null;
   currency: string;
   itemCount: number;
   totalQty: number;
@@ -155,6 +156,13 @@ export const useCartStore = create<CartState>()(
             discount: Number(cart.discountEstimate ?? "0"),
             shipping: Number(cart.shippingEstimate ?? "0"),
             tax: Number(cart.taxEstimate ?? "0"),
+            amountPayable: (() => {
+              const raw =
+                cart.amountPayable ?? cart.promotions?.totals?.amountPayable ?? null;
+              if (raw == null || raw === "") return null;
+              const parsed = Number(raw);
+              return Number.isFinite(parsed) ? parsed : null;
+            })(),
             currency: cart.currency ?? "AED",
             itemCount: cart.itemCount ?? lines.length,
             totalQty:

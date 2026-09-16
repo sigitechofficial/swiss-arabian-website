@@ -68,6 +68,7 @@ export type ApiCart = {
   taxEstimate: string;
   shippingEstimate: string;
   totalEstimate: string;
+  amountPayable?: string | null;
   currency: string;
   promotions?: PromotionSnapshotV1 | null;
   validation: CartValidation | null;

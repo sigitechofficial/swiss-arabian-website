@@ -1,5 +1,5 @@
 import { getAccessToken } from "@/lib/auth/token";
-import { apiGet, apiPost } from "@/lib/api/apiClient";
+import { apiGet, apiPost, apiDelete } from "@/lib/api/apiClient";
 import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
@@ -145,5 +145,27 @@ export async function cancelCheckout(
   return apiPost<CheckoutSessionResponse>(
     `/storefront/checkout/${checkoutSessionId}/cancel?${buildGuestParam().toString()}`,
     reason ? { reason } : {},
+  );
+}
+
+export async function applyCheckoutGiftCard(
+  checkoutSessionId: string,
+  code: string,
+  amount?: string,
+): Promise<CheckoutSessionResponse> {
+  const body: Record<string, string> = { code: code.trim() };
+  if (amount?.trim()) body.amount = amount.trim();
+  return apiPost<CheckoutSessionResponse>(
+    `/storefront/checkout/${checkoutSessionId}/gift-cards?${buildGuestParam().toString()}`,
+    body,
+  );
+}
+
+export async function removeCheckoutGiftCard(
+  checkoutSessionId: string,
+  usageId: string,
+): Promise<CheckoutSessionResponse> {
+  return apiDelete<CheckoutSessionResponse>(
+    `/storefront/checkout/${checkoutSessionId}/gift-cards/${encodeURIComponent(usageId)}?${buildGuestParam().toString()}`,
   );
 }

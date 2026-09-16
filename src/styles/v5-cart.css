@@ -997,10 +997,10 @@
   font: inherit;
   font-size: 0.875rem;
 }
-.coupon-form input:focus {
-  outline: 2px solid var(--copper);
-  outline-offset: 1px;
-  border-color: var(--copper);
+.coupon-form input:focus,
+.coupon-form input:focus-visible {
+  outline: none;
+  border-color: var(--line);
 }
 .coupon-form input.is-err {
   border-color: #b42318;
@@ -1032,6 +1032,7 @@
   grid-template-columns: 1fr auto;
   gap: 6px 10px;
   align-items: center;
+  margin-bottom: 10px;
 }
 .coupon-applied__name {
   margin: 0;
@@ -1067,6 +1068,14 @@
   margin: 8px 0 0;
   font-size: 0.75rem;
   color: #b42318;
+}
+.coupon-box__hint {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+.coupon-box > .coupon-form + .coupon-applied__remove {
+  margin-top: 8px;
 }
 
 .promo-applied-list {

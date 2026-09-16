@@ -996,10 +996,11 @@ main:has(.pdp) + .site-footer {
   resize: vertical;
 }
 .pdp-review-form .fld input:focus,
-.pdp-review-form .fld textarea:focus {
-  outline: 2px solid var(--copper);
-  outline-offset: 1px;
-  border-color: var(--copper);
+.pdp-review-form .fld input:focus-visible,
+.pdp-review-form .fld textarea:focus,
+.pdp-review-form .fld textarea:focus-visible {
+  outline: none;
+  border-color: var(--line);
 }
 .pdp-review-form .fld__err {
   font-size: 0.72rem;

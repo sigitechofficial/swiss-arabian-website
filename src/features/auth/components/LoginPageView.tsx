@@ -213,14 +213,12 @@ export function LoginPageView() {
               />
               <span>Remember me</span>
             </label>
-            {env.flags.passwordReset ? (
-              <Link
-                className="shrink-0 text-[12.5px] font-normal text-sa-primary underline underline-offset-2 hover:text-terra"
-                href="/forgot-password"
-              >
-                Forgot password?
-              </Link>
-            ) : null}
+            <Link
+              className="shrink-0 text-[12.5px] font-normal text-sa-primary underline underline-offset-2 hover:text-terra"
+              href="/forgot-password"
+            >
+              Forgot password?
+            </Link>
           </div>
           <div className="pt-5">
             <AuthSubmitButton disabled={form.formState.isSubmitting}>
