@@ -27,6 +27,12 @@ import {
   notesSectionTitle,
   pyramidFromMetafields,
 } from "../utils/pdpMetafields";
+import { reviewStarsLabel } from "../utils/pdpReviews";
+import {
+  shippingDaysLine,
+  shippingTabCopy,
+  shippingThresholdLine,
+} from "../utils/pdpShipping";
 import {
   PRODUCT_DETAIL_CONTENT,
   noteDotColor,
@@ -41,8 +47,7 @@ const FALLBACK_CONTENT: ProductDetailContent = {
     { level: "Base", names: "Musk · Wood", bar: 92 },
   ],
   wear: "Apply to pulse points — wrists, the base of the throat, behind the ears. An extrait is concentrated: two touches carry through the day.",
-  shipping:
-    "Standard delivery in 3–7 working days across the UAE and GCC; free on orders over AED 150.00. Unopened items can be returned free within 30 days of delivery.",
+  shipping: "",
   authenticity:
     "Composed, filled and finished by Swiss Arabian in Dubai. Every bottle ships from our warehouse with its batch code intact.",
 };
@@ -108,18 +113,30 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     [apiProduct],
   );
   const metafields = apiProduct?.pdpMetafields;
+  const shippingPromise = apiProduct?.shippingPromise ?? null;
+  const pdpReviews = apiProduct?.reviews ?? null;
+  const reviewSummary = pdpReviews?.summary;
+  const showReviewRating = Boolean(reviewSummary && reviewSummary.reviewCount > 0);
+  const daysLine = shippingPromise ? shippingDaysLine(shippingPromise) : null;
+  const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise) : null;
+  const liveShippingCopy = shippingTabCopy(shippingPromise);
   const compositionTabs = useMemo(() => {
     const showNotes =
       livePyramid.length > 0 || Boolean(authoredContent?.notes.length);
-    return TABS.filter((tab) => tab.id !== "notes" || showNotes);
-  }, [authoredContent, livePyramid.length]);
+    return TABS.filter((tab) => {
+      if (tab.id === "notes") return showNotes;
+      if (tab.id === "ship") return Boolean(liveShippingCopy);
+      return true;
+    });
+  }, [authoredContent, livePyramid.length, liveShippingCopy]);
 
   const content = useMemo<ProductDetailContent>(() => {
     const base = authoredContent ?? FALLBACK_CONTENT;
-    if (authoredContent) return base;
+    const shipping = liveShippingCopy ?? "";
+    if (authoredContent) return { ...base, shipping };
     const apiStory = apiProduct?.description?.trim();
-    return apiStory ? { ...base, story: apiStory } : base;
-  }, [authoredContent, apiProduct]);
+    return apiStory ? { ...base, story: apiStory, shipping } : { ...base, shipping };
+  }, [authoredContent, apiProduct, liveShippingCopy]);
 
   const [activeImage, setActiveImage] = useState(0);
   const thumbsRef = useRef<HTMLDivElement>(null);
@@ -441,14 +458,19 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
             </div>
 
             <div className="pdp-hero__panel">
-              <a className="pdp-hero__rating" href="#pdp-reviews">
-                <span className="stars" aria-hidden="true">
-                  ★★★★★
-                </span>
-                <span>
-                  <strong>4.9</strong> · Verified reviews
-                </span>
-              </a>
+              {showReviewRating && reviewSummary ? (
+                <a className="pdp-hero__rating" href="#pdp-reviews">
+                  <span className="stars" aria-hidden="true">
+                    {reviewStarsLabel(reviewSummary.averageRating)}
+                  </span>
+                  <span>
+                    <strong>{reviewSummary.averageRating.toFixed(1)}</strong>
+                    {reviewSummary.verifiedPurchaseCount > 0
+                      ? " · Verified reviews"
+                      : ` · ${reviewSummary.reviewCount} ${reviewSummary.reviewCount === 1 ? "review" : "reviews"}`}
+                  </span>
+                </a>
+              ) : null}
               <h1 className="pdp-hero__name" id="product-name">
                 {product.title}
               </h1>
@@ -478,25 +500,29 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 </p>
               ) : null}
 
-              <ul className="pdp-hero__promises" role="list">
-                <li className="pdp-hero__promise">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                    <path d="M2.5 13.5v-8h9v8zM11.5 8h3.2l2.8 3v2.5h-2" />
-                    <circle cx="6" cy="14.8" r="1.7" />
-                    <circle cx="14" cy="14.8" r="1.7" />
-                  </svg>
-                  <span>
-                    Order today — <strong>delivered in 3–7 working days</strong>.
-                  </span>
-                </li>
-                <li className="pdp-hero__promise">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                    <path d="M10 2.8 3.5 5.5v4.2c0 4 2.8 6.6 6.5 7.5 3.7-.9 6.5-3.5 6.5-7.5V5.5z" />
-                    <path d="M7.2 10l2 2 3.6-4" />
-                  </svg>
-                  <span>Free shipping over AED 150.00 · free returns within 30 days.</span>
-                </li>
-              </ul>
+              {daysLine || thresholdLine ? (
+                <ul className="pdp-hero__promises" role="list">
+                  {daysLine ? (
+                    <li className="pdp-hero__promise">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                        <path d="M2.5 13.5v-8h9v8zM11.5 8h3.2l2.8 3v2.5h-2" />
+                        <circle cx="6" cy="14.8" r="1.7" />
+                        <circle cx="14" cy="14.8" r="1.7" />
+                      </svg>
+                      <span>{daysLine}</span>
+                    </li>
+                  ) : null}
+                  {thresholdLine ? (
+                    <li className="pdp-hero__promise">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                        <path d="M10 2.8 3.5 5.5v4.2c0 4 2.8 6.6 6.5 7.5 3.7-.9 6.5-3.5 6.5-7.5V5.5z" />
+                        <path d="M7.2 10l2 2 3.6-4" />
+                      </svg>
+                      <span>{thresholdLine}</span>
+                    </li>
+                  ) : null}
+                </ul>
+              ) : null}
 
               <div
                 ref={buySlotRef}
@@ -690,7 +716,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   </dl>
                 ) : null}
                 {tab.id === "wear" ? <p>{content.wear}</p> : null}
-                {tab.id === "ship" ? <p>{content.shipping}</p> : null}
+                {tab.id === "ship" && content.shipping ? <p>{content.shipping}</p> : null}
                 {tab.id === "auth" ? <p>{content.authenticity}</p> : null}
               </CompItem>
             ))}
@@ -700,7 +726,12 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         </div>
       </section>
 
-      <PdpReviews productTitle={product.title} />
+      <PdpReviews
+        productId={apiProduct?.id ?? product.id}
+        productTitle={product.title}
+        variantId={product.variantId}
+        reviews={pdpReviews}
+      />
 
       {youMayAlsoLike.length ? (
         <section className="pdp-related" aria-labelledby="also-like-heading">

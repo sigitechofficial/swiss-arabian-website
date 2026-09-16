@@ -13,6 +13,8 @@ import {
   type StorefrontCatalogFacets,
 } from "../types/catalogFacets";
 import { pickPdpMetafields } from "../utils/pdpMetafields";
+import { parsePdpReviews } from "../utils/pdpReviews";
+import { parseShippingPromise } from "../utils/pdpShipping";
 import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
 
@@ -189,6 +191,8 @@ type ApiProductDetailData = {
   isVisible?: boolean;
   isSellable?: boolean;
   blockReasons?: string[] | null;
+  shippingPromise?: unknown;
+  reviews?: unknown;
 };
 
 type ApiProductListData = {
@@ -364,6 +368,8 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     brandName,
     collections,
     pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
+    shippingPromise: parseShippingPromise(raw.shippingPromise),
+    reviews: parsePdpReviews(raw.reviews),
   };
 }
 

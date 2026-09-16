@@ -1,14 +1,15 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   CATALOG_PAGE_SIZE,
   catalogKeys,
   fetchCatalogSearch,
   fetchProducts,
   type CatalogSearchSort,
+  type ProductListResult,
 } from "@/features/catalog/api/catalog.service";
-import type { ProductSummary } from "@/features/catalog/types/product";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useMarket } from "@/providers/MarketProvider";
@@ -26,10 +27,12 @@ type UseCatalogSearchOptions = {
   previewWhenEmpty?: boolean;
   /** Skip debounce — use for `/search?q=` where the query is already committed. */
   immediate?: boolean;
+  /** Append pages on scroll instead of replacing them. */
+  infinite?: boolean;
 };
 
 export type CatalogSearchState = {
-  products: ProductSummary[];
+  products: ProductListResult["products"];
   total: number;
   totalPages: number;
   /** Query is below the minimum length — nothing was requested. */
@@ -38,6 +41,9 @@ export type CatalogSearchState = {
   isPreview: boolean;
   isLoading: boolean;
   isFetching: boolean;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  fetchNextPage: () => void;
   isError: boolean;
   refetch: () => void;
 };
@@ -57,6 +63,7 @@ export function useCatalogSearch(
   const sort = options.sort ?? "newest";
   const previewWhenEmpty = options.previewWhenEmpty ?? false;
   const immediate = options.immediate ?? false;
+  const infinite = options.infinite ?? false;
 
   const debounced = useDebounce(rawQuery.trim(), SEARCH_DEBOUNCE_MS);
   const query = (immediate ? rawQuery : debounced).trim();
@@ -67,11 +74,23 @@ export function useCatalogSearch(
     queryKey: catalogKeys.search(query, zoneCode, page, limit, sort),
     queryFn: () =>
       fetchCatalogSearch(zoneCode, { q: query, page, limit, sort }),
-    enabled: !tooShort,
+    enabled: !tooShort && !infinite,
     placeholderData: keepPreviousData,
   });
 
-  // Browse preview for the empty input — products list, never blank search.
+  const infiniteSearch = useInfiniteQuery({
+    queryKey: [...catalogKeys.search(query, zoneCode, 1, limit, sort), "infinite"],
+    queryFn: ({ pageParam }) =>
+      fetchCatalogSearch(zoneCode, { q: query, page: pageParam, limit, sort }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const { page: current, totalPages } = lastPage.pagination;
+      return current < totalPages ? current + 1 : undefined;
+    },
+    enabled: !tooShort && infinite,
+    placeholderData: keepPreviousData,
+  });
+
   const preview = useQuery({
     queryKey: catalogKeys.list(zoneCode, 1, limit),
     queryFn: () => fetchProducts(zoneCode, { page: 1, limit }),
@@ -79,19 +98,46 @@ export function useCatalogSearch(
     staleTime: 5 * 60 * 1000,
   });
 
-  const active = isPreview ? preview : search;
-  const result = active.data;
+  const products = useMemo(() => {
+    if (isPreview) return preview.data?.products ?? [];
+    if (infinite) {
+      const seen = new Set<string>();
+      return (infiniteSearch.data?.pages ?? [])
+        .flatMap((item) => item.products)
+        .filter((product) => {
+          if (seen.has(product.id)) return false;
+          seen.add(product.id);
+          return true;
+        });
+    }
+    return search.data?.products ?? [];
+  }, [infinite, infiniteSearch.data?.pages, isPreview, preview.data?.products, search.data?.products]);
+
+  const pagination = isPreview
+    ? preview.data?.pagination
+    : infinite
+      ? infiniteSearch.data?.pages[0]?.pagination
+      : search.data?.pagination;
+
+  const fetchNextPage = useCallback(() => {
+    void infiniteSearch.fetchNextPage();
+  }, [infiniteSearch.fetchNextPage]);
+
+  const activePending = isPreview ? preview : infinite ? infiniteSearch : search;
 
   return {
-    products: result?.products ?? [],
-    total: result?.pagination.total ?? 0,
-    totalPages: result?.pagination.totalPages ?? 1,
+    products,
+    total: pagination?.total ?? 0,
+    totalPages: pagination?.totalPages ?? 1,
     tooShort: tooShort && !previewWhenEmpty,
     isPreview,
-    isLoading: active.isLoading && (isPreview || !tooShort),
-    isFetching: active.isFetching,
-    isError: active.isError,
-    refetch: () => void active.refetch(),
+    isLoading: activePending.isLoading && (isPreview || !tooShort),
+    isFetching: activePending.isFetching,
+    isFetchingNextPage: infiniteSearch.isFetchingNextPage,
+    hasNextPage: Boolean(infinite && infiniteSearch.hasNextPage),
+    fetchNextPage,
+    isError: activePending.isError,
+    refetch: () => void activePending.refetch(),
   };
 }
 

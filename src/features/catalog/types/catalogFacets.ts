@@ -11,7 +11,7 @@ export type StorefrontCatalogFacets = {
   featuredNote: StorefrontFacetOption[];
 };
 
-export type CatalogListingSort = "newest" | "price_asc" | "price_desc";
+export type CatalogListingSort = "newest" | "price_asc" | "price_desc" | "bestselling";
 
 export type CatalogListingQuery = {
   page: number;

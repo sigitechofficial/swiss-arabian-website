@@ -1392,11 +1392,15 @@ html[dir="rtl"] .feature-card--4 .feature-card-bg {
   width: 100%;
   height: 100%;
 }
-/* The home best-sellers strip keeps its original inset: its bottle cutouts
-   are designed to float on the plate with breathing room on every side.
-   Catalog/search cards (full lifestyle shots) stay edge to edge. */
+/* Home best-sellers strip — original inset so cutouts sit on the plate. */
 .products-band .product-strip .product-card__media {
   padding: 20%;
+}
+.products-band .product-strip .product-card__media img,
+.products-band .product-strip .product-card__media--swap .product-card__media-link > img {
+  object-fit: cover;
+  object-position: center;
+  padding: 0;
 }
 
 /* Product hover — the base bottle shot fades out while the ingredients

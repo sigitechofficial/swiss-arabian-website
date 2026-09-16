@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
-import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
+import { CatalogInfiniteSentinel } from "@/features/catalog/components/CatalogInfiniteSentinel";
 import { toCatalogProducts } from "@/features/catalog/utils/toCatalogProduct";
 import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
 import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
@@ -19,24 +19,20 @@ import { rememberSearchQuery } from "../utils/recentSearches";
 
 function searchHref(input: {
   q: string;
-  page?: number;
   sort?: CatalogSearchSort;
 }): string {
   const params = new URLSearchParams();
   if (input.q) params.set("q", input.q);
   if (input.sort && input.sort !== "newest") params.set("sort", input.sort);
-  if (input.page && input.page > 1) params.set("page", String(input.page));
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
 }
 
 export function SearchPageView({
   query,
-  page = 1,
   sort = "newest",
 }: {
   query: string;
-  page?: number;
   sort?: CatalogSearchSort;
 }) {
   const router = useRouter();
@@ -46,12 +42,14 @@ export function SearchPageView({
   const {
     products,
     total,
-    totalPages,
     isLoading,
     isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     isError,
     refetch,
-  } = useCatalogSearch(trimmed, { page, sort, immediate: true });
+  } = useCatalogSearch(trimmed, { sort, immediate: true, infinite: true });
 
   const showDiscover = !hasQuery || tooShortQuery || (!isLoading && !isError && !products.length);
   const newest = useNewLaunchesPreview(showDiscover, 4);
@@ -121,7 +119,9 @@ export function SearchPageView({
         {hasQuery && !tooShortQuery && (products.length || isFetching) ? (
           <div className="catalog__toolbar search-plp__toolbar">
             <p className="catalog__count" aria-live="polite">
-              {isLoading ? "Searching the catalog…" : `Showing ${countLabel}`}
+              {isLoading
+                ? "Searching the catalog…"
+                : `Showing ${products.length} of ${total.toLocaleString()}`}
             </p>
             <label className="catalog__sort">
               <span className="catalog__sort-label">Sort</span>
@@ -132,7 +132,6 @@ export function SearchPageView({
                   router.push(
                     searchHref({
                       q: trimmed,
-                      page: 1,
                       sort: event.target.value as CatalogSearchSort,
                     }),
                   );
@@ -174,14 +173,11 @@ export function SearchPageView({
                 ))}
               </ul>
             </WishlistStatusScope>
-            {totalPages > 1 ? (
-              <CatalogPagination
-                page={page}
-                totalPages={totalPages}
-                total={total}
-                hrefForPage={(nextPage) => searchHref({ q: trimmed, page: nextPage, sort })}
-              />
-            ) : null}
+            <CatalogInfiniteSentinel
+              disabled={!hasNextPage}
+              loading={isFetchingNextPage}
+              onVisible={fetchNextPage}
+            />
           </section>
         ) : (
           <SearchDiscover

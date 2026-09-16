@@ -804,6 +804,18 @@ main:has(.pdp) + .site-footer {
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
+.pdp-reviews__empty {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-2, #6b5f53);
+}
+.pdp-reviews__card-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
 .pdp-reviews__head-actions {
   display: flex;
   align-items: center;

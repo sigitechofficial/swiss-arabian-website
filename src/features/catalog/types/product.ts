@@ -1,4 +1,6 @@
 import type { StorefrontPdpMetafields } from "./pdpMetafields";
+import type { StorefrontPdpReviews } from "./pdpReviews";
+import type { StorefrontShippingPromise } from "./pdpShipping";
 
 export type ProductSummary = {
   id: string;
@@ -37,4 +39,6 @@ export type ProductDetail = ProductSummary & {
   brandName?: string;
   collections?: ProductCollectionRef[];
   pdpMetafields?: StorefrontPdpMetafields;
+  shippingPromise?: StorefrontShippingPromise | null;
+  reviews?: StorefrontPdpReviews | null;
 };

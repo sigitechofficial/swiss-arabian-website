@@ -57,8 +57,17 @@ export function MegaShowcase({
   const slug = collectionSlug(item.href);
 
   const liveQuery = useQuery({
-    queryKey: catalogKeys.collectionProducts(slug ?? "", zoneCode, 1, 8),
-    queryFn: () => fetchCollectionProducts(slug as string, zoneCode, { page: 1, limit: 8 }),
+    queryKey: catalogKeys.collectionProducts(slug ?? "", zoneCode, 1, 8, undefined, {
+      page: 1,
+      limit: 8,
+      sort: "bestselling",
+    }),
+    queryFn: () =>
+      fetchCollectionProducts(slug as string, zoneCode, {
+        page: 1,
+        limit: 8,
+        sort: "bestselling",
+      }),
     enabled: Boolean(slug),
     staleTime: 5 * 60_000,
   });

@@ -10,7 +10,7 @@ export function CatalogPageView({
 }: {
   listingQuery: CatalogListingQuery;
 }) {
-  const { products, facets, pagination, serverFiltered, loading } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     { kind: "products" },
     listingQuery,
   );
@@ -23,6 +23,9 @@ export function CatalogPageView({
       pagination={pagination}
       serverFiltered={serverFiltered}
       loading={loading}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      onLoadMore={fetchNextPage}
     />
   );
 }

@@ -20,7 +20,7 @@ import {
   type Concentration,
   type SortOption,
 } from "../constants/catalogProducts";
-import { CatalogPagination } from "./CatalogPagination";
+import { CatalogInfiniteSentinel } from "./CatalogInfiniteSentinel";
 import { ProductCardTags } from "./ProductCardTags";
 import { getCollectionMeta } from "../constants/collectionMeta";
 import {
@@ -74,6 +74,9 @@ export function ProductCatalogView({
   facets = null,
   pagination = null,
   serverFiltered = false,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onLoadMore,
 }: {
   slug?: string;
   /**
@@ -88,6 +91,9 @@ export function ProductCatalogView({
   facets?: StorefrontCatalogFacets | null;
   pagination?: CatalogPaginationMeta | null;
   serverFiltered?: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -638,14 +644,11 @@ export function ProductCatalogView({
                 </ul>
               </WishlistStatusScope>
             )}
-            {serverFiltered && listingQuery && pagination && pagination.totalPages > 1 ? (
-              <CatalogPagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                total={pagination.total}
-                hrefForPage={(page) =>
-                  catalogListingHref(pathname, listingQuery, page)
-                }
+            {serverFiltered && onLoadMore ? (
+              <CatalogInfiniteSentinel
+                disabled={!hasNextPage}
+                loading={isFetchingNextPage}
+                onVisible={onLoadMore}
               />
             ) : null}
           </div>

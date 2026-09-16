@@ -32,13 +32,11 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{
     q?: string | string[];
-    page?: string | string[];
     sort?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const query = one(params.q);
-  const page = Math.max(1, Number.parseInt(one(params.page), 10) || 1);
   const sort = parseSort(one(params.sort));
-  return <SearchPageView query={query} page={page} sort={sort} />;
+  return <SearchPageView query={query} sort={sort} />;
 }

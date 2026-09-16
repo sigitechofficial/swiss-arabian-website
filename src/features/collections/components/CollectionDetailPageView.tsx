@@ -29,7 +29,7 @@ export function CollectionDetailPageView({
     enabled: !usingFallback,
   });
 
-  const { products, facets, pagination, serverFiltered, loading } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     {
       kind: "collection",
       slug,
@@ -62,6 +62,9 @@ export function CollectionDetailPageView({
       pagination={pagination}
       serverFiltered={serverFiltered}
       loading={loading}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      onLoadMore={fetchNextPage}
     />
   );
 }

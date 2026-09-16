@@ -23,7 +23,7 @@ export function CategoryDetailPageView({
     queryFn: () => fetchCategoryBySlug(slug, zoneCode),
   });
 
-  const { products, facets, pagination, serverFiltered, loading } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     { kind: "category", slug },
     listingQuery,
   );
@@ -47,6 +47,9 @@ export function CategoryDetailPageView({
       pagination={pagination}
       serverFiltered={serverFiltered}
       loading={loading}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      onLoadMore={fetchNextPage}
     />
   );
 }
