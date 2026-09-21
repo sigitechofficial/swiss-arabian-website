@@ -62,7 +62,11 @@ export function GiftCardForm({
 
   async function onCheck() {
     const next = code.trim();
-    if (!next) return;
+    if (!next) {
+      setBalanceNote(null);
+      setFieldError("Enter a gift card code first.");
+      return;
+    }
     setFieldError(null);
     try {
       const result = await balance.mutateAsync(next);
@@ -129,9 +133,9 @@ export function GiftCardForm({
       </form>
       <button
         type="button"
-        className="coupon-applied__remove"
+        className="coupon-box__check"
         onClick={() => void onCheck()}
-        disabled={busy || !code.trim()}
+        disabled={busy}
       >
         {balance.isPending ? "Checking…" : "Check balance"}
       </button>

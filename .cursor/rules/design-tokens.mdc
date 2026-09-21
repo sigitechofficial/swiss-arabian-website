@@ -1,0 +1,30 @@
+---
+description: Theme tokens, backgrounds, footer inverse, and logo filters
+globs:
+  - "src/**/*.{ts,tsx,css}"
+alwaysApply: true
+---
+
+# Design tokens & theme
+
+Theme toggle uses `html.dark` only — not `prefers-color-scheme`. Tailwind dark variant: `@custom-variant dark (&:where(.dark, .dark *));`.
+
+## Backgrounds
+
+- Light page: white `#ffffff` (`bg-page` / `--sa-bg-page`) — **not** cream everywhere
+- Cream `#fbf7f0` (`bg-cream` / `section-soft` in light): sections only (Why, newsletter, search field, etc.)
+- Footer / always-dark surfaces: `bg-inverse` (`--sa-bg-inverse`) — light `#2c241d`, dark `#241d18`
+- Do **not** use hardcoded `bg-ink` for footer (stays `#2c241d` in dark and mismatches newsletter)
+
+## Brand colors
+
+- Terra `#B46E57` — primary CTAs
+- Gold `#B5883E` / gold-light `#CDA766` — eyebrows, accents
+- No purple, glow, or generic AI-gradient looks
+
+## Logo
+
+- Asset: `/assets/home/swiss-arabian-logo.png` via `homeAssets.logo`
+- Header (theme-aware): class `site-logo` — cream filter only under `html.dark`
+- Footer / inverse surfaces (always dark): class `site-logo-on-dark` — cream filter always
+- Never use a terra “SA” circle placeholder when the real logo is available

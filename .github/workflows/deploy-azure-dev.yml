@@ -226,7 +226,7 @@ jobs:
 
             if [ "$STATUS" = "200" ]; then
               SVC=$(jq -r '.service // .data.service // empty' /tmp/health.json)
-              if [ "$SVC" = "swiss-arabian-website" ]; then
+              if [ "$SVC" = "swiss-arabian-website" ] || [ "$SVC" = "swiss-arabian-v2" ]; then
                 echo "Health check passed"
                 exit 0
               fi
@@ -256,8 +256,8 @@ jobs:
               continue
             fi
 
-            ACTUAL_SHA=$(jq -r '.deployment.commitSha // empty' /tmp/deployment.json)
-            ACTUAL_IMAGE_TAG=$(jq -r '.deployment.imageTag // empty' /tmp/deployment.json)
+            ACTUAL_SHA=$(jq -r '.deployment.commitSha // .commitSha // empty' /tmp/deployment.json)
+            ACTUAL_IMAGE_TAG=$(jq -r '.deployment.imageTag // .imageTag // empty' /tmp/deployment.json)
             ACTUAL_BRANCH=$(jq -r '.branch // empty' /tmp/deployment.json)
 
             if [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] && [ "$ACTUAL_IMAGE_TAG" = "$EXPECTED_IMAGE_TAG" ] && [ "$ACTUAL_BRANCH" = "$EXPECTED_BRANCH" ]; then

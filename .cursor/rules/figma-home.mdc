@@ -1,0 +1,39 @@
+---
+description: Figma source of truth for Swiss Arabian home / landing UI
+globs:
+  - "src/features/home/**/*"
+  - "src/components/layout/**/*"
+alwaysApply: false
+---
+
+# Figma — home & shell
+
+File: [Website--swiss-arabian](https://www.figma.com/design/TgNMsNtNvB3I3dj0tpqa36/Website--swiss-arabian)  
+`fileKey`: `TgNMsNtNvB3I3dj0tpqa36`
+
+## Key nodes
+
+| Section                  | node-id    |
+| ------------------------ | ---------- |
+| Hero (home)              | `254:1880` |
+| House band               | `254:1999` |
+| Our Story art (seal)     | `254:2136` |
+| Gift Sets page           | `293:1881` |
+| Auth flow section        | `731:6018` |
+| Sign in (desktop)        | `750:6199` |
+| Create account (desktop) | `750:6233` |
+| Verify number (desktop)  | `750:6359` |
+| Product detail (desktop) | `475:7005` |
+| Add to cart side sheet   | `518:7097` |
+| Cart sheet (desktop)     | `475:7285` |
+| Checkout page            | `518:7105` |
+| Checkout (desktop)       | `475:7363` |
+
+URL form: `?node-id=254-1999` → MCP `nodeId` `254:1999`.
+
+## Workflow
+
+1. Load Figma design-to-code skill, then `get_design_context` for the target node
+2. Treat MCP output as reference — adapt to Next.js + existing tokens/components
+3. Download exported assets into `public/assets/home/`; do not leave ephemeral Figma MCP URLs in committed code
+4. Do not invent layouts, copy, or colors when a Figma node exists — match it

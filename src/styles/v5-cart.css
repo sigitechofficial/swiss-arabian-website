@@ -1077,6 +1077,22 @@
 .coupon-box > .coupon-form + .coupon-applied__remove {
   margin-top: 8px;
 }
+.coupon-box__check {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.coupon-box__check:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
 
 .promo-applied-list {
   list-style: none;
