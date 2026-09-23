@@ -2,21 +2,26 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { FRAGRANCE_NOTES } from "../../constants/landingContent";
+import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
+import { useFragranceNotes } from "@/features/merchandising";
+import { fragranceNotesPlpHref } from "@/features/merchandising/utils/visibleFragranceNoteTiles";
 
 export function LandingNotes() {
   const stripRef = useRef<HTMLUListElement>(null);
+  const { tiles, sectionTitle, isReady } = useFragranceNotes();
 
   const scrollBy = (direction: number) => {
     stripRef.current?.scrollBy({ left: direction * 160, behavior: "smooth" });
   };
+
+  if (!isReady || !tiles.length) return null;
 
   return (
     <section className="notes-shop" aria-labelledby="notesTitle">
       <div className="container">
         <header className="section-head">
           <h2 className="display section-head__title" id="notesTitle">
-            Shop by Fragrance Notes
+            {sectionTitle}
           </h2>
         </header>
 
@@ -24,19 +29,22 @@ export function LandingNotes() {
           className="notes-shop__strip"
           role="list"
           tabIndex={0}
-          aria-label="Shop by fragrance notes, scrollable"
+          aria-label={`${sectionTitle}, scrollable`}
           ref={stripRef}
         >
-          {FRAGRANCE_NOTES.map((note) => (
-            <li key={note.label}>
-              <Link className="notes-shop__item" href={note.href}>
-                <span className="notes-shop__art">
-                  <img src={note.image} alt="" loading="lazy" />
-                </span>
-                <span className="notes-shop__label">{note.label}</span>
-              </Link>
-            </li>
-          ))}
+          {tiles.map((tile) => {
+            const imageUrl = resolveCatalogImageUrl(tile.imageUrl);
+            return (
+              <li key={tile.code || tile.fragranceFamily}>
+                <Link className="notes-shop__item" href={fragranceNotesPlpHref(tile.fragranceFamily)}>
+                  <span className="notes-shop__art">
+                    {imageUrl ? <img src={imageUrl} alt="" loading="lazy" /> : null}
+                  </span>
+                  <span className="notes-shop__label">{tile.name}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="strip-controls">

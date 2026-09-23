@@ -46,3 +46,65 @@ export type StorefrontMerchandisingDetailView = {
   };
   products: StorefrontProductCard[];
 };
+
+export type ShopableVideoPriceSummary = {
+  price: string | null;
+  currencyCode: string | null;
+  hasValidPrice: boolean;
+};
+
+export type ShopableVideoSlide = {
+  productId: string;
+  variantId: string | null;
+  sku: string | null;
+  slug: string | null;
+  name: string;
+  image: string | null;
+  video: { url: string; name: string | null } | null;
+  priceSummary: ShopableVideoPriceSummary | null;
+  isSellable: boolean;
+  isVisible: boolean;
+  sortOrder: number | null;
+};
+
+export type ShopableVideoView = {
+  context: StorefrontHomepageContextView;
+  available: boolean;
+  sectionTitle: string | null;
+  collection: {
+    id: string;
+    code: string;
+    slug: string | null;
+    name: string;
+  } | null;
+  slides: ShopableVideoSlide[];
+  metadata?: {
+    generatedAt?: string;
+    slideCount?: number;
+  };
+};
+
+export type FragranceNoteTile = {
+  code: string;
+  name: string;
+  imageUrl: string | null;
+  sortOrder: number | null;
+  fragranceFamily: string;
+};
+
+export type FragranceNotesView = {
+  context: StorefrontHomepageContextView;
+  available: boolean;
+  sectionTitle: string | null;
+  collection: {
+    id: string;
+    code: string;
+    slug: string | null;
+    name: string;
+  } | null;
+  tiles: FragranceNoteTile[];
+  metadata?: {
+    generatedAt?: string;
+    tileCount?: number;
+  };
+};

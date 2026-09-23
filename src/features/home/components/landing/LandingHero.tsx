@@ -11,9 +11,7 @@ export function LandingHero() {
       <div className="container hero__inner">
         <p className="eyebrow hero__eyebrow">Extrait de Parfum · Est. 1974</p>
         <h1 className="display hero__title" id="heroTitle">
-          Where the East
-          <br />
-          meets the West
+          East Meets West
         </h1>
         <p className="lead hero__lead">
           A house founded on duality — the drama and grandeur of the Orient, the

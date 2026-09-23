@@ -148,6 +148,9 @@ export function ProductCatalogView({
     ? listingQuery?.houseCollection ?? "all"
     : localCollection;
   const note = urlDriven ? listingQuery?.featuredNote ?? "all" : localNote;
+  const fragranceFamily = urlDriven
+    ? listingQuery?.fragranceFamily ?? "all"
+    : "all";
   const sort: SortOption = urlDriven
     ? listingSortToUi(listingQuery?.sort)
     : localSort;
@@ -208,6 +211,12 @@ export function ProductCatalogView({
       return;
     }
     setLocalNote(value);
+  };
+
+  const setFragranceFamily = (value: string) => {
+    if (urlDriven) {
+      patchListing({ fragranceFamily: value === "all" ? undefined : value });
+    }
   };
 
   const setSort = (value: SortOption) => {
@@ -291,10 +300,16 @@ export function ProductCatalogView({
           count: countFor((p) => p.note === code),
         }));
 
+  const fragranceFamilyOptions: StorefrontFacetOption[] = serverFiltered
+    ? (facets?.fragranceFamily ?? [])
+    : [];
+
   const showPrice = !serverFiltered || Boolean(facetPrice);
   const showConcentration = concentrationOptions.length > 0;
   const showCollection = collectionOptions.length > 0;
   const showNotes = noteOptions.length > 0;
+  const showFragranceFamily =
+    fragranceFamilyOptions.length > 0 || fragranceFamily !== "all";
 
   const hasActiveFilters = listingQuery
     ? catalogListingHasActiveFilters(listingQuery) ||
@@ -561,6 +576,40 @@ export function ProductCatalogView({
                       type="button"
                       aria-pressed={note === option.code}
                       onClick={() => setNote(option.code)}
+                    >
+                      {option.label}{" "}
+                      <span className="rail-filter__count">({option.count})</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            ) : null}
+
+            {showFragranceFamily ? (
+            <div className="filters-rail__group" role="group" aria-label="Fragrance family">
+              <p className="filters-rail__label">Fragrance family</p>
+              <ul className="filters-rail__list" role="list">
+                <li>
+                  <button
+                    className="rail-filter"
+                    type="button"
+                    aria-pressed={fragranceFamily === "all"}
+                    onClick={() => setFragranceFamily("all")}
+                  >
+                    All families
+                    {serverFiltered ? (
+                      <span className="rail-filter__count"> ({allCount})</span>
+                    ) : null}
+                  </button>
+                </li>
+                {fragranceFamilyOptions.map((option) => (
+                  <li key={option.code}>
+                    <button
+                      className="rail-filter"
+                      type="button"
+                      aria-pressed={fragranceFamily === option.code}
+                      onClick={() => setFragranceFamily(option.code)}
                     >
                       {option.label}{" "}
                       <span className="rail-filter__count">({option.count})</span>

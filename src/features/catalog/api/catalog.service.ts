@@ -13,6 +13,7 @@ import {
   type StorefrontCatalogFacets,
 } from "../types/catalogFacets";
 import { pickPdpMetafields } from "../utils/pdpMetafields";
+import { pickPrVideo } from "../utils/pdpPrVideo";
 import { parsePdpReviews } from "../utils/pdpReviews";
 import { parseShippingPromise } from "../utils/pdpShipping";
 import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
@@ -149,6 +150,7 @@ type ApiCatalogProduct = {
   concentration?: string | null;
   houseCollection?: string | null;
   featuredNote?: string | null;
+  fragranceFamilyCodes?: string[] | null;
 };
 
 type ApiProductDetailVariant = {
@@ -175,8 +177,10 @@ type ApiProductDetailData = {
     brandCode?: string | null;
     brandName?: string | null;
     pdpMetafields?: Record<string, unknown> | null;
+    prVideo?: { url?: string | null; name?: string | null } | null;
   };
   pdpMetafields?: Record<string, unknown> | null;
+  prVideo?: { url?: string | null; name?: string | null } | null;
   variants?: ApiProductDetailVariant[] | null;
   media?: ApiProductImage[] | null;
   collections?: Array<{
@@ -278,10 +282,13 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
 
 function mapListingFacetFields(
   raw: ApiCatalogProduct,
-): Pick<ProductSummary, "concentration" | "houseCollection" | "featuredNote"> {
+): Pick<
+  ProductSummary,
+  "concentration" | "houseCollection" | "featuredNote" | "fragranceFamilyCodes"
+> {
   const fields: Pick<
     ProductSummary,
-    "concentration" | "houseCollection" | "featuredNote"
+    "concentration" | "houseCollection" | "featuredNote" | "fragranceFamilyCodes"
   > = {};
   if ("concentration" in raw) {
     const code = raw.concentration?.trim().toLowerCase() ?? null;
@@ -294,6 +301,11 @@ function mapListingFacetFields(
   if ("featuredNote" in raw) {
     const code = raw.featuredNote?.trim().toLowerCase() || null;
     fields.featuredNote = code;
+  }
+  if (Array.isArray(raw.fragranceFamilyCodes)) {
+    fields.fragranceFamilyCodes = raw.fragranceFamilyCodes
+      .map((code) => String(code).trim().toLowerCase())
+      .filter(Boolean);
   }
   return fields;
 }
@@ -368,6 +380,7 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     brandName,
     collections,
     pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
+    prVideo: pickPrVideo(raw),
     shippingPromise: parseShippingPromise(raw.shippingPromise),
     reviews: parsePdpReviews(raw.reviews),
   };

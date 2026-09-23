@@ -2,23 +2,32 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { COMMUNITY_STORIES } from "../../constants/landingContent";
-import { STATIC_PRODUCTS } from "../../constants/staticProducts";
+import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
+import { useShopableVideo } from "@/features/merchandising";
+import type { ShopableVideoSlide } from "@/features/merchandising/types/merch";
+import { parseShopablePrice } from "@/features/merchandising/utils/playableShopableSlides";
 import { formatMoney } from "../../utils/formatMoney";
 
-const START_INDEX = 2;
-
-function productFor(slug: string) {
-  return STATIC_PRODUCTS.find((product) => product.slug === slug);
+function slideKey(slide: ShopableVideoSlide, index: number): string {
+  return `${slide.productId}-${slide.sku ?? slide.slug ?? "slide"}-${index}`;
 }
 
 export function LandingReel() {
+  const { slides, sectionTitle, isReady } = useShopableVideo();
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
-  const [active, setActive] = useState(START_INDEX);
+  const jumpingRef = useRef(false);
+  const setSize = slides.length;
+  const looping = setSize > 1;
+  const loopSlides = looping ? [...slides, ...slides, ...slides] : slides;
+  const startIndex = looping
+    ? setSize + Math.max(0, Math.floor((setSize - 1) / 2))
+    : Math.max(0, Math.floor((setSize - 1) / 2));
+  const [active, setActive] = useState(startIndex);
   const [playing, setPlaying] = useState<Record<number, boolean>>({});
   const [muted, setMuted] = useState<Record<number, boolean>>({});
+  const trackCount = loopSlides.length;
 
   const nearestIndex = useCallback(() => {
     const slider = sliderRef.current;
@@ -55,9 +64,9 @@ export function LandingReel() {
     });
     setPlaying((prev) => {
       const next: Record<number, boolean> = {};
-      COMMUNITY_STORIES.forEach((_, i) => {
+      for (let i = 0; i < trackCount; i += 1) {
         next[i] = i === index ? Boolean(prev[i]) : false;
-      });
+      }
       return next;
     });
     const video = videoRefs.current[index];
@@ -70,24 +79,50 @@ export function LandingReel() {
     } catch {
       setPlaying((prev) => ({ ...prev, [index]: false }));
     }
-  }, []);
+  }, [trackCount]);
 
   useEffect(() => {
+    setActive(startIndex);
+    setPlaying({});
+    setMuted({});
+  }, [startIndex, trackCount]);
+
+  useEffect(() => {
+    if (!trackCount) return;
     const timer = window.setTimeout(() => {
-      scrollToIndex(START_INDEX, "auto");
-      void playIndex(START_INDEX);
+      scrollToIndex(startIndex, "auto");
+      void playIndex(startIndex);
     }, 60);
     return () => window.clearTimeout(timer);
-  }, [playIndex, scrollToIndex]);
+  }, [playIndex, scrollToIndex, startIndex, trackCount]);
 
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
     let frame = 0;
     const onScroll = () => {
+      if (jumpingRef.current) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const next = nearestIndex();
+        if (jumpingRef.current) return;
+        let next = nearestIndex();
+        if (looping) {
+          if (next < setSize) {
+            jumpingRef.current = true;
+            next += setSize;
+            scrollToIndex(next, "auto");
+            window.setTimeout(() => {
+              jumpingRef.current = false;
+            }, 50);
+          } else if (next >= setSize * 2) {
+            jumpingRef.current = true;
+            next -= setSize;
+            scrollToIndex(next, "auto");
+            window.setTimeout(() => {
+              jumpingRef.current = false;
+            }, 50);
+          }
+        }
         setActive((current) => {
           if (current === next) return current;
           void playIndex(next);
@@ -100,13 +135,18 @@ export function LandingReel() {
       cancelAnimationFrame(frame);
       slider.removeEventListener("scroll", onScroll);
     };
-  }, [nearestIndex, playIndex]);
+  }, [looping, nearestIndex, playIndex, scrollToIndex, setSize, trackCount]);
+
+  if (!isReady || !slides.length) return null;
 
   const step = (direction: number) => {
-    const next = Math.min(
-      COMMUNITY_STORIES.length - 1,
-      Math.max(0, active + direction),
-    );
+    let next = active + direction;
+    if (looping) {
+      if (next < 0) next = setSize * 2 - 1;
+      if (next >= trackCount) next = setSize;
+    } else {
+      next = Math.min(setSize - 1, Math.max(0, next));
+    }
     setActive(next);
     scrollToIndex(next);
     void playIndex(next);
@@ -140,9 +180,9 @@ export function LandingReel() {
   };
 
   return (
-    <section id="scent-reel" className="reel-section" aria-label="Community stories">
-        <div className="container cs-container">
-        <h2 className="cs-heading">Get inspired by our community</h2>
+    <section id="scent-reel" className="reel-section" aria-label={sectionTitle}>
+      <div className="container cs-container">
+        <h2 className="cs-heading">{sectionTitle}</h2>
         <div className="cs-svg-wrap" aria-hidden="true">
           <svg className="cs-heading-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 445 190.1" fill="none">
             <path
@@ -153,21 +193,40 @@ export function LandingReel() {
         </div>
 
         <div className="cs-slider-wrap">
-          <button className="cs-arrow cs-arrow-prev" type="button" onClick={() => step(-1)} aria-label="Previous story">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15 18L9 12L15 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          {slides.length > 1 ? (
+            <button className="cs-arrow cs-arrow-prev" type="button" onClick={() => step(-1)} aria-label="Previous video">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18L9 12L15 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ) : null}
 
-          <div className="cs-slider" ref={sliderRef} aria-label="Community stories">
-            {COMMUNITY_STORIES.map((story, index) => {
-              const product = productFor(story.productSlug);
+          <div className="cs-slider" ref={sliderRef} aria-label={sectionTitle}>
+            {loopSlides.map((slide, index) => {
               const isActive = active === index;
               const isPlaying = Boolean(playing[index]);
               const isMuted = muted[index] !== false;
+              const imageUrl = resolveCatalogImageUrl(slide.image);
+              const { price, currency } = parseShopablePrice(slide);
+              const href = slide.slug?.trim() ? `/products/${slide.slug.trim()}` : null;
+              const videoUrl = slide.video?.url?.trim() ?? "";
+              const productInner = (
+                <>
+                  <span className="cs-product-img">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="" width={66} height={66} />
+                    ) : null}
+                  </span>
+                  <span className="cs-product-info">
+                    <span className="cs-product-title">{slide.name}</span>
+                    <span className="cs-product-price">{formatMoney(price, currency)}</span>
+                  </span>
+                </>
+              );
+
               return (
                 <article
-                  key={story.id}
+                  key={slideKey(slide, index)}
                   className={isActive ? "cs-card is-active" : "cs-card"}
                   ref={(node) => {
                     cardRefs.current[index] = node;
@@ -182,9 +241,9 @@ export function LandingReel() {
                       muted
                       loop
                       playsInline
-                      preload={index === START_INDEX ? "metadata" : "none"}
-                      poster={story.poster}
-                      src={story.video}
+                      preload={index === startIndex ? "metadata" : "none"}
+                      poster={imageUrl ?? undefined}
+                      src={videoUrl}
                       onPlay={() => setPlaying((prev) => ({ ...prev, [index]: true }))}
                       onPause={() => setPlaying((prev) => ({ ...prev, [index]: false }))}
                     />
@@ -219,31 +278,25 @@ export function LandingReel() {
                       </button>
                     </div>
                   </div>
-                  {product ? (
-                    <Link className="cs-product" href={`/products/${product.slug}`}>
-                      <span className="cs-product-img">
-                        {product.imageUrl ? (
-                          <img src={product.imageUrl} alt="" width={66} height={66} />
-                        ) : null}
-                      </span>
-                      <span className="cs-product-info">
-                        <span className="cs-product-title">{product.title}</span>
-                        <span className="cs-product-price">
-                          {formatMoney(product.price, product.currency)}
-                        </span>
-                      </span>
+                  {href ? (
+                    <Link className="cs-product" href={href}>
+                      {productInner}
                     </Link>
-                  ) : null}
+                  ) : (
+                    <div className="cs-product">{productInner}</div>
+                  )}
                 </article>
               );
             })}
           </div>
 
-          <button className="cs-arrow cs-arrow-next" type="button" onClick={() => step(1)} aria-label="Next story">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 6L15 12L9 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          {slides.length > 1 ? (
+            <button className="cs-arrow cs-arrow-next" type="button" onClick={() => step(1)} aria-label="Next video">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 6L15 12L9 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ) : null}
         </div>
       </div>
     </section>

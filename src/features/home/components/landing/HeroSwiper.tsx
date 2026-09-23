@@ -64,6 +64,7 @@ export function HeroSwiper() {
             src={HERO_SLIDES[index].image}
             alt={HERO_SLIDES[index].alt}
             className="hero-swiper__img"
+            style={{ objectPosition: HERO_SLIDES[index].objectPosition }}
             draggable={false}
           />
         </motion.div>

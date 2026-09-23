@@ -32,6 +32,7 @@ describe("parseCatalogFacets", () => {
     ]);
     expect(facets?.houseCollection).toEqual([]);
     expect(facets?.featuredNote[0]?.code).toBe("oud");
+    expect(facets?.fragranceFamily).toEqual([]);
   });
 });
 
@@ -52,6 +53,15 @@ describe("catalog listing query", () => {
     expect(
       catalogListingHref("/products", query),
     ).toBe("/products?minPrice=110&concentration=edp&sort=price_asc&page=2");
+    expect(catalogListingHasActiveFilters(query)).toBe(true);
+  });
+
+  it("parses fragranceFamily listing query", () => {
+    const query = parseCatalogListingParams({ fragranceFamily: "woody" });
+    expect(query.fragranceFamily).toBe("woody");
+    expect(catalogListingHref("/products", query)).toBe(
+      "/products?fragranceFamily=woody",
+    );
     expect(catalogListingHasActiveFilters(query)).toBe(true);
   });
 

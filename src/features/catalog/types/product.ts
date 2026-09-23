@@ -24,6 +24,8 @@ export type ProductSummary = {
   concentration?: "extrait" | "edp" | null;
   houseCollection?: string | null;
   featuredNote?: string | null;
+  /** Server-side fragrance_family_text codes (not PDP pyramid notes). */
+  fragranceFamilyCodes?: string[];
 };
 
 export type ProductCollectionRef = {
@@ -39,6 +41,7 @@ export type ProductDetail = ProductSummary & {
   brandName?: string;
   collections?: ProductCollectionRef[];
   pdpMetafields?: StorefrontPdpMetafields;
+  prVideo?: { url: string; name: string | null };
   shippingPromise?: StorefrontShippingPromise | null;
   reviews?: StorefrontPdpReviews | null;
 };

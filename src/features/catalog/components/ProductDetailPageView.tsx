@@ -139,10 +139,17 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   }, [authoredContent, apiProduct, liveShippingCopy]);
 
   const [activeImage, setActiveImage] = useState(0);
+  const [prVideoOpen, setPrVideoOpen] = useState(true);
+  const [prVideoExpanded, setPrVideoExpanded] = useState(false);
   const thumbsRef = useRef<HTMLDivElement>(null);
   // Live catalog media 404s for some products; drop those sources so the hero
   // and thumbs never render a broken-image icon.
   const [failedImages, setFailedImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    setPrVideoOpen(true);
+    setPrVideoExpanded(false);
+  }, [slug]);
   const [activeTab, setActiveTab] = useState<TabId | null>("notes");
   const [tabsPaused, setTabsPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -339,7 +346,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     );
   }
 
-  const gallery = (product.imageUrls?.length
+  const galleryImages = (product.imageUrls?.length
     ? product.imageUrls
     : product.imageUrl
       ? [product.imageUrl]
@@ -350,7 +357,11 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         Boolean(src) && arr.indexOf(src) === index,
     )
     .filter((src) => !failedImages.includes(src));
-  const heroSrc = gallery[activeImage] ?? gallery[0];
+  const prVideo =
+    apiProduct?.prVideo && !failedImages.includes(apiProduct.prVideo.url)
+      ? apiProduct.prVideo
+      : undefined;
+  const heroSrc = galleryImages[activeImage] ?? galleryImages[0] ?? null;
   const family = familyChips(metafields);
   const chips = family.length
     ? family
@@ -382,7 +393,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         <div className="container container--full">
           <div className="pdp-hero__split">
             <div className="pdp-hero__stage">
-              {gallery.length > 1 ? (
+              {galleryImages.length > 1 ? (
                 <div className="pdp-hero__thumbs-col">
                   <div
                     ref={thumbsRef}
@@ -390,7 +401,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                     role="tablist"
                     aria-label="Product images"
                   >
-                    {gallery.map((src, index) => (
+                    {galleryImages.map((src, index) => (
                       <button
                         key={src}
                         type="button"
@@ -409,7 +420,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                     className="pdp-hero__thumbs-next"
                     aria-label="Next product image"
                     onClick={() =>
-                      setActiveImage((current) => (current + 1) % gallery.length)
+                      setActiveImage((current) => (current + 1) % galleryImages.length)
                     }
                   >
                     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -755,6 +766,60 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
             </ul>
           </div>
         </section>
+      ) : null}
+
+      {prVideo && prVideoOpen ? (
+        <div
+          className={`pdp-float-video ${prVideoExpanded ? "is-expanded" : ""}`}
+        >
+          <video
+            src={prVideo.url}
+            poster={galleryImages[0] ?? undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-label={prVideo.name ?? `${product.title} video`}
+            onError={() =>
+              setFailedImages((prev) =>
+                prev.includes(prVideo.url) ? prev : [...prev, prVideo.url],
+              )
+            }
+          />
+          <button
+            type="button"
+            className="pdp-float-video__close"
+            aria-label="Close video"
+            onClick={() => setPrVideoOpen(false)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6 6 18"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="pdp-float-video__expand"
+            aria-label={prVideoExpanded ? "Shrink video" : "Expand video"}
+            onClick={() => setPrVideoExpanded((open) => !open)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8 4H4v4M16 4h4v4M4 16v4h4M20 16v4h-4"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       ) : null}
 
       {related.length && moreFromCollection ? (

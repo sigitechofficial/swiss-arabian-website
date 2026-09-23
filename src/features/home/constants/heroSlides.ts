@@ -2,27 +2,21 @@ export type HeroSlide = {
   id: string;
   image: string;
   alt: string;
+  /** Cover focal point — bottles sit differently on each banner. */
+  objectPosition: string;
 };
 
 export const HERO_SLIDES: HeroSlide[] = [
   {
-    id: "rose-01",
-    image: "/assets/hero/hero-03-rose01.jpg",
-    alt: "Rose 01 extrait de parfum bottle resting on the shoreline among rose petals",
+    id: "shaghaf-powder",
+    image: "/assets/storefront/banner-shaghaf-powder.jpg",
+    alt: "Shaghaf Oud Marine and St. Moritz bottles with gold and white powder clouds",
+    objectPosition: "70% 62%",
   },
   {
-    id: "musk-07",
-    image: "/assets/hero/hero-04-musk07.jpg",
-    alt: "Musk 07 extrait de parfum bottle on the beach with pomegranate and rose",
-  },
-  {
-    id: "shaghaf-beach",
-    image: "/assets/hero/hero-05-shaghaf-beach.jpg",
-    alt: "Shaghaf Oud Ahmar bottle styled beside a leather bag at sunset on the beach",
-  },
-  {
-    id: "origins-of-taif",
-    image: "/assets/hero/hero-06-taif.jpg",
-    alt: "Origins of Taif extrait de parfum bottle lit in warm golden light",
+    id: "shaghaf-splash",
+    image: "/assets/storefront/banner-shaghaf-splash.jpg",
+    alt: "Shaghaf Oud Marine and St. Moritz bottles in a splash of water",
+    objectPosition: "55% 48%",
   },
 ];

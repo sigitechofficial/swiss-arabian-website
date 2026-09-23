@@ -39,6 +39,7 @@ function hasServerFacetParams(filters: CatalogListingFilters): boolean {
       filters.concentration ||
       filters.houseCollection ||
       filters.featuredNote,
+      filters.fragranceFamily,
   );
 }
 

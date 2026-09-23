@@ -9,6 +9,7 @@ export type StorefrontCatalogFacets = {
   concentration: StorefrontFacetOption[];
   houseCollection: StorefrontFacetOption[];
   featuredNote: StorefrontFacetOption[];
+  fragranceFamily: StorefrontFacetOption[];
 };
 
 export type CatalogListingSort = "newest" | "price_asc" | "price_desc" | "bestselling";
@@ -20,6 +21,7 @@ export type CatalogListingQuery = {
   concentration?: string;
   houseCollection?: string;
   featuredNote?: string;
+  fragranceFamily?: string;
   sort?: CatalogListingSort;
 };
 
@@ -73,7 +75,8 @@ export function parseCatalogFacets(raw: unknown): StorefrontCatalogFacets | null
     !("price" in row) &&
     !("concentration" in row) &&
     !("houseCollection" in row) &&
-    !("featuredNote" in row)
+    !("featuredNote" in row) &&
+    !("fragranceFamily" in row)
   ) {
     return null;
   }
@@ -82,6 +85,7 @@ export function parseCatalogFacets(raw: unknown): StorefrontCatalogFacets | null
     concentration: parseOptions(row.concentration),
     houseCollection: parseOptions(row.houseCollection),
     featuredNote: parseOptions(row.featuredNote),
+    fragranceFamily: parseOptions(row.fragranceFamily),
   };
 }
 
@@ -114,6 +118,7 @@ export function parseCatalogListingParams(
   const concentration = get("concentration").trim();
   const houseCollection = get("houseCollection").trim();
   const featuredNote = get("featuredNote").trim();
+  const fragranceFamily = get("fragranceFamily").trim();
   const sort = parseCatalogListingSort(get("sort").trim());
 
   return {
@@ -123,6 +128,7 @@ export function parseCatalogListingParams(
     ...(concentration ? { concentration } : {}),
     ...(houseCollection ? { houseCollection } : {}),
     ...(featuredNote ? { featuredNote } : {}),
+    ...(fragranceFamily ? { fragranceFamily } : {}),
     ...(sort ? { sort } : {}),
   };
 }
@@ -133,7 +139,8 @@ export function catalogListingHasActiveFilters(query: CatalogListingQuery): bool
       query.maxPrice ||
       query.concentration ||
       query.houseCollection ||
-      query.featuredNote,
+      query.featuredNote ||
+      query.fragranceFamily,
   );
 }
 
@@ -148,6 +155,7 @@ export function catalogListingHref(
   if (query.concentration) params.set("concentration", query.concentration);
   if (query.houseCollection) params.set("houseCollection", query.houseCollection);
   if (query.featuredNote) params.set("featuredNote", query.featuredNote);
+  if (query.fragranceFamily) params.set("fragranceFamily", query.fragranceFamily);
   if (query.sort) params.set("sort", query.sort);
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
@@ -163,6 +171,7 @@ export function catalogListingCacheKey(filters: CatalogListingFilters) {
     filters.concentration ?? "",
     filters.houseCollection ?? "",
     filters.featuredNote ?? "",
+    filters.fragranceFamily ?? "",
     filters.sort ?? "",
     filters.onlySellable ? "sellable" : "all",
   ] as const;
@@ -182,5 +191,6 @@ export function applyCatalogListingParams(
   if (options.concentration) qs.set("concentration", options.concentration);
   if (options.houseCollection) qs.set("houseCollection", options.houseCollection);
   if (options.featuredNote) qs.set("featuredNote", options.featuredNote);
+  if (options.fragranceFamily) qs.set("fragranceFamily", options.fragranceFamily);
   if (options.sort) qs.set("sort", options.sort);
 }
