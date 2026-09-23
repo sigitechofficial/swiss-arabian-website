@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { brandScopedStorage } from "@/lib/storefront/brandStorage";
 
 /** Mirrors storefront catalogContext — kept here to avoid a cycle with context.ts. */
@@ -30,8 +30,10 @@ type UiState = {
   setCatalogContext: (ctx: PersistedCatalogContext | null) => void;
 };
 
+type PersistedUiState = Pick<UiState, "selectedMarketId" | "catalogContext">;
+
 export const useUiStore = create<UiState>()(
-  persist(
+  persist<UiState, [], [], PersistedUiState>(
     (set) => ({
       mobileNavOpen: false,
       cartOpen: false,
@@ -50,7 +52,7 @@ export const useUiStore = create<UiState>()(
       // Only the shopper's country survives reloads (and full-page loads such
       // as a 404) — drawer/overlay open states always start closed.
       name: "sa-ui-market",
-      storage: brandScopedStorage(),
+      storage: createJSONStorage(() => brandScopedStorage()),
       partialize: (state) => ({
         selectedMarketId: state.selectedMarketId,
         catalogContext: state.catalogContext,

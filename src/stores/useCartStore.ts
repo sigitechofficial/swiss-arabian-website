@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
 import { brandScopedStorage } from "@/lib/storefront/brandStorage";
@@ -55,8 +55,10 @@ type CartState = {
   subtotal: () => number;
 };
 
+type PersistedCartState = Pick<CartState, "lines">;
+
 export const useCartStore = create<CartState>()(
-  persist(
+  persist<CartState, [], [], PersistedCartState>(
     (set, get) => ({
       lines: [],
       cartId: null,
@@ -197,7 +199,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "sa-cart-v2",
-      storage: brandScopedStorage(),
+      storage: createJSONStorage(() => brandScopedStorage()),
       partialize: (state) => ({ lines: state.lines }),
     },
   ),
