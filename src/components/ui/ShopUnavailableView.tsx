@@ -9,14 +9,7 @@ export function ShopUnavailableView() {
       <p className="text-sa-muted">
         We cannot load this storefront right now. Please try again later.
       </p>
-      <AppButton
-        type="button"
-        onClick={() => {
-          window.location.assign("/");
-        }}
-      >
-        Try again
-      </AppButton>
+      <AppButton href="/">Try again</AppButton>
     </div>
   );
 }
