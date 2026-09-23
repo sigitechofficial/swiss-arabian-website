@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+import { brandScopedStorage } from "@/lib/storefront/brandStorage";
 
 export type CartLine = {
   cartItemId?: string;
@@ -196,6 +197,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "sa-cart-v2",
+      storage: brandScopedStorage(),
       partialize: (state) => ({ lines: state.lines }),
     },
   ),

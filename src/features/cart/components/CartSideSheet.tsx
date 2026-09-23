@@ -12,7 +12,7 @@ import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
 import { useAddToCart } from "../hooks/useAddToCart";
 
-const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
+const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#015696", "#fff", "#f4ead8"];
 const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
 
 type ConfettiPiece = {

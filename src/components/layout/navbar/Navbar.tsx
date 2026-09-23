@@ -142,26 +142,26 @@ function NavbarTopbar({
   );
 }
 
-function NavbarBrand({ crop = false, wordmark = false }: { crop?: boolean; wordmark?: boolean }) {
+function NavbarBrand({ wordmark = false }: { crop?: boolean; wordmark?: boolean }) {
   if (wordmark) {
     return (
       <Link
         className={`brand-link brand-link--wordmark ${brandWordmarkFont.className}`}
         href="/"
-        aria-label="Swiss Arabian home"
+        aria-label="Sapil home"
       >
-        Swiss{"\u00A0"}Arabian
+        Sapil
       </Link>
     );
   }
 
   return (
-    <Link
-      className={crop ? "brand-link brand-link--crop" : "brand-link"}
-      href="/"
-      aria-label="Swiss Arabian home"
-    >
-      <img src="/assets/sa-logo-clear.png" alt="Swiss Arabian" />
+    <Link className="brand-link" href="/" aria-label="Sapil home">
+      <img
+        src="/assets/sapil-logo.png"
+        alt="Sapil"
+        className="site-logo"
+      />
     </Link>
   );
 }

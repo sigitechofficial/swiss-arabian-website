@@ -5,6 +5,7 @@
 :root {
   --chrome-content-max: 1200px;
   --chrome-edge: 1rem;
+  --chrome-primary: #015696;
 }
 @media (min-width: 768px) {
   :root { --chrome-edge: 1.5rem; }
@@ -17,13 +18,13 @@
    Row 2: tab bar with dropdown mega panels (desktop).
    Mobile: hamburger drawer with accordion sub-groups.
    Loaded LAST on every page so it owns the header styling.
-   Brand literals: copper #8c4435, cream #faf6ee, beige #e8d8bb,
+   Brand literals: primary #015696, cream #faf6ee, beige #e8d8bb,
    line #d9ccb4, ink #241f1b — independent of host token system.
    ============================================================ */
 
 /* --- Top category bar (Ounass-style, brand copper) -------- */
 .topbar {
-  background: #8c4435;                 /* brand copper, full-bleed */
+  background: var(--chrome-primary);   /* brand primary, full-bleed */
   color: #f4e7d3;
   font-family: 'Benton Sans Wide', 'BentonSansWide', sans-serif;
   font-size: 0.72rem;
@@ -54,7 +55,7 @@
 .topbar__cat:hover { color: #fff; }
 .topbar__cat.is-active {
   background: #faf6ee;                 /* cream highlight, copper text */
-  color: #8c4435;
+  color: #015696;
   font-weight: 600;
 }
 .topbar__ticker {
@@ -164,7 +165,7 @@
 .site-header .topbar__menu-option:hover,
 .site-header .topbar__menu-option[aria-selected="true"] {
   background: #f3ebda;
-  color: #8c4435;
+  color: #015696;
 }
 .topbar__menu-trigger[lang="ar"],
 .topbar__menu-option[lang="ar"] {
@@ -339,7 +340,7 @@
   cursor: pointer;
   transition: color 0.3s ease, background 0.3s ease;
 }
-.icon-btn:hover { color: #8c4435; background: #ece0c9; }
+.icon-btn:hover { color: #015696; background: #ece0c9; }
 /* On tablet/mobile the search icon moves next to the menu toggle (`.nav-start`);
    the desktop copy inside `.nav-utils` hides there instead of duplicating it. */
 .nav-start__search { display: none; }
@@ -350,7 +351,7 @@
   padding: 0 4px;
   display: grid; place-items: center;
   font-size: 0.6rem; font-weight: 600;
-  color: #fff; background: #8c4435;
+  color: #fff; background: #015696;
   border-radius: 999px;
 }
 .bag-count[hidden] { display: none; }
@@ -388,9 +389,9 @@
   transition: color 0.3s ease;
 }
 .primary-nav__link:hover,
-.primary-nav__link[aria-current="page"] { color: #8c4435; }
-.primary-nav__item.is-open .primary-nav__link { color: #8c4435; }
-.primary-nav__link--accent { color: #8c4435; }
+.primary-nav__link[aria-current="page"] { color: #015696; }
+.primary-nav__item.is-open .primary-nav__link { color: #015696; }
+.primary-nav__link--accent { color: #015696; }
 
 .primary-nav__caret {
   display: inline-flex;
@@ -398,7 +399,7 @@
   justify-content: center;
   width: 18px;
   align-self: stretch;
-  color: #8c4435;
+  color: #015696;
   background: none;
   border: none;
   cursor: pointer;
@@ -430,7 +431,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #8c4435 25%, #b97a5f 50%, #8c4435 75%, transparent);
+  background: linear-gradient(90deg, transparent, #015696 25%, #b97a5f 50%, #015696 75%, transparent);
   opacity: 0.7;
 }
 .mega__inner {
@@ -453,7 +454,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8c4435;
+  color: #015696;
   border-bottom: 1px solid #ecdfc9;
 }
 .mega__list { margin: 0; padding: 0; list-style: none; }
@@ -469,7 +470,7 @@
   transition: color 0.2s ease, transform 0.2s ease;
 }
 .mega__list a:hover {
-  color: #8c4435;
+  color: #015696;
   transform: translateX(3px);
 }
 
@@ -533,7 +534,7 @@
   color: #241f1b;
   transition: color 0.2s ease;
 }
-.mega__prod:hover .mega__prod-name { color: #8c4435; }
+.mega__prod:hover .mega__prod-name { color: #015696; }
 .mega__prod-meta {
   margin-top: 0.2rem;
   font-size: 0.76rem;
@@ -546,7 +547,7 @@
   margin-top: 0.4rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #8c4435;
+  color: #015696;
 }
 @media (max-width: 1100px) {
   .mega__products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -600,8 +601,8 @@
 .pill--solid,
 .mega__promo-cta {
   color: #fff;
-  background: #8c4435;
-  border: 1px solid #8c4435;
+  background: #015696;
+  border: 1px solid #015696;
 }
 .pill--solid:hover,
 .mega__promo-cta:hover { background: #6d3428; border-color: #6d3428; }
@@ -609,7 +610,7 @@
 /* --- Mobile toggle / drawer ------------------------------- */
 .site-header .nav-toggle { display: none; }
 .site-header .mobile-nav { display: none; }
-.site-header :focus-visible:not(.nav-search-input) { outline: 2px solid #8c4435; outline-offset: 2px; }
+.site-header :focus-visible:not(.nav-search-input) { outline: 2px solid #015696; outline-offset: 2px; }
 
 /* ============================================================
    Mobile
@@ -676,8 +677,8 @@
     cursor: pointer;
   }
   .mobile-nav__list > li > a:hover,
-  .mobile-nav__group-toggle:hover { color: #8c4435; }
-  .mobile-nav__group-toggle svg { width: 14px; height: 14px; flex: none; transition: transform 0.3s ease; color: #8c4435; }
+  .mobile-nav__group-toggle:hover { color: #015696; }
+  .mobile-nav__group-toggle svg { width: 14px; height: 14px; flex: none; transition: transform 0.3s ease; color: #015696; }
   .mobile-nav__group-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 
   .mobile-nav__sub { margin: 0; padding: 0.25rem 0 0.5rem 0.75rem; list-style: none; }
@@ -690,7 +691,7 @@
     color: #5b5148;
     text-decoration: none;
   }
-  .mobile-nav__sub a:hover { color: #8c4435; }
+  .mobile-nav__sub a:hover { color: #015696; }
   .mobile-nav__sub-label {
     padding: 0.6rem 0 0.2rem;
     font-size: 0.66rem;
@@ -758,7 +759,7 @@
 .site-header a.topbar__cat:hover { color: #fff; }
 .site-header a.topbar__cat.is-active {
   background: #faf6ee;
-  color: #8c4435;
+  color: #015696;
   font-weight: 600;
 }
 .site-header .primary-nav__link {
@@ -767,7 +768,7 @@
 }
 .site-header .primary-nav__link:hover,
 .site-header .primary-nav__link[aria-current="page"] {
-  color: #8c4435;
+  color: #015696;
 }
 
 @media (max-width: 767px) {
@@ -805,7 +806,7 @@
 
 .site-footer {
   padding-block: clamp(2.75rem, 6vw, 4.5rem) 2.25rem;
-  background-color: var(--copper, #8c4435);
+  background-color: var(--copper, #015696);
   color: rgba(255, 255, 255, 0.88);
   border-block-start: 1px solid rgb(165 134 79 / 0.3);
 }
@@ -1157,7 +1158,7 @@ html[dir="rtl"] .cart-drawer.is-open .cart-drawer-panel { transform: none; }
 }
 .cart-ship-fill {
   height: 100%; width: 0; border-radius: inherit;
-  background: #8c4435; transform-origin: left center;
+  background: #015696; transform-origin: left center;
   transition: width 0.35s ease, background-color 0.35s ease;
 }
 .cart-drawer-panel { overflow: hidden; }
@@ -1292,7 +1293,7 @@ html[dir="rtl"] .cart-drawer.is-open .cart-drawer-panel { transform: none; }
 .cart-empty a, .cart-empty button {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 10px 18px; border-radius: 999px; border: 0;
-  background: #8c4435; color: #fff; text-decoration: none; cursor: pointer;
+  background: #015696; color: #fff; text-decoration: none; cursor: pointer;
   font: inherit; font-size: 0.85rem;
 }
 .cart-line {
@@ -1320,7 +1321,7 @@ html[dir="rtl"] .cart-drawer.is-open .cart-drawer-panel { transform: none; }
   min-width: 28px; text-align: center; font-size: 0.85rem;
 }
 .cart-line-side { text-align: end; }
-.cart-line-price { margin: 0 0 8px; font-weight: 600; color: #8c4435; font-size: 0.9rem; }
+.cart-line-price { margin: 0 0 8px; font-weight: 600; color: #015696; font-size: 0.9rem; }
 .cart-line-remove {
   border: 0; background: none; padding: 0; cursor: pointer;
   font: inherit; font-size: 0.75rem; color: rgba(33,33,33,0.5);
@@ -1338,7 +1339,7 @@ html[dir="rtl"] .cart-drawer.is-open .cart-drawer-panel { transform: none; }
 .cart-checkout,
 #cart-checkout {
   width: 100%; height: 48px; border: 0; border-radius: 999px;
-  background: #8c4435; color: #fff; font: inherit; font-weight: 600;
+  background: #015696; color: #fff; font: inherit; font-weight: 600;
   cursor: pointer; margin-bottom: 8px;
 }
 .cart-checkout:hover,
@@ -1470,7 +1471,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   color: #241f1b;
 }
 .nav-search-field:hover {
-  border-color: #8c4435;
+  border-color: #015696;
   color: #241f1b;
 }
 
@@ -1551,7 +1552,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   .site-header[data-navbar="logo-center"] .nav-search-field:focus-within,
   .site-header[data-navbar="underline"] .nav-search-field:hover,
   .site-header[data-navbar="underline"] .nav-search-field:focus-within {
-    border-bottom-color: #8c4435;
+    border-bottom-color: #015696;
     color: #241f1b;
   }
   .site-header[data-navbar="logo-center"] .nav-search-field input,
@@ -1651,7 +1652,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   }
   .site-header[data-navbar="minimal"] .nav-search-field:hover,
   .site-header[data-navbar="minimal"] .nav-search-field:focus-within {
-    border-color: #8c4435;
+    border-color: #015696;
     color: #241f1b;
   }
   .site-header[data-navbar="minimal"] .nav-search-field input {
@@ -1681,8 +1682,13 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   .site-header[data-navbar="minimal"] .nav-search-field input::placeholder {
     color: #9a8d7c;
   }
+  .site-header[data-navbar="minimal"] .brand-link--crop {
+    height: 52px;
+  }
   .site-header[data-navbar="minimal"] .brand-link img {
-    max-height: 58px;
+    height: auto;
+    max-height: 48px;
+    max-width: 120px;
   }
   .site-header[data-navbar="minimal"] .nav-actions--boutique {
     display: flex;
@@ -1742,7 +1748,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   }
   .site-header[data-navbar="split"] .nav-search-field:hover,
   .site-header[data-navbar="split"] .nav-search-field:focus-within {
-    border-bottom-color: #8c4435;
+    border-bottom-color: #015696;
     color: #241f1b;
   }
   .site-header[data-navbar="split"] .nav-search-field svg {
@@ -1889,7 +1895,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   }
   .site-header[data-navbar="underline"] .primary-nav__link:hover::after,
   .site-header[data-navbar="underline"] .primary-nav__item.is-open .primary-nav__link::after {
-    background: #8c4435;
+    background: #015696;
   }
 }
 
@@ -1926,7 +1932,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   overflow: visible;
   /* Primary logo copper — the same token the hero's solid CTA and the site
      footer use, so the top of the page matches the buttons. */
-  background: var(--copper, #8c4435);
+  background: var(--copper, #015696);
   color: #fff;
 }
 .topbar--boutique::before,
@@ -2135,7 +2141,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
 }
 .nav-search-drop__popular a:hover,
 .nav-search-drop__queries button:hover {
-  color: #8c4435;
+  color: #015696;
 }
 .nav-search-drop__queries {
   margin: 0;
@@ -2182,7 +2188,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8c4435;
+  color: #015696;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -2199,7 +2205,7 @@ html[dir="rtl"] .ai-search-hit-meta { direction: rtl; }
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8c4435;
+  color: #015696;
   text-decoration: underline;
   text-underline-offset: 3px;
 }

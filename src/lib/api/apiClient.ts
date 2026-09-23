@@ -1,6 +1,12 @@
 import { env } from "@/lib/config/env";
 import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { endSession } from "@/lib/auth/endSession";
+import {
+  applyStorefrontRequestHeaders,
+  isShopUnavailablePath,
+  SHOP_UNAVAILABLE_CODES,
+  SHOP_UNAVAILABLE_PATH,
+} from "@/lib/storefront/brand";
 import { ApiClientError, type ApiErrorBody } from "./apiError";
 
 type ApiEnvelope<T> = {
@@ -32,7 +38,11 @@ async function tryRefresh(): Promise<boolean> {
     try {
       const res = await fetch(`${env.apiBaseUrl}/storefront/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: (() => {
+          const headers = new Headers({ "Content-Type": "application/json" });
+          applyStorefrontRequestHeaders(headers);
+          return headers;
+        })(),
         body: JSON.stringify({ refreshToken }),
       });
       if (!res.ok) return false;
@@ -77,6 +87,8 @@ async function request<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  applyStorefrontRequestHeaders(headers);
+
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,
     headers,
@@ -118,10 +130,21 @@ async function request<T>(
     );
   }
 
+  if (
+    res.status === 400 &&
+    errorCode &&
+    SHOP_UNAVAILABLE_CODES.has(errorCode) &&
+    typeof window !== "undefined" &&
+    !isShopUnavailablePath()
+  ) {
+    window.location.assign(SHOP_UNAVAILABLE_PATH);
+  }
+
   if (!res.ok || json?.success === false) {
     throw new ApiClientError(
       res.status,
       json?.error ?? (text || "Request failed"),
+      json?.meta?.requestId,
     );
   }
 

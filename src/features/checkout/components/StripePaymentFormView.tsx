@@ -37,7 +37,7 @@ function stripeErrorMessage(code?: string, declineCode?: string): string {
 
 /** Brand tokens from v5-landing.css — Stripe's iframe can't read our CSS variables. */
 const BRAND = {
-  copper: "#8c4435",
+  copper: "#015696",
   ink: "#241f1b",
   ink2: "#5b5148",
   line: "#d9ccb4",

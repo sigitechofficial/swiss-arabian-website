@@ -107,7 +107,7 @@
   height: 100%;
   width: 0;
   border-radius: inherit;
-  background: var(--copper, #8c4435);
+  background: var(--copper, #015696);
   transform-origin: left center;
   transition: width 0.35s ease, background-color 0.35s ease;
 }
@@ -273,7 +273,7 @@
   padding: 10px 18px;
   border-radius: 999px;
   border: 0;
-  background: var(--copper, #8c4435);
+  background: var(--copper, #015696);
   color: #fff;
   text-decoration: none;
   cursor: pointer;
@@ -354,7 +354,7 @@
 .cart-line-price {
   margin: 0 0 8px;
   font-weight: 600;
-  color: var(--copper, #8c4435);
+  color: var(--copper, #015696);
   font-size: 0.9rem;
 }
 .cart-line-remove {
@@ -467,8 +467,8 @@
   color: #fff;
 }
 .cart-rec-add[aria-pressed="true"] {
-  background: var(--copper, #8c4435);
-  border-color: var(--copper, #8c4435);
+  background: var(--copper, #015696);
+  border-color: var(--copper, #015696);
   color: #fff;
 }
 
@@ -495,7 +495,7 @@
   height: 48px;
   border: 0;
   border-radius: 999px;
-  background: var(--copper, #8c4435);
+  background: var(--copper, #015696);
   color: #fff;
   font: inherit;
   font-weight: 600;

@@ -26,6 +26,7 @@ import {
 import type { StorefrontMarket } from "@/features/markets/types/market";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore, type PersistedCatalogContext } from "@/stores/useUiStore";
+import { filterMarketsForTenant } from "@/lib/storefront/brand";
 
 type RegionOption = { id: string; label: string; flag?: string; countryCode?: string };
 
@@ -46,6 +47,9 @@ function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
     languageCode: ctx.languageCode ?? market.defaultLanguageCode,
     currencyCode: ctx.currencyCode ?? market.defaultCurrencyCode,
     countryCode: ctx.countryCode || market.countryCode,
+    zoneId: ctx.zoneId,
+    brandId: ctx.brandId ?? null,
+    brandCode: ctx.brandCode ?? null,
   };
 }
 
@@ -72,7 +76,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const shoppable = useMemo(() => {
     const list = marketsQuery.data?.markets ?? [];
     const ready = list.filter((market) => market.isCatalogReady);
-    return ready.length ? ready : list;
+    const pool = ready.length ? ready : list;
+    const filtered = filterMarketsForTenant(pool);
+    return filtered.length ? filtered : pool;
   }, [marketsQuery.data]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {

@@ -22,6 +22,8 @@ export type StorefrontMarketCatalogContext = {
   languageCode: string | null;
   currencyCode: string | null;
   countryCode: string;
+  brandId?: string | null;
+  brandCode?: string | null;
 };
 
 export type StorefrontMarket = {

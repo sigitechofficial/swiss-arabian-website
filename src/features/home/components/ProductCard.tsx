@@ -255,7 +255,7 @@ export function ProductCard({
               family: product.family,
             }).finally(() => setAdding(false));
           }}
-          className={`flex w-full cursor-pointer items-center justify-center bg-terra font-semibold uppercase text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted ${
+          className={`flex w-full cursor-pointer items-center justify-center bg-terra font-semibold uppercase text-white transition-colors hover:bg-[#014578] disabled:cursor-not-allowed disabled:bg-sa-border disabled:text-sa-muted ${
             compact
               ? "h-8 text-[10px] tracking-[0.08em]"
               : "h-[42px] text-[12px] tracking-[0.1em]"

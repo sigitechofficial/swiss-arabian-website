@@ -193,7 +193,7 @@ body.is-search-open { overflow: hidden; }
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--copper, #8c4435);
+  color: var(--copper, #015696);
 }
 .search-plp__title {
   margin: 0;
@@ -206,7 +206,7 @@ body.is-search-open { overflow: hidden; }
 .search-plp__query {
   font-style: italic;
   font-weight: 400;
-  color: var(--copper, #8c4435);
+  color: var(--copper, #015696);
 }
 .search-plp__meta {
   margin: 0.4rem 0 0;
@@ -219,7 +219,7 @@ body.is-search-open { overflow: hidden; }
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--copper, #8c4435);
+  color: var(--copper, #015696);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -260,8 +260,8 @@ body.is-search-open { overflow: hidden; }
   text-decoration: none;
 }
 .search-plp__chips a:hover {
-  border-color: var(--copper, #8c4435);
-  color: var(--copper, #8c4435);
+  border-color: var(--copper, #015696);
+  color: var(--copper, #015696);
 }
 .search-plp .search-plp__empty .catalog-empty__cta {
   margin-top: 1.25rem;
@@ -289,7 +289,7 @@ body.is-search-open { overflow: hidden; }
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--copper, #8c4435);
+  color: var(--copper, #015696);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

@@ -102,4 +102,11 @@ export const env = {
   catalogMediaBaseUrl: readPublic(
     process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
   ),
+  /**
+   * Shop hostname for `X-Storefront-Host` (no scheme/port).
+   * Required on localhost to act as Sapil (`sapil.test`).
+   */
+  storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
+  /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
+  storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
 } as const;

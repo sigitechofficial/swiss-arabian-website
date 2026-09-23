@@ -261,7 +261,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             {payable ? (
               <Link
                 href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
-                className="flex h-9 items-center bg-terra px-4 text-[11px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
+                className="flex h-9 items-center bg-terra px-4 text-[11px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#014578]"
               >
                 Complete payment
               </Link>

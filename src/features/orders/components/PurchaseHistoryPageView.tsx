@@ -70,7 +70,7 @@ function OrderRow({ order }: { order: OrderSummaryApi }) {
           {action === "pay" ? (
             <Link
               href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
-              className={`${ACTION_CLASS} border-terra bg-terra text-white hover:bg-[#a25e48]`}
+              className={`${ACTION_CLASS} border-terra bg-terra text-white hover:bg-[#014578]`}
             >
               Complete payment →
             </Link>
@@ -108,7 +108,7 @@ function EmptyOrders() {
       <p className="mt-1 text-[12px] text-sa-muted">Your purchase history will appear here.</p>
       <Link
         href="/products"
-        className="mt-5 inline-flex h-10 items-center justify-center rounded bg-terra px-6 text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
+        className="mt-5 inline-flex h-10 items-center justify-center rounded bg-terra px-6 text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#014578]"
       >
         Start Shopping
       </Link>

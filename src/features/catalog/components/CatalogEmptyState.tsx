@@ -31,7 +31,7 @@ export function CatalogEmptyState({
       </p>
       <Link
         href="/"
-        className="mt-6 inline-flex h-[42px] cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#a25e48]"
+        className="mt-6 inline-flex h-[42px] cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#014578]"
       >
         Back to home
       </Link>

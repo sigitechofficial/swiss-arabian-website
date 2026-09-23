@@ -179,8 +179,8 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #fff;
-  background: var(--copper, #8c4435);
-  border: 1px solid var(--copper, #8c4435);
+  background: var(--copper, #015696);
+  border: 1px solid var(--copper, #015696);
   border-radius: 999px;
   cursor: pointer;
   transition: background var(--dur, 0.2s) var(--ease, ease), border-color var(--dur, 0.2s) var(--ease, ease);
@@ -396,7 +396,7 @@
 .catalog__sort-select:focus {
   outline: none;
   background-color: rgba(255, 255, 255, 0.8);
-  border-color: var(--copper, #8c4435);
+  border-color: var(--copper, #015696);
   box-shadow:
     0 10px 28px -10px rgba(10, 6, 3, 0.22),
     0 0 0 3px rgba(140, 68, 53, 0.14),

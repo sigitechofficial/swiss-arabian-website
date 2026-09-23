@@ -109,8 +109,8 @@
 
 .landing .hero__btn--solid {
   color: #fff;
-  background: var(--copper, #8c4435);
-  border: 1px solid var(--copper, #8c4435);
+  background: var(--copper, #015696);
+  border: 1px solid var(--copper, #015696);
 }
 
 .landing .hero__btn--solid:hover {
