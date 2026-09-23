@@ -92,6 +92,23 @@ jobs:
           echo "script_host=${SCRIPT_HOST}" >> "$GITHUB_OUTPUT"
           echo "Insider Web SDK: enabled=${ENABLED} account_id=${ACCOUNT_ID} host=${SCRIPT_HOST}"
 
+      - name: Resolve Google Maps API key from Key Vault
+        id: maps
+        run: |
+          set -euo pipefail
+          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
+
+          MAPS_KEY=$(az keyvault secret show --vault-name "$KV" --name next-public-google-maps-api-key --query value -o tsv 2>/dev/null || true)
+
+          if [ -z "$MAPS_KEY" ]; then
+            echo "ERROR: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is empty (Key Vault secret next-public-google-maps-api-key)"
+            exit 1
+          fi
+
+          echo "::add-mask::$MAPS_KEY"
+          echo "api_key=${MAPS_KEY}" >> "$GITHUB_OUTPUT"
+          echo "Google Maps API key resolved from Key Vault"
+
       - name: Build Docker image
         run: |
           docker build \
@@ -105,6 +122,7 @@ jobs:
             --build-arg "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
+            --build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ steps.maps.outputs.api_key }}" \
             -t "${{ steps.vars.outputs.image }}" \
             .
 
@@ -179,6 +197,7 @@ jobs:
               "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
               "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
               "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
+              "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ steps.maps.outputs.api_key }}" \
               "GIT_COMMIT_SHA=${{ github.sha }}" \
               "GIT_SHORT_SHA=${{ steps.vars.outputs.short_sha }}" \
               "GIT_BRANCH=${{ github.ref_name }}" \
