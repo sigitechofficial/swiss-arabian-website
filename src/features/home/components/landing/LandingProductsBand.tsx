@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
-import { cardEyebrow, formatMoney } from "../../utils/formatMoney";
+import { formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
 
 /** Requested display order for this strip only (Trending keeps its own
@@ -139,9 +139,6 @@ export function LandingProductsBand() {
                   <AddToBagButton product={product} variant="product" />
                 </div>
                 <div className="product-card__body">
-                  <p className="product-card__eyebrow">
-                    {cardEyebrow(product.subtitle)}
-                  </p>
                   <h3 className="product-card__name">{product.title}</h3>
                   <p className="product-card__price">
                     {formatMoney(product.price, product.currency)}

@@ -1,0 +1,24 @@
+"use client";
+
+import { useCartStore } from "@/stores/useCartStore";
+import { freeShippingProgress } from "../utils/freeShippingBar";
+import { useApplicablePromotions } from "./useApplicablePromotions";
+
+export function useFreeShippingBar() {
+  const promotions = useCartStore((s) => s.promotions);
+  const totals = useCartStore((s) => s.totals);
+  const subtotal = useCartStore((s) => s.subtotal());
+  const { data } = useApplicablePromotions();
+  const snapshot = data?.promotions ?? promotions;
+  const currency = snapshot?.context.currencyCode ?? totals?.currency ?? "AED";
+  return {
+    ...freeShippingProgress({
+      subtotal,
+      offers: data?.offers,
+      snapshot,
+    }),
+    currency,
+    snapshot,
+    offers: data?.offers ?? [],
+  };
+}

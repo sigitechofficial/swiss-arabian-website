@@ -104,6 +104,7 @@
   overflow: hidden;
 }
 .cart-ship-fill {
+  position: relative;
   height: 100%;
   width: 0;
   border-radius: inherit;

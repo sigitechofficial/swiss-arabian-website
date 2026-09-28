@@ -21,3 +21,4 @@ export { MoneySummary } from "./components/MoneySummary";
 export { AppliedCampaigns } from "./components/AppliedCampaigns";
 export { PromotionUnlockNote } from "./components/PromotionUnlockNote";
 export { useApplicablePromotions } from "./hooks/useApplicablePromotions";
+export { useFreeShippingBar } from "./hooks/useFreeShippingBar";

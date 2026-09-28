@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -786,7 +786,6 @@ export function CatalogProductCard({
         </div>
       )}
       <div className="product-card__body">
-        <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
         <h3 className="product-card__name">{product.title}</h3>
         <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
         {note ? <p className="product-card__note">{note}</p> : null}

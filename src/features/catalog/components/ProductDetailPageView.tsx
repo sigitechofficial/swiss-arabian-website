@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
 import { PageLoading } from "@/components/ui";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
-import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
@@ -934,7 +934,6 @@ function RelatedCard({
         <AddToBagButton product={product} variant="product" />
       </div>
       <div className="product-card__body">
-        <p className="product-card__eyebrow">{cardEyebrow(product.subtitle)}</p>
         <h3 className="product-card__name">{product.title}</h3>
         <p className="product-card__price">{formatMoney(product.price, product.currency)}</p>
       </div>
