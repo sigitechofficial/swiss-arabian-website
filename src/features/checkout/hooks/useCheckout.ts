@@ -40,6 +40,11 @@ import {
   storeZonePaymentMethodId,
 } from "../utils/checkoutSession";
 import { pickDefaultPaymentMethod } from "../utils/methodLabels";
+import {
+  checkoutLineSignature,
+  checkoutSignatureChanged,
+  promotionCheckoutSignature,
+} from "../utils/promotionCheckoutSignature";
 import { PaymentGatewayError, startPayment } from "../utils/startPayment";
 
 /**
@@ -59,34 +64,15 @@ export type CheckoutSubmitValues = {
   billing?: AddressFields;
 };
 
-function lineSignature(lines: CartLine[]): string {
-  return lines
-    .filter((l) => l.cartItemId)
-    .map((l) => `${l.cartItemId}:${l.quantity}`)
-    .sort()
-    .join("|");
-}
-
-/** Lines plus coupon/discount/tender so a promo change rebuilds checkout snapshots. */
-function cartSignature(
-  lines: CartLine[],
-  couponCode = "",
-  discount = 0,
-  shippingDiscount = 0,
-  giftCards = "",
-): string {
-  return `${lineSignature(lines)}|c:${couponCode}|d:${discount}|s:${shippingDiscount}|g:${giftCards}`;
-}
-
 function commerceSignature(lines: CartLine[]): string {
   const state = useCartStore.getState();
-  return cartSignature(
+  return promotionCheckoutSignature({
     lines,
-    appliedCoupon(state.promotions)?.code ?? "",
-    state.totals?.discount ?? 0,
-    shippingDiscountAmount(state.promotions),
-    giftCardSignature(state.promotions),
-  );
+    couponCode: appliedCoupon(state.promotions)?.code ?? "",
+    merchandiseDiscount: state.totals?.discount ?? 0,
+    shippingDiscount: shippingDiscountAmount(state.promotions),
+    giftCards: giftCardSignature(state.promotions),
+  });
 }
 
 /** Whether a session was built from exactly this bag; `null` when it can't be told. */
@@ -100,7 +86,7 @@ function sessionMatchesCart(
     .map((i) => `${i.cartItemId}:${Number.parseInt(i.quantity ?? "0", 10) || 0}`)
     .sort()
     .join("|");
-  return sessionSig === lineSignature(lines);
+  return sessionSig === checkoutLineSignature(lines);
 }
 
 /**
@@ -221,8 +207,14 @@ export function useCheckout() {
   // another tab…). Rebuild it so the placed order matches what's on screen.
   useEffect(() => {
     if (!cartId || !session || sessionSigRef.current === null) return;
-    const sig = cartSignature(lines, couponCode, discountTotal, shippingDiscount, giftCardsSig);
-    if (sig === sessionSigRef.current) return;
+    const sig = promotionCheckoutSignature({
+      lines,
+      couponCode,
+      merchandiseDiscount: discountTotal,
+      shippingDiscount,
+      giftCards: giftCardsSig,
+    });
+    if (!checkoutSignatureChanged(sessionSigRef.current, sig)) return;
     sessionSigRef.current = sig;
     const stale = session;
     void (async () => {
@@ -299,6 +291,7 @@ export function useCheckout() {
       deliveryChoiceRef.current = zoneDeliveryMethodId;
       setSelectedDeliveryId(zoneDeliveryMethodId);
       try {
+        // The response is the server re-quote, including P6 promotion eligibility.
         setSession(await selectDeliveryMethod(sessionId, method.deliveryMethodId));
       } catch (e) {
         deliveryChoiceRef.current = previous;
@@ -319,6 +312,7 @@ export function useCheckout() {
       storeZonePaymentMethodId(method.zonePaymentMethodId);
       storePaymentMethodId(method.paymentMethodId);
       try {
+        // The response is the server re-quote, including P6 promotion eligibility.
         setSession(await selectPaymentMethod(sessionId, method.paymentMethodId));
       } catch (e) {
         paymentChoiceRef.current = previous;

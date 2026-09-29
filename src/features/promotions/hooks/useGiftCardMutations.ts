@@ -7,7 +7,7 @@ import {
   getActiveCart,
   removeCartGiftCards,
 } from "@/features/cart/api/cart.service";
-import { storeCartId } from "@/features/cart/utils/guestToken";
+import { runQueuedCart } from "@/features/cart/api/optimisticCart";
 import {
   applyCheckoutGiftCard,
   removeCheckoutGiftCard,
@@ -20,21 +20,13 @@ export function useGiftCardMutations(opts?: {
   checkoutSessionId?: string | null;
   onCheckoutSession?: (session: CheckoutSessionResponse) => void | Promise<void>;
 }) {
-  const setCartFromApi = useCartStore((s) => s.setCartFromApi);
-  const setCartId = useCartStore((s) => s.setCartId);
   const cartId = useCartStore((s) => s.cartId);
   const checkoutSessionId = opts?.checkoutSessionId ?? null;
-
-  const syncCart = (cart: Awaited<ReturnType<typeof applyCartGiftCard>>) => {
-    storeCartId(cart.cartId);
-    setCartId(cart.cartId);
-    setCartFromApi(cart);
-  };
 
   async function refreshCart() {
     const id = useCartStore.getState().cartId;
     if (!id) return;
-    syncCart(await getActiveCart(id));
+    await runQueuedCart(() => getActiveCart(id));
   }
 
   async function onQuoteError(error: unknown) {
@@ -57,10 +49,9 @@ export function useGiftCardMutations(opts?: {
         await opts?.onCheckoutSession?.(session);
         return session;
       }
-      if (!cartId) throw new Error("Your bag isn’t ready yet.");
-      const cart = await applyCartGiftCard(cartId, code);
-      syncCart(cart);
-      return cart;
+      const id = useCartStore.getState().cartId;
+      if (!id) throw new Error("Your bag isn’t ready yet.");
+      return runQueuedCart(() => applyCartGiftCard(id, code));
     },
     onError: onQuoteError,
   });
@@ -72,10 +63,9 @@ export function useGiftCardMutations(opts?: {
         await opts?.onCheckoutSession?.(session);
         return session;
       }
-      if (!cartId) throw new Error("Your bag isn’t ready yet.");
-      const cart = await removeCartGiftCards(cartId);
-      syncCart(cart);
-      return cart;
+      const id = useCartStore.getState().cartId;
+      if (!id) throw new Error("Your bag isn’t ready yet.");
+      return runQueuedCart(() => removeCartGiftCards(id));
     },
     onError: onQuoteError,
   });

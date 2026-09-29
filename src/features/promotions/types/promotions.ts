@@ -4,14 +4,29 @@ export const KNOWN_PROMOTION_KINDS = ["COUPON", "AUTOMATIC", "FREE_SHIPPING"] as
 export type KnownPromotionKind = (typeof KNOWN_PROMOTION_KINDS)[number];
 export type PromotionAppliedKind = KnownPromotionKind | string;
 
+/** Benefit shapes the backend may return. Unknown values stay renderable. */
+export const KNOWN_DISCOUNT_TYPES = [
+  "PERCENTAGE",
+  "FIXED_AMOUNT",
+  "FIXED_PRICE",
+  "BUY_X_GET_Y",
+  "FREE_SHIPPING",
+] as const;
+export type KnownDiscountType = (typeof KNOWN_DISCOUNT_TYPES)[number];
+
 export type PromotionApplied = {
   kind: PromotionAppliedKind;
   code: string | null;
   label: string | null;
-  discountType: string | null;
+  discountType: KnownDiscountType | string | null;
   discountValue: string | null;
   level: string | null;
   amount: string;
+  /**
+   * Optional server display metadata (for example a later reward cap).
+   * Informational only — never used to count units or choose rewards.
+   */
+  metadata?: Record<string, unknown> | null;
 };
 
 export type PromotionLineAllocation = {
@@ -27,11 +42,40 @@ export type PromotionSnapshotContext = {
   salesChannelCode: string | null;
 };
 
+export const QUALIFICATION_STATUSES = ["ELIGIBLE", "PENDING", "INELIGIBLE"] as const;
+export type QualificationStatus = (typeof QUALIFICATION_STATUSES)[number];
+
+export const PENDING_REASONS = ["PAYMENT_METHOD_REQUIRED", "SHIPPING_METHOD_REQUIRED"] as const;
+export type PendingReason = (typeof PENDING_REASONS)[number];
+
+/** P6 / P6.1 qualification. Unknown status and reason strings stay renderable. */
+export type PromotionQualification = {
+  status?: QualificationStatus | string;
+  minOrderAmount?: string | null;
+  remainingAmount?: string | null;
+  qualifyingSubtotal?: string | null;
+  minEligibleSubtotal?: string | null;
+  minOrderQuantity?: number | null;
+  minEligibleQuantity?: number | null;
+  pendingReason?: PendingReason | string | null;
+};
+
 export type PromotionRejected = {
   code?: string | null;
   reason?: string | null;
   message?: string | null;
   minOrderAmount?: string | null;
+  remainingAmount?: string | null;
+  /** Legacy explicit threshold. Structured qualification fields win. */
+  thresholdAmount?: string | null;
+};
+
+/** Optional near-miss metadata. Present fields are read; unknown keys are ignored. */
+export type PromotionEligibilityHint = {
+  reason?: string | null;
+  thresholdAmount?: string | null;
+  remainingAmount?: string | null;
+  code?: string | null;
 };
 
 export type GiftCardTender = {
@@ -74,6 +118,11 @@ export type PromotionOffer = {
   label?: string | null;
   selected?: boolean;
   rejected?: PromotionRejected | null;
+  qualification?: PromotionQualification | null;
+  /** Legacy explicit threshold. Structured qualification fields win. */
+  thresholdAmount?: string | null;
+  remainingAmount?: string | null;
+  eligibility?: PromotionEligibilityHint | null;
 };
 
 export type ApplicablePromotions = {
@@ -99,13 +148,70 @@ export function appliedCoupon(
   );
 }
 
+export function isFreeShippingBenefit(
+  item: Pick<PromotionApplied, "kind" | "discountType"> | null | undefined,
+): boolean {
+  if (!item) return false;
+  return item.kind === "FREE_SHIPPING" || item.discountType === "FREE_SHIPPING";
+}
+
 export function shippingDiscountAmount(
   snapshot: PromotionSnapshotV1 | null | undefined,
 ): number {
-  const fromTotals = Number(snapshot?.totals?.shippingDiscount ?? "0");
-  if (fromTotals > 0) return fromTotals;
-  const row = (snapshot?.applied ?? []).find((item) => item.kind === "FREE_SHIPPING");
-  return row ? Number(row.amount) : 0;
+  const raw = snapshot?.totals?.shippingDiscount;
+  if (raw != null && raw !== "") {
+    const fromTotals = Number(raw);
+    return Number.isFinite(fromTotals) && fromTotals > 0 ? fromTotals : 0;
+  }
+  const row = (snapshot?.applied ?? []).find((item) => isFreeShippingBenefit(item));
+  const rowAmount = row ? Number(row.amount) : 0;
+  return Number.isFinite(rowAmount) && rowAmount > 0 ? rowAmount : 0;
+}
+
+export type AppliedPromotionView = {
+  label: string;
+  code: string | null;
+  /** Positive server amount. Null means do not print a money figure (including 0). */
+  amount: number | null;
+  /** Non-money status, such as "Free shipping", when there is no merchandise amount. */
+  status: string | null;
+};
+
+/** Label and server amount only. Does not interpret buy/get pools or caps. */
+export function appliedPromotionView(
+  item: PromotionApplied,
+  snapshot?: PromotionSnapshotV1 | null,
+): AppliedPromotionView {
+  const shipping = isFreeShippingBenefit(item);
+  const label =
+    item.label?.trim() ||
+    item.code?.trim() ||
+    (shipping ? "Free shipping" : "Offer");
+  const code = item.code?.trim() || null;
+
+  if (shipping) {
+    const rowAmount = Number(item.amount);
+    const quoted = shippingDiscountAmount(snapshot);
+    if (item.kind === "COUPON") {
+      if (Number.isFinite(rowAmount) && rowAmount > 0) {
+        return { label, code, amount: rowAmount, status: null };
+      }
+      return { label, code, amount: null, status: "Free shipping" };
+    }
+    // A positive row amount is the post-clamp contribution. The shipping total
+    // is only a stand-in when this applied row has no merchandise amount.
+    if (Number.isFinite(rowAmount) && rowAmount > 0) {
+      return { label, code, amount: rowAmount, status: null };
+    }
+    if (quoted > 0) return { label, code, amount: quoted, status: null };
+    return { label, code, amount: null, status: "Free shipping" };
+  }
+
+  const amount = Number(item.amount);
+  if (Number.isFinite(amount) && amount > 0) {
+    return { label, code, amount, status: null };
+  }
+  return { label, code, amount: null, status: "Applied" };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -175,4 +281,72 @@ export function amountPayableFrom(
     if (Number.isFinite(amount) && amount >= 0) return amount;
   }
   return null;
+}
+
+function emptySnapshot(): PromotionSnapshotV1 {
+  return {
+    v: 1,
+    computedAt: null,
+    context: {
+      brandCode: null,
+      zoneCode: null,
+      currencyCode: null,
+      salesChannelCode: null,
+    },
+    applied: [],
+    lineAllocations: [],
+    totals: { discountTotal: "0" },
+    rejected: [],
+  };
+}
+
+/**
+ * Keeps unknown additive keys. Missing lists become empty so a new optional
+ * field cannot break the cart quote.
+ */
+export function readPromotionSnapshot(raw: unknown): PromotionSnapshotV1 | null {
+  const row = asRecord(raw);
+  if (!row) return null;
+  const totals = asRecord(row.totals) ?? {};
+  const context = asRecord(row.context) ?? {};
+  const base = emptySnapshot();
+  return {
+    ...base,
+    ...(row as Partial<PromotionSnapshotV1>),
+    v: typeof row.v === "number" ? row.v : 1,
+    computedAt: asString(row.computedAt),
+    context: {
+      ...base.context,
+      ...context,
+      brandCode: asString(context.brandCode),
+      zoneCode: asString(context.zoneCode),
+      currencyCode: asString(context.currencyCode),
+      salesChannelCode: asString(context.salesChannelCode),
+    },
+    applied: Array.isArray(row.applied) ? (row.applied as PromotionApplied[]) : [],
+    lineAllocations: Array.isArray(row.lineAllocations)
+      ? (row.lineAllocations as PromotionLineAllocation[])
+      : [],
+    totals: {
+      ...totals,
+      discountTotal: asString(totals.discountTotal) ?? "0",
+      shippingDiscount: asString(totals.shippingDiscount) ?? undefined,
+      amountPayable: asString(totals.amountPayable) ?? undefined,
+    },
+    rejected: Array.isArray(row.rejected) ? (row.rejected as PromotionRejected[]) : [],
+  };
+}
+
+export function readApplicablePromotions(raw: unknown): ApplicablePromotions {
+  const data = asRecord(raw) ?? {};
+  const offers = Array.isArray(data.offers)
+    ? data.offers.flatMap((item) => {
+        const offer = asRecord(item);
+        return offer ? [offer as PromotionOffer] : [];
+      })
+    : [];
+  return {
+    promotions: readPromotionSnapshot(data.promotions) ?? emptySnapshot(),
+    offers,
+  };
 }

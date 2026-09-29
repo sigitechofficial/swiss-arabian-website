@@ -3,15 +3,10 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import {
-  shippingDiscountAmount,
+  appliedPromotionView,
   visibleApplied,
-  type PromotionApplied,
   type PromotionSnapshotV1,
 } from "../types/promotions";
-
-function rowLabel(item: PromotionApplied): string {
-  return item.label?.trim() || item.code || (item.kind === "FREE_SHIPPING" ? "Free shipping" : "Offer");
-}
 
 export function AppliedCampaigns({
   snapshot,
@@ -28,17 +23,14 @@ export function AppliedCampaigns({
   return (
     <ul className="promo-applied-list" aria-label="Applied offers">
       {rows.map((item, index) => {
-        const amount =
-          item.kind === "FREE_SHIPPING"
-            ? shippingDiscountAmount(data) || Number(item.amount)
-            : Number(item.amount);
+        const view = appliedPromotionView(item, data);
         return (
-          <li className="promo-applied-row" key={`${item.kind}-${item.code ?? index}`}>
-            <span>{rowLabel(item)}</span>
-            {amount > 0 ? (
-              <span dir="ltr">−{formatMoney(amount, currency)}</span>
+          <li className="promo-applied-row" key={`${item.kind}-${item.code ?? "row"}-${index}`}>
+            <span>{view.label}</span>
+            {view.amount != null && view.amount > 0 ? (
+              <span dir="ltr">−{formatMoney(view.amount, currency)}</span>
             ) : (
-              <span>Applied</span>
+              <span>{view.status ?? "Applied"}</span>
             )}
           </li>
         );

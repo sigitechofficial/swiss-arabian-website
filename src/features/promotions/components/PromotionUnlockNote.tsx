@@ -1,9 +1,10 @@
 "use client";
 
-import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { shippingDiscountAmount } from "../types/promotions";
+import { promotionConflictNotes } from "../utils/conflictNotes";
+import { offerQualificationMessage } from "../utils/qualificationCopy";
 
 export function PromotionUnlockNote({ className = "cart-ship-banner" }: { className?: string }) {
   const promotions = useCartStore((s) => s.promotions);
@@ -13,37 +14,25 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
   const snapshot = data?.promotions ?? promotions;
   const shipOff = shippingDiscountAmount(snapshot);
 
-  const nearMiss = (data?.offers ?? []).find((offer) => {
-    if (offer.selected) return false;
-    const rejected = offer.rejected;
-    if (!rejected || rejected.reason !== "MIN_ORDER") return false;
-    return Boolean(rejected.minOrderAmount);
-  });
+  const qualificationNotes = (data?.offers ?? [])
+    .map((offer) =>
+      offerQualificationMessage(offer, currency, { shippingApplied: shipOff > 0 }),
+    )
+    .filter((note): note is string => Boolean(note));
 
-  const conflicts = (snapshot?.rejected ?? []).filter(
-    (item) => item.reason === "PROMOTION_CONFLICT",
-  );
+  const conflicts = promotionConflictNotes(snapshot?.rejected);
 
-  if (shipOff <= 0 && !nearMiss && !conflicts.length) return null;
-
-  const title =
-    nearMiss?.title?.trim() ||
-    nearMiss?.label?.trim() ||
-    "this offer";
+  if (shipOff <= 0 && !qualificationNotes.length && !conflicts.length) return null;
 
   return (
     <div className={className} aria-live="polite">
       {shipOff > 0 ? <p>Free shipping applied.</p> : null}
-      {shipOff <= 0 && nearMiss?.rejected?.minOrderAmount ? (
-        <p>
-          Spend {formatMoney(Number(nearMiss.rejected.minOrderAmount), currency)} to unlock{" "}
-          {title}.
-        </p>
-      ) : null}
-      {conflicts.map((item, index) => (
-        <p className="promo-conflict" key={`${item.code ?? "conflict"}-${index}`}>
-          {item.message?.trim() ||
-            "Another offer didn’t combine with the one already on your bag."}
+      {qualificationNotes.map((note) => (
+        <p key={note}>{note}</p>
+      ))}
+      {conflicts.map((note) => (
+        <p className="promo-conflict" key={note}>
+          {note}
         </p>
       ))}
     </div>

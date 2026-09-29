@@ -21,6 +21,10 @@ const REASON_COPY: Record<string, string> = {
   NO_ELIGIBLE_DISCOUNT: "Nothing in your bag qualifies for this code.",
   SCOPE: "This code doesn’t apply to the items in your bag.",
   CHANNEL: "This code isn’t valid on this site.",
+  PAYMENT_METHOD_REQUIRED: "Select an eligible payment method at checkout to use this code.",
+  SHIPPING_METHOD_REQUIRED: "Select an eligible delivery method at checkout to use this code.",
+  PAYMENT_METHOD_MISMATCH: "This code doesn’t apply to the selected payment method.",
+  SHIPPING_METHOD_MISMATCH: "This code doesn’t apply to the selected delivery method.",
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -44,15 +48,18 @@ export function couponErrorMessage(error: unknown, currency = "AED"): string {
     const ctx = couponErrorContext(error);
     const reason = typeof ctx.reason === "string" ? ctx.reason : "";
     if (reason === "MIN_ORDER") {
+      const remaining = typeof ctx.remainingAmount === "string" ? ctx.remainingAmount : "";
       const min = typeof ctx.minOrderAmount === "string" ? ctx.minOrderAmount : "";
-      if (min) {
-        return `Spend ${formatMoney(Number(min), currency)} to use this code.`;
+      const amount = remaining.trim() || min.trim();
+      if (amount) {
+        return `Spend ${formatMoney(Number(amount), currency)} to use this code.`;
       }
       return "Your bag doesn’t meet the minimum for this code.";
     }
     return REASON_COPY[reason] ?? "This code doesn’t apply to your bag.";
   }
 
+  if (error.code && REASON_COPY[error.code]) return REASON_COPY[error.code];
   if (error.code && CODE_COPY[error.code]) return CODE_COPY[error.code];
-  return error.message || "We couldn’t apply that code. Please try again.";
+  return "We couldn’t apply that code. Please try again.";
 }
