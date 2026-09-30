@@ -50,6 +50,19 @@ describe("gift card snapshot helpers", () => {
     expect(amountPayableFrom(snapshot)).toBe(80);
     expect(giftCardSignature(snapshot)).toBe("u1:50.00");
   });
+
+  it("prefers the checkout payable over a stale promotion snapshot", () => {
+    const stale = {
+      ...snapshot,
+      totals: { ...snapshot.totals, amountPayable: "99.00" },
+    };
+    expect(amountPayableFrom(stale, ["199.00"])).toBe(199);
+    expect(amountPayableFrom(stale, ["100.00"])).toBe(100);
+    expect(amountPayableFrom(stale, ["200.00"])).toBe(200);
+    expect(amountPayableFrom(stale, ["90.00"])).toBe(90);
+    expect(amountPayableFrom(stale, ["150.00"])).toBe(150);
+    expect(amountPayableFrom(stale, [null, ""])).toBe(99);
+  });
 });
 
 function applied(partial: Partial<PromotionApplied> & Pick<PromotionApplied, "kind" | "amount">): PromotionApplied {

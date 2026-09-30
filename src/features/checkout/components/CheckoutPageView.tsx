@@ -193,7 +193,9 @@ export function CheckoutPageView() {
   const promoSnapshot = session?.promotionSnapshot ?? cartPromotions;
   const shipDiscount = shippingDiscountAmount(promoSnapshot);
   const giftCards = visibleGiftCards(promoSnapshot, session?.giftCards);
-  const amountPayable = amountPayableFrom(promoSnapshot, [estimate?.amountPayable]);
+  const amountPayable = amountPayableFrom(session?.promotionSnapshot ?? null, [
+    estimate?.amountPayable,
+  ]);
   const warnings = checkoutWarningMessages(session?.validationIssues);
 
   const selectedPayment = checkout.paymentMethods.find(

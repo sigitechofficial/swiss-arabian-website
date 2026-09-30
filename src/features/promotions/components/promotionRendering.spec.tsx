@@ -151,6 +151,41 @@ describe("promotion rendering", () => {
     expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 87.00");
   });
 
+  it("shows amount due from the current checkout payable, not a stale cart figure", () => {
+    render(
+      <MoneySummary
+        className="checkout-totals"
+        currency="AED"
+        subtotal={99}
+        discount={0}
+        shipping={100}
+        shippingDiscount={0}
+        total={199}
+        amountPayable={199}
+      />,
+    );
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 199.00");
+    expect(screen.queryByText("Amount due")).not.toBeInTheDocument();
+  });
+
+  it("shows the tender-adjusted checkout payable as amount due", () => {
+    render(
+      <MoneySummary
+        className="checkout-totals"
+        currency="AED"
+        subtotal={200}
+        discount={0}
+        shipping={0}
+        shippingDiscount={0}
+        total={200}
+        amountPayable={150}
+        giftCards={[{ usageId: "u1", maskedCode: null, amount: "50.00" }]}
+      />,
+    );
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 200.00");
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 150.00");
+  });
+
   it("omits Discount when only a gift card is applied", () => {
     render(
       <MoneySummary

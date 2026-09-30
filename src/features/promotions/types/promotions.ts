@@ -291,12 +291,15 @@ export function giftCardSignature(
     .join("|");
 }
 
-/** Server payable when sent. Never subtract gift-card tender on the client. */
+/**
+ * Server payable when sent. Never subtract gift-card tender on the client.
+ * Explicit checkout or cart payable values win over a promotion snapshot.
+ */
 export function amountPayableFrom(
   snapshot: PromotionSnapshotV1 | null | undefined,
   extras: Array<string | null | undefined> = [],
 ): number | null {
-  const candidates = [snapshot?.totals?.amountPayable, ...extras];
+  const candidates = [...extras, snapshot?.totals?.amountPayable];
   for (const value of candidates) {
     if (value == null || value === "") continue;
     const amount = Number(value);
