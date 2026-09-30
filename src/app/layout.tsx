@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { env } from "@/lib/config/env";
 import { AppProviders } from "./providers";
 import "./globals.css";
 
@@ -9,6 +10,10 @@ export const metadata: Metadata = {
   },
   description:
     "Swiss Arabian fragrances — oud, musk, and contemporary scents for every journey.",
+  robots:
+    env.appEnv === "production"
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
 };
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mode');if(t!=='dark'&&t!=='light')t='light';if(t==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');}catch(e){}})();`;
