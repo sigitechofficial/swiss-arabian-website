@@ -51,7 +51,10 @@ export function awardedGiftLines(snapshot: unknown): PromotionGiftLine[] {
 }
 
 export function giftDisplayName(line: PromotionGiftLine): string {
-  return line.name?.trim() || line.sku;
+  const name = line.name?.trim();
+  if (name && !name.includes(":")) return name;
+  if (line.sku.includes(":")) return "Free gift";
+  return name || line.sku;
 }
 
 /** Server gifts are free. This does not adjust cart totals. */

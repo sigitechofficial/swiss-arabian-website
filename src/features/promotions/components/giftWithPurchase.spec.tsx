@@ -6,10 +6,27 @@ import { AppliedCampaigns } from "./AppliedCampaigns";
 import { GiftWithPurchase } from "./GiftWithPurchase";
 import { MoneySummary } from "./MoneySummary";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
+import { matchGiftProduct } from "../hooks/useGiftCatalog";
 import { awardedGiftLines, giftUnitPrice } from "../utils/giftWithPurchase";
 import type { PromotionSnapshotV1 } from "../types/promotions";
 
 const select = vi.hoisted(() => vi.fn());
+
+vi.mock("../hooks/useGiftCatalog", async () => {
+  const actual = await vi.importActual<typeof import("../hooks/useGiftCatalog")>("../hooks/useGiftCatalog");
+  return {
+    ...actual,
+    useGiftCatalogMap: (skus: string[]) => {
+      const map = new Map();
+      for (const sku of skus) {
+        if (sku.startsWith("shopify:")) {
+          map.set(sku, { title: "ROSE 01", imageUrl: "/rose.png", sku: "ROSE-01" });
+        }
+      }
+      return map;
+    },
+  };
+});
 
 vi.mock("../hooks/useGiftChoice", () => ({
   useGiftChoice: () => ({
@@ -48,6 +65,21 @@ afterEach(() => {
 });
 
 describe("gift with purchase", () => {
+  it("maps a source sku to the catalog product", () => {
+    const hit = matchGiftProduct(
+      [
+        {
+          title: "ROSE 01",
+          imageUrl: "/rose.png",
+          sku: "803991",
+        },
+      ],
+      "shopify:shopify_sapil_uae:803991",
+    );
+    expect(hit?.title).toBe("ROSE 01");
+    expect(hit?.imageUrl).toBe("/rose.png");
+  });
+
   it("renders an automatic gift", () => {
     render(
       <GiftWithPurchase
@@ -67,7 +99,35 @@ describe("gift with purchase", () => {
       />,
     );
     expect(screen.getByText("Free gift added")).toBeInTheDocument();
-    expect(screen.getByText("Arabian Oud Sample ×1")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Arabian Oud Sample" })).toBeInTheDocument();
+    expect(screen.getByText("Qty 1")).toBeInTheDocument();
+    expect(screen.getByText("AED 0.00")).toBeInTheDocument();
+    expect(screen.getByText("Gift with purchase")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+  });
+
+  it("renders the catalog product instead of a source sku", () => {
+    const sourceSku = "shopify:shopify_sapil_uae:803991";
+    const promo = snapshot({
+      gifts: [
+        {
+          type: "GIFT_WITH_PURCHASE",
+          promotionCode: "GWP1",
+          status: null,
+          message: null,
+          giftItems: [{ sku: sourceSku, quantity: 1, name: null, imageUrl: null }],
+          choices: [],
+        },
+      ],
+    });
+    render(<GiftWithPurchase currency="AED" snapshot={promo} />);
+    expect(screen.getByRole("heading", { name: "ROSE 01" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "ROSE 01" })).toHaveAttribute("src", "/rose.png");
+    expect(screen.getByText("Qty 1")).toBeInTheDocument();
+    expect(screen.getByText("AED 0.00")).toBeInTheDocument();
+    expect(screen.queryByText(sourceSku)).not.toBeInTheDocument();
+    expect(promo.gifts?.[0]?.giftItems[0]?.sku).toBe(sourceSku);
+    expect(promo.totals.discountTotal).toBe("50.00");
   });
 
   it("renders customer choice and sends the selected sku", async () => {
@@ -154,7 +214,7 @@ describe("gift with purchase", () => {
       ],
     });
     render(<GiftWithPurchase snapshot={promo} selectable={false} />);
-    expect(screen.getByText("Arabian Oud Sample ×1")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Arabian Oud Sample" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Select" })).not.toBeInTheDocument();
   });
 

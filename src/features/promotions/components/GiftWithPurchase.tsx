@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useCartStore } from "@/stores/useCartStore";
+import { GiftCartItem } from "./GiftCartItem";
+import { useGiftCatalogMap } from "../hooks/useGiftCatalog";
 import { useGiftChoice } from "../hooks/useGiftChoice";
 import { readGiftAwards, type PromotionSnapshotV1 } from "../types/promotions";
 import {
   giftDisplayName,
   giftErrorMessage,
   giftNotice,
-  giftUnitPrice,
   isCustomerChoice,
 } from "../utils/giftWithPurchase";
 
@@ -27,6 +27,9 @@ export function GiftWithPurchase({
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
   const awards = readGiftAwards(data);
+  const catalog = useGiftCatalogMap(
+    awards.flatMap((award) => [...award.giftItems, ...award.choices].map((gift) => gift.sku)),
+  );
   const choice = useGiftChoice();
   const [error, setError] = useState<string | null>(null);
 
@@ -59,14 +62,17 @@ export function GiftWithPurchase({
             <div key={`${award.promotionCode ?? "choice"}-${index}`}>
               <p className="promo-gifts__title">Choose your free gift</p>
               <ul className="promo-gifts__choices" aria-label="Free gift choices">
-                {award.choices.map((gift) => (
+                {award.choices.map((gift) => {
+                  const product = catalog.get(gift.sku);
+                  const title = product?.title || giftDisplayName(gift);
+                  return (
                   <li key={gift.sku}>
-                    {gift.imageUrl ? (
+                    {(product?.imageUrl || gift.imageUrl) ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={gift.imageUrl} alt={giftDisplayName(gift)} width={48} height={48} />
+                      <img src={product?.imageUrl || gift.imageUrl || ""} alt={title} width={48} height={48} />
                     ) : null}
-                    <span>{giftDisplayName(gift)}</span>
-                    <span>{gift.sku}</span>
+                    <span>{title}</span>
+                    <span>{product?.sku && !product.sku.includes(":") ? product.sku : gift.sku.includes(":") ? null : gift.sku}</span>
                     {selectable ? (
                       <button
                         type="button"
@@ -77,23 +83,23 @@ export function GiftWithPurchase({
                       </button>
                     ) : null}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           );
         }
         return (
-          <ul className="promo-gifts__awarded" aria-label="Free gifts" key={`${award.promotionCode ?? "auto"}-${index}`}>
+          <div className="promo-gifts__awarded" aria-label="Free gifts" key={`${award.promotionCode ?? "auto"}-${index}`}>
             {award.giftItems.map((gift) => (
-              <li key={gift.sku}>
-                <p>Free gift added</p>
-                <p>
-                  {giftDisplayName(gift)} ×{gift.quantity}
-                </p>
-                <p dir="ltr">{formatMoney(giftUnitPrice(), currency)}</p>
-              </li>
+              <GiftCartItem
+                key={gift.sku}
+                line={gift}
+                product={catalog.get(gift.sku)}
+                currency={currency}
+              />
             ))}
-          </ul>
+          </div>
         );
       })}
       {error ? (
