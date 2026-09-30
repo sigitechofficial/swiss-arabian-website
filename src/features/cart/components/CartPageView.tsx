@@ -7,12 +7,10 @@ import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
-  CATALOG_PRODUCTS,
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
 import { useCartStore } from "@/stores/useCartStore";
-import { COMPLIMENTARY_SAMPLES } from "../constants/complimentarySamples";
 import { useCartMutations } from "../hooks/useCartMutations";
 import {
   addItemOptimistic,
@@ -23,7 +21,7 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, GiftCardForm, MoneySummary, PromotionUnlockNote, amountPayableFrom, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, GiftCardForm, GiftWithPurchase, MoneySummary, PromotionUnlockNote, amountPayableFrom, awardedGiftLines, giftDisplayName, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
 
 /** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
@@ -31,10 +29,6 @@ const SHIP_FLAT = 25;
 
 function itemsLabel(n: number) {
   return n === 1 ? "1 item" : `${n} items`;
-}
-
-function lineImageUrl(slug: string, fallback?: string) {
-  return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
 }
 
 function sizeLabelFor(product: CatalogProduct) {
@@ -235,30 +229,7 @@ export function CartPageView() {
                   </article>
                 ))}
 
-                {COMPLIMENTARY_SAMPLES.map((sample) => {
-                  const thumb = lineImageUrl(sample.slug);
-                  return (
-                    <article className="cline cline--gift" key={`gift-${sample.slug}`}>
-                      <div className="cline__media">
-                        {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={thumb} alt="" />
-                        ) : null}
-                      </div>
-                      <div className="cline__body">
-                        <div className="cline__row">
-                          <h3>{sample.title}</h3>
-                          <span className="cline__price cline__price--gift" dir="ltr">
-                            <s>{formatMoney(sample.value, currency)}</s>
-                            <strong>Free</strong>
-                          </span>
-                        </div>
-                        <p className="cline__meta">{sample.sizeLabel}</p>
-                        <p className="cline__gift-tag">Selected free sample (−{formatMoney(sample.value, currency)})</p>
-                      </div>
-                    </article>
-                  );
-                })}
+                {quotePending ? null : <GiftWithPurchase snapshot={promotions} currency={currency} />}
               </div>
 
               <aside className="cart-summary" aria-label="Order summary">
@@ -283,6 +254,10 @@ export function CartPageView() {
                   total={total}
                   amountPayable={amountPayable}
                   giftCards={giftCards}
+                  freeGifts={awardedGiftLines(promotions).map((gift) => ({
+                    name: giftDisplayName(gift),
+                    quantity: gift.quantity,
+                  }))}
                 />
                 )}
                 {priceChanged ? (

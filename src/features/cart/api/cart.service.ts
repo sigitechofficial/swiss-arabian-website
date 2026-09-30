@@ -113,6 +113,21 @@ export async function removeCartCoupon(cartId: string, code: string): Promise<Ap
   );
 }
 
+/** Sends the customer's free-gift choice. The cart quote that comes back is authoritative. */
+export async function selectCartGift(
+  cartId: string,
+  sku: string,
+  promotionCode?: string | null,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  const body: { sku: string; promotionCode?: string } = { sku: sku.trim() };
+  if (promotionCode?.trim()) body.promotionCode = promotionCode.trim();
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gifts?${params.toString()}`,
+    body,
+  );
+}
+
 export async function applyCartGiftCard(
   cartId: string,
   code: string,

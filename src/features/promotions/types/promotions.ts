@@ -109,6 +109,28 @@ export type PromotionSnapshotV1 = {
   rejected: PromotionRejected[];
   /** Tender — not merchandise discount. */
   giftCards?: GiftCardTender[];
+  /**
+   * Awarded or choosable gifts. Display only.
+   * Never folded into discount or subtotal.
+   */
+  gifts?: PromotionGiftAward[];
+};
+
+export type PromotionGiftLine = {
+  sku: string;
+  quantity: number;
+  name: string | null;
+  imageUrl: string | null;
+};
+
+/** Server gift award. Status notices are shown and are not treated as added lines. */
+export type PromotionGiftAward = {
+  type: string;
+  promotionCode: string | null;
+  status: string | null;
+  message: string | null;
+  giftItems: PromotionGiftLine[];
+  choices: PromotionGiftLine[];
 };
 
 export type PromotionOffer = {
@@ -334,7 +356,70 @@ export function readPromotionSnapshot(raw: unknown): PromotionSnapshotV1 | null 
       amountPayable: asString(totals.amountPayable) ?? undefined,
     },
     rejected: Array.isArray(row.rejected) ? (row.rejected as PromotionRejected[]) : [],
+    gifts: readGiftAwards(row),
   };
+}
+
+function readGiftLine(raw: unknown): PromotionGiftLine | null {
+  const row = asRecord(raw);
+  if (!row) return null;
+  const sku = asString(row.sku);
+  if (!sku) return null;
+  const quantityRaw = row.quantity;
+  const quantity =
+    typeof quantityRaw === "number"
+      ? quantityRaw
+      : typeof quantityRaw === "string"
+        ? Number(quantityRaw)
+        : 1;
+  return {
+    sku,
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+    name: asString(row.name) ?? asString(row.productName),
+    imageUrl: asString(row.imageUrl) ?? asString(row.image),
+  };
+}
+
+function readGiftLines(raw: unknown): PromotionGiftLine[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    const line = readGiftLine(item);
+    return line ? [line] : [];
+  });
+}
+
+/** Gifts from `gifts` or from an applied GIFT_WITH_PURCHASE / CUSTOMER_CHOICE row. */
+export function readGiftAwards(raw: unknown): PromotionGiftAward[] {
+  const row = asRecord(raw);
+  if (!row) return [];
+  const top = Array.isArray(row.gifts) ? row.gifts : [];
+  const fromApplied = Array.isArray(row.applied)
+    ? row.applied.filter((item) => {
+        const applied = asRecord(item);
+        if (!applied) return false;
+        const type = `${applied.type ?? ""} ${applied.kind ?? ""} ${applied.discountType ?? ""}`.toUpperCase();
+        return type.includes("GIFT_WITH_PURCHASE") || type.includes("CUSTOMER_CHOICE");
+      })
+    : [];
+  return [...top, ...fromApplied].flatMap((item) => {
+    const award = asRecord(item);
+    if (!award) return [];
+    const meta = asRecord(award.metadata) ?? {};
+    const type = String(award.type ?? award.kind ?? award.discountType ?? meta.type ?? "").toUpperCase();
+    const giftItems = readGiftLines(award.giftItems ?? meta.giftItems);
+    const choices = readGiftLines(award.choices ?? award.availableGifts ?? meta.choices ?? meta.availableGifts);
+    if (!type && giftItems.length === 0 && choices.length === 0) return [];
+    return [
+      {
+        type: type || "GIFT_WITH_PURCHASE",
+        promotionCode: asString(award.promotionCode) ?? asString(award.code) ?? asString(meta.promotionCode),
+        status: asString(award.status) ?? asString(meta.status),
+        message: asString(award.message) ?? asString(meta.message),
+        giftItems,
+        choices,
+      },
+    ];
+  });
 }
 
 export function readApplicablePromotions(raw: unknown): ApplicablePromotions {

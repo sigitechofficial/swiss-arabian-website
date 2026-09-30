@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
 import { CheckoutAddonRow, MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
-import { COMPLIMENTARY_SAMPLES } from "@/features/cart/constants/complimentarySamples";
 import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
 import {
   CATALOG_PRODUCTS,
@@ -18,9 +17,12 @@ import {
   AppliedCampaigns,
   CouponForm,
   GiftCardForm,
+  GiftWithPurchase,
   MoneySummary,
   PromotionUnlockNote,
   amountPayableFrom,
+  awardedGiftLines,
+  giftDisplayName,
   shippingDiscountAmount,
   visibleGiftCards,
 } from "@/features/promotions";
@@ -646,29 +648,7 @@ export function CheckoutPageView() {
                       </article>
                     );
                   })}
-                  {COMPLIMENTARY_SAMPLES.map((sample) => {
-                    const thumb = lineImageUrl(sample.slug);
-                    return (
-                      <article className="coline coline--gift" key={`gift-${sample.slug}`}>
-                        <div className="coline__media">
-                          {thumb ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={thumb} alt={sample.title} />
-                          ) : null}
-                          <b>1</b>
-                        </div>
-                        <div className="coline__body">
-                          <h3>{sample.title}</h3>
-                          <p>{sample.sizeLabel}</p>
-                          <p className="coline__gift-tag">Selected free sample (−{formatMoney(sample.value, currency)})</p>
-                        </div>
-                        <span className="coline__price coline__price--gift" dir="ltr">
-                          <s>{formatMoney(sample.value, currency)}</s>
-                          <strong>Free</strong>
-                        </span>
-                      </article>
-                    );
-                  })}
+                  <GiftWithPurchase snapshot={promoSnapshot} currency={currency} selectable={false} />
                 </div>
                 {leftOutCount > 0 ? (
                   <p className="checkout-note">
@@ -709,6 +689,10 @@ export function CheckoutPageView() {
                   total={total}
                   amountPayable={amountPayable}
                   giftCards={giftCards}
+                  freeGifts={awardedGiftLines(promoSnapshot).map((gift) => ({
+                    name: giftDisplayName(gift),
+                    quantity: gift.quantity,
+                  }))}
                 />
                 {warnings.map((warning) => (
                   <p className="checkout-note" key={warning} role="status">
