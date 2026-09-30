@@ -1,6 +1,11 @@
 import { env } from "@/lib/config/env";
-import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { endSession } from "@/lib/auth/endSession";
+import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
+import {
+  isShopUnavailablePath,
+  SHOP_UNAVAILABLE_CODES,
+  SHOP_UNAVAILABLE_PATH,
+} from "@/lib/storefront/brand";
 import { ApiClientError, type ApiErrorBody } from "./apiError";
 import { resolveStorefrontHost } from "./storefrontHost";
 
@@ -125,10 +130,21 @@ async function request<T>(
     );
   }
 
+  if (
+    res.status === 400 &&
+    errorCode &&
+    SHOP_UNAVAILABLE_CODES.has(errorCode) &&
+    typeof window !== "undefined" &&
+    !isShopUnavailablePath()
+  ) {
+    window.location.assign(SHOP_UNAVAILABLE_PATH);
+  }
+
   if (!res.ok || json?.success === false) {
     throw new ApiClientError(
       res.status,
       json?.error ?? (text || "Request failed"),
+      json?.meta?.requestId,
     );
   }
 

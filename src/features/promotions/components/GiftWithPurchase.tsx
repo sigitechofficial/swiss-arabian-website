@@ -97,6 +97,7 @@ export function GiftWithPurchase({
                 line={gift}
                 product={catalog.get(gift.sku)}
                 currency={currency}
+                variant={selectable ? "cart" : "checkout"}
               />
             ))}
           </div>

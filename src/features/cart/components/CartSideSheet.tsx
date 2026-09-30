@@ -6,7 +6,7 @@ import Drawer from "@mui/material/Drawer";
 import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { PromotionUnlockNote, amountPayableFrom, shippingDiscountAmount } from "@/features/promotions";
+import { PromotionUnlockNote, amountPayableFrom, useFreeShippingBar } from "@/features/promotions";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
@@ -41,14 +41,15 @@ export function CartSideSheet() {
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
   const promotions = useCartStore((s) => s.promotions);
+  const { isFree, quotePending: shipQuotePending } = useFreeShippingBar();
   const quotePending = syncing && totals == null;
   const currency = totals?.currency ?? "AED";
-  const isFree = !quotePending && shippingDiscountAmount(promotions) > 0;
   const amountDue = quotePending
     ? null
     : (amountPayableFrom(promotions, [
         totals?.amountPayable != null ? String(totals.amountPayable) : null,
       ]) ?? subtotal);
+  const celebrateFree = !quotePending && !shipQuotePending && isFree;
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
   // glow + panel flash + a confetti burst from the bar's fill — the first
@@ -56,8 +57,8 @@ export function CartSideSheet() {
   // while it stays above it, and not on initial mount if it's already met).
   useEffect(() => {
     const previouslyFree = wasFreeRef.current;
-    wasFreeRef.current = isFree;
-    if (!isFree || previouslyFree !== false) return;
+    wasFreeRef.current = celebrateFree;
+    if (!celebrateFree || previouslyFree !== false) return;
 
     setIsPanelFlash(false);
     const restart = requestAnimationFrame(() => {
@@ -70,7 +71,8 @@ export function CartSideSheet() {
 
     let clearConfetti: ReturnType<typeof setTimeout> | undefined;
     if (!reduce) {
-      const bar = panelRef.current;
+      const bar =
+        panelRef.current?.querySelector(".cart-ship-track") ?? panelRef.current;
       const layer = confettiLayerRef.current;
       let ox = 78;
       let oy = 22;
@@ -119,7 +121,7 @@ export function CartSideSheet() {
       clearTimeout(clearFlash);
       if (clearConfetti) clearTimeout(clearConfetti);
     };
-  }, [isFree]);
+  }, [celebrateFree]);
 
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
 

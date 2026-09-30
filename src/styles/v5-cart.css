@@ -685,7 +685,6 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  color: var(--ink);
 }
 .cline__price--gift s {
   font-size: 0.68rem;
@@ -697,18 +696,95 @@
   font-weight: 600;
   color: var(--ink);
 }
+.cline__price--free {
+  color: var(--ink-2);
+  font-weight: 500;
+  font-size: 0.78rem;
+}
 .cline__gift-tag {
-  margin: 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--ink-2);
 }
 .cline--gift {
-  background: var(--cream-2);
+  background: color-mix(in srgb, var(--cream-2) 70%, #fff);
+  border-color: color-mix(in srgb, var(--line) 80%, transparent);
+  box-shadow: none;
 }
 .cline--gift .cline__body {
   justify-content: center;
+  gap: 2px;
+}
+.cline--gift .cline__row h3 {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+.cline--gift .cline__meta {
+  margin: 2px 0 0;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 0.75rem;
+}
+.promo-gifts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+.promo-gifts__awarded {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.promo-gifts__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.promo-gifts__choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.promo-gifts__choices li {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+.promo-gifts__choices img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: var(--cream-2);
+}
+.promo-gifts__choices button {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--copper);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+.promo-gifts__choices button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .cart-miss {
   margin: 0 0 18px;

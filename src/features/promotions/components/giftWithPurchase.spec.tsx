@@ -83,6 +83,7 @@ describe("gift with purchase", () => {
   it("renders an automatic gift", () => {
     render(
       <GiftWithPurchase
+        selectable={false}
         currency="AED"
         snapshot={snapshot({
           gifts: [
@@ -98,11 +99,11 @@ describe("gift with purchase", () => {
         })}
       />,
     );
-    expect(screen.getByText("Free gift added")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Arabian Oud Sample" })).toBeInTheDocument();
-    expect(screen.getByText("Qty 1")).toBeInTheDocument();
-    expect(screen.getByText("AED 0.00")).toBeInTheDocument();
-    expect(screen.getByText("Gift with purchase")).toBeInTheDocument();
+    expect(screen.getByText("Free")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.queryByText("Free gift")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gift with purchase")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   });
 
@@ -120,11 +121,10 @@ describe("gift with purchase", () => {
         },
       ],
     });
-    render(<GiftWithPurchase currency="AED" snapshot={promo} />);
+    render(<GiftWithPurchase currency="AED" snapshot={promo} selectable={false} />);
     expect(screen.getByRole("heading", { name: "ROSE 01" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "ROSE 01" })).toHaveAttribute("src", "/rose.png");
-    expect(screen.getByText("Qty 1")).toBeInTheDocument();
-    expect(screen.getByText("AED 0.00")).toBeInTheDocument();
+    expect(document.querySelector(".coline img")).toHaveAttribute("src", "/rose.png");
+    expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.queryByText(sourceSku)).not.toBeInTheDocument();
     expect(promo.gifts?.[0]?.giftItems[0]?.sku).toBe(sourceSku);
     expect(promo.totals.discountTotal).toBe("50.00");
