@@ -9,6 +9,8 @@ import { offerQualificationMessage } from "../utils/qualificationCopy";
 export function PromotionUnlockNote({ className = "cart-ship-banner" }: { className?: string }) {
   const promotions = useCartStore((s) => s.promotions);
   const totals = useCartStore((s) => s.totals);
+  const syncing = useCartStore((s) => s.syncing);
+  const quotePending = syncing && totals == null;
   const currency = promotions?.context.currencyCode ?? totals?.currency ?? "AED";
   const { data } = useApplicablePromotions();
   const snapshot = data?.promotions ?? promotions;
@@ -22,6 +24,7 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
 
   const conflicts = promotionConflictNotes(snapshot?.rejected);
 
+  if (quotePending) return null;
   if (shipOff <= 0 && !qualificationNotes.length && !conflicts.length) return null;
 
   return (

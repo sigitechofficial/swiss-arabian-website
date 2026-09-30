@@ -1223,6 +1223,10 @@ button.checkout-cta:hover {
   font-size: 0.72rem;
   color: var(--ink-2);
 }
+.oc-line__discount {
+  font-size: 0.72rem;
+  color: var(--ink-2);
+}
 .oc-line__price {
   font-size: 0.85rem;
   font-weight: 500;

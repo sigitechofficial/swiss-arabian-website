@@ -2,6 +2,7 @@ import { env } from "@/lib/config/env";
 import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { endSession } from "@/lib/auth/endSession";
 import { ApiClientError, type ApiErrorBody } from "./apiError";
+import { resolveStorefrontHost } from "./storefrontHost";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -30,9 +31,12 @@ async function tryRefresh(): Promise<boolean> {
     if (!refreshToken) return false;
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const storefrontHost = await resolveStorefrontHost();
+      if (storefrontHost) headers["x-storefront-host"] = storefrontHost;
       const res = await fetch(`${env.apiBaseUrl}/storefront/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ refreshToken }),
       });
       if (!res.ok) return false;
@@ -76,6 +80,9 @@ async function request<T>(
     const token = getAccessToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
+
+  const storefrontHost = await resolveStorefrontHost();
+  if (storefrontHost) headers.set("x-storefront-host", storefrontHost);
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,

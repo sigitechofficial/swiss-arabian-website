@@ -16,11 +16,11 @@ export function AccountHelpRow() {
         />
         <div className="min-w-0">
           <p className="text-[13.5px] font-bold text-sa-primary">
-            Need to return your fragrance?
+            Questions about an order?
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-sa-secondary">
-            Go to Order History, select the order and choose &ldquo;Start a
-            return&rdquo;.
+            Open Order History and contact customer care with your order number.
+            Return requests are not available in your account yet.
           </p>
         </div>
       </div>

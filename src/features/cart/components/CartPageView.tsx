@@ -97,7 +97,8 @@ export function CartPageView() {
   const currency = totals?.currency ?? promotions?.context.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
-  const shipping = totals ? totals.shipping : subtotal === 0 ? 0 : SHIP_FLAT;
+  const quotePending = syncing && totals == null;
+  const shipping = totals ? totals.shipping : quotePending || subtotal === 0 ? 0 : SHIP_FLAT;
   const discount = totals?.discount ?? 0;
   const shipDiscount = shippingDiscountAmount(promotions);
   const giftCards = visibleGiftCards(promotions);
@@ -262,9 +263,16 @@ export function CartPageView() {
 
               <aside className="cart-summary" aria-label="Order summary">
                 <h2>Summary</h2>
-                <AppliedCampaigns />
+                {quotePending ? (
+                  <p className="cart-hint" role="status">
+                    Updating offers…
+                  </p>
+                ) : (
+                  <AppliedCampaigns />
+                )}
                 <CouponForm />
                 <GiftCardForm />
+                {quotePending ? null : (
                 <MoneySummary
                   className="cart-totals"
                   currency={currency}
@@ -276,6 +284,7 @@ export function CartPageView() {
                   amountPayable={amountPayable}
                   giftCards={giftCards}
                 />
+                )}
                 {priceChanged ? (
                   <p className="cart-hint" role="status">
                     Prices have been updated since you added these items.

@@ -22,6 +22,7 @@ import {
 import { OrderTrackingPanel } from "@/features/tracking/components/OrderTrackingPanel";
 import { ApiClientError } from "@/lib/api/apiError";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
+import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 
 type Feedback = { tone: "success" | "info" | "error"; text: string };
@@ -316,6 +317,11 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
+                    <HistoricalLineDiscount
+                      snapshot={line.promotionSnapshot}
+                      currency={line.currencyCode || currency}
+                      className="mt-1 text-[12px] text-sa-muted"
+                    />
                   </div>
                   <p className="shrink-0 text-[13px] font-semibold text-sa-primary">
                     {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}

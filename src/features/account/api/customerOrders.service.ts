@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
+import type { OrderLinePromotionSnapshot } from "@/features/orders/utils/historicalLineDiscount";
 import type { OrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -85,6 +86,8 @@ export interface CustomerOrderDetailResponse {
       lineTotal: string;
       currencyCode: string;
       imageUrl?: string | null;
+      /** Frozen at purchase. Null on orders placed before line snapshots. */
+      promotionSnapshot?: OrderLinePromotionSnapshot | null;
     }[];
     addresses: {
       addressType: string;
@@ -95,6 +98,8 @@ export interface CustomerOrderDetailResponse {
       postalCode: string | null;
     }[];
     totals: { subtotal: string; discount: string; shipping: string; tax: string; total: string };
+    /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
+    promotionSnapshot?: OrderLinePromotionSnapshot | null;
     selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
     timeline: { eventType: string; title: string | null; occurredAt: string }[];
