@@ -48,6 +48,7 @@ type CartState = {
   updateQuantity: (variantId: string, quantity: number) => void;
   removeLine: (variantId: string) => void;
   clear: () => void;
+  clearPromotions: () => void;
   setCartId: (id: string | null) => void;
   setValidation: (v: CartValidation | null) => void;
   setCartFromApi: (cart: ApiCart) => void;
@@ -118,6 +119,9 @@ export const useCartStore = create<CartState>()(
         })),
 
       clear: () => set({ lines: [], totals: null, promotions: null, validation: null }),
+
+      /** Drop the previous market quote. Lines stay until the next server cart. */
+      clearPromotions: () => set({ promotions: null, totals: null }),
 
       setCartId: (id) => set({ cartId: id }),
 

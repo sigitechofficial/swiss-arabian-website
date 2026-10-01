@@ -3,15 +3,17 @@
 import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useCartStore } from "@/stores/useCartStore";
+import { useUiStore } from "@/stores/useUiStore";
 import { promotionKeys } from "../api/promotions.keys";
 import { fetchApplicablePromotions } from "../api/promotions.service";
 
 export function useApplicablePromotions() {
   const cartId = useCartStore((s) => s.cartId);
   const computedAt = useCartStore((s) => s.promotions?.computedAt);
+  const zoneCode = useUiStore((s) => s.catalogContext?.zoneCode);
 
   return useApiQuery(
-    promotionKeys.applicable(cartId ?? "", computedAt),
+    promotionKeys.applicable(cartId ?? "", computedAt, zoneCode),
     () => fetchApplicablePromotions(cartId!),
     {
       enabled: Boolean(cartId),

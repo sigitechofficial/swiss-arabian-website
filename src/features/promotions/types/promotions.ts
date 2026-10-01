@@ -424,7 +424,10 @@ export function readGiftAwards(raw: unknown): PromotionGiftAward[] {
     const meta = asRecord(award.metadata) ?? {};
     const type = String(award.type ?? award.kind ?? award.discountType ?? meta.type ?? "").toUpperCase();
     const giftItems = readGiftLines(award.giftItems ?? meta.giftItems);
-    const choices = readGiftLines(award.choices ?? award.availableGifts ?? meta.choices ?? meta.availableGifts);
+    const quotedOptions = award.giftOptions ?? meta.giftOptions;
+    const choices = Array.isArray(quotedOptions)
+      ? readGiftLines(quotedOptions)
+      : readGiftLines(award.choices ?? award.availableGifts ?? meta.choices ?? meta.availableGifts);
     if (!type && giftItems.length === 0 && choices.length === 0) return [];
     return [
       {
