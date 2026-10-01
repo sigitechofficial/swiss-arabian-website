@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import os from "node:os";
 
-/** LAN / Tailscale IPv4s so `http://192.168.x.x:3000` works in `next dev`. */
+/** LAN / Tailscale IPv4s so `http://192.168.x.x:3004` works in `next dev`. */
 function lanDevOrigins(): string[] {
   const hosts = new Set<string>();
   for (const addrs of Object.values(os.networkInterfaces())) {
