@@ -1,5 +1,6 @@
 "use client";
 
+import { keepPreviousData } from "@tanstack/react-query";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useCartStore } from "@/stores/useCartStore";
@@ -18,6 +19,9 @@ export function useApplicablePromotions() {
     {
       enabled: Boolean(cartId),
       staleTime: 15_000,
+      // Qty edits change `computedAt`, which changes the query key. Keep the
+      // last offers so the shipping bar does not unmount while the next quote loads.
+      placeholderData: keepPreviousData,
       retry: (count, error) => {
         if (error instanceof ApiClientError && error.status === 404) return false;
         return count < 1;
