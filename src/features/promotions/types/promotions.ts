@@ -308,6 +308,20 @@ export function amountPayableFrom(
   return null;
 }
 
+/** Checkout quote first. A cart snapshot is only used before a checkout session exists. */
+export function checkoutQuoteSnapshot(
+  session:
+    | {
+        promotionSnapshot?: PromotionSnapshotV1 | null;
+        promotions?: PromotionSnapshotV1 | null;
+      }
+    | null
+    | undefined,
+  cartSnapshot: PromotionSnapshotV1 | null | undefined,
+): PromotionSnapshotV1 | null {
+  return session?.promotionSnapshot ?? session?.promotions ?? cartSnapshot ?? null;
+}
+
 function emptySnapshot(): PromotionSnapshotV1 {
   return {
     v: 1,

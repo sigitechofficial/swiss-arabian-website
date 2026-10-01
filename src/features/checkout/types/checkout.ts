@@ -100,6 +100,8 @@ export interface CheckoutSessionResponse {
     status: string;
   };
   metadata?: Record<string, unknown> | null;
+  /** Live checkout quote. The cart snapshot must not replace this after a requote. */
+  promotions?: PromotionSnapshotV1 | null;
   /** Same v1 shape as cart `promotions` after snapshot rebuild. */
   promotionSnapshot?: PromotionSnapshotV1 | null;
   giftCards?: unknown;

@@ -21,6 +21,7 @@ import {
   MoneySummary,
   PromotionUnlockNote,
   amountPayableFrom,
+  checkoutQuoteSnapshot,
   awardedGiftLines,
   giftDisplayName,
   shippingDiscountAmount,
@@ -190,12 +191,13 @@ export function CheckoutPageView() {
   const discount = estimate ? Number(estimate.discount) : 0;
   const tax = estimate ? Number(estimate.tax) : 0;
   const total = estimate ? Number(estimate.total) : cartSubtotal;
-  const promoSnapshot = session?.promotionSnapshot ?? cartPromotions;
+  const promoSnapshot = checkoutQuoteSnapshot(session, cartPromotions);
   const shipDiscount = shippingDiscountAmount(promoSnapshot);
   const giftCards = visibleGiftCards(promoSnapshot, session?.giftCards);
-  const amountPayable = amountPayableFrom(session?.promotionSnapshot ?? null, [
-    estimate?.amountPayable,
-  ]);
+  const amountPayable = amountPayableFrom(
+    session ? checkoutQuoteSnapshot(session, null) : null,
+    [estimate?.amountPayable],
+  );
   const warnings = checkoutWarningMessages(session?.validationIssues);
 
   const selectedPayment = checkout.paymentMethods.find(

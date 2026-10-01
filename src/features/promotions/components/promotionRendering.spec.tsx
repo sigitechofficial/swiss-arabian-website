@@ -205,6 +205,97 @@ describe("promotion rendering", () => {
     expect(screen.getByText("Amount due")).toBeInTheDocument();
   });
 
+  it("renders partial shipping money separately from merchandise discount and gift cards", () => {
+    render(
+      <>
+        <AppliedCampaigns
+          snapshot={snapshot({
+            applied: [
+              {
+                kind: "AUTOMATIC",
+                code: "SHIP50",
+                label: "50% off shipping",
+                discountType: "PERCENTAGE",
+                discountValue: "50",
+                level: "SHIPPING",
+                amount: "50.00",
+              },
+            ],
+            totals: { discountTotal: "20.00", shippingDiscount: "50.00", amountPayable: "150.00" },
+          })}
+        />
+        <MoneySummary
+          className="checkout-totals"
+          currency="AED"
+          subtotal={200}
+          discount={20}
+          shipping={50}
+          shippingDiscount={50}
+          total={250}
+          amountPayable={150}
+          giftCards={[{ usageId: "gc", maskedCode: null, amount: "100.00" }]}
+        />
+      </>,
+    );
+    expect(screen.getByText("50% off shipping")).toBeInTheDocument();
+    expect(screen.getByText("Applied · AED 50.00")).toBeInTheDocument();
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("AED 50.00");
+    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 50.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 20.00");
+    expect(screen.getByText("Gift card").nextElementSibling).toHaveTextContent("−AED 100.00");
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 150.00");
+  });
+
+  it("shows a fixed shipping discount beside the server shipping amount", () => {
+    render(
+      <MoneySummary
+        className="checkout-totals"
+        currency="AED"
+        subtotal={100}
+        discount={0}
+        shipping={80}
+        shippingDiscount={20}
+        total={180}
+        amountPayable={180}
+      />,
+    );
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("AED 80.00");
+    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 20.00");
+    expect(screen.queryByText(/^Free$/)).not.toBeInTheDocument();
+  });
+
+  it("keeps a fully waived shipping row as Free", () => {
+    render(
+      <MoneySummary
+        className="cart-totals"
+        currency="AED"
+        subtotal={100}
+        discount={0}
+        shipping={0}
+        shippingDiscount={100}
+        total={100}
+        amountPayable={100}
+      />,
+    );
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("Free");
+  });
+
+  it("does not invent a shipping discount when the cart shipping fee is zero", () => {
+    render(
+      <MoneySummary
+        className="cart-totals"
+        currency="AED"
+        subtotal={100}
+        discount={0}
+        shipping={0}
+        shippingDiscount={0}
+        total={100}
+        amountPayable={100}
+      />,
+    );
+    expect(screen.queryByText("Shipping discount")).not.toBeInTheDocument();
+  });
+
   it("renders a promotion conflict as a quiet note", () => {
     const promo = snapshot({
       rejected: [{ reason: "PROMOTION_CONFLICT", message: "Another offer didn’t combine with the one already on your bag." }],

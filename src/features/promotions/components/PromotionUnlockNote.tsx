@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useFreeShippingBar } from "../hooks/useFreeShippingBar";
-import { shippingDiscountAmount } from "../types/promotions";
 import { promotionConflictNotes } from "../utils/conflictNotes";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
 
@@ -12,11 +11,10 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
     useFreeShippingBar();
   const [whoop, setWhoop] = useState(false);
   const wasFreeRef = useRef<boolean | null>(null);
-  const shipOff = shippingDiscountAmount(snapshot);
 
   const qualificationNotes = offers
     .map((offer) =>
-      offerQualificationMessage(offer, currency, { shippingApplied: isFree || shipOff > 0 }),
+      offerQualificationMessage(offer, currency, { shippingApplied: isFree }),
     )
     .filter((note): note is string => Boolean(note));
 

@@ -1,5 +1,4 @@
 import type { PromotionOffer, PromotionSnapshotV1 } from "../types/promotions";
-import { shippingDiscountAmount } from "../types/promotions";
 import {
   explicitThresholdAmount,
   structuredSpendAmount,
@@ -68,9 +67,9 @@ export function freeShippingProgress(args: {
   snapshot: PromotionSnapshotV1 | null | undefined;
 }): { threshold: number | null; isFree: boolean; progress: number; remaining: number } {
   const threshold = pickShippingThreshold(args.offers, args.snapshot, args.subtotal);
-  const quotedFree = shippingDiscountAmount(args.snapshot) > 0;
-  const crossed = threshold != null && args.subtotal >= threshold;
-  const isFree = quotedFree || crossed;
+  const isFree = (args.snapshot?.applied ?? []).some(
+    (item) => item.kind === "FREE_SHIPPING" || item.discountType === "FREE_SHIPPING",
+  );
   const progress = isFree ? 1 : threshold ? Math.min(1, args.subtotal / threshold) : 0;
   const remaining = threshold != null ? Math.max(0, threshold - args.subtotal) : 0;
   return { threshold, isFree, progress, remaining };

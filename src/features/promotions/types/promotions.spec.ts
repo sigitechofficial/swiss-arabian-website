@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   amountPayableFrom,
+  checkoutQuoteSnapshot,
   appliedPromotionView,
   giftCardSignature,
   parseGiftCardTender,
@@ -62,6 +63,38 @@ describe("gift card snapshot helpers", () => {
     expect(amountPayableFrom(stale, ["90.00"])).toBe(90);
     expect(amountPayableFrom(stale, ["150.00"])).toBe(150);
     expect(amountPayableFrom(stale, [null, ""])).toBe(99);
+  });
+
+  it("uses the rebuilt checkout quote after delivery selection", () => {
+    const cart = {
+      ...snapshot,
+      totals: { ...snapshot.totals, shippingDiscount: "0.00", amountPayable: "99.00" },
+      applied: [],
+    };
+    const matched = {
+      ...snapshot,
+      applied: [
+        {
+          kind: "AUTOMATIC" as const,
+          code: "SHIP50",
+          label: "50% off shipping",
+          discountType: "PERCENTAGE",
+          discountValue: "50",
+          level: "SHIPPING",
+          amount: "50.00",
+        },
+      ],
+      totals: { discountTotal: "0.00", shippingDiscount: "50.00", amountPayable: "149.00" },
+    };
+    const removed = {
+      ...snapshot,
+      applied: [],
+      totals: { discountTotal: "0.00", shippingDiscount: "0.00", amountPayable: "199.00" },
+    };
+    expect(checkoutQuoteSnapshot({ promotions: matched }, cart)?.totals.shippingDiscount).toBe("50.00");
+    expect(checkoutQuoteSnapshot({ promotions: removed }, cart)?.applied).toEqual([]);
+    expect(amountPayableFrom(checkoutQuoteSnapshot({ promotions: matched }, cart), ["149.00"])).toBe(149);
+    expect(amountPayableFrom(cart, ["199.00"])).toBe(199);
   });
 });
 
