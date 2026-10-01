@@ -7,14 +7,14 @@ import { promotionConflictNotes } from "../utils/conflictNotes";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
 
 export function PromotionUnlockNote({ className = "cart-ship-banner" }: { className?: string }) {
-  const { isFree, progress, remaining, threshold, currency, snapshot, offers, quotePending } =
+  const { isFree, unlocked, progress, remaining, threshold, currency, snapshot, offers } =
     useFreeShippingBar();
   const [whoop, setWhoop] = useState(false);
   const wasFreeRef = useRef<boolean | null>(null);
 
   const qualificationNotes = offers
     .map((offer) =>
-      offerQualificationMessage(offer, currency, { shippingApplied: isFree }),
+      offerQualificationMessage(offer, currency, { shippingApplied: unlocked }),
     )
     .filter((note): note is string => Boolean(note));
 
@@ -23,33 +23,31 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
 
   useEffect(() => {
     const previouslyFree = wasFreeRef.current;
-    wasFreeRef.current = isFree;
-    if (!isFree || previouslyFree !== false) return;
+    wasFreeRef.current = unlocked;
+    if (!unlocked || previouslyFree !== false) return;
     setWhoop(true);
     const id = window.setTimeout(() => setWhoop(false), 1100);
     return () => window.clearTimeout(id);
-  }, [isFree]);
+  }, [unlocked]);
 
-  if (quotePending) return null;
   if (!showBar && !qualificationNotes.length && !conflicts.length) return null;
 
-  const classes = [className, isFree ? "is-free" : "", whoop ? "is-whoop" : ""]
+  const classes = [className, unlocked ? "is-free" : "", whoop ? "is-whoop" : ""]
     .filter(Boolean)
     .join(" ");
 
-  const barCopy = isFree
+  const barCopy = unlocked
     ? null
-    : qualificationNotes[0] ??
-      (threshold != null
-        ? `Spend ${formatMoney(remaining, currency)} to unlock free shipping`
-        : null);
+    : threshold != null
+      ? `Spend ${formatMoney(remaining, currency)} to unlock free shipping`
+      : (qualificationNotes[0] ?? null);
 
   return (
     <div className={classes} aria-live="polite">
       {showBar ? (
         <>
           <p>
-            {isFree ? (
+            {unlocked ? (
               <>
                 <span className="ship-whoop-check" aria-hidden="true" />
                 You&apos;ve unlocked free shipping
@@ -66,13 +64,12 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
           </div>
         </>
       ) : null}
-      {!showBar
-        ? qualificationNotes.map((note) => (
-            <p key={note}>{note}</p>
-          ))
-        : qualificationNotes.slice(1).map((note) => (
-            <p key={note}>{note}</p>
-          ))}
+      {(showBar
+        ? qualificationNotes.filter((note) => !/free shipping/i.test(note))
+        : qualificationNotes
+      ).map((note) => (
+        <p key={note}>{note}</p>
+      ))}
       {conflicts.map((note) => (
         <p className="promo-conflict" key={note}>
           {note}

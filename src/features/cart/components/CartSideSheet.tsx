@@ -41,7 +41,7 @@ export function CartSideSheet() {
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
   const promotions = useCartStore((s) => s.promotions);
-  const { isFree, quotePending: shipQuotePending } = useFreeShippingBar();
+  const { unlocked } = useFreeShippingBar();
   const quotePending = syncing && totals == null;
   const currency = totals?.currency ?? "AED";
   const amountDue = quotePending
@@ -49,7 +49,7 @@ export function CartSideSheet() {
     : (amountPayableFrom(promotions, [
         totals?.amountPayable != null ? String(totals.amountPayable) : null,
       ]) ?? subtotal);
-  const celebrateFree = !quotePending && !shipQuotePending && isFree;
+  const celebrateFree = unlocked;
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
   // glow + panel flash + a confetti burst from the bar's fill — the first

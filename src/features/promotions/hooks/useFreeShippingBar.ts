@@ -13,12 +13,17 @@ export function useFreeShippingBar() {
   const snapshot = data?.promotions ?? promotions;
   const currency = snapshot?.context.currencyCode ?? totals?.currency ?? "AED";
   const quotePending = syncing && totals == null;
+  const progressState = freeShippingProgress({
+    subtotal,
+    offers: data?.offers,
+    snapshot,
+  });
+  const unlocked =
+    progressState.isFree ||
+    (progressState.threshold != null && progressState.remaining <= 0);
   return {
-    ...freeShippingProgress({
-      subtotal,
-      offers: data?.offers,
-      snapshot,
-    }),
+    ...progressState,
+    unlocked,
     currency,
     snapshot,
     offers: data?.offers ?? [],
