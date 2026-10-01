@@ -7,7 +7,7 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useCouponMutations } from "@/features/cart/hooks/useCouponMutations";
-import { appliedCoupon, appliedPromotionView } from "../types/promotions";
+import { appliedCoupon, appliedPromotionView, isFixedAmountBxgy } from "../types/promotions";
 import { couponErrorMessage } from "../utils/couponErrors";
 import {
   couponLoginHref,
@@ -90,7 +90,8 @@ export function CouponForm() {
           </div>
           {appliedView?.amount != null && appliedView.amount > 0 ? (
             <span className="coupon-applied__amt" dir="ltr">
-              −{formatMoney(appliedView.amount, currency)}
+              {applied && isFixedAmountBxgy(applied) ? "Applied · " : "−"}
+              {formatMoney(appliedView.amount, currency)}
             </span>
           ) : appliedView?.status ? (
             <span className="coupon-applied__amt">{appliedView.status}</span>

@@ -4,6 +4,7 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import {
   appliedPromotionView,
+  isFixedAmountBxgy,
   isFreeShippingBenefit,
   visibleApplied,
   type PromotionSnapshotV1,
@@ -25,12 +26,13 @@ export function AppliedCampaigns({
     <ul className="promo-applied-list" aria-label="Applied offers">
       {rows.map((item, index) => {
         const view = appliedPromotionView(item, data);
-        const partialShipping =
-          item.level === "SHIPPING" && !isFreeShippingBenefit(item) && view.amount != null && view.amount > 0;
+        const quotedAmount = view.amount != null && view.amount > 0;
+        const partialShipping = item.level === "SHIPPING" && !isFreeShippingBenefit(item) && quotedAmount;
+        const fixedBxgy = isFixedAmountBxgy(item) && quotedAmount;
         return (
           <li className="promo-applied-row" key={`${item.kind}-${item.code ?? "row"}-${index}`}>
             <span>{view.label}</span>
-            {partialShipping ? (
+            {partialShipping || fixedBxgy ? (
               <span dir="ltr">Applied · {formatMoney(view.amount ?? 0, currency)}</span>
             ) : view.amount != null && view.amount > 0 ? (
               <span dir="ltr">−{formatMoney(view.amount, currency)}</span>

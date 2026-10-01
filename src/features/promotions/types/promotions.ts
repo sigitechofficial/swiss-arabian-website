@@ -200,6 +200,13 @@ export type AppliedPromotionView = {
 };
 
 /** Label and server amount only. Does not interpret buy/get pools or caps. */
+export function isFixedAmountBxgy(item: PromotionApplied): boolean {
+  if (item.discountType !== "BUY_X_GET_Y") return false;
+  const meta = item.metadata;
+  if (!meta) return false;
+  const raw = meta.rewardType ?? meta.rewardDiscountType;
+  return typeof raw === "string" && raw.trim().toUpperCase() === "FIXED_AMOUNT";
+}
 export function appliedPromotionView(
   item: PromotionApplied,
   snapshot?: PromotionSnapshotV1 | null,
