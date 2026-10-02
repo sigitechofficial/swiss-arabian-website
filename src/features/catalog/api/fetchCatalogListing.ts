@@ -38,7 +38,7 @@ function hasServerFacetParams(filters: CatalogListingFilters): boolean {
       filters.maxPrice ||
       filters.concentration ||
       filters.houseCollection ||
-      filters.featuredNote,
+      filters.featuredNote ||
       filters.fragranceFamily,
   );
 }
