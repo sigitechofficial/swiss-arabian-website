@@ -118,6 +118,7 @@ jobs:
             --build-arg NEXT_PUBLIC_ENABLE_MFA=false \
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
             --build-arg NEXT_PUBLIC_ENABLE_OAUTH=false \
+            --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
             --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
             --build-arg "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
