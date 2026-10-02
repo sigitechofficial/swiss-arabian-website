@@ -427,7 +427,7 @@ function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
 
 /**
  * User + currency + basket. Must land in InsiderQueue *before* page type + init.
- * Language is a default *user* attribute (`en_US`), not a separate queue type.
+ * Language is both a user attribute and a `type: "language"` row (`en_US`).
  */
 export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
@@ -448,6 +448,12 @@ export function pushInsiderUserContext(input?: {
     if (input?.user) persistInsiderUserValue(userValue);
     queue().push({ type: "user", value: userValue });
     queue().push({ type: "currency", value: currency });
+    queue().push({
+      type: "language",
+      value:
+        (typeof userValue.language === "string" && userValue.language) ||
+        INSIDER_LANGUAGE,
+    });
     if (input?.skipCart !== true) {
       queue().push({
         type: "cart",
@@ -540,11 +546,11 @@ export function insiderLogout(): void {
  * Writes straight to `InsiderQueue` so a refresh test can see `init` immediately.
  * If the head script already pushed `init`, the product is inserted before it.
  */
-const INSIDER_PAGE_TYPES = new Set([
+/** Page views that already closed with their own init. Basket `cart` is context, not a page. */
+const CLOSED_PAGE_TYPES = new Set([
   "home",
   "category",
   "product",
-  "cart",
   "other",
   "purchase",
 ]);
@@ -561,10 +567,10 @@ export function ensureInsiderProductPage(product: InsiderProductPayload): void {
   for (let index = 0; index < rows.length; index += 1) {
     if (rows[index]?.type === "init") lastInit = index;
   }
-  const pageBeforeInit =
-    lastInit >= 0 &&
-    rows.slice(0, lastInit).some((row) => INSIDER_PAGE_TYPES.has(String(row.type)));
-  if (lastInit >= 0 && !pageBeforeInit) {
+  const before = lastInit > 0 ? rows[lastInit - 1] : undefined;
+  const closedPage =
+    lastInit >= 0 && CLOSED_PAGE_TYPES.has(String(before?.type ?? ""));
+  if (lastInit >= 0 && !closedPage) {
     rows.splice(lastInit, 0, entry);
     return;
   }
