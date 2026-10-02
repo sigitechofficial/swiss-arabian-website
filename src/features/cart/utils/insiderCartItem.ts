@@ -25,7 +25,8 @@ export function cartLineToInsiderItem(
     ...(line.productId || line.variantId
       ? { groupcode: line.productId || line.variantId }
       : {}),
-    ...(line.isSellable === false ? { stock: 0 } : {}),
+    stock: line.isSellable === false ? 0 : 1,
+    color: "",
   };
 }
 

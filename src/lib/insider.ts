@@ -415,7 +415,13 @@ function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
     subtotal: total,
     shipping_cost: 0,
     quantity,
-    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
+    items: cart.items.map((item) => {
+      const value = productQueueValue(item, item.quantity);
+      if (typeof value.stock !== "number") value.stock = 0;
+      if (typeof value.color !== "string") value.color = "";
+      value.shipping_cost = 0;
+      return value;
+    }),
   };
 }
 
@@ -529,11 +535,45 @@ export function insiderLogout(): void {
  * SOW event #2 — product detail page viewed (`product_detail_page_view`).
  * Fire when a PDP mounts and product data is available.
  */
+/**
+ * Product page for the InOne tester: one `product` row, then exactly one `init`.
+ * Writes straight to `InsiderQueue` so a refresh test can see `init` immediately.
+ * If the head script already pushed `init`, the product is inserted before it.
+ */
+const INSIDER_PAGE_TYPES = new Set([
+  "home",
+  "category",
+  "product",
+  "cart",
+  "other",
+  "purchase",
+]);
+
+export function ensureInsiderProductPage(product: InsiderProductPayload): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  const rows = queue();
+  if (rows.some((row) => row.type === "product")) {
+    if (!rows.some((row) => row.type === "init")) rows.push({ type: "init" });
+    return;
+  }
+  const entry = { type: "product" as const, value: productQueueValue(product) };
+  let lastInit = -1;
+  for (let index = 0; index < rows.length; index += 1) {
+    if (rows[index]?.type === "init") lastInit = index;
+  }
+  const pageBeforeInit =
+    lastInit >= 0 &&
+    rows.slice(0, lastInit).some((row) => INSIDER_PAGE_TYPES.has(String(row.type)));
+  if (lastInit >= 0 && !pageBeforeInit) {
+    rows.splice(lastInit, 0, entry);
+    return;
+  }
+  rows.push(entry);
+  rows.push({ type: "init" });
+}
+
 export function insiderProductViewed(product: InsiderProductPayload): void {
-  runWhenReady(() => {
-    queue().push({ type: "product", value: productQueueValue(product) });
-    queue().push({ type: "init" });
-  });
+  ensureInsiderProductPage(product);
 }
 
 /**

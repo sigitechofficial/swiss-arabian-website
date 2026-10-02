@@ -176,6 +176,30 @@ describe("Insider page-view queues", () => {
     ).toHaveLength(1);
   });
 
+  it("puts stock, color, and shipping_cost on each cart line", () => {
+    insiderCartPage({
+      total: 199,
+      items: [
+        {
+          id: "var-1",
+          sku: "SKU-1",
+          name: "Oud",
+          price: 199,
+          currency: "AED",
+          quantity: 1,
+        },
+      ],
+    });
+    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
+    const items = (cart?.value as { items?: Record<string, unknown>[] }).items;
+    expect(cart?.value).toMatchObject({ shipping_cost: 0 });
+    expect(items?.[0]).toMatchObject({
+      stock: 0,
+      color: "",
+      shipping_cost: 0,
+    });
+  });
+
   it("sends user, currency, and basket cart before a page init", () => {
     pushInsiderUserContext({
       cart: { total: 0, items: [] },
