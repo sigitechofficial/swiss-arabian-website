@@ -109,4 +109,20 @@ export const env = {
   storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
   /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
   storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
+  /**
+   * Insider Web SDK. Script loads only when enabled AND accountId is set.
+   * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
+   */
+  insider: {
+    enabled:
+      readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",
+    accountId: readPublic(
+      process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
+      "10015366",
+    ),
+    scriptHost: readPublic(
+      process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
+      "swissarabianuatnew.api.useinsider.com",
+    ),
+  },
 } as const;

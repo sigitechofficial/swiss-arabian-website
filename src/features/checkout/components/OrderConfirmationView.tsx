@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -12,6 +12,10 @@ import {
   formatOrderDate,
   orderProgressStep,
 } from "@/features/orders/utils/orderStatus";
+import {
+  insiderPurchasePage,
+  toInsiderPurchaseValueFromOrder,
+} from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
 import type { OrderAddressSummary } from "../types/checkout";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
@@ -139,6 +143,28 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     retry: false,
   });
   const polling = shouldPoll && !settle.data && !settle.isError;
+  const purchaseSent = useRef(false);
+
+  useEffect(() => {
+    const placed = orderQuery.data;
+    if (!placed || purchaseSent.current) return;
+    const method = placed.selectedPaymentMethod;
+    const offline = /\bcod\b|cash/i.test(
+      `${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`,
+    );
+    const raw = paymentState(settle.data?.status ?? placed.paymentStatus);
+    const paid = offline && raw === "pending" ? "success" : raw;
+    if (paid !== "success") return;
+    purchaseSent.current = true;
+    insiderPurchasePage(
+      toInsiderPurchaseValueFromOrder({
+        orderId: placed.orderId,
+        orderNumber: placed.orderNumber,
+        totals: placed.totals,
+        lines: placed.lines,
+      }),
+    );
+  }, [orderQuery.data, settle.data?.status]);
 
   if (orderQuery.isPending || polling) {
     return (

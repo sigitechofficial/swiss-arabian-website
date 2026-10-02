@@ -8,7 +8,13 @@ import { PageLoading } from "@/components/ui";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import {
+  beginInsiderRouteFlush,
+  insiderProductViewed,
+  pushInsiderUserContext,
+} from "@/lib/insider";
+import { DEFAULT_LANGUAGE_CODE, DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useMarket } from "@/providers/MarketProvider";
 import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
 import { toCatalogProduct } from "../utils/toCatalogProduct";
@@ -85,6 +91,7 @@ function cartLineForProduct(
 export function ProductDetailPageView({ slug }: { slug: string }) {
   const { marketId } = useMarket();
   const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const bootstrapped = useAuthStore((s) => s.bootstrapped);
 
   // Live catalog slugs are SKUs (e.g. `SOAH098501`), so the PDP has to resolve
   // them through the API. `fetchProductBySlug` already falls back from the
@@ -150,6 +157,42 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     setPrVideoOpen(true);
     setPrVideoExpanded(false);
   }, [slug]);
+
+  useEffect(() => {
+    if (!product || !bootstrapped) return;
+    if (!beginInsiderRouteFlush(window.location.pathname)) return;
+    const category =
+      apiProduct?.collections?.find((collection) => collection.isFeatured)?.name ||
+      apiProduct?.collections?.[0]?.name ||
+      product.houseCollection ||
+      null;
+    const authUser = useAuthStore.getState().user;
+    pushInsiderUserContext({
+      user: authUser
+        ? {
+            uuid: authUser.id,
+            email: authUser.email,
+            phone: authUser.phoneE164,
+            firstName: authUser.firstName,
+            lastName: authUser.lastName,
+            locale: DEFAULT_LANGUAGE_CODE,
+          }
+        : null,
+    });
+    insiderProductViewed({
+      id: product.variantId || product.id,
+      sku: product.sku || product.variantId || product.id,
+      name: product.title,
+      price: product.price ?? 0,
+      currency: product.currency || "AED",
+      imageUrl: product.imageUrl ?? product.imageUrls?.[0] ?? null,
+      category,
+      brand: apiProduct?.brandName ?? null,
+      stock: product.availableQty ?? (product.inStock === false ? 0 : 1),
+      size: product.subtitle,
+      groupcode: product.id,
+    });
+  }, [apiProduct, bootstrapped, product]);
   const [activeTab, setActiveTab] = useState<TabId | null>("notes");
   const [tabsPaused, setTabsPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);

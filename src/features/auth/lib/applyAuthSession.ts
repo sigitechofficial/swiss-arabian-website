@@ -1,6 +1,26 @@
 import { setTokens } from "@/lib/auth/token";
+import { insiderIdentify } from "@/lib/insider";
+import {
+  DEFAULT_LANGUAGE_CODE,
+  DEFAULT_ZONE_CODE,
+} from "@/lib/storefront/context";
 import { useAuthStore, type StoreUser } from "@/stores/useAuthStore";
+import { useUiStore } from "@/stores/useUiStore";
 import type { AuthResult, CustomerProfileView } from "../types/auth";
+
+function stitchInsiderSession(customer: CustomerProfileView): void {
+  const zoneCode =
+    useUiStore.getState().selectedMarketId?.trim() || DEFAULT_ZONE_CODE;
+  insiderIdentify({
+    uuid: customer.id,
+    email: customer.email,
+    phone: customer.phoneE164,
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    zoneCode,
+    locale: DEFAULT_LANGUAGE_CODE,
+  });
+}
 
 export function mapCustomerToStoreUser(
   customer: CustomerProfileView,
@@ -22,11 +42,13 @@ export function applyAuthResult(result: AuthResult): StoreUser {
   const user = mapCustomerToStoreUser(result.customer);
   useAuthStore.getState().setUser(user);
   useAuthStore.getState().setBootstrapped(true);
+  stitchInsiderSession(result.customer);
   return user;
 }
 
 export function applyCustomerProfile(customer: CustomerProfileView): StoreUser {
   const user = mapCustomerToStoreUser(customer);
   useAuthStore.getState().setUser(user);
+  stitchInsiderSession(customer);
   return user;
 }

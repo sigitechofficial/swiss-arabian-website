@@ -78,7 +78,7 @@ const nextConfig: NextConfig = {
   // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
   // already produces its own optimized deployment output.
   output: process.env.VERCEL ? undefined : "standalone",
-  allowedDevOrigins: lanDevOrigins(),
+  allowedDevOrigins: [...lanDevOrigins(), "uae.swissarabian.com"],
   // Stripe Elements renders in a js.stripe.com iframe and fetches our brand
   // font cross-origin, which browsers only allow with a CORS header.
   async headers() {

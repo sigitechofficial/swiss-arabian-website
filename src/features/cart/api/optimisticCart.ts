@@ -1,7 +1,9 @@
 "use client";
 
 import { toastApiError } from "@/lib/api/toastApiError";
+import { insiderAddToCart, insiderRemoveFromCart } from "@/lib/insider";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { cartLineToInsiderItem } from "../utils/insiderCartItem";
 import type { ApiCart } from "../types/cart";
 import { getStoredCartId, storeCartId } from "../utils/guestToken";
 import { addCartItem, getActiveCart, removeCartItem, updateCartItem } from "./cart.service";
@@ -91,7 +93,11 @@ function finishOne() {
     });
 }
 
-function enqueue(run: () => Promise<ApiCart | null>, rollback: () => void) {
+function enqueue(
+  run: () => Promise<ApiCart | null>,
+  rollback: () => void,
+  onSynced?: () => void,
+) {
   if (inFlight === 0) useCartStore.getState().setSyncing(true);
   inFlight += 1;
   chain = chain.then(async () => {
@@ -101,6 +107,7 @@ function enqueue(run: () => Promise<ApiCart | null>, rollback: () => void) {
         latestCart = cart;
         // Guests: persist the id now so the next queued call hits the same cart.
         storeCartId(cart.cartId);
+        onSynced?.();
       }
     } catch (error) {
       batchFailed = true;
@@ -144,6 +151,18 @@ export function addItemOptimistic(input: {
       const line = store.lines.find((l) => l.variantId === key);
       if (line) store.updateQuantity(key, line.quantity - input.quantity);
     },
+    () => {
+      insiderAddToCart(
+        cartLineToInsiderItem(
+          {
+            ...input.line,
+            variantId: key,
+            quantity: input.quantity,
+          },
+          input.quantity,
+        ),
+      );
+    },
   );
 }
 
@@ -173,6 +192,11 @@ export function setQuantityOptimistic(variantId: string, quantity: number) {
       } else {
         current.addLine(snapshot);
       }
+    },
+    () => {
+      const delta = quantity - snapshot.quantity;
+      if (delta > 0) insiderAddToCart(cartLineToInsiderItem(snapshot, delta));
+      else if (delta < 0) insiderRemoveFromCart(cartLineToInsiderItem(snapshot, -delta));
     },
   );
 }
