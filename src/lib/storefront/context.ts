@@ -10,9 +10,14 @@ export function toAuthZoneCode(zoneCode?: string | null): string {
   return (zoneCode?.trim() || DEFAULT_ZONE_CODE).toUpperCase();
 }
 
+/**
+ * Last-resort channel when `/storefront/markets` has not loaded yet.
+ * Live markets return `platform_sa_uae` / `platform_sa_ksa`, not `platform_uae`.
+ * Once a market is selected, that API `salesChannelCode` replaces this.
+ */
 export function toAuthSalesChannelCode(zoneCode?: string | null): string {
   const zone = (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
-  return `platform_${zone}`;
+  return `platform_sa_${zone}`;
 }
 
 export type StorefrontContextInput = {
@@ -32,12 +37,23 @@ export function getPersistedCatalogContext(): StorefrontContextInput {
   return useUiStore.getState().catalogContext ?? {};
 }
 
+/** Old client invented `platform_uae`. Markets now return `platform_sa_uae`. */
+function isLegacyInventedChannel(code: string, zoneCode: string): boolean {
+  const zone = (zoneCode.trim() || DEFAULT_ZONE_CODE).toLowerCase();
+  return code.trim().toLowerCase() === `platform_${zone}`;
+}
+
 export function resolveStorefrontContext(
   input: StorefrontContextInput = {},
 ): StorefrontContextInput {
   const saved = getPersistedCatalogContext();
   const zoneCode = input.zoneCode?.trim() || saved.zoneCode || DEFAULT_ZONE_CODE;
   const sameZone = !saved.zoneCode || saved.zoneCode === zoneCode;
+  const savedChannel = sameZone ? saved.salesChannelCode?.trim() : "";
+  const usableSaved =
+    savedChannel && !isLegacyInventedChannel(savedChannel, zoneCode)
+      ? savedChannel
+      : null;
   return {
     zoneCode,
     languageCode:
@@ -54,7 +70,7 @@ export function resolveStorefrontContext(
       undefined,
     salesChannelCode:
       input.salesChannelCode?.trim() ||
-      (sameZone ? saved.salesChannelCode : null) ||
+      usableSaved ||
       toAuthSalesChannelCode(zoneCode),
   };
 }

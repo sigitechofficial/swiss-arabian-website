@@ -1,6 +1,6 @@
 import { getAccessToken } from "@/lib/auth/token";
 import { apiGet, apiPost, apiDelete } from "@/lib/api/apiClient";
-import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
   CheckoutAddressSnapshot,
@@ -12,10 +12,7 @@ import type {
 
 /** Zone + channel + guest token — for the session-creating endpoint. */
 function buildContextParams(): URLSearchParams {
-  const params = new URLSearchParams({
-    zoneCode: DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(),
-  });
+  const params = new URLSearchParams(storefrontContextQuery());
   if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);
@@ -23,9 +20,9 @@ function buildContextParams(): URLSearchParams {
   return params;
 }
 
-/** Guest token only — existing sessions already carry their context. */
+/** Market context plus guest token. Sessions also store context; the channel still goes on the URL. */
 function buildGuestParam(): URLSearchParams {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams(storefrontContextQuery());
   if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);

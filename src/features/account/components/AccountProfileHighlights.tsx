@@ -20,7 +20,7 @@ type HighlightCard = {
 export function AccountProfileHighlights() {
   // Shares the address book's cache, so edits there update this card.
   const addresses = useApiQuery(customerAccountKeys.addresses(), listCustomerAddresses);
-  const saved = addresses.data ?? [];
+  const saved = Array.isArray(addresses.data) ? addresses.data : [];
   const primary = saved.find((a) => a.isDefaultShipping) ?? saved[0];
 
   const shippingCard: HighlightCard = primary

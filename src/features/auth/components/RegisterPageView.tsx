@@ -6,10 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { env } from "@/lib/config/env";
-import {
-  toAuthSalesChannelCode,
-  toAuthZoneCode,
-} from "@/lib/storefront/context";
+import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
 import { useUiStore } from "@/stores/useUiStore";
 import { registerCustomer, splitFullName } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
@@ -29,12 +26,12 @@ export function RegisterPageView() {
     try {
       const { firstName, lastName } = splitFullName(values.fullName);
       const marketId = useUiStore.getState().selectedMarketId;
-      const catalogContext = useUiStore.getState().catalogContext;
-      const result = await registerCustomer({
+      const context = resolveStorefrontContext({
         zoneCode: toAuthZoneCode(marketId),
-        salesChannelCode:
-          catalogContext?.salesChannelCode?.trim() ||
-          toAuthSalesChannelCode(marketId),
+      });
+      const result = await registerCustomer({
+        zoneCode: context.zoneCode || toAuthZoneCode(marketId),
+        salesChannelCode: context.salesChannelCode || undefined,
         email: values.email,
         // Already E.164 from the phone field.
         phone: values.phone,

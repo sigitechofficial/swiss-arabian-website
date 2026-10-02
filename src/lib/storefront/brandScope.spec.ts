@@ -1,9 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { storefrontContextQuery } from "@/lib/storefront/context";
+import { storefrontContextQuery, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { useUiStore } from "@/stores/useUiStore";
 import { readPromotionSnapshot } from "@/features/promotions/types/promotions";
 import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
 
 describe("brand scoped storefront context", () => {
+  it("sends the markets sales channel, not the old invented platform_uae code", () => {
+    useUiStore.setState({ catalogContext: null, selectedMarketId: null });
+    expect(toAuthSalesChannelCode("UAE")).toBe("platform_sa_uae");
+    expect(toAuthSalesChannelCode("KSA")).toBe("platform_sa_ksa");
+    const query = storefrontContextQuery({ zoneCode: "UAE" });
+    expect(query).toContain("salesChannelCode=platform_sa_uae");
+    expect(query).not.toContain("salesChannelCode=platform_uae");
+  });
+
+  it("replaces a saved platform_uae channel with the markets channel", () => {
+    useUiStore.setState({
+      catalogContext: {
+        zoneCode: "UAE",
+        salesChannelCode: "platform_uae",
+        currencyCode: "AED",
+      },
+    });
+    expect(storefrontContextQuery({ zoneCode: "UAE" })).toContain(
+      "salesChannelCode=platform_sa_uae",
+    );
+    useUiStore.setState({
+      catalogContext: {
+        zoneCode: "UAE",
+        salesChannelCode: "platform_sa_uae",
+        currencyCode: "AED",
+      },
+    });
+    expect(storefrontContextQuery({ zoneCode: "KSA" })).toContain(
+      "salesChannelCode=platform_sa_ksa",
+    );
+    useUiStore.setState({ catalogContext: null });
+  });
+
   it("sends zone, currency, and channel and does not choose a brand", () => {
     const query = storefrontContextQuery({
       zoneCode: "UAE",

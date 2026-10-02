@@ -1,4 +1,5 @@
 import { apiGet } from "@/lib/api/apiClient";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 
 /**
  * `/storefront/order-tracking/:orderNumber` — shapes verified against the live
@@ -94,11 +95,12 @@ export interface OrderTrackingTimeline {
 
 /** With a token → public guest proof (no Bearer). Without → the signed-in customer's JWT. */
 function trackingRequest(path: string, orderAccessToken?: string | null) {
+  const qs = new URLSearchParams(storefrontContextQuery());
   if (orderAccessToken) {
-    const qs = new URLSearchParams({ orderAccessToken });
+    qs.set("orderAccessToken", orderAccessToken);
     return { url: `${path}?${qs.toString()}`, options: { skipAuth: true } };
   }
-  return { url: path, options: {} };
+  return { url: `${path}?${qs.toString()}`, options: {} };
 }
 
 export async function getOrderTracking(

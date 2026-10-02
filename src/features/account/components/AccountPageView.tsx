@@ -41,7 +41,7 @@ function DashboardContent() {
     queryFn: () => listOrders({ limit: 1, offset: 0 }),
     staleTime: 60_000,
   });
-  const recentOrder = recentQuery.data?.items[0];
+  const recentOrder = recentQuery.data?.items?.[0];
 
   async function handleLogout() {
     try {

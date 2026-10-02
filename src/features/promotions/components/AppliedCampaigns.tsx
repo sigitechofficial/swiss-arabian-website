@@ -20,7 +20,7 @@ export function AppliedCampaigns({
   const rows = visibleApplied(data).filter((item) => item.kind !== "COUPON");
   if (!rows.length) return null;
 
-  const currency = data?.context.currencyCode ?? "AED";
+  const currency = data?.context?.currencyCode ?? "AED";
 
   return (
     <ul className="promo-applied-list" aria-label="Applied offers">

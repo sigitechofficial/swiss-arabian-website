@@ -23,7 +23,7 @@ export function CouponForm() {
   const promotions = useCartStore((s) => s.promotions);
   const totals = useCartStore((s) => s.totals);
   const currency =
-    promotions?.context.currencyCode ?? totals?.currency ?? "AED";
+    promotions?.context?.currencyCode ?? totals?.currency ?? "AED";
   const { apply, remove, cartId } = useCouponMutations();
 
   const [code, setCode] = useState("");

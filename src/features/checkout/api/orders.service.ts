@@ -18,7 +18,7 @@ function buildContextParams(): URLSearchParams {
 }
 
 function buildGuestParam(): URLSearchParams {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams(storefrontContextQuery());
   if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);

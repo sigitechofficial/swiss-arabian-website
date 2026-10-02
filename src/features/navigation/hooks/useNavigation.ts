@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ApiClientError } from "@/lib/api/apiError";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
+import { useUiStore } from "@/stores/useUiStore";
 import type { MobileNavItem, MobileNavLink } from "@/features/home/constants/homeAssets";
 import type { ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { fetchNavigation } from "../api/navigation.service";
@@ -74,10 +75,11 @@ function retryServerErrors(failureCount: number, error: unknown): boolean {
 export function useNavigation(
   zoneCode: string = DEFAULT_ZONE_CODE,
 ): UseNavigationReturn {
-  // Keyed by zone, so changing the country refetches the menu. The previous
-  // menu stays on screen while the new one loads.
+  const salesChannelCode = useUiStore((s) => s.catalogContext?.salesChannelCode);
+  // Keyed by zone and the markets API channel, so a late `platform_sa_uae`
+  // replaces an earlier fallback and the menu refetches.
   const zoneQuery = useQuery({
-    queryKey: ["storefront", "navigation", zoneCode],
+    queryKey: ["storefront", "navigation", zoneCode, salesChannelCode ?? ""],
     queryFn: () => fetchNavigation(zoneCode),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
@@ -89,7 +91,7 @@ export function useNavigation(
   // rather than dropping to the static one.
   const fallbackActive = zoneCode !== DEFAULT_ZONE_CODE && zoneQuery.isError;
   const fallbackQuery = useQuery({
-    queryKey: ["storefront", "navigation", DEFAULT_ZONE_CODE],
+    queryKey: ["storefront", "navigation", DEFAULT_ZONE_CODE, salesChannelCode ?? ""],
     queryFn: () => fetchNavigation(DEFAULT_ZONE_CODE),
     enabled: fallbackActive,
     staleTime: 30_000,

@@ -3,7 +3,10 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
-import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+import {
+  readPromotionSnapshot,
+  type PromotionSnapshotV1,
+} from "@/features/promotions/types/promotions";
 import { brandScopedStorage } from "@/lib/storefront/brandStorage";
 
 export type CartLine = {
@@ -180,7 +183,7 @@ export const useCartStore = create<CartState>()(
           return {
             lines,
             totals,
-            promotions: cart.promotions ?? null,
+            promotions: readPromotionSnapshot(cart.promotions),
             cartId: cart.cartId,
             validation: cart.validation ?? null,
           };

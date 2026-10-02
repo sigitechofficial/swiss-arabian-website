@@ -11,7 +11,7 @@ export function useFreeShippingBar() {
   const subtotal = useCartStore((s) => s.subtotal());
   const { data } = useApplicablePromotions();
   const snapshot = data?.promotions ?? promotions;
-  const currency = snapshot?.context.currencyCode ?? totals?.currency ?? "AED";
+  const currency = snapshot?.context?.currencyCode ?? totals?.currency ?? "AED";
   const quotePending = syncing && totals == null;
   const progressState = freeShippingProgress({
     subtotal,

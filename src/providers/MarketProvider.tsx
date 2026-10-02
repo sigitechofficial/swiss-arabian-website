@@ -44,7 +44,7 @@ function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
   const ctx = market.catalogContext;
   return {
     zoneCode: ctx.zoneCode,
-    salesChannelCode: ctx.salesChannelCode,
+    salesChannelCode: market.salesChannelCode?.trim() || ctx.salesChannelCode,
     languageCode: ctx.languageCode ?? market.defaultLanguageCode,
     currencyCode: ctx.currencyCode ?? market.defaultCurrencyCode,
     countryCode: ctx.countryCode || market.countryCode,

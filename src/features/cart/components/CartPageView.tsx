@@ -88,7 +88,7 @@ export function CartPageView() {
   const itemCount = mounted ? persistedItemCount : 0;
 
   const promotions = useCartStore((s) => s.promotions);
-  const currency = totals?.currency ?? promotions?.context.currencyCode ?? "AED";
+  const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
   const quotePending = syncing && totals == null;

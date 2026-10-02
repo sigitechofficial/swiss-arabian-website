@@ -23,7 +23,7 @@ export function GiftCardForm({
   const totals = useCartStore((s) => s.totals);
   const data = snapshot ?? fromStore;
   const cards = visibleGiftCards(data, extraGiftCards);
-  const currency = data?.context.currencyCode ?? totals?.currency ?? "AED";
+  const currency = data?.context?.currencyCode ?? totals?.currency ?? "AED";
   const { apply, remove, balance, cartId, checkoutSessionId: sessionId } =
     useGiftCardMutations({
       checkoutSessionId,
