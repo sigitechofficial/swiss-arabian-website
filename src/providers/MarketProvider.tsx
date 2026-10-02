@@ -24,8 +24,10 @@ import {
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import { promotionKeys } from "@/features/promotions/api/promotions.keys";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore, type PersistedCatalogContext } from "@/stores/useUiStore";
+import { filterMarketsForTenant } from "@/lib/storefront/brand";
 
 type RegionOption = { id: string; label: string; flag?: string; countryCode?: string };
 
@@ -46,6 +48,9 @@ function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
     languageCode: ctx.languageCode ?? market.defaultLanguageCode,
     currencyCode: ctx.currencyCode ?? market.defaultCurrencyCode,
     countryCode: ctx.countryCode || market.countryCode,
+    zoneId: ctx.zoneId,
+    brandId: ctx.brandId ?? null,
+    brandCode: ctx.brandCode ?? null,
   };
 }
 
@@ -57,6 +62,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const setCatalogContext = useUiStore((s) => s.setCatalogContext);
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
   const setCartId = useCartStore((s) => s.setCartId);
+  const clearPromotions = useCartStore((s) => s.clearPromotions);
+  const setSyncing = useCartStore((s) => s.setSyncing);
   const [hydrated, setHydrated] = useState(false);
   const marketsQuery = useStorefrontMarkets();
 
@@ -72,7 +79,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const shoppable = useMemo(() => {
     const list = marketsQuery.data?.markets ?? [];
     const ready = list.filter((market) => market.isCatalogReady);
-    return ready.length ? ready : list;
+    const pool = ready.length ? ready : list;
+    const filtered = filterMarketsForTenant(pool);
+    return filtered.length ? filtered : pool;
   }, [marketsQuery.data]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {
@@ -149,10 +158,16 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
     void queryClient.invalidateQueries({ queryKey: ["storefront", "navigation"] });
     void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    void queryClient.removeQueries({ queryKey: promotionKeys.all });
+    clearPromotions();
+    setSyncing(true);
 
     const cartId = getStoredCartId();
     const authed = Boolean(getAccessToken());
-    if (!cartId && !authed) return;
+    if (!cartId && !authed) {
+      setSyncing(false);
+      return;
+    }
 
     void (cartId ? getActiveCart(cartId) : createOrResolveCart({}))
       .catch(() => createOrResolveCart({}))
@@ -163,8 +178,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         // Soft failure — shopper can still browse the new market.
-      });
-  }, [queryClient, setCartFromApi, setCartId]);
+      })
+      .finally(() => setSyncing(false));
+  }, [clearPromotions, queryClient, setCartFromApi, setCartId, setSyncing]);
 
   const setMarketId = useCallback(
     (id: string | null) => {

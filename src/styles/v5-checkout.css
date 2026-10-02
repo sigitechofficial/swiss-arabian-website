@@ -560,19 +560,11 @@ button.checkout-cta:hover {
   font-weight: 500;
   color: var(--copper);
 }
-.coline__body .coline__gift-tag {
-  margin-top: 4px;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
 .coline__price--gift {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  color: var(--ink);
 }
 .coline__price--gift s {
   font-size: 0.68rem;
@@ -1220,6 +1212,10 @@ button.checkout-cta:hover {
   color: var(--ink);
 }
 .oc-line__sub {
+  font-size: 0.72rem;
+  color: var(--ink-2);
+}
+.oc-line__discount {
   font-size: 0.72rem;
   color: var(--ink-2);
 }

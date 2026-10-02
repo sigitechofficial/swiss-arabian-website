@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
+import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
 import {
   ORDER_PROGRESS_STEPS,
   formatOrderDate,
@@ -369,6 +371,11 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                     <span className="oc-line__body">
                       <span className="oc-line__name">{name}</span>
                       <span className="oc-line__sub">{[variant, `Qty ${qty}`].filter(Boolean).join(" · ")}</span>
+                      <HistoricalLineDiscount
+                        snapshot={line.promotionSnapshot}
+                        currency={line.currencyCode || currency}
+                        className="oc-line__discount"
+                      />
                     </span>
                     <span className="oc-line__price" dir="ltr">
                       {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
@@ -404,6 +411,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                   <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
                 </div>
               ) : null}
+              <HistoricalGiftNote snapshot={order.promotionSnapshot} className="oc-line__discount" />
               <div className="checkout-totals-line">
                 <dt>Total</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>

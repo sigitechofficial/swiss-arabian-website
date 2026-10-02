@@ -7,7 +7,7 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useCouponMutations } from "@/features/cart/hooks/useCouponMutations";
-import { appliedCoupon } from "../types/promotions";
+import { appliedCoupon, appliedPromotionView, isFixedAmountBxgy } from "../types/promotions";
 import { couponErrorMessage } from "../utils/couponErrors";
 import {
   couponLoginHref,
@@ -77,7 +77,7 @@ export function CouponForm() {
   }
 
   const busy = apply.isPending || remove.isPending;
-  const amount = applied ? Number(applied.amount) : 0;
+  const appliedView = applied ? appliedPromotionView(applied, promotions) : null;
 
   return (
     <div className="coupon-box">
@@ -85,13 +85,16 @@ export function CouponForm() {
       {applied?.code ? (
         <div className="coupon-applied">
           <div>
-            <p className="coupon-applied__name">{applied.label || applied.code}</p>
+            <p className="coupon-applied__name">{appliedView?.label || applied.code}</p>
             <p className="coupon-applied__code">{applied.code}</p>
           </div>
-          {amount > 0 ? (
+          {appliedView?.amount != null && appliedView.amount > 0 ? (
             <span className="coupon-applied__amt" dir="ltr">
-              −{formatMoney(amount, currency)}
+              {applied && isFixedAmountBxgy(applied) ? "Applied · " : "−"}
+              {formatMoney(appliedView.amount, currency)}
             </span>
+          ) : appliedView?.status ? (
+            <span className="coupon-applied__amt">{appliedView.status}</span>
           ) : null}
           <button
             type="button"

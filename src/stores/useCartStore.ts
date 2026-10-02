@@ -1,9 +1,10 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+import { brandScopedStorage } from "@/lib/storefront/brandStorage";
 
 export type CartLine = {
   cartItemId?: string;
@@ -47,6 +48,7 @@ type CartState = {
   updateQuantity: (variantId: string, quantity: number) => void;
   removeLine: (variantId: string) => void;
   clear: () => void;
+  clearPromotions: () => void;
   setCartId: (id: string | null) => void;
   setValidation: (v: CartValidation | null) => void;
   setCartFromApi: (cart: ApiCart) => void;
@@ -54,8 +56,10 @@ type CartState = {
   subtotal: () => number;
 };
 
+type PersistedCartState = Pick<CartState, "lines">;
+
 export const useCartStore = create<CartState>()(
-  persist(
+  persist<CartState, [], [], PersistedCartState>(
     (set, get) => ({
       lines: [],
       cartId: null,
@@ -115,6 +119,9 @@ export const useCartStore = create<CartState>()(
         })),
 
       clear: () => set({ lines: [], totals: null, promotions: null, validation: null }),
+
+      /** Drop the previous market quote. Lines stay until the next server cart. */
+      clearPromotions: () => set({ promotions: null, totals: null }),
 
       setCartId: (id) => set({ cartId: id }),
 
@@ -196,6 +203,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "sa-cart-v2",
+      storage: createJSONStorage(() => brandScopedStorage()),
       partialize: (state) => ({ lines: state.lines }),
     },
   ),

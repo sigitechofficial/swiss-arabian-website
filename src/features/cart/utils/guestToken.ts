@@ -1,7 +1,17 @@
-/** localStorage keys and helpers for guest cart identity. */
+/** localStorage keys and helpers for guest cart identity (per shop host). */
+
+import { storefrontStorageKey } from "@/lib/storefront/brand";
 
 const GUEST_TOKEN_KEY = "sa_guest_token";
 const CART_ID_KEY = "sa_cart_id";
+
+function guestKey(): string {
+  return storefrontStorageKey(GUEST_TOKEN_KEY);
+}
+
+function cartIdKey(): string {
+  return storefrontStorageKey(CART_ID_KEY);
+}
 
 function generateUuid(): string {
   if (
@@ -20,10 +30,10 @@ function generateUuid(): string {
 export function getOrCreateGuestToken(): string {
   if (typeof window === "undefined") return "";
   try {
-    const existing = localStorage.getItem(GUEST_TOKEN_KEY);
+    const existing = localStorage.getItem(guestKey());
     if (existing) return existing;
     const token = generateUuid();
-    localStorage.setItem(GUEST_TOKEN_KEY, token);
+    localStorage.setItem(guestKey(), token);
     return token;
   } catch {
     return generateUuid();
@@ -33,7 +43,7 @@ export function getOrCreateGuestToken(): string {
 export function clearGuestToken(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(GUEST_TOKEN_KEY);
+    localStorage.removeItem(guestKey());
   } catch {
     // ignore
   }
@@ -42,7 +52,7 @@ export function clearGuestToken(): void {
 export function getStoredCartId(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(CART_ID_KEY);
+    return localStorage.getItem(cartIdKey());
   } catch {
     return null;
   }
@@ -51,7 +61,7 @@ export function getStoredCartId(): string | null {
 export function storeCartId(cartId: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(CART_ID_KEY, cartId);
+    localStorage.setItem(cartIdKey(), cartId);
   } catch {
     // ignore
   }
@@ -60,7 +70,7 @@ export function storeCartId(cartId: string): void {
 export function clearCartId(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(CART_ID_KEY);
+    localStorage.removeItem(cartIdKey());
   } catch {
     // ignore
   }

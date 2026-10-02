@@ -12,7 +12,7 @@ export const accountQuickLinks: AccountQuickLink[] = [
     icon: accountAssets.icons.orders,
     title: "Order History",
     description:
-      "Track your orders, start a return, or view previous purchases.",
+      "Track your orders and view previous purchases.",
     href: "/account/orders",
   },
   {

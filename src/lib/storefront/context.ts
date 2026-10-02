@@ -20,6 +20,9 @@ export type StorefrontContextInput = {
   currencyCode?: string | null;
   countryCode?: string | null;
   salesChannelCode?: string | null;
+  zoneId?: string | null;
+  brandId?: string | null;
+  brandCode?: string | null;
 };
 
 /** Last selected market’s catalogContext (client only; empty on the server). */

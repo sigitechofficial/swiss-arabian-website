@@ -3,76 +3,76 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useFreeShippingBar } from "../hooks/useFreeShippingBar";
+import { promotionConflictNotes } from "../utils/conflictNotes";
+import { offerQualificationMessage } from "../utils/qualificationCopy";
 
 export function PromotionUnlockNote({ className = "cart-ship-banner" }: { className?: string }) {
-  const { isFree, progress, remaining, threshold, currency, snapshot, offers } = useFreeShippingBar();
+  const { isFree, unlocked, progress, remaining, threshold, currency, snapshot, offers } =
+    useFreeShippingBar();
   const [whoop, setWhoop] = useState(false);
   const wasFreeRef = useRef<boolean | null>(null);
 
-  const couponNearMiss = offers.find((offer) => {
-    if (offer.selected) return false;
-    const rejected = offer.rejected;
-    if (!rejected || rejected.reason !== "MIN_ORDER" || !rejected.minOrderAmount) return false;
-    const hay = `${offer.code ?? ""} ${offer.campaignCode ?? ""} ${offer.title ?? ""} ${offer.label ?? ""}`.toLowerCase();
-    return !/ship|deliver/.test(hay);
-  });
+  const qualificationNotes = offers
+    .map((offer) =>
+      offerQualificationMessage(offer, currency, { shippingApplied: unlocked }),
+    )
+    .filter((note): note is string => Boolean(note));
 
-  const conflicts = (snapshot?.rejected ?? []).filter(
-    (item) => item.reason === "PROMOTION_CONFLICT",
-  );
-
+  const conflicts = promotionConflictNotes(snapshot?.rejected);
   const showBar = threshold != null || isFree;
 
   useEffect(() => {
     const previouslyFree = wasFreeRef.current;
-    wasFreeRef.current = isFree;
-    if (!isFree || previouslyFree !== false) return;
+    wasFreeRef.current = unlocked;
+    if (!unlocked || previouslyFree !== false) return;
     setWhoop(true);
     const id = window.setTimeout(() => setWhoop(false), 1100);
     return () => window.clearTimeout(id);
-  }, [isFree]);
+  }, [unlocked]);
 
-  if (!showBar && !couponNearMiss && !conflicts.length) return null;
+  if (!showBar && !qualificationNotes.length && !conflicts.length) return null;
 
-  const classes = [
-    className,
-    isFree ? "is-free" : "",
-    whoop ? "is-whoop" : "",
-  ]
+  const classes = [className, unlocked ? "is-free" : "", whoop ? "is-whoop" : ""]
     .filter(Boolean)
     .join(" ");
+
+  const barCopy = unlocked
+    ? null
+    : threshold != null
+      ? `Spend ${formatMoney(remaining, currency)} to unlock free shipping`
+      : (qualificationNotes[0] ?? null);
 
   return (
     <div className={classes} aria-live="polite">
       {showBar ? (
         <>
           <p>
-            {isFree ? (
+            {unlocked ? (
               <>
                 <span className="ship-whoop-check" aria-hidden="true" />
                 You&apos;ve unlocked free shipping
               </>
             ) : (
-              <>Spend {formatMoney(remaining, currency)} to unlock free shipping</>
+              barCopy
             )}
           </p>
-          <div className="cart-ship-track">
+          <div className="cart-ship-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
             <div
               className="cart-ship-fill"
               style={{ width: `${Math.round(progress * 100)}%` }}
             />
           </div>
         </>
-      ) : couponNearMiss?.rejected?.minOrderAmount ? (
-        <p>
-          Spend {formatMoney(Number(couponNearMiss.rejected.minOrderAmount), currency)} to unlock{" "}
-          {couponNearMiss.title?.trim() || couponNearMiss.label?.trim() || "this offer"}.
-        </p>
       ) : null}
-      {conflicts.map((item, index) => (
-        <p className="promo-conflict" key={`${item.code ?? "conflict"}-${index}`}>
-          {item.message?.trim() ||
-            "Another offer didn’t combine with the one already on your bag."}
+      {(showBar
+        ? qualificationNotes.filter((note) => !/free shipping/i.test(note))
+        : qualificationNotes
+      ).map((note) => (
+        <p key={note}>{note}</p>
+      ))}
+      {conflicts.map((note) => (
+        <p className="promo-conflict" key={note}>
+          {note}
         </p>
       ))}
     </div>

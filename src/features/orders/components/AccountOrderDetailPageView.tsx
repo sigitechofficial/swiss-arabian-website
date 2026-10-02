@@ -22,6 +22,8 @@ import {
 import { OrderTrackingPanel } from "@/features/tracking/components/OrderTrackingPanel";
 import { ApiClientError } from "@/lib/api/apiError";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
+import { HistoricalGiftNote } from "./HistoricalGiftNote";
+import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 
 type Feedback = { tone: "success" | "info" | "error"; text: string };
@@ -316,6 +318,11 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
+                    <HistoricalLineDiscount
+                      snapshot={line.promotionSnapshot}
+                      currency={line.currencyCode || currency}
+                      className="mt-1 text-[12px] text-sa-muted"
+                    />
                   </div>
                   <p className="shrink-0 text-[13px] font-semibold text-sa-primary">
                     {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
@@ -351,6 +358,10 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                   <dd className="font-medium text-sa-primary">{formatMoney(Number(order.totals.tax), currency)}</dd>
                 </div>
               ) : null}
+              <HistoricalGiftNote
+                snapshot={order.promotionSnapshot}
+                className="text-[12px] text-sa-muted"
+              />
               <div className="mt-1 flex justify-between border-t border-sa-border pt-3.5">
                 <dt className="text-[13.5px] font-bold text-sa-primary">Total</dt>
                 <dd className="text-[13.5px] font-bold text-sa-primary">{formatMoney(Number(order.totals.total), currency)}</dd>

@@ -41,12 +41,15 @@ export function CartSideSheet() {
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
   const promotions = useCartStore((s) => s.promotions);
+  const { unlocked } = useFreeShippingBar();
+  const quotePending = syncing && totals == null;
   const currency = totals?.currency ?? "AED";
-  const { isFree } = useFreeShippingBar();
-  const amountDue =
-    amountPayableFrom(promotions, [
-      totals?.amountPayable != null ? String(totals.amountPayable) : null,
-    ]) ?? subtotal;
+  const amountDue = quotePending
+    ? null
+    : (amountPayableFrom(promotions, [
+        totals?.amountPayable != null ? String(totals.amountPayable) : null,
+      ]) ?? subtotal);
+  const celebrateFree = unlocked;
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
   // glow + panel flash + a confetti burst from the bar's fill — the first
@@ -54,8 +57,8 @@ export function CartSideSheet() {
   // while it stays above it, and not on initial mount if it's already met).
   useEffect(() => {
     const previouslyFree = wasFreeRef.current;
-    wasFreeRef.current = isFree;
-    if (!isFree || previouslyFree !== false) return;
+    wasFreeRef.current = celebrateFree;
+    if (!celebrateFree || previouslyFree !== false) return;
 
     setIsPanelFlash(false);
     const restart = requestAnimationFrame(() => {
@@ -118,7 +121,7 @@ export function CartSideSheet() {
       clearTimeout(clearFlash);
       if (clearConfetti) clearTimeout(clearConfetti);
     };
-  }, [isFree]);
+  }, [celebrateFree]);
 
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
 
@@ -309,7 +312,7 @@ export function CartSideSheet() {
         <footer className="cart-drawer-foot">
           <div className="cart-total-row">
             <span>Total</span>
-            <strong>{formatMoney(amountDue, currency)}</strong>
+            <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
           </div>
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}

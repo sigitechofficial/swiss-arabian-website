@@ -1,5 +1,8 @@
 import type { PromotionOffer, PromotionSnapshotV1 } from "../types/promotions";
-import { shippingDiscountAmount } from "../types/promotions";
+import {
+  explicitThresholdAmount,
+  structuredSpendAmount,
+} from "./freeShippingThreshold";
 
 function blob(offer: PromotionOffer): string {
   return `${offer.code ?? ""} ${offer.campaignCode ?? ""} ${offer.title ?? ""} ${offer.label ?? ""}`.toLowerCase();
@@ -14,9 +17,19 @@ function minOrderFrom(value: string | null | undefined): number | null {
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
-function thresholdFromOffer(offer: PromotionOffer): number | null {
-  const min = minOrderFrom(offer.rejected?.minOrderAmount);
+function thresholdFromOffer(offer: PromotionOffer, subtotal: number): number | null {
+  const min =
+    minOrderFrom(offer.qualification?.minOrderAmount) ??
+    minOrderFrom(offer.rejected?.minOrderAmount) ??
+    minOrderFrom(explicitThresholdAmount(offer));
   if (min) return min;
+
+  const remaining = minOrderFrom(structuredSpendAmount(offer));
+  if (remaining != null && subtotal >= 0) {
+    const derived = remaining + subtotal;
+    if (derived > 0) return derived;
+  }
+
   const code = `${offer.code ?? ""} ${offer.campaignCode ?? ""}`;
   const codeMatch = code.match(/ship_free[_-]?(\d+)/i);
   if (codeMatch) return Number(codeMatch[1]);
@@ -30,10 +43,11 @@ function thresholdFromOffer(offer: PromotionOffer): number | null {
 export function pickShippingThreshold(
   offers: PromotionOffer[] | undefined,
   snapshot: PromotionSnapshotV1 | null | undefined,
+  subtotal = 0,
 ): number | null {
   for (const offer of offers ?? []) {
     if (!isShippingOffer(offer)) continue;
-    const threshold = thresholdFromOffer(offer);
+    const threshold = thresholdFromOffer(offer, subtotal);
     if (threshold) return threshold;
   }
   for (const row of snapshot?.rejected ?? []) {
@@ -52,10 +66,10 @@ export function freeShippingProgress(args: {
   offers?: PromotionOffer[];
   snapshot: PromotionSnapshotV1 | null | undefined;
 }): { threshold: number | null; isFree: boolean; progress: number; remaining: number } {
-  const threshold = pickShippingThreshold(args.offers, args.snapshot);
-  const quotedFree = shippingDiscountAmount(args.snapshot) > 0;
-  const crossed = threshold != null && args.subtotal >= threshold;
-  const isFree = quotedFree || crossed;
+  const threshold = pickShippingThreshold(args.offers, args.snapshot, args.subtotal);
+  const isFree = (args.snapshot?.applied ?? []).some(
+    (item) => item.kind === "FREE_SHIPPING" || item.discountType === "FREE_SHIPPING",
+  );
   const progress = isFree ? 1 : threshold ? Math.min(1, args.subtotal / threshold) : 0;
   const remaining = threshold != null ? Math.max(0, threshold - args.subtotal) : 0;
   return { threshold, isFree, progress, remaining };

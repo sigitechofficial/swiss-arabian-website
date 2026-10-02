@@ -209,20 +209,6 @@ function ProfileContent() {
               Manage reviews
             </Link>
           </div>
-          <div className="border-b border-sa-border py-5">
-            <p className="text-[12px] font-semibold text-sa-primary">
-              Returns & exchanges
-            </p>
-            <p className="mt-1 text-[13.5px] text-sa-secondary">
-              Track return and exchange requests for your orders.
-            </p>
-            <Link
-              href="/account/returns"
-              className="mt-2 inline-block text-[12px] font-semibold text-terra hover:underline"
-            >
-              View requests
-            </Link>
-          </div>
         </div>
       </section>
 

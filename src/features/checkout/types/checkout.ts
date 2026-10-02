@@ -1,6 +1,7 @@
 /** Checkout + orders API types — mirrors `/storefront/checkout` and `/storefront/orders`. */
 
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+import type { OrderLinePromotionSnapshot } from "@/features/orders/utils/historicalLineDiscount";
 
 // ─── Checkout session ────────────────────────────────────────────────────────
 
@@ -99,6 +100,8 @@ export interface CheckoutSessionResponse {
     status: string;
   };
   metadata?: Record<string, unknown> | null;
+  /** Live checkout quote. The cart snapshot must not replace this after a requote. */
+  promotions?: PromotionSnapshotV1 | null;
   /** Same v1 shape as cart `promotions` after snapshot rebuild. */
   promotionSnapshot?: PromotionSnapshotV1 | null;
   giftCards?: unknown;
@@ -171,6 +174,8 @@ export interface OrderLineSummary {
   lineTotal: string;
   currencyCode: string;
   imageUrl?: string | null;
+  /** Frozen at purchase. Null on orders placed before line snapshots. */
+  promotionSnapshot?: OrderLinePromotionSnapshot | null;
 }
 
 export interface OrderAddressSummary {
@@ -235,6 +240,8 @@ export interface OrderResponse {
   selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
   selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
   timeline: OrderTimelineEvent[];
+  /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
+  promotionSnapshot?: OrderLinePromotionSnapshot | null;
   /** `false` on an idempotent replay of an order that already existed. */
   created: boolean;
   createdAt: string;

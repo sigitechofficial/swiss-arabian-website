@@ -1,6 +1,10 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import { storefrontCartQuery } from "@/features/cart/api/cart.service";
-import type { ApplicablePromotions, GiftCardBalance } from "../types/promotions";
+import {
+  readApplicablePromotions,
+  type ApplicablePromotions,
+  type GiftCardBalance,
+} from "../types/promotions";
 
 export async function fetchApplicablePromotions(
   cartId: string,
@@ -9,10 +13,7 @@ export async function fetchApplicablePromotions(
   const data = await apiGet<ApplicablePromotions>(
     `/storefront/promotions/applicable?${params.toString()}`,
   );
-  return {
-    promotions: data.promotions,
-    offers: data.offers ?? [],
-  };
+  return readApplicablePromotions(data);
 }
 
 export async function checkGiftCardBalance(code: string): Promise<GiftCardBalance> {

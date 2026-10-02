@@ -14,6 +14,7 @@ export function MoneySummary({
   total,
   amountPayable,
   giftCards = [],
+  freeGifts = [],
 }: {
   className: string;
   currency: string;
@@ -25,6 +26,8 @@ export function MoneySummary({
   total: number;
   amountPayable?: number | null;
   giftCards?: GiftCardTender[];
+  /** Display-only awarded gifts. Not added to subtotal, discount, or total. */
+  freeGifts?: { name: string; quantity: number }[];
 }) {
   const showPayable =
     amountPayable != null && Number.isFinite(amountPayable) && amountPayable !== total;
@@ -57,6 +60,15 @@ export function MoneySummary({
           <dd dir="ltr">{formatMoney(tax, currency)}</dd>
         </div>
       ) : null}
+      {freeGifts.map((gift, index) => (
+        <div key={`${gift.name}-${index}`}>
+          <dt>Free gift</dt>
+          <dd dir="ltr">
+            {gift.name}
+            {gift.quantity > 1 ? ` ×${gift.quantity}` : ""} {formatMoney(0, currency)}
+          </dd>
+        </div>
+      ))}
       {giftCards.map((card, index) => {
         const amount = Number(card.amount);
         if (!(amount > 0)) return null;

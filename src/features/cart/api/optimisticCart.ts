@@ -42,6 +42,32 @@ function serverItemId(variantId: string): string | null {
   return item?.cartItemId ?? null;
 }
 
+/**
+ * Run a server cart read/write after any in-flight bag edits.
+ * The store is replaced only when the queue drains, so an older
+ * response cannot clobber a newer quote. A rejection leaves the
+ * last successful cart in place.
+ */
+export function runQueuedCart(run: () => Promise<ApiCart>): Promise<ApiCart> {
+  if (inFlight === 0) useCartStore.getState().setSyncing(true);
+  inFlight += 1;
+  const task = chain.then(async () => {
+    try {
+      const cart = await run();
+      latestCart = cart;
+      storeCartId(cart.cartId);
+      return cart;
+    } finally {
+      finishOne();
+    }
+  });
+  chain = task.then(
+    () => undefined,
+    () => undefined,
+  );
+  return task;
+}
+
 function finishOne() {
   inFlight -= 1;
   if (inFlight > 0) return;

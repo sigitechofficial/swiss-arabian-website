@@ -1,7 +1,13 @@
 import { env } from "@/lib/config/env";
-import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { endSession } from "@/lib/auth/endSession";
+import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
+import {
+  isShopUnavailablePath,
+  SHOP_UNAVAILABLE_CODES,
+  SHOP_UNAVAILABLE_PATH,
+} from "@/lib/storefront/brand";
 import { ApiClientError, type ApiErrorBody } from "./apiError";
+import { resolveStorefrontHost } from "./storefrontHost";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -30,9 +36,12 @@ async function tryRefresh(): Promise<boolean> {
     if (!refreshToken) return false;
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const storefrontHost = await resolveStorefrontHost();
+      if (storefrontHost) headers["x-storefront-host"] = storefrontHost;
       const res = await fetch(`${env.apiBaseUrl}/storefront/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ refreshToken }),
       });
       if (!res.ok) return false;
@@ -77,6 +86,9 @@ async function request<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const storefrontHost = await resolveStorefrontHost();
+  if (storefrontHost) headers.set("x-storefront-host", storefrontHost);
+
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,
     headers,
@@ -118,10 +130,21 @@ async function request<T>(
     );
   }
 
+  if (
+    res.status === 400 &&
+    errorCode &&
+    SHOP_UNAVAILABLE_CODES.has(errorCode) &&
+    typeof window !== "undefined" &&
+    !isShopUnavailablePath()
+  ) {
+    window.location.assign(SHOP_UNAVAILABLE_PATH);
+  }
+
   if (!res.ok || json?.success === false) {
     throw new ApiClientError(
       res.status,
       json?.error ?? (text || "Request failed"),
+      json?.meta?.requestId,
     );
   }
 

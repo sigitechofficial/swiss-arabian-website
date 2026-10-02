@@ -61,11 +61,11 @@ const API_BASE_BY_ENV: Record<AppEnv, string> = {
 const RETURN_URL_BY_ENV: Record<AppEnv, string> = {
   local: readPublic(
     process.env.NEXT_PUBLIC_LOCAL_RETURN_URL,
-    "http://localhost:3000",
+    "http://localhost:3004",
   ),
   dev: readPublic(
     process.env.NEXT_PUBLIC_DEV_RETURN_URL,
-    "http://localhost:3000",
+    "http://localhost:3004",
   ),
   staging: readPublic(process.env.NEXT_PUBLIC_STAGING_RETURN_URL),
   production: readPublic(process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL),
@@ -102,4 +102,11 @@ export const env = {
   catalogMediaBaseUrl: readPublic(
     process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
   ),
+  /**
+   * Shop hostname for `X-Storefront-Host` (no scheme/port).
+   * Required on localhost to act as Sapil (`sapil-website.vercel.app`).
+   */
+  storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
+  /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
+  storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
 } as const;
