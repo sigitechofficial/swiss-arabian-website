@@ -5,13 +5,14 @@ export const DEFAULT_ZONE_CODE = "UAE";
 export const DEFAULT_LANGUAGE_CODE = "en";
 export const DEFAULT_CURRENCY_CODE = "AED";
 
-/** Auth / register: zone lowercase + `platform_{zone}` sales channel. */
+/** Auth / register: zone matches the markets API (`UAE`, `KSA`). */
 export function toAuthZoneCode(zoneCode?: string | null): string {
-  return (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
+  return (zoneCode?.trim() || DEFAULT_ZONE_CODE).toUpperCase();
 }
 
 export function toAuthSalesChannelCode(zoneCode?: string | null): string {
-  return `platform_${toAuthZoneCode(zoneCode)}`;
+  const zone = (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
+  return `platform_${zone}`;
 }
 
 export type StorefrontContextInput = {
