@@ -1249,6 +1249,62 @@ body.is-gift-reveal .cart-drawer-panel {
   color: var(--ink);
 }
 
+/* Loyalty earning. Deliberately quiet so it never competes with promotion
+   offers, the free-shipping rail, or the checkout button. */
+.loyalty-earn-note {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.loyalty-earn-block {
+  margin-block-start: 14px;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--line, rgba(42, 32, 26, 0.12));
+}
+.loyalty-earn-block__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.loyalty-earn-block__points {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.loyalty-earn-block__basis {
+  margin: 4px 0 0;
+  font-size: 0.78125rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.loyalty-order-reward__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.loyalty-order-reward__points {
+  margin: 8px 0 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.loyalty-order-reward__note {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
 .cart-badges {
   display: flex;
   align-items: center;

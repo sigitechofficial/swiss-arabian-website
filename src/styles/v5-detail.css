@@ -413,6 +413,15 @@ main:has(.pdp) + .site-footer {
 }
 .pdp-hero__installments strong { color: #2a201a; }
 
+/* One compact rewards line. No card, no badge — it must not compete with
+   price, Add to bag, or the promotion offer link. */
+.pdp-hero__price-block ~ .loyalty-earn-note,
+.pdp-hero .loyalty-earn-note {
+  margin: var(--sp-2) 0 0;
+  font-size: 0.8125rem;
+  color: #6f6152;
+}
+
 .pdp-hero__buy {
   display: flex;
   flex-wrap: wrap;

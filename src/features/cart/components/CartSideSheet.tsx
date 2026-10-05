@@ -7,6 +7,8 @@ import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import { EmptyBagRecovery, GiftWithPurchase, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
 import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -44,7 +46,9 @@ export function CartSideSheet() {
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
   const promotions = useCartStore((s) => s.promotions);
+  const cartId = useCartStore((s) => s.cartId);
   const { unlocked } = useFreeShippingBar();
+  const earnPreview = useEarnPreview({ cartId });
   const quotePending = syncing && totals == null;
   const currency = totals?.currency ?? "AED";
   const amountDue = quotePending
@@ -327,6 +331,7 @@ export function CartSideSheet() {
             <span>Total</span>
             <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
           </div>
+          {quotePending ? null : <EarnPreviewNote preview={earnPreview.preview} />}
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}
           <Link

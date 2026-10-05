@@ -21,6 +21,8 @@ import {
   type CatalogProduct,
 } from "../constants/catalogProducts";
 import { OfferCountLink, PdpOffersPanel } from "@/features/promotions/components/PromotionOffers";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
 import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
 import { OutOfStockAlternatives } from "@/features/promotions/components/OutOfStockAlternatives";
@@ -187,6 +189,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     [lines, product],
   );
   const displayQty = cartLine ? cartLine.quantity : quantity;
+  const earnPreview = useProductEarnPreview({
+    unitPrice: product?.price,
+    quantity: displayQty,
+  });
   const [wished, setWished] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [status, setStatus] = useState("");
@@ -611,6 +617,9 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   Tamara.
                 </p>
               ) : null}
+
+              <EarnPreviewNote preview={earnPreview.preview} />
+
 
               {daysLine || thresholdLine ? (
                 <ul className="pdp-hero__promises" role="list">

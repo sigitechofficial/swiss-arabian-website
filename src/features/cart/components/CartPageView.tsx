@@ -10,6 +10,8 @@ import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useCartStore } from "@/stores/useCartStore";
 import { useCartMutations } from "../hooks/useCartMutations";
 import {
@@ -49,6 +51,7 @@ export function CartPageView() {
   const validation = useCartStore((s) => s.validation);
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
+  const earnPreview = useEarnPreview({ cartId });
   const router = useRouter();
 
   const blockingErrors = validation?.isValid === false ? validation.errors : [];
@@ -267,6 +270,9 @@ export function CartPageView() {
                     quantity: gift.quantity,
                   }))}
                 />
+                )}
+                {quotePending ? null : (
+                  <EarnPreviewNote preview={earnPreview.preview} variant="block" showBasis />
                 )}
                 {priceChanged ? (
                   <p className="cart-hint" role="status">

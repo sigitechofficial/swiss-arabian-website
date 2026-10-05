@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
 import {
@@ -121,6 +123,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     queryFn: () => getOrder(orderId),
     retry: 1,
   });
+
+  // Frozen order snapshot — never the last cart estimate.
+  const orderReward = useOrderReward(orderId);
 
   const loadedOrder = orderQuery.data;
   const method = loadedOrder?.selectedPaymentMethod;
@@ -446,6 +451,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
               </div>
             </dl>
           </section>
+
+          {orderReward?.earned ? (
+            <div className="oc-card">
+              <OrderRewardNote reward={orderReward} />
+            </div>
+          ) : null}
 
           <section className="oc-card" aria-labelledby="order-delivery">
             <h2 id="order-delivery">Delivery &amp; payment</h2>

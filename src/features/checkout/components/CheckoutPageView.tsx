@@ -28,6 +28,8 @@ import {
   shippingDiscountAmount,
   visibleGiftCards,
 } from "@/features/promotions";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -211,6 +213,9 @@ export function CheckoutPageView() {
     [estimate?.amountPayable],
   );
   const warnings = checkoutWarningMessages(session?.validationIssues);
+  const earnPreview = useEarnPreview({
+    checkoutSessionId: session?.checkoutSessionId,
+  });
 
   const selectedPayment = checkout.paymentMethods.find(
     (m) => m.zonePaymentMethodId === checkout.selectedPaymentId,
@@ -713,6 +718,7 @@ export function CheckoutPageView() {
                     quantity: gift.quantity,
                   }))}
                 />
+                <EarnPreviewNote preview={earnPreview.preview} variant="block" />
                 {warnings.map((warning) => (
                   <p className="checkout-note" key={warning} role="status">
                     {warning}

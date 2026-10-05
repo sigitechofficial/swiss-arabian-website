@@ -24,6 +24,7 @@ import {
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import { loyaltyKeys } from "@/features/loyalty/api/loyalty.keys";
 import { promotionKeys } from "@/features/promotions/api/promotions.keys";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore, type PersistedCatalogContext } from "@/stores/useUiStore";
@@ -159,6 +160,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     void queryClient.invalidateQueries({ queryKey: ["storefront", "navigation"] });
     void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     void queryClient.removeQueries({ queryKey: promotionKeys.all });
+    void queryClient.removeQueries({ queryKey: loyaltyKeys.all });
     clearPromotions();
     setSyncing(true);
 
