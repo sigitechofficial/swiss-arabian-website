@@ -46,23 +46,24 @@ export function PdpScentFamily({
   if (items.length < 2) return null;
 
   return (
-    <section className="pdp-scents" aria-labelledby="pdp-scents-heading">
-      <p className="pdp-scents__label" id="pdp-scents-heading">
+    <section className="mt-5" aria-labelledby="pdp-scents-heading">
+      <p className="mb-3 text-[0.95rem]" id="pdp-scents-heading">
         Scent: <strong>{current.title}</strong>
       </p>
-      <ul>
+      <ul className="m-0 flex list-none gap-3 overflow-x-auto p-0">
         {items.map((product) => {
           const active = product.id === current.id;
           return (
-            <li key={product.id}>
+            <li className="w-[92px] shrink-0" key={product.id}>
               <Link
+                className="grid gap-1.5 text-xs leading-snug text-inherit no-underline aria-[current=true]:[&_img]:border-2 aria-[current=true]:[&_img]:border-copper aria-[current=true]:[&_.bottle]:border-2 aria-[current=true]:[&_.bottle]:border-copper"
                 href={`/products/${product.slug}`}
                 aria-current={active ? "true" : undefined}
               >
                 {product.imageUrl ? (
-                  <img src={product.imageUrl} alt="" />
+                  <img className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt="" />
                 ) : (
-                  <span className="bottle" aria-hidden="true" />
+                  <span className="bottle aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white" aria-hidden="true" />
                 )}
                 <span>{product.title}</span>
               </Link>

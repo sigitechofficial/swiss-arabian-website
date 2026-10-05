@@ -122,22 +122,22 @@ export function ProductCompanions({
   return (
     <>
       {bundle && pieces.length > 0 ? (
-        <section className="pdp-bundle" aria-labelledby="companion-heading">
+        <section className="bg-warm py-[clamp(2rem,4vw,3.5rem)]" aria-labelledby="companion-heading">
           <div className="container container--full">
-            <div className="pdp-bundle__head">
+            <div className="mb-5 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_h2]:m-0 [&_h2]:text-[clamp(1.6rem,3vw,2.2rem)] [&_h2]:font-medium">
               <div>
-                <p className="pdp-bundle__eyebrow">Often bought together</p>
+                <p className="m-0 mb-1.5 text-[0.72rem] font-bold tracking-[0.08em] text-copper uppercase">Often bought together</p>
                 <h2 id="companion-heading">{bundle.heading}</h2>
               </div>
-              {fresh?.message ? <p>{fresh.message}</p> : null}
+              {fresh?.message ? <p className="m-0">{fresh.message}</p> : null}
             </div>
-            <div className="pdp-bundle__layout">
-              <ul className="pdp-bundle__pieces">
+            <div className="grid items-start gap-5 max-[900px]:grid-cols-1 min-[901px]:grid-cols-[minmax(0,1fr)_300px]">
+              <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-[0.85rem] p-0">
                 {pieces.map((product) => {
                   const current = product.sku === data.current?.sku;
                   return (
-                    <li key={product.sku} className={selected.includes(product.sku) ? "is-selected" : undefined}>
-                      <label>
+                    <li key={product.sku} className={`grid gap-[0.45rem] rounded-[10px] border bg-white p-3 [&_h3]:m-0 [&_h3]:text-[0.95rem] [&_h3]:font-semibold [&_img]:aspect-square [&_img]:w-full [&_img]:object-contain [&_p]:m-0 [&_p]:text-[0.85rem] ${selected.includes(product.sku) ? "border-[#2a201a]" : "border-[#241f1b]/12"}`}>
+                      <label className="flex items-center justify-between gap-2 text-[0.68rem] font-bold tracking-[0.06em] uppercase">
                         <span>{current ? data.copy.thisProduct : data.copy.addSelected}</span>
                         <input
                           type="checkbox"
@@ -149,12 +149,12 @@ export function ProductCompanions({
                       </label>
                       {product.slug ? (
                         <Link href={`/products/${product.slug}`}>
-                          {product.image ? <img src={product.image} alt="" /> : <span className="bottle" aria-hidden="true" />}
+                          {product.image ? <img src={product.image} alt="" /> : <span className="bottle aspect-square w-full" aria-hidden="true" />}
                         </Link>
                       ) : product.image ? (
                         <img src={product.image} alt="" />
                       ) : (
-                        <span className="bottle" aria-hidden="true" />
+                        <span className="bottle aspect-square w-full" aria-hidden="true" />
                       )}
                       <h3>{product.title}</h3>
                       {product.price ? <p>{product.price}</p> : null}
@@ -174,7 +174,7 @@ export function ProductCompanions({
                     total={total}
                   />
                 ) : null}
-                {fresh?.message ? <p className="pdp-bundle__note">{fresh.message}</p> : null}
+                {fresh?.message ? <p className="mb-3 text-[0.85rem]">{fresh.message}</p> : null}
                 <button
                   className={ready ? "cart-cta" : "cart-cta is-disabled"}
                   type="button"

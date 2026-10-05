@@ -464,7 +464,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         data-reveal={reveal ? "play" : undefined}
       >
         <div className="container container--full">
-          <nav className="crumbs pdp-hero__crumbs" aria-label="Breadcrumb">
+          <nav className="crumbs mb-[clamp(1rem,2vw,1.75rem)]" aria-label="Breadcrumb">
             <ol className="crumbs__list" role="list">
               <li>
                 <Link href="/">Home</Link>
@@ -582,7 +582,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
               ) : null}
               {apiProduct?.description &&
               !apiProduct.description.startsWith("Product details will appear") ? (
-                <p className="pdp-hero__blurb">{apiProduct.description}</p>
+                <p className="mt-[var(--sp-4)] max-w-[38rem] text-[0.9375rem] leading-normal text-[#6f6152]">{apiProduct.description}</p>
               ) : null}
 
               {chips.length ? (
@@ -600,8 +600,8 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 </ul>
               ) : null}
 
-              <div className="pdp-hero__price-row">
-                <p className="pdp-hero__price">{formatMoney(product.price, product.currency)}</p>
+              <div className="mt-[var(--sp-6)] flex flex-wrap items-center gap-x-4 gap-y-3">
+                <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">{formatMoney(product.price, product.currency)}</p>
                 <OfferCountLink productId={product.id} />
               </div>
               {product.price != null ? (

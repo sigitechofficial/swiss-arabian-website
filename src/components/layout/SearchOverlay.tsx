@@ -63,14 +63,14 @@ export function SearchOverlay() {
 
   useEffect(() => {
     if (!open) return;
-    document.body.classList.add("is-search-open");
+    document.body.classList.add("overflow-hidden");
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.classList.remove("is-search-open");
+      document.body.classList.remove("overflow-hidden");
       document.removeEventListener("keydown", onKeyDown);
       cancelAnimationFrame(frame);
     };
@@ -106,9 +106,9 @@ export function SearchOverlay() {
   return (
     <AnimatePresence>
       {open ? (
-        <div id="ai-search" className="ai-search is-open" role="dialog" aria-modal="true" aria-label="Search">
+        <div id="ai-search" className="pointer-events-auto fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label="Search">
           <motion.div
-            className="ai-search-scrim"
+            className="absolute inset-0 bg-[rgba(24,20,17,0.45)] backdrop-blur-[3px]"
             variants={scrimVariants}
             initial="hidden"
             animate="visible"
@@ -116,14 +116,14 @@ export function SearchOverlay() {
             onClick={() => setOpen(false)}
           />
           <motion.div
-            className="ai-search-dock"
+            className="absolute top-[88px] left-1/2 flex w-[min(720px,calc(100%-32px))] flex-col gap-2.5 will-change-transform max-[640px]:top-16 max-[640px]:w-[calc(100%-20px)]"
             variants={dockVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
             <form
-              className="ai-search-bar"
+              className="flex h-14 items-center gap-1.5 rounded-full border border-white/12 bg-[var(--ink)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.28)]"
               autoComplete="off"
               role="search"
               onSubmit={(e) => {
@@ -133,7 +133,7 @@ export function SearchOverlay() {
             >
               <button
                 type="button"
-                className="ai-search-circle"
+                className="flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-white/8 text-[var(--white)] hover:bg-white/16 [&_svg]:size-3.5"
                 aria-label="Close search"
                 onClick={() => setOpen(false)}
               >
@@ -156,6 +156,7 @@ export function SearchOverlay() {
                 aria-autocomplete="list"
                 aria-controls="ai-search-results"
                 aria-activedescendant={hits[activeIndex] ? `ai-search-hit-${hits[activeIndex].id}` : undefined}
+                className="h-full min-w-0 flex-1 border-0 bg-transparent px-2 font-[inherit] text-[0.95rem] text-[var(--white)] outline-none placeholder:text-white/50 [&::-webkit-search-cancel-button]:hidden"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -175,7 +176,7 @@ export function SearchOverlay() {
                   }
                 }}
               />
-              <button type="submit" className="ai-search-circle ai-search-send" aria-label="Search">
+              <button type="submit" className="flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper)] text-[var(--white)] hover:bg-[var(--copper-deep)] [&_svg]:size-3.5" aria-label="Search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m20 20-3.5-3.5" />
@@ -183,16 +184,16 @@ export function SearchOverlay() {
               </button>
             </form>
 
-            <div className="ai-search-panel">
-              <p className="ai-search-kicker" hidden={hasQuery && hits.length === 0}>
+            <div className="max-h-[min(62vh,480px)] overflow-y-auto rounded-[20px] border border-[var(--line)] bg-[var(--white)] shadow-[0_16px_48px_rgba(0,0,0,0.14)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <p className="m-0 px-[18px] pt-4 pb-2 text-[11px] tracking-[0.08em] text-[var(--ink-2)] uppercase" hidden={hasQuery && hits.length === 0}>
                 {hasQuery ? "Suggestions" : "Try a note, a name, or a mood"}
               </p>
-              <ul className="ai-search-results" id="ai-search-results" role="listbox">
+              <ul className="m-0 list-none px-2 pt-1 pb-3" id="ai-search-results" role="listbox">
                 {hits.map((product, index) => (
                   <li key={product.id} role="presentation">
                     <Link
                       id={`ai-search-hit-${product.id}`}
-                      className={`ai-search-hit${index === activeIndex ? " is-active" : ""}`}
+                      className="flex items-center gap-3.5 rounded-[14px] px-3 py-2.5 text-inherit no-underline transition-colors hover:bg-[var(--cream-2)] aria-selected:bg-[var(--cream-2)] rtl:flex-row-reverse rtl:text-right"
                       href={`/products/${product.slug}`}
                       role="option"
                       aria-selected={index === activeIndex}
@@ -201,13 +202,13 @@ export function SearchOverlay() {
                     >
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.imageUrl} alt="" />
+                        <img className="size-[52px] shrink-0 rounded-[10px] bg-[var(--sand)] object-contain" src={product.imageUrl} alt="" />
                       ) : (
-                        <img alt="" style={{ background: "#efeae2" }} />
+                        <img className="size-[52px] shrink-0 rounded-[10px] bg-[#efeae2] object-contain" alt="" />
                       )}
-                      <span className="ai-search-hit-copy">
-                        <p className="ai-search-hit-name">{product.title}</p>
-                        <p className="ai-search-hit-meta">
+                      <span className="min-w-0">
+                        <p className="m-0 text-[0.95rem] font-semibold text-[var(--ink)]">{product.title}</p>
+                        <p className="mt-0.5 truncate text-[0.8rem] text-[var(--ink-2)] rtl:[direction:rtl]">
                           {product.subtitle}
                           {product.price != null ? ` · ${formatMoney(product.price, product.currency)}` : ""}
                         </p>
@@ -216,7 +217,7 @@ export function SearchOverlay() {
                   </li>
                 ))}
               </ul>
-              <p className="ai-search-empty" hidden={!hasQuery || hits.length > 0}>
+              <p className="m-0 px-[18px] pt-2 pb-[18px] text-[0.9rem] text-[var(--ink-2)]" hidden={!hasQuery || hits.length > 0}>
                 No matches — try another spelling
               </p>
             </div>

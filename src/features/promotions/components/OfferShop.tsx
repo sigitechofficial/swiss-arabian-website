@@ -12,7 +12,6 @@ import type { DiscoveryOffer } from "../types/discovery";
 import { rememberEmptyOrigin } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import { MoneySummary } from "./MoneySummary";
-import styles from "./promotionDiscovery.module.css";
 
 type ShopProduct = {
   productId: string;
@@ -101,11 +100,18 @@ function asCatalog(product: ShopProduct, currency: string): CatalogProduct {
   });
 }
 
-function ProductFace({ image, empty }: { image?: string | null; empty?: boolean }) {
-  if (empty || !image) return <span className={styles.faceEmpty} />;
+function ProductFace({ image, empty, current }: { image?: string | null; empty?: boolean; current?: boolean }) {
+  const box = "grid aspect-square place-items-center overflow-hidden rounded-xl bg-[#f3ebe0]";
+  if (empty || !image) {
+    return (
+      <span
+        className={`${box} border border-dashed border-shop-ink/30 ${current ? "outline outline-2 outline-offset-2 outline-copper" : ""}`}
+      />
+    );
+  }
   return (
-    <span className={styles.face}>
-      <img src={image} alt="" />
+    <span className={box}>
+      <img className="h-full w-full object-contain" src={image} alt="" />
     </span>
   );
 }
@@ -304,13 +310,13 @@ export function OfferShop({ code }: { code: string }) {
   const total = moneyNumber(preview?.totalAmount);
 
   return (
-    <article className={styles.shop}>
-      <header className={styles.hero}>
-        {shop.offer.badge ? <p className={styles.eyebrow}>{shop.offer.badge}</p> : null}
+    <article className="flex w-full min-w-0 max-w-full flex-col gap-5 overflow-x-clip pb-24 [&>*]:min-w-0 min-[960px]:grid min-[960px]:grid-cols-[minmax(0,1fr)_340px] min-[960px]:items-start min-[960px]:gap-x-9 [&_h1]:m-0 [&_h1]:font-medium [&_h2]:m-0 [&_h2]:font-medium">
+      <header className="min-[960px]:col-start-1 [&_h1]:text-[clamp(1.6rem,3vw,2.2rem)] [&_h1]:leading-[1.15] [&_p]:m-0">
+        {shop.offer.badge ? <p className="text-xs tracking-[0.08em] text-copper uppercase">{shop.offer.badge}</p> : null}
         <h1>{shop.offer.publicTitle}</h1>
         {shop.offer.shortMessage ? <p>{shop.offer.shortMessage}</p> : null}
       </header>
-      <section className={styles.picks} aria-label={shop.copy.tray}>
+      <section className="min-[960px]:col-start-1 [&_a]:grid [&_a]:gap-2 [&_a]:text-inherit [&_a]:no-underline [&_button]:cursor-pointer [&_button]:justify-self-start [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:font-[inherit] [&_button]:text-shop-ink/60! [&_button]:underline! [&_li]:grid [&_li]:w-[148px] [&_li]:shrink-0 [&_li]:content-start [&_li]:gap-2 [&_strong]:line-clamp-2 [&_strong]:font-medium [&_ul]:mt-3 [&_ul]:flex [&_ul]:w-full [&_ul]:list-none [&_ul]:gap-3 [&_ul]:overflow-x-auto [&_ul]:p-0 [&_ul]:pb-2" aria-label={shop.copy.tray}>
         <h2>{shop.copy.tray}</h2>
         <ul>
           {shop.groups.flatMap((group) => {
@@ -319,12 +325,12 @@ export function OfferShop({ code }: { code: string }) {
             const tiles = chosen.map((row) => {
               const product = productsBySku.get(`${row.groupId}:${row.sku}`);
               return (
-                <li key={`${group.id}-${row.sku}`} className={styles.pickDone}>
+                <li key={`${group.id}-${row.sku}`}>
                   <ProductFace image={product?.image} />
                   <strong>{product?.title ?? row.sku}</strong>
                   {group.selectionMode === "many" && (group.requiredQuantity == null || group.requiredQuantity > 1) ? (
                     <input
-                      className={styles.qty}
+                      className="min-h-11 w-[72px] font-[inherit]"
                       type="number"
                       min={1}
                       max={group.requiredQuantity ?? 20}
@@ -361,9 +367,9 @@ export function OfferShop({ code }: { code: string }) {
             });
             if (!done) {
               tiles.push(
-                <li key={`${group.id}-empty`} className={activeId === group.id ? styles.pickCurrent : undefined}>
+                <li key={`${group.id}-empty`}>
                   <a href={`#offer-group-${group.id}`}>
-                    <ProductFace empty />
+                    <ProductFace empty current={activeId === group.id} />
                     <strong>{shop.copy.choose} {group.name}</strong>
                   </a>
                 </li>,
@@ -373,7 +379,7 @@ export function OfferShop({ code }: { code: string }) {
           })}
         </ul>
       </section>
-      <aside className={`${styles.summary} cart-summary`}>
+      <aside className="cart-summary min-w-0 self-start max-[959px]:order-3 min-[960px]:col-start-2 min-[960px]:row-span-3">
         <h2>Summary</h2>
         {subtotal != null && savings != null && total != null ? (
           <MoneySummary
@@ -385,13 +391,13 @@ export function OfferShop({ code }: { code: string }) {
             total={total}
           />
         ) : null}
-        {preview?.message ? <p className={styles.lead}>{preview.message}</p> : null}
+        {preview?.message ? <p className="m-0 text-base">{preview.message}</p> : null}
         {addError ? <p role="alert">{addError}</p> : null}
         <button className={ready ? "cart-cta" : "cart-cta is-disabled"} type="button" disabled={!ready} onClick={addSelected}>
           {shop.copy.add}
         </button>
       </aside>
-      <div className={styles.catalog}>
+      <div className="max-[959px]:order-4 min-[960px]:col-start-1">
         {shop.groups.map((group) => {
           const needle = (query[group.id] || "").trim().toLowerCase();
           const visible = group.products.filter((product) => !needle || product.title.toLowerCase().includes(needle));
@@ -401,23 +407,24 @@ export function OfferShop({ code }: { code: string }) {
               id={`offer-group-${group.id}`}
               aria-label={group.name}
               aria-current={activeId === group.id ? "true" : undefined}
-              className={activeId === group.id ? `${styles.groupActive} grid-band products-band` : "grid-band products-band"}
+              className={activeId === group.id ? "grid-band products-band scroll-mt-[8.5rem]" : "grid-band products-band"}
             >
-              <div className={styles.groupHead}>
+              <div className="grid gap-3 min-[720px]:grid-cols-[1fr_minmax(180px,260px)] min-[720px]:items-center">
                 <h2>
                   {group.name}
                   {group.requiredQuantity && group.requiredQuantity > 1 ? ` · ${group.requiredQuantity}` : ""}
                 </h2>
-                <label className={styles.find}>
-                  <span className={styles.sr}>{shop.copy.search}</span>
+                <label>
+                  <span className="absolute h-px w-px overflow-hidden [clip:rect(0,0,0,0)]">{shop.copy.search}</span>
                   <input
+                    className="min-h-11 w-full rounded-full border border-shop-ink/15 bg-sand px-4 font-[inherit]"
                     value={query[group.id] || ""}
                     placeholder={shop.copy.search}
                     onChange={(event) => setQuery((current) => ({ ...current, [group.id]: event.target.value }))}
                   />
                 </label>
               </div>
-              <ul className="product-grid" role="list">
+              <ul className="product-grid ![grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))]" role="list">
                 {visible.map((product) => {
                   const selected = selections.some((row) => row.groupId === group.id && row.sku === product.sku);
                   return (

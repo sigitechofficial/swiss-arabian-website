@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import styles from "./promotionDiscovery.module.css";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { DiscoveryChrome, DiscoveryOffer, PromotionDiscovery } from "../types/discovery";
 import { badgeForProduct } from "../types/discovery";
@@ -84,12 +83,13 @@ function OfferBody({
   prominent?: boolean;
 }) {
   return (
-    <article className={prominent ? `${styles.offer} ${styles.offerPrimary}` : styles.offer}>
-      <h3>{offer.publicTitle}</h3>
+    <article className={prominent ? "grid gap-1.5 pt-3 [&_h3]:text-[1.2rem]" : "grid gap-1.5 border-t border-shop-ink/12 pt-3"}>
+      <h3 className="m-0 font-medium">{offer.publicTitle}</h3>
       {offer.qualificationSummary ? <p>{offer.qualificationSummary}</p> : null}
-      <div className={styles.actions}>
+      <div className="flex flex-wrap gap-2">
         {offer.detailsAvailable ? (
           <button
+            className="cursor-pointer border border-current bg-transparent px-3 py-2 font-[inherit] text-inherit"
             type="button"
             onClick={() => {
               trackPromotion("promotion_details_opened", {
@@ -108,6 +108,7 @@ function OfferBody({
         ) : null}
         {offer.shopOfferAvailable && offer.shopOfferPath ? (
           <Link
+            className="border border-current px-3 py-2 text-inherit no-underline"
             href={offer.shopOfferPath}
             onClick={() =>
               trackPromotion("shop_offer_clicked", {
@@ -140,11 +141,11 @@ function Details({
   const titleId = useId();
   const ref = useDialog(true, onClose);
   return (
-    <div ref={ref} className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <button className={styles.close} type="button" onClick={onClose}>
+    <div ref={ref} className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)] [&_h3]:m-0 [&_h3]:font-medium" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <button className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit" type="button" onClick={onClose}>
         {chrome.close}
       </button>
-      <h2 id={titleId}>{offer.publicTitle}</h2>
+      <h2 className="m-0 font-medium" id={titleId}>{offer.publicTitle}</h2>
       <section>
         <h3>{chrome.whatYouGet}</h3>
         <p>{offer.details.whatYouGet || offer.benefitSummary}</p>
@@ -164,8 +165,8 @@ function Details({
         </section>
       ) : null}
       {offer.shopOfferAvailable && offer.shopOfferPath ? (
-        <div className={styles.actions}>
-          <Link href={offer.shopOfferPath}>{offer.details.ctaLabel || "Choose your pieces"}</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link className="border border-current px-3 py-2 text-inherit no-underline" href={offer.shopOfferPath}>{offer.details.ctaLabel || "Choose your pieces"}</Link>
         </div>
       ) : null}
     </div>
@@ -212,19 +213,19 @@ export function PromotionOfferHub({
 
   return (
     <>
-      <button className={styles.entry} type="button" onClick={() => setOpen(true)}>
+      <button className="mb-3 flex w-full cursor-pointer border border-current bg-transparent px-3 py-2.5 text-start font-[inherit] text-inherit" type="button" onClick={() => setOpen(true)}>
         {discovery.entryLabel}
       </button>
       {open ? (
         <Overlay>
-          <button className={styles.backdrop} type="button" aria-label="Close" onClick={() => setOpen(false)} />
-          <div ref={hubRef} className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <button className={styles.close} type="button" onClick={() => setOpen(false)}>
+          <button className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]" type="button" aria-label="Close" onClick={() => setOpen(false)} />
+          <div ref={hubRef} className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)]" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <button className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit" type="button" onClick={() => setOpen(false)}>
               {discovery.chrome.close}
             </button>
-            <h2 id={titleId}>{discovery.entryLabel}</h2>
+            <h2 className="m-0 font-medium" id={titleId}>{discovery.entryLabel}</h2>
             {discovery.unlockedBenefits.map((item) => (
-              <p className={styles.unlocked} key={`${item.campaignCode}-${item.message}`}>
+              <p className="m-0" key={`${item.campaignCode}-${item.message}`}>
                 {item.message}
               </p>
             ))}
@@ -257,8 +258,8 @@ export function PromotionOfferHub({
               />
             ))}
             {hiddenOffers > 0 ? (
-              <div className={styles.actions}>
-                <button type="button" onClick={() => setShowAll(true)}>
+              <div className="flex flex-wrap gap-2">
+                <button className="cursor-pointer border border-current bg-transparent px-3 py-2 font-[inherit] text-inherit" type="button" onClick={() => setShowAll(true)}>
                   {discovery.locale.toLowerCase().startsWith("ar")
                     ? `${discovery.chrome.viewAll} (${discovery.offers.length})`
                     : `View all ${discovery.offers.length} benefits`}
@@ -270,7 +271,7 @@ export function PromotionOfferHub({
       ) : null}
       {details ? (
         <Overlay>
-          <button className={styles.backdrop} type="button" aria-label="Close details" onClick={() => setDetails(null)} />
+          <button className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]" type="button" aria-label="Close details" onClick={() => setDetails(null)} />
           <Details offer={details} chrome={discovery.chrome} onClose={() => setDetails(null)} />
         </Overlay>
       ) : null}
@@ -290,16 +291,16 @@ export function PdpOffersPanel({ productId }: { productId?: string | null }) {
     : `${offers.length} available`;
 
   return (
-    <section className="pdp-offers" id="pdp-offers">
+    <section className="mt-5" id="pdp-offers">
       <button
-        className="pdp-offers__bar"
+        className="flex min-h-[52px] w-full cursor-pointer items-center justify-between gap-4 rounded-lg border-0 bg-copper px-4 py-3 text-[0.95rem]! font-semibold! text-white! aria-expanded:[&_svg]:rotate-180"
         type="button"
         aria-expanded={open}
         aria-controls="pdp-offers-list"
         onClick={() => setOpen((current) => !current)}
       >
         <span>{arabic ? "مزايا لك" : "Offers for you"}</span>
-        <span className="pdp-offers__count">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold [&_svg]:h-3.5 [&_svg]:w-3.5">
           {countLabel}
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -307,10 +308,10 @@ export function PdpOffersPanel({ productId }: { productId?: string | null }) {
         </span>
       </button>
       {open ? (
-        <ul className="pdp-offers__list" id="pdp-offers-list">
+        <ul className="m-0 list-none rounded-b-lg border border-t-0 border-copper/35 bg-sand p-0" id="pdp-offers-list">
           {offers.map((offer) => (
-            <li key={offer.campaignCode}>
-              {offer.badge ? <p className="pdp-offers__kicker">{offer.badge}</p> : null}
+            <li className="border-t border-[#241f1b]/8 px-4 py-[0.9rem] [&_a]:mt-[0.45rem] [&_a]:inline-block [&_a]:text-[0.85rem] [&_a]:font-semibold [&_a]:text-copper [&_h3]:m-0 [&_h3]:text-[0.95rem] [&_h3]:font-semibold [&_p]:mt-1 [&_p]:text-[0.85rem] [&_p]:text-[#241f1b]/70" key={offer.campaignCode}>
+              {offer.badge ? <p className="m-0 text-[0.68rem] font-bold tracking-[0.08em] text-copper uppercase">{offer.badge}</p> : null}
               <h3>{offer.publicTitle}</h3>
               {offer.shortMessage ? <p>{offer.shortMessage}</p> : null}
               {offer.qualificationSummary && offer.qualificationSummary !== offer.shortMessage ? (
@@ -333,7 +334,7 @@ export function OfferCountLink({ productId }: { productId?: string | null }) {
   if (count === 0) return null;
   const arabic = query.data?.locale.toLowerCase().startsWith("ar");
   return (
-    <a className="pdp-hero__offer-count" href="#pdp-offers">
+    <a className="inline-flex items-center rounded-full bg-copper px-[0.7rem] py-[0.3rem] text-xs font-semibold tracking-[0.02em] text-white no-underline" href="#pdp-offers">
       {arabic ? `${count} مزايا` : `${count} ${count === 1 ? "offer" : "offers"}`}
     </a>
   );
@@ -355,7 +356,7 @@ export function PromotionCardBadge({ productId }: { productId?: string | null })
   const query = usePromotionDiscovery(productId ? [productId] : []);
   const badge = badgeForProduct(query.data, productId);
   if (!badge) return null;
-  return <p className={styles.badge}>{badge.badge}</p>;
+  return <p className="mb-1.5 text-xs tracking-[0.04em] uppercase">{badge.badge}</p>;
 }
 
 export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
@@ -364,7 +365,7 @@ export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
       {offer.badge ? <span>{offer.badge}</span> : null}
       <strong>{offer.publicTitle}</strong>
       {offer.lines.length > 1 ? (
-        <ul className={styles.tileLines}>
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
           {offer.lines.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -377,10 +378,10 @@ export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
     </>
   );
   if (!offer.shopOfferPath) {
-    return <article className={styles.tile}>{copy}</article>;
+    return <article className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase">{copy}</article>;
   }
   return (
-    <Link className={styles.tile} href={offer.shopOfferPath}>
+    <Link className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit no-underline [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase" href={offer.shopOfferPath}>
       {copy}
     </Link>
   );

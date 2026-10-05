@@ -27,6 +27,43 @@ import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionD
 import { badgeForProduct } from "@/features/promotions/types/discovery";
 import { getCollectionMeta } from "../constants/collectionMeta";
 import {
+  catalogCount,
+  catalogLayout,
+  catalogMain,
+  catalogSort,
+  catalogSortLabel,
+  catalogSortSelect,
+  catalogSortSelectStyle,
+  emptyArt,
+  emptyCta,
+  emptyEyebrow,
+  emptyState,
+  emptyText,
+  emptyTitle,
+  filtersApply,
+  filtersBackdrop,
+  filtersBody,
+  filtersButton,
+  filtersClose,
+  filtersFoot,
+  filtersGroup,
+  filtersHead,
+  filtersLabel,
+  filtersList,
+  filtersRail,
+  filtersTitle,
+  gridEmpty,
+  priceFill,
+  priceInput,
+  priceRange,
+  priceSlider,
+  priceTrack,
+  priceValues,
+  railFilter,
+  railFilterCount,
+  toolbar,
+} from "../catalogChrome";
+import {
   catalogListingHasActiveFilters,
   catalogListingHref,
   type CatalogListingQuery,
@@ -342,13 +379,9 @@ export function ProductCatalogView({
     const { body } = document;
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
-    html.classList.add("is-filters-open");
-    body.classList.add("is-filters-open");
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
     return () => {
-      html.classList.remove("is-filters-open");
-      body.classList.remove("is-filters-open");
       html.style.overflow = prevHtmlOverflow;
       body.style.overflow = prevBodyOverflow;
     };
@@ -404,42 +437,42 @@ export function ProductCatalogView({
           </div>
         ) : emptyCollection ? (
           <div className="container container--full">
-            <div className="catalog-empty" role="status">
+            <div className={emptyState} role="status">
               <img
-                className="catalog-empty__art"
+                className={emptyArt}
                 src="/assets/catalog/empty-products.svg"
                 alt=""
                 width={180}
                 height={180}
               />
-              <p className="catalog-empty__eyebrow">Coming soon</p>
-              <h3 className="catalog-empty__title">No fragrances here yet</h3>
-              <p className="catalog-empty__text">
+              <p className={emptyEyebrow}>Coming soon</p>
+              <h3 className={emptyTitle}>No fragrances here yet</h3>
+              <p className={emptyText}>
                 We’re still filling this collection. Explore the rest of the house in the meantime.
               </p>
-              <Link className="catalog-empty__cta" href="/products">
+              <Link className={emptyCta} href="/products">
                 Browse all fragrances
               </Link>
             </div>
           </div>
         ) : (
-        <div className="catalog container container--full">
+        <div className={`${catalogLayout} container container--full`}>
           <button
             type="button"
-            className={`filters-backdrop ${filtersOpen ? "is-open" : ""}`}
+            className={filtersBackdrop(filtersOpen)}
             aria-label="Close filters"
             tabIndex={filtersOpen ? 0 : -1}
             onClick={() => setFiltersOpen(false)}
           />
           <aside
-            className={`filters-rail ${filtersOpen ? "filters-rail--open" : ""}`}
+            className={filtersRail(filtersOpen)}
             aria-label="Filters"
           >
-            <div className="filters-rail__head">
-              <p className="filters-rail__title">Filter by</p>
+            <div className={filtersHead}>
+              <p className={filtersTitle}>Filter by</p>
               <button
                 type="button"
-                className="filters-rail__close"
+                className={filtersClose}
                 aria-label="Close filters"
                 onClick={() => setFiltersOpen(false)}
               >
@@ -449,12 +482,12 @@ export function ProductCatalogView({
               </button>
             </div>
 
-            <div className="filters-rail__body">
+            <div className={filtersBody}>
             {showPrice ? (
-            <div className="filters-rail__group" role="group" aria-label="Price">
-              <p className="filters-rail__label">Price</p>
-              <div className="price-range">
-                <div className="price-range__values">
+            <div className={filtersGroup} role="group" aria-label="Price">
+              <p className={filtersLabel}>Price</p>
+              <div className={priceRange}>
+                <div className={priceValues}>
                   <span>
                     {currency} <strong>{priceMin.toFixed(0)}</strong>
                   </span>
@@ -462,13 +495,14 @@ export function ProductCatalogView({
                     {currency} <strong>{priceMax.toFixed(0)}</strong>
                   </span>
                 </div>
-                <div className="price-range__slider">
-                  <div className="price-range__track" />
+                <div className={priceSlider}>
+                  <div className={priceTrack} />
                   <div
-                    className="price-range__fill"
+                    className={priceFill}
                     style={{ insetInlineStart: `${fillLeft}%`, insetInlineEnd: `${fillRight}%` }}
                   />
                   <input
+                    className={priceInput}
                     type="range"
                     min={PRICE_FLOOR}
                     max={PRICE_CEIL}
@@ -481,6 +515,7 @@ export function ProductCatalogView({
                     }}
                   />
                   <input
+                    className={priceInput}
                     type="range"
                     min={PRICE_FLOOR}
                     max={PRICE_CEIL}
@@ -498,29 +533,29 @@ export function ProductCatalogView({
             ) : null}
 
             {showConcentration ? (
-            <div className="filters-rail__group" role="group" aria-label="Concentration">
-              <p className="filters-rail__label">Concentration</p>
-              <ul className="filters-rail__list" role="list">
+            <div className={filtersGroup} role="group" aria-label="Concentration">
+              <p className={filtersLabel}>Concentration</p>
+              <ul className={filtersList} role="list">
                 <li>
                   <button
-                    className="rail-filter"
+                    className={railFilter}
                     type="button"
                     aria-pressed={concentration === "all"}
                     onClick={() => setConcentration("all")}
                   >
-                    All <span className="rail-filter__count">({allCount})</span>
+                    All <span className={railFilterCount}>({allCount})</span>
                   </button>
                 </li>
                 {concentrationOptions.map((option) => (
                   <li key={option.code}>
                     <button
-                      className="rail-filter"
+                      className={railFilter}
                       type="button"
                       aria-pressed={concentration === option.code}
                       onClick={() => setConcentration(option.code)}
                     >
                       {option.label}{" "}
-                      <span className="rail-filter__count">({option.count})</span>
+                      <span className={railFilterCount}>({option.count})</span>
                     </button>
                   </li>
                 ))}
@@ -529,32 +564,32 @@ export function ProductCatalogView({
             ) : null}
 
             {showCollection ? (
-            <div className="filters-rail__group" role="group" aria-label="Collection">
-              <p className="filters-rail__label">Collection</p>
-              <ul className="filters-rail__list" role="list">
+            <div className={filtersGroup} role="group" aria-label="Collection">
+              <p className={filtersLabel}>Collection</p>
+              <ul className={filtersList} role="list">
                 <li>
                   <button
-                    className="rail-filter"
+                    className={railFilter}
                     type="button"
                     aria-pressed={collection === "all"}
                     onClick={() => setCollection("all")}
                   >
                     All collections
                     {serverFiltered ? (
-                      <span className="rail-filter__count"> ({allCount})</span>
+                      <span className={railFilterCount}> ({allCount})</span>
                     ) : null}
                   </button>
                 </li>
                 {collectionOptions.map((option) => (
                   <li key={option.code}>
                     <button
-                      className="rail-filter"
+                      className={railFilter}
                       type="button"
                       aria-pressed={collection === option.code}
                       onClick={() => setCollection(option.code)}
                     >
                       {option.label}{" "}
-                      <span className="rail-filter__count">({option.count})</span>
+                      <span className={railFilterCount}>({option.count})</span>
                     </button>
                   </li>
                 ))}
@@ -563,32 +598,32 @@ export function ProductCatalogView({
             ) : null}
 
             {showNotes ? (
-            <div className="filters-rail__group" role="group" aria-label="Featured note">
-              <p className="filters-rail__label">Featured note</p>
-              <ul className="filters-rail__list" role="list">
+            <div className={filtersGroup} role="group" aria-label="Featured note">
+              <p className={filtersLabel}>Featured note</p>
+              <ul className={filtersList} role="list">
                 <li>
                   <button
-                    className="rail-filter"
+                    className={railFilter}
                     type="button"
                     aria-pressed={note === "all"}
                     onClick={() => setNote("all")}
                   >
                     All notes
                     {serverFiltered ? (
-                      <span className="rail-filter__count"> ({allCount})</span>
+                      <span className={railFilterCount}> ({allCount})</span>
                     ) : null}
                   </button>
                 </li>
                 {noteOptions.map((option) => (
                   <li key={option.code}>
                     <button
-                      className="rail-filter"
+                      className={railFilter}
                       type="button"
                       aria-pressed={note === option.code}
                       onClick={() => setNote(option.code)}
                     >
                       {option.label}{" "}
-                      <span className="rail-filter__count">({option.count})</span>
+                      <span className={railFilterCount}>({option.count})</span>
                     </button>
                   </li>
                 ))}
@@ -597,32 +632,32 @@ export function ProductCatalogView({
             ) : null}
 
             {showFragranceFamily ? (
-            <div className="filters-rail__group" role="group" aria-label="Fragrance family">
-              <p className="filters-rail__label">Fragrance family</p>
-              <ul className="filters-rail__list" role="list">
+            <div className={filtersGroup} role="group" aria-label="Fragrance family">
+              <p className={filtersLabel}>Fragrance family</p>
+              <ul className={filtersList} role="list">
                 <li>
                   <button
-                    className="rail-filter"
+                    className={railFilter}
                     type="button"
                     aria-pressed={fragranceFamily === "all"}
                     onClick={() => setFragranceFamily("all")}
                   >
                     All families
                     {serverFiltered ? (
-                      <span className="rail-filter__count"> ({allCount})</span>
+                      <span className={railFilterCount}> ({allCount})</span>
                     ) : null}
                   </button>
                 </li>
                 {fragranceFamilyOptions.map((option) => (
                   <li key={option.code}>
                     <button
-                      className="rail-filter"
+                      className={railFilter}
                       type="button"
                       aria-pressed={fragranceFamily === option.code}
                       onClick={() => setFragranceFamily(option.code)}
                     >
                       {option.label}{" "}
-                      <span className="rail-filter__count">({option.count})</span>
+                      <span className={railFilterCount}>({option.count})</span>
                     </button>
                   </li>
                 ))}
@@ -631,10 +666,10 @@ export function ProductCatalogView({
             ) : null}
             </div>
 
-            <div className="filters-rail__foot">
+            <div className={filtersFoot}>
               <button
                 type="button"
-                className="filters-rail__apply"
+                className={filtersApply}
                 onClick={() => {
                   if (urlDriven && listingQuery) {
                     const atBounds =
@@ -654,23 +689,24 @@ export function ProductCatalogView({
             </div>
           </aside>
 
-          <div className="catalog__main">
-            <div className="catalog__toolbar">
+          <div className={catalogMain}>
+            <div className={toolbar}>
               <button
                 type="button"
-                className="app-filters-btn"
+                className={filtersButton}
                 aria-expanded={filtersOpen}
                 onClick={() => setFiltersOpen((v) => !v)}
               >
                 Filters
               </button>
-              <p className="catalog__count" aria-live="polite">
+              <p className={catalogCount} aria-live="polite">
                 Showing {filtered.length} of {allCount}
               </p>
-              <label className="catalog__sort">
-                <span className="catalog__sort-label">Sort by</span>
+              <label className={catalogSort}>
+                <span className={catalogSortLabel}>Sort by</span>
                 <select
-                  className="catalog__sort-select"
+                  className={catalogSortSelect}
+                  style={catalogSortSelectStyle}
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortOption)}
                 >
@@ -689,7 +725,7 @@ export function ProductCatalogView({
             </div>
 
             {filtered.length === 0 ? (
-              <p className="grid-band__empty">No products match these filters.</p>
+              <p className={gridEmpty}>No products match these filters.</p>
             ) : (
               <WishlistStatusScope>
                 <ul className="product-grid" role="list">

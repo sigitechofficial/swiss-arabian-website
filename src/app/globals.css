@@ -9,7 +9,6 @@
 @import "../styles/v5-detail.css";
 @import "../styles/v5-cart.css";
 @import "../styles/v5-checkout.css";
-@import "../styles/v5-search.css";
 
 /* Theme toggle uses html.dark — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -84,6 +83,11 @@ html.dark {
   --color-surface: var(--sa-bg-surface);
   --color-inverse: var(--sa-bg-inverse);
   --color-terra: #b46e57;
+  --color-copper: #8c4435;
+  --color-copper-deep: #6d3428;
+  --color-sand: #fffdf8;
+  --color-warm: #f6f1e8;
+  --color-shop-ink: #1c1612;
   --color-ink: #2c241d;
   --color-cream: #fbf7f0;
   --color-paper: #f6f0e6;
@@ -168,3 +172,4 @@ html,
   scrollbar-width: thin;
   scrollbar-color: var(--sa-scrollbar-thumb) var(--sa-scrollbar-track);
 }
+
