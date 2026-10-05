@@ -131,6 +131,21 @@ export type PromotionGiftAward = {
   message: string | null;
   giftItems: PromotionGiftLine[];
   choices: PromotionGiftLine[];
+  /** Set when the quote asks the customer to pick, including after they have picked. */
+  selectionMode?: "CUSTOMER_CHOICE" | "AUTO_FIRST_AVAILABLE" | null;
+};
+
+/** Server Set Bundle progress. Display only — the website does not count sets. */
+export type SetBundleProgress = {
+  completedSets?: number;
+  percentOff?: string;
+  repeat?: boolean;
+  message?: string | null;
+  lines?: Array<{
+    ref?: string | null;
+    sku?: string | null;
+    label?: string | null;
+  }>;
 };
 
 export type PromotionOffer = {
@@ -138,7 +153,9 @@ export type PromotionOffer = {
   campaignCode?: string | null;
   title?: string | null;
   label?: string | null;
+  applied?: boolean;
   selected?: boolean;
+  setBundle?: SetBundleProgress | null;
   rejected?: PromotionRejected | null;
   qualification?: PromotionQualification | null;
   /** Legacy explicit threshold. Structured qualification fields win. */
@@ -147,9 +164,48 @@ export type PromotionOffer = {
   eligibility?: PromotionEligibilityHint | null;
 };
 
+export type ProgressRailLine = {
+  campaignCode: string;
+  mechanic: string;
+  message: string;
+};
+
+/** Server cart progress. The website prints these sentences and does not choose the next step. */
+export type ProgressMark = {
+  label: string;
+  detail: string;
+  state: "complete" | "current" | "next";
+};
+
+export type PromotionProgressRail = {
+  primary: ProgressRailLine | null;
+  primaryProgress: number | null;
+  unlockedSummary: string | null;
+  unlocked: ProgressRailLine[];
+  secondary: ProgressRailLine[];
+  marks: ProgressMark[];
+};
+
+export type PromotionRecommendationProduct = {
+  productId: string;
+  sku: string;
+  slug: string | null;
+  title: string;
+  image: string | null;
+  price: string | null;
+};
+
+export type PromotionRecommendations = {
+  heading: string | null;
+  addLabel: string;
+  products: PromotionRecommendationProduct[];
+};
+
 export type ApplicablePromotions = {
   promotions: PromotionSnapshotV1;
   offers: PromotionOffer[];
+  progress?: PromotionProgressRail | null;
+  recommendations?: PromotionRecommendations | null;
 };
 
 export function isKnownPromotionKind(kind: string | null | undefined): kind is KnownPromotionKind {
@@ -412,40 +468,57 @@ function readGiftLines(raw: unknown): PromotionGiftLine[] {
   });
 }
 
-/** Gifts from `gifts` or from an applied GIFT_WITH_PURCHASE / CUSTOMER_CHOICE row. */
+function isGiftApplied(item: unknown): boolean {
+  const applied = asRecord(item);
+  if (!applied) return false;
+  const type = `${applied.type ?? ""} ${applied.kind ?? ""} ${applied.discountType ?? ""}`.toUpperCase();
+  const mode = String(applied.giftSelectionMode ?? "").toUpperCase();
+  return type.includes("GIFT_WITH_PURCHASE") || type.includes("CUSTOMER_CHOICE") || mode === "CUSTOMER_CHOICE";
+}
+
+function normalizeGiftAward(item: unknown): PromotionGiftAward | null {
+  const award = asRecord(item);
+  if (!award) return null;
+  const meta = asRecord(award.metadata) ?? {};
+  const declared = String(award.type ?? award.kind ?? award.discountType ?? meta.type ?? "").toUpperCase();
+  const modeRaw = String(
+    award.giftSelectionMode ?? award.selectionMode ?? meta.giftSelectionMode ?? "",
+  ).toUpperCase();
+  const customerChoice = declared.includes("CUSTOMER_CHOICE") || modeRaw === "CUSTOMER_CHOICE";
+  const giftItems = readGiftLines(award.giftItems ?? meta.giftItems);
+  const quotedOptions = award.giftOptions ?? meta.giftOptions;
+  const choices = Array.isArray(quotedOptions)
+    ? readGiftLines(quotedOptions)
+    : readGiftLines(award.choices ?? award.availableGifts ?? meta.choices ?? meta.availableGifts);
+  if (!declared && !customerChoice && giftItems.length === 0 && choices.length === 0) return null;
+  const awaiting = customerChoice && giftItems.length === 0 && choices.length > 0;
+  return {
+    type: awaiting ? "CUSTOMER_CHOICE" : declared || "GIFT_WITH_PURCHASE",
+    promotionCode: asString(award.promotionCode) ?? asString(award.code) ?? asString(meta.promotionCode),
+    status: asString(award.status) ?? asString(meta.status),
+    message: asString(award.message) ?? asString(meta.message),
+    giftItems,
+    choices,
+    selectionMode: customerChoice
+      ? "CUSTOMER_CHOICE"
+      : modeRaw === "AUTO_FIRST_AVAILABLE"
+        ? "AUTO_FIRST_AVAILABLE"
+        : null,
+  };
+}
+
+/** Gifts from `gifts`, or from an applied gift row when the snapshot has not been parsed yet. */
 export function readGiftAwards(raw: unknown): PromotionGiftAward[] {
   const row = asRecord(raw);
   if (!row) return [];
-  const top = Array.isArray(row.gifts) ? row.gifts : [];
-  const fromApplied = Array.isArray(row.applied)
-    ? row.applied.filter((item) => {
-        const applied = asRecord(item);
-        if (!applied) return false;
-        const type = `${applied.type ?? ""} ${applied.kind ?? ""} ${applied.discountType ?? ""}`.toUpperCase();
-        return type.includes("GIFT_WITH_PURCHASE") || type.includes("CUSTOMER_CHOICE");
-      })
-    : [];
-  return [...top, ...fromApplied].flatMap((item) => {
-    const award = asRecord(item);
-    if (!award) return [];
-    const meta = asRecord(award.metadata) ?? {};
-    const type = String(award.type ?? award.kind ?? award.discountType ?? meta.type ?? "").toUpperCase();
-    const giftItems = readGiftLines(award.giftItems ?? meta.giftItems);
-    const quotedOptions = award.giftOptions ?? meta.giftOptions;
-    const choices = Array.isArray(quotedOptions)
-      ? readGiftLines(quotedOptions)
-      : readGiftLines(award.choices ?? award.availableGifts ?? meta.choices ?? meta.availableGifts);
-    if (!type && giftItems.length === 0 && choices.length === 0) return [];
-    return [
-      {
-        type: type || "GIFT_WITH_PURCHASE",
-        promotionCode: asString(award.promotionCode) ?? asString(award.code) ?? asString(meta.promotionCode),
-        status: asString(award.status) ?? asString(meta.status),
-        message: asString(award.message) ?? asString(meta.message),
-        giftItems,
-        choices,
-      },
-    ];
+  const source = Array.isArray(row.gifts)
+    ? row.gifts
+    : Array.isArray(row.applied)
+      ? row.applied.filter(isGiftApplied)
+      : [];
+  return source.flatMap((item) => {
+    const award = normalizeGiftAward(item);
+    return award ? [award] : [];
   });
 }
 
@@ -460,5 +533,71 @@ export function readApplicablePromotions(raw: unknown): ApplicablePromotions {
   return {
     promotions: readPromotionSnapshot(data.promotions) ?? emptySnapshot(),
     offers,
+    progress: readProgressRail(data.progress),
+    recommendations: readRecommendations(data.recommendations),
+  };
+}
+
+function readRecommendations(value: unknown): PromotionRecommendations | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  const products = Array.isArray(row.products) ? row.products.flatMap((item) => {
+    const product = asRecord(item);
+    const sku = asString(product?.sku)?.trim();
+    const title = asString(product?.title)?.trim();
+    const productId = asString(product?.productId)?.trim();
+    if (!product || !sku || !title || !productId) return [];
+    return [{
+      productId,
+      sku,
+      slug: asString(product.slug),
+      title,
+      image: asString(product.image),
+      price: asString(product.price),
+    }];
+  }) : [];
+  return {
+    heading: asString(row.heading),
+    addLabel: asString(row.addLabel) ?? "Add",
+    products,
+  };
+}
+
+function readProgressLine(value: unknown): ProgressRailLine | null {
+  const row = asRecord(value);
+  const message = asString(row?.message)?.trim();
+  if (!row || !message) return null;
+  return {
+    campaignCode: asString(row.campaignCode) ?? "",
+    mechanic: asString(row.mechanic) ?? "",
+    message,
+  };
+}
+
+function readProgressRail(value: unknown): PromotionProgressRail | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  const primary = readProgressLine(row.primary);
+  const progress = typeof row.primaryProgress === 'number' ? row.primaryProgress : Number.NaN;
+  return {
+    primary,
+    primaryProgress: primary && Number.isFinite(progress) ? progress : null,
+    unlockedSummary: asString(row.unlockedSummary),
+    unlocked: Array.isArray(row.unlocked) ? row.unlocked.flatMap((item) => {
+      const line = readProgressLine(item);
+      return line ? [line] : [];
+    }) : [],
+    secondary: Array.isArray(row.secondary) ? row.secondary.flatMap((item) => {
+      const line = readProgressLine(item);
+      return line ? [line] : [];
+    }) : [],
+    marks: Array.isArray(row.marks) ? row.marks.flatMap((item) => {
+      const mark = asRecord(item);
+      const label = asString(mark?.label)?.trim();
+      const detail = asString(mark?.detail)?.trim() ?? "";
+      const state = asString(mark?.state);
+      if (!mark || !label || (state !== "complete" && state !== "current" && state !== "next")) return [];
+      return [{ label, detail, state }];
+    }) : [],
   };
 }

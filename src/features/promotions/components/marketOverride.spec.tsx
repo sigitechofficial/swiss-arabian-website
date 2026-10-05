@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { useCartStore } from "@/stores/useCartStore";
 import { AppliedCampaigns } from "../components/AppliedCampaigns";
+import { GiftChoiceHost } from "../components/GiftChoiceHost";
 import { GiftWithPurchase } from "../components/GiftWithPurchase";
+import { useGiftChoiceStore } from "../giftChoiceStore";
 import { MoneySummary } from "../components/MoneySummary";
 import {
   amountPayableFrom,
@@ -15,6 +17,10 @@ import {
   type PromotionSnapshotV1,
 } from "../types/promotions";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/cart",
+}));
 
 vi.mock("../hooks/useGiftCatalog", () => ({
   useGiftCatalogMap: () => new Map(),
@@ -54,6 +60,8 @@ function row(partial: Partial<PromotionApplied> & Pick<PromotionApplied, "amount
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
+  useGiftChoiceStore.setState({ openCode: null, celebrate: false, flashing: false });
   useCartStore.setState({ lines: [], promotions: null, totals: null, cartId: "cart-1" });
 });
 
@@ -134,12 +142,13 @@ describe("effective market quote", () => {
       ],
     });
     expect(ksa[0]?.choices.map((gift) => gift.sku)).toEqual(["B", "D"]);
+    const snap = quote({ gifts: ksa });
+    useCartStore.setState({ promotions: snap, cartId: "cart-1" });
     render(
-      <GiftWithPurchase
-        snapshot={quote({
-          gifts: ksa,
-        })}
-      />,
+      <>
+        <GiftWithPurchase snapshot={snap} />
+        <GiftChoiceHost />
+      </>,
     );
     expect(screen.getByText("Gift B")).toBeInTheDocument();
     expect(screen.getByText("Gift D")).toBeInTheDocument();

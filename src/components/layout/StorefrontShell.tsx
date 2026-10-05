@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CartSideSheet } from "@/features/cart/components/CartSideSheet";
+import { GiftChoiceHost } from "@/features/promotions/components/GiftChoiceHost";
 import type { NavbarVariant } from "./navbar";
 import { SearchOverlay } from "./SearchOverlay";
 import { SiteFooter } from "./SiteFooter";
@@ -30,6 +31,7 @@ export function StorefrontShell({
       </main>
       <SiteFooter />
       <CartSideSheet />
+      <GiftChoiceHost />
       <SearchOverlay />
     </div>
   );

@@ -3,7 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useCartStore } from "@/stores/useCartStore";
 import { AppliedCampaigns } from "./AppliedCampaigns";
+import { GiftChoiceHost } from "./GiftChoiceHost";
 import { GiftWithPurchase } from "./GiftWithPurchase";
+import { useGiftChoiceStore } from "../giftChoiceStore";
 import { MoneySummary } from "./MoneySummary";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { matchGiftProduct } from "../hooks/useGiftCatalog";
@@ -27,6 +29,10 @@ vi.mock("../hooks/useGiftCatalog", async () => {
     },
   };
 });
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/cart",
+}));
 
 vi.mock("../hooks/useGiftChoice", () => ({
   useGiftChoice: () => ({
@@ -61,6 +67,8 @@ function snapshot(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
 afterEach(() => {
   cleanup();
   select.mockReset();
+  sessionStorage.clear();
+  useGiftChoiceStore.setState({ openCode: null, celebrate: false, flashing: false });
   useCartStore.setState({ promotions: null, cartId: "cart-1", totals: null });
 });
 
@@ -133,23 +141,26 @@ describe("gift with purchase", () => {
   it("renders customer choice and sends the selected sku", async () => {
     const user = userEvent.setup();
     select.mockResolvedValue(undefined);
-    render(
-      <GiftWithPurchase
-        snapshot={snapshot({
-          gifts: [
-            {
-              type: "CUSTOMER_CHOICE",
-              promotionCode: "GWP-CHOICE",
-              status: null,
-              message: null,
-              giftItems: [],
-              choices: [
-                { sku: "SAMPLE-A", quantity: 1, name: "Rose Sample", imageUrl: "/rose.jpg" },
-              ],
-            },
+    const promo = snapshot({
+      gifts: [
+        {
+          type: "CUSTOMER_CHOICE",
+          promotionCode: "GWP-CHOICE",
+          status: null,
+          message: null,
+          giftItems: [],
+          choices: [
+            { sku: "SAMPLE-A", quantity: 1, name: "Rose Sample", imageUrl: "/rose.jpg" },
           ],
-        })}
-      />,
+        },
+      ],
+    });
+    useCartStore.setState({ promotions: promo, cartId: "cart-1" });
+    render(
+      <>
+        <GiftWithPurchase snapshot={promo} />
+        <GiftChoiceHost />
+      </>,
     );
     expect(screen.getByText("Choose your free gift")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Rose Sample" })).toHaveAttribute("src", "/rose.jpg");

@@ -6,7 +6,9 @@ import Drawer from "@mui/material/Drawer";
 import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { PromotionUnlockNote, amountPayableFrom, useFreeShippingBar } from "@/features/promotions";
+import { EmptyBagRecovery, GiftWithPurchase, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
+import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
+import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
@@ -34,6 +36,7 @@ export function CartSideSheet() {
   const removeLocalLine = useCartStore((s) => s.removeLine);
 
   const [addedRecs, setAddedRecs] = useState<Set<string>>(new Set());
+  const giftFlash = useGiftChoiceStore((s) => s.flashing);
   const [isPanelFlash, setIsPanelFlash] = useState(false);
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
   const wasFreeRef = useRef<boolean | null>(null);
@@ -124,6 +127,7 @@ export function CartSideSheet() {
   }, [celebrateFree]);
 
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
+  const promotionRecs = useApplicablePromotions().data?.recommendations?.products ?? [];
 
   return (
     <Drawer
@@ -154,7 +158,7 @@ export function CartSideSheet() {
         },
       }}
     >
-      <div className={`cart-drawer-panel ${isPanelFlash ? "is-whoop-flash" : ""}`} ref={panelRef}>
+      <div className={`cart-drawer-panel ${isPanelFlash || giftFlash ? "is-whoop-flash" : ""}`} ref={panelRef}>
         <div className="cart-confetti" ref={confettiLayerRef} aria-hidden="true">
           {confetti.map((piece) => (
             <span
@@ -177,18 +181,23 @@ export function CartSideSheet() {
           </button>
         </header>
 
-        {lines.length > 0 ? <PromotionUnlockNote className="cart-ship-bar" /> : null}
-
         <div className="cart-drawer-body">
+          {lines.length > 0 ? (
+            <div className="cart-promo">
+              <PromotionProgressRail className="cart-ship-bar" surface="cart" />
+              <PromotionQuickAdd surface="cart" />
+            </div>
+          ) : (
+            <div className="cart-empty">
+              <p>Your bag is empty.</p>
+              <EmptyBagRecovery surface="empty-cart" />
+              <Link href="/products" onClick={() => setCartOpen(false)}>
+                Shop fragrances
+              </Link>
+            </div>
+          )}
           <div className="cart-items">
-            {lines.length === 0 ? (
-              <div className="cart-empty">
-                <p>Your bag is empty.</p>
-                <Link href="/products" onClick={() => setCartOpen(false)}>
-                  Shop fragrances
-                </Link>
-              </div>
-            ) : (
+            {lines.length === 0 ? null : (
               lines.map((line) => (
                 <article className="cart-line" key={line.cartItemId ?? line.variantId}>
                   <div className="cart-line-img">
@@ -235,6 +244,9 @@ export function CartSideSheet() {
                     <p className="cart-line-price">
                       {formatMoney(line.unitPrice * line.quantity, line.currency)}
                     </p>
+                    {setBundleLineLabel(promotions, line) ? (
+                      <p className="cart-line-price">{setBundleLineLabel(promotions, line)}</p>
+                    ) : null}
                     <button
                       type="button"
                       className="cart-line-remove"
@@ -252,9 +264,10 @@ export function CartSideSheet() {
                 </article>
               ))
             )}
+            {lines.length > 0 ? <GiftWithPurchase currency={currency} /> : null}
           </div>
 
-          {recs.length ? (
+          {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
             <div className="cart-recs">
               <h3 className="cart-recs-title">Layer your scents</h3>
               <div className="cart-recs-swiper" role="list">

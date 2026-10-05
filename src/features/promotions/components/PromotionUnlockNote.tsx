@@ -5,6 +5,7 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useFreeShippingBar } from "../hooks/useFreeShippingBar";
 import { promotionConflictNotes } from "../utils/conflictNotes";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
+import { setBundleNotes } from "../utils/setBundlePresentation";
 
 export function PromotionUnlockNote({ className = "cart-ship-banner" }: { className?: string }) {
   const { isFree, unlocked, progress, remaining, threshold, currency, snapshot, offers } =
@@ -19,6 +20,7 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
     .filter((note): note is string => Boolean(note));
 
   const conflicts = promotionConflictNotes(snapshot?.rejected);
+  const bundleNotes = setBundleNotes(offers, snapshot);
   const showBar = threshold != null || isFree;
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
     return () => window.clearTimeout(id);
   }, [unlocked]);
 
-  if (!showBar && !qualificationNotes.length && !conflicts.length) return null;
+  if (!showBar && !qualificationNotes.length && !conflicts.length && !bundleNotes.length) return null;
 
   const classes = [className, unlocked ? "is-free" : "", whoop ? "is-whoop" : ""]
     .filter(Boolean)
@@ -74,6 +76,9 @@ export function PromotionUnlockNote({ className = "cart-ship-banner" }: { classN
         <p className="promo-conflict" key={note}>
           {note}
         </p>
+      ))}
+      {bundleNotes.map((note) => (
+        <p key={note}>{note}</p>
       ))}
     </div>
   );

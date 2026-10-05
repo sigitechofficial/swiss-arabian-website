@@ -22,6 +22,9 @@ import {
 } from "../constants/catalogProducts";
 import { CatalogInfiniteSentinel } from "./CatalogInfiniteSentinel";
 import { ProductCardTags } from "./ProductCardTags";
+import { PromotionCampaignTile } from "@/features/promotions/components/PromotionOffers";
+import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionDiscovery";
+import { badgeForProduct } from "@/features/promotions/types/discovery";
 import { getCollectionMeta } from "../constants/collectionMeta";
 import {
   catalogListingHasActiveFilters,
@@ -54,6 +57,11 @@ function uiSortToListing(sort: SortOption): CatalogListingSort | undefined {
   if (sort === "price-asc") return "price_asc";
   if (sort === "price-desc") return "price_desc";
   return undefined;
+}
+
+/** First tile after four products, the next after eight. A short list keeps them at the end. */
+function offerTileAt(slot: number, productCount: number): number {
+  return Math.min((slot + 1) * 4, productCount);
 }
 
 /** Banner supplied by the collections API; falls back to the static hero. */
@@ -266,6 +274,8 @@ export function ProductCatalogView({
     priceMax,
     sort,
   ]);
+  const discovery = usePromotionDiscovery(filtered.map((product) => product.id));
+  const campaignTiles = discovery.data?.tiles ?? [];
 
   const allCount = serverFiltered
     ? (pagination?.total ?? products.length)
@@ -683,13 +693,37 @@ export function ProductCatalogView({
             ) : (
               <WishlistStatusScope>
                 <ul className="product-grid" role="list">
-                  {filtered.map((product) => (
-                    <CatalogProductCard
-                      key={product.id}
-                      product={product}
-                      collectionSlug={slug}
-                    />
-                  ))}
+                  {filtered.flatMap((product, index) => {
+                    const badge = badgeForProduct(discovery.data, product.id);
+                    const card = (
+                      <CatalogProductCard
+                        key={product.id}
+                        product={product}
+                        collectionSlug={slug}
+                        promotionBadge={badge?.badge}
+                        promotionLabel={badge?.title}
+                      />
+                    );
+                    const tiles = campaignTiles.flatMap((offer, slot) => {
+                      const at = offerTileAt(slot, filtered.length);
+                      if (index !== at || at === filtered.length) return [];
+                      return [
+                        <li key={offer.campaignCode} className="catalog-offer-tile">
+                          <PromotionCampaignTile offer={offer} />
+                        </li>,
+                      ];
+                    });
+                    return [...tiles, card];
+                  })}
+                  {campaignTiles.flatMap((offer, slot) => {
+                    const at = offerTileAt(slot, filtered.length);
+                    if (at !== filtered.length) return [];
+                    return [
+                      <li key={offer.campaignCode} className="catalog-offer-tile">
+                        <PromotionCampaignTile offer={offer} />
+                      </li>,
+                    ];
+                  })}
                 </ul>
               </WishlistStatusScope>
             )}
@@ -712,16 +746,23 @@ export function CatalogProductCard({
   product,
   action,
   hideAdd = false,
+  addControl,
   note,
   collectionSlug,
+  promotionBadge,
+  promotionLabel,
 }: {
   product: CatalogProduct;
   /** Top-right control above the card link (e.g. the wishlist heart). */
   action?: ReactNode;
   /** Unsellable products keep the card but lose the add-to-bag pill. */
   hideAdd?: boolean;
+  /** Replaces the add-to-bag control. The card layout stays the same. */
+  addControl?: ReactNode;
   note?: string;
   collectionSlug?: string;
+  promotionBadge?: string | null;
+  promotionLabel?: string | null;
 }) {
   // Live catalog media 404s for some products, which would otherwise render a
   // broken-image icon and its alt text. Fall back to the same bottle
@@ -751,6 +792,11 @@ export function CatalogProductCard({
         tags={product.tags ?? []}
         collectionSlug={collectionSlug}
       />
+      {promotionBadge ? (
+        <p className="product-card__tags" aria-label={promotionLabel || promotionBadge}>
+          {promotionBadge}
+        </p>
+      ) : null}
       <div
         className={
           hasIngredientsHover ? "product-card__media product-card__media--swap" : "product-card__media"
@@ -782,7 +828,7 @@ export function CatalogProductCard({
       </div>
       {hideAdd ? null : (
         <div className="product-card__add-slot">
-          <AddToBagButton product={product} variant="product" />
+          {addControl ?? <AddToBagButton product={product} variant="product" />}
         </div>
       )}
       <div className="product-card__body">

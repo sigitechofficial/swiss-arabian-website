@@ -446,6 +446,15 @@
 .products-band .product-grid .product-card {
   flex: none;
 }
+.products-band .product-grid > .catalog-offer-tile {
+  display: flex;
+  min-width: 0;
+}
+.products-band .product-grid > .catalog-offer-tile > a,
+.products-band .product-grid > .catalog-offer-tile > article {
+  flex: 1;
+  width: 100%;
+}
 /* Grid cards carry long live catalog names (often all caps) — a smaller type
    scale than the home strip keeps them to two tidy lines. */
 .products-band .product-grid .product-card__eyebrow {

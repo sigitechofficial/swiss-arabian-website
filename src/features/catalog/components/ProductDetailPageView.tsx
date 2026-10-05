@@ -9,7 +9,6 @@ import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { ensureInsiderProductPage } from "@/lib/insider";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
 import { toCatalogProduct } from "../utils/toCatalogProduct";
@@ -21,7 +20,13 @@ import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "../constants/catalogProducts";
+import { OfferCountLink, PdpOffersPanel } from "@/features/promotions/components/PromotionOffers";
+import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
+import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
+import { OutOfStockAlternatives } from "@/features/promotions/components/OutOfStockAlternatives";
+import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemory";
 import { PdpReviews } from "./PdpReviews";
+import { PdpScentFamily } from "./PdpScentFamily";
 import { ProductCardTags } from "./ProductCardTags";
 import {
   familyChips,
@@ -85,15 +90,14 @@ function cartLineForProduct(
 
 export function ProductDetailPageView({ slug }: { slug: string }) {
   const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const zoneCode = marketId ?? "";
 
-  // Live catalog slugs are SKUs (e.g. `SOAH098501`), so the PDP has to resolve
-  // them through the API. `fetchProductBySlug` already falls back from the
-  // detail payload to a SKU lookup and then to search.
-  const { data: apiProduct, isLoading } = useQuery({
+  // Wait for the real market. The default "UAE" code is not the live zone,
+  // and a fetch against it reports a real product as missing.
+  const { data: apiProduct, isPending } = useQuery({
     queryKey: catalogKeys.detail(slug, zoneCode),
     queryFn: () => fetchProductBySlug(slug, zoneCode),
-    enabled: Boolean(slug),
+    enabled: Boolean(slug && zoneCode),
   });
 
   const staticProduct = useMemo(
@@ -249,6 +253,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   }, [slug, compositionTabs]);
 
   useEffect(() => {
+    if (apiProduct?.id) rememberViewedProduct(apiProduct.id);
+  }, [apiProduct?.id]);
+
+  useEffect(() => {
     setActiveImage(0);
     setQuantity(1);
     setWished(false);
@@ -311,7 +319,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         limit: 12,
         onlySellable: true,
       }),
-    enabled: Boolean(moreFromCollection?.slug),
+    enabled: Boolean(zoneCode && moreFromCollection?.slug),
     retry: false,
   });
 
@@ -344,7 +352,7 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     });
   }, [youMayAlsoLike, related]);
 
-  if (!product && isLoading) {
+  if ((!zoneCode || isPending) && !product) {
     return (
       <div className="landing">
         <section className="section container">
@@ -405,6 +413,48 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         : [];
   const notesBlurb = metafields?.fragrance_notes?.trim();
   const showLongevityBars = livePyramid.length === 0 && notesRows.length > 0;
+  const legacyRelated = (
+    <>
+      {youMayAlsoLike.length ? (
+        <section className="pdp-related" aria-labelledby="also-like-heading">
+          <div className="container container--full">
+            <div className="pdp-related__head">
+              <h2 className="pdp-related__title" id="also-like-heading">
+                You may also <em className="pdp-related__em">like.</em>
+              </h2>
+              <Link className="pdp-related__all" href={`/collections/${MERCH_RAIL_SLUGS.pdpAlsoLike}`}>
+                See all
+              </Link>
+            </div>
+            <ul className="pdp-related__grid products-band" role="list">
+              {youMayAlsoLike.map((item) => (
+                <RelatedCard key={item.id} product={item} />
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+      {related.length && moreFromCollection ? (
+        <section className="pdp-related" aria-labelledby="related-heading">
+          <div className="container container--full">
+            <div className="pdp-related__head">
+              <h2 className="pdp-related__title" id="related-heading">
+                More from {moreFromHeading}.
+              </h2>
+              <Link className="pdp-related__all" href={`/collections/${moreFromCollection.slug}`}>
+                See all
+              </Link>
+            </div>
+            <ul className="pdp-related__grid products-band" role="list">
+              {related.map((item) => (
+                <RelatedCard key={item.id} product={item} collectionSlug={moreFromCollection.slug} />
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
 
   return (
     <div className="landing pdp">
@@ -414,6 +464,22 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         data-reveal={reveal ? "play" : undefined}
       >
         <div className="container container--full">
+          <nav className="crumbs pdp-hero__crumbs" aria-label="Breadcrumb">
+            <ol className="crumbs__list" role="list">
+              <li>
+                <Link href="/">Home</Link>
+              </li>
+              {moreFromCollection ? (
+                <li>
+                  <Link href={`/collections/${moreFromCollection.slug}`}>{moreFromCollection.name}</Link>
+                </li>
+              ) : null}
+              {product.concentration ? (
+                <li>{CONCENTRATION_LABELS[product.concentration]}</li>
+              ) : null}
+              <li aria-current="page">{product.title}</li>
+            </ol>
+          </nav>
           <div className="pdp-hero__split">
             <div className="pdp-hero__stage">
               {galleryImages.length > 1 ? (
@@ -492,6 +558,15 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
             </div>
 
             <div className="pdp-hero__panel">
+              {apiProduct?.brandName || moreFromCollection ? (
+                <p className="pdp-hero__eyebrow">
+                  {[apiProduct?.brandName, moreFromCollection?.name].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
+              <h1 className="pdp-hero__name" id="product-name">
+                {product.title}
+              </h1>
+              <p className="pdp-hero__format">{formatLabel}</p>
               {showReviewRating && reviewSummary ? (
                 <a className="pdp-hero__rating" href="#pdp-reviews">
                   <span className="stars" aria-hidden="true">
@@ -505,10 +580,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                   </span>
                 </a>
               ) : null}
-              <h1 className="pdp-hero__name" id="product-name">
-                {product.title}
-              </h1>
-              <p className="pdp-hero__format">{formatLabel}</p>
+              {apiProduct?.description &&
+              !apiProduct.description.startsWith("Product details will appear") ? (
+                <p className="pdp-hero__blurb">{apiProduct.description}</p>
+              ) : null}
 
               {chips.length ? (
                 <ul className="pdp-hero__chips" role="list" aria-label="Featured notes">
@@ -525,7 +600,10 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                 </ul>
               ) : null}
 
-              <p className="pdp-hero__price">{formatMoney(product.price, product.currency)}</p>
+              <div className="pdp-hero__price-row">
+                <p className="pdp-hero__price">{formatMoney(product.price, product.currency)}</p>
+                <OfferCountLink productId={product.id} />
+              </div>
               {product.price != null ? (
                 <p className="pdp-hero__installments">
                   or 4 interest-free payments of{" "}
@@ -616,26 +694,32 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
                     </button>
                   </div>
 
-                  <button
-                    className="pdp-hero__add"
-                    type="button"
-                    onClick={() => {
-                      // Instant: the bag updates and opens now; the API syncs behind.
-                      void addToCart({
-                        sku: product.sku,
-                        variantId: product.variantId,
-                        slug: product.slug,
-                        title: product.title,
-                        imageUrl: product.imageUrl,
-                        price: product.price,
-                        currency: product.currency,
-                        quantity: cartLine ? 1 : quantity,
-                      });
-                      setStatus(`Added ${product.title} to your bag.`);
-                    }}
-                  >
-                    Add to bag
-                  </button>
+                  {product.isSellable === false ? (
+                    <OutOfStockAlternatives productId={product.id} />
+                  ) : (
+                    <button
+                      className="pdp-hero__add"
+                      type="button"
+                      onClick={() => {
+                        // Instant: the bag updates and opens now; the API syncs behind.
+                        void addToCart({
+                          sku: product.sku,
+                          variantId: product.variantId,
+                          slug: product.slug,
+                          title: product.title,
+                          imageUrl: product.imageUrl,
+                          price: product.price,
+                          currency: product.currency,
+                          quantity: cartLine ? 1 : quantity,
+                        });
+                        setStatus(`Added ${product.title} to your bag.`);
+                      }}
+                    >
+                      {product.price != null
+                        ? `Add to bag · ${formatMoney(product.price, product.currency)}`
+                        : "Add to bag"}
+                    </button>
+                  )}
 
                   <button
                     className="pdp-hero__wish"
@@ -654,6 +738,13 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
               <p className="pdp-hero__status" role="status">
                 {status}
               </p>
+              <PdpOffersPanel productId={product.id} />
+              <PdpScentFamily
+                current={product}
+                familyCode={family[0]?.toLowerCase().replace(/[^a-z0-9]+/g, "") || null}
+                zoneCode={zoneCode}
+                fallback={related}
+              />
             </div>
           </div>
         </div>
@@ -767,29 +858,16 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         reviews={pdpReviews}
       />
 
-      {youMayAlsoLike.length ? (
-        <section className="pdp-related" aria-labelledby="also-like-heading">
-          <div className="container container--full">
-            <div className="pdp-related__head">
-              <h2 className="pdp-related__title" id="also-like-heading">
-                You may also <em className="pdp-related__em">like.</em>
-              </h2>
-              <Link
-                className="pdp-related__all"
-                href={`/collections/${MERCH_RAIL_SLUGS.pdpAlsoLike}`}
-              >
-                See all
-              </Link>
-            </div>
-
-            <ul className="pdp-related__grid products-band" role="list">
-              {youMayAlsoLike.map((item) => (
-                <RelatedCard key={item.id} product={item} />
-              ))}
-            </ul>
-          </div>
-        </section>
+      {apiProduct?.id ? (
+        <ProductCompanions
+          productId={apiProduct.id}
+          marketCode={zoneCode}
+          omitGroupIds={youMayAlsoLike.length > 0 ? ["also"] : []}
+          fallback={null}
+        />
       ) : null}
+      {legacyRelated}
+      <RecentlyViewed excludeProductId={apiProduct?.id ?? product.id} />
 
       {prVideo && prVideoOpen ? (
         <div
@@ -845,30 +923,6 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         </div>
       ) : null}
 
-      {related.length && moreFromCollection ? (
-        <section className="pdp-related" aria-labelledby="related-heading">
-          <div className="container container--full">
-            <div className="pdp-related__head">
-              <h2 className="pdp-related__title" id="related-heading">
-                More from {moreFromHeading}.
-              </h2>
-              <Link className="pdp-related__all" href={`/collections/${moreFromCollection.slug}`}>
-                See all
-              </Link>
-            </div>
-
-            <ul className="pdp-related__grid products-band" role="list">
-              {related.map((item) => (
-                <RelatedCard
-                  key={item.id}
-                  product={item}
-                  collectionSlug={moreFromCollection.slug}
-                />
-              ))}
-            </ul>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

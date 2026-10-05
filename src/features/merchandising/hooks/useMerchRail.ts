@@ -30,7 +30,7 @@ export function useMerchRail(
     merchKeys.collection(slug, zoneCode, currencyCode),
     () => fetchMerchCollectionRail(slug),
     {
-      enabled: Boolean(slug),
+      enabled: Boolean(slug && zoneCode),
       staleTime: 60_000,
       placeholderData: keepPreviousData,
       retry: retryUnless404,

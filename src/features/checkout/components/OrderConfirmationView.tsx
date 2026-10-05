@@ -19,6 +19,7 @@ import {
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
 import type { OrderAddressSummary } from "../types/checkout";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
+import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 
 type PaymentState = "success" | "pending" | "failed";
@@ -156,6 +157,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     const paid = offline && raw === "pending" ? "success" : raw;
     if (paid !== "success") return;
     purchaseSent.current = true;
+    trackPromotion("promotion_order_completed", { surface: "order" });
     insiderPurchasePage(
       toInsiderPurchaseValueFromOrder({
         orderId: placed.orderId,

@@ -21,7 +21,7 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, GiftCardForm, GiftWithPurchase, MoneySummary, PromotionUnlockNote, amountPayableFrom, awardedGiftLines, giftDisplayName, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
 
 /** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
@@ -146,7 +146,12 @@ export function CartPageView() {
             </p>
           </header>
 
-          <PromotionUnlockNote />
+          {!isEmpty ? (
+            <div className="cart-promo">
+              <PromotionProgressRail surface="cart" />
+              <PromotionQuickAdd surface="cart" />
+            </div>
+          ) : null}
 
           {!isEmpty ? (
             <div className="cart-layout" id="cart-page-layout">
@@ -179,6 +184,9 @@ export function CartPageView() {
                         </span>
                       </div>
                       {line.sizeLabel ? <p className="cline__meta">{line.sizeLabel}</p> : null}
+                      {setBundleLineLabel(promotions, line) ? (
+                        <p className="cline__meta">{setBundleLineLabel(promotions, line)}</p>
+                      ) : null}
                       <div className="cline__actions">
                         <span className="cline__qty">
                           <button
@@ -304,13 +312,8 @@ export function CartPageView() {
             </div>
           ) : (
             <section className="cart-empty-state">
-              <p className="collection-head__eyebrow">Nothing yet</p>
-              <h2 className="collection-head__title">
-                Your bag is <em className="collection-head__em">empty.</em>
-              </h2>
-              <p className="collection-head__intro">
-                Every scent is composed in small lots. Start with a signature.
-              </p>
+              <p className="cart-empty-note">Your bag is empty.</p>
+              <EmptyBagRecovery surface="empty-cart" />
               <Link className="cart-cta cart-cta--inline" href="/products">
                 <span>Explore the collection</span>
                 <b className="arrow" aria-hidden="true">

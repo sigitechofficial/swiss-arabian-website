@@ -8,7 +8,7 @@ export function MoneySummary({
   currency,
   subtotal,
   discount,
-  shipping,
+  shipping = null,
   shippingDiscount,
   tax = 0,
   total,
@@ -20,7 +20,8 @@ export function MoneySummary({
   currency: string;
   subtotal: number;
   discount: number;
-  shipping: number;
+  /** Omit the row when delivery is not part of this total. */
+  shipping?: number | null;
   shippingDiscount: number;
   tax?: number;
   total: number;
@@ -44,10 +45,12 @@ export function MoneySummary({
           <dd dir="ltr">−{formatMoney(discount, currency)}</dd>
         </div>
       ) : null}
-      <div>
-        <dt>Shipping</dt>
-        <dd dir="ltr">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd>
-      </div>
+      {shipping != null ? (
+        <div>
+          <dt>Shipping</dt>
+          <dd dir="ltr">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd>
+        </div>
+      ) : null}
       {shippingDiscount > 0 ? (
         <div>
           <dt>Shipping discount</dt>

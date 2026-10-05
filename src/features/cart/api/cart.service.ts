@@ -49,6 +49,14 @@ type AddItemOpts = {
   cartId?: string | null;
 };
 
+export async function addCartItems(
+  items: Array<{ sku: string; quantity: number }>,
+  cartId?: string | null,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId: cartId ?? getStoredCartId() });
+  return apiPost<ApiCart>(`/storefront/cart/items/batch?${params.toString()}`, { items });
+}
+
 export async function addCartItem(opts: AddItemOpts): Promise<ApiCart> {
   const params = buildCartParams({ cartId: opts.cartId ?? getStoredCartId() });
   const body: Record<string, unknown> = { quantity: opts.quantity };

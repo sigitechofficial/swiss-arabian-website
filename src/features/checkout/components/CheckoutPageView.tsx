@@ -19,11 +19,12 @@ import {
   GiftCardForm,
   GiftWithPurchase,
   MoneySummary,
-  PromotionUnlockNote,
+  PromotionProgressRail,
   amountPayableFrom,
   checkoutQuoteSnapshot,
   awardedGiftLines,
   giftDisplayName,
+  setBundleLineLabel,
   shippingDiscountAmount,
   visibleGiftCards,
 } from "@/features/promotions";
@@ -37,6 +38,7 @@ import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import type { AddressFields } from "../utils/addressSnapshot";
+import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
 import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import {
   deliveryEta,
@@ -184,6 +186,16 @@ export function CheckoutPageView() {
   const missThis = upsells.slice(0, 4);
 
   const session = checkout.session;
+  const checkoutTracked = useRef("");
+  useEffect(() => {
+    const id = session?.checkoutSessionId;
+    if (!id || checkoutTracked.current === id) return;
+    checkoutTracked.current = id;
+    trackPromotion("promotion_checkout_started", {
+      market: session?.context?.zoneCode ?? catalogContext?.zoneCode ?? null,
+      surface: "checkout",
+    });
+  }, [session?.checkoutSessionId, session?.context?.zoneCode, catalogContext?.zoneCode]);
   const estimate = session?.totalsEstimate;
   const currency = session?.currency ?? cartCurrency ?? "AED";
   const subtotal = estimate ? Number(estimate.subtotal) : cartSubtotal;
@@ -623,7 +635,7 @@ export function CheckoutPageView() {
                 aria-label="Order summary"
               >
                 <h2>Your order</h2>
-                {subtotal > 0 ? <PromotionUnlockNote className="checkout-ship" /> : null}
+                {subtotal > 0 ? <PromotionProgressRail className="checkout-ship" surface="checkout" /> : null}
                 <div className="checkout-lines" id="checkout-lines">
                   {orderableLines.map((line) => {
                     const thumb = lineImageUrl(line.slug, line.imageUrl);
@@ -645,6 +657,9 @@ export function CheckoutPageView() {
                         <div className="coline__body">
                           <h3>{line.title}</h3>
                           {line.sizeLabel ? <p>{line.sizeLabel}</p> : null}
+                          {setBundleLineLabel(promoSnapshot, line) ? (
+                            <p>{setBundleLineLabel(promoSnapshot, line)}</p>
+                          ) : null}
                         </div>
                         <span className="coline__price" dir="ltr">
                           {formatMoney(line.unitPrice * line.quantity, line.currency)}

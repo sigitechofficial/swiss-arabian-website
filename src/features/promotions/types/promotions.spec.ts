@@ -238,6 +238,7 @@ describe("applicable promotions parsing", () => {
     expect(parsed.promotions.totals.discountTotal).toBe("0");
     expect(parsed.offers[0]?.eligibility?.remainingAmount).toBe("40");
     expect(parsed.offers[0]?.eligibility?.thresholdAmount).toBe("300");
+    expect(parsed.progress).toBeNull();
     expect(visibleApplied(parsed.promotions)).toEqual([]);
     expect((parsed.promotions as { futureField?: string }).futureField).toBe("kept");
   });
