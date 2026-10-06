@@ -49,6 +49,10 @@
 }
 
 :root {
+  /* Site typeface. Change only this line.
+     Wide:    "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif
+     Regular: "BentonSans Regular", "Benton Sans Wide", ui-sans-serif, system-ui, sans-serif */
+  --font-site: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
   --chrome-content-max: 1200px;
   --chrome-edge: 1rem;
   --site-header-h: 9.25rem;
@@ -181,8 +185,8 @@ html.dark {
   --color-sa-muted: var(--sa-text-muted);
   --color-sa-border: var(--sa-border-default);
   --color-sa-input: var(--sa-border-input);
-  --font-sans: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-site);
+  --font-display: var(--font-site);
   --animate-pdp-bottle: pdp-bottle-arrive 1500ms cubic-bezier(0.2, 0, 0.2, 1) 240ms forwards;
   --animate-pdp-glow: pdp-glow-bloom 1500ms cubic-bezier(0, 0, 0.2, 1) 120ms forwards;
   --animate-pdp-puff-a: pdp-puff-a 1300ms cubic-bezier(0, 0, 0.2, 1) forwards;
@@ -313,6 +317,34 @@ html.dark {
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: none; }
 }
+@keyframes offer-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes offer-out {
+  to { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+@keyframes offer-sheet {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes offer-sheet-out {
+  to { transform: translateY(100%); }
+}
+@keyframes offer-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.offer-dialog::backdrop {
+  background: rgba(33, 27, 23, 0.46);
+  animation: offer-fade 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .offer-dialog,
+  .offer-dialog::backdrop {
+    animation: none !important;
+  }
+}
 @keyframes oc-draw {
   to { stroke-dashoffset: 0; }
 }
@@ -329,7 +361,7 @@ html.dark {
   body {
     background: var(--cream, var(--sa-bg-page));
     color: var(--ink, var(--sa-text-primary));
-    font-family: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-site);
     font-size: var(--fs-body, 0.9375rem);
     letter-spacing: 0.01em;
   }

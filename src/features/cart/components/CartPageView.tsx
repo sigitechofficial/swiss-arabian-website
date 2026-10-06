@@ -58,10 +58,11 @@ import {
   cartErrorMessage,
 } from "../constants/validationMessages";
 import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import {
+  quotedCartShipping,
+  quotedCartTotal,
+} from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
-
-/** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
-const SHIP_FLAT = 25;
 
 function itemsLabel(n: number) {
   return n === 1 ? "1 item" : `${n} items`;
@@ -128,14 +129,28 @@ export function CartPageView() {
   const isEmpty = lines.length === 0;
 
   const quotePending = syncing && totals == null;
-  const shipping = totals ? totals.shipping : quotePending || subtotal === 0 ? 0 : SHIP_FLAT;
+  const shipping =
+    !mounted || quotePending
+      ? 0
+      : quotedCartShipping(subtotal, totals?.shipping);
   const discount = totals?.discount ?? 0;
   const shipDiscount = shippingDiscountAmount(promotions);
   const giftCards = visibleGiftCards(promotions);
-  const amountPayable = amountPayableFrom(promotions, [
+  const payable = amountPayableFrom(promotions, [
     totals?.amountPayable != null ? String(totals.amountPayable) : null,
   ]);
-  const total = totals ? totals.total : subtotal + shipping;
+  const total =
+    !mounted || quotePending
+      ? subtotal
+      : quotedCartTotal({
+          merchandise: subtotal,
+          quotedTotal: totals?.total,
+          quotedShipping: totals?.shipping,
+          shipping,
+        });
+  const extraShipping = totals ? Math.max(0, shipping - totals.shipping) : 0;
+  const amountPayable =
+    payable != null && extraShipping > 0 ? payable + extraShipping : payable;
 
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
 

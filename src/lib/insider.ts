@@ -259,7 +259,10 @@ export type InsiderCartItemPayload = InsiderProductPayload & {
 };
 
 export type InsiderCartSnapshot = {
+  /** Full cart amount, including shipping and tax. */
   total: number;
+  /** Delivery fee. Sent only on the cart object, never on line items. */
+  shippingCost?: number;
   items: InsiderCartItemPayload[];
 };
 
@@ -405,24 +408,32 @@ function userQueueValue(user?: InsiderIdentifyUser | null): Record<string, unkno
 }
 
 function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
-  const quantity = cart.items.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0),
-    0,
-  );
-  const total = cart.total;
+  const shipping = Number(cart.shippingCost);
   return {
-    total,
-    subtotal: total,
-    shipping_cost: 0,
-    quantity,
+    total: cart.total,
+    shipping_cost: Number.isFinite(shipping) && shipping > 0 ? shipping : 0,
     items: cart.items.map((item) => {
       const value = productQueueValue(item, item.quantity);
       if (typeof value.stock !== "number") value.stock = 0;
       if (typeof value.color !== "string") value.color = "";
-      value.shipping_cost = 0;
       return value;
     }),
   };
+}
+
+/** Update the basket already queued for this page. Does not push another init. */
+export function syncInsiderCart(cart: InsiderCartSnapshot): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  const rows = queue();
+  const entry = { type: "cart" as const, value: cartQueueValue(cart) };
+  const index = rows.findIndex((row) => row.type === "cart");
+  if (index >= 0) {
+    rows[index] = entry;
+    return;
+  }
+  const initAt = rows.findIndex((row) => row.type === "init");
+  if (initAt >= 0) rows.splice(initAt, 0, entry);
+  else rows.push(entry);
 }
 
 /**

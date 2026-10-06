@@ -3,8 +3,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { SideSheet } from "@/components/ui/SideSheet";
-import { drawerBody, drawerClose, drawerHead, drawerPanel } from "@/styles/cartChrome";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { DiscoveryChrome, DiscoveryOffer, PromotionDiscovery } from "../types/discovery";
 import { badgeForProduct } from "../types/discovery";
@@ -281,6 +279,58 @@ export function PromotionOfferHub({
   );
 }
 
+const OFFER_FILLER = new Set(["a", "an", "and", "each", "for", "from", "of", "on", "the", "to", "with", "your"]);
+
+function offerWords(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06ff%]+/gi, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 1 && !OFFER_FILLER.has(word));
+}
+
+function sameOfferLine(left: string, right: string) {
+  const a = left.trim();
+  const b = right.trim();
+  if (!a || !b) return false;
+  if (a.toLowerCase() === b.toLowerCase()) return true;
+  const leftWords = offerWords(a);
+  const rightWords = new Set(offerWords(b));
+  if (!leftWords.length || rightWords.size === 0) return false;
+  const shared = leftWords.filter((word) => rightWords.has(word)).length;
+  return shared / Math.min(leftWords.length, rightWords.size) >= 0.66;
+}
+
+function offerCardCopy(offer: DiscoveryOffer) {
+  const headline = (offer.badge || offer.publicTitle).trim();
+  const short = offer.shortMessage.trim();
+  const title = offer.publicTitle.trim();
+  const support =
+    short && !sameOfferLine(short, headline)
+      ? short
+      : !short && title && !sameOfferLine(title, headline)
+        ? title
+        : "";
+  return { headline, support };
+}
+
+function offerDetailLines(offer: DiscoveryOffer, shown: string[]) {
+  const candidates = [
+    offer.shortMessage,
+    offer.details.whatYouGet || offer.benefitSummary,
+    offer.details.howToQualify || offer.qualificationSummary,
+    ...offer.details.restrictions,
+  ];
+  const lines: string[] = [];
+  for (const line of candidates) {
+    const text = line.trim();
+    if (!text) continue;
+    if ([...shown, ...lines].some((existing) => sameOfferLine(text, existing))) continue;
+    lines.push(text);
+  }
+  return lines;
+}
+
 function OfferMark({ mechanic }: { mechanic: string }) {
   const common = { viewBox: "0 0 20 20", fill: "none", "aria-hidden": true as const, className: "size-5" };
   if (mechanic === "SET_BUNDLE" || mechanic === "BUNDLE") {
@@ -359,14 +409,26 @@ export function PdpOffersPanel({
     if (openProp === undefined) setUncontrolledOpen(next);
   };
   const titleId = useId();
+  const close = () => {
+    setActiveCode(null);
+    setOpen(false);
+  };
+  const dialogRef = useDialog(open, close);
   const discovery = query.data;
   const offers = discovery?.offers ?? [];
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.classList.add("overflow-hidden");
+    return () => document.body.classList.remove("overflow-hidden");
+  }, [open]);
+
   if (!discovery || offers.length === 0) return null;
   const arabic = discovery.locale.toLowerCase().startsWith("ar");
   const title = arabic ? "مزايا لك" : "Offers for you";
   const countLabel = arabic
     ? `${offers.length} متاحة`
-    : `${offers.length} available`;
+    : `${offers.length} ${offers.length === 1 ? "offer" : "offers"}`;
 
   return (
     <section className="m-0" id="pdp-offers">
@@ -374,7 +436,7 @@ export function PdpOffersPanel({
         className="flex min-h-[52px] w-full cursor-pointer items-center justify-between gap-4 rounded-lg border-0 bg-copper px-4 py-3 text-[0.95rem]! font-semibold! text-white!"
         type="button"
         aria-expanded={open}
-        aria-controls="pdp-offers-drawer"
+        aria-controls="pdp-offers-dialog"
         onClick={() => setOpen(true)}
       >
         <span>{title}</span>
@@ -385,90 +447,127 @@ export function PdpOffersPanel({
           </svg>
         </span>
       </button>
-      <SideSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        labelledBy={titleId}
-        className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[420px]"
-      >
-        <div className={drawerPanel} id="pdp-offers-drawer">
-          <div className={drawerHead}>
-            <h2 id={titleId}>{title}</h2>
-            <button className={drawerClose} type="button" aria-label={arabic ? "إغلاق" : "Close"} onClick={() => setOpen(false)}>
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="size-5">
-                <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.6" />
-              </svg>
-            </button>
-          </div>
-          <div className={drawerBody}>
-            <ul className="m-0 flex list-none flex-col gap-2.5 px-[22px] py-3">
-              {offers.map((offer) => {
-                const expanded = activeCode === offer.campaignCode;
-                const whatYouGet = offer.details.whatYouGet || offer.benefitSummary;
-                const howToQualify = offer.details.howToQualify || offer.qualificationSummary;
-                const showWhat = Boolean(whatYouGet) && whatYouGet !== offer.shortMessage;
-                const showHow = Boolean(howToQualify) && howToQualify !== offer.shortMessage && howToQualify !== whatYouGet;
-                return (
-                  <li className="overflow-hidden rounded-xl border border-[#241f1b]/10 bg-white" key={offer.campaignCode}>
-                    <button
-                      className="group flex w-full cursor-pointer items-start gap-3 border-0 bg-transparent px-3 py-3 text-start text-inherit aria-expanded:bg-[#faf6ee]"
-                      type="button"
-                      aria-expanded={expanded}
-                      onClick={() => setActiveCode(expanded ? null : offer.campaignCode)}
+      {open ? (
+        <Overlay>
+          <button
+            className="fixed inset-0 z-[1400] cursor-pointer border-0 bg-[rgba(24,20,17,0.46)] backdrop-blur-[6px]"
+            type="button"
+            aria-label={arabic ? "إغلاق" : "Close"}
+            onClick={close}
+          />
+          <div className="pointer-events-none fixed inset-0 z-[1401] grid place-items-center p-4 sm:p-6">
+            <div
+              ref={dialogRef}
+              id="pdp-offers-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              className="pointer-events-auto flex max-h-[min(84vh,720px)] w-[min(720px,100%)] flex-col overflow-hidden rounded-[22px] bg-[#faf6ee] text-[#1a1512] shadow-[0_28px_70px_rgba(24,20,17,0.28)]"
+            >
+              <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
+                <div>
+                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-copper uppercase">{countLabel}</p>
+                  <h2 id={titleId} className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.55rem] leading-none font-medium">
+                    {title}
+                  </h2>
+                </div>
+                <button
+                  className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-[rgb(26_21_18/0.06)]"
+                  type="button"
+                  aria-label={arabic ? "إغلاق" : "Close"}
+                  onClick={close}
+                >
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="size-5">
+                    <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.6" />
+                  </svg>
+                </button>
+              </div>
+              <ul className={`m-0 grid min-h-0 flex-1 auto-rows-max list-none items-start gap-2.5 overflow-y-auto px-5 pt-1 pb-5 sm:px-6 sm:pb-6 ${offers.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                {offers.map((offer) => {
+                  const expanded = activeCode === offer.campaignCode;
+                  const copy = offerCardCopy(offer);
+                  const details = offerDetailLines(offer, [copy.headline, copy.support]);
+                  const canShop = Boolean(offer.shopOfferAvailable && offer.shopOfferPath);
+                  const canExpand = details.length > 0 || canShop;
+                  return (
+                    <li
+                      className={`min-h-min overflow-hidden rounded-2xl border bg-white ${expanded ? "border-copper/35" : "border-[#241f1b]/10"}`}
+                      key={offer.campaignCode}
                     >
-                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[rgb(140_68_53/0.1)] text-copper group-aria-expanded:bg-copper group-aria-expanded:text-white">
-                        <OfferMark mechanic={offer.mechanic} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        {offer.badge ? <span className="block text-[0.68rem] font-bold tracking-[0.08em] text-copper uppercase">{offer.badge}</span> : null}
-                        <span className="mt-0.5 block text-[0.95rem] font-semibold text-[#1a1512]">{offer.publicTitle}</span>
-                        {offer.shortMessage && !expanded ? <span className="mt-1 block text-[0.82rem] leading-snug text-[#241f1b]/70">{offer.shortMessage}</span> : null}
-                      </span>
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={`mt-2 size-4 shrink-0 text-[#241f1b]/50 transition-transform ${expanded ? "rotate-180" : ""}`}>
-                        <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    {expanded ? (
-                      <div className="border-t border-[#241f1b]/8 px-3 pt-3 pb-3.5">
-                        {offer.shortMessage ? <p className="m-0 text-[0.85rem] leading-snug text-[#241f1b]/80">{offer.shortMessage}</p> : null}
-                        {showWhat ? (
-                          <p className="mt-2 mb-0 text-[0.85rem] leading-snug text-[#241f1b]/80">
-                            <span className="font-semibold text-[#1a1512]">{discovery.chrome.whatYouGet}. </span>
-                            {whatYouGet}
-                          </p>
-                        ) : null}
-                        {showHow ? (
-                          <p className="mt-2 mb-0 text-[0.85rem] leading-snug text-[#241f1b]/80">
-                            <span className="font-semibold text-[#1a1512]">{discovery.chrome.howToQualify}. </span>
-                            {howToQualify}
-                          </p>
-                        ) : null}
-                        {offer.details.restrictions.length ? (
-                          <ul className="mt-2 mb-0 list-disc ps-4 text-[0.82rem] text-[#241f1b]/70">
-                            {offer.details.restrictions.map((line) => (
-                              <li key={line}>{line}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {offer.shopOfferAvailable && offer.shopOfferPath ? (
-                          <Link
-                            className="mt-3 inline-flex rounded-full bg-copper px-3.5 py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-white! no-underline hover:bg-copper-deep"
-                            href={offer.shopOfferPath}
-                            onClick={() => setOpen(false)}
-                          >
-                            {offer.details.ctaLabel || "Choose your pieces"}
-                          </Link>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                      {canExpand ? (
+                        <button
+                          className="group flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-3.5 py-3 text-start text-inherit"
+                          type="button"
+                          aria-expanded={expanded}
+                          onClick={() => setActiveCode(expanded ? null : offer.campaignCode)}
+                        >
+                          <OfferFace offer={offer} copy={copy} expanded={expanded} disclosure />
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-3 px-3.5 py-3">
+                          <OfferFace offer={offer} copy={copy} expanded={false} disclosure={false} />
+                        </div>
+                      )}
+                      {expanded ? (
+                        <div className="border-t border-[#241f1b]/8 px-3.5 pt-3 pb-3.5">
+                          {details.length ? (
+                            <div className="grid gap-1.5">
+                              {details.map((line) => (
+                                <p className="m-0 text-[0.84rem] leading-snug text-[#241f1b]/75" key={line}>
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
+                          {canShop ? (
+                            <Link
+                              className="mt-3 inline-flex rounded-full bg-copper px-3.5 py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-white! no-underline hover:bg-copper-deep"
+                              href={offer.shopOfferPath as string}
+                              onClick={close}
+                            >
+                              {offer.details.ctaLabel || (arabic ? "اختَر القطع" : "Choose your pieces")}
+                            </Link>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
-        </div>
-      </SideSheet>
+        </Overlay>
+      ) : null}
     </section>
+  );
+}
+
+function OfferFace({
+  offer,
+  copy,
+  expanded,
+  disclosure,
+}: {
+  offer: DiscoveryOffer;
+  copy: { headline: string; support: string };
+  expanded: boolean;
+  disclosure: boolean;
+}) {
+  return (
+    <>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${expanded ? "bg-copper text-white" : "bg-[rgb(140_68_53/0.1)] text-copper"}`}>
+        <OfferMark mechanic={offer.mechanic} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.92rem] leading-snug font-semibold text-[#1a1512]">{copy.headline}</span>
+        {copy.support ? (
+          <span className="mt-0.5 block text-[0.8rem] leading-snug text-[#241f1b]/62">{copy.support}</span>
+        ) : null}
+      </span>
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={`size-4 shrink-0 text-[#241f1b]/40 transition-transform ${expanded ? "rotate-180" : ""} ${disclosure ? "" : "invisible"}`}>
+        <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    </>
   );
 }
 
@@ -486,7 +585,7 @@ export function OfferCountLink({
   const label = arabic ? `${count} مزايا` : `${count} ${count === 1 ? "offer" : "offers"}`;
   if (onOpen) {
     return (
-      <button className="inline-flex cursor-pointer items-center rounded-full border-0 bg-copper px-[0.7rem] py-[0.3rem] text-xs font-semibold! tracking-[0.02em] text-white!" type="button" onClick={onOpen}>
+      <button className="inline-flex min-h-11 cursor-pointer items-center rounded-full border-0 bg-copper px-3 text-xs font-semibold! tracking-[0.02em] text-white!" type="button" aria-haspopup="dialog" aria-controls="pdp-offers-dialog" onClick={onOpen}>
         {label}
       </button>
     );

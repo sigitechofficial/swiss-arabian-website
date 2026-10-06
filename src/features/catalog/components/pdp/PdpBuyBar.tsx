@@ -12,9 +12,10 @@ import type { CatalogProduct } from "../../constants/catalogProducts";
 type PdpBuyBarProps = {
   product: CatalogProduct;
   cartLine: CartLine | undefined;
+  onQuantityChange?: (quantity: number) => void;
 };
 
-export function PdpBuyBar({ product, cartLine }: PdpBuyBarProps) {
+export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProps) {
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
   const [status, setStatus] = useState("");
@@ -31,6 +32,10 @@ export function PdpBuyBar({ product, cartLine }: PdpBuyBarProps) {
     setWished(false);
     setStatus("");
   }, [product.slug]);
+
+  useEffect(() => {
+    onQuantityChange?.(displayQty);
+  }, [displayQty, onQuantityChange]);
 
   // Pin the same Add-to-bag row to the viewport bottom while its natural
   // slot is still below the fold, then release it back into flow once the

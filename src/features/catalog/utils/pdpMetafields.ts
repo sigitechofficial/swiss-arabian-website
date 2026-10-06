@@ -54,6 +54,38 @@ export function familyChips(
     .slice(0, 6);
 }
 
+/** Named notes in a pyramid layer. "Pink pepper, Cumin" is two notes. */
+function noteNames(value: string | null | undefined): string[] {
+  const raw = text(value);
+  if (!raw) return [];
+  return raw
+    .split(/[,/|·•]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+/**
+ * One chip from the top, heart, and base layers.
+ * A missing layer is skipped. If the first name in a layer was already used, the next name in that layer is used.
+ */
+export function pyramidNoteChips(
+  metafields: StorefrontPdpMetafields | null | undefined,
+): string[] {
+  const chosen: string[] = [];
+  const seen = new Set<string>();
+  for (const layer of [
+    metafields?.top_note,
+    metafields?.middle_note,
+    metafields?.base_note,
+  ]) {
+    const name = noteNames(layer).find((part) => !seen.has(part.toLowerCase()));
+    if (!name) continue;
+    seen.add(name.toLowerCase());
+    chosen.push(name);
+  }
+  return chosen;
+}
+
 export function notesSectionTitle(
   metafields: StorefrontPdpMetafields | null | undefined,
 ): string {
