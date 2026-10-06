@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import { CatalogPageView } from "@/features/catalog";
+import { parseCatalogListingParams } from "@/features/catalog/types/catalogFacets";
 
-/** Bundles lives at `/collections/bundles` (same pattern as Minis). */
-export default function ProductsPage() {
-  redirect("/collections/bundles");
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const listingQuery = parseCatalogListingParams(await searchParams);
+  return <CatalogPageView listingQuery={listingQuery} />;
 }

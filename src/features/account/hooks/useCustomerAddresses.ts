@@ -21,8 +21,12 @@ export function useCustomerAddresses() {
   const queryClient = useQueryClient();
   const list = useApiQuery(customerAccountKeys.addresses(), listCustomerAddresses);
 
+  // Checkout prefills from its own saved-addresses query — refresh both.
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: customerAccountKeys.addresses() });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: customerAccountKeys.addresses() }),
+      queryClient.invalidateQueries({ queryKey: ["checkout", "saved-addresses"] }),
+    ]);
 
   const create = useApiMutation(createCustomerAddress, {
     onSuccess: async () => {

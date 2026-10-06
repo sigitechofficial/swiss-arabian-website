@@ -1,12 +1,10 @@
-"use client";
-
-import { AuthGuard } from "@/components/guards/AuthGuard";
+import type { Metadata } from "next";
 import { AccountSecurityPageView } from "@/features/account/components/AccountSecurityPageView";
 
-export default function AccountSecurityPage() {
-  return (
-    <AuthGuard requireAuth>
-      <AccountSecurityPageView />
-    </AuthGuard>
-  );
+export const metadata: Metadata = {
+  title: "Security",
+};
+
+export default function SecurityPage() {
+  return <AccountSecurityPageView />;
 }

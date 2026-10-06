@@ -1,4 +1,4 @@
-export { OrderCard } from "./components/OrderCard";
 export { PurchaseHistoryPageView } from "./components/PurchaseHistoryPageView";
-export { purchaseHistoryOrders } from "./data/purchaseHistoryContent";
-export type { OrderChannel, OrderSummaryView } from "./types/order";
+export { AccountOrderDetailPageView } from "./components/AccountOrderDetailPageView";
+export { OrderCard } from "./components/OrderCard";
+export type { OrderSummaryView, OrderChannel } from "./types/order";

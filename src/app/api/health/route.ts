@@ -8,7 +8,7 @@ export function GET() {
 
   return NextResponse.json({
     status: "ok",
-    service: "swiss-arabian-website",
+    service: "swiss-arabian-v2",
     environment,
   });
 }

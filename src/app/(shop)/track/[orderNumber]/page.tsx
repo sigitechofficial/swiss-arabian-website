@@ -1,7 +1,12 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { PageLoading } from "@/components/ui";
 import { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
 
-export const metadata = { title: "Track Your Order — Swiss Arabian" };
+export const metadata: Metadata = {
+  title: "Track your order",
+  robots: { index: false, follow: false },
+};
 
 export default async function GuestTrackingPage({
   params,
@@ -10,14 +15,8 @@ export default async function GuestTrackingPage({
 }) {
   const { orderNumber } = await params;
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-page">
-          <span className="size-8 animate-spin rounded-full border-2 border-sa-border border-t-terra" />
-        </div>
-      }
-    >
-      <GuestTrackingPageView orderNumber={orderNumber} />
+    <Suspense fallback={<PageLoading label="Looking up your order…" fill />}>
+      <GuestTrackingPageView orderNumber={decodeURIComponent(orderNumber)} />
     </Suspense>
   );
 }

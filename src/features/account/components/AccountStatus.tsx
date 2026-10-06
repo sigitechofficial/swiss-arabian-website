@@ -28,7 +28,7 @@ type AccountStatusLabelProps = {
   tone: AccountStatusTone;
 };
 
-/** Figma · Tx status cell (1318:10067) — 7px dot + 12px semibold label */
+/** 7px dot + 12px semibold label */
 export function AccountStatusLabel({ label, tone }: AccountStatusLabelProps) {
   const dot = DOT[tone];
 
@@ -50,7 +50,7 @@ const PILL: Record<AccountStatusTone, string> = {
   muted: "bg-section-soft text-sa-secondary",
 };
 
-/** Figma · badge-active (1236:9637) — rounded status pill */
+/** Rounded status pill */
 export function AccountStatusPill({ label, tone }: AccountStatusLabelProps) {
   const dot = tone === "success" ? accountAssets.dots.active : DOT[tone];
 

@@ -1,4 +1,4 @@
-/** Account area assets — Figma 1068:2 · 1098:9661 · 1236:9875 · 1318:10242 */
+/** Account area assets. */
 export const accountAssets = {
   hero: "/assets/account/hero.png",
   orderThumb: "/assets/account/order-thumb.png",

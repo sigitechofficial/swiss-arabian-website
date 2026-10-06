@@ -10,7 +10,6 @@ import {
 
 type QueryFn<T> = () => Promise<T>;
 
-/** RTK-compatible query helper used across feature modules. */
 export function useApiQuery<T>(
   key: QueryKey,
   queryFn: QueryFn<T>,

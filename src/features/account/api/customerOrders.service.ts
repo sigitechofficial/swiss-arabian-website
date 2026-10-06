@@ -1,4 +1,7 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
+import { resolveStorefrontContext } from "@/lib/storefront/context";
+import type { OrderLinePromotionSnapshot } from "@/features/orders/utils/historicalLineDiscount";
+import type { OrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,7 +43,8 @@ export interface PaginatedOrdersResponse {
   offset: number;
 }
 
-export interface TrackingEvent {
+/** Shipment event as embedded in the account order detail (newest first). */
+export interface ShipmentDetailEvent {
   status: string;
   description: string | null;
   occurredAt: string;
@@ -52,7 +56,7 @@ export interface ShipmentDetail {
   trackingNumber: string | null;
   trackingUrl: string | null;
   deliveredAt: string | null;
-  events: TrackingEvent[];
+  events: ShipmentDetailEvent[];
 }
 
 export interface CancellationWindow {
@@ -83,6 +87,8 @@ export interface CustomerOrderDetailResponse {
       lineTotal: string;
       currencyCode: string;
       imageUrl?: string | null;
+      /** Frozen at purchase. Null on orders placed before line snapshots. */
+      promotionSnapshot?: OrderLinePromotionSnapshot | null;
     }[];
     addresses: {
       addressType: string;
@@ -93,6 +99,8 @@ export interface CustomerOrderDetailResponse {
       postalCode: string | null;
     }[];
     totals: { subtotal: string; discount: string; shipping: string; tax: string; total: string };
+    /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
+    promotionSnapshot?: OrderLinePromotionSnapshot | null;
     selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
     timeline: { eventType: string; title: string | null; occurredAt: string }[];
@@ -108,12 +116,16 @@ export interface CancelOrderResponse {
   requiresRefund: boolean;
 }
 
-export interface CustomerOrderTrackingResponse {
+/**
+ * The guide documents this endpoint with detail-style events
+ * (`status` / `occurredAt`), but the live API returns the carrier timeline
+ * shape — `eventStatus` / `eventTime` / `title`, plus `carrier`,
+ * `shipmentNumber` and a merged `timeline`. Typed to what it actually sends.
+ */
+export type CustomerOrderTrackingResponse = OrderTrackingTimeline & {
   orderId: string;
-  orderNumber: string | null;
   fulfillmentStatus: string;
-  shipments: ShipmentDetail[];
-}
+};
 
 // ─── Service functions ────────────────────────────────────────────────────────
 
@@ -131,11 +143,20 @@ export interface ListOrdersParams {
  * GET /storefront/customer/orders
  * JWT required. Returns paginated order history.
  */
+function withMarket(params: URLSearchParams): URLSearchParams {
+  const ctx = resolveStorefrontContext();
+  if (ctx.zoneCode?.trim()) params.set("zoneCode", ctx.zoneCode.trim());
+  if (ctx.salesChannelCode?.trim()) {
+    params.set("salesChannelCode", ctx.salesChannelCode.trim());
+  }
+  return params;
+}
+
 export async function listOrders(params: ListOrdersParams = {}): Promise<PaginatedOrdersResponse> {
-  const q = new URLSearchParams({
+  const q = withMarket(new URLSearchParams({
     limit: String(params.limit ?? 20),
     offset: String(params.offset ?? 0),
-  });
+  }));
   if (params.status) q.set("status", params.status);
   if (params.paymentStatus) q.set("paymentStatus", params.paymentStatus);
   if (params.fulfillmentStatus) q.set("fulfillmentStatus", params.fulfillmentStatus);
@@ -149,7 +170,9 @@ export async function listOrders(params: ListOrdersParams = {}): Promise<Paginat
  * JWT required. Full order detail with shipments + cancellation window.
  */
 export async function getCustomerOrderDetail(orderId: string): Promise<CustomerOrderDetailResponse> {
-  return apiGet<CustomerOrderDetailResponse>(`/storefront/customer/orders/${orderId}`);
+  return apiGet<CustomerOrderDetailResponse>(
+    `/storefront/customer/orders/${orderId}?${withMarket(new URLSearchParams()).toString()}`,
+  );
 }
 
 /**
@@ -161,7 +184,7 @@ export async function cancelOrder(
   reason = "Customer request",
 ): Promise<CancelOrderResponse> {
   return apiPost<CancelOrderResponse>(
-    `/storefront/customer/orders/${orderId}/cancel`,
+    `/storefront/customer/orders/${orderId}/cancel?${withMarket(new URLSearchParams()).toString()}`,
     { reason, idempotencyKey: `cancel-${orderId}` },
   );
 }
@@ -171,5 +194,7 @@ export async function cancelOrder(
  * JWT required. Merged tracking timeline for all shipments.
  */
 export async function getCustomerOrderTracking(orderId: string): Promise<CustomerOrderTrackingResponse> {
-  return apiGet<CustomerOrderTrackingResponse>(`/storefront/customer/orders/${orderId}/tracking`);
+  return apiGet<CustomerOrderTrackingResponse>(
+    `/storefront/customer/orders/${orderId}/tracking?${withMarket(new URLSearchParams()).toString()}`,
+  );
 }

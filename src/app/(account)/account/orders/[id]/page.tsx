@@ -1,6 +1,10 @@
-import { AccountOrderDetailPageView } from "@/features/account/components/AccountOrderDetailPageView";
+import type { Metadata } from "next";
+import { AccountOrderDetailPageView } from "@/features/orders";
 
-export const metadata = { title: "Order Detail — Swiss Arabian" };
+export const metadata: Metadata = {
+  title: "Order details",
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountOrderDetailPage({
   params,

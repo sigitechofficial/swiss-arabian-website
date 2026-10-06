@@ -1,438 +1,325 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import { useApiQuery } from "@/lib/api/queryHooks";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui";
-import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
-import { toast } from "@/components/ui/Toaster";
-import { ProductCard } from "@/features/home/components/ProductCard";
-import { NewsletterSection } from "@/features/home/components/NewsletterSection";
-import { formatMoney } from "@/features/home/data/homeContent";
-import { insiderProductViewed, beginInsiderRouteFlush, pushInsiderUserContext } from "@/lib/insider";
-import { DEFAULT_LANGUAGE_CODE, DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { ensureInsiderProductPage } from "@/lib/insider";
 import { useMarket } from "@/providers/MarketProvider";
+import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
+import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
+import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
+import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemory";
+import { pageContainer } from "@/styles/siteChrome";
+import { crumbsList } from "@/styles/shopChrome";
+import { pdpHero, pdpSplit, relatedEm } from "@/styles/pdpChrome";
+import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
 import {
-  CATALOG_PAGE_SIZE,
-  catalogKeys,
-  fetchProductBySlug,
-  fetchProducts,
-} from "../api/catalog.service";
-import { PDP_TRUST } from "../data/pdpContent";
-import { notesFromCatalogHtml } from "../utils/catalogHtml";
-import { toProductCardModel } from "../utils/toProductCardModel";
-import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
+  CATALOG_PRODUCTS,
+  CONCENTRATION_LABELS,
+  type CatalogProduct,
+} from "../constants/catalogProducts";
 import {
-  ProductRatingBadge,
-  ProductReviewsSection,
-} from "@/features/reviews";
-import { ProductImageZoom } from "./ProductImageZoom";
+  PRODUCT_DETAIL_CONTENT,
+  type ProductDetailContent,
+} from "../constants/productDetailContent";
+import { toCatalogProduct } from "../utils/toCatalogProduct";
+import { notesSectionTitle, pyramidFromMetafields } from "../utils/pdpMetafields";
+import { shippingDaysLine, shippingTabCopy, shippingThresholdLine } from "../utils/pdpShipping";
+import { PdpReviews } from "./PdpReviews";
+import { PdpBuyBox } from "./pdp/PdpBuyBox";
+import { PdpComposition } from "./pdp/PdpComposition";
+import { PdpGallery } from "./pdp/PdpGallery";
+import { PdpPrVideo } from "./pdp/PdpPrVideo";
+import { PdpRelatedRail } from "./pdp/PdpRelatedRail";
 
-export function ProductDetailPageView() {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
-  const addToCart = useAddToCart();
+const FALLBACK_CONTENT: ProductDetailContent = {
+  story: "Composed in Dubai since 1974 — a Swiss Arabian signature, worn on its own or layered.",
+  notes: [
+    { level: "Top", names: "Bergamot · Pink Pepper", bar: 42 },
+    { level: "Heart", names: "Rose · Amber", bar: 68 },
+    { level: "Base", names: "Musk · Wood", bar: 92 },
+  ],
+  wear: "Apply to pulse points — wrists, the base of the throat, behind the ears. An extrait is concentrated: two touches carry through the day.",
+  shipping: "",
+  authenticity:
+    "Composed, filled and finished by Swiss Arabian in Dubai. Every bottle ships from our warehouse with its batch code intact.",
+};
+
+function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLine | undefined {
+  const keys = [product.variantId, product.sku, product.slug].filter((key): key is string =>
+    Boolean(key?.trim()),
+  );
+  return lines.find((line) => keys.includes(line.variantId) || line.slug === product.slug);
+}
+
+export function ProductDetailPageView({ slug }: { slug: string }) {
   const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
-  const bootstrapped = useAuthStore((s) => s.bootstrapped);
+  const zoneCode = marketId ?? "";
 
-  const [activeImage, setActiveImage] = useState(0);
-  const [qty, setQty] = useState(1);
+  // Wait for the real market. The default "UAE" code is not the live zone,
+  // and a fetch against it reports a real product as missing.
+  const { data: apiProduct, isPending } = useQuery({
+    queryKey: catalogKeys.detail(slug, zoneCode),
+    queryFn: () => fetchProductBySlug(slug, zoneCode),
+    enabled: Boolean(slug && zoneCode),
+  });
 
-  const { data, isLoading, isError } = useApiQuery(
-    catalogKeys.detail(slug, zoneCode),
-    () => fetchProductBySlug(slug, zoneCode),
-    { enabled: Boolean(slug) },
+  const staticProduct = useMemo(() => CATALOG_PRODUCTS.find((item) => item.slug === slug), [slug]);
+
+  // Prefer live data; keep the static entry as the fallback so the designed
+  // house products keep rendering exactly as they do today.
+  const product = useMemo(
+    () => (apiProduct ? toCatalogProduct(apiProduct) : staticProduct),
+    [apiProduct, staticProduct],
   );
 
-  const { data: relatedData } = useApiQuery(
-    catalogKeys.list(zoneCode, 1, CATALOG_PAGE_SIZE),
-    () => fetchProducts(zoneCode, { page: 1, limit: CATALOG_PAGE_SIZE }),
-    { enabled: Boolean(data) },
-  );
+  const authoredContent = (slug && PRODUCT_DETAIL_CONTENT[slug]) || null;
+  const livePyramid = useMemo(() => pyramidFromMetafields(apiProduct?.pdpMetafields), [apiProduct]);
+  const metafields = apiProduct?.pdpMetafields;
+  const shippingPromise = apiProduct?.shippingPromise ?? null;
+  const pdpReviews = apiProduct?.reviews ?? null;
+  const reviewSummary = pdpReviews?.summary;
+  const showReviewRating = Boolean(reviewSummary && reviewSummary.reviewCount > 0);
+  const daysLine = shippingPromise ? shippingDaysLine(shippingPromise) : null;
+  const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise) : null;
+  const liveShippingCopy = shippingTabCopy(shippingPromise);
 
-  const gallery = useMemo(() => {
-    if (!data) return [] as string[];
-    if (data.imageUrls?.length) return data.imageUrls;
-    if (data.imageUrl) return [data.imageUrl];
-    return [];
-  }, [data]);
+  const content = useMemo<ProductDetailContent>(() => {
+    const base = authoredContent ?? FALLBACK_CONTENT;
+    const shipping = liveShippingCopy ?? "";
+    if (authoredContent) return { ...base, shipping };
+    const apiStory = apiProduct?.description?.trim();
+    return apiStory ? { ...base, story: apiStory, shipping } : { ...base, shipping };
+  }, [authoredContent, apiProduct, liveShippingCopy]);
+
+  const [failedImages, setFailedImages] = useState<string[]>([]);
+  const [reveal, setReveal] = useState(false);
+  const lines = useCartStore((s) => s.lines);
+  const cartLine = useMemo(
+    () => (product ? cartLineForProduct(lines, product) : undefined),
+    [lines, product],
+  );
 
   useEffect(() => {
-    setActiveImage(0);
-    setQty(1);
+    if (!product) return;
+    const category =
+      apiProduct?.collections?.find((collection) => collection.isFeatured)?.name ||
+      apiProduct?.collections?.[0]?.name ||
+      product.houseCollection ||
+      null;
+    ensureInsiderProductPage({
+      id: product.variantId || product.id,
+      sku: product.sku || product.variantId || product.id,
+      name: product.title,
+      price: product.price ?? 0,
+      currency: product.currency || "AED",
+      imageUrl: product.imageUrl ?? product.imageUrls?.[0] ?? null,
+      category,
+      brand: apiProduct?.brandName ?? null,
+      stock: product.availableQty ?? (product.inStock === false ? 0 : 1),
+      size: product.subtitle,
+      groupcode: product.id,
+    });
+  }, [apiProduct, product]);
+
+  useEffect(() => {
+    if (apiProduct?.id) rememberViewedProduct(apiProduct.id);
+  }, [apiProduct?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    const id = requestAnimationFrame(() => setReveal(true));
+    return () => cancelAnimationFrame(id);
   }, [slug]);
 
-  useEffect(() => {
-    if (activeImage >= gallery.length) setActiveImage(0);
-  }, [gallery.length, activeImage]);
+  const youMayAlsoLikeRail = useMerchRail(MERCH_RAIL_SLUGS.pdpAlsoLike, product?.id ? [product.id] : []);
 
-  useEffect(() => {
-    if (!data || !bootstrapped) return;
-    if (!beginInsiderRouteFlush(window.location.pathname)) return;
-    const category =
-      data.collections?.find((c) => c.isFeatured)?.name ||
-      data.collections?.[0]?.name ||
-      null;
-    const authUser = useAuthStore.getState().user;
-    pushInsiderUserContext({
-      user: authUser
-        ? {
-            uuid: authUser.id,
-            email: authUser.email,
-            phone: authUser.phoneE164,
-            firstName: authUser.firstName,
-            lastName: authUser.lastName,
-            locale: DEFAULT_LANGUAGE_CODE,
-          }
-        : null,
-    });
-    insiderProductViewed({
-      id: data.variantId || data.id,
-      sku: data.sku || data.variantId || data.id,
-      name: data.title,
-      price: data.price ?? 0,
-      currency: data.currency || "AED",
-      imageUrl: data.imageUrl ?? data.imageUrls?.[0] ?? null,
-      category,
-      brand: data.brandName ?? null,
-      stock: data.availableQty ?? (data.inStock === false ? 0 : 1),
-      size: data.subtitle ?? undefined,
-      groupcode: data.id,
-    });
-  }, [data, bootstrapped]);
+  const moreFromCollection = pickMoreFromCollection(apiProduct?.collections);
+  const { data: moreFromFeed } = useQuery({
+    queryKey: catalogKeys.collectionProducts(moreFromCollection?.slug ?? "", zoneCode, 1, 12, true),
+    queryFn: () =>
+      fetchCollectionProducts(moreFromCollection!.slug, zoneCode, {
+        page: 1,
+        limit: 12,
+        onlySellable: true,
+      }),
+    enabled: Boolean(zoneCode && moreFromCollection?.slug),
+    retry: false,
+  });
 
-  const recommendations = useMemo(() => {
-    const items = relatedData?.products ?? [];
-    return items
-      .filter((p) => p.slug !== slug && p.id !== data?.id)
+  const related = useMemo(() => {
+    if (!product) return [];
+    const inCart = new Set(lines.map((line) => line.slug).filter(Boolean));
+    return (moreFromFeed?.products ?? [])
+      .filter((item) => item.id !== product.id && item.slug !== product.slug)
+      .filter((item) => item.isSellable !== false)
+      .filter((item) => !inCart.has(item.slug))
+      .map((item) => toCatalogProduct(item))
       .slice(0, 4);
-  }, [relatedData?.products, slug, data?.id]);
+  }, [moreFromFeed, product, lines]);
 
-  if (isLoading) {
-    return <PageLoading label="Loading product…" fill />;
-  }
+  const youMayAlsoLike = useMemo(() => {
+    const usedIds = new Set(related.map((item) => item.id));
+    return youMayAlsoLikeRail.filter((item) => !usedIds.has(item.id)).slice(0, 4);
+  }, [youMayAlsoLikeRail, related]);
 
-  if (isError || !data) {
+  const moreFromHeading = moreFromCollection?.name.replace(/\.$/, "") ?? "";
+
+  useEffect(() => {
+    [...youMayAlsoLike, ...related].forEach((item) => {
+      const hoverImg = item.imageUrls?.[1];
+      if (hoverImg && hoverImg !== item.imageUrl) {
+        const img = new Image();
+        img.src = hoverImg;
+        img.decode?.().catch(() => {});
+      }
+    });
+  }, [youMayAlsoLike, related]);
+
+  if ((!zoneCode || isPending) && !product) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-20 text-center">
-        <h1 className="font-sans text-[28px] font-medium text-sa-primary">
-          Product not found
-        </h1>
-        <p className="max-w-sm text-[14px] text-sa-muted">
-          This fragrance isn’t available in the catalog for your market.
-        </p>
-        <Link
-          href="/products"
-          className="mt-2 inline-flex h-[42px] cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#a25e48]"
-        >
-          Back to shop
-        </Link>
+      <div>
+        <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>
+          <PageLoading label="Loading product…" />
+        </section>
       </div>
     );
   }
 
-  const title = data.title;
-  const brandLine =
-    data.brandName?.trim() ||
-    data.collections?.find((c) => c.isFeatured)?.name ||
-    data.collections?.[0]?.name ||
-    data.sku ||
-    "Swiss Arabian";
-  const currency = data.currency || "AED";
-  const priceValue = data.price;
-  const descriptionHtml = data.descriptionHtml?.trim();
-  const descriptionPlain =
-    data.description?.trim() ||
-    "Product details will appear once the catalog is fully refreshed.";
-  const notes = notesFromCatalogHtml(
-    descriptionHtml || data.description,
-  );
-  const canAdd = Boolean(data.isSellable && data.price != null);
-  const mainSrc = gallery[activeImage] ?? gallery[0] ?? null;
-  const collectionLinks = (data.collections ?? []).filter(
-    (c) => c.slug && !c.slug.includes("not-for-sale"),
-  );
+  if (!product) {
+    return (
+      <div>
+        <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>
+          <h1 className="font-display text-[2rem] leading-[1.05] font-medium tracking-[0.005em]">
+            Product not found.
+          </h1>
+          <p className="mt-4 max-w-[62ch] text-base leading-[1.7] text-[var(--ink-2,#5b5148)]">
+            <Link href="/products">Back to all products</Link>
+          </p>
+        </section>
+      </div>
+    );
+  }
 
-  const breadcrumbs = [
-    { label: "Home", href: "/" },
-    { label: "Shop", href: "/products" },
-    { label: title, href: `/products/${slug}` },
-  ];
+  const galleryImages = (product.imageUrls?.length ? product.imageUrls : product.imageUrl ? [product.imageUrl] : [])
+    .filter((src, index, arr): src is string => Boolean(src) && arr.indexOf(src) === index)
+    .filter((src) => !failedImages.includes(src));
+  const prVideo = apiProduct?.prVideo && !failedImages.includes(apiProduct.prVideo.url) ? apiProduct.prVideo : undefined;
+  const formatLabel =
+    metafields?.size?.trim() ||
+    `${product.concentration ? CONCENTRATION_LABELS[product.concentration] : "Fragrance"} · 50 ml`;
+  const notesHeading = notesSectionTitle(metafields);
+  const notesRows = livePyramid.length > 0 ? livePyramid : authoredContent ? authoredContent.notes : [];
+  const description =
+    apiProduct?.description && !apiProduct.description.startsWith("Product details will appear")
+      ? apiProduct.description
+      : null;
+
+  const markFailed = (src: string) => {
+    setFailedImages((prev) => (prev.includes(src) ? prev : [...prev, src]));
+  };
 
   return (
-    <div className="flex flex-1 flex-col bg-page text-sa-primary">
-      <nav
-        aria-label="Breadcrumb"
-        className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center gap-2 px-4 py-3 text-[12px] sm:px-6 lg:px-10 xl:px-20"
-      >
-        {breadcrumbs.map((crumb, index) => {
-          const isLast = index === breadcrumbs.length - 1;
-          return (
-            <span key={`${crumb.href}-${index}`} className="flex items-center gap-2">
-              {index > 0 ? (
-                <span className="text-sa-muted" aria-hidden>
-                  /
-                </span>
+    <div>
+      <section className={pdpHero} aria-labelledby="product-name" data-reveal={reveal ? "play" : undefined}>
+        <div className={pageContainer}>
+          <nav className="pt-3 pb-4" aria-label="Breadcrumb">
+            <ol className={crumbsList} role="list">
+              <li>
+                <Link href="/">Home</Link>
+              </li>
+              {moreFromCollection ? (
+                <li>
+                  <Link href={`/collections/${moreFromCollection.slug}`}>{moreFromCollection.name}</Link>
+                </li>
               ) : null}
-              {isLast ? (
-                <span className="font-semibold tracking-wide text-sa-primary">
-                  {crumb.label}
-                </span>
-              ) : (
-                <Link
-                  href={crumb.href}
-                  className="font-semibold tracking-wide text-sa-muted hover:text-sa-primary"
-                >
-                  {crumb.label}
-                </Link>
-              )}
-            </span>
-          );
-        })}
-      </nav>
-
-      <section className="mx-auto grid w-full max-w-[1280px] gap-10 px-4 pb-16 pt-2 sm:px-6 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:gap-16 lg:px-10 xl:gap-20 xl:px-20">
-        <div className="flex flex-col gap-4">
-          <ProductImageZoom
-            images={gallery}
-            activeIndex={activeImage}
-            alt={title}
-          />
-
-          {gallery.length > 1 ? (
-            <div className="flex gap-3 overflow-x-auto sm:gap-4">
-              {gallery.map((src, index) => {
-                const active = index === activeImage;
-                return (
-                  <button
-                    key={`thumb-${src}-${index}`}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    aria-label={`View image ${index + 1}`}
-                    aria-pressed={active}
-                    className={`relative size-[72px] shrink-0 cursor-pointer overflow-hidden border bg-page sm:size-[96px] lg:size-[128px] ${
-                      active
-                        ? "border-[1.5px] border-terra"
-                        : "border-sa-border"
-                    }`}
-                  >
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="128px"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-8 lg:max-w-[600px]">
-          <div className="flex flex-col gap-3">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-sa-muted">
-              {brandLine}
-            </p>
-            <h1 className="font-sans text-[32px] font-medium leading-tight tracking-[-0.02em] text-sa-primary sm:text-[42px] sm:leading-[48px]">
-              {title}
-            </h1>
-            <ProductRatingBadge productKey={data.id} />
-            <p
-              className={`text-base font-bold ${
-                priceValue == null ? "text-sa-muted" : "text-sa-primary"
-              }`}
-            >
-              {priceValue == null
-                ? "Price unavailable"
-                : formatMoney(priceValue, currency)}
-            </p>
-            {!data.isSellable ? (
-              <p className="text-[13px] text-sa-muted">
-                {data.blockReasons?.[0] ?? "Availability pending refresh"}
-              </p>
-            ) : null}
-          </div>
-
-          {notes.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-gold">
-                In this set
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {notes.map((note, index) => (
-                  <span
-                    key={note}
-                    className={`px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] ${
-                      index === 0
-                        ? "bg-terra text-white"
-                        : "border border-sa-input text-sa-muted"
-                    }`}
-                  >
-                    {note}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {descriptionHtml ? (
-            <div
-              className="space-y-3 text-[14px] leading-relaxed text-sa-primary opacity-90 [&_p]:m-0 [&_p+p]:mt-3 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5"
-              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              <li aria-current="page">{product.title}</li>
+            </ol>
+          </nav>
+          <div className={pdpSplit}>
+            <PdpGallery images={galleryImages} title={product.title} resetKey={slug} onImageError={markFailed} />
+            <PdpBuyBox
+              product={product}
+              formatLabel={formatLabel}
+              description={description}
+              reviewSummary={reviewSummary}
+              showReviewRating={showReviewRating}
+              metafields={metafields}
+              daysLine={daysLine}
+              thresholdLine={thresholdLine}
+              zoneCode={zoneCode}
+              cartLine={cartLine}
+              scentFallback={related}
             />
-          ) : (
-            <p className="whitespace-pre-line text-[14px] leading-relaxed text-sa-primary opacity-90">
-              {descriptionPlain}
-            </p>
-          )}
-
-          {collectionLinks.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sa-muted">
-                Collections
-              </span>
-              {collectionLinks.map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/collections/${c.slug}`}
-                  className="border border-sa-border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sa-primary transition-colors hover:border-terra hover:text-terra"
-                >
-                  {c.name}
-                </Link>
-              ))}
-            </div>
-          ) : null}
-
-          {data.sku ? (
-            <>
-              <div className="h-px w-full bg-sa-border" aria-hidden />
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-sa-muted">
-                SKU:{" "}
-                <span className="font-bold text-sa-primary">{data.sku}</span>
-              </p>
-            </>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-[42px] items-center gap-5 border border-sa-input bg-cream px-4 dark:bg-section-soft">
-              <button
-                type="button"
-                aria-label="Decrease quantity"
-                className="cursor-pointer text-base font-semibold text-sa-muted hover:text-sa-primary"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-              >
-                −
-              </button>
-              <span className="min-w-[1.25rem] text-center text-sm font-bold">
-                {qty}
-              </span>
-              <button
-                type="button"
-                aria-label="Increase quantity"
-                className="cursor-pointer text-base font-semibold text-sa-muted hover:text-sa-primary"
-                onClick={() => setQty((q) => q + 1)}
-              >
-                +
-              </button>
-            </div>
-
-            <WishlistHeartButton productId={data.id} size="pdp" />
-            <button
-              type="button"
-              disabled={!canAdd}
-              className="flex h-[42px] flex-1 cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:min-w-[200px]"
-              onClick={() => {
-                if (!canAdd || data.price == null) {
-                  toast(
-                    "This product isn’t available to purchase yet.",
-                    "error",
-                  );
-                  return;
-                }
-                addToCart({
-                  productId: data.id,
-                  variantId: data.variantId,
-                  slug: data.slug,
-                  title: data.title,
-                  imageUrl: mainSrc ?? undefined,
-                  unitPrice: data.price,
-                  currency,
-                  notes: notes.slice(0, 5),
-                  quantity: qty,
-                  sku: data.sku,
-                  category:
-                    data.collections?.find((c) => c.isFeatured)?.name ||
-                    data.collections?.[0]?.name ||
-                    null,
-                  brand: data.brandName ?? null,
-                });
-              }}
-            >
-              {canAdd ? "Add to bag" : "Unavailable"}
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {PDP_TRUST.map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <Image
-                  src={item.icon}
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="size-4"
-                  unoptimized
-                />
-                <span className="text-[12px] text-sa-muted">{item.label}</span>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
-      <ProductReviewsSection
-        key={data.id}
-        productId={data.id}
-        variantId={data.variantId}
+      <PdpComposition
+        product={product}
+        content={content}
+        metafields={metafields}
+        formatLabel={formatLabel}
+        notesHeading={notesHeading}
+        notesRows={notesRows}
+        notesBlurb={metafields?.fragrance_notes?.trim()}
+        showNotes={livePyramid.length > 0 || Boolean(authoredContent?.notes.length)}
+        showLongevityBars={livePyramid.length === 0 && notesRows.length > 0}
+        shippingCopy={liveShippingCopy ?? ""}
+        resetKey={slug}
       />
 
-      {recommendations.length > 0 ? (
-        <section
-          className="bg-page py-16 lg:py-[88px]"
-          aria-label="You may also like"
-        >
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-10">
-            <div className="mx-auto flex max-w-[1200px] flex-col items-center border-b border-sa-border pb-3.5 text-center">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-gold">
-                Complete your collection
-              </p>
-              <h2 className="mt-3 font-sans text-[32px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[44px] sm:leading-[52px]">
-                You May Also Like
-              </h2>
-            </div>
+      <PdpReviews
+        productId={apiProduct?.id ?? product.id}
+        productTitle={product.title}
+        variantId={product.variantId}
+        reviews={pdpReviews}
+      />
 
-            <div className="-mx-4 mt-10 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
-              {recommendations.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={toProductCardModel(product)}
-                  addDisabled={
-                    product.price == null || product.isSellable === false
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+      {apiProduct?.id ? (
+        <ProductCompanions
+          productId={apiProduct.id}
+          marketCode={zoneCode}
+          omitGroupIds={youMayAlsoLike.length > 0 ? ["also"] : []}
+          fallback={null}
+        />
       ) : null}
+      {youMayAlsoLike.length ? (
+        <PdpRelatedRail
+          id="also-like-heading"
+          heading={
+            <>
+              You may also <em className={relatedEm}>like.</em>
+            </>
+          }
+          seeAllHref={`/collections/${MERCH_RAIL_SLUGS.pdpAlsoLike}`}
+          products={youMayAlsoLike}
+        />
+      ) : null}
+      {related.length && moreFromCollection ? (
+        <PdpRelatedRail
+          id="related-heading"
+          heading={`More from ${moreFromHeading}.`}
+          seeAllHref={`/collections/${moreFromCollection.slug}`}
+          products={related}
+          collectionSlug={moreFromCollection.slug}
+        />
+      ) : null}
+      <RecentlyViewed excludeProductId={apiProduct?.id ?? product.id} />
 
-      <NewsletterSection />
+      {prVideo ? (
+        <PdpPrVideo
+          video={prVideo}
+          poster={galleryImages[0]}
+          title={product.title}
+          resetKey={slug}
+          onError={markFailed}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 /**
- * Figma account frames are 1440 wide with a 100–120px gutter.
- * Every account page and the tab nav share this container so the
- * left edges line up across Dashboard / Purchase History / Profile /
- * Subscription / Payments.
+ * Account pages share the site chrome's content box so their edges line up with
+ * the navbar. Mirrors `.site-header .primary-nav__list` exactly:
+ *   --chrome-content-max → 1200px cap
+ *   --chrome-edge        → gutter below 1200px
+ *   ≥1200px              → gutter drops to 0, content runs edge-to-edge
+ * Bound to the same custom properties so the two can never drift apart.
  */
 export const accountContainer =
-  "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-[100px]";
+  "mx-auto w-full max-w-[var(--chrome-content-max)] px-[var(--chrome-edge)] [@media(min-width:1200px)]:px-0";

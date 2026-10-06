@@ -1,5 +1,10 @@
 import { ProductDetailPageView } from "@/features/catalog";
 
-export default function ProductDetailPage() {
-  return <ProductDetailPageView />;
+export default async function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <ProductDetailPageView slug={slug} />;
 }

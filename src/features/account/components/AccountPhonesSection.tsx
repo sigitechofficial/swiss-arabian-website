@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toE164Phone } from "@/features/auth/api/auth.service";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -25,6 +26,7 @@ export function AccountPhonesSection() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -38,20 +40,20 @@ export function AccountPhonesSection() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-[17px] font-semibold text-sa-primary">Phones</h2>
-      <p className="mt-1 text-[13px] text-sa-secondary">
+      <h2 className="text-[15px] font-semibold text-sa-primary">Phones</h2>
+      <p className="mt-1 text-[12px] text-sa-secondary">
         Primary phone is used on your profile
         {user?.phoneE164 ? ` (${user.phoneE164})` : ""}.
       </p>
 
       {list.isPending ? (
-        <p className="mt-3 text-[13px] text-sa-secondary">Loading phones…</p>
+        <p className="mt-3 text-[12px] text-sa-secondary">Loading phones…</p>
       ) : list.isError ? (
-        <p className="mt-3 text-[13px] text-red-600">
+        <p className="mt-3 text-[12px] text-red-600">
           {getUserFacingErrorMessage(list.error)}
         </p>
       ) : phones.length === 0 && !adding ? (
-        <p className="mt-3 text-[14px] text-sa-secondary">No phones saved yet.</p>
+        <p className="mt-3 text-[13px] text-sa-secondary">No phones saved yet.</p>
       ) : (
         <ul className="mt-3 divide-y divide-sa-border border-y border-sa-border">
           {phones.map((phone) => (
@@ -60,12 +62,12 @@ export function AccountPhonesSection() {
               className="flex flex-wrap items-center justify-between gap-3 py-3"
             >
               <div>
-                <p className="text-[15px] text-sa-primary">{phone.phoneE164}</p>
+                <p className="text-[13.5px] text-sa-primary">{phone.phoneE164}</p>
                 {phone.isPrimary ? (
                   <p className="text-[12px] font-semibold text-terra">Primary</p>
                 ) : null}
               </div>
-              <div className="flex gap-3 text-[13px] font-semibold">
+              <div className="flex gap-3 text-[12px] font-semibold">
                 {!phone.isPrimary ? (
                   <button
                     type="button"
@@ -96,30 +98,33 @@ export function AccountPhonesSection() {
 
       {adding ? (
         <form
-          className="mt-4 border border-sa-border p-4"
+          className="mt-4 rounded-lg border border-sa-border p-4"
           onSubmit={handleSubmit(async (values) => {
             await create.unwrap({
-              phone: toE164Phone(values.phone),
-              countryCode: "AE",
+              phone: values.phone,
+              countryCode: parsePhoneNumberFromString(values.phone)?.country ?? "AE",
               isPrimary: values.isPrimary || phones.length === 0,
             });
             reset();
             setAdding(false);
           })}
         >
-          <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-            Phone number
-          </label>
-          <input
-            type="tel"
-            className={accountInputClass}
-            placeholder="+971501234567"
-            {...register("phone")}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <PhoneNumberField
+                variant="account"
+                id="new-phone"
+                label="Phone number"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                error={errors.phone?.message}
+              />
+            )}
           />
-          {errors.phone ? (
-            <p className="mt-1 text-[11px] text-red-600">{errors.phone.message}</p>
-          ) : null}
-          <label className="mt-3 flex items-center gap-2 text-[13px] text-sa-primary">
+          <label className="mt-3 flex items-center gap-2 text-[12px] text-sa-primary">
             <input type="checkbox" {...register("isPrimary")} />
             Set as primary
           </label>
@@ -146,7 +151,7 @@ export function AccountPhonesSection() {
       ) : (
         <button
           type="button"
-          className="mt-4 text-[14px] font-semibold text-terra hover:underline"
+          className="mt-4 text-[13px] font-semibold text-terra hover:underline"
           onClick={() => setAdding(true)}
         >
           + Add a phone

@@ -3,7 +3,6 @@ import Image from "next/image";
 import { accountAssets } from "../constants/accountAssets";
 import { accountContainer } from "../constants/accountLayout";
 
-/** Figma · help-row (1098:9678) */
 export function AccountHelpRow() {
   return (
     <section className="border-y border-sa-border bg-section-soft">
@@ -16,12 +15,12 @@ export function AccountHelpRow() {
           className="mt-0.5 h-[26px] w-[26px] shrink-0"
         />
         <div className="min-w-0">
-          <p className="text-[15px] font-bold text-sa-primary">
-            Need to return your fragrance?
+          <p className="text-[13.5px] font-bold text-sa-primary">
+            Questions about an order?
           </p>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-sa-secondary">
-            Go to Order History, select the order and choose &ldquo;Start a
-            return&rdquo;.
+          <p className="mt-1 text-[12.5px] leading-relaxed text-sa-secondary">
+            Open Order History and contact customer care with your order number.
+            Return requests are not available in your account yet.
           </p>
         </div>
       </div>

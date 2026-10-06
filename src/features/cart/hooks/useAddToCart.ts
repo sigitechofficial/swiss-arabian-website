@@ -1,74 +1,64 @@
 "use client";
 
-import { toast } from "@/components/ui/Toaster";
-import { insiderAddToCart } from "@/lib/insider";
-import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { addCartItem } from "../api/cart.service";
-import { DEFAULT_SIZE_LABEL } from "../data/cartContent";
-import { productPageUrl } from "../utils/insiderCartItem";
-import { storeCartId } from "../utils/guestToken";
+import { addItemOptimistic } from "../api/optimisticCart";
 
-type AddPayload = Omit<CartLine, "quantity"> & {
-  quantity?: number;
-  /**
-   * D365 SKU — preferred over variantId for add-to-cart.
-   * Pass both when available; the service will prefer sku.
-   */
+export type AddToCartInput = {
   sku?: string;
-  category?: string | null;
-  brand?: string | null;
+  variantId?: string;
+  quantity?: number;
+  /** Shown in the bag straight away, before the server cart comes back. */
+  slug?: string;
+  title?: string;
+  imageUrl?: string | null;
+  price?: number | null;
+  currency?: string;
+  sizeLabel?: string;
 };
 
-/** Adds a product to the cart (optimistic + API sync) and opens the side sheet. */
 export function useAddToCart() {
-  const addLine = useCartStore((s) => s.addLine);
-  const removeLine = useCartStore((s) => s.removeLine);
-  const setCartFromApi = useCartStore((s) => s.setCartFromApi);
-  const cartId = useCartStore((s) => s.cartId);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
+  const addLocalLine = useCartStore((s) => s.addLine);
+  const syncing = useCartStore((s) => s.syncing);
 
-  return (payload: AddPayload): void => {
-    const { sku, category, brand, quantity, ...cartFields } = payload;
-    const line: CartLine = {
-      sizeLabel: DEFAULT_SIZE_LABEL,
-      ...cartFields,
-      sku,
-      category,
-      brand,
-      quantity: quantity ?? 1,
-    };
+  return {
+    /** The API sync is still running — the bag already shows the change. */
+    isPending: syncing,
+    /** Resolves immediately: the line is added locally and the drawer opens now. */
+    addToCart: async (opts: AddToCartInput) => {
+      const quantity = opts.quantity ?? 1;
 
-    // Optimistic: instant feedback before API responds.
-    addLine(line);
-    setCartOpen(true);
-
-    void addCartItem({
-      sku,
-      variantId: payload.variantId,
-      quantity: line.quantity,
-      cartId,
-    })
-      .then((cart) => {
-        storeCartId(cart.cartId);
-        setCartFromApi(cart);
-        insiderAddToCart({
-          id: payload.variantId,
-          sku: sku || payload.variantId,
-          name: payload.title,
-          price: payload.unitPrice,
-          currency: payload.currency,
-          quantity: line.quantity,
-          imageUrl: payload.imageUrl ?? null,
-          productUrl: productPageUrl(payload.slug),
-          category: category ?? null,
-          brand: brand ?? null,
+      if (opts.sku || opts.variantId) {
+        addItemOptimistic({
+          sku: opts.sku,
+          variantId: opts.variantId,
+          quantity,
+          line: {
+            slug: opts.slug ?? "",
+            title: opts.title ?? "",
+            imageUrl: opts.imageUrl ?? undefined,
+            unitPrice: opts.price ?? 0,
+            currency: opts.currency ?? "AED",
+            sizeLabel: opts.sizeLabel,
+          },
         });
-      })
-      .catch(() => {
-        // Revert the optimistic add and notify the user.
-        removeLine(line.variantId);
-        toast("Could not add item to cart. Please try again.", "error");
-      });
+      } else if (opts.slug && opts.title) {
+        // No live backend variant for this product yet — kept client-side
+        // only (persisted, shown in the drawer/bag page), never synced.
+        addLocalLine({
+          variantId: opts.slug,
+          slug: opts.slug,
+          title: opts.title,
+          imageUrl: opts.imageUrl ?? undefined,
+          unitPrice: opts.price ?? 0,
+          currency: opts.currency ?? "AED",
+          quantity,
+          sizeLabel: opts.sizeLabel ?? "Extrait de Parfum · 50 ml",
+        });
+      }
+
+      setCartOpen(true);
+    },
   };
 }

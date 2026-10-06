@@ -7,13 +7,12 @@ export type AccountQuickLink = {
   href?: string;
 };
 
-/** Figma · card-grid (1098:9684) */
 export const accountQuickLinks: AccountQuickLink[] = [
   {
     icon: accountAssets.icons.orders,
     title: "Order History",
     description:
-      "Track your orders, start a return, or view previous purchases.",
+      "Track your orders and view previous purchases.",
     href: "/account/orders",
   },
   {
@@ -42,23 +41,25 @@ export const accountQuickLinks: AccountQuickLink[] = [
   },
 ];
 
-/** Figma · card-grid (1098:9690) */
 export const accountSupportLinks: AccountQuickLink[] = [
   {
     icon: accountAssets.icons.returnsFaq,
     title: "Returns FAQ",
     description:
       "Questions about returns? Read our exchange and return policy.",
+    href: "/faq?topic=order",
   },
   {
     icon: accountAssets.icons.faq,
     title: "Swiss Arabian FAQ",
     description:
       "Browse our FAQs — scents, orders, delivery and samples answered.",
+    href: "/faq",
   },
   {
     icon: accountAssets.icons.contact,
     title: "Contact Us",
     description: "WhatsApp our team, email us, or find quick answers.",
+    href: "/faq#contact",
   },
 ];

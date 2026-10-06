@@ -54,7 +54,6 @@ function writeMode(mode: ColorMode) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const mode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Keep html.dark in sync after hydrate (layout script handles first paint)
   useEffect(() => {
     applyDomMode(mode);
   }, [mode]);

@@ -1,3 +1,7 @@
+import type { StorefrontPdpMetafields } from "./pdpMetafields";
+import type { StorefrontPdpReviews } from "./pdpReviews";
+import type { StorefrontShippingPromise } from "./pdpShipping";
+
 export type ProductSummary = {
   id: string;
   slug: string;
@@ -5,9 +9,7 @@ export type ProductSummary = {
   subtitle?: string;
   price: number | null;
   currency: string;
-  /** Primary image (first gallery entry). */
   imageUrl?: string | null;
-  /** All product images in display order (primary first). */
   imageUrls?: string[];
   sku?: string;
   variantId?: string;
@@ -17,6 +19,13 @@ export type ProductSummary = {
   inStock?: boolean;
   availableQty?: number;
   blockReasons?: string[];
+  /** Raw catalog tags. UI maps a shopper allowlist — see productBadges.ts. */
+  tags?: string[];
+  concentration?: "extrait" | "edp" | null;
+  houseCollection?: string | null;
+  featuredNote?: string | null;
+  /** Server-side fragrance_family_text codes (not PDP pyramid notes). */
+  fragranceFamilyCodes?: string[];
 };
 
 export type ProductCollectionRef = {
@@ -26,11 +35,13 @@ export type ProductCollectionRef = {
 };
 
 export type ProductDetail = ProductSummary & {
-  /** Plain-text description fallback. */
   description: string;
-  /** Sanitized HTML for PDP body (preferred when present). */
   descriptionHtml?: string;
   variantId: string;
   brandName?: string;
   collections?: ProductCollectionRef[];
+  pdpMetafields?: StorefrontPdpMetafields;
+  prVideo?: { url: string; name: string | null };
+  shippingPromise?: StorefrontShippingPromise | null;
+  reviews?: StorefrontPdpReviews | null;
 };

@@ -19,8 +19,8 @@ export function AccountPlaceholderPageView({
     <AccountPageShell>
       <AccountPageTitle title={title} />
       <div className={`${accountContainer} pb-20`}>
-        <div className="border border-sa-border bg-section-soft px-6 py-10">
-          <p className="max-w-[520px] text-[14px] leading-relaxed text-sa-secondary">
+        <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
+          <p className="max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
             {description}
           </p>
         </div>

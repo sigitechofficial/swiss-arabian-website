@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Insider UAT — Meeting Notes</title>
+  <style>
+    @page { margin: 22mm 20mm; }
+    body {
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      font-size: 12.5pt;
+      line-height: 1.55;
+      color: #1f1b16;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 20pt;
+      margin: 0 0 6px;
+      color: #2c241d;
+    }
+    .meta {
+      color: #6b6259;
+      font-size: 10.5pt;
+      margin-bottom: 22px;
+    }
+    p { margin: 0 0 12px; }
+    h2 {
+      font-size: 13.5pt;
+      margin: 22px 0 10px;
+      color: #b46e57;
+    }
+    ol { padding-left: 1.3em; margin: 0; }
+    li { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Insider new UAT — talking points</h1>
+  <p class="meta">Swiss Arabian · Partner: swissarabianuatnew · For meeting with Insider team</p>
+
+  <p>We actually needed a new test UAT partner, so we copied the old Swiss UAT into this new one — swissarabianuatnew. The old partner already has our journeys and setup. This new one is for testing, and we need it to work the same way.</p>
+
+  <p>From our side the work is done. These events are implemented and sending successfully: identify, product view, add to cart, remove from cart, page views, logout, user register, purchase, checkout started, order cancelled, and order refunded. On Azure Dev they go out correctly.</p>
+
+  <p>In InsiderOne we already see identify after login, and add to cart in User Profiles. Remove from cart is also sending successfully. What we do not see is product view and the other page views. We are sending them, but they are not collecting because UCD is off on this new partner. That is why hits show ucd false, and why latest visited product and browse abandon are empty. Pause and Resume in the panel does not fix this. You still need to turn on product page collection and Cart / Browsed / Purchased Items from Event Parameters.</p>
+
+  <p>The other blocker is Architect. It is locked on the new UAT. We are admins and we still cannot open it, so we cannot manage journeys. All the journeys from the old Swiss UAT also need to be copied here, or exported from the old partner and imported into this one, because copying the partner did not bring that across for us.</p>
+
+  <p>So the gap is not our events. We copied the old UAT to get a clean test partner, but we still need Architect unlocked, journeys copied, and UCD turned on, then ins.js republished. Going forward, when we add new custom events we should not have to turn UCD on ourselves every time. Please keep collection on at partner level, or you enable it for us, because we cannot do that from our side.</p>
+
+  <h2>Questions for you</h2>
+  <ol>
+    <li>For journeys, which channel will you use — email, WhatsApp, SMS, or web push?</li>
+    <li>Welcome message kis event pe chale — user register, ya sign up confirmation?</li>
+    <li>Checkout pe hum other page view bhejte hain, aur checkout started bhi. Is this enough, or do you need something else?</li>
+    <li>Are these events already added in your panel — checkout started, order cancelled, and order refunded?</li>
+    <li>Which website domains are allowed? Localhost does not work with Insider.</li>
+  </ol>
+
+  <p>After UCD is on, please send a User Profiles screenshot so we can re-check.</p>
+</body>
+</html>

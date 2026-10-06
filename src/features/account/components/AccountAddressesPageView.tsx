@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PageLoading } from "@/components/ui";
-import { toE164Phone } from "@/features/auth/api/auth.service";
+import { PageLoading } from "@/components/ui/PageLoading";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 
 import {
@@ -19,9 +19,12 @@ import {
   ADDRESS_COUNTRIES,
   addressBookSchema,
   countryNameForCode,
-  UAE_EMIRATES,
   type AddressBookFormValues,
 } from "../schemas/addressBook.schema";
+import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
+import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
+import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
+import { matchCountryRegion, normalizeCountryCode, regionsForCountry } from "../data/regionsByCountry";
 import type {
   CreateCustomerAddressDto,
   StorefrontCustomerAddressView,
@@ -29,23 +32,27 @@ import type {
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountPageTitle } from "./AccountPageTitle";
 
-function FieldLabel({ children }: { children: string }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-sa-muted">
+        {label}
+      </span>
       {children}
+      {error ? <span className="mt-1 block text-[11px] text-red-600">{error}</span> : null}
     </label>
   );
 }
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-1 text-[11px] text-red-600">{message}</p>;
-}
-
 function toDto(values: AddressBookFormValues): CreateCustomerAddressDto {
-  const country =
-    ADDRESS_COUNTRIES.find((c) => c.code === values.countryCode)?.name ??
-    values.countryCode;
   const phone = values.phone?.trim();
   return {
     type: "SHIPPING",
@@ -55,9 +62,9 @@ function toDto(values: AddressBookFormValues): CreateCustomerAddressDto {
     address2: values.address2?.trim() || undefined,
     city: values.city.trim(),
     province: values.province?.trim() || undefined,
-    country,
+    country: countryNameForCode(values.countryCode),
     countryCode: values.countryCode,
-    phone: phone ? toE164Phone(phone) : undefined,
+    phone: phone || undefined,
     isDefaultShipping: values.isDefaultShipping,
     isDefaultBilling: values.isDefaultBilling,
   };
@@ -65,11 +72,13 @@ function toDto(values: AddressBookFormValues): CreateCustomerAddressDto {
 
 function AddressForm({
   initial,
+  isFirst,
   submitting,
   onCancel,
   onSubmit,
 }: {
   initial?: StorefrontCustomerAddressView;
+  isFirst: boolean;
   submitting: boolean;
   onCancel: () => void;
   onSubmit: (dto: CreateCustomerAddressDto) => Promise<void>;
@@ -83,119 +92,180 @@ function AddressForm({
     province: initial?.province ?? "",
     countryCode: initial?.countryCode || "AE",
     phone: initial?.phoneE164 ?? "",
-    isDefaultShipping: initial?.isDefaultShipping ?? true,
-    isDefaultBilling: initial?.isDefaultBilling ?? false,
+    // A first address becomes the default so checkout can prefill it.
+    isDefaultShipping: initial?.isDefaultShipping ?? isFirst,
+    isDefaultBilling: initial?.isDefaultBilling ?? isFirst,
   };
 
   const {
     register,
+    control,
     handleSubmit,
+    setValue,
+    getValues,
+    watch,
     formState: { errors },
   } = useForm<AddressBookFormValues>({
     resolver: zodResolver(addressBookSchema),
     defaultValues: defaults,
   });
-
   const [countryCode, setCountryCode] = useState(defaults.countryCode);
+  const regionSet = regionsForCountry(countryCode);
+  const address1 = watch("address1");
 
   return (
+    <GooglePlacesProvider>
     <form
-      className="border border-sa-border bg-page p-5"
+      className="rounded-lg border border-terra/40 bg-surface p-5 shadow-[0_10px_30px_-20px_rgba(140,68,53,0.5)] sm:p-6 md:col-span-2"
       onSubmit={handleSubmit(async (values) => {
         await onSubmit(toDto(values));
       })}
+      noValidate
     >
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div>
-          <FieldLabel>First name</FieldLabel>
-          <input className={accountInputClass} {...register("firstName")} />
-          <FieldError message={errors.firstName?.message} />
+      <p className="mb-5 text-[15px] font-semibold text-sa-primary">
+        {initial ? "Edit address" : "Add a new address"}
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="First name" error={errors.firstName?.message}>
+          <input className={accountInputClass} autoComplete="given-name" {...register("firstName")} />
+        </Field>
+        <Field label="Last name" error={errors.lastName?.message}>
+          <input className={accountInputClass} autoComplete="family-name" {...register("lastName")} />
+        </Field>
+        <div className="sm:col-span-2">
+          <Field label="Address" error={errors.address1?.message}>
+            <PlacesAddressInput
+              className={accountInputClass}
+              placeholder="Start typing your street address"
+              value={address1}
+              countryCode={countryCode}
+              onChange={(value) =>
+                setValue("address1", value, { shouldValidate: true, shouldDirty: true })
+              }
+              onResolved={(parsed: ParsedStreetAddress) => {
+                if (parsed.address1) {
+                  setValue("address1", parsed.address1, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+                if (parsed.address2) {
+                  setValue("address2", parsed.address2, { shouldDirty: true });
+                }
+                if (parsed.city) {
+                  setValue("city", parsed.city, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+                const googleCountry = normalizeCountryCode(parsed.countryCode);
+                const nextCountry = ADDRESS_COUNTRIES.some(
+                  (item) => item.code === googleCountry,
+                )
+                  ? googleCountry
+                  : countryCode;
+                if (nextCountry !== countryCode) {
+                  setCountryCode(nextCountry);
+                  setValue("countryCode", nextCountry, { shouldDirty: true });
+                }
+                const region = matchCountryRegion(
+                  nextCountry,
+                  parsed.province,
+                  parsed.city,
+                );
+                if (region) {
+                  setValue("province", region, { shouldDirty: true });
+                }
+              }}
+            />
+          </Field>
         </div>
-        <div>
-          <FieldLabel>Last name</FieldLabel>
-          <input className={accountInputClass} {...register("lastName")} />
-          <FieldError message={errors.lastName?.message} />
+        <div className="sm:col-span-2">
+          <Field label="Apartment, suite, etc. (optional)">
+            <input className={accountInputClass} autoComplete="address-line2" {...register("address2")} />
+          </Field>
         </div>
-      </div>
-      <div className="mb-4">
-        <FieldLabel>Address</FieldLabel>
-        <input className={accountInputClass} {...register("address1")} />
-        <FieldError message={errors.address1?.message} />
-      </div>
-      <div className="mb-4">
-        <FieldLabel>Apartment, suite, etc. (optional)</FieldLabel>
-        <input className={accountInputClass} {...register("address2")} />
-      </div>
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div>
-          <FieldLabel>City</FieldLabel>
-          <input className={accountInputClass} {...register("city")} />
-          <FieldError message={errors.city?.message} />
-        </div>
-        <div>
-          <FieldLabel>Emirate / region</FieldLabel>
-          {countryCode === "AE" ? (
-            <select className={accountSelectClass} {...register("province")}>
-              <option value="">Select emirate</option>
-              {UAE_EMIRATES.map((e) => (
-                <option key={e} value={e}>
-                  {e}
+        <Field label="Country" error={errors.countryCode?.message}>
+          <select
+            className={accountSelectClass}
+            autoComplete="country"
+            {...register("countryCode", {
+              onChange: (e) => {
+                const next = e.target.value;
+                setCountryCode(next);
+                const nextSet = regionsForCountry(next);
+                const current = getValues("province") ?? "";
+                const stillValid = nextSet?.regions.some(
+                  (region) => region.toLowerCase() === current.trim().toLowerCase(),
+                );
+                if (!stillValid) setValue("province", "");
+              },
+            })}
+          >
+            {ADDRESS_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label={regionSet?.label ?? "Region"}>
+          {regionSet ? (
+            <select className={accountSelectClass} autoComplete="address-level1" {...register("province")}>
+              <option value="">{regionSet.placeholder}</option>
+              {regionSet.regions.map((region) => (
+                <option key={region} value={region}>
+                  {region}
                 </option>
               ))}
             </select>
           ) : (
-            <input className={accountInputClass} {...register("province")} />
+            <input className={accountInputClass} autoComplete="address-level1" {...register("province")} />
           )}
-        </div>
+        </Field>
+        <Field label="City" error={errors.city?.message}>
+          <input className={accountInputClass} autoComplete="address-level2" {...register("city")} />
+        </Field>
+        <Field label="Phone (optional)" error={errors.phone?.message}>
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <PhoneNumberField
+                variant="account"
+                renderLabel={false}
+                id="address-phone"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+        </Field>
       </div>
-      <div className="mb-4">
-        <FieldLabel>Country</FieldLabel>
-        <select
-          className={accountSelectClass}
-          {...register("countryCode", {
-            onChange: (e) => setCountryCode(e.target.value),
-          })}
-        >
-          {ADDRESS_COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <FieldError message={errors.countryCode?.message} />
+
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-sa-primary">
+          <input type="checkbox" className="size-4 accent-terra" {...register("isDefaultShipping")} />
+          Default shipping address
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-sa-primary">
+          <input type="checkbox" className="size-4 accent-terra" {...register("isDefaultBilling")} />
+          Default billing address
+        </label>
       </div>
-      <div className="mb-4">
-        <FieldLabel>Phone (optional)</FieldLabel>
-        <input
-          type="tel"
-          className={accountInputClass}
-          placeholder="+971501234567"
-          {...register("phone")}
-        />
-        <FieldError message={errors.phone?.message} />
-      </div>
-      <label className="mb-2 flex items-center gap-2 text-[13px] text-sa-primary">
-        <input type="checkbox" {...register("isDefaultShipping")} />
-        Default shipping address
-      </label>
-      <label className="mb-5 flex items-center gap-2 text-[13px] text-sa-primary">
-        <input type="checkbox" {...register("isDefaultBilling")} />
-        Default billing address
-      </label>
-      <div className="flex flex-wrap gap-3">
+
+      <div className="mt-6 flex flex-wrap gap-3">
         <button type="submit" className={accountBtnPrimary} disabled={submitting}>
           {submitting ? "Saving…" : "Save address"}
         </button>
-        <button
-          type="button"
-          className={accountBtnGhost}
-          onClick={onCancel}
-          disabled={submitting}
-        >
+        <button type="button" className={accountBtnGhost} onClick={onCancel} disabled={submitting}>
           Cancel
         </button>
       </div>
     </form>
+    </GooglePlacesProvider>
   );
 }
 
@@ -212,66 +282,88 @@ function AddressCard({
   onDelete: () => void;
   onDefault: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const name =
     address.fullName?.trim() ||
     [address.firstName, address.lastName].filter(Boolean).join(" ").trim() ||
     "Address";
-  const line = [address.address1, address.address2, address.city, address.province]
-    .filter(Boolean)
-    .join(", ");
+  const line = [address.address1, address.address2].filter(Boolean).join(", ");
+  const place = [address.city, address.province].filter(Boolean).join(", ");
   const country = address.country || countryNameForCode(address.countryCode ?? "");
+  const isDefault = address.isDefaultShipping || address.isDefaultBilling;
 
   return (
-    <article className="border border-sa-border bg-page p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-sa-primary">{name}</p>
-          <p className="mt-1 text-[14px] text-sa-secondary">{line}</p>
-          <p className="text-[13px] text-sa-secondary">{country}</p>
-          {address.phoneE164 ? (
-            <p className="mt-1 text-[13px] text-sa-secondary">{address.phoneE164}</p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {address.isDefaultShipping ? (
-              <span className="border border-sa-border px-2 py-0.5 text-[11px] font-semibold text-sa-primary">
-                Default shipping
-              </span>
-            ) : null}
-            {address.isDefaultBilling ? (
-              <span className="border border-sa-border px-2 py-0.5 text-[11px] font-semibold text-sa-primary">
-                Default billing
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-3 text-[13px] font-semibold">
-          {!address.isDefaultShipping || !address.isDefaultBilling ? (
+    <article
+      className={`flex flex-col rounded-lg border bg-surface p-5 sm:p-6 ${
+        isDefault ? "border-terra/50" : "border-sa-border"
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-[15px] font-semibold text-sa-primary">{name}</p>
+        {address.isDefaultShipping ? (
+          <span className="rounded-full bg-terra/10 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-terra">
+            Default shipping
+          </span>
+        ) : null}
+        {address.isDefaultBilling ? (
+          <span className="rounded-full bg-section-soft px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-sa-secondary">
+            Default billing
+          </span>
+        ) : null}
+      </div>
+
+      <address className="mt-3 flex flex-1 flex-col gap-0.5 text-[13.5px] not-italic leading-relaxed text-sa-secondary">
+        <span>{line}</span>
+        {place ? <span>{place}</span> : null}
+        {country ? <span>{country}</span> : null}
+        {address.phoneE164 ? <span className="mt-1 text-sa-primary">{address.phoneE164}</span> : null}
+      </address>
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-sa-border pt-4 text-[12.5px] font-semibold">
+        {confirming ? (
+          <>
+            <span className="font-normal text-sa-secondary">Remove this address?</span>
             <button
               type="button"
-              className="text-terra hover:underline disabled:opacity-50"
+              className="text-[#b4483f] hover:underline disabled:opacity-50"
               disabled={busy}
-              onClick={onDefault}
+              onClick={onDelete}
             >
-              Set as default
+              Yes, remove
             </button>
-          ) : null}
-          <button
-            type="button"
-            className="text-terra hover:underline disabled:opacity-50"
-            disabled={busy}
-            onClick={onEdit}
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            className="text-sa-secondary hover:text-terra hover:underline disabled:opacity-50"
-            disabled={busy}
-            onClick={onDelete}
-          >
-            Remove
-          </button>
-        </div>
+            <button
+              type="button"
+              className="text-sa-secondary hover:text-sa-primary"
+              onClick={() => setConfirming(false)}
+            >
+              Keep
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="text-terra hover:underline disabled:opacity-50" disabled={busy} onClick={onEdit}>
+              Edit
+            </button>
+            {!address.isDefaultShipping || !address.isDefaultBilling ? (
+              <button
+                type="button"
+                className="text-terra hover:underline disabled:opacity-50"
+                disabled={busy}
+                onClick={onDefault}
+              >
+                Set as default
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="ml-auto text-sa-secondary hover:text-[#b4483f] disabled:opacity-50"
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            >
+              Remove
+            </button>
+          </>
+        )}
       </div>
     </article>
   );
@@ -281,9 +373,8 @@ export function AccountAddressesPageView() {
   const { list, create, update, remove, setDefault } = useCustomerAddresses();
   const [mode, setMode] = useState<"idle" | "create" | string>("idle");
 
-  const addresses = useMemo(() => list.data ?? [], [list.data]);
-  const busy =
-    create.isPending || update.isPending || remove.isPending || setDefault.isPending;
+  const addresses = list.data ?? [];
+  const busy = create.isPending || update.isPending || remove.isPending || setDefault.isPending;
 
   return (
     <AccountPageShell>
@@ -293,73 +384,88 @@ export function AccountAddressesPageView() {
       />
       <div className={`${accountContainer} pb-20`}>
         {list.isPending ? (
-          <PageLoading label="Loading addresses…" fill />
+          <PageLoading label="Loading your addresses…" />
         ) : list.isError ? (
-          <p className="text-[14px] text-red-600">
-            {getUserFacingErrorMessage(list.error)}
-          </p>
-        ) : (
-          <div className="flex max-w-[860px] flex-col gap-4">
-            {addresses.length === 0 && mode === "idle" ? (
-              <div className="border border-sa-border bg-section-soft px-6 py-8">
-                <p className="text-[14px] text-sa-secondary">
-                  No saved addresses yet. Add one for faster checkout.
-                </p>
-              </div>
-            ) : null}
-
-            {addresses.map((address) =>
-              mode === address.id ? (
-                <AddressForm
-                  key={address.id}
-                  initial={address}
-                  submitting={update.isPending}
-                  onCancel={() => setMode("idle")}
-                  onSubmit={async (dto) => {
-                    await update.unwrap({ addressId: address.id, dto });
-                    setMode("idle");
-                  }}
-                />
-              ) : (
-                <AddressCard
-                  key={address.id}
-                  address={address}
-                  busy={busy}
-                  onEdit={() => setMode(address.id)}
-                  onDelete={() => {
-                    if (window.confirm("Remove this address?")) {
-                      void remove.unwrap(address.id);
-                    }
-                  }}
-                  onDefault={() => {
-                    void setDefault.unwrap({
-                      addressId: address.id,
-                      target: "both",
-                    });
-                  }}
-                />
-              ),
-            )}
-
-            {mode === "create" ? (
-              <AddressForm
-                submitting={create.isPending}
-                onCancel={() => setMode("idle")}
-                onSubmit={async (dto) => {
-                  await create.unwrap(dto);
-                  setMode("idle");
-                }}
-              />
-            ) : (
-              <button
-                type="button"
-                className="self-start text-[14px] font-semibold text-terra hover:underline"
-                onClick={() => setMode("create")}
-              >
-                + Add an address
-              </button>
-            )}
+          <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10 text-center">
+            <p className="text-[14px] text-sa-primary">We couldn’t load your addresses.</p>
+            <p className="mt-1 text-[12.5px] text-sa-secondary">{getUserFacingErrorMessage(list.error)}</p>
+            <button
+              type="button"
+              onClick={() => void list.refetch()}
+              className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
+            >
+              Try again
+            </button>
           </div>
+        ) : (
+          <>
+            {addresses.length === 0 && mode === "idle" ? (
+              <div className="flex flex-col items-center rounded-lg border border-dashed border-sa-border bg-surface px-6 py-14 text-center">
+                <span className="flex size-14 items-center justify-center rounded-full bg-section-soft text-terra" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 21s-7-6.2-7-11.5A7 7 0 0112 2.5a7 7 0 017 7C19 14.8 12 21 12 21z" />
+                    <circle cx="12" cy="9.5" r="2.5" />
+                  </svg>
+                </span>
+                <p className="mt-4 text-[15px] font-semibold text-sa-primary">No saved addresses yet</p>
+                <p className="mt-1 max-w-sm text-[13px] text-sa-secondary">
+                  Add a delivery address and we’ll fill it in for you at checkout.
+                </p>
+                <button type="button" className={`${accountBtnPrimary} mt-6`} onClick={() => setMode("create")}>
+                  + Add an address
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {addresses.map((address) =>
+                  mode === address.id ? (
+                    <AddressForm
+                      key={address.id}
+                      initial={address}
+                      isFirst={false}
+                      submitting={update.isPending}
+                      onCancel={() => setMode("idle")}
+                      onSubmit={async (dto) => {
+                        await update.unwrap({ addressId: address.id, dto });
+                        setMode("idle");
+                      }}
+                    />
+                  ) : (
+                    <AddressCard
+                      key={address.id}
+                      address={address}
+                      busy={busy}
+                      onEdit={() => setMode(address.id)}
+                      onDelete={() => void remove.unwrap(address.id)}
+                      onDefault={() => void setDefault.unwrap({ addressId: address.id, target: "both" })}
+                    />
+                  ),
+                )}
+
+                {mode === "create" ? (
+                  <AddressForm
+                    isFirst={addresses.length === 0}
+                    submitting={create.isPending}
+                    onCancel={() => setMode("idle")}
+                    onSubmit={async (dto) => {
+                      await create.unwrap(dto);
+                      setMode("idle");
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setMode("create")}
+                    disabled={mode !== "idle"}
+                    className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-sa-border bg-transparent text-[13px] font-semibold text-terra transition-colors hover:border-terra hover:bg-surface disabled:opacity-40"
+                  >
+                    <span className="text-[22px] leading-none" aria-hidden="true">+</span>
+                    Add a new address
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </AccountPageShell>

@@ -1,5 +1,10 @@
-import { GiftCardsPageView } from "@/features/gift-cards";
+import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 
 export default function GiftCardsPage() {
-  return <GiftCardsPageView />;
+  return (
+    <FeaturePlaceholder
+      title="Gift cards"
+      description="Gift card purchase flow is not wired yet."
+    />
+  );
 }

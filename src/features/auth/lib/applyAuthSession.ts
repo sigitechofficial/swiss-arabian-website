@@ -37,7 +37,6 @@ export function mapCustomerToStoreUser(
   };
 }
 
-/** Persist tokens + hydrate Zustand from AuthResult. */
 export function applyAuthResult(result: AuthResult): StoreUser {
   setTokens(result.token.accessToken, result.token.refreshToken);
   const user = mapCustomerToStoreUser(result.customer);

@@ -1,4 +1,9 @@
-// ─── Checkout context ──────────────────────────────────────────────────────
+/** Checkout + orders API types — mirrors `/storefront/checkout` and `/storefront/orders`. */
+
+import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+import type { OrderLinePromotionSnapshot } from "@/features/orders/utils/historicalLineDiscount";
+
+// ─── Checkout session ────────────────────────────────────────────────────────
 
 export interface CheckoutContextSummary {
   zoneId: string | null;
@@ -10,8 +15,6 @@ export interface CheckoutContextSummary {
   currencyCode: string;
   languageCode: string | null;
 }
-
-// ─── Checkout items ─────────────────────────────────────────────────────────
 
 export interface CheckoutItemSummary {
   cartItemId: string | null;
@@ -42,8 +45,6 @@ export interface CheckoutInventorySnapshot {
   checkedAt: string | null;
 }
 
-// ─── Selected methods ────────────────────────────────────────────────────────
-
 export interface SelectedPaymentMethod {
   paymentMethodId: string | null;
   zonePaymentMethodId: string | null;
@@ -59,11 +60,10 @@ export interface SelectedDeliveryMethod {
   estimatedFee: string | null;
 }
 
-// ─── Validation ──────────────────────────────────────────────────────────────
-
 export interface CheckoutValidationIssue {
   id?: string;
   issueType: string;
+  /** "ERROR" | "WARNING" | "INFO" */
   severity: string | null;
   code: string | null;
   message: string;
@@ -71,18 +71,18 @@ export interface CheckoutValidationIssue {
   fieldPath: string | null;
 }
 
-// ─── Full session response ───────────────────────────────────────────────────
-
 export interface CheckoutTotalsEstimate {
   subtotal: string;
   discount: string;
   shipping: string;
   tax: string;
   total: string;
+  amountPayable?: string | null;
 }
 
 export interface CheckoutSessionResponse {
   checkoutSessionId: string;
+  /** Live sessions come back as `VALID`; `COMPLETED` / `CANCELLED` / `EXPIRED` are terminal. */
   status: string;
   context: CheckoutContextSummary;
   cartId: string;
@@ -100,6 +100,11 @@ export interface CheckoutSessionResponse {
     status: string;
   };
   metadata?: Record<string, unknown> | null;
+  /** Live checkout quote. The cart snapshot must not replace this after a requote. */
+  promotions?: PromotionSnapshotV1 | null;
+  /** Same v1 shape as cart `promotions` after snapshot rebuild. */
+  promotionSnapshot?: PromotionSnapshotV1 | null;
+  giftCards?: unknown;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────
@@ -109,9 +114,10 @@ export interface PaymentMethodOption {
   paymentMethodId: string;
   providerCode: string;
   methodCode: string;
+  methodType?: string;
   displayName: string;
   isDefault: boolean;
-  /** false for Stripe (inline), true for Paymob (redirect) */
+  /** `true` for Paymob (hosted page), `false` for Stripe (inline Elements). */
   requiresRedirect?: boolean;
   isEnabled?: boolean;
   isTestMode?: boolean | null;
@@ -125,8 +131,32 @@ export interface DeliveryMethodOption {
   methodCode: string;
   displayName: string;
   isDefault: boolean;
+  /** Decimal string; `null` means free / not yet priced. */
   estimatedFee: string | null;
-  metadata?: Record<string, unknown> | null;
+  metadata?: {
+    estimatedMinDays?: number | null;
+    estimatedMaxDays?: number | null;
+    [key: string]: unknown;
+  } | null;
+}
+
+/** Free-form JSON the address endpoint stores as-is. Shipping and billing share it. */
+export interface CheckoutAddressSnapshot {
+  fullName: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  province?: string;
+  postalCode?: string;
+  countryCode: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface GuestContact {
+  email?: string;
+  phone?: string;
+  fullName?: string;
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
@@ -143,23 +173,13 @@ export interface OrderLineSummary {
   unitPrice: string;
   lineTotal: string;
   currencyCode: string;
-  /** May be present if the backend includes product image in order line detail */
   imageUrl?: string | null;
-}
-
-/** Guest / new-address JSON for POST …/address. Shipping and billing share this shape. */
-export interface CheckoutAddressSnapshot {
-  fullName: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  province?: string;
-  postalCode?: string;
-  countryCode: string;
-  phone?: string;
+  /** Frozen at purchase. Null on orders placed before line snapshots. */
+  promotionSnapshot?: OrderLinePromotionSnapshot | null;
 }
 
 export interface OrderAddressSummary {
+  /** "SHIPPING" | "BILLING" */
   addressType: string;
   fullName: string | null;
   address1: string | null;
@@ -191,10 +211,17 @@ export interface OrderTimelineEvent {
 
 export interface GuestTrackingResponse {
   orderNumber: string | null;
+  /** One-time — only issued on first creation. */
   orderAccessToken: string | null;
   trackingToken: string | null;
   previouslyIssued: boolean;
   message: string;
+}
+
+export interface OrderMethodSummary {
+  providerCode?: string | null;
+  partnerCode?: string | null;
+  methodCode: string | null;
 }
 
 export interface OrderResponse {
@@ -213,6 +240,9 @@ export interface OrderResponse {
   selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
   selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
   timeline: OrderTimelineEvent[];
+  /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
+  promotionSnapshot?: OrderLinePromotionSnapshot | null;
+  /** `false` on an idempotent replay of an order that already existed. */
   created: boolean;
   createdAt: string;
   metadata?: Record<string, unknown> | null;
@@ -236,11 +266,11 @@ export interface PaymentInitiationResponse {
   providerCode: string;
   amount: string;
   currency: string;
-  paymentExecutionStatus: "SUCCESS" | "PENDING_PROVIDER_EXECUTION" | string;
-  /** REDIRECT = Paymob hosted page · INLINE_CARD = Stripe Elements */
-  paymentAction: "REDIRECT" | "INLINE_CARD" | string | null;
+  /** "SUCCESS" | "PENDING_PROVIDER_EXECUTION" */
+  paymentExecutionStatus: string;
+  /** "REDIRECT" = Paymob hosted page · "INLINE_CARD" = Stripe Elements · null = no gateway step */
+  paymentAction: string | null;
   redirectUrl: string | null;
-  /** Stripe PaymentIntent client secret — only present when paymentAction === "INLINE_CARD" */
   clientSecret: string | null;
   requiresProviderExecution: boolean;
   providerExecutionAvailable: boolean;
@@ -251,6 +281,7 @@ export interface PaymentInitiationResponse {
 
 export interface OrderPaymentStatusResponse {
   orderId: string;
+  /** PENDING | AUTHORIZED | PAID | FAILED | DECLINED | CANCELLED | REFUNDED */
   orderPaymentStatus: string;
   payments: Array<{
     paymentTransactionId: string;
@@ -265,12 +296,4 @@ export interface OrderPaymentStatusResponse {
     requiresProviderExecution: boolean;
     providerExecutionAvailable: boolean;
   }>;
-}
-
-// ─── Guest contact ───────────────────────────────────────────────────────────
-
-export interface GuestContact {
-  email?: string;
-  phone?: string;
-  fullName?: string;
 }

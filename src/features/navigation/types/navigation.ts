@@ -1,5 +1,3 @@
-/** API types for the navigation module — mirrors /storefront/navigation response. */
-
 export type NavItemType =
   | "COLLECTION"
   | "CATEGORY"
@@ -12,7 +10,6 @@ export type NavItem = {
   label: string;
   slug: string | null;
   type: NavItemType;
-  /** null for GROUP_HEADER items */
   href: string | null;
   children?: NavItem[];
 };

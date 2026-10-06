@@ -7,18 +7,18 @@ type AccountDashboardHeroProps = {
   firstName: string;
 };
 
-/** Figma · acct-hero (1110:9319) — greeting | image | subscription panel */
+/** Greeting | image | subscription panel */
 export function AccountDashboardHero({
   firstName,
 }: AccountDashboardHeroProps) {
   return (
     <section className="border-y border-sa-border">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col lg:flex-row lg:px-[120px]">
-        <div className="flex flex-1 flex-col justify-center gap-4 bg-page px-6 py-10 sm:px-[52px] lg:border-r lg:border-sa-border lg:py-14">
-          <h1 className="text-[32px] font-bold leading-tight text-sa-primary lg:text-[40px]">
+      <div className="mx-auto flex w-full max-w-[var(--chrome-content-max)] flex-col px-[var(--chrome-edge)] lg:flex-row [@media(min-width:1200px)]:px-0">
+        <div className="flex flex-1 flex-col justify-center gap-4 bg-page py-10 pr-6 sm:pr-10 lg:border-r lg:border-sa-border lg:py-14">
+          <h1 className="text-[28px] font-bold leading-tight text-sa-primary lg:text-[34px]">
             Hi {firstName}!
           </h1>
-          <p className="max-w-[360px] text-[14px] leading-relaxed text-sa-secondary">
+          <p className="max-w-[360px] text-[13px] leading-relaxed text-sa-secondary">
             Today is a great day to discover a new scent.
           </p>
         </div>
@@ -34,7 +34,7 @@ export function AccountDashboardHero({
           />
         </div>
 
-        <div className="flex flex-1 flex-col justify-center gap-4 border-t border-sa-border bg-page px-6 py-10 sm:px-[52px] lg:border-l lg:border-t-0 lg:py-12">
+        <div className="flex flex-1 flex-col justify-center gap-4 border-t border-sa-border bg-page py-10 pl-0 pr-6 sm:pr-10 lg:border-l lg:border-t-0 lg:py-12 lg:pl-10 lg:pr-0">
           <div className="flex items-center gap-2.5">
             <Image
               src={accountAssets.icons.subscription}
@@ -43,17 +43,17 @@ export function AccountDashboardHero({
               height={32}
               className="h-8 w-8"
             />
-            <p className="text-[17px] font-semibold text-sa-primary">
+            <p className="text-[15px] font-semibold text-sa-primary">
               Subscription
             </p>
           </div>
-          <p className="max-w-[308px] text-[15px] leading-relaxed text-sa-secondary">
+          <p className="max-w-[308px] text-[13.5px] leading-relaxed text-sa-secondary">
             Check your level, explore your benefits, and get the most out of
             your subscription.
           </p>
           <Link
             href="/account/subscription"
-            className="text-[14px] font-medium text-sa-primary hover:text-terra"
+            className="text-[13px] font-medium text-sa-primary hover:text-terra"
           >
             View Subscription &nbsp;→
           </Link>

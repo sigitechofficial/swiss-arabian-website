@@ -1,7 +1,17 @@
-import { PaymentCancelView } from "@/features/checkout/components/PaymentCancelView";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { PageLoading } from "@/components/ui";
+import { PaymentCancelView } from "@/features/checkout";
 
-export const metadata = { title: "Payment Cancelled — Swiss Arabian" };
+export const metadata: Metadata = {
+  title: "Complete your payment",
+  robots: { index: false, follow: false },
+};
 
 export default function PaymentCancelPage() {
-  return <PaymentCancelView />;
+  return (
+    <Suspense fallback={<PageLoading label="Loading…" fill />}>
+      <PaymentCancelView />
+    </Suspense>
+  );
 }

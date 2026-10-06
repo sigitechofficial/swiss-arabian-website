@@ -2,150 +2,115 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/Toaster";
-import {
-  DEFAULT_ZONE_CODE,
-  toAuthSalesChannelCode,
-  toAuthZoneCode,
-} from "@/lib/storefront/context";
-import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import { useMarket } from "@/providers/MarketProvider";
-import {
-  registerCustomer,
-  splitFullName,
-  toE164Phone,
-} from "../api/auth.service";
+import { toastApiError } from "@/lib/api/toastApiError";
+import { env } from "@/lib/config/env";
+import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
+import { useUiStore } from "@/stores/useUiStore";
+import { registerCustomer, splitFullName } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
-import {
-  registerSchema,
-  type RegisterFormValues,
-} from "../schemas/registerSchema";
-import { AuthCard } from "./AuthCard";
-import { AuthCheckbox } from "./AuthCheckbox";
-import { AuthField } from "./AuthField";
-import { AuthPasswordField } from "./AuthPasswordField";
-import { AuthOrDivider, AuthSocialButtons } from "./AuthSocialButtons";
-import { AuthSubmitButton } from "./AuthSubmitButton";
+import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
+import { AuthShell } from "./AuthShell";
+import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
+import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
 
-/** Phase 1B — register is non-blocking (tokens immediately, no mandatory OTP). */
 export function RegisterPageView() {
   const router = useRouter();
-  const { marketId } = useMarket();
-  const zoneCode = toAuthZoneCode(marketId || DEFAULT_ZONE_CODE);
-  const salesChannelCode = toAuthSalesChannelCode(zoneCode);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({
+  const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      marketingConsent: false,
-      smsConsent: false,
-    },
+    defaultValues: { fullName: "", email: "", phone: "", password: "" },
   });
 
-  return (
-    <AuthCard
-      title="Create an account"
-      subtitle="Join Swiss Arabian to check out faster and save your favourites."
-    >
-      <form
-        className="flex w-full flex-col"
-        onSubmit={handleSubmit(async (values) => {
-          try {
-            const { firstName, lastName } = splitFullName(values.fullName);
-            const phone = toE164Phone(values.mobile);
-            const result = await registerCustomer({
-              zoneCode,
-              email: values.email.trim(),
-              phone,
-              password: values.password,
-              firstName,
-              lastName,
-              salesChannelCode,
-              marketingConsent: values.marketingConsent,
-              smsConsent: values.smsConsent,
-            });
-            applyAuthResult(result);
-            toast("Account created", "success");
-            router.push("/account");
-          } catch (error) {
-            toast(getUserFacingErrorMessage(error), "error");
-          }
-        })}
-      >
-        <AuthSocialButtons />
-        <AuthOrDivider />
+  async function onSubmit(values: RegisterFormValues) {
+    try {
+      const { firstName, lastName } = splitFullName(values.fullName);
+      const marketId = useUiStore.getState().selectedMarketId;
+      const context = resolveStorefrontContext({
+        zoneCode: toAuthZoneCode(marketId),
+      });
+      const result = await registerCustomer({
+        zoneCode: context.zoneCode || toAuthZoneCode(marketId),
+        salesChannelCode: context.salesChannelCode || undefined,
+        email: values.email,
+        // Already E.164 from the phone field.
+        phone: values.phone,
+        password: values.password,
+        firstName,
+        lastName,
+      });
+      applyAuthResult(result);
+      router.push("/account");
+    } catch (error) {
+      toastApiError(error);
+    }
+  }
 
+  return (
+    <AuthShell heading="Create an account" subtitle="Join Swiss Arabian to check out faster and save your favourites.">
+      <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
+        {env.flags.oauth ? (
+          <>
+            <AuthSocialButtons />
+            <AuthDivider />
+          </>
+        ) : null}
         <div className="flex w-full flex-col gap-4">
           <AuthField
+            id="fullName"
             label="Full name"
             placeholder="Aisha Al Nuaimi"
             autoComplete="name"
-            {...register("fullName")}
-            error={errors.fullName?.message}
+            {...form.register("fullName")}
+            error={form.formState.errors.fullName?.message}
           />
           <AuthField
+            id="email"
             label="Email address"
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
-            {...register("email")}
-            error={errors.email?.message}
+            {...form.register("email")}
+            error={form.formState.errors.email?.message}
           />
-          <AuthField
-            label="Mobile number"
-            type="tel"
-            placeholder="+971 50 123 4567"
-            autoComplete="tel"
-            hint="Include country code (e.g. +971)."
-            {...register("mobile")}
-            error={errors.mobile?.message}
+          <Controller
+            name="phone"
+            control={form.control}
+            render={({ field }) => (
+              <PhoneNumberField
+                id="mobile"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                hint="Choose your country, then enter the number without the code."
+                error={form.formState.errors.phone?.message}
+              />
+            )}
           />
           <AuthPasswordField
-            placeholder="Your password"
+            id="password"
+            label="Password"
             autoComplete="new-password"
-            {...register("password")}
-            error={errors.password?.message}
+            placeholder="Your password"
+            {...form.register("password")}
+            error={form.formState.errors.password?.message}
           />
         </div>
-
-        <div className="flex flex-col gap-3 pt-4">
-          <AuthCheckbox
-            label="Email me with news and offers"
-            {...register("marketingConsent")}
-          />
-          <AuthCheckbox
-            label="Text me with news and offers"
-            {...register("smsConsent")}
-          />
-        </div>
-
         <div className="pt-5">
-          <AuthSubmitButton disabled={isSubmitting}>
-            Create account
+          <AuthSubmitButton disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? "Creating…" : "Create account"}
           </AuthSubmitButton>
         </div>
-
-        <p className="mt-6 text-center text-[15px] text-sa-secondary">
+        <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
           Already registered?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]"
-          >
+          <Link className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/login">
             Sign in
           </Link>
         </p>
-
-        <p className="mt-4 text-center text-[12px] leading-relaxed text-sa-muted">
-          By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions
-          and Privacy Policy.
+        <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
+          By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.
         </p>
       </form>
-    </AuthCard>
+    </AuthShell>
   );
 }

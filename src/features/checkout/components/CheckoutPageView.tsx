@@ -1,894 +1,448 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { formatMoney } from "@/features/home/data/homeContent";
-import { toast } from "@/components/ui/Toaster";
-import { useCartStore } from "@/stores/useCartStore";
-import { UAE_EMIRATES, CHECKOUT_COUNTRIES } from "../data/checkoutContent";
-import { CheckoutShell } from "./CheckoutShell";
+import { useQuery } from "@tanstack/react-query";
+import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
+import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
+import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
+import { type CatalogProduct } from "@/features/catalog/constants/catalogProducts";
+import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
-  checkoutSchema,
-  type CheckoutFormValues,
-} from "../schemas/checkout.schema";
+  checkoutCrumbsList,
+  collectionHeadFlush,
+  collectionTitle,
+  crumbs,
+  doneTitle,
+  pageTitle,
+  stateEyebrow,
+  stateIntro,
+} from "@/styles/shopChrome";
+import { pageContainer } from "@/styles/siteChrome";
+import {
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutDone,
+  checkoutEmpty,
+  checkoutForm,
+  checkoutHead,
+  checkoutLayout,
+  checkoutStepCurrent,
+  checkoutSteps,
+  checkoutSummaryChevron,
+  checkoutSummaryToggle,
+  checkoutSummaryToggleTotal,
+} from "@/styles/checkoutChrome";
+import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
+import {
+  amountPayableFrom,
+  checkoutQuoteSnapshot,
+  shippingDiscountAmount,
+  visibleGiftCards,
+} from "@/features/promotions";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useCartStore } from "@/stores/useCartStore";
+import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/features/account/data/regionsByCountry";
+import { useMarket } from "@/providers/MarketProvider";
 import { useCheckout } from "../hooks/useCheckout";
-import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
+import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
+import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
+import type { AddressFields } from "../utils/addressSnapshot";
+import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
+import { checkoutWarningMessages } from "../utils/checkoutIssues";
+import { isStripePaymentMethod } from "../utils/methodLabels";
+import { CheckoutBilling } from "./checkout/CheckoutBilling";
+import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
+import { CheckoutPayment } from "./checkout/CheckoutPayment";
+import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
+import { CheckoutSummary } from "./checkout/CheckoutSummary";
 
-// ─── Shared primitives ────────────────────────────────────────────────────────
+const EMPTY_ADDRESS: AddressFields = {
+  fullName: "",
+  phone: "",
+  address1: "",
+  address2: "",
+  city: "",
+  emirate: "",
+  postalCode: "",
+};
 
-const inputClass =
-  "h-11 w-full rounded-md border border-sa-input bg-white px-3.5 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted focus:border-terra dark:bg-page dark:text-sa-primary";
-
-const selectClass = `${inputClass} appearance-none pr-9 cursor-pointer`;
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-      {children}
-    </label>
-  );
+function applyGooglePlace(
+  setter: (update: (prev: AddressFields) => AddressFields) => void,
+  parsed: ParsedStreetAddress,
+  countryCode: string,
+) {
+  const country = parsed.countryCode || countryCode;
+  setter((prev) => ({
+    ...prev,
+    address1: parsed.address1 || prev.address1,
+    address2: parsed.address2 || prev.address2,
+    city: parsed.city || prev.city,
+    emirate:
+      matchCountryRegion(country, parsed.province, parsed.city) ||
+      parsed.province ||
+      prev.emirate,
+    postalCode: parsed.postalCode || prev.postalCode,
+  }));
 }
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-1 text-[11px] text-red-600">{message}</p>;
-}
-
-function SelectChevron() {
-  return (
-    <svg
-      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sa-muted"
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-    >
-      <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Checkbox({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-sa-primary select-none">
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`flex size-[18px] shrink-0 items-center justify-center rounded border transition-colors ${
-          checked ? "border-terra bg-terra" : "border-sa-input bg-white dark:bg-page"
-        }`}
-      >
-        {checked ? (
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : null}
-      </button>
-      {label}
-    </label>
-  );
-}
-
-function RadioOption({
-  selected,
-  onSelect,
-  label,
-  sublabel,
-  trailing,
-  icon,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  label: string;
-  sublabel?: string;
-  trailing?: React.ReactNode;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex w-full items-center gap-3 rounded-md border p-4 text-left transition-colors ${
-        selected
-          ? "border-terra bg-white dark:bg-page"
-          : "border-sa-input bg-white hover:border-sa-muted dark:bg-page"
-      }`}
-    >
-      <span
-        className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          selected ? "border-terra" : "border-sa-input"
-        }`}
-      >
-        {selected ? <span className="size-2 rounded-full bg-terra" /> : null}
-      </span>
-      {icon ? <span className="text-sa-muted">{icon}</span> : null}
-      <span className="flex-1 min-w-0">
-        <span className="block text-[14px] font-medium text-sa-primary">{label}</span>
-        {sublabel ? (
-          <span className="block text-[12px] text-sa-muted">{sublabel}</span>
-        ) : null}
-      </span>
-      {trailing}
-    </button>
-  );
-}
-
-function DeliveryRow({
-  method,
-  selected,
-  onSelect,
-}: {
-  method: DeliveryMethodOption;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const feeDisplay =
-    !method.estimatedFee || method.estimatedFee === "0.00"
-      ? "Free"
-      : `AED ${Number(method.estimatedFee).toFixed(2)}`;
-
-  return (
-    <RadioOption
-      selected={selected}
-      onSelect={onSelect}
-      label={method.displayName}
-      sublabel="3–5 business days"
-      trailing={
-        <span className={`shrink-0 text-[14px] font-semibold ${feeDisplay === "Free" ? "text-terra" : "text-sa-primary"}`}>
-          {feeDisplay}
-        </span>
-      }
-      icon={
-        <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-          <rect x="1" y="4" width="13" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-          <path d="M14 7h4l3 4v3h-7V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-          <circle cx="5" cy="14" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-          <circle cx="17" cy="14" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-        </svg>
-      }
-    />
-  );
-}
-
-function PaymentRow({
-  method,
-  selected,
-  onSelect,
-}: {
-  method: PaymentMethodOption;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <RadioOption
-      selected={selected}
-      onSelect={onSelect}
-      label={method.displayName}
-      trailing={
-        method.methodCode === "COD" ? (
-          <span className="rounded border border-sa-border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sa-muted">
-            COD
-          </span>
-        ) : (
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-sa-muted">
-            <path d="M8 1L2 4v4c0 3.31 2.56 6.41 6 7.16C14.44 14.41 14 11.31 14 8V4L8 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-          </svg>
-        )
-      }
-    />
-  );
-}
-
-function SkeletonBlock({ className }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded-md bg-sa-border ${className ?? "h-11 w-full"}`} />
-  );
-}
-
-// ─── Step indicator ───────────────────────────────────────────────────────────
-
-// ─── Trust badges ─────────────────────────────────────────────────────────────
-
-function TrustBadge({
-  icon,
-  title,
-  sub,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-md border border-sa-border bg-white px-4 py-3 dark:bg-page">
-      <span className="shrink-0 text-terra">{icon}</span>
-      <div>
-        <p className="text-[13px] font-semibold text-sa-primary">{title}</p>
-        <p className="text-[11px] text-sa-muted">{sub}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export function CheckoutPageView() {
+  const hydrated = useHydrated();
   const lines = useCartStore((s) => s.lines);
-  const cartTotals = useCartStore((s) => s.totals);
-  const itemCount = useCartStore((s) => s.lines.reduce((sum, l) => sum + l.quantity, 0));
-  const currency = lines[0]?.currency ?? cartTotals?.currency ?? "AED";
+  const cartSubtotal = useCartStore((s) => s.subtotal());
+  const cartCurrency = useCartStore((s) => s.totals?.currency);
+  const cartPromotions = useCartStore((s) => s.promotions);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const checkout = useCheckout();
+  const dontMissRail = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss);
+  const { catalogContext } = useMarket();
+  const countryCode =
+    normalizeCountryCode(catalogContext?.countryCode) ||
+    normalizeCountryCode(checkout.session?.context?.countryCode) ||
+    "AE";
+  const regionSet = regionsForCountry(countryCode);
+  const countryKeyRef = useRef(countryCode);
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [email, setEmail] = useState("");
+  const [shipping, setShipping] = useState<AddressFields>(EMPTY_ADDRESS);
+  const [billing, setBilling] = useState<AddressFields>(EMPTY_ADDRESS);
+  const [billingSame, setBillingSame] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
-  const displayLines = mounted ? lines : [];
-  const displayCount = mounted ? itemCount : 0;
+  // Header/market country changed — drop the previous country's city/region
+  // so the emirate dropdown never keeps e.g. Doha on UAE.
+  useEffect(() => {
+    if (countryKeyRef.current === countryCode) return;
+    countryKeyRef.current = countryCode;
+    const resetLocation = (prev: AddressFields): AddressFields => {
+      const emirate = matchCountryRegion(countryCode, prev.emirate);
+      if (emirate) return { ...prev, emirate };
+      return {
+        ...prev,
+        address1: "",
+        address2: "",
+        city: "",
+        emirate: "",
+        postalCode: "",
+      };
+    };
+    setShipping(resetLocation);
+    setBilling(resetLocation);
+  }, [countryCode]);
 
-  const {
-    session,
-    deliveryMethods,
-    paymentMethods,
-    selectedDeliveryId,
-    selectedPaymentId,
-    status,
-    errorMsg,
-    chooseDelivery,
-    choosePayment,
-    submitCheckout,
-  } = useCheckout();
-
-  const sessionTotals = session?.totalsEstimate;
-  const displaySubtotal = sessionTotals
-    ? Number(sessionTotals.subtotal)
-    : mounted
-      ? (cartTotals?.subtotal ?? lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0))
-      : 0;
-  const shippingFee = sessionTotals ? Number(sessionTotals.shipping) : 0;
-  const displayTotal = sessionTotals
-    ? Number(sessionTotals.total)
-    : displaySubtotal + shippingFee;
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    getValues,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<CheckoutFormValues>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      email: "",
-      emailOffers: true,
-      country: "United Arab Emirates",
-      firstName: "",
-      lastName: "",
-      address: "",
-      apartment: "",
-      city: "",
-      emirate: "",
-      phone: "",
-      saveInfo: false,
-      smsOffers: false,
-      discountCode: "",
-      billingSameAsShipping: true,
-      billingCountry: "United Arab Emirates",
-      billingFirstName: "",
-      billingLastName: "",
-      billingAddress: "",
-      billingApartment: "",
-      billingCity: "",
-      billingEmirate: "",
-      billingPhone: "",
-    },
+  const { data: savedAddresses } = useQuery({
+    queryKey: ["checkout", "saved-addresses", user?.id ?? "guest"],
+    queryFn: listCustomerAddresses,
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
+  const defaultAddress =
+    savedAddresses?.find((a) => a.isDefaultShipping) ?? savedAddresses?.[0];
 
-  const billingSameAsShipping = watch("billingSameAsShipping");
-
-  async function onSubmit(data: CheckoutFormValues) {
-    if (lines.length === 0) {
-      toast("Your cart is empty", "error");
-      return;
-    }
-    if (!session) {
-      toast("Checkout session not ready. Please wait.", "error");
-      return;
-    }
-    await submitCheckout(data);
-    if (errorMsg) toast(errorMsg, "error");
+  if (shipping.emirate && regionSet && !regionSet.regions.includes(shipping.emirate)) {
+    setShipping((prev) => ({
+      ...prev,
+      emirate: matchCountryRegion(countryCode, prev.emirate),
+    }));
+  }
+  if (billing.emirate && regionSet && !regionSet.regions.includes(billing.emirate)) {
+    setBilling((prev) => ({
+      ...prev,
+      emirate: matchCountryRegion(countryCode, prev.emirate),
+    }));
   }
 
-  const isLoading = status === "loading";
-  const isSubmittingCheckout = status === "submitting" || isSubmitting;
-  const submitDisabled = isLoading || isSubmittingCheckout || displayLines.length === 0;
+  // Prefill from the signed-in profile and default address, once per
+  // combination — during render rather than in an effect, and never over
+  // anything the shopper has already typed.
+  const prefillKey = user ? `${user.id}:${defaultAddress?.id ?? "none"}` : null;
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(null);
+  if (user && prefillKey && prefillKey !== prefilledFor) {
+    setPrefilledFor(prefillKey);
+    const profileEmail = user.email.includes("@") ? user.email : "";
+    const savedName =
+      defaultAddress?.fullName ||
+      [defaultAddress?.firstName, defaultAddress?.lastName].filter(Boolean).join(" ");
+    setEmail((prev) => prev || profileEmail);
+    setShipping((prev) => ({
+      fullName: prev.fullName || savedName || user.fullName || "",
+      phone: prev.phone || defaultAddress?.phoneE164 || user.phoneE164 || "",
+      address1: prev.address1 || defaultAddress?.address1 || "",
+      address2: prev.address2 || defaultAddress?.address2 || "",
+      city: prev.city || defaultAddress?.city || "",
+      emirate: prev.emirate || matchCountryRegion(countryCode, defaultAddress?.province),
+      postalCode: prev.postalCode || defaultAddress?.postalCode || "",
+    }));
+  }
+
+  const visibleLines = hydrated ? lines : [];
+  // Only API-backed lines are part of the checkout session. Local-only lines
+  // (static catalogue items with no SKU) would never reach the order.
+  const orderableLines = visibleLines.filter((line) => line.cartItemId);
+  const leftOutCount = visibleLines.length - orderableLines.length;
+
+  // Always show the "Don't miss this" and add-on picks. Only products with a
+  // live SKU or variant can join the checkout session, so the rest stay visible
+  // with a disabled add button — never added locally and silently left out.
+  const inCart = new Set(visibleLines.map((l) => l.slug).filter(Boolean));
+  const upsells = dontMissRail.filter((p) => !inCart.has(p.slug));
+  const canAddToOrder = (p: CatalogProduct) => Boolean(p.sku || p.variantId);
+  const addOns = upsells.slice(0, 3);
+  const missThis = upsells.slice(0, 4);
+
+  const session = checkout.session;
+  const checkoutTracked = useRef("");
+  useEffect(() => {
+    const id = session?.checkoutSessionId;
+    if (!id || checkoutTracked.current === id) return;
+    checkoutTracked.current = id;
+    trackPromotion("promotion_checkout_started", {
+      market: session?.context?.zoneCode ?? catalogContext?.zoneCode ?? null,
+      surface: "checkout",
+    });
+  }, [session?.checkoutSessionId, session?.context?.zoneCode, catalogContext?.zoneCode]);
+  const estimate = session?.totalsEstimate;
+  const currency = session?.currency ?? cartCurrency ?? "AED";
+  const subtotal = estimate ? Number(estimate.subtotal) : cartSubtotal;
+  const shippingFee = estimate ? Number(estimate.shipping) : 0;
+  const discount = estimate ? Number(estimate.discount) : 0;
+  const tax = estimate ? Number(estimate.tax) : 0;
+  const total = estimate ? Number(estimate.total) : cartSubtotal;
+  const promoSnapshot = checkoutQuoteSnapshot(session, cartPromotions);
+  const shipDiscount = shippingDiscountAmount(promoSnapshot);
+  const giftCards = visibleGiftCards(promoSnapshot, session?.giftCards);
+  const amountPayable = amountPayableFrom(
+    session ? checkoutQuoteSnapshot(session, null) : null,
+    [estimate?.amountPayable],
+  );
+  const warnings = checkoutWarningMessages(session?.validationIssues);
+  const earnPreview = useEarnPreview({
+    checkoutSessionId: session?.checkoutSessionId,
+  });
+
+  const selectedPayment = checkout.paymentMethods.find(
+    (m) => m.zonePaymentMethodId === checkout.selectedPaymentId,
+  );
+  const submitting = checkout.status === "submitting";
+  const canSubmit =
+    checkout.status === "ready" &&
+    Boolean(checkout.selectedDeliveryId && checkout.selectedPaymentId);
+  const ctaLabel = submitting
+    ? "Placing order…"
+    : selectedPayment && (selectedPayment.requiresRedirect || isStripePaymentMethod(selectedPayment))
+      ? "Continue to payment"
+      : "Place order";
+
+  // Once the order is placed the bag is consumed — keep the page on a
+  // "taking you to payment" state instead of flashing the empty bag.
+  const redirecting = submitting && orderableLines.length === 0;
+  const isEmpty = hydrated && visibleLines.length === 0 && !submitting;
+  const nothingOrderable = hydrated && visibleLines.length > 0 && orderableLines.length === 0;
+  const showLayout = hydrated && orderableLines.length > 0;
+
+  const bindShipping = (field: keyof AddressFields) => ({
+    value: shipping[field] ?? "",
+    onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setShipping((prev) => ({ ...prev, [field]: e.target.value })),
+  });
+  const bindBilling = (field: keyof AddressFields) => ({
+    value: billing[field] ?? "",
+    onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setBilling((prev) => ({ ...prev, [field]: e.target.value })),
+  });
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    // The form is `noValidate` for styling; still surface native field errors.
+    if (!event.currentTarget.reportValidity()) return;
+    void checkout.submitCheckout({
+      email,
+      shipping,
+      billingSameAsShipping: billingSame,
+      // Billing has no phone field of its own — reuse the delivery contact.
+      billing: billingSame ? undefined : { ...billing, phone: shipping.phone },
+    });
+  }
+
+  function addFromCheckout(product: CatalogProduct) {
+    if (!canAddToOrder(product)) return;
+    // Instant in the summary; the checkout session rebuilds itself once the
+    // bag changes and the background sync lands.
+    addItemOptimistic({
+      sku: product.sku,
+      variantId: product.variantId,
+      quantity: 1,
+      line: {
+        slug: product.slug,
+        title: product.title,
+        imageUrl: product.imageUrl ?? undefined,
+        unitPrice: product.price ?? 0,
+        currency: product.currency,
+      },
+    });
+  }
 
   return (
-    <CheckoutShell step={1}>
-      <div className="relative flex flex-1 flex-col">
-        {/* Cream bleed — extends from summary column to the right screen edge */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden bg-[#faf6f1] lg:block dark:bg-section-soft"
-          style={{ left: "min(55%, calc(50% + 4rem))" }}
-        />
+    <div>
+      <section className={collectionHeadFlush} aria-labelledby="checkout-heading">
+        <div className={pageContainer}>
+          <nav className={crumbs} aria-label="Breadcrumb">
+            <ol className={checkoutCrumbsList} role="list">
+              <li>
+                <Link href="/">Home</Link>
+              </li>
+              <li>
+                <Link href="/cart">Bag</Link>
+              </li>
+              <li aria-current="page">Checkout</li>
+            </ol>
+          </nav>
 
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col lg:flex-row">
+          <header className={checkoutHead}>
+            <h1 className={pageTitle} id="checkout-heading">
+              Checkout
+            </h1>
+            <ol className={checkoutSteps}>
+              <li>
+                <Link href="/cart">Bag</Link>
+              </li>
+              <li aria-hidden="true">·</li>
+              <li className={checkoutStepCurrent}>Details &amp; payment</li>
+            </ol>
+          </header>
 
-        {/* ── Left — form (starts under logo) ── */}
-        <div className="flex flex-1 px-5 py-8 sm:px-8 lg:py-10 lg:pr-10">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="w-full max-w-[500px]"
-            noValidate
-          >
-
-            {/* Error banner */}
-            {errorMsg ? (
-              <div className="mb-6 flex items-start gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-                <svg className="mt-0.5 shrink-0" width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.3" />
-                  <path d="M7.5 4.5v3.5M7.5 10.5h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <span>
-                  {errorMsg}
-                  {status === "error" ? (
-                    <Link href="/" className="ml-2 underline underline-offset-2">
-                      Return to shop
-                    </Link>
-                  ) : null}
-                </span>
-              </div>
-            ) : null}
-
-            {/* Validation warnings */}
-            {session?.validationIssues
-              ?.filter((i) => i.severity === "WARNING")
-              .map((issue) => (
-                <div
-                  key={issue.id ?? issue.code}
-                  className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                >
-                  {issue.message}
-                </div>
-              ))}
-
-            {/* ── Contact information ── */}
-            <section className="mb-8">
-              <div className="mb-4 flex items-baseline justify-between">
-                <h2 className="text-[18px] font-bold text-sa-primary">Contact information</h2>
-                <span className="text-[12px] text-sa-muted">
-                  Already have an account?{" "}
-                  <Link href="/login" className="font-medium text-terra hover:underline">
-                    Log in
-                  </Link>
-                </span>
-              </div>
-              <div>
-                <FieldLabel>Email address</FieldLabel>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  className={inputClass}
-                  {...register("email")}
-                />
-                <FieldError message={errors.email?.message} />
-              </div>
-              <Controller
-                name="emailOffers"
-                control={control}
-                render={({ field }) => (
-                  <div className="mt-3">
-                    <Checkbox
-                      checked={field.value}
-                      onChange={field.onChange}
-                      label="Email me with news and offers"
-                    />
-                  </div>
-                )}
-              />
-            </section>
-
-            {/* ── Delivery address ── */}
-            <section className="mb-8">
-              <h2 className="mb-4 text-[18px] font-bold text-sa-primary">Delivery address</h2>
-
-              <div className="mb-4">
-                <FieldLabel>Country / Region</FieldLabel>
-                <div className="relative">
-                  <select className={selectClass} {...register("country")}>
-                    {CHECKOUT_COUNTRIES.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                  <SelectChevron />
-                </div>
-              </div>
-
-              <div className="mb-4 grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>First name</FieldLabel>
-                  <input
-                    autoComplete="given-name"
-                    className={inputClass}
-                    {...register("firstName")}
-                  />
-                  <FieldError message={errors.firstName?.message} />
-                </div>
-                <div>
-                  <FieldLabel>Last name</FieldLabel>
-                  <input
-                    autoComplete="family-name"
-                    className={inputClass}
-                    {...register("lastName")}
-                  />
-                  <FieldError message={errors.lastName?.message} />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <FieldLabel>Address</FieldLabel>
-                <input
-                  autoComplete="street-address"
-                  className={inputClass}
-                  {...register("address")}
-                />
-                <FieldError message={errors.address?.message} />
-              </div>
-
-              <div className="mb-4">
-                <FieldLabel>Apartment, suite, etc. (optional)</FieldLabel>
-                <input className={inputClass} {...register("apartment")} />
-              </div>
-
-              <div className="mb-4 grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>City</FieldLabel>
-                  <input
-                    autoComplete="address-level2"
-                    className={inputClass}
-                    {...register("city")}
-                  />
-                  <FieldError message={errors.city?.message} />
-                </div>
-                <div>
-                  <FieldLabel>Emirate</FieldLabel>
-                  <div className="relative">
-                    <select className={selectClass} {...register("emirate")}>
-                      <option value="">Select emirate</option>
-                      {UAE_EMIRATES.map((e) => (
-                        <option key={e} value={e}>
-                          {e}
-                        </option>
-                      ))}
-                    </select>
-                    <SelectChevron />
-                  </div>
-                  <FieldError message={errors.emirate?.message} />
-                </div>
-              </div>
-
-              <div className="mb-5">
-                <FieldLabel>Phone number</FieldLabel>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    autoComplete="tel"
-                    className={`${inputClass} pr-10`}
-                    {...register("phone")}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="text-sa-muted">
-                      <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2" />
-                      <path d="M7.5 5.5v.5M7.5 7.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-                <FieldError message={errors.phone?.message} />
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Controller
-                  name="saveInfo"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      checked={field.value}
-                      onChange={field.onChange}
-                      label="Save this information for next time"
-                    />
-                  )}
-                />
-                <Controller
-                  name="smsOffers"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      checked={field.value}
-                      onChange={field.onChange}
-                      label="Text me with news and offers"
-                    />
-                  )}
-                />
-              </div>
-            </section>
-
-            {/* ── Billing address ── */}
-            <section className="mb-8">
-              <h2 className="mb-4 text-[18px] font-bold text-sa-primary">Billing address</h2>
-              <Controller
-                name="billingSameAsShipping"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onChange={(same) => {
-                      field.onChange(same);
-                      if (!same) {
-                        setValue("billingCountry", getValues("country"));
-                        setValue("billingFirstName", getValues("firstName"));
-                        setValue("billingLastName", getValues("lastName"));
-                        setValue("billingAddress", getValues("address"));
-                        setValue("billingApartment", getValues("apartment"));
-                        setValue("billingCity", getValues("city"));
-                        setValue("billingEmirate", getValues("emirate"));
-                        setValue("billingPhone", getValues("phone"));
-                      }
-                    }}
-                    label="Same as shipping address"
-                  />
-                )}
-              />
-
-              {!billingSameAsShipping ? (
-                <div className="mt-5">
-                  <div className="mb-4">
-                    <FieldLabel>Country / Region</FieldLabel>
-                    <div className="relative">
-                      <select className={selectClass} {...register("billingCountry")}>
-                        {CHECKOUT_COUNTRIES.map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                      <SelectChevron />
-                    </div>
-                    <FieldError message={errors.billingCountry?.message} />
-                  </div>
-
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel>First name</FieldLabel>
-                      <input
-                        autoComplete="billing given-name"
-                        className={inputClass}
-                        {...register("billingFirstName")}
-                      />
-                      <FieldError message={errors.billingFirstName?.message} />
-                    </div>
-                    <div>
-                      <FieldLabel>Last name</FieldLabel>
-                      <input
-                        autoComplete="billing family-name"
-                        className={inputClass}
-                        {...register("billingLastName")}
-                      />
-                      <FieldError message={errors.billingLastName?.message} />
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <FieldLabel>Address</FieldLabel>
-                    <input
-                      autoComplete="billing street-address"
-                      className={inputClass}
-                      {...register("billingAddress")}
-                    />
-                    <FieldError message={errors.billingAddress?.message} />
-                  </div>
-
-                  <div className="mb-4">
-                    <FieldLabel>Apartment, suite, etc. (optional)</FieldLabel>
-                    <input className={inputClass} {...register("billingApartment")} />
-                  </div>
-
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel>City</FieldLabel>
-                      <input
-                        autoComplete="billing address-level2"
-                        className={inputClass}
-                        {...register("billingCity")}
-                      />
-                      <FieldError message={errors.billingCity?.message} />
-                    </div>
-                    <div>
-                      <FieldLabel>Emirate</FieldLabel>
-                      <div className="relative">
-                        <select className={selectClass} {...register("billingEmirate")}>
-                          <option value="">Select emirate</option>
-                          {UAE_EMIRATES.map((e) => (
-                            <option key={e} value={e}>
-                              {e}
-                            </option>
-                          ))}
-                        </select>
-                        <SelectChevron />
-                      </div>
-                      <FieldError message={errors.billingEmirate?.message} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <FieldLabel>Phone number</FieldLabel>
-                    <input
-                      type="tel"
-                      autoComplete="billing tel"
-                      className={inputClass}
-                      {...register("billingPhone")}
-                    />
-                    <FieldError message={errors.billingPhone?.message} />
-                  </div>
-                </div>
-              ) : null}
-            </section>
-
-            {/* ── Shipping method ── */}
-            <section className="mb-8">
-              <h2 className="mb-4 text-[18px] font-bold text-sa-primary">Shipping method</h2>
-              {isLoading ? (
-                <SkeletonBlock className="h-[70px] w-full rounded-md" />
-              ) : deliveryMethods.length === 0 ? (
-                <div className="rounded-md border border-sa-border bg-section-soft px-4 py-4 text-[13px] text-sa-muted">
-                  Add your address to see available shipping options.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {deliveryMethods.map((m) => (
-                    <DeliveryRow
-                      key={m.zoneDeliveryMethodId}
-                      method={m}
-                      selected={selectedDeliveryId === m.zoneDeliveryMethodId}
-                      onSelect={() => chooseDelivery(m.zoneDeliveryMethodId)}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* ── Payment ── */}
-            <section className="mb-8">
-              <div className="mb-1 flex items-baseline justify-between">
-                <h2 className="text-[18px] font-bold text-sa-primary">Payment</h2>
-              </div>
-              <p className="mb-4 text-[12px] text-sa-muted">
-                All transactions are secure and encrypted.
-              </p>
-              {isLoading ? (
-                <div className="flex flex-col gap-3">
-                  <SkeletonBlock className="h-[70px] w-full rounded-md" />
-                  <SkeletonBlock className="h-[70px] w-full rounded-md" />
-                </div>
-              ) : paymentMethods.length === 0 ? (
-                <div className="rounded-md border border-sa-border bg-section-soft px-4 py-4 text-[13px] text-sa-muted">
-                  Payment options will appear after your session loads.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {paymentMethods.map((m) => (
-                    <PaymentRow
-                      key={m.zonePaymentMethodId}
-                      method={m}
-                      selected={selectedPaymentId === m.zonePaymentMethodId}
-                      onSelect={() => choosePayment(m.zonePaymentMethodId)}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* ── Submit ── */}
-            <button
-              type="submit"
-              disabled={submitDisabled}
-              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-md bg-terra text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#a25e48] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmittingCheckout ? (
-                <>
-                  <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Processing…
-                </>
-              ) : (
-                <>
-                  Continue to payment
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* ── Right — order summary (sticky) ── */}
-        <aside className="w-full border-t border-sa-border bg-[#faf6f1] lg:sticky lg:top-0 lg:h-screen lg:w-[45%] lg:overflow-y-auto lg:border-l lg:border-t-0 lg:bg-transparent dark:bg-section-soft lg:dark:bg-transparent">
-          <div className="w-full px-5 py-8 sm:px-8 lg:py-10">
-
-            {/* Heading */}
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[16px] font-bold text-sa-primary">
-                Order summary{" "}
-                <span className="font-normal text-sa-muted">({displayCount})</span>
-              </h2>
-              <Link
-                href="/cart"
-                className="text-[12px] font-medium text-terra hover:underline underline-offset-2"
-              >
-                Edit cart
-              </Link>
-            </div>
-
-            {/* Line items */}
-            {displayLines.length === 0 ? (
-              <div className="mb-6 rounded-md border border-sa-border bg-white px-4 py-5 text-center dark:bg-page">
-                <p className="text-[14px] font-medium text-sa-primary">Your cart is empty</p>
-                <Link href="/products" className="mt-2 inline-block text-[13px] text-terra hover:underline">
-                  Continue shopping
-                </Link>
-              </div>
-            ) : (
-              <ul className="mb-5 flex flex-col gap-4">
-                {displayLines.map((line) => (
-                  <li key={line.variantId} className="flex items-start gap-4">
-                    <div className="relative shrink-0 rounded-md border border-sa-border bg-white p-1.5">
-                      {line.imageUrl ? (
-                        <Image
-                          src={line.imageUrl}
-                          alt=""
-                          width={60}
-                          height={60}
-                          className="size-[60px] object-contain"
-                        />
-                      ) : (
-                        <div className="flex size-[60px] items-center justify-center text-[10px] uppercase text-sa-muted">
-                          SA
-                        </div>
-                      )}
-                      <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-terra text-[10px] font-bold text-white">
-                        {line.quantity}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="truncate text-[13px] font-semibold uppercase leading-snug text-sa-primary">
-                        {line.title}
-                      </p>
-                      <p className="mt-0.5 truncate text-[12px] text-sa-muted">
-                        {[line.sizeLabel, ...(line.notes ?? []).slice(0, 2)]
-                          .filter(Boolean)
-                          .join(" · ") || "Default Title"}
-                      </p>
-                    </div>
-                    <p className="shrink-0 pt-0.5 text-[14px] font-semibold text-sa-primary">
-                      {formatMoney(line.unitPrice * line.quantity, currency)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* Divider */}
-            <div className="mb-5 h-px w-full bg-sa-border" />
-
-            {/* Discount code */}
-            <div className="mb-5 flex gap-2">
-              <input
-                placeholder="Discount code"
-                className="h-11 flex-1 rounded-md border border-sa-input bg-white px-3.5 text-[13px] text-sa-primary outline-none placeholder:text-sa-muted focus:border-terra dark:bg-page"
-                {...register("discountCode")}
-              />
+          {showLayout ? (
+            <div className={checkoutLayout}>
               <button
                 type="button"
-                onClick={() => toast("Discount codes are applied automatically at checkout", "info")}
-                className="h-11 shrink-0 rounded-md bg-terra px-5 text-[13px] font-semibold text-white hover:bg-[#a25e48] transition-colors"
+                className={checkoutSummaryToggle}
+                aria-expanded={summaryOpen}
+                aria-controls="checkout-summary"
+                onClick={() => setSummaryOpen((v) => !v)}
               >
-                Apply
+                <span>Order summary</span>
+                <span className={checkoutSummaryToggleTotal} dir="ltr">
+                  {formatMoney(amountPayable ?? total, currency)}
+                  <i className={checkoutSummaryChevron} aria-hidden="true" />
+                </span>
               </button>
-            </div>
 
-            {/* Divider */}
-            <div className="mb-5 h-px w-full bg-sa-border" />
+              <GooglePlacesProvider>
+              <form className={checkoutForm} noValidate onSubmit={handleSubmit}>
+                {missThis.length ? (
+                  <MissThisSwiper
+                    products={missThis}
+                    addingSlug={null}
+                    onAdd={(p) => void addFromCheckout(p)}
+                    canAdd={canAddToOrder}
+                  />
+                ) : null}
 
-            {/* Totals */}
-            <div className="flex flex-col gap-3 text-[14px]">
-              <div className="flex justify-between">
-                <span className="text-sa-muted">
-                  Subtotal ({displayCount} {displayCount === 1 ? "item" : "items"})
-                </span>
-                <span className="font-semibold text-sa-primary">
-                  {formatMoney(displaySubtotal, currency)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sa-muted">Shipping</span>
-                {shippingFee > 0 ? (
-                  <span className="font-semibold text-sa-primary">
-                    {formatMoney(shippingFee, currency)}
-                  </span>
-                ) : (
-                  <span className="font-semibold text-terra">
-                    {isLoading ? "Calculating…" : "Free"}
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {/* Divider */}
-            <div className="my-4 h-px w-full bg-sa-border" />
+                <CheckoutDelivery
+                  email={email}
+                  onEmail={setEmail}
+                  shipping={shipping}
+                  bind={bindShipping}
+                  onPhone={(phone) => setShipping((prev) => ({ ...prev, phone }))}
+                  onAddress1={(value) => setShipping((prev) => ({ ...prev, address1: value }))}
+                  onPlace={(parsed) => applyGooglePlace(setShipping, parsed, countryCode)}
+                  countryCode={countryCode}
+                  regionSet={regionSet}
+                />
+                <CheckoutShippingMethod
+                  methods={checkout.deliveryMethods}
+                  selectedId={checkout.selectedDeliveryId}
+                  status={checkout.status}
+                  submitting={submitting}
+                  currency={currency}
+                  onSelect={(id) => void checkout.chooseDelivery(id)}
+                />
+                <CheckoutBilling
+                  billingSame={billingSame}
+                  onBillingSame={setBillingSame}
+                  billing={billing}
+                  bind={bindBilling}
+                  onAddress1={(value) => setBilling((prev) => ({ ...prev, address1: value }))}
+                  onPlace={(parsed) => applyGooglePlace(setBilling, parsed, countryCode)}
+                  countryCode={countryCode}
+                  regionSet={regionSet}
+                />
+                <CheckoutPayment
+                  methods={checkout.paymentMethods}
+                  selectedId={checkout.selectedPaymentId}
+                  status={checkout.status}
+                  submitting={submitting}
+                  errorMsg={checkout.errorMsg}
+                  onRetry={checkout.retry}
+                  onSelect={(id) => void checkout.choosePayment(id)}
+                  canSubmit={canSubmit}
+                  ctaLabel={ctaLabel}
+                />
+              </form>
+              </GooglePlacesProvider>
 
-            {/* Total */}
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-[20px] font-bold text-sa-primary">Total</span>
-                <p className="text-[11px] text-sa-muted">Including VAT</p>
-              </div>
-              <p className="flex items-baseline gap-1.5">
-                <span className="text-[13px] font-medium text-sa-muted">{currency}</span>
-                <span className="text-[28px] font-bold leading-none text-terra">
-                  {displayTotal.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </p>
-            </div>
-
-            {/* Trust badges */}
-            <div className="mt-6 flex flex-col gap-2.5">
-              <TrustBadge
-                icon={
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <rect x="1" y="6" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-                    <path d="M13 9h4l3 4v4H13V9z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                    <circle cx="5" cy="17" r="2" stroke="currentColor" strokeWidth="1.3" />
-                    <circle cx="16" cy="17" r="2" stroke="currentColor" strokeWidth="1.3" />
-                  </svg>
-                }
-                title="Free delivery"
-                sub="On all orders over AED 200"
-              />
-              <TrustBadge
-                icon={
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 2L3 5v5c0 4.42 3.04 8.56 7 9.55C13.96 18.56 17 14.42 17 10V5L10 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                    <path d="M7 10l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                }
-                title="Secure payments"
-                sub="100% secure checkout"
-              />
-              <TrustBadge
-                icon={
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 2L3 5v5c0 4.42 3.04 8.56 7 9.55C13.96 18.56 17 14.42 17 10V5L10 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                    <path d="M7.5 10.5l2 2 3.5-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                }
-                title="Authentic products"
-                sub="100% original fragrances"
+              <CheckoutSummary
+                open={summaryOpen}
+                orderableLines={orderableLines}
+                leftOutCount={leftOutCount}
+                subtotal={subtotal}
+                promoSnapshot={promoSnapshot}
+                currency={currency}
+                addOns={addOns}
+                onAdd={(product) => void addFromCheckout(product)}
+                canAdd={canAddToOrder}
+                session={session}
+                onCheckoutSession={checkout.adoptSession}
+                discount={discount}
+                shippingFee={shippingFee}
+                shipDiscount={shipDiscount}
+                tax={tax}
+                total={total}
+                amountPayable={amountPayable}
+                giftCards={giftCards}
+                warnings={warnings}
+                earnPreview={earnPreview.preview}
               />
             </div>
-          </div>
-        </aside>
+          ) : null}
+
+          {redirecting ? (
+            <section className={checkoutDone} aria-live="polite">
+              <span className="mb-4 size-8 animate-spin rounded-full border-2 border-[var(--copper,#8c4435)]/25 border-t-[var(--copper,#8c4435)]" aria-hidden="true" />
+              <p className={stateEyebrow}>Order placed</p>
+              <h2 className={collectionTitle}>Taking you to payment…</h2>
+              <p className={stateIntro}>Please don’t close or refresh this page.</p>
+            </section>
+          ) : null}
+
+          {nothingOrderable ? (
+            <section className={checkoutEmpty}>
+              <p className={stateEyebrow}>Can’t check out yet</p>
+              <h2 className={doneTitle}>These items can’t be ordered online.</h2>
+              <p>Please return to your bag and add them again from the collection.</p>
+              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+                <span>Back to bag</span>
+                <b aria-hidden="true">↗</b>
+              </Link>
+            </section>
+          ) : null}
+
+          {isEmpty ? (
+            <section className={checkoutEmpty} id="checkout-empty">
+              <p className={stateEyebrow}>Empty bag</p>
+              <h2 className={doneTitle}>Nothing to check out yet.</h2>
+              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
+                <span>Explore the collection</span>
+                <b aria-hidden="true">↗</b>
+              </Link>
+            </section>
+          ) : null}
         </div>
-      </div>
-    </CheckoutShell>
+      </section>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 export const accountInputClass =
-  "h-11 w-full rounded-md border border-sa-input bg-white px-3.5 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted focus:border-terra dark:bg-page dark:text-sa-primary";
+  "h-11 w-full rounded-md border border-sa-input bg-white px-3.5 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted focus:outline-none focus-visible:outline-none dark:bg-page dark:text-sa-primary";
 
 export const accountSelectClass = `${accountInputClass} appearance-none pr-9 cursor-pointer`;
 

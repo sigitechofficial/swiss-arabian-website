@@ -7,7 +7,6 @@ import { accountTabNav } from "@/lib/navigation/storeNavigation";
 
 import { accountContainer } from "../constants/accountLayout";
 
-/** Figma · Tab Nav / Account 1196:8809 */
 export function AccountTabNav() {
   const pathname = usePathname();
 
@@ -27,7 +26,7 @@ export function AccountTabNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`relative shrink-0 py-[18px] text-[14px] whitespace-nowrap transition-colors ${
+              className={`relative shrink-0 py-[15px] text-[12.5px] whitespace-nowrap transition-colors ${
                 active
                   ? "font-semibold text-sa-primary"
                   : "font-normal text-sa-secondary hover:text-sa-primary"

@@ -61,11 +61,11 @@ const API_BASE_BY_ENV: Record<AppEnv, string> = {
 const RETURN_URL_BY_ENV: Record<AppEnv, string> = {
   local: readPublic(
     process.env.NEXT_PUBLIC_LOCAL_RETURN_URL,
-    "http://localhost:3000",
+    "http://localhost:3004",
   ),
   dev: readPublic(
     process.env.NEXT_PUBLIC_DEV_RETURN_URL,
-    "http://localhost:3000",
+    "http://localhost:3004",
   ),
   staging: readPublic(process.env.NEXT_PUBLIC_STAGING_RETURN_URL),
   production: readPublic(process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL),
@@ -81,7 +81,6 @@ export const env = {
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",
   flags: {
-    /** Toggle LAN backend vs Azure Dev via NEXT_PUBLIC_USE_LOCAL_API */
     useLocalApi: USE_LOCAL_API,
     mfa: readPublic(process.env.NEXT_PUBLIC_ENABLE_MFA) === "true",
     passwordReset:
@@ -90,35 +89,26 @@ export const env = {
     verification:
       readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
-    /**
-     * Prefer Paymob (redirect) at checkout when the zone lists it.
-     * Off only when NEXT_PUBLIC_ENABLE_PAYMOB=false.
-     */
-    paymob:
-      readPublic(process.env.NEXT_PUBLIC_ENABLE_PAYMOB, "true") !== "false",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
   },
-  /**
-   * Local QA only — mirrors backend CUSTOMER_MASTER_OTP when enabled.
-   * Never set against production API builds.
-   */
   masterOtp:
     process.env.NODE_ENV === "development"
       ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
       : "",
-  /** Google Maps JavaScript API — enables multi-marker store locator. */
   googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
-  /** Optional Map ID for Advanced Markers (Cloud console). */
   googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
-  /**
-   * Optional absolute base for relative catalog image paths (`/catalog/media/...`).
-   * Defaults to `apiBaseUrl` when unset.
-   */
   catalogMediaBaseUrl: readPublic(
     process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
   ),
+  /**
+   * Shop hostname for `X-Storefront-Host` (no scheme/port).
+   * Required on localhost to act as Sapil (`sapil-website.vercel.app`).
+   */
+  storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
+  /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
+  storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
   /**
    * Insider Web SDK. Script loads only when enabled AND accountId is set.
    * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
@@ -126,10 +116,13 @@ export const env = {
   insider: {
     enabled:
       readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",
-    accountId: readPublic(process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID),
+    accountId: readPublic(
+      process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
+      "10015366",
+    ),
     scriptHost: readPublic(
       process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
-      "swissarabian.api.useinsider.com",
+      "swissarabianuatnew.api.useinsider.com",
     ),
   },
 } as const;

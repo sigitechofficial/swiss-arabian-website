@@ -12,15 +12,21 @@ export function cartLineToInsiderItem(
 ): InsiderCartItemPayload {
   return {
     id: line.variantId,
-    sku: line.sku || line.variantId,
+    sku: line.variantId,
     name: line.title,
     price: line.unitPrice,
     currency: line.currency,
     quantity,
     imageUrl: line.imageUrl ?? null,
     productUrl: productPageUrl(line.slug),
-    category: line.category ?? null,
-    brand: line.brand ?? null,
+    category: null,
+    brand: null,
+    ...(line.sizeLabel ? { size: line.sizeLabel } : {}),
+    ...(line.productId || line.variantId
+      ? { groupcode: line.productId || line.variantId }
+      : {}),
+    stock: line.isSellable === false ? 0 : 1,
+    color: "",
   };
 }
 

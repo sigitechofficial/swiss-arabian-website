@@ -1,60 +1,29 @@
-import { Reveal } from "@/components/motion";
-import { BestSellersSection } from "./BestSellersSection";
-import { CollectionsSection } from "./CollectionsSection";
-import { HeroSection } from "./HeroSection";
-import { HouseBandSection } from "./HouseBandSection";
-import { NewsletterSection } from "./NewsletterSection";
-import { NewLaunchesSection } from "./NewLaunchesSection";
-import { OurStorySection } from "./OurStorySection";
-import { ReviewsSection } from "./ReviewsSection";
-import { ShaghafSection } from "./ShaghafSection";
-import { ShopByGenderSection } from "./ShopByGenderSection";
-import { TrendingSection } from "./TrendingSection";
-import { WhySwissArabianSection } from "./WhySwissArabianSection";
+import { LandingBundles } from "./landing/LandingBundles";
+import { LandingCollections } from "./landing/LandingCollections";
+import { LandingFeatureCards } from "./landing/LandingFeatureCards";
+import { LandingHero } from "./landing/LandingHero";
+import { LandingNotes } from "./landing/LandingNotes";
+import { LandingPlans } from "./landing/LandingPlans";
+import { LandingProductsBand } from "./landing/LandingProductsBand";
+import { LandingReel } from "./landing/LandingReel";
+import { LandingReviews } from "./landing/LandingReviews";
+import { LandingStory } from "./landing/LandingStory";
+import { LandingTrending } from "./landing/LandingTrending";
 
-/** Home landing — Figma Landing Page 001 / prototype index.html */
 export function HomePageView() {
   return (
-    <div className="bg-page">
-      <h1 className="sr-only">Swiss Arabian — Luxury Oriental Perfumes</h1>
-      <Reveal fade>
-        <HeroSection />
-      </Reveal>
-      <Reveal>
-        <WhySwissArabianSection />
-      </Reveal>
-      <Reveal>
-        <ShopByGenderSection />
-      </Reveal>
-      <Reveal>
-        <NewLaunchesSection />
-      </Reveal>
-      <Reveal>
-        <BestSellersSection />
-      </Reveal>
-      <Reveal>
-        <CollectionsSection />
-      </Reveal>
-      <Reveal>
-        <HouseBandSection />
-      </Reveal>
-      <Reveal>
-        <TrendingSection />
-      </Reveal>
-      <Reveal>
-        <ShaghafSection />
-      </Reveal>
-      <Reveal>
-        <ReviewsSection />
-      </Reveal>
-      <Reveal>
-        <div id="our-story">
-          <OurStorySection />
-        </div>
-      </Reveal>
-      <Reveal>
-        <NewsletterSection />
-      </Reveal>
+    <div>
+      <LandingHero />
+      <LandingFeatureCards />
+      <LandingProductsBand />
+      <LandingCollections />
+      <LandingNotes />
+      <LandingTrending />
+      <LandingBundles />
+      <LandingReel />
+      <LandingReviews />
+      <LandingStory />
+      <LandingPlans />
     </div>
   );
 }

@@ -1,28 +1,16 @@
 import { getAccessToken } from "@/lib/auth/token";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api/apiClient";
-import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ApiCart } from "../types/cart";
 import { getOrCreateGuestToken, getStoredCartId } from "../utils/guestToken";
 
-// ─── Context params ────────────────────────────────────────────────────────
-
 type CartParamOpts = {
-  /** If true, skip guestToken even for unauthenticated requests (e.g. after login). */
   skipGuestToken?: boolean;
   cartId?: string | null;
 };
 
-/**
- * Build URLSearchParams for every cart API call.
- * - Always includes zoneCode + salesChannelCode.
- * - Appends guestToken for unauthenticated requests.
- * - Appends cartId when provided.
- */
 function buildCartParams(opts: CartParamOpts = {}): URLSearchParams {
-  const params = new URLSearchParams({
-    zoneCode: DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(),
-  });
+  const params = new URLSearchParams(storefrontContextQuery());
 
   if (opts.cartId) {
     params.set("cartId", opts.cartId);
@@ -37,13 +25,11 @@ function buildCartParams(opts: CartParamOpts = {}): URLSearchParams {
   return params;
 }
 
-// ─── Service functions ─────────────────────────────────────────────────────
+/** Same zone + guest query as other cart routes. */
+export function storefrontCartQuery(opts: CartParamOpts = {}): URLSearchParams {
+  return buildCartParams(opts);
+}
 
-/**
- * POST /storefront/cart
- * Create a new cart or return the existing active cart for this identity.
- * When called with a Bearer token, the backend auto-merges any guest cart.
- */
 export async function createOrResolveCart(
   opts: { cartId?: string | null } = {},
 ): Promise<ApiCart> {
@@ -51,13 +37,7 @@ export async function createOrResolveCart(
   return apiPost<ApiCart>(`/storefront/cart?${params.toString()}`, {});
 }
 
-/**
- * GET /storefront/cart
- * Fetch the active cart. Returns 404 (throws) if no cart exists yet.
- */
-export async function getActiveCart(
-  cartId?: string | null,
-): Promise<ApiCart> {
+export async function getActiveCart(cartId?: string | null): Promise<ApiCart> {
   const params = buildCartParams({ cartId: cartId ?? getStoredCartId() });
   return apiGet<ApiCart>(`/storefront/cart?${params.toString()}`);
 }
@@ -69,11 +49,14 @@ type AddItemOpts = {
   cartId?: string | null;
 };
 
-/**
- * POST /storefront/cart/items
- * Add a product variant to the cart. Creates a cart automatically if cartId is absent.
- * At least one of sku or variantId is required (sku preferred).
- */
+export async function addCartItems(
+  items: Array<{ sku: string; quantity: number }>,
+  cartId?: string | null,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId: cartId ?? getStoredCartId() });
+  return apiPost<ApiCart>(`/storefront/cart/items/batch?${params.toString()}`, { items });
+}
+
 export async function addCartItem(opts: AddItemOpts): Promise<ApiCart> {
   const params = buildCartParams({ cartId: opts.cartId ?? getStoredCartId() });
   const body: Record<string, unknown> = { quantity: opts.quantity };
@@ -91,10 +74,6 @@ type UpdateItemOpts = {
   cartId: string;
 };
 
-/**
- * PATCH /storefront/cart/items/:cartItemId
- * Update the quantity of a specific cart item. quantity must be >= 1.
- */
 export async function updateCartItem(opts: UpdateItemOpts): Promise<ApiCart> {
   const params = buildCartParams({ cartId: opts.cartId });
   return apiPatch<ApiCart>(
@@ -108,10 +87,6 @@ type RemoveItemOpts = {
   cartId: string;
 };
 
-/**
- * DELETE /storefront/cart/items/:cartItemId
- * Remove a specific item from the cart.
- */
 export async function removeCartItem(opts: RemoveItemOpts): Promise<ApiCart> {
   const params = buildCartParams({ cartId: opts.cartId });
   return apiDelete<ApiCart>(
@@ -119,23 +94,65 @@ export async function removeCartItem(opts: RemoveItemOpts): Promise<ApiCart> {
   );
 }
 
-/**
- * DELETE /storefront/cart/items
- * Remove all items from the cart (keeps the cart record).
- */
 export async function clearCartItems(cartId: string): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiDelete<ApiCart>(`/storefront/cart/items?${params.toString()}`);
 }
 
-/**
- * POST /storefront/cart/validate
- * Re-validate all items against live pricing and inventory.
- * Always call before proceeding to checkout.
- */
 export async function validateCart(cartId: string): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiPost<ApiCart>(`/storefront/cart/validate?${params.toString()}`, {
     cartId,
   });
+}
+
+export async function applyCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/coupons?${params.toString()}`,
+    { code: code.trim() },
+  );
+}
+
+export async function removeCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiDelete<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/coupons/${encodeURIComponent(code.trim())}?${params.toString()}`,
+  );
+}
+
+/** Sends the customer's free-gift choice. The cart quote that comes back is authoritative. */
+export async function selectCartGift(
+  cartId: string,
+  sku: string,
+  promotionCode?: string | null,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  const body: { sku: string; promotionCode?: string } = { sku: sku.trim() };
+  if (promotionCode?.trim()) body.promotionCode = promotionCode.trim();
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gifts?${params.toString()}`,
+    body,
+  );
+}
+
+export async function applyCartGiftCard(
+  cartId: string,
+  code: string,
+  amount?: string,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  const body: Record<string, string> = { code: code.trim() };
+  if (amount?.trim()) body.amount = amount.trim();
+  return apiPost<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gift-cards?${params.toString()}`,
+    body,
+  );
+}
+
+export async function removeCartGiftCards(cartId: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiDelete<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/gift-cards?${params.toString()}`,
+  );
 }

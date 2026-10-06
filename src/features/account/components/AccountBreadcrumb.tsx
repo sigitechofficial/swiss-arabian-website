@@ -6,11 +6,11 @@ type AccountBreadcrumbProps = {
   label: string;
 };
 
-/** Figma · breadcrumb (1098:9665) — Home / <page> */
+/** Home / <page> */
 export function AccountBreadcrumb({ label }: AccountBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className={`${accountContainer} py-[14px]`}>
-      <p className="text-[13px] text-sa-secondary">
+      <p className="text-[12px] text-sa-secondary">
         <Link href="/" className="hover:text-sa-primary">
           Home
         </Link>

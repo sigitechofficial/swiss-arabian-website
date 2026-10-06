@@ -415,13 +415,19 @@ function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
     subtotal: total,
     shipping_cost: 0,
     quantity,
-    items: cart.items.map((item) => productQueueValue(item, item.quantity)),
+    items: cart.items.map((item) => {
+      const value = productQueueValue(item, item.quantity);
+      if (typeof value.stock !== "number") value.stock = 0;
+      if (typeof value.color !== "string") value.color = "";
+      value.shipping_cost = 0;
+      return value;
+    }),
   };
 }
 
 /**
  * User + currency + basket. Must land in InsiderQueue *before* page type + init.
- * Language is a default *user* attribute (`en_US`), not a separate queue type.
+ * Language is both a user attribute and a `type: "language"` row (`en_US`).
  */
 export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
@@ -442,6 +448,12 @@ export function pushInsiderUserContext(input?: {
     if (input?.user) persistInsiderUserValue(userValue);
     queue().push({ type: "user", value: userValue });
     queue().push({ type: "currency", value: currency });
+    queue().push({
+      type: "language",
+      value:
+        (typeof userValue.language === "string" && userValue.language) ||
+        INSIDER_LANGUAGE,
+    });
     if (input?.skipCart !== true) {
       queue().push({
         type: "cart",
@@ -529,11 +541,45 @@ export function insiderLogout(): void {
  * SOW event #2 — product detail page viewed (`product_detail_page_view`).
  * Fire when a PDP mounts and product data is available.
  */
+/**
+ * Product page for the InOne tester: one `product` row, then exactly one `init`.
+ * Writes straight to `InsiderQueue` so a refresh test can see `init` immediately.
+ * If the head script already pushed `init`, the product is inserted before it.
+ */
+/** Page views that already closed with their own init. Basket `cart` is context, not a page. */
+const CLOSED_PAGE_TYPES = new Set([
+  "home",
+  "category",
+  "product",
+  "other",
+  "purchase",
+]);
+
+export function ensureInsiderProductPage(product: InsiderProductPayload): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  const rows = queue();
+  if (rows.some((row) => row.type === "product")) {
+    if (!rows.some((row) => row.type === "init")) rows.push({ type: "init" });
+    return;
+  }
+  const entry = { type: "product" as const, value: productQueueValue(product) };
+  let lastInit = -1;
+  for (let index = 0; index < rows.length; index += 1) {
+    if (rows[index]?.type === "init") lastInit = index;
+  }
+  const before = lastInit > 0 ? rows[lastInit - 1] : undefined;
+  const closedPage =
+    lastInit >= 0 && CLOSED_PAGE_TYPES.has(String(before?.type ?? ""));
+  if (lastInit >= 0 && !closedPage) {
+    rows.splice(lastInit, 0, entry);
+    return;
+  }
+  rows.push(entry);
+  rows.push({ type: "init" });
+}
+
 export function insiderProductViewed(product: InsiderProductPayload): void {
-  runWhenReady(() => {
-    queue().push({ type: "product", value: productQueueValue(product) });
-    queue().push({ type: "init" });
-  });
+  ensureInsiderProductPage(product);
 }
 
 /**

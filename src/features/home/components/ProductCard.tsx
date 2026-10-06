@@ -3,10 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { notesFromFamily } from "@/features/cart/data/cartContent";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
-import { formatMoney } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/features/home/utils/formatMoney";
 import { isProductUuid } from "@/features/wishlist/utils/productId";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import type { HomeProductBadge } from "@/features/home/types/home";
@@ -42,7 +41,7 @@ export function ProductCard({
   addDisabled = false,
   density = "default",
 }: ProductCardProps) {
-  const addToCart = useAddToCart();
+  const { addToCart } = useAddToCart();
   const addCatalogProduct = useAddCatalogProduct();
   const [failed, setFailed] = useState<Record<number, boolean>>({});
   const [active, setActive] = useState(0);
@@ -93,13 +92,21 @@ export function ProductCard({
     setActive(0);
   }
 
-  // Reset gallery state when the product changes.
-  useEffect(() => {
-    clearTimers();
+  // Reset gallery state when the product changes. Done during render (React's
+  // "adjust state when a prop changes" pattern) rather than in an effect, which
+  // would cascade an extra render pass for every card in the grid.
+  const galleryKey = `${product.id}|${product.image ?? ""}|${product.images?.join("|") ?? ""}`;
+  const [seenKey, setSeenKey] = useState(galleryKey);
+  if (seenKey !== galleryKey) {
+    setSeenKey(galleryKey);
     setFailed({});
     setActive(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id, product.image, product.images?.join("|")]);
+  }
+
+  // Stop any in-flight hover cycle when the product swaps out.
+  useEffect(() => {
+    clearTimers();
+  }, [galleryKey]);
 
   // Cleanup on unmount.
   useEffect(() => () => clearTimers(), []);
@@ -227,17 +234,15 @@ export function ProductCard({
             if (!canAdd || product.price == null || adding) return;
             const imageUrl = gallery[safeIndex] ?? product.image ?? undefined;
             if (product.variantId || product.sku) {
-              addToCart({
-                productId: product.id,
+              void addToCart({
+                sku: product.sku,
                 variantId: product.variantId ?? product.id,
                 slug: product.slug,
                 title: product.name,
                 imageUrl,
-                unitPrice: product.price,
+                price: product.price,
                 currency,
-                notes: notesFromFamily(product.family),
-                sku: product.sku,
-                category: product.family || null,
+                quantity: 1,
               });
               return;
             }

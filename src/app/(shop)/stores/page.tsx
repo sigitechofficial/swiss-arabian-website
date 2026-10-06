@@ -1,5 +1,10 @@
-import { StoresPageView } from "@/features/stores";
+import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 
 export default function StoresPage() {
-  return <StoresPageView />;
+  return (
+    <FeaturePlaceholder
+      title="Store locator"
+      description="Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable the map."
+    />
+  );
 }

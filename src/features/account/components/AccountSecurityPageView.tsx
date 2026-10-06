@@ -1,214 +1,169 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-import { useApiQuery } from "@/lib/api/queryHooks";
-import { PageLoading } from "@/components/ui";
 import { toast } from "@/components/ui/Toaster";
-import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { changeCustomerPassword } from "@/features/auth/api/auth.service";
 import { endSession } from "@/lib/auth/endSession";
-import {
-  authKeys,
-  changeCustomerPassword,
-  fetchCustomerSessions,
-  revokeCustomerSession,
-} from "@/features/auth/api/auth.service";
-import { performLogoutAll } from "@/features/auth/lib/performLogout";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+
+import { accountBtnPrimary, accountInputClass } from "../constants/accountForm";
+import { accountContainer } from "../constants/accountLayout";
+import { AccountPageShell } from "./AccountPageShell";
+import { AccountPageTitle } from "./AccountPageTitle";
 
 const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(8, "Enter your current password"),
+    currentPassword: z.string().min(1, "Enter your current password"),
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(8, "Confirm your password"),
+    confirmPassword: z.string().min(1, "Confirm your new password"),
   })
-  .refine((v) => v.newPassword === v.confirmPassword, {
+  .refine((values) => values.newPassword === values.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
+  })
+  .refine((values) => values.newPassword !== values.currentPassword, {
+    message: "Choose a password you haven’t used here before",
+    path: ["newPassword"],
   });
 
 type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 
+function PasswordField({
+  id,
+  label,
+  autoComplete,
+  error,
+  register,
+}: {
+  id: keyof ChangePasswordValues;
+  label: string;
+  autoComplete: string;
+  error?: string;
+  register: ReturnType<typeof useForm<ChangePasswordValues>>["register"];
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-sa-muted">
+        {label}
+      </span>
+      <span className="relative block">
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          className={`${accountInputClass} pr-11`}
+          {...register(id)}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center text-sa-muted hover:text-terra"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+            <circle cx="12" cy="12" r="3" />
+            {visible ? <path d="M4 20 20 4" /> : null}
+          </svg>
+        </button>
+      </span>
+      {error ? <span className="mt-1 block text-[11px] text-red-600">{error}</span> : null}
+    </label>
+  );
+}
+
+/**
+ * Security — change password. The backend revokes existing sessions on a
+ * password change, so the shopper is signed out here and sent to sign in again.
+ */
 export function AccountSecurityPageView() {
   const router = useRouter();
-  const [revokingId, setRevokingId] = useState<string | null>(null);
-
-  const {
-    data: sessions,
-    isLoading,
-    refetch,
-  } = useApiQuery(authKeys.sessions(), () => fetchCustomerSessions());
+  const [done, setDone] = useState(false);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
+    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
 
+  async function onSubmit(values: ChangePasswordValues) {
+    try {
+      await changeCustomerPassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      reset();
+      setDone(true);
+      toast("Password updated. Please sign in again.", "success");
+      endSession();
+      router.push("/login?returnTo=/account/profile");
+    } catch (error) {
+      toast(getUserFacingErrorMessage(error), "error");
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-[800px] px-4 py-10 sm:px-6">
-      <header className="mb-8 border-b border-sa-border pb-6">
-        <h1 className="font-sans text-[28px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[36px]">
-          Security
-        </h1>
-        <p className="mt-2 text-[14px] text-sa-muted">
-          Password and session management for your storefront account.
-        </p>
-      </header>
+    <AccountPageShell>
+      <AccountPageTitle
+        title="Security"
+        subtitle="Change the password you use to sign in."
+      />
 
-      <section className="mb-12">
-        <h2 className="text-[14px] font-semibold uppercase tracking-[0.1em] text-sa-muted">
-          Change password
-        </h2>
-        <form
-          className="mt-4 flex max-w-md flex-col gap-4"
-          onSubmit={handleSubmit(async (values) => {
-            try {
-              await changeCustomerPassword({
-                currentPassword: values.currentPassword,
-                newPassword: values.newPassword,
-              });
-              endSession();
-              toast("Password updated. Please sign in again.", "success");
-              router.push("/login");
-            } catch (error) {
-              toast(getUserFacingErrorMessage(error), "error");
-            }
-          })}
-        >
-          <label className="flex flex-col gap-1.5 text-[13px]">
-            <span className="font-semibold text-sa-primary">Current password</span>
-            <input
-              type="password"
+      <div className={`${accountContainer} pb-20`}>
+        <section className="max-w-[560px] rounded-lg border border-sa-border bg-surface p-5 sm:p-6">
+          <h2 className="text-[15px] font-semibold text-sa-primary">Change password</h2>
+          <p className="mt-1 text-[12.5px] text-sa-secondary">
+            Use at least 8 characters. You’ll be signed out on this and any other device.
+          </p>
+
+          <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <PasswordField
+              id="currentPassword"
+              label="Current password"
               autoComplete="current-password"
-              className="h-11 border border-sa-input bg-surface px-3 text-sa-primary outline-none focus:border-terra"
-              {...register("currentPassword")}
+              error={errors.currentPassword?.message}
+              register={register}
             />
-            {errors.currentPassword ? (
-              <span className="text-red-600">{errors.currentPassword.message}</span>
-            ) : null}
-          </label>
-          <label className="flex flex-col gap-1.5 text-[13px]">
-            <span className="font-semibold text-sa-primary">New password</span>
-            <input
-              type="password"
+            <PasswordField
+              id="newPassword"
+              label="New password"
               autoComplete="new-password"
-              className="h-11 border border-sa-input bg-surface px-3 text-sa-primary outline-none focus:border-terra"
-              {...register("newPassword")}
+              error={errors.newPassword?.message}
+              register={register}
             />
-            {errors.newPassword ? (
-              <span className="text-red-600">{errors.newPassword.message}</span>
-            ) : null}
-          </label>
-          <label className="flex flex-col gap-1.5 text-[13px]">
-            <span className="font-semibold text-sa-primary">Confirm password</span>
-            <input
-              type="password"
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm new password"
               autoComplete="new-password"
-              className="h-11 border border-sa-input bg-surface px-3 text-sa-primary outline-none focus:border-terra"
-              {...register("confirmPassword")}
+              error={errors.confirmPassword?.message}
+              register={register}
             />
-            {errors.confirmPassword ? (
-              <span className="text-red-600">{errors.confirmPassword.message}</span>
-            ) : null}
-          </label>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-2 h-[42px] cursor-pointer bg-terra px-6 text-[12px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#a25e48] disabled:opacity-50"
-          >
-            Update password
-          </button>
-        </form>
-      </section>
 
-      <section>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[14px] font-semibold uppercase tracking-[0.1em] text-sa-muted">
-            Active sessions
-          </h2>
-          <button
-            type="button"
-            className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.08em] text-terra hover:opacity-80"
-            onClick={async () => {
-              try {
-                await performLogoutAll();
-                toast("Signed out everywhere", "success");
-                router.push("/login");
-              } catch (error) {
-                toast(getUserFacingErrorMessage(error), "error");
-              }
-            }}
-          >
-            Sign out all devices
-          </button>
-        </div>
+            <div className="pt-1">
+              <button type="submit" className={accountBtnPrimary} disabled={isSubmitting || done}>
+                {isSubmitting ? "Updating…" : "Update password"}
+              </button>
+            </div>
+          </form>
+        </section>
 
-        {isLoading ? (
-          <PageLoading label="Loading sessions…" />
-        ) : (
-          <ul className="mt-4 divide-y divide-sa-border border border-sa-border">
-            {(sessions ?? []).map((session) => (
-              <li
-                key={session.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-4"
-              >
-                <div>
-                  <p className="text-[14px] font-medium text-sa-primary">
-                    {session.deviceName || session.browser || "Session"}
-                    {session.current ? (
-                      <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-gold">
-                        Current
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="mt-1 text-[12px] text-sa-muted">
-                    {[session.os, session.city, session.countryCode]
-                      .filter(Boolean)
-                      .join(" · ") || "Unknown device"}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-sa-muted">
-                    Last seen:{" "}
-                    {session.lastSeenAt
-                      ? new Date(session.lastSeenAt).toLocaleString()
-                      : "—"}
-                  </p>
-                </div>
-                {!session.current ? (
-                  <button
-                    type="button"
-                    disabled={revokingId === session.id}
-                    className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.08em] text-sa-muted hover:text-terra disabled:opacity-50"
-                    onClick={async () => {
-                      setRevokingId(session.id);
-                      try {
-                        await revokeCustomerSession(session.id);
-                        toast("Session revoked", "success");
-                        await refetch();
-                      } catch (error) {
-                        toast(getUserFacingErrorMessage(error), "error");
-                      } finally {
-                        setRevokingId(null);
-                      }
-                    }}
-                  >
-                    Revoke
-                  </button>
-                ) : null}
-              </li>
-            ))}
-            {(sessions ?? []).length === 0 ? (
-              <li className="px-4 py-6 text-[14px] text-sa-muted">
-                No sessions found.
-              </li>
-            ) : null}
-          </ul>
-        )}
-      </section>
-    </div>
+        <p className="mt-4 max-w-[560px] text-[12px] text-sa-secondary">
+          Forgotten your current password?{" "}
+          <a className="font-semibold text-terra hover:underline" href="/forgot-password">
+            Reset it by email
+          </a>
+          .
+        </p>
+      </div>
+    </AccountPageShell>
   );
 }

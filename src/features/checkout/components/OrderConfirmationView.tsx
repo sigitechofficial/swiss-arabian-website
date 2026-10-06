@@ -1,514 +1,537 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { formatMoney } from "@/features/home/data/homeContent";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { formatMoney } from "@/features/home/utils/formatMoney";
+import { OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
+import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
-  consumeHeadInsiderInit,
+  checkoutCta,
+  checkoutCtaGhost,
+  checkoutCtaInline,
+  checkoutEmpty,
+  checkoutLink,
+  checkoutNote,
+  checkoutTotals,
+  checkoutTotalsLine,
+  ocActions,
+  ocAddress,
+  ocAddressName,
+  ocAddressSame,
+  ocBadge,
+  ocBadgeFailed,
+  ocBadgeMark,
+  ocBadgePending,
+  ocBadgeRing,
+  ocBadgeSuccess,
+  ocBody,
+  ocCard,
+  ocCardCount,
+  ocCopy,
+  ocHero,
+  ocHeroIntro,
+  ocLine,
+  ocLineBody,
+  ocLineDiscount,
+  ocLineMedia,
+  ocLineName,
+  ocLinePrice,
+  ocLineSub,
+  ocLines,
+  ocMeta,
+  ocMetaNumber,
+  ocMethods,
+  ocStack,
+  ocStep,
+  ocStepDot,
+  ocStepHint,
+  ocStepLabel,
+  ocSteps,
+} from "@/styles/checkoutChrome";
+import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
+import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
+import {
+  ORDER_PROGRESS_STEPS,
+  formatOrderDate,
+  orderProgressStep,
+} from "@/features/orders/utils/orderStatus";
+import {
   insiderPurchasePage,
-  pushInsiderUserContext,
-  type InsiderPurchaseValue,
+  toInsiderPurchaseValueFromOrder,
 } from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
-import {
-  getStoredInsiderPurchasePayload,
-  persistInsiderPurchaseFromOrder,
-} from "../utils/checkoutSession";
-import { CheckoutStepBar } from "./CheckoutShell";
-import type { OrderAddressSummary, OrderResponse } from "../types/checkout";
-
-// ─── Status config ────────────────────────────────────────────────────────────
+import type { OrderAddressSummary } from "../types/checkout";
+import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
+import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
+import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 
 type PaymentState = "success" | "pending" | "failed";
 
-function getPaymentState(status: string): PaymentState {
-  if (["PAID", "AUTHORIZED"].includes(status)) return "success";
-  if (["FAILED", "DECLINED"].includes(status)) return "failed";
+function paymentState(status?: string | null): PaymentState {
+  const s = status?.toUpperCase() ?? "";
+  if (s === "PAID" || s === "AUTHORIZED") return "success";
+  if (s === "FAILED" || s === "DECLINED" || s === "CANCELLED") return "failed";
   return "pending";
 }
 
-const STATE_BADGE: Record<
-  PaymentState,
-  { bg: string; text: string; dot: string; label: string }
-> = {
-  success: {
-    bg: "bg-emerald-50 dark:bg-emerald-900/20",
-    text: "text-emerald-700 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-    label: "Confirmed",
-  },
-  pending: {
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    text: "text-amber-700 dark:text-amber-300",
-    dot: "bg-amber-500",
-    label: "Pending",
-  },
-  failed: {
-    bg: "bg-red-50 dark:bg-red-900/20",
-    text: "text-red-700 dark:text-red-400",
-    dot: "bg-red-500",
-    label: "Payment Failed",
-  },
+const STEP_HINTS: Record<(typeof ORDER_PROGRESS_STEPS)[number], string> = {
+  Placed: "We’ve received your order",
+  Confirmed: "Payment confirmed",
+  Preparing: "Packed with care",
+  Shipped: "Tracking sent by email",
+  Delivered: "Enjoy your fragrance",
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function countryName(code: string | null): string | null {
+  if (!code) return null;
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code;
+  } catch {
+    return code;
+  }
+}
 
-function StatusIcon({ state }: { state: PaymentState }) {
-  if (state === "success") {
-    return (
-      <div className="flex size-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-        <svg
-          className="size-10 text-emerald-600 dark:text-emerald-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.8}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-    );
-  }
-  if (state === "failed") {
-    return (
-      <div className="flex size-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-        <svg
-          className="size-10 text-red-600 dark:text-red-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.8}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </div>
-    );
-  }
+function sameAddress(a?: OrderAddressSummary, b?: OrderAddressSummary): boolean {
+  if (!a || !b) return false;
   return (
-    <div className="flex size-20 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-      <svg
-        className="size-10 text-amber-600 dark:text-amber-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.8}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    </div>
+    a.fullName === b.fullName &&
+    a.address1 === b.address1 &&
+    a.city === b.city &&
+    a.countryCode === b.countryCode
   );
 }
 
 function StatusBadge({ state }: { state: PaymentState }) {
-  const cfg = STATE_BADGE[state];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-wide ${cfg.bg} ${cfg.text}`}
+      className={`${ocBadge} ${state === "success" ? ocBadgeSuccess : state === "failed" ? ocBadgeFailed : ocBadgePending}`}
+      aria-hidden="true"
     >
-      <span className={`size-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+      <svg viewBox="0 0 52 52" fill="none">
+        <circle className={ocBadgeRing} cx="26" cy="26" r="24" />
+        {state === "success" ? (
+          <path className={ocBadgeMark} d="M15 27l7.5 7.5L37 19" />
+        ) : state === "failed" ? (
+          <path className={ocBadgeMark} d="M18 18l16 16M34 18L18 34" />
+        ) : (
+          <path className={ocBadgeMark} d="M26 14v12l8 5" />
+        )}
+      </svg>
     </span>
   );
 }
 
-function AddressCard({
-  title,
-  address,
-}: {
-  title: string;
-  address: OrderAddressSummary;
-}) {
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 1800);
+    return () => clearTimeout(id);
+  }, [copied]);
+
   return (
-    <div className="border border-sa-border px-5 py-4">
-      <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-        {title}
-      </h2>
-      <address className="space-y-0.5 not-italic text-[13px] leading-6 text-sa-primary">
-        {address.fullName ? (
-          <span className="block font-medium">{address.fullName}</span>
-        ) : null}
-        {address.address1 ? (
-          <span className="block text-sa-muted">{address.address1}</span>
-        ) : null}
-        {address.city ? (
-          <span className="block text-sa-muted">
-            {[address.city, address.countryCode].filter(Boolean).join(", ")}
-          </span>
-        ) : null}
+    <button
+      type="button"
+      className={ocCopy}
+      onClick={() => {
+        void navigator.clipboard?.writeText(value).then(() => setCopied(true));
+      }}
+      aria-label={copied ? "Order number copied" : "Copy order number"}
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+function AddressBlock({ title, address }: { title: string; address: OrderAddressSummary }) {
+  const cityLine = [address.city, countryName(address.countryCode)].filter(Boolean).join(", ");
+  return (
+    <div className={ocAddress}>
+      <h3>{title}</h3>
+      <address>
+        {address.fullName ? <span className={ocAddressName}>{address.fullName}</span> : null}
+        {address.address1 ? <span>{address.address1}</span> : null}
+        {cityLine ? <span>{cityLine}</span> : null}
       </address>
     </div>
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: React.ReactNode;
-  bold?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between py-2.5">
-      <span
-        className={
-          bold
-            ? "text-[15px] font-bold text-sa-primary"
-            : "text-[13px] text-sa-muted"
-        }
-      >
-        {label}
-      </span>
-      <span
-        className={
-          bold
-            ? "text-[18px] font-bold text-sa-primary"
-            : "text-[14px] font-medium text-sa-primary"
-        }
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-// ─── Main view ────────────────────────────────────────────────────────────────
-
 export function OrderConfirmationView({ orderId }: { orderId: string }) {
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const shouldVerify = searchParams.get("verify") === "1";
-  const purchaseQueued = useRef(false);
+  const verify = searchParams.get("verify") === "1";
 
-  const [order, setOrder] = useState<OrderResponse | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const orderQuery = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => getOrder(orderId),
+    retry: 1,
+  });
 
-  useEffect(() => {
-    if (purchaseQueued.current) return;
-    if (consumeHeadInsiderInit(pathname)) {
-      purchaseQueued.current = true;
-      return;
-    }
-    const stored = getStoredInsiderPurchasePayload();
-    if (
-      !stored ||
-      !Array.isArray(stored.items) ||
-      (stored.matchId !== orderId && stored.order_id !== orderId)
-    ) {
-      return;
-    }
-    const value: InsiderPurchaseValue = {
-      order_id: String(stored.order_id),
-      total: Number(stored.total) || 0,
-      quantity: Number(stored.quantity) || 0,
-      items: stored.items as Record<string, unknown>[],
-    };
-    if (typeof stored.shipping_cost === "number") {
-      value.shipping_cost = stored.shipping_cost;
-    }
-    pushInsiderUserContext();
-    insiderPurchasePage(value);
-    purchaseQueued.current = true;
-  }, [pathname, orderId]);
+  // Frozen order snapshot — never the last cart estimate.
+  const orderReward = useOrderReward(orderId);
 
-  useEffect(() => {
-    if (!order) return;
-    const value = persistInsiderPurchaseFromOrder(order);
-    if (purchaseQueued.current) return;
-    if (consumeHeadInsiderInit(pathname)) {
-      purchaseQueued.current = true;
-      return;
-    }
-    pushInsiderUserContext();
-    insiderPurchasePage(value);
-    purchaseQueued.current = true;
-  }, [order, pathname]);
+  const loadedOrder = orderQuery.data;
+  const method = loadedOrder?.selectedPaymentMethod;
+  // Cash on delivery has no gateway step to wait for.
+  const payOffline = /\bcod\b|cash/i.test(`${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`);
+
+  // Gateways (Paymob, Stripe 3DS) send the shopper here straight after paying —
+  // that proves nothing. While an online payment still reads pending, poll
+  // payment-status until the webhook settles it (or we time out).
+  const shouldPoll =
+    Boolean(loadedOrder) &&
+    !payOffline &&
+    (verify || paymentState(loadedOrder?.paymentStatus) === "pending");
+
+  const settle = useQuery({
+    queryKey: ["order-payment-settle", orderId],
+    queryFn: () => pollUntilPaymentSettles(orderId),
+    enabled: shouldPoll,
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+  });
+  const polling = shouldPoll && !settle.data && !settle.isError;
+  const purchaseSent = useRef(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        if (shouldVerify) {
-          const result = await pollUntilPaymentSettles(orderId);
-          setPaymentStatus(result.status);
-        }
-        const orderData = await getOrder(orderId);
-        setOrder(orderData);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not load order details.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [orderId, shouldVerify]);
+    const placed = orderQuery.data;
+    if (!placed || purchaseSent.current) return;
+    const method = placed.selectedPaymentMethod;
+    const offline = /\bcod\b|cash/i.test(
+      `${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`,
+    );
+    const raw = paymentState(settle.data?.status ?? placed.paymentStatus);
+    const paid = offline && raw === "pending" ? "success" : raw;
+    if (paid !== "success") return;
+    purchaseSent.current = true;
+    trackPromotion("promotion_order_completed", { surface: "order" });
+    insiderPurchasePage(
+      toInsiderPurchaseValueFromOrder({
+        orderId: placed.orderId,
+        orderNumber: placed.orderNumber,
+        totals: placed.totals,
+        lines: placed.lines,
+      }),
+    );
+  }, [orderQuery.data, settle.data?.status]);
 
-  // ── Loading ──
-  if (loading) {
+  if (orderQuery.isPending || polling) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-sa-border border-t-terra" />
-          <p className="text-[14px] text-sa-muted">
-            {shouldVerify ? "Verifying payment…" : "Loading order…"}
-          </p>
-        </div>
-      </div>
+      <CheckoutStateShell current="Order confirmation">
+        <CheckoutSpinnerState
+          eyebrow={polling ? "Payment" : undefined}
+          title={polling ? "Confirming your payment…" : "Loading your order…"}
+          body={
+            polling ? "This usually takes a few seconds. Please don’t close or refresh this page." : undefined
+          }
+        />
+      </CheckoutStateShell>
     );
   }
 
-  // ── Error ──
-  if (error || !order) {
+  const order = orderQuery.data;
+  if (orderQuery.isError || !order) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <p className="text-[15px] text-sa-primary">{error ?? "Order not found."}</p>
-        <Link href="/" className="text-[13px] text-terra underline">
-          Return to home
-        </Link>
-      </div>
+      <CheckoutStateShell current="Order confirmation">
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Order</p>
+          <h1 className={collectionTitle}>We couldn’t load this order.</h1>
+          <p>It may belong to another session. Your confirmation email has the details.</p>
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
+            <span>Return home</span>
+            <b aria-hidden="true">↗</b>
+          </Link>
+        </section>
+      </CheckoutStateShell>
     );
   }
 
+  const rawState = paymentState(settle.data?.status ?? order.paymentStatus);
+  // A cash-on-delivery order is confirmed on placement; payment comes later.
+  const state: PaymentState = payOffline && rawState === "pending" ? "success" : rawState;
+  const currency = order.currency;
   const shippingAddress = order.addresses?.find((a) => a.addressType === "SHIPPING");
   const billingAddress = order.addresses?.find((a) => a.addressType === "BILLING");
-  const effectiveStatus = paymentStatus ?? order.paymentStatus;
-  const state = getPaymentState(effectiveStatus);
-  const currency = order.currency;
-  const isGuest = order.customer?.isGuest;
+  const firstName = (order.customer?.fullName ?? shippingAddress?.fullName ?? "")
+    .trim()
+    .split(/\s+/)[0];
+  const email = order.customer?.email;
+  const isGuest = Boolean(order.customer?.isGuest);
+  const retryHref = `/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`;
+  const trackHref = order.orderNumber
+    ? isGuest
+      ? `/track/${encodeURIComponent(order.orderNumber)}`
+      : `/account/orders/${encodeURIComponent(order.orderId)}#tracking`
+    : null;
+  const totals = order.totals;
+  const shippingTotal = Number(totals.shipping);
+  const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+
+  // A just-paid order can still read PAYMENT_PENDING for a moment — never show it behind "Confirmed".
+  const rawStep = orderProgressStep(order.status);
+  const currentStep = state === "success" ? Math.max(rawStep, 1) : rawStep;
+  const showProgress = state !== "failed" && currentStep >= 0;
 
   return (
-    <section className="bg-page py-14">
-      {/* Checkout progress — step 3 Done */}
-      <div className="mb-8 border-b border-sa-border">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <CheckoutStepBar step={3} />
-        </div>
-      </div>
-      <div className="mx-auto w-full max-w-170 px-4">
-
-        {/* ── Hero status block ── */}
-        <div className="mb-12 flex flex-col items-center gap-4 text-center">
-          <StatusIcon state={state} />
-
-          <div className="space-y-1">
-            <h1 className="text-[30px] font-bold tracking-tight text-sa-primary">
-              {state === "success"
-                ? "Thank you for your order!"
-                : state === "failed"
-                  ? "Payment Unsuccessful"
-                  : "Order Received"}
-            </h1>
-            <p className="text-[15px] text-sa-muted">
-              {state === "success"
-                ? "We've received your order and will start processing it shortly."
-                : state === "failed"
-                  ? "Your payment could not be processed. Please try again."
-                  : "We've received your order and are awaiting payment confirmation."}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <StatusBadge state={state} />
-            {order.orderNumber ? (
-              <span className="rounded border border-sa-border bg-cream px-3 py-1 font-mono text-[12px] font-semibold text-sa-primary dark:bg-[#1e1812]">
-                {order.orderNumber}
-              </span>
-            ) : null}
-          </div>
-
-          {/* Guest: track via public token URL · Logged-in: account order detail */}
-          {isGuest && order.orderNumber ? (
-            <div className="mt-1 flex w-full max-w-105 flex-col gap-3 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-left dark:border-amber-700 dark:bg-amber-900/20">
-              <p className="text-[12px] text-amber-800 dark:text-amber-300">
-                <strong className="font-semibold">Save your order number</strong>
-                <span className="mx-1 font-mono font-bold">{order.orderNumber}</span>
-                — you&apos;ll need it to track your order.
-              </p>
-              <Link
-                href={`/track/${order.orderNumber}`}
-                className="flex h-10 w-full items-center justify-center rounded bg-terra text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
-              >
-                Track Order
-              </Link>
-            </div>
-          ) : state === "success" ? (
-            <Link
-              href={`/account/orders/${orderId}`}
-              className="mt-1 flex h-10 items-center justify-center rounded bg-terra px-6 text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
-            >
-              Track Order
-            </Link>
-          ) : null}
-
-          {/* Failed CTA */}
+    <CheckoutStateShell current="Order confirmation">
+      <section className={ocHero} aria-labelledby="order-heading">
+        <StatusBadge state={state} />
+        <p className={ocEyebrow}>
+          {state === "success" ? "Order confirmed" : state === "failed" ? "Payment unsuccessful" : "Payment processing"}
+        </p>
+        <h1 className={ocTitle} id="order-heading">
           {state === "failed" ? (
-            <Link
-              href="/checkout"
-              className="mt-1 flex h-10 items-center justify-center rounded bg-terra px-6 text-[13px] font-semibold uppercase tracking-wide text-white hover:bg-[#a25e48]"
-            >
-              Try Again
-            </Link>
+            <>
+              Your payment <em className={ocEm}>didn’t go through</em>.
+            </>
+          ) : firstName ? (
+            <>
+              Thank you, <em className={ocEm}>{firstName}</em>.
+            </>
+          ) : (
+            <>
+              Thank you for <em className={ocEm}>your order</em>.
+            </>
+          )}
+        </h1>
+        <p className={ocHeroIntro}>
+          {state === "success" ? (
+            <>
+              We’ll start preparing your order shortly.
+              {email ? (
+                <>
+                  {" "}
+                  A confirmation is on its way to <strong>{email}</strong>.
+                </>
+              ) : (
+                " A confirmation is on its way to your inbox."
+              )}
+            </>
+          ) : state === "failed" ? (
+            "Your order is saved, but the payment wasn’t completed. You can try again below."
+          ) : (
+            "Your payment is still processing — check again shortly. We’ll email you as soon as it’s confirmed, so there’s no need to pay again."
+          )}
+        </p>
+
+        <dl className={ocMeta}>
+          {order.orderNumber ? (
+            <div>
+              <dt>Order number</dt>
+              <dd className={ocMetaNumber}>
+                <span dir="ltr">{order.orderNumber}</span>
+                <CopyButton value={order.orderNumber} />
+              </dd>
+            </div>
           ) : null}
-        </div>
-
-        {/* ── Items ── */}
-        <div className="mb-6 overflow-hidden border border-sa-border">
-          <div className="border-b border-sa-border bg-cream px-5 py-3 dark:bg-[#1e1812]">
-            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-              Items Ordered
-            </h2>
+          <div>
+            <dt>Date</dt>
+            <dd>{formatOrderDate(order.createdAt)}</dd>
           </div>
-          <ul className="divide-y divide-sa-border">
-            {order.lines.map((line) => (
-              <li
-                key={line.orderLineId}
-                className="flex items-center gap-4 px-5 py-4"
+          <div>
+            <dt>Total</dt>
+            <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
+          </div>
+          <div>
+            <dt>Payment</dt>
+            <dd>{orderPaymentLabel(order.selectedPaymentMethod)}</dd>
+          </div>
+        </dl>
+
+        <div className={ocActions}>
+          {state === "success" ? (
+            <>
+              <Link className={checkoutCta} href="/products">
+                <span>Continue shopping</span>
+                <b aria-hidden="true">↗</b>
+              </Link>
+              {trackHref ? (
+                <Link className={checkoutCtaGhost} href={trackHref}>
+                  <span>Track order</span>
+                </Link>
+              ) : null}
+            </>
+          ) : state === "failed" ? (
+            <>
+              <Link className={checkoutCta} href={retryHref}>
+                <span>Retry payment</span>
+                <b aria-hidden="true">↗</b>
+              </Link>
+              <Link className={checkoutCtaGhost} href="/products">
+                <span>Continue shopping</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={checkoutCta}
+                disabled={settle.isFetching}
+                onClick={() => {
+                  void settle.refetch();
+                  void orderQuery.refetch();
+                }}
               >
-                {/* Thumbnail placeholder */}
-                <div className="size-14 shrink-0 overflow-hidden border border-sa-border bg-cream dark:bg-[#1e1812]">
-                  {line.imageUrl ? (
-                    <Image
-                      src={line.imageUrl}
-                      alt={line.productName ?? ""}
-                      width={56}
-                      height={56}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <svg
-                        className="size-6 text-sa-border"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-sa-primary">
-                    {line.productName ?? line.sku}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-sa-muted">
-                    {[line.variantName, `Qty ${line.quantity}`]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-
-                <p className="ml-4 shrink-0 text-[14px] font-semibold text-sa-primary">
-                  {formatMoney(Number(line.lineTotal), line.currencyCode ?? currency)}
-                </p>
-              </li>
-            ))}
-          </ul>
+                <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
+                <b aria-hidden="true">↗</b>
+              </button>
+              <Link className={checkoutCtaGhost} href={retryHref}>
+                <span>Pay now</span>
+              </Link>
+            </>
+          )}
         </div>
+        {!isGuest ? (
+          <Link className={`${checkoutLink} mt-4`} href="/account/orders">
+            View all your orders
+          </Link>
+        ) : order.orderNumber ? (
+          <p className={`${checkoutNote} mt-4`}>Keep your order number — you’ll need it if you contact us about this order.</p>
+        ) : null}
+      </section>
 
-        {/* ── Two-column: summary + details ── */}
-        <div className="mb-6 grid gap-6 sm:grid-cols-2">
-          {/* Totals */}
-          <div className="border border-sa-border px-5 py-4">
-            <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-              Order Summary
+      <div className={ocBody}>
+        <div className={ocStack}>
+          {showProgress ? (
+            <section className={ocCard} aria-labelledby="order-progress">
+              <h2 id="order-progress">What happens next</h2>
+              <ol className={ocSteps}>
+                {ORDER_PROGRESS_STEPS.map((step, index) => {
+                  const status = index < currentStep ? "done" : index === currentStep ? "current" : "todo";
+                  return (
+                    <li
+                      key={step}
+                      className={ocStep}
+                      data-status={status}
+                      aria-current={status === "current" ? "step" : undefined}
+                    >
+                      <span className={ocStepDot} aria-hidden="true" />
+                      <span className={ocStepLabel}>{step}</span>
+                      <span className={ocStepHint}>{STEP_HINTS[step]}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
+
+          <section className={ocCard} aria-labelledby="order-items">
+            <h2 id="order-items">
+              Items ordered <span className={ocCardCount}>({itemCount})</span>
             </h2>
-            <div className="divide-y divide-sa-border">
-              <SummaryRow
-                label="Subtotal"
-                value={formatMoney(Number(order.totals.subtotal), currency)}
-              />
-              {Number(order.totals.discount) > 0 ? (
-                <SummaryRow
-                  label="Discount"
-                  value={
-                    <span className="text-terra">
-                      −{formatMoney(Number(order.totals.discount), currency)}
+            <ul className={ocLines} role="list">
+              {order.lines.map((line) => {
+                const name = line.productName ?? line.sku;
+                const qty = Number.parseInt(line.quantity, 10) || 1;
+                const variant =
+                  line.variantName && line.variantName.trim().toLowerCase() !== name.trim().toLowerCase()
+                    ? line.variantName
+                    : null;
+                const thumb = line.imageUrl?.startsWith("http") ? line.imageUrl : null;
+                return (
+                  <li className={ocLine} key={line.orderLineId}>
+                    <span className={ocLineMedia}>
+                      {thumb ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={thumb}
+                          alt=""
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <span aria-hidden="true">{name.charAt(0)}</span>
+                      )}
                     </span>
-                  }
-                />
-              ) : null}
-              <SummaryRow
-                label="Shipping"
-                value={
-                  Number(order.totals.shipping) === 0
-                    ? "Free"
-                    : formatMoney(Number(order.totals.shipping), currency)
-                }
-              />
-              <SummaryRow
-                label="Total"
-                value={formatMoney(Number(order.totals.total), currency)}
-                bold
-              />
-            </div>
-          </div>
+                    <span className={ocLineBody}>
+                      <span className={ocLineName}>{name}</span>
+                      <span className={ocLineSub}>{[variant, `Qty ${qty}`].filter(Boolean).join(" · ")}</span>
+                      <HistoricalLineDiscount
+                        snapshot={line.promotionSnapshot}
+                        currency={line.currencyCode || currency}
+                        className={ocLineDiscount}
+                      />
+                    </span>
+                    <span className={ocLinePrice} dir="ltr">
+                      {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
 
-          {/* Shipping + billing addresses */}
-          <div className="space-y-4">
-            {shippingAddress ? (
-              <AddressCard title="Ship to" address={shippingAddress} />
-            ) : null}
+        <aside className={ocStack}>
+          <section className={ocCard} aria-labelledby="order-summary">
+            <h2 id="order-summary">Order summary</h2>
+            <dl className={checkoutTotals}>
+              <div>
+                <dt>Subtotal</dt>
+                <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
+              </div>
+              {Number(totals.discount) > 0 ? (
+                <div>
+                  <dt>Discount</dt>
+                  <dd dir="ltr">−{formatMoney(Number(totals.discount), currency)}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Shipping</dt>
+                <dd dir="ltr">{shippingTotal > 0 ? formatMoney(shippingTotal, currency) : "Free"}</dd>
+              </div>
+              {Number(totals.tax) > 0 ? (
+                <div>
+                  <dt>Tax</dt>
+                  <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
+                </div>
+              ) : null}
+              <HistoricalGiftNote snapshot={order.promotionSnapshot} className={ocLineDiscount} />
+              <div className={checkoutTotalsLine}>
+                <dt>Total</dt>
+                <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
+              </div>
+            </dl>
+          </section>
+
+          {orderReward?.earned ? (
+            <div className={ocCard}>
+              <OrderRewardNote reward={orderReward} />
+            </div>
+          ) : null}
+
+          <section className={ocCard} aria-labelledby="order-delivery">
+            <h2 id="order-delivery">Delivery &amp; payment</h2>
+            {shippingAddress ? <AddressBlock title="Ship to" address={shippingAddress} /> : null}
             {billingAddress ? (
-              <AddressCard title="Bill to" address={billingAddress} />
+              sameAddress(shippingAddress, billingAddress) ? (
+                <div className={ocAddress}>
+                  <h3>Bill to</h3>
+                  <p className={ocAddressSame}>Same as shipping address</p>
+                </div>
+              ) : (
+                <AddressBlock title="Bill to" address={billingAddress} />
+              )
             ) : null}
-
-            {/* Delivery & payment method */}
-            <div className="grid grid-cols-2 gap-3">
-              {order.selectedDeliveryMethod ? (
-                <div className="border border-sa-border px-4 py-3">
-                  <p className="mb-1 text-[10px] uppercase tracking-widest text-sa-muted">
-                    Delivery
-                  </p>
-                  <p className="text-[13px] font-medium text-sa-primary">
-                    {order.selectedDeliveryMethod.methodCode ?? "Standard"}
-                  </p>
-                </div>
-              ) : null}
-              {order.selectedPaymentMethod ? (
-                <div className="border border-sa-border px-4 py-3">
-                  <p className="mb-1 text-[10px] uppercase tracking-widest text-sa-muted">
-                    Payment
-                  </p>
-                  <p className="text-[13px] font-medium text-sa-primary">
-                    {order.selectedPaymentMethod.methodCode ?? "—"}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Actions ── */}
-        <div className="flex flex-col items-center gap-3 pt-4">
-          <Link
-            href="/products"
-            className="flex h-11 w-full max-w-70 items-center justify-center bg-terra text-[12px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#a25e48]"
-          >
-            Continue Shopping
-          </Link>
-          <Link
-            href="/"
-            className="text-[13px] text-sa-muted underline underline-offset-4 hover:text-sa-primary"
-          >
-            Return to Home
-          </Link>
-        </div>
+            <dl className={ocMethods}>
+              <div>
+                <dt>Delivery</dt>
+                <dd>{orderDeliveryLabel(order.selectedDeliveryMethod)}</dd>
+              </div>
+              <div>
+                <dt>Payment</dt>
+                <dd>{orderPaymentLabel(order.selectedPaymentMethod)}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
       </div>
-    </section>
+    </CheckoutStateShell>
   );
 }

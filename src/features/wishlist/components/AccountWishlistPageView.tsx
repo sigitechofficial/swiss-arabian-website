@@ -7,8 +7,8 @@ import { PageLoading } from "@/components/ui";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { accountContainer } from "@/features/account/constants/accountLayout";
-import { ProductCard } from "@/features/home/components/ProductCard";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
+import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
@@ -21,8 +21,9 @@ import {
   WISHLIST_LIST_PAGE_SIZE,
 } from "../utils/productId";
 import type { StorefrontWishlistStatusView } from "../types/wishlist";
-import { toWishlistProductCard } from "../utils/toWishlistProductCard";
+import { toWishlistCatalogProduct } from "../utils/toWishlistProductCard";
 import { WishlistHeartButton } from "./WishlistHeartButton";
+import { wishlistBand, wishlistGrid } from "@/styles/shopChrome";
 
 type AccountWishlistPageViewProps = {
   title: string;
@@ -58,7 +59,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
     () =>
       (items ?? []).map((item) => ({
         item,
-        card: item.product ? toWishlistProductCard(item.product) : null,
+        card: item.product ? toWishlistCatalogProduct(item.product) : null,
       })),
     [items],
   );
@@ -90,14 +91,14 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
         {isLoading && !data ? (
           <PageLoading label="Loading saved items…" />
         ) : isError ? (
-          <div className="border border-sa-border bg-section-soft px-6 py-10">
-            <p className="text-[14px] text-sa-secondary">
+          <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
+            <p className="text-[13px] text-sa-secondary">
               {getUserFacingErrorMessage(error)}
             </p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-4 text-[13px] font-semibold text-terra hover:underline"
+              className="mt-4 text-[12px] font-semibold text-terra hover:underline"
             >
               Try again
             </button>
@@ -108,8 +109,8 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
             description="Tap the heart on a product to save it here. Your wishlist is available after you sign in."
           />
         ) : !items?.length ? (
-          <div className="border border-sa-border bg-section-soft px-6 py-10">
-            <p className="text-[14px] text-sa-secondary">
+          <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
+            <p className="text-[13px] text-sa-secondary">
               Saved items on this page are hidden in the current market.
             </p>
             {totalPages > 1 ? (
@@ -127,7 +128,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
           <>
             <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
               {confirmClear ? (
-                <div className="flex flex-wrap items-center gap-3 text-[13px]">
+                <div className="flex flex-wrap items-center gap-3 text-[12px]">
                   <span className="text-sa-secondary">
                     Remove all saved items?
                   </span>
@@ -153,39 +154,45 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                 <button
                   type="button"
                   onClick={() => setConfirmClear(true)}
-                  className="cursor-pointer text-[13px] font-semibold uppercase tracking-[0.08em] text-sa-muted hover:text-terra"
+                  className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.08em] text-sa-muted hover:text-terra"
                 >
                   Clear all
                 </button>
               )}
             </div>
 
-            <div
-              className="-mx-4 grid grid-cols-2 gap-[6px] sm:-mx-6 md:mx-0 md:grid-cols-3 md:gap-4 xl:grid-cols-4"
-              aria-busy={isFetching}
-            >
-              {cards.map(({ item, card }) => {
-                const unavailable = !card || item.product?.isSellable === false;
-                return (
-                  <article key={item.productId} className="relative">
-                    {card ? (
-                      <ProductCard product={card} addDisabled={unavailable} />
-                    ) : (
-                      <div className="flex min-h-[280px] flex-col justify-between border border-sa-border bg-section-soft p-4">
-                        <p className="text-[14px] font-medium text-sa-primary">
-                          {item.product?.name || "This product is unavailable"}
-                        </p>
-                        <p className="mt-2 text-[12px] text-sa-muted">
-                          It may be hidden in this market. You can still remove it.
-                        </p>
-                        <div className="mt-4 self-end">
-                          <WishlistHeartButton productId={item.productId} />
-                        </div>
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
+            <div className={wishlistBand}>
+                <ul className={wishlistGrid} role="list" aria-busy={isFetching}>
+                  {cards.map(({ item, card }) => {
+                    const heart = <WishlistHeartButton productId={item.productId} />;
+                    if (!card) {
+                      return (
+                        <li
+                          key={item.productId}
+                          className="flex min-h-[280px] flex-col justify-between rounded-lg border border-sa-border bg-section-soft p-4"
+                        >
+                          <p className="text-[13px] font-medium text-sa-primary">
+                            {item.product?.name || "This product is unavailable"}
+                          </p>
+                          <p className="mt-2 text-[12px] text-sa-muted">
+                            It may be hidden in this market. You can still remove it.
+                          </p>
+                          <div className="mt-4 self-end">{heart}</div>
+                        </li>
+                      );
+                    }
+                    const unavailable = item.product?.isSellable === false || card.price == null;
+                    return (
+                      <CatalogProductCard
+                        key={item.productId}
+                        product={card}
+                        action={heart}
+                        hideAdd={unavailable}
+                        note={unavailable ? "Currently unavailable" : undefined}
+                      />
+                    );
+                  })}
+                </ul>
             </div>
 
             {totalPages > 1 ? (

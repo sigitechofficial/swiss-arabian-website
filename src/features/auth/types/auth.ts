@@ -1,4 +1,4 @@
-/** Phase 1 storefront auth types — Swagger is source of truth. */
+/** Storefront auth types — Swagger is source of truth. */
 
 export type IssuedCustomerToken = {
   accessToken: string;
@@ -25,7 +25,6 @@ export type AuthResult = {
   customer: CustomerProfileView;
 };
 
-/** Password login when email is unverified (HTTP 200 — not an error). */
 export type EmailVerificationRequired = {
   status: "EMAIL_VERIFICATION_REQUIRED";
   email: string;
@@ -47,10 +46,6 @@ export type RegisterPayload = {
   firstName?: string;
   lastName?: string;
   salesChannelCode?: string;
-  /** Maps to Insider `gdpr_optin` on backend user_register upsert. */
-  marketingConsent?: boolean;
-  /** Maps to Insider `sms_optin` on backend user_register upsert. */
-  smsConsent?: boolean;
 };
 
 export type LoginPayload = {
@@ -80,16 +75,12 @@ export type OtpPurpose =
   | "RESET_PASSWORD"
   | "LOGIN";
 
-export function isAuthResult(
-  data: PasswordLoginResult,
-): data is AuthResult {
+export function isAuthResult(data: PasswordLoginResult): data is AuthResult {
   return "token" in data && Boolean(data.token);
 }
 
 export function isEmailVerificationRequired(
   data: PasswordLoginResult,
 ): data is EmailVerificationRequired {
-  return (
-    "status" in data && data.status === "EMAIL_VERIFICATION_REQUIRED"
-  );
+  return "status" in data && data.status === "EMAIL_VERIFICATION_REQUIRED";
 }

@@ -42,15 +42,15 @@ export function AccountConsentsSection() {
 
   return (
     <div>
-      <p className="max-w-[660px] text-[13px] text-sa-secondary">
+      <p className="max-w-[660px] text-[12px] text-sa-secondary">
         Choose how Swiss Arabian can contact you about offers. Order updates
         still go through transactional channels.
       </p>
 
       {list.isPending ? (
-        <p className="mt-4 text-[13px] text-sa-secondary">Loading preferences…</p>
+        <p className="mt-4 text-[12px] text-sa-secondary">Loading preferences…</p>
       ) : list.isError ? (
-        <p className="mt-4 text-[13px] text-red-600">
+        <p className="mt-4 text-[12px] text-red-600">
           {getUserFacingErrorMessage(list.error)}
         </p>
       ) : (
@@ -58,7 +58,7 @@ export function AccountConsentsSection() {
           <ul className="mt-4 flex flex-col gap-3">
             {CHANNELS.map(({ channel, label }) => (
               <li key={channel}>
-                <label className="flex items-center gap-2 text-[14px] text-sa-primary">
+                <label className="flex items-center gap-2 text-[13px] text-sa-primary">
                   <input
                     type="checkbox"
                     checked={isOptedIn(channel)}

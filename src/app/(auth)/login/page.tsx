@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { PageLoading } from "@/components/ui";
 import { LoginPageView } from "@/features/auth";
+import { PageLoading } from "@/components/ui";
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading…" fill />}>
+    <Suspense fallback={<PageLoading label="Loading…" />}>
       <LoginPageView />
     </Suspense>
   );

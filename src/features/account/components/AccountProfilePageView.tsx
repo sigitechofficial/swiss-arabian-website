@@ -36,13 +36,13 @@ function DetailRow({
   editHref?: string;
 }) {
   const editClass =
-    "shrink-0 text-[13px] font-semibold text-terra hover:underline";
+    "shrink-0 text-[12px] font-semibold text-terra hover:underline";
 
   return (
     <div className="flex items-start justify-between gap-4 border-b border-sa-border py-5">
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-sa-primary">{label}</p>
-        <p className="mt-1 truncate text-[15px] text-sa-secondary">{value}</p>
+        <p className="text-[12px] font-semibold text-sa-primary">{label}</p>
+        <p className="mt-1 truncate text-[13.5px] text-sa-secondary">{value}</p>
       </div>
       {editHref ? (
         <Link href={editHref} className={editClass}>
@@ -74,7 +74,7 @@ function PrefBlock({
     >
       <div className={accountContainer}>
         <div className={MEASURE}>
-          <h3 className="text-[15px] font-semibold text-sa-primary">{title}</h3>
+          <h3 className="text-[13.5px] font-semibold text-sa-primary">{title}</h3>
           <div className="mt-3 border-t border-sa-border pt-3">{children}</div>
         </div>
       </div>
@@ -116,7 +116,7 @@ function NameEditor({
         onDone();
       })}
     >
-      <p className="text-[13px] font-semibold text-sa-primary">Name</p>
+      <p className="text-[12px] font-semibold text-sa-primary">Name</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <input
@@ -170,13 +170,13 @@ function ProfileContent() {
     <>
       <header className="border-b border-sa-border py-6">
         <div className={accountContainer}>
-          <h1 className="text-[28px] font-bold text-sa-primary">Profile</h1>
+          <h1 className="text-[24px] font-bold text-sa-primary">Profile</h1>
         </div>
       </header>
 
       <section className={`${accountContainer} py-8`}>
         <div className={MEASURE}>
-          <h2 className="text-[17px] font-semibold text-sa-primary">
+          <h2 className="text-[15px] font-semibold text-sa-primary">
             Account Details
           </h2>
           <div className="mt-2">
@@ -198,29 +198,15 @@ function ProfileContent() {
           </div>
           <AccountPhonesSection />
           <div className="border-b border-sa-border py-5">
-            <p className="text-[13px] font-semibold text-sa-primary">Reviews</p>
-            <p className="mt-1 text-[15px] text-sa-secondary">
+            <p className="text-[12px] font-semibold text-sa-primary">Reviews</p>
+            <p className="mt-1 text-[13.5px] text-sa-secondary">
               View pending and published product reviews.
             </p>
             <Link
               href="/account/reviews"
-              className="mt-2 inline-block text-[13px] font-semibold text-terra hover:underline"
+              className="mt-2 inline-block text-[12px] font-semibold text-terra hover:underline"
             >
               Manage reviews
-            </Link>
-          </div>
-          <div className="border-b border-sa-border py-5">
-            <p className="text-[13px] font-semibold text-sa-primary">
-              Returns & exchanges
-            </p>
-            <p className="mt-1 text-[15px] text-sa-secondary">
-              Track return and exchange requests for your orders.
-            </p>
-            <Link
-              href="/account/returns"
-              className="mt-2 inline-block text-[13px] font-semibold text-terra hover:underline"
-            >
-              View requests
             </Link>
           </div>
         </div>
@@ -229,10 +215,10 @@ function ProfileContent() {
       <section className="bg-section-soft py-8">
         <div className={accountContainer}>
           <div className={MEASURE}>
-            <h2 className="text-[17px] font-semibold text-sa-primary">
+            <h2 className="text-[15px] font-semibold text-sa-primary">
               Passkeys
             </h2>
-            <p className="mt-3 text-[14px] leading-normal text-sa-secondary">
+            <p className="mt-3 text-[13px] leading-normal text-sa-secondary">
               Passkeys are an easier and more secure alternative to passwords.
               They let you sign in with just your fingerprint, face scan or
               screen lock.
@@ -241,7 +227,7 @@ function ProfileContent() {
               <button
                 type="button"
                 onClick={() => soon("Passkeys")}
-                className="text-[14px] font-semibold text-terra hover:underline"
+                className="text-[13px] font-semibold text-terra hover:underline"
               >
                 + Add a passkey
               </button>
@@ -251,7 +237,7 @@ function ProfileContent() {
       </section>
 
       <section className={`${accountContainer} py-6`}>
-        <h2 className="text-[22px] font-bold text-sa-primary">
+        <h2 className="text-[19px] font-bold text-sa-primary">
           Checkout preferences
         </h2>
       </section>
@@ -259,7 +245,7 @@ function ProfileContent() {
       <PrefBlock title="Shipping addresses">
         <Link
           href="/account/addresses"
-          className="text-[14px] font-semibold text-terra hover:underline"
+          className="text-[13px] font-semibold text-terra hover:underline"
         >
           Manage addresses
         </Link>
@@ -268,9 +254,9 @@ function ProfileContent() {
       <PrefBlock title="Payment methods">
         <Link
           href="/account/payments"
-          className="text-[14px] font-semibold text-terra hover:underline"
+          className="text-[13px] font-semibold text-terra hover:underline"
         >
-          + Add a payment method
+          View payments
         </Link>
       </PrefBlock>
 
@@ -283,7 +269,7 @@ function ProfileContent() {
           <button
             type="button"
             onClick={() => soon("Account deletion")}
-            className="text-[13px] text-sa-secondary hover:text-terra hover:underline"
+            className="text-[12px] text-sa-secondary hover:text-terra hover:underline"
           >
             Delete account
           </button>

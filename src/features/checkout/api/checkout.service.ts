@@ -1,43 +1,34 @@
 import { getAccessToken } from "@/lib/auth/token";
-import { apiGet, apiPost } from "@/lib/api/apiClient";
-import { DEFAULT_ZONE_CODE, toAuthSalesChannelCode } from "@/lib/storefront/context";
+import { apiGet, apiPost, apiDelete } from "@/lib/api/apiClient";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
   CheckoutAddressSnapshot,
   CheckoutSessionResponse,
   DeliveryMethodOption,
-  PaymentMethodOption,
   GuestContact,
+  PaymentMethodOption,
 } from "../types/checkout";
 
-// ─── Param builders ───────────────────────────────────────────────────────────
-
-/** Full context params (zone + channel) — for session-creating endpoints. */
+/** Zone + channel + guest token — for the session-creating endpoint. */
 function buildContextParams(): URLSearchParams {
-  const params = new URLSearchParams({
-    zoneCode: DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(),
-  });
-  const isAuthenticated = Boolean(getAccessToken());
-  if (!isAuthenticated) {
+  const params = new URLSearchParams(storefrontContextQuery());
+  if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);
   }
   return params;
 }
 
-/** Guest-only param — for existing session endpoints (no zone/channel needed). */
+/** Market context plus guest token. Sessions also store context; the channel still goes on the URL. */
 function buildGuestParam(): URLSearchParams {
-  const params = new URLSearchParams();
-  const isAuthenticated = Boolean(getAccessToken());
-  if (!isAuthenticated) {
+  const params = new URLSearchParams(storefrontContextQuery());
+  if (!getAccessToken()) {
     const guestToken = getOrCreateGuestToken();
     if (guestToken) params.set("guestToken", guestToken);
   }
   return params;
 }
-
-// ─── Checkout service ─────────────────────────────────────────────────────────
 
 type CreateFromCartDto = {
   cartId: string;
@@ -46,102 +37,67 @@ type CreateFromCartDto = {
 };
 
 /**
- * POST /storefront/checkout/from-cart
- * Creates a new checkout session from a validated cart.
- * If the same cart already has an active session, it is resumed.
+ * POST /storefront/checkout/from-cart — creates a session, or resumes the
+ * existing active one for this cart (which does NOT re-read a changed cart).
  */
 export async function createCheckoutFromCart(
   dto: CreateFromCartDto,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildContextParams();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/from-cart?${params.toString()}`,
+    `/storefront/checkout/from-cart?${buildContextParams().toString()}`,
     dto,
   );
 }
 
-/**
- * GET /storefront/checkout/:checkoutSessionId
- * Returns current state of the checkout session.
- */
 export async function getCheckoutSession(
   checkoutSessionId: string,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiGet<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}?${buildGuestParam().toString()}`,
   );
 }
 
-/**
- * GET /storefront/checkout/:checkoutSessionId/delivery-methods
- * Returns available delivery options for this checkout.
- */
+/** Empty until the zone resolves — callers show a retry state rather than failing. */
 export async function listDeliveryMethods(
   checkoutSessionId: string,
 ): Promise<DeliveryMethodOption[]> {
-  const params = buildGuestParam();
-  return apiGet<DeliveryMethodOption[]>(
-    `/storefront/checkout/${checkoutSessionId}/delivery-methods?${params.toString()}`,
+  const data = await apiGet<DeliveryMethodOption[] | null>(
+    `/storefront/checkout/${checkoutSessionId}/delivery-methods?${buildGuestParam().toString()}`,
   );
+  return Array.isArray(data) ? data : [];
 }
 
-/**
- * POST /storefront/checkout/:checkoutSessionId/delivery-method
- * Selects a delivery method for this checkout session.
- */
 export async function selectDeliveryMethod(
   checkoutSessionId: string,
   deliveryMethodId: string,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}/delivery-method?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/delivery-method?${buildGuestParam().toString()}`,
     { deliveryMethodId },
   );
 }
 
-/**
- * GET /storefront/checkout/:checkoutSessionId/payment-methods
- * Returns available payment options for this checkout.
- */
 type PaymentMethodsPayload =
   | PaymentMethodOption[]
-  | {
-      items?: PaymentMethodOption[];
-      paymentMethods?: PaymentMethodOption[];
-    };
-
-function unwrapPaymentMethods(data: PaymentMethodsPayload | undefined): PaymentMethodOption[] {
-  if (Array.isArray(data)) return data;
-  if (data?.items && Array.isArray(data.items)) return data.items;
-  if (data?.paymentMethods && Array.isArray(data.paymentMethods)) {
-    return data.paymentMethods;
-  }
-  return [];
-}
+  | { items?: PaymentMethodOption[]; paymentMethods?: PaymentMethodOption[] }
+  | null;
 
 export async function listPaymentMethods(
   checkoutSessionId: string,
 ): Promise<PaymentMethodOption[]> {
-  const params = buildGuestParam();
   const data = await apiGet<PaymentMethodsPayload>(
-    `/storefront/checkout/${checkoutSessionId}/payment-methods?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/payment-methods?${buildGuestParam().toString()}`,
   );
-  return unwrapPaymentMethods(data);
+  if (Array.isArray(data)) return data;
+  return data?.items ?? data?.paymentMethods ?? [];
 }
 
-/**
- * POST /storefront/checkout/:checkoutSessionId/payment-method
- * Selects a payment method for this checkout session.
- */
 export async function selectPaymentMethod(
   checkoutSessionId: string,
   paymentMethodId: string,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}/payment-method?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/payment-method?${buildGuestParam().toString()}`,
     { paymentMethodId },
   );
 }
@@ -149,58 +105,64 @@ export async function selectPaymentMethod(
 export type SetAddressDto = {
   /** Saved shipping address — shipping only. */
   customerAddressId?: string;
-  /** Guest/new shipping snapshot — shipping only. */
+  /** New / guest shipping snapshot — shipping only. */
   addressSnapshot?: CheckoutAddressSnapshot;
-  /** Copy shipping → billing on the same request. */
+  /** Copy shipping → billing. */
   billingSameAsShipping?: boolean;
-  /** Saved billing address book id. */
   billingCustomerAddressId?: string;
-  /** Explicit billing snapshot when different from shipping. */
+  /** Explicit billing when it differs from shipping. */
   billingAddressSnapshot?: CheckoutAddressSnapshot;
 };
 
-/**
- * POST /storefront/checkout/:checkoutSessionId/address
- * Sets shipping (`customerAddressId` / `addressSnapshot`) and optional billing
- * (`billingSameAsShipping` / `billingCustomerAddressId` / `billingAddressSnapshot`).
- * Shipping fields are never used for billing.
- */
 export async function setCheckoutAddress(
   checkoutSessionId: string,
   dto: SetAddressDto,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}/address?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/address?${buildGuestParam().toString()}`,
     dto,
   );
 }
 
-/**
- * POST /storefront/checkout/:checkoutSessionId/validate
- * Re-validates the entire checkout session before submit.
- */
+/** A 200 here does not mean valid — read `validation.isValid`. */
 export async function validateCheckout(
   checkoutSessionId: string,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}/validate?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/validate?${buildGuestParam().toString()}`,
     {},
   );
 }
 
-/**
- * POST /storefront/checkout/:checkoutSessionId/cancel
- * Cancels the checkout session (cart is not deleted).
- */
+/** Cancels the session; the cart survives and can start a new checkout. */
 export async function cancelCheckout(
   checkoutSessionId: string,
   reason?: string,
 ): Promise<CheckoutSessionResponse> {
-  const params = buildGuestParam();
   return apiPost<CheckoutSessionResponse>(
-    `/storefront/checkout/${checkoutSessionId}/cancel?${params.toString()}`,
+    `/storefront/checkout/${checkoutSessionId}/cancel?${buildGuestParam().toString()}`,
     reason ? { reason } : {},
+  );
+}
+
+export async function applyCheckoutGiftCard(
+  checkoutSessionId: string,
+  code: string,
+  amount?: string,
+): Promise<CheckoutSessionResponse> {
+  const body: Record<string, string> = { code: code.trim() };
+  if (amount?.trim()) body.amount = amount.trim();
+  return apiPost<CheckoutSessionResponse>(
+    `/storefront/checkout/${checkoutSessionId}/gift-cards?${buildGuestParam().toString()}`,
+    body,
+  );
+}
+
+export async function removeCheckoutGiftCard(
+  checkoutSessionId: string,
+  usageId: string,
+): Promise<CheckoutSessionResponse> {
+  return apiDelete<CheckoutSessionResponse>(
+    `/storefront/checkout/${checkoutSessionId}/gift-cards/${encodeURIComponent(usageId)}?${buildGuestParam().toString()}`,
   );
 }

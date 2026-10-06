@@ -1,5 +1,7 @@
 /** API types for the cart module — mirrors backend Cart response shape. */
 
+import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
+
 export type CartContext = {
   zoneId: string;
   zoneCode: string;
@@ -44,15 +46,10 @@ export type ApiCartItem = {
   sku: string;
   productName: string | null;
   variantName: string | null;
-  /** Primary image URL returned directly by the API */
   image?: string | null;
-  /** Full image array returned by the API */
   images?: ApiCartImage[];
-  /** Decimal string — e.g. "2" */
   quantity: string;
-  /** Decimal string — e.g. "150.00" */
   unitPriceEstimate: string | null;
-  /** Decimal string */
   lineSubtotalEstimate: string | null;
   currencyCode: string | null;
   sellabilitySummary: CartSellabilitySummary;
@@ -65,14 +62,15 @@ export type ApiCart = {
   context: CartContext;
   items: ApiCartItem[];
   itemCount: number;
-  /** Decimal string — total units across all items */
   totalQuantity: string;
   subtotalEstimate: string;
   discountEstimate: string;
   taxEstimate: string;
   shippingEstimate: string;
   totalEstimate: string;
+  amountPayable?: string | null;
   currency: string;
+  promotions?: PromotionSnapshotV1 | null;
   validation: CartValidation | null;
   updatedAt: string;
   metadata: Record<string, unknown> | null;

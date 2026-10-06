@@ -1,6 +1,5 @@
 import type { Transition, Variants } from "framer-motion";
 
-/** Luxury / enterprise easing — soft deceleration */
 export const easeOutExpo: Transition["ease"] = [0.22, 1, 0.36, 1];
 
 export const revealTransition: Transition = {

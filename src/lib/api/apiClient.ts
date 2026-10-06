@@ -1,7 +1,13 @@
 import { env } from "@/lib/config/env";
-import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { endSession } from "@/lib/auth/endSession";
+import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
+import {
+  isShopUnavailablePath,
+  SHOP_UNAVAILABLE_CODES,
+  SHOP_UNAVAILABLE_PATH,
+} from "@/lib/storefront/brand";
 import { ApiClientError, type ApiErrorBody } from "./apiError";
+import { resolveStorefrontHost } from "./storefrontHost";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -20,7 +26,7 @@ type RequestOptions = {
 let refreshInFlight: Promise<boolean> | null = null;
 
 const PUBLIC_AUTH_PATH =
-  /^\/storefront\/auth\/(login|register|refresh|logout|logout-all|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
+  /^\/storefront\/auth\/(login|register|refresh|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
 
 async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
@@ -30,9 +36,12 @@ async function tryRefresh(): Promise<boolean> {
     if (!refreshToken) return false;
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const storefrontHost = await resolveStorefrontHost();
+      if (storefrontHost) headers["x-storefront-host"] = storefrontHost;
       const res = await fetch(`${env.apiBaseUrl}/storefront/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ refreshToken }),
       });
       if (!res.ok) return false;
@@ -44,8 +53,7 @@ async function tryRefresh(): Promise<boolean> {
         accessToken?: string;
         refreshToken?: string;
       }>;
-      const access =
-        json.data?.token?.accessToken ?? json.data?.accessToken;
+      const access = json.data?.token?.accessToken ?? json.data?.accessToken;
       const nextRefresh =
         json.data?.token?.refreshToken ?? json.data?.refreshToken;
       if (!json.success || !access) return false;
@@ -78,6 +86,9 @@ async function request<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const storefrontHost = await resolveStorefrontHost();
+  if (storefrontHost) headers.set("x-storefront-host", storefrontHost);
+
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,
     headers,
@@ -85,8 +96,24 @@ async function request<T>(
     signal: options.signal,
   });
 
+  let json: ApiEnvelope<T> | null = null;
+  const text = await res.text();
+  if (text) {
+    try {
+      json = JSON.parse(text) as ApiEnvelope<T>;
+    } catch {
+      throw new ApiClientError(res.status, "Unexpected response from server.");
+    }
+  }
+
+  const errorCode =
+    json?.error && typeof json.error === "object" ? json.error.code : undefined;
+  /** Business 401 (e.g. coupon needs login) — not a dead session. */
+  const isBusinessUnauthorized = errorCode === "COUPON_REQUIRES_LOGIN";
+
   const canRefresh =
     res.status === 401 &&
+    !isBusinessUnauthorized &&
     !options.skipAuth &&
     !retried &&
     !PUBLIC_AUTH_PATH.test(path);
@@ -103,28 +130,21 @@ async function request<T>(
     );
   }
 
-  if (res.status === 401 && !options.skipAuth) {
-    endSession();
-    throw new ApiClientError(
-      401,
-      "Your session has expired. Please sign in again.",
-    );
-  }
-
-  let json: ApiEnvelope<T> | null = null;
-  const text = await res.text();
-  if (text) {
-    try {
-      json = JSON.parse(text) as ApiEnvelope<T>;
-    } catch {
-      throw new ApiClientError(res.status, "Unexpected response from server.");
-    }
+  if (
+    res.status === 400 &&
+    errorCode &&
+    SHOP_UNAVAILABLE_CODES.has(errorCode) &&
+    typeof window !== "undefined" &&
+    !isShopUnavailablePath()
+  ) {
+    window.location.assign(SHOP_UNAVAILABLE_PATH);
   }
 
   if (!res.ok || json?.success === false) {
     throw new ApiClientError(
       res.status,
       json?.error ?? (text || "Request failed"),
+      json?.meta?.requestId,
     );
   }
 

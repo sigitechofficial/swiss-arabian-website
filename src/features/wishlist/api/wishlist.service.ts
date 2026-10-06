@@ -2,7 +2,6 @@ import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
 import {
   DEFAULT_ZONE_CODE,
   storefrontContextQuery,
-  toAuthSalesChannelCode,
 } from "@/lib/storefront/context";
 import type {
   StorefrontWishlistAddResult,
@@ -19,7 +18,6 @@ import {
 function wishlistContextQuery(zoneCode?: string | null): string {
   return storefrontContextQuery({
     zoneCode: zoneCode?.trim() || DEFAULT_ZONE_CODE,
-    salesChannelCode: toAuthSalesChannelCode(zoneCode),
   });
 }
 
@@ -46,7 +44,8 @@ export async function fetchWishlistStatus(
     WISHLIST_STATUS_BATCH_SIZE,
   );
   if (ids.length === 0) return { items: [] };
-  const params = new URLSearchParams({ productIds: ids.join(",") });
+  const params = new URLSearchParams(wishlistContextQuery());
+  params.set("productIds", ids.join(","));
   return apiGet<StorefrontWishlistStatusView>(
     `/storefront/customer/wishlist/status?${params.toString()}`,
   );
@@ -67,12 +66,12 @@ export async function removeWishlistItem(
   productId: string,
 ): Promise<StorefrontWishlistRemoveResult> {
   return apiDelete<StorefrontWishlistRemoveResult>(
-    `/storefront/customer/wishlist/items/${encodeURIComponent(productId)}`,
+    `/storefront/customer/wishlist/items/${encodeURIComponent(productId)}?${wishlistContextQuery()}`,
   );
 }
 
 export async function clearWishlist(): Promise<StorefrontWishlistClearResult> {
   return apiDelete<StorefrontWishlistClearResult>(
-    "/storefront/customer/wishlist/items",
+    `/storefront/customer/wishlist/items?${wishlistContextQuery()}`,
   );
 }

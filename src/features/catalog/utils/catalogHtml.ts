@@ -1,4 +1,3 @@
-/** Strip tags for plain-text fields (subtitle, cards, notes). */
 export function stripHtml(value: string | null | undefined): string {
   if (!value) return "";
   return value
@@ -17,10 +16,6 @@ export function stripHtml(value: string | null | undefined): string {
     .trim();
 }
 
-/**
- * Allowlist sanitizer for catalog HTML (p, br, lists, emphasis only).
- * No dependency — strips scripts/handlers before PDP render.
- */
 export function sanitizeCatalogHtml(
   value: string | null | undefined,
 ): string {
@@ -38,22 +33,4 @@ export function sanitizeCatalogHtml(
   );
 
   return html.trim();
-}
-
-/** Bullet lines from CMS HTML (• Item). */
-export function notesFromCatalogHtml(
-  html: string | null | undefined,
-  limit = 6,
-): string[] {
-  if (!html) return [];
-  const fromBullets = [...html.matchAll(/[•·]\s*([^<\n]+)/g)]
-    .map((m) => stripHtml(m[1]))
-    .filter(Boolean);
-  if (fromBullets.length) return fromBullets.slice(0, limit);
-
-  return stripHtml(html)
-    .split(/[·,|/]/)
-    .map((n) => n.trim())
-    .filter(Boolean)
-    .slice(0, limit);
 }

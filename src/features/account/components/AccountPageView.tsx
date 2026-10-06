@@ -1,12 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { performLogout } from "@/features/auth";
+import { logoutCustomer } from "@/features/auth/api/auth.service";
+import { endSession } from "@/lib/auth/endSession";
+import { toastApiError } from "@/lib/api/toastApiError";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { listOrders } from "@/features/account/api/customerOrders.service";
 import { OrderCard } from "@/features/orders/components/OrderCard";
-import { purchaseHistoryOrders } from "@/features/orders/data/purchaseHistoryContent";
+import { toOrderSummaryView } from "@/features/orders/utils/toOrderSummaryView";
 
 import { accountContainer } from "../constants/accountLayout";
 import {
@@ -29,7 +33,26 @@ function DashboardContent() {
     user?.firstName?.trim() ||
     user?.fullName?.trim().split(/\s+/)[0] ||
     "there";
-  const recentOrder = purchaseHistoryOrders[0];
+
+  // Latest real order — shares the "customer-orders" key prefix, so placing an
+  // order or cancelling one refreshes this card too.
+  const recentQuery = useQuery({
+    queryKey: ["customer-orders", "recent"],
+    queryFn: () => listOrders({ limit: 1, offset: 0 }),
+    staleTime: 60_000,
+  });
+  const recentOrder = recentQuery.data?.items?.[0];
+
+  async function handleLogout() {
+    try {
+      await logoutCustomer();
+    } catch (error) {
+      toastApiError(error);
+    } finally {
+      endSession();
+      router.push("/");
+    }
+  }
 
   return (
     <>
@@ -46,10 +69,12 @@ function DashboardContent() {
               linkLabel="View all purchases"
               href="/account/orders"
             />
-            {recentOrder ? (
-              <OrderCard order={recentOrder} />
+            {recentQuery.isPending ? (
+              <p className="text-[13.5px] text-sa-secondary">Loading your latest order…</p>
+            ) : recentOrder ? (
+              <OrderCard order={toOrderSummaryView(recentOrder)} />
             ) : (
-              <p className="text-[15px] text-sa-secondary">
+              <p className="text-[13.5px] text-sa-secondary">
                 You have no purchases yet.
               </p>
             )}
@@ -97,11 +122,8 @@ function DashboardContent() {
       <div className={`${accountContainer} pb-12`}>
         <button
           type="button"
-          onClick={async () => {
-            await performLogout();
-            router.push("/");
-          }}
-          className="text-[13px] font-semibold text-sa-secondary hover:text-terra hover:underline"
+          onClick={handleLogout}
+          className="text-[12px] font-semibold text-sa-secondary hover:text-terra hover:underline"
         >
           Sign out
         </button>
@@ -110,7 +132,7 @@ function DashboardContent() {
   );
 }
 
-/** Account Dashboard — Figma 1068:2 · 1098:9661 */
+/** Account Dashboard */
 export function AccountPageView() {
   return (
     <AccountPageShell>

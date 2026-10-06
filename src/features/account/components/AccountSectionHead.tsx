@@ -3,11 +3,10 @@ import { accountContainer } from "../constants/accountLayout";
 type AccountSectionHeadProps = {
   eyebrow: string;
   title: string;
-  /** Rendered in gold next to the title, as in the Figma two-tone headings. */
+  /** Rendered in gold next to the title, as in the two-tone headings. */
   accent: string;
 };
 
-/** Figma · section-head (1098:9670 · 1098:9674) */
 export function AccountSectionHead({
   eyebrow,
   title,
@@ -18,7 +17,7 @@ export function AccountSectionHead({
       <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-gold">
         {eyebrow}
       </p>
-      <h2 className="mt-2 text-[24px] font-bold leading-tight text-sa-primary lg:text-[28px]">
+      <h2 className="mt-2 text-[21px] font-bold leading-tight text-sa-primary lg:text-[24px]">
         {title} <span className="text-gold-light">{accent}</span>
       </h2>
     </div>

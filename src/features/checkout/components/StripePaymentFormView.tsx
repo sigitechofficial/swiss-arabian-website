@@ -1,249 +1,496 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
+import { useQuery } from "@tanstack/react-query";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
-import type { StripeElementsOptions } from "@stripe/stripe-js";
-import { pollUntilPaymentSettles } from "../api/orders.service";
+  loadStripe,
+  type StripeElementsOptions,
+  type StripePaymentElementOptions,
+} from "@stripe/stripe-js";
+import { LoaderMark } from "@/components/ui/PageLoading";
+import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
+import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useHydrated } from "@/hooks/useHydrated";
+import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
+import type { OrderResponse } from "../types/checkout";
 import {
+  clearPaymentState,
   getStoredOrderId,
   getStoredStripeClientSecret,
   getStoredStripePublishableKey,
-  clearStripeClientSecret,
-  clearPaymentState,
 } from "../utils/checkoutSession";
-import { clearCartId } from "@/features/cart/utils/guestToken";
-import { CheckoutShell } from "./CheckoutShell";
+import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { collectionTitle, pageTitle, stateEyebrow } from "@/styles/shopChrome";
+import {
+  cbox,
+  cboxBody,
+  cboxHead,
+  cboxNum,
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutEmpty,
+  checkoutError,
+  checkoutForm,
+  checkoutHead,
+  checkoutLayout,
+  checkoutLegal,
+  checkoutLines,
+  checkoutLink,
+  checkoutNote,
+  checkoutStepCurrent,
+  checkoutSteps,
+  checkoutSummary,
+  checkoutTotals,
+  checkoutTotalsLine,
+  coline,
+  colineBody,
+  colineMedia,
+  colineMeta,
+  colineName,
+  colinePrice,
+  colineTop,
+  stripePayBrands,
+  stripePayCta,
+  stripePayElementLoading,
+  stripePayForm,
+  stripePayHead,
+  stripePayNum,
+  stripePayOrderNo,
+  stripePayState,
+  stripePayStateTitle,
+  stripePaySummary,
+  stripePaySummaryState,
+  stripePayTrust,
+} from "@/styles/checkoutChrome";
 
-// ─── Error message mapper ─────────────────────────────────────────────────────
-
-function mapStripeError(code?: string | null, declineCode?: string | null): string {
+function stripeErrorMessage(code?: string, declineCode?: string): string {
   if (declineCode === "insufficient_funds") return "Insufficient funds. Please try another card.";
-  if (code === "card_declined" || declineCode === "generic_decline") return "Your card was declined. Please try another card.";
+  if (code === "card_declined" || declineCode === "generic_decline") {
+    return "Your card was declined. Please try another card.";
+  }
   if (code === "expired_card") return "Your card has expired.";
-  if (code === "incorrect_cvc") return "Incorrect CVC. Please check and try again.";
-  if (code === "incorrect_number" || code === "invalid_number") return "Invalid card number. Please check and try again.";
+  if (code === "incorrect_cvc") return "The security code is incorrect.";
+  if (code === "incorrect_number" || code === "invalid_number") return "The card number is invalid.";
   if (code === "processing_error") return "A processing error occurred. Please try again.";
   return "Payment failed. Please try another card or contact your bank.";
 }
 
-// ─── Inner form (needs Stripe context) ───────────────────────────────────────
+/** Brand tokens — Stripe's iframe can't read our CSS variables. */
+const BRAND = {
+  copper: "#8c4435",
+  ink: "#241f1b",
+  ink2: "#5b5148",
+  line: "#d9ccb4",
+  danger: "#b4483f",
+};
+const FONT_FAMILY = '"Benton Sans Wide", system-ui, sans-serif';
 
-function StripeForm({ orderId, returnUrl }: { orderId: string; returnUrl: string }) {
+function LockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse | undefined }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
-
-  const [submitting, setSubmitting] = useState(false);
-  const [polling, setPolling] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "confirming" | "polling">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [needsRetry, setNeedsRetry] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const shipping = order?.addresses?.find((a) => a.addressType === "SHIPPING");
+  const elementOptions: StripePaymentElementOptions = {
+    layout: "tabs",
+    // Link's "save my info" sign-up clutters a one-off card payment.
+    wallets: { link: "never" },
+    terms: { card: "never" },
+    defaultValues: {
+      billingDetails: {
+        name: order?.customer?.fullName ?? shipping?.fullName ?? undefined,
+        email: order?.customer?.email ?? undefined,
+        address: shipping?.countryCode ? { country: shipping.countryCode } : undefined,
+      },
+    },
+  };
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!stripe || !elements) return;
-
-    setSubmitting(true);
+    setPhase("confirming");
     setErrorMsg(null);
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: returnUrl },
+      // Only followed when the card needs a 3DS redirect; that page polls the backend.
+      confirmParams: { return_url: `${window.location.origin}/checkout/payment/success` },
       redirect: "if_required",
     });
 
     if (error) {
-      setErrorMsg(mapStripeError(error.code, error.decline_code));
-      setSubmitting(false);
+      // Stripe-side rejection — the same PaymentIntent can be retried in place.
+      setErrorMsg(stripeErrorMessage(error.code, error.decline_code));
+      setPhase("idle");
       return;
     }
 
-    // No error — payment confirmed (or 3DS handled inline)
-    setSubmitting(false);
-    setPolling(true);
-
+    // Confirmation comes from the webhook, not from confirmPayment resolving.
+    setPhase("polling");
     const result = await pollUntilPaymentSettles(orderId);
-    clearStripeClientSecret();
-    clearPaymentState();
-    clearCartId();
-
     if (result.success) {
-      router.push(`/order-confirmation/${orderId}`);
-    } else if (result.status === "TIMEOUT") {
-      setPolling(false);
+      clearPaymentState();
+      router.replace(`/order-confirmation/${orderId}`);
+      return;
+    }
+
+    setPhase("idle");
+    if (result.status === "TIMEOUT") {
       setErrorMsg(
-        "Your payment was received but confirmation is taking longer than expected. " +
-        "Please check your email — we'll notify you once the order is confirmed.",
+        "Your payment is taking longer than expected to confirm. Please check your email before trying again.",
       );
-    } else if (result.status === "DECLINED") {
-      setPolling(false);
-      setErrorMsg("Your card was declined. Please try another card.");
     } else {
-      // FAILED / CANCELLED — payment may still have gone through on Stripe side.
-      // Show a soft message instead of "try again" to avoid double-charging.
-      setPolling(false);
+      // The backend marked it failed — this PaymentIntent is done; start a new attempt.
+      setNeedsRetry(true);
       setErrorMsg(
-        "We couldn't confirm your payment status. If your card was charged, " +
-        "please check your email or contact support before retrying.",
+        result.status === "DECLINED"
+          ? "Your card was declined. Please start a new payment attempt with another card."
+          : "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.",
       );
     }
   }
 
-  if (polling) {
+  if (phase === "polling") {
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
-        <span className="size-8 animate-spin rounded-full border-2 border-sa-border border-t-terra" />
-        <p className="text-[14px] text-sa-muted">Confirming your payment…</p>
+      <div className={stripePayState} aria-live="polite" aria-busy="true">
+        <LoaderMark size={84} />
+        <p className={stripePayStateTitle}>Confirming your payment…</p>
+        <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
       </div>
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <PaymentElement />
+  const total = order ? formatMoney(Number(order.totals.total), order.currency) : null;
 
-      {errorMsg ? (
-        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-          {errorMsg}
+  return (
+    <form className={cboxBody} onSubmit={handleSubmit}>
+      {!ready && !loadFailed ? (
+        <div className={stripePayState} role="status" aria-live="polite">
+          <LoaderMark size={72} />
+          <p className={checkoutNote}>Loading secure card form…</p>
         </div>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={!stripe || !elements || submitting}
-        className="flex h-11 w-full items-center justify-center gap-2 bg-terra text-[12px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#a25e48] disabled:opacity-60"
-      >
-        {submitting ? (
-          <>
-            <span className="size-3.5 animate-spin rounded-full border border-white/40 border-t-white" />
-            Processing…
-          </>
-        ) : (
-          "Pay Now"
-        )}
-      </button>
+      {loadFailed ? (
+        <p className={checkoutError} role="alert">
+          We couldn’t load the secure card form. Please refresh the page or{" "}
+          <Link className={checkoutLink} href="/checkout/payment/cancel">
+            choose another way to pay
+          </Link>
+          .
+        </p>
+      ) : null}
 
-      <p className="text-center text-[11px] text-sa-muted">
-        Secured by{" "}
-        <span className="font-semibold text-sa-primary">Stripe</span>. Your card details are
-        never stored on our servers.
-      </p>
+      {/* Stays mounted while loading so Stripe can boot it; revealed on ready. */}
+      <div className={ready ? undefined : stripePayElementLoading}>
+        <PaymentElement
+          options={elementOptions}
+          onReady={() => setReady(true)}
+          onLoadError={() => setLoadFailed(true)}
+        />
+      </div>
+
+      {ready ? (
+        <>
+          {errorMsg ? (
+            <p className={checkoutError} role="alert">
+              {errorMsg}
+              {needsRetry ? (
+                <>
+                  {" "}
+                  <Link className={checkoutLink} href="/checkout/payment/cancel">
+                    Start a new attempt
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            className={`${checkoutCta} ${stripePayCta}`}
+            disabled={!stripe || !elements || phase !== "idle" || needsRetry}
+          >
+            <span>
+              {phase === "confirming" ? "Processing…" : total ? `Pay ${total}` : "Pay now"}
+            </span>
+            <b aria-hidden="true">↗</b>
+          </button>
+          <p className={stripePayTrust}>
+            <LockIcon />
+            <span>Secured by Stripe — your card details never touch our servers.</span>
+          </p>
+        </>
+      ) : null}
     </form>
   );
 }
 
-// ─── Outer view — loads Stripe + wraps Elements ───────────────────────────────
+function OrderSummary({ order, loading }: { order: OrderResponse | undefined; loading: boolean }) {
+  if (loading) {
+    return (
+      <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary" aria-busy="true">
+        <h2>Your order</h2>
+        <div className={`${stripePayState} ${stripePaySummaryState}`}>
+          <LoaderMark size={56} />
+        </div>
+      </aside>
+    );
+  }
+  if (!order) return null;
+
+  const { totals, currency } = order;
+  const shipping = Number(totals.shipping);
+
+  return (
+    <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary">
+      <h2>Your order</h2>
+      {order.orderNumber ? (
+        <p className={stripePayOrderNo}>
+          Order <span dir="ltr">{order.orderNumber}</span>
+        </p>
+      ) : null}
+      <div className={checkoutLines}>
+        {order.lines.map((line) => {
+          const qty = Number.parseInt(line.quantity, 10) || 1;
+          const title = line.productName ?? line.sku;
+          const thumb = line.imageUrl?.startsWith("http") ? line.imageUrl : null;
+          return (
+            <article className={coline} key={line.orderLineId}>
+              <div className={colineMedia}>
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={thumb}
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = "hidden";
+                    }}
+                  />
+                ) : null}
+                <b>{qty}</b>
+              </div>
+              <div className={colineBody}>
+                <div className={colineTop}>
+                  <h3 className={colineName}>{title}</h3>
+                  <p className={colinePrice} dir="ltr">
+                    {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
+                  </p>
+                </div>
+                {showsDistinctSize(title, line.variantName ?? undefined) ? (
+                  <p className={colineMeta}>{line.variantName}</p>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <dl className={checkoutTotals}>
+        <div>
+          <dt>Subtotal</dt>
+          <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
+        </div>
+        {Number(totals.discount) > 0 ? (
+          <div>
+            <dt>Discount</dt>
+            <dd dir="ltr">−{formatMoney(Number(totals.discount), currency)}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>Shipping</dt>
+          <dd dir="ltr">{shipping > 0 ? formatMoney(shipping, currency) : "Free"}</dd>
+        </div>
+        {Number(totals.tax) > 0 ? (
+          <div>
+            <dt>Tax</dt>
+            <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
+          </div>
+        ) : null}
+        <div className={checkoutTotalsLine}>
+          <dt>Total</dt>
+          <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
+        </div>
+      </dl>
+    </aside>
+  );
+}
 
 export function StripePaymentFormView() {
+  const hydrated = useHydrated();
   const router = useRouter();
 
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const [missingCtx, setMissingCtx] = useState(false);
+  // Read once after hydration. The client secret stays in sessionStorage only.
+  const ctx = useMemo(
+    () =>
+      hydrated
+        ? {
+            clientSecret: getStoredStripeClientSecret(),
+            publishableKey: getStoredStripePublishableKey(),
+            orderId: getStoredOrderId(),
+          }
+        : null,
+    [hydrated],
+  );
+  const publishableKey = ctx?.publishableKey ?? null;
+  const orderId = ctx?.orderId ?? null;
+  // The key arrives on the initiate response — never hardcoded.
+  const stripePromise = useMemo(
+    () => (publishableKey ? loadStripe(publishableKey) : null),
+    [publishableKey],
+  );
 
+  const orderQuery = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => getOrder(orderId as string),
+    enabled: Boolean(orderId && ctx?.clientSecret),
+    retry: 1,
+    staleTime: 60_000,
+  });
+
+  // Already paid (e.g. back button after success) — don't offer to charge again.
+  const paymentStatus = orderQuery.data?.paymentStatus?.toUpperCase();
+  const alreadyPaid = paymentStatus === "PAID" || paymentStatus === "AUTHORIZED";
   useEffect(() => {
-    const secret = getStoredStripeClientSecret();
-    const pubKey = getStoredStripePublishableKey();
-    const oid = getStoredOrderId();
+    if (!alreadyPaid || !orderId) return;
+    clearPaymentState();
+    router.replace(`/order-confirmation/${orderId}`);
+  }, [alreadyPaid, orderId, router]);
 
-    if (!secret || !pubKey || !oid) {
-      setMissingCtx(true);
-      return;
-    }
-
-    setClientSecret(secret);
-    setOrderId(oid);
-    setStripePromise(loadStripe(pubKey));
-    setReady(true);
-  }, []);
-
-  // ── Missing context ──
-  if (missingCtx) {
+  if (!hydrated || alreadyPaid) {
     return (
-      <CheckoutShell step={2}>
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-20 text-center">
-          <p className="text-[15px] text-sa-primary">Session expired. Please start a new order.</p>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="text-[13px] text-terra underline underline-offset-4"
-          >
-            Return to Home
-          </button>
-        </div>
-      </CheckoutShell>
+      <CheckoutStateShell current="Payment">
+        <CheckoutSpinnerState title="Loading secure payment…" />
+      </CheckoutStateShell>
     );
   }
 
-  // ── Loading Stripe ──
-  if (!ready || !stripePromise || !clientSecret || !orderId) {
+  if (!ctx?.clientSecret || !orderId || !stripePromise) {
     return (
-      <CheckoutShell step={2}>
-        <div className="flex flex-1 items-center justify-center py-20">
-          <span className="size-8 animate-spin rounded-full border-2 border-sa-border border-t-terra" />
-        </div>
-      </CheckoutShell>
+      <CheckoutStateShell current="Payment">
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Payment</p>
+          <h1 className={collectionTitle}>This payment session has expired.</h1>
+          <p>If you already placed an order, you can finish paying for it from here.</p>
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
+            <span>Retry payment</span>
+            <b aria-hidden="true">↗</b>
+          </Link>
+        </section>
+      </CheckoutStateShell>
     );
   }
-
-  const returnUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/checkout/payment/stripe`;
 
   const options: StripeElementsOptions = {
-    clientSecret,
+    clientSecret: ctx.clientSecret,
+    fonts: [400, 500].map((weight) => ({
+      family: "Benton Sans Wide",
+      src: `url(${window.location.origin}/fonts/benton-sans-wide-${weight}.ttf)`,
+      weight: String(weight),
+    })),
     appearance: {
       theme: "stripe",
       variables: {
-        colorPrimary: "#B46E57",
+        fontFamily: FONT_FAMILY,
+        fontSizeBase: "14px",
+        colorPrimary: BRAND.copper,
         colorBackground: "#ffffff",
-        colorText: "#2c241d",
-        colorDanger: "#dc2626",
-        fontFamily: "inherit",
-        borderRadius: "6px",
+        colorText: BRAND.ink,
+        colorTextSecondary: BRAND.ink2,
+        colorTextPlaceholder: "#a3978a",
+        colorDanger: BRAND.danger,
+        colorIcon: BRAND.ink2,
+        borderRadius: "4px",
+        spacingUnit: "4px",
+        gridRowSpacing: "16px",
+      },
+      rules: {
+        ".Label": {
+          fontSize: "10px",
+          fontWeight: "500",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: BRAND.ink2,
+          marginBottom: "6px",
+        },
+        ".Input": {
+          border: `1px solid ${BRAND.line}`,
+          boxShadow: "none",
+          padding: "12px 14px",
+        },
+        ".Input:focus": {
+          borderColor: BRAND.copper,
+          boxShadow: `0 0 0 1px ${BRAND.copper}`,
+        },
+        ".Input--invalid": {
+          borderColor: BRAND.danger,
+          boxShadow: "none",
+        },
+        ".Tab": {
+          border: `1px solid ${BRAND.line}`,
+          boxShadow: "none",
+        },
+        ".Tab--selected": {
+          borderColor: BRAND.copper,
+          boxShadow: `0 0 0 1px ${BRAND.copper}`,
+        },
       },
     },
   };
 
   return (
-    <CheckoutShell step={2}>
-      <div className="flex flex-1 items-start justify-center px-4 py-10 lg:py-14">
-        <div className="w-full max-w-lg">
+    <CheckoutStateShell current="Payment">
+      <header className={checkoutHead}>
+        <h1 className={pageTitle}>Payment</h1>
+        <ol className={checkoutSteps}>
+          <li>
+            <Link href="/cart">Bag</Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>Details</li>
+          <li aria-hidden="true">·</li>
+          <li className={checkoutStepCurrent}>Payment</li>
+        </ol>
+      </header>
 
-          {/* Heading */}
-          <div className="mb-8">
-            <h1 className="text-[24px] font-bold tracking-tight text-sa-primary">
-              Secure Card Payment
-            </h1>
-            <p className="mt-1 text-[14px] text-sa-muted">
-              Your card details are encrypted and never stored on our servers.
-            </p>
-          </div>
-
-          {/* Card form */}
-          <div className="rounded-xl border border-sa-border bg-white px-6 py-6 shadow-sm dark:bg-page">
+      <div className={checkoutLayout}>
+        <div className={`${checkoutForm} ${stripePayForm}`}>
+          <section className={cbox} aria-labelledby="card-payment-heading">
+            <div className={`${cboxHead} ${stripePayHead}`}>
+              <span className={`${cboxNum} ${stripePayNum}`}>
+                <LockIcon />
+              </span>
+              <h2 id="card-payment-heading">Card details</h2>
+              <span className={stripePayBrands} aria-label="Visa, Mastercard and American Express accepted">
+                Visa · Mastercard · Amex
+              </span>
+            </div>
             <Elements stripe={stripePromise} options={options}>
-              <StripeForm orderId={orderId} returnUrl={returnUrl} />
+              <StripeForm orderId={orderId} order={orderQuery.data} />
             </Elements>
-          </div>
-
-          {/* Cancel */}
-          <div className="mt-5 text-center">
-            <button
-              type="button"
-              onClick={() => router.push("/checkout/payment/cancel")}
-              className="text-[13px] text-sa-muted underline underline-offset-4 hover:text-sa-primary"
-            >
-              Cancel and return
-            </button>
-          </div>
+          </section>
+          <p className={checkoutLegal}>
+            Changed your mind? <Link href="/checkout/payment/cancel">Cancel payment</Link> — your order stays saved.
+          </p>
         </div>
+
+        <OrderSummary order={orderQuery.data} loading={orderQuery.isPending} />
       </div>
-    </CheckoutShell>
+    </CheckoutStateShell>
   );
 }

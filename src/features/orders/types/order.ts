@@ -3,8 +3,8 @@ import type { AccountStatusTone } from "@/features/account/components/AccountSta
 export type OrderChannel = "ONLINE" | "IN_STORE";
 
 /**
- * View model for a purchase row. Shaped after the Figma order card so the
- * storefront Orders API (Phase 6) only needs a mapper, not a UI change.
+ * View model for a purchase row. Shaped after the order card so the
+ * storefront Orders API only needs a mapper, not a UI change.
  */
 export type OrderSummaryView = {
   id: string;

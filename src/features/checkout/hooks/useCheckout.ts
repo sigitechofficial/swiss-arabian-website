@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCartStore } from "@/stores/useCartStore";
 import { clearCartId } from "@/features/cart/utils/guestToken";
-import { ApiClientError } from "@/lib/api/apiError";
+import { getActiveCart } from "@/features/cart/api/cart.service";
+import { appliedCoupon, giftCardSignature, shippingDiscountAmount } from "@/features/promotions/types/promotions";
+import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import {
+  cancelCheckout,
   createCheckoutFromCart,
   getCheckoutSession,
   listDeliveryMethods,
@@ -17,57 +19,130 @@ import {
   validateCheckout,
   type SetAddressDto,
 } from "../api/checkout.service";
-import { placeOrder, initiatePayment } from "../api/orders.service";
-import {
-  getStoredCheckoutSessionId,
-  storeCheckoutSessionId,
-  clearCheckoutSessionId,
-  storeOrderId,
-  storeOrderNumber,
-  storeGuestOrderAccessToken,
-  storeGuestOrderLines,
-  persistInsiderPurchaseFromOrder,
-  storePaymentTransactionId,
-  storeZonePaymentMethodId,
-  storePaymentMethodId,
-  getPayAttempt,
-  storeStripeClientSecret,
-  storeStripePublishableKey,
-} from "../utils/checkoutSession";
-import {
-  pickPreferredPaymentMethod,
-  sortPaymentMethodsForDisplay,
-} from "../utils/paymentMethod";
+import { placeOrder } from "../api/orders.service";
 import type {
   CheckoutSessionResponse,
   DeliveryMethodOption,
   PaymentMethodOption,
 } from "../types/checkout";
-import type { CheckoutFormValues } from "../schemas/checkout.schema";
-import { buildAddressSnapshot } from "../utils/addressSnapshot";
+import { buildAddressSnapshot, type AddressFields } from "../utils/addressSnapshot";
+import { ApiClientError } from "@/lib/api/apiError";
+import { checkoutErrorMessage, checkoutIssueMessage } from "../utils/checkoutIssues";
+import {
+  clearCheckoutSessionId,
+  getStoredCheckoutSessionId,
+  resetPayAttempt,
+  storeCheckoutSessionId,
+  storeGuestOrderAccessToken,
+  storeOrderId,
+  storeOrderNumber,
+  storePaymentMethodId,
+  storeZonePaymentMethodId,
+} from "../utils/checkoutSession";
+import { pickDefaultPaymentMethod } from "../utils/methodLabels";
+import {
+  checkoutLineSignature,
+  checkoutSignatureChanged,
+  promotionCheckoutSignature,
+} from "../utils/promotionCheckoutSignature";
+import { PaymentGatewayError, startPayment } from "../utils/startPayment";
 
-// ─── Hook types ───────────────────────────────────────────────────────────────
+/**
+ * Statuses a session can't come back from. The live backend reports usable
+ * sessions as `VALID`, not the `ACTIVE` the guide documents — so match terminal
+ * states instead of requiring a live one (requiring `ACTIVE`, as the reference
+ * does, throws the session away and rebuilds it on every page load).
+ */
+const TERMINAL_SESSION_STATUSES = new Set(["COMPLETED", "CANCELLED", "EXPIRED"]);
 
-export type CheckoutStatus = "loading" | "ready" | "submitting" | "error";
+export type CheckoutStatus = "idle" | "loading" | "ready" | "submitting" | "error";
 
-export interface UseCheckoutReturn {
-  session: CheckoutSessionResponse | null;
-  deliveryMethods: DeliveryMethodOption[];
-  paymentMethods: PaymentMethodOption[];
-  selectedDeliveryId: string | null;
-  selectedPaymentId: string | null;
-  status: CheckoutStatus;
-  errorMsg: string | null;
-  chooseDelivery: (zoneDeliveryMethodId: string) => Promise<void>;
-  choosePayment: (zonePaymentMethodId: string) => Promise<void>;
-  submitCheckout: (data: CheckoutFormValues) => Promise<void>;
+export type CheckoutSubmitValues = {
+  email: string;
+  shipping: AddressFields;
+  billingSameAsShipping: boolean;
+  billing?: AddressFields;
+};
+
+function commerceSignature(lines: CartLine[]): string {
+  const state = useCartStore.getState();
+  return promotionCheckoutSignature({
+    lines,
+    couponCode: appliedCoupon(state.promotions)?.code ?? "",
+    merchandiseDiscount: state.totals?.discount ?? 0,
+    shippingDiscount: shippingDiscountAmount(state.promotions),
+    giftCards: giftCardSignature(state.promotions),
+  });
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+/** Whether a session was built from exactly this bag; `null` when it can't be told. */
+function sessionMatchesCart(
+  session: CheckoutSessionResponse,
+  lines: CartLine[],
+): boolean | null {
+  const items = session.items ?? [];
+  if (items.some((i) => !i.cartItemId)) return null;
+  const sessionSig = items
+    .map((i) => `${i.cartItemId}:${Number.parseInt(i.quantity ?? "0", 10) || 0}`)
+    .sort()
+    .join("|");
+  return sessionSig === checkoutLineSignature(lines);
+}
 
-export function useCheckout(): UseCheckoutReturn {
+/**
+ * `from-cart` resumes any active session for the cart without re-reading it,
+ * so a changed bag needs the old session cancelled before a new one is made.
+ */
+async function rebuildSession(
+  cartId: string,
+  stale: CheckoutSessionResponse | null,
+): Promise<CheckoutSessionResponse> {
+  if (stale) {
+    try {
+      await cancelCheckout(stale.checkoutSessionId, "Bag changed during checkout");
+    } catch {
+      // Already expired/cancelled — nothing to release.
+    }
+  }
+  clearCheckoutSessionId();
+  return createCheckoutFromCart({ cartId });
+}
+
+async function resolveSession(
+  cartId: string,
+  lines: CartLine[],
+): Promise<CheckoutSessionResponse> {
+  const storedId = getStoredCheckoutSessionId();
+  if (storedId) {
+    try {
+      const existing = await getCheckoutSession(storedId);
+      const live =
+        existing.cartId === cartId && !TERMINAL_SESSION_STATUSES.has(existing.status);
+      if (live && sessionMatchesCart(existing, lines) !== false) return existing;
+      if (live) return rebuildSession(cartId, existing);
+    } catch {
+      // Stale id — fall through and start fresh.
+    }
+    clearCheckoutSessionId();
+  }
+
+  const created = await createCheckoutFromCart({ cartId });
+  // A session resumed from another tab may predate a bag change made since.
+  return sessionMatchesCart(created, lines) === false
+    ? rebuildSession(cartId, created)
+    : created;
+}
+
+export function useCheckout() {
   const cartId = useCartStore((s) => s.cartId);
+  const lines = useCartStore((s) => s.lines);
+  const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
+  const discountTotal = useCartStore((s) => s.totals?.discount ?? 0);
+  const shippingDiscount = useCartStore((s) => shippingDiscountAmount(s.promotions));
+  const giftCardsSig = useCartStore((s) => giftCardSignature(s.promotions));
   const clearCart = useCartStore((s) => s.clear);
+  const setCartId = useCartStore((s) => s.setCartId);
+  const setCartFromApi = useCartStore((s) => s.setCartFromApi);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -79,372 +154,303 @@ export function useCheckout(): UseCheckoutReturn {
   const [status, setStatus] = useState<CheckoutStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Prevent double-init from React StrictMode / concurrent renders
-  const initRef = useRef(false);
+  const initCartRef = useRef<string | null>(null);
   const methodsSessionRef = useRef<string | null>(null);
+  /** The bag signature the current session was built from. */
+  const sessionSigRef = useRef<string | null>(null);
+  /** Shopper's choices, re-applied when a session is rebuilt. */
+  const deliveryChoiceRef = useRef<string | null>(null);
+  const paymentChoiceRef = useRef<string | null>(null);
 
-  // ── C.0 + C.1: Create / resume checkout session ──────────────────────────
+  const adopt = useCallback((next: CheckoutSessionResponse) => {
+    storeCheckoutSessionId(next.checkoutSessionId);
+    setSession(next);
+  }, []);
 
-  useEffect(() => {
-    if (initRef.current) return;
-    if (!cartId) return;
-    initRef.current = true;
-
-    async function initSession() {
-      const storedId = getStoredCheckoutSessionId();
-      let sess: CheckoutSessionResponse;
-
-      try {
-        if (storedId) {
-          try {
-            sess = await getCheckoutSession(storedId);
-            if (sess.status !== "ACTIVE") {
-              clearCheckoutSessionId();
-              sess = await createCheckoutFromCart({ cartId: cartId! });
-            }
-          } catch {
-            clearCheckoutSessionId();
-            sess = await createCheckoutFromCart({ cartId: cartId! });
-          }
-        } else {
-          sess = await createCheckoutFromCart({ cartId: cartId! });
+  const adoptSession = useCallback(
+    async (next: CheckoutSessionResponse) => {
+      adopt(next);
+      if (cartId) {
+        try {
+          setCartFromApi(await getActiveCart(cartId));
+        } catch {
+          // Session already has the tender.
         }
-        storeCheckoutSessionId(sess.checkoutSessionId);
-        setSession(sess);
+      }
+      sessionSigRef.current = commerceSignature(useCartStore.getState().lines);
+    },
+    [adopt, cartId, setCartFromApi],
+  );
+
+  const start = useCallback(
+    async (id: string, currentLines: CartLine[]) => {
+      try {
+        const next = await resolveSession(id, currentLines);
+        sessionSigRef.current = commerceSignature(currentLines);
+        adopt(next);
       } catch (e) {
-        const msg =
-          e instanceof ApiClientError
-            ? e.message
-            : "Could not start checkout. Please try again.";
-        setErrorMsg(msg);
+        setErrorMsg(checkoutErrorMessage(e, "We couldn’t start checkout. Please try again."));
         setStatus("error");
       }
-    }
+    },
+    [adopt],
+  );
 
-    initSession();
-  }, [cartId]);
-
-  // ── C.2 + C.3: Load delivery + payment methods, auto-select defaults ─────
-
+  // C.1 — create or resume the session, once per cart.
   useEffect(() => {
-    if (!session) return;
-    const id = session.checkoutSessionId;
-    if (methodsSessionRef.current === id) return;
-    methodsSessionRef.current = id;
+    if (!cartId || initCartRef.current === cartId) return;
+    initCartRef.current = cartId;
+    void start(cartId, lines);
+  }, [cartId, lines, start]);
 
-    async function loadMethods() {
+  // Bag changed after the session was built (an add-on, a quantity change in
+  // another tab…). Rebuild it so the placed order matches what's on screen.
+  useEffect(() => {
+    if (!cartId || !session || sessionSigRef.current === null) return;
+    const sig = promotionCheckoutSignature({
+      lines,
+      couponCode,
+      merchandiseDiscount: discountTotal,
+      shippingDiscount,
+      giftCards: giftCardsSig,
+    });
+    if (!checkoutSignatureChanged(sessionSigRef.current, sig)) return;
+    sessionSigRef.current = sig;
+    const stale = session;
+    void (async () => {
+      try {
+        const next = await rebuildSession(cartId, stale);
+        setStatus("loading");
+        adopt(next);
+      } catch (e) {
+        setErrorMsg(checkoutErrorMessage(e));
+      }
+    })();
+  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, session, adopt]);
+
+  // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
+  const sessionId = session?.checkoutSessionId ?? null;
+  useEffect(() => {
+    if (!sessionId || methodsSessionRef.current === sessionId) return;
+    methodsSessionRef.current = sessionId;
+
+    void (async () => {
       try {
         const [delivery, payment] = await Promise.all([
-          listDeliveryMethods(id),
-          listPaymentMethods(id),
+          listDeliveryMethods(sessionId),
+          listPaymentMethods(sessionId),
         ]);
         setDeliveryMethods(delivery);
-        setPaymentMethods(sortPaymentMethodsForDisplay(payment));
+        setPaymentMethods(payment);
 
-        // Auto-select default delivery
-        const defDelivery = delivery.find((d) => d.isDefault) ?? delivery[0];
-        if (defDelivery) {
-          setSelectedDeliveryId(defDelivery.zoneDeliveryMethodId);
+        const deliveryPick =
+          delivery.find((d) => d.zoneDeliveryMethodId === deliveryChoiceRef.current) ??
+          delivery.find((d) => d.isDefault) ??
+          delivery[0];
+        if (deliveryPick) {
+          deliveryChoiceRef.current = deliveryPick.zoneDeliveryMethodId;
+          setSelectedDeliveryId(deliveryPick.zoneDeliveryMethodId);
           try {
-            const updated = await selectDeliveryMethod(id, defDelivery.deliveryMethodId);
-            setSession(updated);
+            setSession(await selectDeliveryMethod(sessionId, deliveryPick.deliveryMethodId));
           } catch {
-            // Non-critical — user can still pick manually
+            // Re-asserted on submit.
           }
+        } else {
+          setErrorMsg("No shipping options are available for this order right now.");
         }
 
-        // Prefer Paymob when the zone offers it (otherwise backend default)
-        const defPayment = pickPreferredPaymentMethod(payment);
-        if (defPayment) {
-          setSelectedPaymentId(defPayment.zonePaymentMethodId);
-          storeZonePaymentMethodId(defPayment.zonePaymentMethodId);
-          storePaymentMethodId(defPayment.paymentMethodId);
+        const paymentPick =
+          payment.find((p) => p.zonePaymentMethodId === paymentChoiceRef.current) ??
+          pickDefaultPaymentMethod(payment);
+        if (paymentPick) {
+          paymentChoiceRef.current = paymentPick.zonePaymentMethodId;
+          setSelectedPaymentId(paymentPick.zonePaymentMethodId);
+          storeZonePaymentMethodId(paymentPick.zonePaymentMethodId);
+          storePaymentMethodId(paymentPick.paymentMethodId);
           try {
-            const updated = await selectPaymentMethod(id, defPayment.paymentMethodId);
-            setSession(updated);
+            setSession(await selectPaymentMethod(sessionId, paymentPick.paymentMethodId));
           } catch {
-            // Non-critical
+            // Re-asserted on submit.
           }
         }
-      } catch {
-        // Methods failed to load — form is still usable with empty lists
+      } catch (e) {
+        setErrorMsg(
+          checkoutErrorMessage(e, "We couldn’t load shipping and payment options. Please refresh."),
+        );
       } finally {
         setStatus("ready");
       }
-    }
-
-    loadMethods();
-  }, [session?.checkoutSessionId]);
-
-  // ── Interactive delivery selection ──────────────────────────────────────
+    })();
+  }, [sessionId]);
 
   const chooseDelivery = useCallback(
     async (zoneDeliveryMethodId: string) => {
-      const method = deliveryMethods.find(
-        (d) => d.zoneDeliveryMethodId === zoneDeliveryMethodId,
-      );
-      if (!method || !session) return;
+      const method = deliveryMethods.find((d) => d.zoneDeliveryMethodId === zoneDeliveryMethodId);
+      if (!method || !sessionId) return;
+      const previous = deliveryChoiceRef.current;
+      deliveryChoiceRef.current = zoneDeliveryMethodId;
       setSelectedDeliveryId(zoneDeliveryMethodId);
       try {
-        const updated = await selectDeliveryMethod(
-          session.checkoutSessionId,
-          method.deliveryMethodId,
-        );
-        setSession(updated);
-      } catch {
-        // Revert on error
-        setSelectedDeliveryId(
-          session.selectedDeliveryMethod?.zoneDeliveryMethodId ?? null,
-        );
+        // The response is the server re-quote, including P6 promotion eligibility.
+        setSession(await selectDeliveryMethod(sessionId, method.deliveryMethodId));
+      } catch (e) {
+        deliveryChoiceRef.current = previous;
+        setSelectedDeliveryId(previous);
+        setErrorMsg(checkoutErrorMessage(e));
       }
     },
-    [deliveryMethods, session],
+    [deliveryMethods, sessionId],
   );
-
-  // ── Interactive payment selection ────────────────────────────────────────
 
   const choosePayment = useCallback(
     async (zonePaymentMethodId: string) => {
-      const method = paymentMethods.find(
-        (p) => p.zonePaymentMethodId === zonePaymentMethodId,
-      );
-      if (!method || !session) return;
+      const method = paymentMethods.find((p) => p.zonePaymentMethodId === zonePaymentMethodId);
+      if (!method || !sessionId) return;
+      const previous = paymentChoiceRef.current;
+      paymentChoiceRef.current = zonePaymentMethodId;
       setSelectedPaymentId(zonePaymentMethodId);
-      storeZonePaymentMethodId(zonePaymentMethodId);
+      storeZonePaymentMethodId(method.zonePaymentMethodId);
       storePaymentMethodId(method.paymentMethodId);
       try {
-        const updated = await selectPaymentMethod(
-          session.checkoutSessionId,
-          method.paymentMethodId,
-        );
-        setSession(updated);
-      } catch {
-        setSelectedPaymentId(
-          session.selectedPaymentMethod?.zonePaymentMethodId ?? null,
-        );
+        // The response is the server re-quote, including P6 promotion eligibility.
+        setSession(await selectPaymentMethod(sessionId, method.paymentMethodId));
+      } catch (e) {
+        paymentChoiceRef.current = previous;
+        setSelectedPaymentId(previous);
+        setErrorMsg(checkoutErrorMessage(e));
       }
     },
-    [paymentMethods, session],
+    [paymentMethods, sessionId],
   );
 
-  // ── C.4 – C.7: Full submit flow ──────────────────────────────────────────
-
+  // C.4 → C.7 — address, validate, place, pay.
   const submitCheckout = useCallback(
-    async (data: CheckoutFormValues) => {
+    async (values: CheckoutSubmitValues) => {
       if (!session) return;
+      const id = session.checkoutSessionId;
+      const delivery = deliveryMethods.find((d) => d.zoneDeliveryMethodId === selectedDeliveryId);
+      const payment = paymentMethods.find((p) => p.zonePaymentMethodId === selectedPaymentId);
+      if (!delivery) return setErrorMsg("Choose a shipping method to continue.");
+      if (!payment) return setErrorMsg("Choose a payment method to continue.");
+
       setStatus("submitting");
       setErrorMsg(null);
-
-      const sessionId = session.checkoutSessionId;
+      let placedOrderId: string | null = null;
 
       try {
-        // C.4 — Set shipping address; billing is additive (never overload shipping fields)
-        const addressSnapshot = buildAddressSnapshot({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          address: data.address,
-          apartment: data.apartment,
-          city: data.city,
-          country: data.country,
-          phone: data.phone,
+        const countryCode = session.context?.countryCode;
+        const addressSnapshot = buildAddressSnapshot(values.shipping, {
+          email: values.email,
+          countryCode,
         });
+        const addressDto: SetAddressDto =
+          values.billingSameAsShipping || !values.billing
+            ? { addressSnapshot, billingSameAsShipping: true }
+            : {
+                addressSnapshot,
+                billingAddressSnapshot: buildAddressSnapshot(values.billing, {
+                  email: values.email,
+                  countryCode,
+                }),
+              };
+        await setCheckoutAddress(id, addressDto);
 
-        const addressDto: SetAddressDto = data.billingSameAsShipping
-          ? { addressSnapshot, billingSameAsShipping: true }
-          : {
-              addressSnapshot,
-              billingAddressSnapshot: buildAddressSnapshot({
-                firstName: data.billingFirstName ?? "",
-                lastName: data.billingLastName ?? "",
-                address: data.billingAddress ?? "",
-                apartment: data.billingApartment,
-                city: data.billingCity ?? "",
-                country: data.billingCountry ?? data.country,
-                phone: data.billingPhone ?? "",
-              }),
-            };
+        // Re-assert both choices right before validating: the background
+        // selections from the method-loading effect may still be in flight.
+        await selectDeliveryMethod(id, delivery.deliveryMethodId);
+        await selectPaymentMethod(id, payment.paymentMethodId);
+        storeZonePaymentMethodId(payment.zonePaymentMethodId);
+        storePaymentMethodId(payment.paymentMethodId);
 
-        const afterAddress = await setCheckoutAddress(sessionId, addressDto);
-        setSession(afterAddress);
-
-        const selectedMethod =
-          paymentMethods.find(
-            (p) => p.zonePaymentMethodId === selectedPaymentId,
-          ) ?? pickPreferredPaymentMethod(paymentMethods);
-
-        if (selectedMethod) {
-          storeZonePaymentMethodId(selectedMethod.zonePaymentMethodId);
-          storePaymentMethodId(selectedMethod.paymentMethodId);
-          try {
-            const afterPayment = await selectPaymentMethod(
-              sessionId,
-              selectedMethod.paymentMethodId,
-            );
-            setSession(afterPayment);
-          } catch {
-            // Session may already have this method — initiate still sends paymentMethodId
-          }
-        }
-
-        // C.5 — Validate
-        // NOTE: HTTP 200 from validate does NOT mean isValid=true — always check the body.
-        // Backend skips delivery/payment checks inside validate if they are not yet set,
-        // but assertCheckoutReadyForPlacement (inside from-checkout) is stricter.
-        const afterValidate = await validateCheckout(sessionId);
-        setSession(afterValidate);
-
-        // Map backend issueType → user-friendly message
-        const ISSUE_MESSAGES: Record<string, string> = {
-          PRICE_MISSING: "One or more items in your cart have no price. Please contact support.",
-          PRODUCT_NOT_SELLABLE: "One or more items are no longer available for purchase.",
-          PRODUCT_NOT_VISIBLE: "One or more items are no longer visible in this region.",
-          INSUFFICIENT_INVENTORY: "One or more items are out of stock.",
-          INVENTORY_MISSING: "One or more items have no available stock.",
-          VARIANT_INACTIVE: "One or more items are inactive. Please remove them from your cart.",
-          CURRENCY_MISMATCH: "Currency mismatch detected. Please refresh and try again.",
-          ADDRESS_INVALID: "Your shipping address is incomplete or invalid.",
-          CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",
-          CHECKOUT_BILLING_REQUIRES_SHIPPING:
-            "Add a delivery address before using the same billing address.",
-          PAYMENT_METHOD_UNAVAILABLE: "The selected payment method is not available.",
-          DELIVERY_METHOD_UNAVAILABLE: "The selected delivery method is not available.",
-          MANUAL_REVIEW_REQUIRED: "Your order requires manual review. Please contact support.",
-        };
-
-        const allIssues = afterValidate.validationIssues ?? [];
-        const blockingIssue = allIssues.find(
-          (i) => i.severity === "ERROR" || i.severity === "WARNING",
-        );
-
-        if (afterValidate.validation?.isValid !== true) {
-          const msg =
-            (blockingIssue?.issueType && ISSUE_MESSAGES[blockingIssue.issueType]) ??
-            blockingIssue?.message ??
-            "Some items in your cart are unavailable. Please review your cart and try again.";
-          setErrorMsg(msg);
+        const validated = await validateCheckout(id);
+        setSession(validated);
+        if (validated.validation?.isValid !== true) {
+          setErrorMsg(checkoutIssueMessage(validated.validationIssues));
           setStatus("ready");
           return;
         }
 
-        // C.6 — Place order
-        const idempotencyKey = `order-${cartId ?? sessionId}`;
-        const order = await placeOrder({ checkoutSessionId: sessionId, idempotencyKey });
-
-        // Persist order info immediately
+        // Keyed by session: a retry can't double-place, but a session rebuilt
+        // after a bag change gets its own order.
+        const order = await placeOrder({ checkoutSessionId: id, idempotencyKey: `order-${id}` });
+        placedOrderId = order.orderId;
         storeOrderId(order.orderId);
         if (order.orderNumber) storeOrderNumber(order.orderNumber);
-        persistInsiderPurchaseFromOrder(order);
-
-        // Refresh account order list so Purchase History shows the new order
+        const tracking = order.guestTracking;
+        if (
+          order.created &&
+          order.orderNumber &&
+          tracking?.orderAccessToken &&
+          !tracking.previouslyIssued
+        ) {
+          storeGuestOrderAccessToken(order.orderNumber, tracking.orderAccessToken);
+        }
+        resetPayAttempt();
         void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
 
-        // Save guest tracking token keyed by orderNumber (never a global key)
-        if (
-          order.orderNumber &&
-          order.guestTracking &&
-          !order.guestTracking.previouslyIssued &&
-          order.guestTracking.orderAccessToken
-        ) {
-          storeGuestOrderAccessToken(
-            order.orderNumber,
-            order.guestTracking.orderAccessToken,
-          );
-        }
-        if (order.orderNumber && order.lines?.length) {
-          storeGuestOrderLines(
-            order.orderNumber,
-            order.lines.map((line) => ({
-              orderLineId: line.orderLineId,
-              sku: line.sku,
-              productName: line.productName,
-              variantName: line.variantName,
-              quantity: Number.parseInt(line.quantity, 10) || 1,
-            })),
-          );
-        }
-
-        // Clear cart after successful order
+        // The order consumed the cart server-side.
         clearCart();
+        setCartId(null);
         clearCartId();
         clearCheckoutSessionId();
 
-        // C.7 — Initiate payment
-        // Payment method is already selected on the checkout session — backend reads it from there.
-        // Do NOT send zonePaymentMethodId (forbidNonWhitelisted — causes 400).
-        const attempt = getPayAttempt();
-        const payAttemptKey = `pay-${order.orderId}-${attempt}`;
-
-        const returnUrl = `${window.location.origin}/checkout/payment/success`;
-        const cancelUrl = `${window.location.origin}/checkout/payment/cancel`;
-
-        const payment = await initiatePayment(order.orderId, {
-          idempotencyKey: payAttemptKey,
-          returnUrl,
-          cancelUrl,
-          ...(selectedMethod?.paymentMethodId
-            ? { paymentMethodId: selectedMethod.paymentMethodId }
-            : {}),
+        await startPayment(order.orderId, (href) => router.push(href), {
+          zonePaymentMethodId: payment.zonePaymentMethodId,
+          paymentMethodId: payment.paymentMethodId,
         });
-
-        if (payment.paymentAction === "REDIRECT" && payment.redirectUrl) {
-          // Store transaction ID for debugging
-          if (payment.paymentTransactionId) {
-            storePaymentTransactionId(payment.paymentTransactionId);
-          }
-          // Hard redirect to payment gateway — never use router.push here
-          window.location.href = payment.redirectUrl;
-          return;
-        }
-
-        if (payment.paymentAction === "INLINE_CARD" && payment.clientSecret) {
-          // Stripe inline flow — store keys and navigate to the Stripe payment page
-          if (payment.paymentTransactionId) {
-            storePaymentTransactionId(payment.paymentTransactionId);
-          }
-          const publishableKey =
-            payment.metadata?.publishableKey ??
-            (payment.metadata?.publishable_key as string | undefined);
-          if (publishableKey) storeStripePublishableKey(publishableKey);
-          storeStripeClientSecret(payment.clientSecret);
-          router.push("/checkout/payment/stripe");
-          return;
-        }
-
-        if (payment.paymentExecutionStatus === "PENDING_PROVIDER_EXECUTION") {
-          setErrorMsg(
-            payment.warnings?.[0] ??
-              "Card payment is not configured on the server. Paymob was not started.",
-          );
-          setStatus("ready");
-          return;
-        }
-
-        // COD or no provider action — confirmation
-        router.push(`/order-confirmation/${order.orderId}`);
       } catch (e) {
-        const ADDRESS_ERROR_MESSAGES: Record<string, string> = {
-          CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",
-          CHECKOUT_BILLING_REQUIRES_SHIPPING:
-            "Add a delivery address before using the same billing address.",
-        };
-        const msg =
-          e instanceof ApiClientError
-            ? (e.code && ADDRESS_ERROR_MESSAGES[e.code]) || e.message
-            : "Something went wrong. Please try again.";
-        setErrorMsg(msg);
+        if (placedOrderId) {
+          // The order exists and the bag is gone — send the shopper to the retry
+          // screen instead of stranding them on an empty checkout. A gateway
+          // that couldn't open its payment page gets an explicit message there.
+          router.push(
+            e instanceof PaymentGatewayError
+              ? "/checkout/payment/cancel?reason=gateway"
+              : "/checkout/payment/cancel",
+          );
+          return;
+        }
+        setErrorMsg(checkoutErrorMessage(e));
         setStatus("ready");
+        if (
+          e instanceof ApiClientError &&
+          (e.code === "PRICING_CHANGED" || e.code === "REDEMPTION_EXPIRED") &&
+          cartId
+        ) {
+          try {
+            setCartFromApi(await getActiveCart(cartId));
+            const next = await rebuildSession(cartId, session);
+            sessionSigRef.current = commerceSignature(useCartStore.getState().lines);
+            adopt(next);
+          } catch {
+            // Copy from checkoutErrorMessage is enough.
+          }
+        }
       }
     },
     [
       session,
-      cartId,
-      clearCart,
-      router,
-      queryClient,
+      deliveryMethods,
       paymentMethods,
+      selectedDeliveryId,
       selectedPaymentId,
+      queryClient,
+      clearCart,
+      setCartId,
+      cartId,
+      setCartFromApi,
+      adopt,
+      router,
     ],
   );
+
+  const retry = useCallback(() => {
+    if (!cartId) return;
+    setErrorMsg(null);
+    setStatus("loading");
+    methodsSessionRef.current = null;
+    void start(cartId, lines);
+  }, [cartId, lines, start]);
 
   return {
     session,
@@ -452,10 +458,14 @@ export function useCheckout(): UseCheckoutReturn {
     paymentMethods,
     selectedDeliveryId,
     selectedPaymentId,
-    status,
+    // No cart means nothing to check out — unless an order was just placed
+    // and consumed it, in which case we're mid-redirect to payment.
+    status: cartId || status === "submitting" ? status : ("idle" as CheckoutStatus),
     errorMsg,
     chooseDelivery,
     choosePayment,
     submitCheckout,
+    retry,
+    adoptSession,
   };
 }

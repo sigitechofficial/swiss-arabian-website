@@ -93,8 +93,7 @@ export const faqDrawers: FaqDrawer[] = [
       },
       {
         id: "order-friend",
-        question:
-          "I’m not in the UAE — can I have an order delivered to a friend here?",
+        question: "I’m not in the UAE — can I have an order delivered to a friend here?",
         answer:
           "Yes — you can place an order and pay by credit card. We’ll deliver to the address you provide. For assistance, email customerservice@sapguae.com.",
       },
@@ -139,14 +138,12 @@ export const faqDrawers: FaqDrawer[] = [
       {
         id: "delivery-charges",
         question: "What are the delivery charges?",
-        answer:
-          "Delivery charges are USD 16 across the UAE for all orders below USD 150.",
+        answer: "Delivery charges are USD 16 across the UAE for all orders below USD 150.",
       },
       {
         id: "delivery-free",
         question: "Do you offer free shipping?",
-        answer:
-          "Yes — shipping is free on purchases of USD 150 and above.",
+        answer: "Yes — shipping is free on purchases of USD 150 and above.",
       },
       {
         id: "delivery-time",
@@ -176,8 +173,7 @@ export const faqDrawers: FaqDrawer[] = [
       {
         id: "scents-cruelty",
         question: "Is Swiss Arabian cruelty free?",
-        answer:
-          "Swiss Arabian is cruelty free — we don’t test our perfumes on animals.",
+        answer: "Swiss Arabian is cruelty free — we don’t test our perfumes on animals.",
       },
       {
         id: "scents-vegan",
@@ -187,10 +183,8 @@ export const faqDrawers: FaqDrawer[] = [
       },
       {
         id: "scents-oud",
-        question:
-          "Is Swiss Arabian using real oud, amber and musk in its perfumes?",
-        answer:
-          "Yes — we use natural extracts of those materials, and we never use banned ingredients.",
+        question: "Is Swiss Arabian using real oud, amber and musk in its perfumes?",
+        answer: "Yes — we use natural extracts of those materials, and we never use banned ingredients.",
       },
       {
         id: "scents-alcohol",
@@ -238,8 +232,7 @@ export const faqDrawers: FaqDrawer[] = [
       {
         id: "samples-free",
         question: "Does Swiss Arabian offer free samples?",
-        answer:
-          "Yes — complimentary samples are included with each online order.",
+        answer: "Yes — complimentary samples are included with each online order.",
       },
       {
         id: "samples-sell",

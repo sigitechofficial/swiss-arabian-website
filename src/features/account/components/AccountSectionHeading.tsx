@@ -6,7 +6,7 @@ type AccountSectionHeadingProps = {
   href?: string;
 };
 
-/** Figma · sect-hd (1110:9333) — inline title with trailing link */
+/** Inline title with trailing link */
 export function AccountSectionHeading({
   title,
   linkLabel,
@@ -14,13 +14,13 @@ export function AccountSectionHeading({
 }: AccountSectionHeadingProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="text-[19px] font-bold text-sa-primary lg:text-[22px]">
+      <h2 className="text-[17px] font-bold text-sa-primary lg:text-[19px]">
         {title}
       </h2>
       {href && linkLabel ? (
         <Link
           href={href}
-          className="text-[13px] font-medium text-sa-primary hover:text-terra"
+          className="text-[12px] font-medium text-sa-primary hover:text-terra"
         >
           {linkLabel} &nbsp;→
         </Link>

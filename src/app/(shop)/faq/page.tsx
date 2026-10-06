@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-
 import { FaqPageView } from "@/features/faq";
 
 export const metadata: Metadata = {
-  title: "FAQs",
-  description:
-    "Answers on orders, delivery, scents, samples and more — from the house of Swiss Arabian.",
+  title: "FAQ",
+  description: "Answers about orders, delivery, payments, samples and Swiss Arabian scents.",
 };
 
-export default function FaqPage() {
-  return <FaqPageView />;
+export default async function FaqPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topic?: string }>;
+}) {
+  const { topic } = await searchParams;
+  return <FaqPageView initialDrawer={topic} />;
 }

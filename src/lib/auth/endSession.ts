@@ -11,7 +11,6 @@ export function endSession(): void {
   clearTokens();
   useAuthStore.getState().reset();
   queryClient.clear();
-  // Clear cart local state — server-side cart persists for 30 days.
   useCartStore.getState().clear();
   useCartStore.getState().setCartId(null);
   clearCartId();

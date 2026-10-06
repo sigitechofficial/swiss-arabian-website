@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { PageLoading } from "@/components/ui";
 import { ResetPasswordPageView } from "@/features/auth";
+import { PageLoading } from "@/components/ui";
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading…" fill />}>
+    <Suspense fallback={<PageLoading label="Loading…" />}>
       <ResetPasswordPageView />
     </Suspense>
   );

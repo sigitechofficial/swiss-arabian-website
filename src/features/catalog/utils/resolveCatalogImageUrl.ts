@@ -1,10 +1,5 @@
 import { env } from "@/lib/config/env";
 
-/**
- * Catalog APIs may return absolute CDN/Shopify URLs or relative media paths
- * like `/catalog/media/files/uae/{productId}/{file}.webp`.
- * Relative paths are served from the API host (or optional media base).
- */
 export function resolveCatalogImageUrl(
   image: string | null | undefined,
 ): string | null {

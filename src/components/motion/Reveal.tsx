@@ -67,8 +67,8 @@ type StaggerProps = {
   children: ReactNode;
   className?: string;
   /**
-   * `scroll` — play when in viewport (home sections).
-   * `mount` — play as soon as the grid mounts (async catalog / filtered lists).
+   * `scroll` — play when in viewport (page sections).
+   * `mount` — play as soon as the grid mounts (async lists).
    */
   mode?: "scroll" | "mount";
 };
@@ -84,11 +84,7 @@ export function Stagger({
 }: StaggerProps) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
-  const isInView = useInView(ref, {
-    once: true,
-    amount: 0.05,
-    // Always true check skipped when mount mode — we don't need the observer
-  });
+  const isInView = useInView(ref, { once: true, amount: 0.05 });
   const shouldShow = mode === "mount" || isInView;
 
   if (reduce) {
@@ -123,68 +119,6 @@ export function StaggerItem({
 
   return (
     <motion.div className={className} variants={staggerItemVariants}>
-      {children}
-    </motion.div>
-  );
-}
-
-/** Soft continuous float — decorative only, pauses with reduced motion */
-export function SoftFloat({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const reduce = useReducedMotion();
-
-  if (reduce) {
-    return <div className={className}>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      className={className}
-      animate={{ y: [0, -6, 0] }}
-      transition={{
-        duration: 5.5,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/** Single item that fades up when it enters the viewport (lazy grids). */
-export function InViewItem({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const reduce = useReducedMotion();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const isInView = useInView(ref, {
-    once: true,
-    amount: 0.15,
-    margin: "0px 0px -40px 0px",
-  });
-
-  if (reduce) {
-    return <div className={className}>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      ref={ref}
-      className={className}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={revealTransition}
-    >
       {children}
     </motion.div>
   );

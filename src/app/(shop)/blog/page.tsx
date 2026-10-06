@@ -1,11 +1,10 @@
-import { Suspense } from "react";
-import { PageLoading } from "@/components/ui";
-import { BlogPageView } from "@/features/blog";
+import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 
 export default function BlogPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading journal…" fill />}>
-      <BlogPageView />
-    </Suspense>
+    <FeaturePlaceholder
+      title="Journal"
+      description="Blog listing is waiting on CMS content."
+    />
   );
 }

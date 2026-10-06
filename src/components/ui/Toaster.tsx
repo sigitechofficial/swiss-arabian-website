@@ -1,7 +1,5 @@
 "use client";
 
-import Alert from "@mui/material/Alert";
-import Snackbar from "@mui/material/Snackbar";
 import {
   createContext,
   useCallback,
@@ -51,22 +49,39 @@ export function Toaster() {
 
   const api = useMemo(() => ({ toast: show }), [show]);
 
+  useEffect(() => {
+    if (!state.open) return;
+    const id = window.setTimeout(() => setState((prev) => ({ ...prev, open: false })), 4000);
+    return () => window.clearTimeout(id);
+  }, [state.open, state.message, state.tone]);
+
+  const toneClass = {
+    success: "bg-[#2e7d4f]",
+    error: "bg-[#c0392b]",
+    info: "bg-ink",
+    warning: "bg-gold",
+  }[state.tone];
+
   return (
     <ToastContext.Provider value={api}>
-      <Snackbar
-        open={state.open}
-        autoHideDuration={4000}
-        onClose={() => setState((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity={state.tone}
-          variant="filled"
-          onClose={() => setState((prev) => ({ ...prev, open: false }))}
-        >
-          {state.message}
-        </Alert>
-      </Snackbar>
+      {state.open ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[1400] flex justify-center px-4">
+          <div
+            className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-md px-4 py-3 text-sm text-white shadow-[0_12px_32px_rgba(44,36,29,0.18)] ${toneClass}`}
+            role="status"
+          >
+            <p className="m-0">{state.message}</p>
+            <button
+              type="button"
+              className="cursor-pointer border-0 bg-transparent p-0 text-white/80"
+              aria-label="Dismiss"
+              onClick={() => setState((prev) => ({ ...prev, open: false }))}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      ) : null}
     </ToastContext.Provider>
   );
 }

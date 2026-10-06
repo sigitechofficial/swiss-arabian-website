@@ -1,6 +1,11 @@
 import { apiGet } from "@/lib/api/apiClient";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+/**
+ * `/storefront/order-tracking/:orderNumber` — shapes verified against the live
+ * API. Proof is either the one-time `orderAccessToken` (guests) or the
+ * customer's JWT for their own order; the order number alone is refused (422).
+ */
 
 export interface TrackingEvent {
   eventStatus: string;
@@ -13,34 +18,39 @@ export interface TrackingEvent {
   trackingNumber: string | null;
 }
 
-export interface GuestShipmentSummary {
+export interface TrackingDeliveryMethod {
+  methodCode: string;
+  displayName: string | null;
+  methodType?: string | null;
+  estimatedMinDays: number | null;
+  estimatedMaxDays: number | null;
+}
+
+export interface TrackingShipment {
   shipmentId: string;
   shipmentNumber: string;
   status: string;
-  deliveryMethod: {
-    methodCode: string;
-    displayName: string | null;
-    estimatedMinDays: number | null;
-    estimatedMaxDays: number | null;
-  };
+  deliveryMethod: TrackingDeliveryMethod;
   shippingPartner: { partnerCode: string; displayName: string | null };
   trackingNumber: string | null;
+  /** Third-party carrier page — open in a new tab, never route to it. */
   trackingUrl: string | null;
   shippedAt: string | null;
   estimatedDeliveryAt: string | null;
   deliveredAt: string | null;
   itemCount: number;
-  items: {
-    sku: string;
-    productName: string | null;
-    quantity: string;
-    orderLineId?: string | null;
-    variantName?: string | null;
-  }[];
+  items: { sku: string; productName: string | null; quantity: string }[];
   latestTrackingEvent: TrackingEvent | null;
 }
 
-export interface GuestOrderTrackingSummaryResponse {
+export interface TrackingCancellationWindow {
+  isInsideWindow: boolean;
+  canCancel: boolean;
+  remainingSeconds: number | null;
+  endsAt: string | null;
+}
+
+export interface OrderTrackingSummary {
   orderId: string;
   orderNumber: string;
   status: string;
@@ -51,33 +61,21 @@ export interface GuestOrderTrackingSummaryResponse {
   total: string;
   itemCount: number;
   isGuestOrder: boolean;
-  shipments: GuestShipmentSummary[];
+  shipments: TrackingShipment[];
   latestTrackingStatus: string | null;
   latestTrackingEventTime: string | null;
   estimatedDeliveryAt: string | null;
   deliveredAt: string | null;
-  cancellationWindow: {
-    isInsideWindow: boolean;
-    canCancel: boolean;
-    remainingSeconds: number | null;
-    endsAt: string | null;
-  } | null;
+  cancellationWindow: TrackingCancellationWindow | null;
   timeline: {
     eventType: string;
     title: string | null;
     description: string | null;
     occurredAt: string;
   }[];
-  lines?: {
-    orderLineId: string;
-    sku: string;
-    productName: string | null;
-    variantName?: string | null;
-    quantity: string;
-  }[];
 }
 
-export interface GuestOrderTrackingTimelineResponse {
+export interface OrderTrackingTimeline {
   orderNumber: string;
   latestStatus: string | null;
   latestEventTime: string | null;
@@ -87,44 +85,42 @@ export interface GuestOrderTrackingTimelineResponse {
     status: string;
     trackingNumber: string | null;
     trackingUrl: string | null;
+    carrier: { partnerCode: string; displayName: string | null };
+    deliveryMethod: TrackingDeliveryMethod;
     latestEvent: TrackingEvent | null;
     events: TrackingEvent[];
   }[];
   timeline: (TrackingEvent & { shipmentId: string })[];
 }
 
-// ─── Service functions ────────────────────────────────────────────────────────
-
-function buildTokenParam(orderAccessToken: string): URLSearchParams {
-  return new URLSearchParams({ orderAccessToken });
+/** With a token → public guest proof (no Bearer). Without → the signed-in customer's JWT. */
+function trackingRequest(path: string, orderAccessToken?: string | null) {
+  const qs = new URLSearchParams(storefrontContextQuery());
+  if (orderAccessToken) {
+    qs.set("orderAccessToken", orderAccessToken);
+    return { url: `${path}?${qs.toString()}`, options: { skipAuth: true } };
+  }
+  return { url: `${path}?${qs.toString()}`, options: {} };
 }
 
-/**
- * GET /storefront/order-tracking/:orderNumber
- * Public — proof-protected by orderAccessToken. No login required.
- */
-export async function getGuestOrderTracking(
+export async function getOrderTracking(
   orderNumber: string,
-  orderAccessToken: string,
-): Promise<GuestOrderTrackingSummaryResponse> {
-  const q = buildTokenParam(orderAccessToken);
-  return apiGet<GuestOrderTrackingSummaryResponse>(
-    `/storefront/order-tracking/${orderNumber}?${q}`,
-    { skipAuth: true },
+  orderAccessToken?: string | null,
+): Promise<OrderTrackingSummary> {
+  const { url, options } = trackingRequest(
+    `/storefront/order-tracking/${encodeURIComponent(orderNumber)}`,
+    orderAccessToken,
   );
+  return apiGet<OrderTrackingSummary>(url, options);
 }
 
-/**
- * GET /storefront/order-tracking/:orderNumber/tracking
- * Public — full tracking event timeline for all shipments.
- */
-export async function getGuestOrderTrackingTimeline(
+export async function getOrderTrackingTimeline(
   orderNumber: string,
-  orderAccessToken: string,
-): Promise<GuestOrderTrackingTimelineResponse> {
-  const q = buildTokenParam(orderAccessToken);
-  return apiGet<GuestOrderTrackingTimelineResponse>(
-    `/storefront/order-tracking/${orderNumber}/tracking?${q}`,
-    { skipAuth: true },
+  orderAccessToken?: string | null,
+): Promise<OrderTrackingTimeline> {
+  const { url, options } = trackingRequest(
+    `/storefront/order-tracking/${encodeURIComponent(orderNumber)}/tracking`,
+    orderAccessToken,
   );
+  return apiGet<OrderTrackingTimeline>(url, options);
 }

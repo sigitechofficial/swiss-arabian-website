@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import os from "node:os";
 
-/** LAN / Tailscale IPv4s so `http://192.168.x.x:3000` works in `next dev`. */
+/** LAN / Tailscale IPv4s so `http://192.168.x.x:3004` works in `next dev`. */
 function lanDevOrigins(): string[] {
   const hosts = new Set<string>();
   for (const addrs of Object.values(os.networkInterfaces())) {
@@ -62,31 +62,33 @@ const catalogMediaPatterns = [
     process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL,
     "/catalog/media/**",
   ),
-  // Azure Dev default when env not loaded at config time
   {
     protocol: "https" as const,
     hostname:
       "ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
     pathname: "/catalog/media/**",
   },
-  // All LAN IPs on this machine — covers any 192.168.x.x backend in dev
-  ...lanDevOrigins().map((ip) => ({
-    protocol: "http" as const,
-    hostname: ip,
-    port: "3000",
-    pathname: "/catalog/media/**",
-  })),
-  // Any host on port 3000 in local dev (backend may return its own LAN IP in image URLs)
-  ...(process.env.NODE_ENV === "development"
-    ? [{ protocol: "http" as const, hostname: "**", port: "3000", pathname: "/catalog/media/**" }]
-    : []),
 ].filter(Boolean) as RemotePattern[];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  // Next 16 blocks cross-origin /_next/* from non-localhost unless allowlisted.
-  // uae.swissarabian.com is the Insider partner host — local hosts-file testing.
+  // Next.js 16.3 fails to emit `.next/next-server.js.nft.json` when
+  // `output: "standalone"` is combined with Vercel's build adapter, which
+  // breaks Vercel's `onBuildComplete` step with an ENOENT on that file
+  // (https://github.com/vercel/next.js/issues/96646). Standalone is only
+  // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
+  // already produces its own optimized deployment output.
+  output: process.env.VERCEL ? undefined : "standalone",
   allowedDevOrigins: [...lanDevOrigins(), "uae.swissarabian.com"],
+  // Stripe Elements renders in a js.stripe.com iframe and fetches our brand
+  // font cross-origin, which browsers only allow with a CORS header.
+  async headers() {
+    return [
+      {
+        source: "/fonts/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
+  },
   images: {
     qualities: [75, 90, 95],
     remotePatterns: [
@@ -99,6 +101,16 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "stswissarabiandev.blob.core.windows.net",
         pathname: "/catalog-images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "dossier.eu",
+        pathname: "/cdn/shop/files/**",
+      },
+      {
+        protocol: "https",
+        hostname: "swissarabian.com",
+        pathname: "/cdn/shop/files/**",
       },
       ...catalogMediaPatterns,
     ],

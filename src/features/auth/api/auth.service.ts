@@ -18,7 +18,6 @@ export const authKeys = {
   identities: () => [...authKeys.all, "identities"] as const,
 };
 
-/** Normalize phone to E.164-ish (`+` + digits). */
 export function toE164Phone(value: string): string {
   const trimmed = value.trim();
   const digits = trimmed.replace(/\D/g, "");
@@ -26,7 +25,6 @@ export function toE164Phone(value: string): string {
   return `+${digits}`;
 }
 
-/** Login identifier: email as-is, phone as E.164. */
 export function toLoginIdentifier(value: string): string {
   const trimmed = value.trim();
   if (trimmed.includes("@")) return trimmed;
@@ -60,7 +58,6 @@ export async function loginCustomer(
   });
 }
 
-/** Passwordless email sign-in code — existing accounts only (anti-enumeration). */
 export async function requestEmailLoginCode(email: string) {
   return apiPost<{ success: boolean; message: string }>(
     "/storefront/auth/login/email-code/request",

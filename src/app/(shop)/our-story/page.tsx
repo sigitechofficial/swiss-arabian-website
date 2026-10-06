@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-
-import { StoryPageView } from "@/features/story";
-
-export const metadata: Metadata = {
-  title: "Our Story",
-  description:
-    "Two worlds, one signature — the first perfume house in the UAE, founded in 1974 on Arabian creativity and Swiss technique.",
-};
+import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 
 export default function OurStoryPage() {
-  return <StoryPageView />;
+  return (
+    <FeaturePlaceholder
+      title="Our story"
+      description="Brand story content is static until a CMS feed is bound."
+    />
+  );
 }

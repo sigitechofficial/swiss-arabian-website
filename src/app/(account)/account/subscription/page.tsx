@@ -1,9 +1,10 @@
-import { MySubscriptionPageView } from "@/features/subscriptions";
-
-export const metadata = {
-  title: "My Subscription",
-};
+import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 
 export default function AccountSubscriptionPage() {
-  return <MySubscriptionPageView />;
+  return (
+    <FeaturePlaceholder
+      title="My subscription"
+      description="Manage / pause / cancel waits on subscription APIs."
+    />
+  );
 }

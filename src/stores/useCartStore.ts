@@ -1,11 +1,15 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
+import {
+  readPromotionSnapshot,
+  type PromotionSnapshotV1,
+} from "@/features/promotions/types/promotions";
+import { brandScopedStorage } from "@/lib/storefront/brandStorage";
 
 export type CartLine = {
-  /** API-assigned cart item ID — required for update/remove mutations. */
   cartItemId?: string;
   productId?: string;
   variantId: string;
@@ -15,21 +19,20 @@ export type CartLine = {
   unitPrice: number;
   currency: string;
   quantity: number;
-  /** e.g. "75 ml EDP" */
   sizeLabel?: string;
-  /** Fragrance note chips */
   notes?: string[];
-  /** False when API reports item is not sellable (e.g. out of stock). */
   isSellable?: boolean;
-  sku?: string;
-  category?: string | null;
-  brand?: string | null;
+  /** Backed by the server cart (real sku/variantId) — edits sync to the API. */
+  remote?: boolean;
 };
 
 type CartTotals = {
   subtotal: number;
   total: number;
   discount: number;
+  shipping: number;
+  tax: number;
+  amountPayable: number | null;
   currency: string;
   itemCount: number;
   totalQty: number;
@@ -37,41 +40,42 @@ type CartTotals = {
 
 type CartState = {
   lines: CartLine[];
-  /** API-assigned cart ID — persisted in localStorage, threaded through every mutation. */
   cartId: string | null;
-  /** Authoritative totals from the API response; null until first API sync. */
   totals: CartTotals | null;
-  /** Populated after POST /validate. */
+  promotions: PromotionSnapshotV1 | null;
   validation: CartValidation | null;
-
-  // ── Local mutations (used for optimistic updates + offline fallback) ──
+  /** Optimistic edits are still being written to the API in the background. */
+  syncing: boolean;
+  setSyncing: (syncing: boolean) => void;
   addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeLine: (variantId: string) => void;
   clear: () => void;
+  clearPromotions: () => void;
   setCartId: (id: string | null) => void;
   setValidation: (v: CartValidation | null) => void;
-
-  /**
-   * Sync full store state from an API cart response.
-   * Merges API items with existing local lines to preserve imageUrl / slug / notes
-   * that the API does not return.
-   */
   setCartFromApi: (cart: ApiCart) => void;
-
-  // ── Derived ──
   itemCount: () => number;
   subtotal: () => number;
 };
 
+type PersistedCartState = Pick<CartState, "lines">;
+
 export const useCartStore = create<CartState>()(
-  persist(
+  persist<CartState, [], [], PersistedCartState>(
     (set, get) => ({
       lines: [],
       cartId: null,
       totals: null,
+      promotions: null,
       validation: null,
+      syncing: false,
 
+      setSyncing: (syncing) => set({ syncing }),
+
+      // Local edits clear the server `totals` — they're stale the moment a
+      // line changes, so counts and subtotal fall back to the lines until the
+      // next server cart lands.
       addLine: (line) =>
         set((state) => {
           const existing = state.lines.find(
@@ -79,6 +83,7 @@ export const useCartStore = create<CartState>()(
           );
           if (existing) {
             return {
+              totals: null,
               lines: state.lines.map((item) =>
                 item.variantId === line.variantId
                   ? {
@@ -87,18 +92,21 @@ export const useCartStore = create<CartState>()(
                       imageUrl: line.imageUrl ?? item.imageUrl,
                       sizeLabel: line.sizeLabel ?? item.sizeLabel,
                       notes: line.notes?.length ? line.notes : item.notes,
+                      remote: line.remote ?? item.remote,
                     }
                   : item,
               ),
             };
           }
           return {
+            totals: null,
             lines: [...state.lines, { ...line, quantity: line.quantity ?? 1 }],
           };
         }),
 
       updateQuantity: (variantId, quantity) =>
         set((state) => ({
+          totals: null,
           lines:
             quantity <= 0
               ? state.lines.filter((item) => item.variantId !== variantId)
@@ -109,10 +117,14 @@ export const useCartStore = create<CartState>()(
 
       removeLine: (variantId) =>
         set((state) => ({
+          totals: null,
           lines: state.lines.filter((item) => item.variantId !== variantId),
         })),
 
-      clear: () => set({ lines: [], totals: null, validation: null }),
+      clear: () => set({ lines: [], totals: null, promotions: null, validation: null }),
+
+      /** Drop the previous market quote. Lines stay until the next server cart. */
+      clearPromotions: () => set({ promotions: null, totals: null }),
 
       setCartId: (id) => set({ cartId: id }),
 
@@ -120,8 +132,6 @@ export const useCartStore = create<CartState>()(
 
       setCartFromApi: (cart) =>
         set((state) => {
-          // Build a lookup of existing lines by variantId to preserve
-          // imageUrl / slug / notes that the API does not return.
           const localByVariant = new Map(
             state.lines.map((l) => [l.variantId, l]),
           );
@@ -138,16 +148,15 @@ export const useCartStore = create<CartState>()(
               variantId: vid ?? item.cartItemId,
               slug: local?.slug ?? "",
               title: item.productName ?? local?.title ?? "",
-              imageUrl: local?.imageUrl ?? item.image ?? item.images?.[0]?.url ?? undefined,
+              imageUrl:
+                local?.imageUrl ?? item.image ?? item.images?.[0]?.url ?? undefined,
               unitPrice,
               currency: item.currencyCode ?? cart.currency ?? "AED",
               quantity,
               sizeLabel: item.variantName ?? local?.sizeLabel,
               notes: local?.notes,
               isSellable: item.sellabilitySummary?.isSellable ?? true,
-              sku: item.sku || local?.sku,
-              category: local?.category,
-              brand: local?.brand,
+              remote: true,
             };
           });
 
@@ -155,6 +164,15 @@ export const useCartStore = create<CartState>()(
             subtotal: Number(cart.subtotalEstimate ?? "0"),
             total: Number(cart.totalEstimate ?? "0"),
             discount: Number(cart.discountEstimate ?? "0"),
+            shipping: Number(cart.shippingEstimate ?? "0"),
+            tax: Number(cart.taxEstimate ?? "0"),
+            amountPayable: (() => {
+              const raw =
+                cart.amountPayable ?? cart.promotions?.totals?.amountPayable ?? null;
+              if (raw == null || raw === "") return null;
+              const parsed = Number(raw);
+              return Number.isFinite(parsed) ? parsed : null;
+            })(),
             currency: cart.currency ?? "AED",
             itemCount: cart.itemCount ?? lines.length,
             totalQty:
@@ -165,6 +183,7 @@ export const useCartStore = create<CartState>()(
           return {
             lines,
             totals,
+            promotions: readPromotionSnapshot(cart.promotions),
             cartId: cart.cartId,
             validation: cart.validation ?? null,
           };
@@ -187,7 +206,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "sa-cart-v2",
-      // Only persist lines for offline/SSR fallback — live data comes from API.
+      storage: createJSONStorage(() => brandScopedStorage()),
       partialize: (state) => ({ lines: state.lines }),
     },
   ),
