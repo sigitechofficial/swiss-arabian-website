@@ -1,5 +1,7 @@
 "use client";
 
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import type { LoyaltyEarnPreviewView } from "@/features/loyalty/types/loyalty";
 import { CheckoutAddonRow } from "@/features/cart/components/MissThisSwiper";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { CATALOG_PRODUCTS } from "@/features/catalog/constants/catalogProducts";
@@ -64,6 +66,7 @@ type CheckoutSummaryProps = {
   amountPayable: number | null;
   giftCards: ReturnType<typeof visibleGiftCards>;
   warnings: string[];
+  earnPreview?: LoyaltyEarnPreviewView | null;
 };
 
 export function CheckoutSummary({
@@ -86,6 +89,7 @@ export function CheckoutSummary({
   amountPayable,
   giftCards,
   warnings,
+  earnPreview,
 }: CheckoutSummaryProps) {
   const cartPromotions = useCartStore((state) => state.promotions);
 
@@ -182,6 +186,7 @@ export function CheckoutSummary({
           quantity: gift.quantity,
         }))}
       />
+      {earnPreview ? <EarnPreviewNote preview={earnPreview} variant="block" /> : null}
       {warnings.map((warning) => (
         <p className={`${checkoutNote} ${checkoutSummaryNote}`} key={warning} role="status">
           {warning}

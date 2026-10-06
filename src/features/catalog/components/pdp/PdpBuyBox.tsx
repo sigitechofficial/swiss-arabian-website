@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { OfferCountLink, PdpOffersPanel } from "@/features/promotions/components/PromotionOffers";
 import { stars } from "@/styles/landingChrome";
 import {
@@ -54,6 +56,10 @@ export function PdpBuyBox({
   scentFallback,
 }: PdpBuyBoxProps) {
   const [offersOpen, setOffersOpen] = useState(false);
+  const earnPreview = useProductEarnPreview({
+    unitPrice: product.price,
+    quantity: cartLine?.quantity ?? 1,
+  });
 
   const family = familyChips(metafields);
   const chips = family.length
@@ -113,6 +119,8 @@ export function PdpBuyBox({
           Tabby or Tamara.
         </p>
       ) : null}
+
+      <EarnPreviewNote preview={earnPreview.preview} />
 
       {daysLine || thresholdLine ? (
         <ul className={pdpPromises} role="list">
