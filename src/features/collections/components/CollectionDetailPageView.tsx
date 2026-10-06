@@ -6,8 +6,7 @@ import { catalogKeys, fetchCollectionBySlug } from "@/features/catalog/api/catal
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
 import { metafieldMediaUrl } from "@/features/catalog/utils/collectionMetafields";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useMarket } from "@/providers/MarketProvider";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 
 /** Slugs the collections API doesn't carry — these read the full catalog. */
 const CATALOG_FALLBACK_SLUGS = new Set(["minis", "bundles"]);
@@ -19,14 +18,14 @@ export function CollectionDetailPageView({
   slug: string;
   listingQuery: CatalogListingQuery;
 }) {
-  const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const market = useSelectedCatalogMarket();
+  const zoneCode = market?.zoneCode ?? "";
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
 
   const { data: collection } = useQuery({
-    queryKey: catalogKeys.collection(slug, zoneCode),
-    queryFn: () => fetchCollectionBySlug(slug, zoneCode),
-    enabled: !usingFallback,
+    queryKey: [...catalogKeys.collection(slug, zoneCode), market?.salesChannelCode ?? ""],
+    queryFn: () => fetchCollectionBySlug(slug, zoneCode, market),
+    enabled: Boolean(market) && !usingFallback,
   });
 
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(

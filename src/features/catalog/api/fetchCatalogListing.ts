@@ -6,6 +6,7 @@ import {
   fetchProducts,
   type ProductListResult,
 } from "../api/catalog.service";
+import type { StorefrontContextInput } from "@/lib/storefront/context";
 import type { CatalogListingFilters } from "../types/catalogFacets";
 
 const LEGACY_LISTING_LIMIT = 100;
@@ -22,14 +23,15 @@ function requestListing(
   source: CatalogListingSource,
   zoneCode: string | null | undefined,
   options: CatalogListingFilters,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductListResult> {
   if (source.kind === "products" || (source.kind === "collection" && source.fallbackToProducts)) {
-    return fetchProducts(zoneCode, options);
+    return fetchProducts(zoneCode, options, market);
   }
   if (source.kind === "collection") {
-    return fetchCollectionProducts(source.slug, zoneCode, options);
+    return fetchCollectionProducts(source.slug, zoneCode, options, market);
   }
-  return fetchCategoryProducts(source.slug, zoneCode, options);
+  return fetchCategoryProducts(source.slug, zoneCode, options, market);
 }
 
 function hasServerFacetParams(filters: CatalogListingFilters): boolean {
@@ -51,23 +53,34 @@ export async function fetchCatalogListing(
   source: CatalogListingSource,
   zoneCode: string | null | undefined,
   filters: CatalogListingFilters,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductListResult> {
   const page = Math.max(1, filters.page ?? 1);
   const sort = filters.sort;
 
   if (listingHasFacets === false) {
-    return requestListing(source, zoneCode, {
-      page: 1,
-      limit: LEGACY_LISTING_LIMIT,
-    });
+    return requestListing(
+      source,
+      zoneCode,
+      {
+        page: 1,
+        limit: LEGACY_LISTING_LIMIT,
+      },
+      market,
+    );
   }
 
   if (listingHasFacets === true) {
-    return requestListing(source, zoneCode, {
-      ...filters,
-      page,
-      limit: CATALOG_PAGE_SIZE,
-    });
+    return requestListing(
+      source,
+      zoneCode,
+      {
+        ...filters,
+        page,
+        limit: CATALOG_PAGE_SIZE,
+      },
+      market,
+    );
   }
 
   const pageQuery: CatalogListingFilters = {
@@ -77,31 +90,46 @@ export async function fetchCatalogListing(
   };
 
   try {
-    const probed = await requestListing(source, zoneCode, pageQuery);
+    const probed = await requestListing(source, zoneCode, pageQuery, market);
     listingHasFacets = Boolean(probed.facets);
 
     if (!probed.facets) {
-      return requestListing(source, zoneCode, {
-        page: 1,
-        limit: LEGACY_LISTING_LIMIT,
-      });
+      return requestListing(
+        source,
+        zoneCode,
+        {
+          page: 1,
+          limit: LEGACY_LISTING_LIMIT,
+        },
+        market,
+      );
     }
 
     if (hasServerFacetParams(filters)) {
-      return requestListing(source, zoneCode, {
-        ...filters,
-        page,
-        limit: CATALOG_PAGE_SIZE,
-      });
+      return requestListing(
+        source,
+        zoneCode,
+        {
+          ...filters,
+          page,
+          limit: CATALOG_PAGE_SIZE,
+        },
+        market,
+      );
     }
 
     return probed;
   } catch {
     listingHasFacets = false;
-    return requestListing(source, zoneCode, {
-      page: 1,
-      limit: LEGACY_LISTING_LIMIT,
-    });
+    return requestListing(
+      source,
+      zoneCode,
+      {
+        page: 1,
+        limit: LEGACY_LISTING_LIMIT,
+      },
+      market,
+    );
   }
 }
 

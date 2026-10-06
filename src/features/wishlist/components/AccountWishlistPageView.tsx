@@ -8,7 +8,7 @@ import { AccountPageShell } from "@/features/account/components/AccountPageShell
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
-import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
+import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
@@ -23,6 +23,7 @@ import {
 import type { StorefrontWishlistStatusView } from "../types/wishlist";
 import { toWishlistCatalogProduct } from "../utils/toWishlistProductCard";
 import { WishlistHeartButton } from "./WishlistHeartButton";
+import { wishlistBand, wishlistGrid } from "@/styles/shopChrome";
 
 type AccountWishlistPageViewProps = {
   title: string;
@@ -160,10 +161,8 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
               )}
             </div>
 
-            {/* Same card + grid as the products page (`.landing .products-band`). */}
-            <div className="landing">
-              <div className="products-band wishlist-band">
-                <ul className="product-grid" role="list" aria-busy={isFetching}>
+            <div className={wishlistBand}>
+                <ul className={wishlistGrid} role="list" aria-busy={isFetching}>
                   {cards.map(({ item, card }) => {
                     const heart = <WishlistHeartButton productId={item.productId} />;
                     if (!card) {
@@ -194,7 +193,6 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                     );
                   })}
                 </ul>
-              </div>
             </div>
 
             {totalPages > 1 ? (

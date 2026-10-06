@@ -7,6 +7,15 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { pollUntilPaymentSettles } from "../api/orders.service";
 import { clearPaymentState, getStoredOrderId } from "../utils/checkoutSession";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
+import {
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutDone,
+  checkoutDoneActions,
+  checkoutEmpty,
+  checkoutLink,
+} from "@/styles/checkoutChrome";
 
 type Outcome = { kind: "failed"; status: string } | { kind: "timeout" } | null;
 
@@ -52,13 +61,13 @@ export function PaymentSuccessView() {
   if (!orderId) {
     return (
       <CheckoutStateShell current="Payment">
-        <section className="checkout-empty">
-          <p className="collection-head__eyebrow">Payment</p>
-          <h1 className="collection-head__title">We couldn’t find your order.</h1>
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Payment</p>
+          <h1 className={collectionTitle}>We couldn’t find your order.</h1>
           <p>If you completed a payment, your confirmation email has the details.</p>
-          <Link className="checkout-cta checkout-cta--inline" href="/">
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
             <span>Return home</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </Link>
         </section>
       </CheckoutStateShell>
@@ -68,20 +77,20 @@ export function PaymentSuccessView() {
   if (outcome?.kind === "timeout") {
     return (
       <CheckoutStateShell current="Payment">
-        <section className="checkout-done">
-          <p className="collection-head__eyebrow">Still processing</p>
-          <h1 className="collection-head__title">
-            Your payment is taking <em className="collection-head__em">a little longer</em>.
+        <section className={checkoutDone}>
+          <p className={stateEyebrow}>Still processing</p>
+          <h1 className={doneTitle}>
+            Your payment is taking <em className={doneEm}>a little longer</em>.
           </h1>
-          <p className="collection-head__intro">
+          <p className={stateIntro}>
             We’ll email you as soon as it’s confirmed — there’s no need to pay again.
           </p>
-          <div className="checkout-done__actions">
-            <Link className="checkout-cta checkout-cta--inline" href={`/order-confirmation/${orderId}?verify=1`}>
+          <div className={checkoutDoneActions}>
+            <Link className={`${checkoutCta} ${checkoutCtaInline}`} href={`/order-confirmation/${orderId}?verify=1`}>
               <span>Check order status</span>
-              <b className="arrow" aria-hidden="true">↗</b>
+              <b aria-hidden="true">↗</b>
             </Link>
-            <Link className="checkout-link" href="/">
+            <Link className={checkoutLink} href="/">
               Return home
             </Link>
           </div>
@@ -93,22 +102,22 @@ export function PaymentSuccessView() {
   const declined = outcome?.kind === "failed" && outcome.status === "DECLINED";
   return (
     <CheckoutStateShell current="Payment">
-      <section className="checkout-done">
-        <p className="collection-head__eyebrow">Payment unsuccessful</p>
-        <h1 className="collection-head__title">
-          Your payment <em className="collection-head__em">didn’t go through</em>.
+      <section className={checkoutDone}>
+        <p className={stateEyebrow}>Payment unsuccessful</p>
+        <h1 className={doneTitle}>
+          Your payment <em className={doneEm}>didn’t go through</em>.
         </h1>
-        <p className="collection-head__intro">
+        <p className={stateIntro}>
           {declined
             ? "Your card was declined by the issuer. Your order is saved — you can try another card."
             : "We couldn’t process your payment. Your order is saved — you can try again."}
         </p>
-        <div className="checkout-done__actions">
-          <Link className="checkout-cta checkout-cta--inline" href="/checkout/payment/cancel">
+        <div className={checkoutDoneActions}>
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
             <span>Try again</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </Link>
-          <Link className="checkout-link" href="/">
+          <Link className={checkoutLink} href="/">
             Return home
           </Link>
         </div>

@@ -4,14 +4,42 @@ import { useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
-import { useLandingProducts } from "../../hooks/useLandingProducts";
+import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
+import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
+import {
+  cardAddSlot,
+  cardImgSwap,
+  cardLink,
+  cardMediaLink,
+  cardMediaLinkSwap,
+  cardMediaSwap,
+  cardName,
+  cardPrice,
+  productStrip,
+  trendBody,
+  trendCard,
+  trendImg,
+  trendMedia,
+} from "@/styles/productCard";
+import {
+  arrowOutline,
+  bottle,
+  linkUnderline,
+  sectionHead,
+  sectionTitle,
+  sectionTitleFlush,
+  stripArrows,
+  stripControls,
+  trendTitleRow,
+  trendingSection,
+} from "@/styles/landingChrome";
+import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
 export function LandingTrending() {
   const stripRef = useRef<HTMLUListElement>(null);
-  const { data } = useLandingProducts(8);
-  const products = data?.products ?? [];
+  const { products, pending, live } = useHomeCollectionProducts("trending", 8);
 
   // Preload AND fully decode every ingredients hover image up front (so the
   // first fade-in doesn't blink), and only swap to the ones that actually
@@ -27,31 +55,35 @@ export function LandingTrending() {
   };
 
   return (
-    <section className="section trending" aria-labelledby="trendTitle">
-      <div className="container">
-        <header className="section-head">
-          <div className="trending__title-row">
-            <h2 className="display section-head__title" id="trendTitle">
+    <section className={trendingSection} aria-labelledby="trendTitle">
+      <div className={pageContainer}>
+        <header className={`${sectionHead} flex max-w-none flex-col items-stretch`}>
+          <div className={trendTitleRow}>
+            <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
               Trending Now
             </h2>
-            <Link className="link-underline" href="/products">
+            <Link className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`} href="/collections/trending">
               View all
             </Link>
           </div>
         </header>
         <ul
-          className="trending-grid"
+          className={productStrip}
           role="list"
           tabIndex={0}
           aria-label="Trending now, scrollable"
+          aria-busy={pending}
           ref={stripRef}
         >
+          {pending ? <HomeStripSkeleton /> : null}
           {products.map((product) => {
-            const hover = product.imageUrls?.[1];
+            const hoverCandidate = product.imageUrls?.[1];
+            const hover =
+              hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
             const hasIngredientsHover = Boolean(hover && loadedHovers.has(hover));
             return (
               <li
-                className="trend-card"
+                className={trendCard}
                 key={product.id}
                 style={
                   hasIngredientsHover
@@ -63,11 +95,15 @@ export function LandingTrending() {
                     the whole card — sits below the Add-to-bag button so
                     that stays usable; the single focusable link here. */}
                 <Link
-                  className="trend-card__link"
+                  className={cardLink}
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
                 />
-                <ProductCardTags slug={product.slug} />
+                <ProductCardTags
+                  slug={product.slug}
+                  tags={live ? (product.tags ?? []) : undefined}
+                  collectionSlug={live ? "trending" : undefined}
+                />
                 {/* Ingredients hover art — a ::before background pseudo-
                     element on `.trend-card`, not `.trend-card__media`
                     (which has overflow:hidden for the bottle crop), so it
@@ -76,20 +112,24 @@ export function LandingTrending() {
                 <div
                   className={
                     hasIngredientsHover
-                      ? "trend-card__media trend-card__media--swap"
-                      : "trend-card__media"
+                      ? `${trendMedia} ${cardMediaSwap}${live ? " p-0!" : ""}`
+                      : live
+                        ? `${trendMedia} p-0!`
+                        : trendMedia
                   }
                 >
                   <Link
-                    className="trend-card__media-link"
+                    className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
                     href={`/products/${product.slug}`}
                     tabIndex={-1}
                     aria-hidden="true"
                   >
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.title} loading="lazy" />
+                      <img
+                        className={hasIngredientsHover ? cardImgSwap : trendImg}
+                        src={product.imageUrl} alt={product.title} loading="lazy" />
                     ) : (
-                      <span className="bottle" aria-hidden="true" />
+                      <span className={bottle} aria-hidden="true" />
                     )}
                   </Link>
                 </div>
@@ -102,12 +142,14 @@ export function LandingTrending() {
                     box's exact geometry here keeps the button visually
                     anchored the same way while its z-index competes
                     directly against `::before` and wins. */}
-                <div className="trend-card__add-slot">
-                  <AddToBagButton product={product} variant="trend" />
-                </div>
-                <div className="trend-card__body">
-                  <h3 className="trend-card__name">{product.title}</h3>
-                  <p className="trend-card__price">
+                {product.inStock !== false ? (
+                  <div className={cardAddSlot}>
+                    <AddToBagButton product={product} variant="trend" />
+                  </div>
+                ) : null}
+                <div className={trendBody}>
+                  <h3 className={cardName}>{product.title}</h3>
+                  <p className={cardPrice}>
                     {formatMoney(product.price, product.currency)}
                   </p>
                 </div>
@@ -116,10 +158,10 @@ export function LandingTrending() {
           })}
         </ul>
 
-        <div className="strip-controls">
-          <div className="strip-controls__arrows">
+        <div className={stripControls}>
+          <div className={stripArrows}>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(-1)}
             >
@@ -132,10 +174,10 @@ export function LandingTrending() {
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className="visually-hidden">Scroll trending left</span>
+              <span className={visuallyHidden}>Scroll trending left</span>
             </button>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(1)}
             >
@@ -148,7 +190,7 @@ export function LandingTrending() {
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className="visually-hidden">Scroll trending right</span>
+              <span className={visuallyHidden}>Scroll trending right</span>
             </button>
           </div>
         </div>

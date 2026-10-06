@@ -7,6 +7,19 @@ import type { CheckoutSessionResponse } from "@/features/checkout/types/checkout
 import { useGiftCardMutations } from "../hooks/useGiftCardMutations";
 import { visibleGiftCards, type PromotionSnapshotV1 } from "../types/promotions";
 import { giftCardErrorMessage } from "../utils/giftCardErrors";
+import {
+  couponApplied,
+  couponAppliedAmt,
+  couponAppliedCode,
+  couponAppliedName,
+  couponAppliedRemove,
+  couponBox,
+  couponCheck,
+  couponError,
+  couponForm,
+  couponHint,
+  couponLabel,
+} from "@/styles/cartChrome";
 
 export function GiftCardForm({
   snapshot,
@@ -84,24 +97,24 @@ export function GiftCardForm({
   }
 
   return (
-    <div className="coupon-box">
-      <p className="coupon-box__label">Gift card</p>
+    <div className={couponBox} data-coupon="">
+      <p className={couponLabel}>Gift card</p>
       {cards.map((card, index) => {
         const amount = Number(card.amount);
         return (
-          <div className="coupon-applied" key={card.usageId ?? card.maskedCode ?? index}>
+          <div className={couponApplied} key={card.usageId ?? card.maskedCode ?? index}>
             <div>
-              <p className="coupon-applied__name">{card.maskedCode || "Gift card"}</p>
-              <p className="coupon-applied__code">Applied as payment</p>
+              <p className={couponAppliedName}>{card.maskedCode || "Gift card"}</p>
+              <p className={couponAppliedCode}>Applied as payment</p>
             </div>
             {amount > 0 ? (
-              <span className="coupon-applied__amt" dir="ltr">
+              <span className={couponAppliedAmt} dir="ltr">
                 −{formatMoney(amount, card.currencyCode || currency)}
               </span>
             ) : null}
             <button
               type="button"
-              className="coupon-applied__remove"
+              className={couponAppliedRemove}
               onClick={() => void onRemove(card.usageId)}
               disabled={busy}
             >
@@ -110,14 +123,13 @@ export function GiftCardForm({
           </div>
         );
       })}
-      <form className="coupon-form" onSubmit={(e) => void onApply(e)}>
+      <form className={couponForm} onSubmit={(e) => void onApply(e)}>
         <input
-          className={fieldError ? "is-err" : undefined}
           name="gift-card"
           autoComplete="off"
           spellCheck={false}
           aria-label="Gift card code"
-          aria-invalid={Boolean(fieldError)}
+          aria-invalid={fieldError ? true : undefined}
           placeholder="Enter gift card"
           value={code}
           onChange={(e) => {
@@ -133,15 +145,15 @@ export function GiftCardForm({
       </form>
       <button
         type="button"
-        className="coupon-box__check"
+        className={couponCheck}
         onClick={() => void onCheck()}
         disabled={busy}
       >
         {balance.isPending ? "Checking…" : "Check balance"}
       </button>
-      {balanceNote ? <p className="coupon-box__hint">{balanceNote}</p> : null}
+      {balanceNote ? <p className={couponHint}>{balanceNote}</p> : null}
       {fieldError ? (
-        <p className="coupon-box__error" role="alert">
+        <p className={couponError} role="alert">
           {fieldError}
         </p>
       ) : null}

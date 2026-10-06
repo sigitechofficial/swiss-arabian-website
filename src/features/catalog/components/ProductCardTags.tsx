@@ -1,3 +1,4 @@
+import { cardTags, cardTagsNew } from "@/styles/productCard";
 import { badgeForProduct } from "../constants/productBadges";
 
 export function ProductCardTags({
@@ -16,7 +17,7 @@ export function ProductCardTags({
   const kind = badge === "New" ? "new" : "best-seller";
 
   return (
-    <p className={`product-card__tags product-card__tags--${kind}`}>
+    <p className={kind === "new" ? `${cardTags} ${cardTagsNew}` : cardTags}>
       <span>{badge}</span>
     </p>
   );

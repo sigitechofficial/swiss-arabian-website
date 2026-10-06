@@ -29,7 +29,7 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
         <input
           ref={ref}
           id={id}
-          className={`auth-field-input block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
+          className={`block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
           {...props}
         />
       </div>
@@ -61,7 +61,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
           ref={ref}
           id={id}
           type={visible ? "text" : "password"}
-          className={`auth-field-input min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
+          className={`min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
           {...props}
         />
         <button

@@ -12,7 +12,7 @@ import { LandingTrending } from "./landing/LandingTrending";
 
 export function HomePageView() {
   return (
-    <div className="landing">
+    <div>
       <LandingHero />
       <LandingFeatureCards />
       <LandingProductsBand />

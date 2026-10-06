@@ -5,6 +5,19 @@ import Link from "next/link";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { useFragranceNotes } from "@/features/merchandising";
 import { fragranceNotesPlpHref } from "@/features/merchandising/utils/visibleFragranceNoteTiles";
+import {
+  arrowOutline,
+  notesArt,
+  notesHead,
+  notesItem,
+  notesLabel,
+  notesShop,
+  notesStrip,
+  sectionTitle as sectionTitleClass,
+  stripArrows,
+  stripControls,
+} from "@/styles/landingChrome";
+import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
 export function LandingNotes() {
   const stripRef = useRef<HTMLUListElement>(null);
@@ -17,16 +30,16 @@ export function LandingNotes() {
   if (!isReady || !tiles.length) return null;
 
   return (
-    <section className="notes-shop" aria-labelledby="notesTitle">
-      <div className="container">
-        <header className="section-head">
-          <h2 className="display section-head__title" id="notesTitle">
+    <section className={notesShop} aria-labelledby="notesTitle">
+      <div className={pageContainer}>
+        <header className={notesHead}>
+          <h2 className={`${sectionTitleClass} mt-0`} id="notesTitle">
             {sectionTitle}
           </h2>
         </header>
 
         <ul
-          className="notes-shop__strip"
+          className={notesStrip}
           role="list"
           tabIndex={0}
           aria-label={`${sectionTitle}, scrollable`}
@@ -36,21 +49,21 @@ export function LandingNotes() {
             const imageUrl = resolveCatalogImageUrl(tile.imageUrl);
             return (
               <li key={tile.code || tile.fragranceFamily}>
-                <Link className="notes-shop__item" href={fragranceNotesPlpHref(tile.fragranceFamily)}>
-                  <span className="notes-shop__art">
+                <Link className={`${notesItem} group/note`} href={fragranceNotesPlpHref(tile.fragranceFamily)}>
+                  <span className={notesArt}>
                     {imageUrl ? <img src={imageUrl} alt="" loading="lazy" /> : null}
                   </span>
-                  <span className="notes-shop__label">{tile.name}</span>
+                  <span className={notesLabel}>{tile.name}</span>
                 </Link>
               </li>
             );
           })}
         </ul>
 
-        <div className="strip-controls">
-          <div className="strip-controls__arrows">
+        <div className={stripControls}>
+          <div className={stripArrows}>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(-1)}
             >
@@ -63,10 +76,10 @@ export function LandingNotes() {
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className="visually-hidden">Scroll notes left</span>
+              <span className={visuallyHidden}>Scroll notes left</span>
             </button>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(1)}
             >
@@ -79,7 +92,7 @@ export function LandingNotes() {
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className="visually-hidden">Scroll notes right</span>
+              <span className={visuallyHidden}>Scroll notes right</span>
             </button>
           </div>
         </div>

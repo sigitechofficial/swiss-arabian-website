@@ -11,6 +11,7 @@ import {
   type StripePaymentElementOptions,
 } from "@stripe/stripe-js";
 import { LoaderMark } from "@/components/ui/PageLoading";
+import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
@@ -22,6 +23,48 @@ import {
   getStoredStripePublishableKey,
 } from "../utils/checkoutSession";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { collectionTitle, pageTitle, stateEyebrow } from "@/styles/shopChrome";
+import {
+  cbox,
+  cboxBody,
+  cboxHead,
+  cboxNum,
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutEmpty,
+  checkoutError,
+  checkoutForm,
+  checkoutHead,
+  checkoutLayout,
+  checkoutLegal,
+  checkoutLines,
+  checkoutLink,
+  checkoutNote,
+  checkoutStepCurrent,
+  checkoutSteps,
+  checkoutSummary,
+  checkoutTotals,
+  checkoutTotalsLine,
+  coline,
+  colineBody,
+  colineMedia,
+  colineMeta,
+  colineName,
+  colinePrice,
+  colineTop,
+  stripePayBrands,
+  stripePayCta,
+  stripePayElementLoading,
+  stripePayForm,
+  stripePayHead,
+  stripePayNum,
+  stripePayOrderNo,
+  stripePayState,
+  stripePayStateTitle,
+  stripePaySummary,
+  stripePaySummaryState,
+  stripePayTrust,
+} from "@/styles/checkoutChrome";
 
 function stripeErrorMessage(code?: string, declineCode?: string): string {
   if (declineCode === "insufficient_funds") return "Insufficient funds. Please try another card.";
@@ -35,7 +78,7 @@ function stripeErrorMessage(code?: string, declineCode?: string): string {
   return "Payment failed. Please try another card or contact your bank.";
 }
 
-/** Brand tokens from v5-landing.css — Stripe's iframe can't read our CSS variables. */
+/** Brand tokens — Stripe's iframe can't read our CSS variables. */
 const BRAND = {
   copper: "#8c4435",
   ink: "#241f1b",
@@ -126,10 +169,10 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
 
   if (phase === "polling") {
     return (
-      <div className="stripe-pay__state" aria-live="polite" aria-busy="true">
+      <div className={stripePayState} aria-live="polite" aria-busy="true">
         <LoaderMark size={84} />
-        <p className="stripe-pay__state-title">Confirming your payment…</p>
-        <p className="checkout-note">This usually takes a few seconds. Please don’t close this page.</p>
+        <p className={stripePayStateTitle}>Confirming your payment…</p>
+        <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
       </div>
     );
   }
@@ -137,18 +180,18 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
   const total = order ? formatMoney(Number(order.totals.total), order.currency) : null;
 
   return (
-    <form className="cbox__body" onSubmit={handleSubmit}>
+    <form className={cboxBody} onSubmit={handleSubmit}>
       {!ready && !loadFailed ? (
-        <div className="stripe-pay__state" role="status" aria-live="polite">
+        <div className={stripePayState} role="status" aria-live="polite">
           <LoaderMark size={72} />
-          <p className="checkout-note">Loading secure card form…</p>
+          <p className={checkoutNote}>Loading secure card form…</p>
         </div>
       ) : null}
 
       {loadFailed ? (
-        <p className="checkout-error" role="alert">
+        <p className={checkoutError} role="alert">
           We couldn’t load the secure card form. Please refresh the page or{" "}
-          <Link className="checkout-link" href="/checkout/payment/cancel">
+          <Link className={checkoutLink} href="/checkout/payment/cancel">
             choose another way to pay
           </Link>
           .
@@ -156,7 +199,7 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
       ) : null}
 
       {/* Stays mounted while loading so Stripe can boot it; revealed on ready. */}
-      <div className={`stripe-pay__element ${ready ? "" : "is-loading"}`}>
+      <div className={ready ? undefined : stripePayElementLoading}>
         <PaymentElement
           options={elementOptions}
           onReady={() => setReady(true)}
@@ -167,12 +210,12 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
       {ready ? (
         <>
           {errorMsg ? (
-            <p className="checkout-error" role="alert">
+            <p className={checkoutError} role="alert">
               {errorMsg}
               {needsRetry ? (
                 <>
                   {" "}
-                  <Link className="checkout-link" href="/checkout/payment/cancel">
+                  <Link className={checkoutLink} href="/checkout/payment/cancel">
                     Start a new attempt
                   </Link>
                 </>
@@ -181,15 +224,15 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
           ) : null}
           <button
             type="submit"
-            className="checkout-cta"
+            className={`${checkoutCta} ${stripePayCta}`}
             disabled={!stripe || !elements || phase !== "idle" || needsRetry}
           >
             <span>
               {phase === "confirming" ? "Processing…" : total ? `Pay ${total}` : "Pay now"}
             </span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </button>
-          <p className="stripe-pay__trust">
+          <p className={stripePayTrust}>
             <LockIcon />
             <span>Secured by Stripe — your card details never touch our servers.</span>
           </p>
@@ -202,9 +245,9 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
 function OrderSummary({ order, loading }: { order: OrderResponse | undefined; loading: boolean }) {
   if (loading) {
     return (
-      <aside className="checkout-summary stripe-pay__summary" aria-label="Order summary" aria-busy="true">
+      <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary" aria-busy="true">
         <h2>Your order</h2>
-        <div className="stripe-pay__state">
+        <div className={`${stripePayState} ${stripePaySummaryState}`}>
           <LoaderMark size={56} />
         </div>
       </aside>
@@ -216,20 +259,21 @@ function OrderSummary({ order, loading }: { order: OrderResponse | undefined; lo
   const shipping = Number(totals.shipping);
 
   return (
-    <aside className="checkout-summary stripe-pay__summary" aria-label="Order summary">
+    <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary">
       <h2>Your order</h2>
       {order.orderNumber ? (
-        <p className="stripe-pay__order-no">
+        <p className={stripePayOrderNo}>
           Order <span dir="ltr">{order.orderNumber}</span>
         </p>
       ) : null}
-      <div className="checkout-lines">
+      <div className={checkoutLines}>
         {order.lines.map((line) => {
           const qty = Number.parseInt(line.quantity, 10) || 1;
+          const title = line.productName ?? line.sku;
           const thumb = line.imageUrl?.startsWith("http") ? line.imageUrl : null;
           return (
-            <article className="coline" key={line.orderLineId}>
-              <div className="coline__media">
+            <article className={coline} key={line.orderLineId}>
+              <div className={colineMedia}>
                 {thumb ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -242,18 +286,22 @@ function OrderSummary({ order, loading }: { order: OrderResponse | undefined; lo
                 ) : null}
                 <b>{qty}</b>
               </div>
-              <div className="coline__body">
-                <h3>{line.productName ?? line.sku}</h3>
-                {line.variantName ? <p>{line.variantName}</p> : null}
+              <div className={colineBody}>
+                <div className={colineTop}>
+                  <h3 className={colineName}>{title}</h3>
+                  <p className={colinePrice} dir="ltr">
+                    {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
+                  </p>
+                </div>
+                {showsDistinctSize(title, line.variantName ?? undefined) ? (
+                  <p className={colineMeta}>{line.variantName}</p>
+                ) : null}
               </div>
-              <span className="coline__price" dir="ltr">
-                {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
-              </span>
             </article>
           );
         })}
       </div>
-      <dl className="checkout-totals">
+      <dl className={checkoutTotals}>
         <div>
           <dt>Subtotal</dt>
           <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
@@ -274,7 +322,7 @@ function OrderSummary({ order, loading }: { order: OrderResponse | undefined; lo
             <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
           </div>
         ) : null}
-        <div className="checkout-totals-line">
+        <div className={checkoutTotalsLine}>
           <dt>Total</dt>
           <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
         </div>
@@ -335,13 +383,13 @@ export function StripePaymentFormView() {
   if (!ctx?.clientSecret || !orderId || !stripePromise) {
     return (
       <CheckoutStateShell current="Payment">
-        <section className="checkout-empty">
-          <p className="collection-head__eyebrow">Payment</p>
-          <h1 className="collection-head__title">This payment session has expired.</h1>
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Payment</p>
+          <h1 className={collectionTitle}>This payment session has expired.</h1>
           <p>If you already placed an order, you can finish paying for it from here.</p>
-          <Link className="checkout-cta checkout-cta--inline" href="/checkout/payment/cancel">
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
             <span>Retry payment</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </Link>
         </section>
       </CheckoutStateShell>
@@ -407,28 +455,28 @@ export function StripePaymentFormView() {
 
   return (
     <CheckoutStateShell current="Payment">
-      <header className="checkout-head">
-        <h1 className="collection-head__title">Payment</h1>
-        <ol className="checkout-steps">
+      <header className={checkoutHead}>
+        <h1 className={pageTitle}>Payment</h1>
+        <ol className={checkoutSteps}>
           <li>
             <Link href="/cart">Bag</Link>
           </li>
           <li aria-hidden="true">·</li>
           <li>Details</li>
           <li aria-hidden="true">·</li>
-          <li className="is-current">Payment</li>
+          <li className={checkoutStepCurrent}>Payment</li>
         </ol>
       </header>
 
-      <div className="checkout-layout stripe-pay">
-        <div className="checkout-form">
-          <section className="cbox" aria-labelledby="card-payment-heading">
-            <div className="cbox__head">
-              <span className="cbox__num">
+      <div className={checkoutLayout}>
+        <div className={`${checkoutForm} ${stripePayForm}`}>
+          <section className={cbox} aria-labelledby="card-payment-heading">
+            <div className={`${cboxHead} ${stripePayHead}`}>
+              <span className={`${cboxNum} ${stripePayNum}`}>
                 <LockIcon />
               </span>
               <h2 id="card-payment-heading">Card details</h2>
-              <span className="stripe-pay__brands" aria-label="Visa, Mastercard and American Express accepted">
+              <span className={stripePayBrands} aria-label="Visa, Mastercard and American Express accepted">
                 Visa · Mastercard · Amex
               </span>
             </div>
@@ -436,7 +484,7 @@ export function StripePaymentFormView() {
               <StripeForm orderId={orderId} order={orderQuery.data} />
             </Elements>
           </section>
-          <p className="checkout-legal">
+          <p className={checkoutLegal}>
             Changed your mind? <Link href="/checkout/payment/cancel">Cancel payment</Link> — your order stays saved.
           </p>
         </div>

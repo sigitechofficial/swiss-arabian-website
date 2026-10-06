@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
+import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { toCatalogProduct } from "@/features/catalog/utils/toCatalogProduct";
 import { useUiStore } from "@/stores/useUiStore";
 import { fetchEmptyBag } from "../api/promotions.service";
 import type { EmptyBagProduct } from "../types/emptyBag";
 import { readViewed } from "../utils/emptyBagMemory";
+import {
+  related,
+  relatedGrid,
+  relatedHead,
+  relatedTitle,
+} from "@/styles/pdpChrome";
+import { pageContainer } from "@/styles/siteChrome";
 
 function asCatalog(product: EmptyBagProduct, currency: string): CatalogProduct | null {
   if (!product.productId || !product.slug) return null;
@@ -54,16 +61,16 @@ export function RecentlyViewed({ excludeProductId }: { excludeProductId: string 
   if (products.length === 0) return null;
 
   return (
-    <section className="pdp-related" aria-labelledby="recently-viewed-heading">
-      <div className="container container--full">
-        <div className="pdp-related__head">
-          <h2 className="pdp-related__title" id="recently-viewed-heading">
+    <section className={related} aria-labelledby="recently-viewed-heading">
+      <div className={pageContainer}>
+        <div className={relatedHead}>
+          <h2 className={relatedTitle} id="recently-viewed-heading">
             {group?.heading || "Recently viewed."}
           </h2>
         </div>
-        <ul className="pdp-related__grid products-band" role="list">
+        <ul className={relatedGrid} role="list">
           {products.map((product) => (
-            <CatalogProductCard key={product.id} product={product} />
+            <CatalogProductCard key={product.id} product={product} dense={false} />
           ))}
         </ul>
       </div>

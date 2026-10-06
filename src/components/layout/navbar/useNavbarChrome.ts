@@ -72,7 +72,7 @@ export function useNavbarChrome() {
 
     const syncTopbarHeight = () => {
       if (topbarHidden) return;
-      const topbar = header.querySelector(".topbar");
+      const topbar = header.querySelector("[data-topbar]");
       const height = topbar?.getBoundingClientRect().height ?? 0;
       if (height) header.style.setProperty("--topbar-h", `${Math.round(height)}px`);
     };
@@ -129,16 +129,7 @@ export function useNavbarChrome() {
       // heights into --site-header-h resizes the spacer + hero and the
       // page jumps when scrolling back to the top.
       if (header.getAttribute("data-scrolled") === "true") return;
-      const topbar = header.querySelector(".topbar");
-      const shell = header.querySelector(".nav-shell");
-      const nav = header.querySelector(".primary-nav");
-      const navVisible =
-        nav instanceof HTMLElement && getComputedStyle(nav).display !== "none";
-      const height = Math.round(
-        (topbar?.getBoundingClientRect().height ?? 0) +
-          (shell?.getBoundingClientRect().height ?? 0) +
-          (navVisible ? nav.getBoundingClientRect().height : 0),
-      );
+      const height = Math.round(header.getBoundingClientRect().height);
       if (!height) return;
       if (!allowShrink && frozen && height < frozen - 1) return;
       if (height === frozen) return;

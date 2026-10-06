@@ -1,36 +1,52 @@
 import { REVIEWS } from "../../constants/landingContent";
+import {
+  eyebrow,
+  reviewBody,
+  reviewCard,
+  reviewFoot,
+  reviewMark,
+  reviewName,
+  reviewProduct,
+  reviewStars,
+  reviewsGrid,
+  reviewsHead,
+  reviewsRating,
+  reviewsSection,
+  sectionTitle,
+} from "@/styles/landingChrome";
+import { pageContainer } from "@/styles/siteChrome";
 
 export function LandingReviews() {
   return (
-    <section className="section reviews" id="reviews" aria-labelledby="reviews-heading">
-      <div className="container">
-        <header className="reviews__head">
-          <p className="eyebrow">Loved worldwide</p>
-          <h2 className="display reviews__title" id="reviews-heading">
+    <section className={reviewsSection} id="reviews" aria-labelledby="reviews-heading">
+      <div className={pageContainer}>
+        <header className={reviewsHead}>
+          <p className={eyebrow}>Loved worldwide</p>
+          <h2 className={sectionTitle} id="reviews-heading">
             What our community says
           </h2>
-          <p className="reviews__rating">
-            <span className="stars" aria-hidden="true">
+          <p className={reviewsRating}>
+            <span className={reviewStars} aria-hidden="true">
               ★★★★★
             </span>
-            <span className="reviews__rating-text">
+            <span>
               <strong>4.8</strong> · 2,480 verified reviews · 98% recommend
             </span>
           </p>
         </header>
-        <ul className="reviews__grid" role="list">
+        <ul className={reviewsGrid} role="list">
           {REVIEWS.map((review) => (
-            <li className="review-card" key={review.name}>
-              <span className="review-card__mark" aria-hidden="true">
+            <li className={reviewCard} key={review.name}>
+              <span className={reviewMark} aria-hidden="true">
                 ”
               </span>
-              <span className="stars" role="img" aria-label="Rated 5 out of 5">
+              <span className={reviewStars} role="img" aria-label="Rated 5 out of 5">
                 ★★★★★
               </span>
-              <p className="review-card__body">{review.body}</p>
-              <div className="review-card__foot">
-                <span className="review-card__name">{review.name}</span>
-                <span className="review-card__product">{review.product}</span>
+              <p className={reviewBody}>{review.body}</p>
+              <div className={reviewFoot}>
+                <span className={reviewName}>{review.name}</span>
+                <span className={reviewProduct}>{review.product}</span>
               </div>
             </li>
           ))}

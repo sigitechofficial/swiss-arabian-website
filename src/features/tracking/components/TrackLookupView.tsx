@@ -4,6 +4,17 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
+import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
+import {
+  cbox,
+  cboxBody,
+  checkoutCta,
+  checkoutError,
+  checkoutLegal,
+  checkoutNote,
+  fldFull,
+  fldHint,
+} from "@/styles/checkoutChrome";
 import { storeGuestOrderAccessToken } from "@/features/checkout/utils/checkoutSession";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -31,22 +42,22 @@ export function TrackLookupView() {
   return (
     <CheckoutStateShell current="Track order">
       <div className="mx-auto w-full max-w-md pb-16">
-        <header className="checkout-head text-center">
-          <p className="collection-head__eyebrow">Order tracking</p>
-          <h1 className="collection-head__title">Track your order</h1>
-          <p className="checkout-note">
+        <header className="text-center">
+          <p className={checkoutEyebrow}>Order tracking</p>
+          <h1 className={pageTitle}>Track your order</h1>
+          <p className={checkoutNote}>
             Your order number and tracking token are in your order confirmation email.
           </p>
         </header>
 
-        <form className="cbox" onSubmit={submit} noValidate>
-          <div className="cbox__body">
+        <form className={cbox} onSubmit={submit} noValidate>
+          <div className={cboxBody}>
             {error ? (
-              <p className="checkout-error" role="alert">
+              <p className={checkoutError} role="alert">
                 {error}
               </p>
             ) : null}
-            <label className="fld fld--full">
+            <label className={fldFull}>
               <span>Order number</span>
               <input
                 type="text"
@@ -58,9 +69,9 @@ export function TrackLookupView() {
                 onChange={(e) => setOrderNumber(e.target.value)}
               />
             </label>
-            <label className="fld fld--full">
+            <label className={fldFull}>
               <span>
-                Tracking token{isAuthenticated ? <span className="fld__hint"> (not needed for your own orders)</span> : null}
+                Tracking token{isAuthenticated ? <span className={fldHint}> (not needed for your own orders)</span> : null}
               </span>
               <input
                 type="text"
@@ -72,14 +83,14 @@ export function TrackLookupView() {
                 onChange={(e) => setToken(e.target.value)}
               />
             </label>
-            <button type="submit" className="checkout-cta">
+            <button type="submit" className={checkoutCta}>
               <span>Track order</span>
-              <b className="arrow" aria-hidden="true">↗</b>
+              <b aria-hidden="true">↗</b>
             </button>
           </div>
         </form>
 
-        <p className="checkout-legal mt-4">
+        <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
               All your orders are in <Link href="/account/orders">Purchase History</Link>.

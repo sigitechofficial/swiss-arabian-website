@@ -10,6 +10,17 @@ import { useUiStore } from "@/stores/useUiStore";
 import { fetchEmptyBag } from "../api/promotions.service";
 import { readEmptyOrigin, readViewed } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import {
+  cartRec,
+  cartRecAdd,
+  cartRecCopy,
+  cartRecName,
+  cartRecPh,
+  cartRecPrice,
+  cartRecs,
+  cartRecsSwiper,
+  cartRecsTitle,
+} from "@/styles/cartChrome";
 
 export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string }) {
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
@@ -31,18 +42,18 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
   return (
     <>
       {bag.groups.map((group) => (
-        <div className="cart-recs" key={group.id || group.heading}>
-          <h3 className="cart-recs-title">{group.heading}</h3>
-          <div className="cart-recs-swiper" role="list">
+        <div className={cartRecs} key={group.id || group.heading}>
+          <h3 className={cartRecsTitle}>{group.heading}</h3>
+          <div className={cartRecsSwiper} role="list">
             {group.products.map((product) => (
-              <article className="cart-rec" key={`${group.id}-${product.sku}`} role="listitem">
+              <article className={cartRec} key={`${group.id}-${product.sku}`} role="listitem">
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.image} alt="" />
                 ) : (
-                  <span className="cart-rec-ph" aria-hidden="true" />
+                  <span className={cartRecPh} aria-hidden="true" />
                 )}
-                <div className="cart-rec-copy">
+                <div className={cartRecCopy}>
                   {product.slug ? (
                     <Link
                       href={`/products/${product.slug}`}
@@ -52,16 +63,16 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
                         surface,
                       })}
                     >
-                      <p className="cart-rec-name">{product.title}</p>
+                      <p className={cartRecName}>{product.title}</p>
                     </Link>
                   ) : (
-                    <p className="cart-rec-name">{product.title}</p>
+                    <p className={cartRecName}>{product.title}</p>
                   )}
-                  {product.price ? <p className="cart-rec-price">{product.price}</p> : null}
+                  {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
                 </div>
                 <button
                   type="button"
-                  className="cart-rec-add"
+                  className={cartRecAdd}
                   disabled={busy === product.sku}
                   aria-label={`${bag.addLabel} ${product.title}`}
                   onClick={() => {

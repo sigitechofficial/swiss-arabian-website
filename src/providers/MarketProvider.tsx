@@ -58,9 +58,8 @@ function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
 export function MarketProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const marketId = useUiStore((s) => s.selectedMarketId);
-  const setSelectedMarketId = useUiStore((s) => s.setSelectedMarketId);
   const catalogContext = useUiStore((s) => s.catalogContext);
-  const setCatalogContext = useUiStore((s) => s.setCatalogContext);
+  const selectMarket = useUiStore((s) => s.selectMarket);
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
   const setCartId = useCartStore((s) => s.setCartId);
   const clearPromotions = useCartStore((s) => s.clearPromotions);
@@ -114,8 +113,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
 
     if (!marketsQuery.data) {
       if (saved && !useUiStore.getState().catalogContext) {
-        setSelectedMarketId(saved);
-        setCatalogContext(fallbackCatalogContext(saved));
+        selectMarket(saved, fallbackCatalogContext(saved));
         writeZoneCookie(saved);
       }
       return;
@@ -144,16 +142,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setSelectedMarketId(pick.zoneCode);
-    setCatalogContext(nextCtx);
+    selectMarket(pick.zoneCode, nextCtx);
     writeZoneCookie(pick.zoneCode);
-  }, [
-    hydrated,
-    marketsQuery.data,
-    shoppable,
-    setCatalogContext,
-    setSelectedMarketId,
-  ]);
+  }, [hydrated, marketsQuery.data, shoppable, selectMarket]);
 
   const refreshMarketScopedData = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
@@ -191,17 +182,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       const next = market
         ? contextFromMarket(market)
         : fallbackCatalogContext(id);
-      setSelectedMarketId(id);
-      setCatalogContext(next);
+      selectMarket(id, next);
       writeZoneCookie(id);
       refreshMarketScopedData();
     },
-    [
-      refreshMarketScopedData,
-      setCatalogContext,
-      setSelectedMarketId,
-      shoppable,
-    ],
+    [refreshMarketScopedData, selectMarket, shoppable],
   );
 
   const value = useMemo(

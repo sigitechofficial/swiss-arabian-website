@@ -7,6 +7,19 @@ import { useGiftCatalogMap } from "../hooks/useGiftCatalog";
 import { useGiftChoice } from "../hooks/useGiftChoice";
 import type { PromotionGiftAward } from "../types/promotions";
 import { giftDisplayName, giftErrorMessage } from "../utils/giftWithPurchase";
+import {
+  cartHint,
+  giftChoiceBackdrop,
+  giftChoiceDialog,
+  giftChoiceKicker,
+  giftChoiceLater,
+  giftChoiceLede,
+  giftChoiceList,
+  giftChoiceName,
+  giftChoicePh,
+  giftChoiceReveal,
+  giftChoiceRoot,
+} from "@/styles/cartChrome";
 
 export function GiftChoiceModal({
   award,
@@ -55,18 +68,18 @@ export function GiftChoiceModal({
   }
 
   return createPortal(
-    <div className="gift-choice-root">
-      <button type="button" className="gift-choice-backdrop" aria-label="Close gift choices" onClick={onClose} />
+    <div className={giftChoiceRoot}>
+      <button type="button" className={giftChoiceBackdrop} aria-label="Close gift choices" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`gift-choice-dialog ${celebrate ? "is-reveal" : ""}`}
+        className={`${giftChoiceDialog} ${celebrate ? giftChoiceReveal : ""}`}
       >
-        <p className="gift-choice-kicker">Free gift</p>
+        <p className={giftChoiceKicker}>Free gift</p>
         <h2 id={titleId}>A gift is yours</h2>
-        <p className="gift-choice-lede">Choose one. You can change it before checkout.</p>
-        <ul className="gift-choice-list" aria-label="Free gift choices">
+        <p className={giftChoiceLede}>Choose one. You can change it before checkout.</p>
+        <ul className={giftChoiceList} aria-label="Free gift choices">
           {award.choices.map((gift, index) => {
             const product = catalog.get(gift.sku);
             const title = product?.title || giftDisplayName(gift);
@@ -77,9 +90,9 @@ export function GiftChoiceModal({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={image} alt={title} width={64} height={64} />
                 ) : (
-                  <span className="gift-choice-ph" aria-hidden="true" />
+                  <span className={giftChoicePh} aria-hidden="true" />
                 )}
-                <span className="gift-choice-name">
+                <span className={giftChoiceName}>
                   {title}
                   {!gift.sku.includes(":") && gift.sku.length <= 48 ? (
                     <small>{gift.sku}</small>
@@ -97,11 +110,11 @@ export function GiftChoiceModal({
           })}
         </ul>
         {error ? (
-          <p className="cart-hint" role="alert">
+          <p className={cartHint} role="alert">
             {error}
           </p>
         ) : null}
-        <button type="button" className="gift-choice-later" onClick={onClose}>
+        <button type="button" className={giftChoiceLater} onClick={onClose}>
           Not now
         </button>
       </div>

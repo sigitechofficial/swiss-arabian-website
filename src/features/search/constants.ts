@@ -11,7 +11,7 @@ export const SEARCH_IDLE_SHORTCUTS = [
   { label: "Oud", href: "/search?q=oud" },
   { label: "Best sellers", href: "/collections/best-sellers" },
   { label: "New launches", href: "/collections/new-launches" },
-  { label: "Gift sets", href: "/gift-box" },
+  { label: "Gift sets", href: "/collections/gift-sets" },
 ] as const;
 
 export const SEARCH_SORT_OPTIONS = [

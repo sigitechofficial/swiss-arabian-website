@@ -2,6 +2,8 @@
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { GiftCardTender } from "../types/promotions";
+import { cartTotalsLine } from "@/styles/cartChrome";
+import { checkoutTotalsLine } from "@/styles/checkoutChrome";
 
 export function MoneySummary({
   className,
@@ -15,6 +17,7 @@ export function MoneySummary({
   amountPayable,
   giftCards = [],
   freeGifts = [],
+  surface,
 }: {
   className: string;
   currency: string;
@@ -29,7 +32,11 @@ export function MoneySummary({
   giftCards?: GiftCardTender[];
   /** Display-only awarded gifts. Not added to subtotal, discount, or total. */
   freeGifts?: { name: string; quantity: number }[];
+  /** Checkout rows use the summary total rule. Cart is the default. */
+  surface?: "cart" | "checkout";
 }) {
+  const checkout = surface ? surface === "checkout" : className.includes("checkout");
+  const totalsLine = checkout ? checkoutTotalsLine : cartTotalsLine;
   const showPayable =
     amountPayable != null && Number.isFinite(amountPayable) && amountPayable !== total;
 
@@ -82,12 +89,12 @@ export function MoneySummary({
           </div>
         );
       })}
-      <div className={className.includes("checkout") ? "checkout-totals-line" : "cart-totals-line"}>
+      <div className={totalsLine}>
         <dt>Total</dt>
         <dd dir="ltr">{formatMoney(total, currency)}</dd>
       </div>
       {showPayable ? (
-        <div className={className.includes("checkout") ? "checkout-totals-line" : "cart-totals-line"}>
+        <div className={totalsLine}>
           <dt>Amount due</dt>
           <dd dir="ltr">{formatMoney(amountPayable, currency)}</dd>
         </div>

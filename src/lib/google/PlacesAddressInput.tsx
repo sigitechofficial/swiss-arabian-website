@@ -26,6 +26,8 @@ type PlacesAddressInputProps = Omit<
 function PlainAddressInput({
   value,
   onChange,
+  countryCode: _countryCode,
+  onResolved: _onResolved,
   ...rest
 }: PlacesAddressInputProps) {
   return (

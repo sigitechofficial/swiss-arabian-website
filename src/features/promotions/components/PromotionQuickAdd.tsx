@@ -7,6 +7,17 @@ import { addCartItem } from "@/features/cart/api/cart.service";
 import { useCartStore } from "@/stores/useCartStore";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import {
+  cartRec,
+  cartRecAdd,
+  cartRecCopy,
+  cartRecName,
+  cartRecPh,
+  cartRecPrice,
+  cartRecs,
+  cartRecsSwiper,
+  cartRecsTitle,
+} from "@/styles/cartChrome";
 
 export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
   const { data } = useApplicablePromotions();
@@ -18,18 +29,18 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
   if (!recommendations?.heading || products.length === 0) return null;
 
   return (
-    <div className="cart-recs">
-      <h3 className="cart-recs-title">{recommendations.heading}</h3>
-      <div className="cart-recs-swiper" role="list">
+    <div className={cartRecs}>
+      <h3 className={cartRecsTitle}>{recommendations.heading}</h3>
+      <div className={cartRecsSwiper} role="list">
         {products.map((product) => (
-          <article className="cart-rec" key={product.sku} role="listitem">
+          <article className={cartRec} key={product.sku} role="listitem">
             {product.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image} alt="" />
             ) : (
-              <span className="cart-rec-ph" aria-hidden="true" />
+              <span className={cartRecPh} aria-hidden="true" />
             )}
-            <div className="cart-rec-copy">
+            <div className={cartRecCopy}>
               {product.slug ? (
                 <Link href={`/products/${product.slug}`} onClick={() => trackPromotion("promotion_recommendation_clicked", {
                   campaignCode: data?.progress?.primary?.campaignCode,
@@ -38,16 +49,16 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
                   surface,
                 })}
                 >
-                  <p className="cart-rec-name">{product.title}</p>
+                  <p className={cartRecName}>{product.title}</p>
                 </Link>
               ) : (
-                <p className="cart-rec-name">{product.title}</p>
+                <p className={cartRecName}>{product.title}</p>
               )}
-              {product.price ? <p className="cart-rec-price">{product.price}</p> : null}
+              {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
             </div>
             <button
               type="button"
-              className="cart-rec-add"
+              className={cartRecAdd}
               disabled={busy === product.sku}
               aria-label={`${recommendations.addLabel} ${product.title}`}
               onClick={() => {

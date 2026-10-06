@@ -15,6 +15,16 @@ import {
 } from "../utils/checkoutSession";
 import { PaymentGatewayError, startPayment } from "../utils/startPayment";
 import { CheckoutStateShell } from "./CheckoutStateShell";
+import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
+import {
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutDone,
+  checkoutDoneActions,
+  checkoutEmpty,
+  checkoutError,
+  checkoutLink,
+} from "@/styles/checkoutChrome";
 
 const GATEWAY_ERROR =
   "Card payment couldn’t be started right now. Your order is saved — please try again in a moment, or contact us if it keeps happening.";
@@ -72,13 +82,13 @@ export function PaymentCancelView() {
   if (hydrated && !orderId) {
     return (
       <CheckoutStateShell current="Payment">
-        <section className="checkout-empty">
-          <p className="collection-head__eyebrow">Payment</p>
-          <h1 className="collection-head__title">This payment session has ended.</h1>
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Payment</p>
+          <h1 className={collectionTitle}>This payment session has ended.</h1>
           <p>Start again from your bag to place a new order.</p>
-          <Link className="checkout-cta checkout-cta--inline" href="/cart">
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
             <span>Back to bag</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </Link>
         </section>
       </CheckoutStateShell>
@@ -87,31 +97,31 @@ export function PaymentCancelView() {
 
   return (
     <CheckoutStateShell current="Payment">
-      <section className="checkout-done">
-        <p className="collection-head__eyebrow">Payment not completed</p>
-        <h1 className="collection-head__title">
-          Your order is <em className="collection-head__em">saved</em>.
+      <section className={checkoutDone}>
+        <p className={stateEyebrow}>Payment not completed</p>
+        <h1 className={doneTitle}>
+          Your order is <em className={doneEm}>saved</em>.
         </h1>
-        <p className="collection-head__intro">
+        <p className={stateIntro}>
           {orderNumber ? `Order ${orderNumber} is waiting for payment. ` : "Your order is waiting for payment. "}
           You can finish paying now, or come back to it later.
         </p>
         {error ? (
-          <p className="checkout-error" role="alert">
+          <p className={checkoutError} role="alert">
             {error}
           </p>
         ) : null}
-        <div className="checkout-done__actions">
+        <div className={checkoutDoneActions}>
           <button
             type="button"
-            className="checkout-cta checkout-cta--inline"
+            className={`${checkoutCta} ${checkoutCtaInline}`}
             onClick={() => void retry()}
             disabled={retrying || !hydrated}
           >
             <span>{retrying ? "Opening payment…" : "Retry payment"}</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </button>
-          <Link className="checkout-link" href="/">
+          <Link className={checkoutLink} href="/">
             Return home
           </Link>
         </div>

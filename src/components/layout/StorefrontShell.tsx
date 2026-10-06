@@ -5,6 +5,7 @@ import type { NavbarVariant } from "./navbar";
 import { SearchOverlay } from "./SearchOverlay";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
+import { siteHeaderSpacer, skipLink } from "@/styles/siteChrome";
 
 export function StorefrontShell({
   children,
@@ -21,11 +22,11 @@ export function StorefrontShell({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--cream)] font-sans text-[var(--ink)]">
-      <a className="skip-link" href="#main">
+      <a className={skipLink} href="#main">
         Skip to content
       </a>
       <SiteHeader key="site-header" variant={navbarVariant} />
-      <div className="site-header-spacer" aria-hidden="true" />
+      <div className={siteHeaderSpacer} aria-hidden="true" />
       <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>

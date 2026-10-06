@@ -1,6 +1,5 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ApiClientError } from "@/lib/api/apiError";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useUiStore } from "@/stores/useUiStore";
 import type { MobileNavItem, MobileNavLink } from "@/features/home/constants/homeAssets";
 import type { ChromeNavItem } from "@/features/home/constants/chromeNav";
@@ -72,35 +71,27 @@ function retryServerErrors(failureCount: number, error: unknown): boolean {
   return failureCount < 1;
 }
 
-export function useNavigation(
-  zoneCode: string = DEFAULT_ZONE_CODE,
-): UseNavigationReturn {
-  const salesChannelCode = useUiStore((s) => s.catalogContext?.salesChannelCode);
-  // Keyed by zone and the markets API channel, so a late `platform_sa_uae`
-  // replaces an earlier fallback and the menu refetches.
+export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
+  const zone = zoneCode?.trim() ?? "";
+  const salesChannelCode = useUiStore((s) =>
+    s.catalogContext?.zoneCode === zone ? s.catalogContext.salesChannelCode : "",
+  );
   const zoneQuery = useQuery({
-    queryKey: ["storefront", "navigation", zoneCode, salesChannelCode ?? ""],
-    queryFn: () => fetchNavigation(zoneCode),
-    placeholderData: keepPreviousData,
+    queryKey: ["storefront", "navigation", zone, salesChannelCode ?? ""],
+    queryFn: () => fetchNavigation(zone),
+    enabled: Boolean(zone),
+    placeholderData: (previous, previousQuery) => {
+      const key = previousQuery?.queryKey ?? [];
+      if (!zone || !key.includes(zone)) return undefined;
+      return previous;
+    },
     staleTime: 30_000,
     gcTime: 60_000,
     retry: retryServerErrors,
   });
 
-  // A zone the backend can't resolve yet falls back to the default zone's menu
-  // rather than dropping to the static one.
-  const fallbackActive = zoneCode !== DEFAULT_ZONE_CODE && zoneQuery.isError;
-  const fallbackQuery = useQuery({
-    queryKey: ["storefront", "navigation", DEFAULT_ZONE_CODE, salesChannelCode ?? ""],
-    queryFn: () => fetchNavigation(DEFAULT_ZONE_CODE),
-    enabled: fallbackActive,
-    staleTime: 30_000,
-    gcTime: 60_000,
-    retry: retryServerErrors,
-  });
-
-  const data = zoneQuery.data ?? (fallbackActive ? fallbackQuery.data : undefined);
-  const isLoading = zoneQuery.isLoading || (fallbackActive && fallbackQuery.isLoading);
+  const data = zoneQuery.data;
+  const isLoading = !zone || zoneQuery.isLoading;
 
   return {
     headerItems: data ? apiNavToMobileNav(data.header) : [],

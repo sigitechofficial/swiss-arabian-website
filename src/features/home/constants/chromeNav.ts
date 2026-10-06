@@ -49,7 +49,7 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
     type: "mega",
     id: "perfumes",
     label: "Perfumes",
-    href: "/collections/perfumes",
+    href: "/collections/perfume",
     groups: [
       {
         heading: "Collections",
@@ -78,23 +78,23 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
       image: "/assets/collection-1.jpg",
       copy: "Extrait de parfum, composed in Dubai since 1974.",
       cta: "Shop perfumes",
-      href: "/collections/perfumes",
+      href: "/collections/perfume",
     },
   },
   {
     type: "mega",
     id: "oils",
     label: "Perfume Oils",
-    href: "/collections/perfume-oils",
+    href: "/collections/concentrated-perfume-oils",
     groups: [
       {
         heading: "Collections",
         links: [
-          { label: "Concentrated Perfume Oils", href: "/collections/perfume-oils" },
+          { label: "Concentrated Perfume Oils", href: "/collections/concentrated-perfume-oils" },
           { label: "Dehn El Oud", href: "/collections/dehn-el-oud" },
           { label: "Malaki", href: "/collections/malaki" },
           { label: "Private", href: "/collections/private" },
-          { label: "All perfume oils", href: "/collections/perfume-oils" },
+          { label: "All perfume oils", href: "/collections/concentrated-perfume-oils" },
         ],
       },
       {
@@ -111,7 +111,7 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
       image: "/assets/collection-2.jpg",
       copy: "Concentrated oils in the oldest tradition of the house.",
       cta: "Shop perfume oils",
-      href: "/collections/perfume-oils",
+      href: "/collections/concentrated-perfume-oils",
     },
   },
   {
@@ -147,7 +147,7 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
         links: [
           { label: "Trending", href: "/products" },
           { label: "Perfume best sellers", href: "/collections/best-sellers" },
-          { label: "Perfume oil best sellers", href: "/collections/perfume-oils" },
+          { label: "Perfume oil best sellers", href: "/collections/perfume-oil-best-sellers" },
           { label: "Incense best sellers", href: "/collections/incense" },
           { label: "All best sellers", href: "/collections/best-sellers" },
         ],
@@ -183,7 +183,7 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
         links: [
           { label: "Best Sellers", href: "/collections/best-sellers" },
           { label: "New In", href: "/collections/new-launches" },
-          { label: "Gift Sets", href: "/gift-box" },
+          { label: "Gift Sets", href: "/collections/gift-sets" },
         ],
       },
     ],
@@ -196,5 +196,5 @@ export const PRIMARY_NAV: ChromeNavItem[] = [
     },
   },
   { type: "link", label: "Minis", href: "/collections/minis" },
-  { type: "link", label: "Gift Sets", href: "/gift-box", accent: true },
+  { type: "link", label: "Gift Sets", href: "/collections/gift-sets", accent: true },
 ];

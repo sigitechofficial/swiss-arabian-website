@@ -19,6 +19,7 @@ export { couponErrorMessage } from "./utils/couponErrors";
 export { CouponForm } from "./components/CouponForm";
 export { GiftCardForm } from "./components/GiftCardForm";
 export { MoneySummary } from "./components/MoneySummary";
+export { PromoLinePrice } from "./components/PromoLinePrice";
 export { AppliedCampaigns } from "./components/AppliedCampaigns";
 export { GiftWithPurchase } from "./components/GiftWithPurchase";
 export { awardedGiftLines, giftDisplayName } from "./utils/giftWithPurchase";

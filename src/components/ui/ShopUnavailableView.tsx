@@ -1,4 +1,7 @@
-import { AppButton } from "./AppButton";
+import Link from "next/link";
+
+const action =
+  "inline-flex h-11 items-center justify-center rounded-md bg-terra px-5 text-sm font-semibold text-white hover:bg-[var(--sa-action-primary-hover)]";
 
 export function ShopUnavailableView() {
   return (
@@ -9,7 +12,9 @@ export function ShopUnavailableView() {
       <p className="text-sa-muted">
         We cannot load this storefront right now. Please try again later.
       </p>
-      <AppButton href="/">Try again</AppButton>
+      <Link className={action} href="/">
+        Try again
+      </Link>
     </div>
   );
 }

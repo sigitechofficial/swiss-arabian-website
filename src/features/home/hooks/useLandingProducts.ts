@@ -2,11 +2,9 @@
 
 import { STATIC_PRODUCTS } from "../constants/staticProducts";
 
-/** Landing sections (products band, trending grid, bundle panel) render
- *  this fully static product list — no live catalog call, no live image
- *  URLs — so the "shape" still matches a query result (`{ data }`) even
- *  though nothing is actually fetched. Swap back to a real `useQuery`
- *  against the catalog API once live data + images are ready. */
+/** The bundle panel still uses this hand-picked list. The best-sellers and
+ *  trending strips load their collections and only fall back here when that
+ *  collection has nothing to show. */
 export function useLandingProducts(limit = 8) {
   return {
     data: { products: STATIC_PRODUCTS.slice(0, limit) },

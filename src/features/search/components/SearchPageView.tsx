@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
+import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogInfiniteSentinel } from "@/features/catalog/components/CatalogInfiniteSentinel";
 import { toCatalogProducts } from "@/features/catalog/utils/toCatalogProduct";
 import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
@@ -28,6 +28,9 @@ import {
   emptyTitle,
   toolbar,
 } from "@/features/catalog/catalogChrome";
+import { crumbs, crumbsList, searchProductGrid } from "@/styles/shopChrome";
+import { productsBand } from "@/styles/landingChrome";
+import { pageContainer } from "@/styles/siteChrome";
 
 function searchHref(input: {
   q: string;
@@ -75,10 +78,10 @@ export function SearchPageView({
     total === 1 ? "1 product" : `${total.toLocaleString()} products`;
 
   return (
-    <div className="landing bg-[var(--cream,#faf6ee)] pb-[clamp(3rem,6vw,5rem)]">
-      <div className="container container--full">
-        <nav className="crumbs pt-[clamp(1rem,2.2vh,1.5rem)]" aria-label="Breadcrumb">
-          <ol className="crumbs__list" role="list">
+    <div className="bg-[var(--cream,#faf6ee)] pb-[clamp(3rem,6vw,5rem)]">
+      <div className={pageContainer}>
+        <nav className={crumbs} aria-label="Breadcrumb">
+          <ol className={crumbsList} role="list">
             <li>
               <Link href="/">Home</Link>
             </li>
@@ -174,9 +177,9 @@ export function SearchPageView({
             Searching the catalog…
           </p>
         ) : cards.length ? (
-          <section className="products-band" aria-labelledby="search-heading">
+          <section className={productsBand} aria-labelledby="search-heading">
             <WishlistStatusScope>
-              <ul className="product-grid gap-x-[clamp(0.85rem,1.4vw,1.35rem)] gap-y-[clamp(1.25rem,2vw,2rem)] ![grid-template-columns:repeat(4,minmax(0,1fr))] max-[1080px]:![grid-template-columns:repeat(3,minmax(0,1fr))] max-[720px]:![grid-template-columns:repeat(2,minmax(0,1fr))]" role="list">
+              <ul className={searchProductGrid} role="list">
                 {cards.map((product) => (
                   <CatalogProductCard
                     key={product.id}
@@ -235,7 +238,7 @@ function SearchDiscover({
       </div>
 
       {newest.length ? (
-        <section className="products-band pt-2" aria-labelledby="search-new-in">
+        <section className="pt-2 pb-[clamp(1rem,2.5vw,1.5rem)]" aria-labelledby="search-new-in">
           <div className="mb-4 flex items-baseline justify-between gap-4">
             <h2 className="m-0 text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ink,#241f1b)] uppercase" id="search-new-in">
               New in
@@ -243,7 +246,7 @@ function SearchDiscover({
             <Link className="text-[0.62rem] font-semibold tracking-[0.1em] text-[var(--copper,#8c4435)] uppercase underline! underline-offset-[3px]" href="/collections/new-launches">See all</Link>
           </div>
           <WishlistStatusScope>
-            <ul className="product-grid gap-x-[clamp(0.85rem,1.4vw,1.35rem)] gap-y-[clamp(1.25rem,2vw,2rem)] ![grid-template-columns:repeat(4,minmax(0,1fr))] max-[1080px]:![grid-template-columns:repeat(3,minmax(0,1fr))] max-[720px]:![grid-template-columns:repeat(2,minmax(0,1fr))]" role="list">
+            <ul className={searchProductGrid} role="list">
               {toCatalogProducts(newest, { guessFacets: false }).map((product) => (
                 <CatalogProductCard
                   key={product.id}
