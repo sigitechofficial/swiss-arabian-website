@@ -12,7 +12,6 @@ import {
   pdpFormat,
   pdpInstallments,
   pdpName,
-  pdpNameRegular,
   pdpPanel,
   pdpPromise,
   pdpPromises,
@@ -77,12 +76,9 @@ export function PdpBuyBox({
 
   return (
     <div className={pdpPanel}>
-      <p className="m-0 text-[0.68rem] font-bold tracking-[0.14em] text-[#6f6152] uppercase">Benton Sans Wide</p>
       <h1 className={pdpName} id="product-name">
         {product.title}
       </h1>
-      <p className="m-0 text-[0.68rem] font-bold tracking-[0.14em] text-[#6f6152] uppercase">Benton Sans Regular</p>
-      <p className={pdpNameRegular}>{product.title}</p>
       <p className={pdpFormat}>{formatLabel}</p>
       {showReviewRating && reviewSummary ? (
         <a className={pdpRating} href="#pdp-reviews">

@@ -66,9 +66,7 @@ export const pdpPanel =
 const pdpNameSize =
   "m-0 text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.08] font-normal tracking-[-0.01em] text-[#2a201a]";
 
-export const pdpName = `${pdpNameSize} font-['Benton_Sans_Wide','BentonSansWide',sans-serif]`;
-
-export const pdpNameRegular = `${pdpNameSize} font-['BentonSans_Regular',var(--font-display)]`;
+export const pdpName = `${pdpNameSize} font-[family-name:var(--font-display)]`;
 
 export const pdpFormat = "m-0 text-[0.9375rem] text-[#6f6152]";
 
