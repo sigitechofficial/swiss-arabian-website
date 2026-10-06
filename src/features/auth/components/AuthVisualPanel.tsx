@@ -80,7 +80,7 @@ export function AuthVisualPanel() {
           <img
             src="/assets/sa-logo-clear.png"
             alt=""
-            className="site-logo-on-dark h-full w-full object-contain object-left"
+            className="h-full w-full object-contain object-left [filter:brightness(0)_invert(0.93)_sepia(0.12)]"
           />
         </Link>
 

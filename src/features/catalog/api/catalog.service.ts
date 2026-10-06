@@ -1,5 +1,8 @@
 import { apiGet } from "@/lib/api/apiClient";
-import { storefrontContextQuery } from "@/lib/storefront/context";
+import {
+  storefrontContextQuery,
+  type StorefrontContextInput,
+} from "@/lib/storefront/context";
 import type {
   ProductCollectionRef,
   ProductDetail,
@@ -386,8 +389,14 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
   };
 }
 
-function contextQs(zoneCode?: string | null) {
-  return storefrontContextQuery({ zoneCode });
+function contextQs(
+  zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
+) {
+  return storefrontContextQuery({
+    ...market,
+    zoneCode: zoneCode?.trim() || market?.zoneCode,
+  });
 }
 
 function normalizePagination(
@@ -439,6 +448,8 @@ export type CatalogSearchOptions = {
   limit?: number;
   sort?: CatalogSearchSort;
   onlySellable?: boolean;
+  /** Selected market. Channel and currency are sent as returned by the markets API. */
+  context?: StorefrontContextInput | null;
 };
 
 /**
@@ -458,11 +469,7 @@ export async function fetchCatalogSearch(
   const sort = options.sort ?? "newest";
   const onlySellable = options.onlySellable !== false;
 
-  const qs = new URLSearchParams(
-    storefrontContextQuery({
-      zoneCode,
-    }),
-  );
+  const qs = new URLSearchParams(contextQs(zoneCode, options.context));
   qs.set("q", q);
   qs.set("onlySellable", onlySellable ? "true" : "false");
   qs.set("page", String(page));
@@ -486,10 +493,11 @@ export async function fetchCatalogSearch(
 export async function fetchProducts(
   zoneCode?: string | null,
   options?: CatalogListingFilters,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = new URLSearchParams(contextQs(zoneCode));
+  const qs = new URLSearchParams(contextQs(zoneCode, market));
   applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/products?${qs}`,
@@ -501,8 +509,9 @@ export async function fetchProducts(
 export async function fetchProductBySlug(
   slug: string,
   zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductDetail | null> {
-  const qs = contextQs(zoneCode);
+  const qs = contextQs(zoneCode, market);
 
   try {
     const data = await apiGet<ApiProductDetailData>(
@@ -580,9 +589,10 @@ type ApiCollectionListData = {
 
 export async function fetchCollections(
   zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
 ): Promise<CatalogCollection[]> {
   const data = await apiGet<ApiCollectionListData>(
-    `/storefront/catalog/collections?${contextQs(zoneCode)}`,
+    `/storefront/catalog/collections?${contextQs(zoneCode, market)}`,
     { skipAuth: true },
   );
   return data.items ?? [];
@@ -606,10 +616,11 @@ export type CatalogCategory = {
 export async function fetchCategoryBySlug(
   slug: string,
   zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
 ): Promise<CatalogCategory | null> {
   try {
     return await apiGet<CatalogCategory>(
-      `/storefront/catalog/categories/${encodeURIComponent(slug)}?${contextQs(zoneCode)}`,
+      `/storefront/catalog/categories/${encodeURIComponent(slug)}?${contextQs(zoneCode, market)}`,
       { skipAuth: true },
     );
   } catch {
@@ -622,10 +633,11 @@ export async function fetchCategoryProducts(
   slug: string,
   zoneCode?: string | null,
   options?: CatalogListingFilters,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = new URLSearchParams(contextQs(zoneCode));
+  const qs = new URLSearchParams(contextQs(zoneCode, market));
   applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/categories/${encodeURIComponent(slug)}/products?${qs}`,
@@ -637,10 +649,11 @@ export async function fetchCategoryProducts(
 export async function fetchCollectionBySlug(
   slug: string,
   zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
 ): Promise<CatalogCollection | null> {
   try {
     const data = await apiGet<ApiCollectionDetailData>(
-      `/storefront/catalog/collections/${encodeURIComponent(slug)}?${contextQs(zoneCode)}`,
+      `/storefront/catalog/collections/${encodeURIComponent(slug)}?${contextQs(zoneCode, market)}`,
       { skipAuth: true },
     );
     return mapCollectionDetail(data);
@@ -653,10 +666,11 @@ export async function fetchCollectionProducts(
   slug: string,
   zoneCode?: string | null,
   options?: CatalogListingFilters,
+  market?: StorefrontContextInput | null,
 ): Promise<ProductListResult> {
   const page = Math.max(1, options?.page ?? 1);
   const limit = Math.max(1, options?.limit ?? CATALOG_PAGE_SIZE);
-  const qs = new URLSearchParams(contextQs(zoneCode));
+  const qs = new URLSearchParams(contextQs(zoneCode, market));
   applyCatalogListingParams(qs, { ...options, page, limit });
   const data = await apiGet<ApiProductListData>(
     `/storefront/catalog/collections/${encodeURIComponent(slug)}/products?${qs}`,

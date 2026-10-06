@@ -12,6 +12,35 @@ import { createCustomerReview } from "../api/reviews.service";
 import { writeReviewSchema, type WriteReviewValues } from "../schemas/review.schema";
 import type { StorefrontPdpReviews } from "../types/pdpReviews";
 import { reviewStarsLabel } from "../utils/pdpReviews";
+import {
+  compositionEm,
+  compositionEyebrow,
+  reviewErr,
+  reviewFoot,
+  reviewForm,
+  reviewGrid,
+  reviewIntro,
+  reviewRating,
+  reviewStar,
+  reviewStarOn,
+  reviewSubmit,
+  reviews as reviewsSection,
+  reviewsActions,
+  reviewsBody,
+  reviewsCardTitle,
+  reviewsCopy,
+  reviewsEmpty,
+  reviewsHead,
+  reviewsItem,
+  reviewsList,
+  reviewsMeta,
+  reviewsNav,
+  reviewsTitle,
+  reviewsWrite,
+} from "@/styles/pdpChrome";
+import { fld, fldFull } from "@/styles/checkoutChrome";
+import { stars } from "@/styles/landingChrome";
+import { pageContainer } from "@/styles/siteChrome";
 
 export function PdpReviews({
   productId,
@@ -43,7 +72,7 @@ export function PdpReviews({
   const step = (dir: -1 | 1) => {
     const el = scrollerRef.current;
     if (!el) return;
-    const card = el.querySelector(".pdp-reviews__item");
+    const card = el.querySelector("li");
     const width = card instanceof HTMLElement ? card.getBoundingClientRect().width + 16 : 420;
     el.scrollBy({ left: dir * width, behavior: "smooth" });
   };
@@ -96,18 +125,18 @@ export function PdpReviews({
   };
 
   return (
-    <section className="pdp-reviews" id="pdp-reviews" aria-labelledby="pdp-reviews-heading">
-      <div className="container container--full">
-        <header className="pdp-reviews__head">
-          <div className="pdp-reviews__head-copy">
-            <p className="pdp-composition__eyebrow">Customer reviews</p>
-            <h2 className="pdp-reviews__title" id="pdp-reviews-heading">
-              What customers <em className="pdp-composition__em">say.</em>
+    <section className={reviewsSection} id="pdp-reviews" aria-labelledby="pdp-reviews-heading">
+      <div className={pageContainer}>
+        <header className={reviewsHead}>
+          <div className={reviewsCopy}>
+            <p className={compositionEyebrow}>Customer reviews</p>
+            <h2 className={reviewsTitle} id="pdp-reviews-heading">
+              What customers <em className={compositionEm}>say.</em>
             </h2>
           </div>
-          <div className="pdp-reviews__head-actions">
+          <div className={reviewsActions}>
             {items.length > 1 ? (
-              <div className="pdp-reviews__nav">
+              <div className={reviewsNav}>
                 <button type="button" onClick={() => step(-1)} aria-label="Previous review">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
                     <path d="M15 5l-7 7 7 7" />
@@ -120,27 +149,27 @@ export function PdpReviews({
                 </button>
               </div>
             ) : null}
-            <button type="button" className="pdp-reviews__write" onClick={toggleWrite}>
+            <button type="button" className={reviewsWrite} onClick={toggleWrite}>
               {open ? "Close" : "Write a review"}
             </button>
           </div>
         </header>
 
         {open ? (
-          <form className="pdp-review-form" noValidate onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="pdp-review-form__intro">
+          <form className={reviewForm} noValidate onSubmit={form.handleSubmit(onSubmit)}>
+            <div className={reviewIntro}>
               <h3>Write a review</h3>
               <p>Share how {productTitle} wears on you. It appears after approval.</p>
             </div>
-            <div className="pdp-review-form__grid">
-              <label className="fld">
+            <div className={reviewGrid}>
+              <label className={fld}>
                 <span>Overall rating</span>
-                <div className="pdp-review-form__rating" role="radiogroup" aria-label="Overall rating">
+                <div className={reviewRating} role="radiogroup" aria-label="Overall rating">
                   {[1, 2, 3, 4, 5].map((value) => (
                     <button
                       key={value}
                       type="button"
-                      className={rating >= value ? "is-on" : ""}
+                      className={rating >= value ? `${reviewStar} ${reviewStarOn}` : reviewStar}
                       aria-checked={rating === value}
                       role="radio"
                       onClick={() => form.setValue("rating", value, { shouldValidate: true })}
@@ -150,34 +179,34 @@ export function PdpReviews({
                   ))}
                 </div>
                 {form.formState.errors.rating ? (
-                  <span className="fld__err">{form.formState.errors.rating.message}</span>
+                  <span className={reviewErr}>{form.formState.errors.rating.message}</span>
                 ) : null}
               </label>
-              <label className="fld">
+              <label className={fld}>
                 <span>Review title</span>
                 <input type="text" placeholder="A signature, not a trend" {...form.register("title")} />
                 {form.formState.errors.title ? (
-                  <span className="fld__err">{form.formState.errors.title.message}</span>
+                  <span className={reviewErr}>{form.formState.errors.title.message}</span>
                 ) : null}
               </label>
-              <label className="fld fld--full">
+              <label className={fldFull}>
                 <span>Your review</span>
                 <textarea rows={5} placeholder="Longevity, sillage, when you wear it…" {...form.register("body")} />
                 {form.formState.errors.body ? (
-                  <span className="fld__err">{form.formState.errors.body.message}</span>
+                  <span className={reviewErr}>{form.formState.errors.body.message}</span>
                 ) : null}
               </label>
-              <label className="fld">
+              <label className={fld}>
                 <span>Display name</span>
                 <input type="text" autoComplete="name" placeholder="Amira K." {...form.register("name")} />
                 {form.formState.errors.name ? (
-                  <span className="fld__err">{form.formState.errors.name.message}</span>
+                  <span className={reviewErr}>{form.formState.errors.name.message}</span>
                 ) : null}
               </label>
             </div>
-            <div className="pdp-review-form__foot">
+            <div className={reviewFoot}>
               <p>By submitting, you confirm this is your own experience with the fragrance.</p>
-              <button className="pdp-review-form__submit" type="submit" disabled={submitting}>
+              <button className={reviewSubmit} type="submit" disabled={submitting}>
                 {submitting ? "Submitting…" : "Submit review"}
               </button>
             </div>
@@ -185,16 +214,16 @@ export function PdpReviews({
         ) : null}
 
         {items.length ? (
-          <div className="pdp-reviews__swiper">
-            <ul className="pdp-reviews__list" ref={scrollerRef} role="list">
+          <div className="min-w-0">
+            <ul className={reviewsList} ref={scrollerRef} role="list">
               {items.map((review) => (
-                <li className="pdp-reviews__item" key={review.reviewId}>
-                  <span className="stars" role="img" aria-label={`Rated ${review.rating} out of 5`}>
+                <li className={reviewsItem} key={review.reviewId}>
+                  <span className={`${stars} text-[0.62rem]`} role="img" aria-label={`Rated ${review.rating} out of 5`}>
                     {reviewStarsLabel(review.rating)}
                   </span>
-                  {review.title ? <p className="pdp-reviews__card-title">{review.title}</p> : null}
-                  {review.body ? <p className="pdp-reviews__body">{review.body}</p> : null}
-                  <p className="pdp-reviews__meta">
+                  {review.title ? <p className={reviewsCardTitle}>{review.title}</p> : null}
+                  {review.body ? <p className={reviewsBody}>{review.body}</p> : null}
+                  <p className={reviewsMeta}>
                     {review.displayName ?? "Customer"}
                     {review.verifiedPurchase ? " · Verified purchase" : null}
                   </p>
@@ -203,7 +232,7 @@ export function PdpReviews({
             </ul>
           </div>
         ) : (
-          <p className="pdp-reviews__empty">
+          <p className={reviewsEmpty}>
             {reviewCount === 0 ? "No reviews yet. Be the first to share how it wears." : "Reviews will appear here once approved."}
           </p>
         )}

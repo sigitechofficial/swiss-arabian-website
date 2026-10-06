@@ -3,21 +3,21 @@
 import { useState } from "react";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { useAddToCart } from "@/features/cart";
+import { cardAddButton, cardAddCheck, cardAddPlus } from "@/styles/productCard";
 
 export function AddToBagButton({
   product,
-  variant = "product",
+  variant: _variant = "product",
 }: {
   product: ProductSummary;
   variant?: "product" | "trend";
 }) {
   const { addToCart } = useAddToCart();
   const [pressed, setPressed] = useState(false);
-  const prefix = variant === "trend" ? "trend-card" : "product-card";
 
   return (
     <button
-      className={`${prefix}__add`}
+      className={cardAddButton}
       type="button"
       aria-pressed={pressed}
       aria-label={`Add ${product.title} to bag`}
@@ -39,7 +39,7 @@ export function AddToBagButton({
       }}
     >
       <svg
-        className={`${prefix}__add-plus`}
+        className={cardAddPlus}
         viewBox="0 0 20 20"
         fill="none"
         stroke="currentColor"
@@ -49,7 +49,7 @@ export function AddToBagButton({
         <path d="M10 4v12M4 10h12" />
       </svg>
       <svg
-        className={`${prefix}__add-check`}
+        className={cardAddCheck}
         viewBox="0 0 20 20"
         fill="none"
         stroke="currentColor"

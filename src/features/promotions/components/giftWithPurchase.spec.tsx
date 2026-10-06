@@ -131,7 +131,7 @@ describe("gift with purchase", () => {
     });
     render(<GiftWithPurchase currency="AED" snapshot={promo} selectable={false} />);
     expect(screen.getByRole("heading", { name: "ROSE 01" })).toBeInTheDocument();
-    expect(document.querySelector(".coline img")).toHaveAttribute("src", "/rose.png");
+    expect(document.querySelector("article img")).toHaveAttribute("src", "/rose.png");
     expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.queryByText(sourceSku)).not.toBeInTheDocument();
     expect(promo.gifts?.[0]?.giftItems[0]?.sku).toBe(sourceSku);

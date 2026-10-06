@@ -1,5 +1,14 @@
 import type { GiftCatalogHit } from "../hooks/useGiftCatalog";
 import type { PromotionGiftLine } from "../types/promotions";
+import { cline, clineBody, clineMedia, clineMeta, clinePrice, clineRow } from "@/styles/cartChrome";
+import {
+  coline,
+  colineBody,
+  colineMedia,
+  colineName,
+  colinePrice,
+  colineTop,
+} from "@/styles/checkoutChrome";
 
 function isSourceSku(value: string): boolean {
   return value.includes(":") || value.length > 48;
@@ -34,7 +43,7 @@ export function GiftCartItem({
   line: PromotionGiftLine;
   product?: GiftCatalogHit | null;
   currency?: string;
-  /** Checkout summary uses compact `coline`; cart page uses full `cline`. */
+  /** Checkout summary uses the bag-drawer row; cart page uses full `cline`. */
   variant?: "checkout" | "cart";
 }) {
   const title = giftCardTitle(line, product);
@@ -42,13 +51,13 @@ export function GiftCartItem({
 
   if (variant === "checkout") {
     return (
-      <article className="coline" aria-label={`Free gift: ${title}`}>
-        <div className="coline__media">
+      <article className={coline} aria-label={`Free gift: ${title}`}>
+        <div className={colineMedia}>
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imageUrl}
-              alt={title}
+              alt=""
               onError={(e) => {
                 e.currentTarget.style.visibility = "hidden";
               }}
@@ -56,32 +65,34 @@ export function GiftCartItem({
           ) : null}
           <b>{line.quantity}</b>
         </div>
-        <div className="coline__body">
-          <h3>{title}</h3>
+        <div className={colineBody}>
+          <div className={colineTop}>
+            <h3 className={colineName}>{title}</h3>
+            <p className={colinePrice} dir="ltr">
+              Free
+            </p>
+          </div>
         </div>
-        <span className="coline__price" dir="ltr">
-          Free
-        </span>
       </article>
     );
   }
 
   return (
-    <article className="cline" aria-label={`Free gift: ${title}`}>
-      <div className="cline__media">
+    <article className={cline} aria-label={`Free gift: ${title}`}>
+      <div className={clineMedia}>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt={title} />
         ) : null}
       </div>
-      <div className="cline__body">
-        <div className="cline__row">
+      <div className={clineBody}>
+        <div className={clineRow}>
           <h3>{title}</h3>
-          <span className="cline__price" dir="ltr">
+          <span className={clinePrice} dir="ltr">
             Free
           </span>
         </div>
-        <p className="cline__meta">Qty {line.quantity}</p>
+        <p className={clineMeta}>Qty {line.quantity}</p>
       </div>
     </article>
   );

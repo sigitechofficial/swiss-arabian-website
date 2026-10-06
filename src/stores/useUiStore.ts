@@ -17,17 +17,18 @@ export type PersistedCatalogContext = {
 };
 
 type UiState = {
-  mobileNavOpen: boolean;
   cartOpen: boolean;
   searchOpen: boolean;
   selectedMarketId: string | null;
   catalogContext: PersistedCatalogContext | null;
-  setMobileNavOpen: (open: boolean) => void;
-  toggleMobileNav: () => void;
   setCartOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
   setSelectedMarketId: (id: string | null) => void;
   setCatalogContext: (ctx: PersistedCatalogContext | null) => void;
+  selectMarket: (
+    selectedMarketId: string | null,
+    catalogContext: PersistedCatalogContext | null,
+  ) => void;
 };
 
 type PersistedUiState = Pick<UiState, "selectedMarketId" | "catalogContext">;
@@ -35,18 +36,16 @@ type PersistedUiState = Pick<UiState, "selectedMarketId" | "catalogContext">;
 export const useUiStore = create<UiState>()(
   persist<UiState, [], [], PersistedUiState>(
     (set) => ({
-      mobileNavOpen: false,
       cartOpen: false,
       searchOpen: false,
       selectedMarketId: null,
       catalogContext: null,
-      setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
-      toggleMobileNav: () =>
-        set((state) => ({ mobileNavOpen: !state.mobileNavOpen })),
       setCartOpen: (cartOpen) => set({ cartOpen }),
       setSearchOpen: (searchOpen) => set({ searchOpen }),
       setSelectedMarketId: (selectedMarketId) => set({ selectedMarketId }),
       setCatalogContext: (catalogContext) => set({ catalogContext }),
+      selectMarket: (selectedMarketId, catalogContext) =>
+        set({ selectedMarketId, catalogContext }),
     }),
     {
       // Only the shopper's country survives reloads (and full-page loads such

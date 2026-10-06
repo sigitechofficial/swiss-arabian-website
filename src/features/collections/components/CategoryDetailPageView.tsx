@@ -5,8 +5,7 @@ import { ProductCatalogView } from "@/features/catalog/components/ProductCatalog
 import { catalogKeys, fetchCategoryBySlug } from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useMarket } from "@/providers/MarketProvider";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 
 export function CategoryDetailPageView({
   slug,
@@ -15,12 +14,13 @@ export function CategoryDetailPageView({
   slug: string;
   listingQuery: CatalogListingQuery;
 }) {
-  const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const market = useSelectedCatalogMarket();
+  const zoneCode = market?.zoneCode ?? "";
 
   const { data: category } = useQuery({
-    queryKey: catalogKeys.category(slug, zoneCode),
-    queryFn: () => fetchCategoryBySlug(slug, zoneCode),
+    queryKey: [...catalogKeys.category(slug, zoneCode), market?.salesChannelCode ?? ""],
+    queryFn: () => fetchCategoryBySlug(slug, zoneCode, market),
+    enabled: Boolean(market),
   });
 
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(

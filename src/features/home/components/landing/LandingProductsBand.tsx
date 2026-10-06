@@ -4,37 +4,43 @@ import { useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
-import { useLandingProducts } from "../../hooks/useLandingProducts";
+import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
+import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
-
-/** Requested display order for this strip only (Trending keeps its own
- *  order) — anything not listed here just falls in afterwards, in the
- *  order it already comes back in. */
-const DISPLAY_ORDER = [
-  "patchouli-01",
-  "shaghaf-oud-ahmar",
-  "rose-01",
-  "incense-01",
-  "tobacco-01",
-];
-
-const HIDE_BADGE = new Set(["incense-01", "shaghaf-oud-ahmar"]);
-
-function withDisplayOrder<T extends { slug: string }>(items: T[]): T[] {
-  const bySlug = new Map(items.map((item) => [item.slug, item]));
-  const ordered = DISPLAY_ORDER.map((slug) => bySlug.get(slug)).filter(
-    (item): item is T => Boolean(item)
-  );
-  const orderedSlugs = new Set(ordered.map((item) => item.slug));
-  const rest = items.filter((item) => !orderedSlugs.has(item.slug));
-  return [...ordered, ...rest];
-}
+import {
+  cardAddSlot,
+  cardBottle,
+  cardImg,
+  cardImgSwap,
+  cardLink,
+  cardMedia,
+  cardMediaInset,
+  cardMediaLink,
+  cardMediaLinkSwap,
+  cardMediaSwap,
+  cardName,
+  cardPrice,
+  productStrip,
+  stripCard,
+} from "@/styles/productCard";
+import {
+  arrowOutline,
+  bottle,
+  linkUnderline,
+  productsBand,
+  productsBandHead,
+  productsBandTitleEm,
+  sectionTitle,
+  sectionTitleFlush,
+  stripArrows,
+  stripControls,
+} from "@/styles/landingChrome";
+import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
 export function LandingProductsBand() {
   const stripRef = useRef<HTMLUListElement>(null);
-  const { data } = useLandingProducts(8);
-  const products = withDisplayOrder(data?.products ?? []);
+  const { products, pending, live } = useHomeCollectionProducts("best-sellers", 8);
 
   // Preload AND fully decode every ingredients hover image up front (so the
   // first fade-in doesn't blink), and only swap to the ones that actually
@@ -50,32 +56,36 @@ export function LandingProductsBand() {
   };
 
   return (
-    <section className="section products-band" aria-labelledby="prodTitle">
-      <div className="container">
-        <header className="section-head section-head--row">
+    <section className={productsBand} aria-labelledby="prodTitle">
+      <div className={pageContainer}>
+        <header className={productsBandHead}>
           <div>
-            <h2 className="display section-head__title" id="prodTitle">
-              Our <em>best sellers.</em>
+            <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="prodTitle">
+              Our <em className={productsBandTitleEm}>best sellers.</em>
             </h2>
           </div>
-          <Link className="link-underline" href="/products">
+          <Link className={`${linkUnderline} shrink-0 whitespace-nowrap`} href="/collections/best-sellers">
             View all
           </Link>
         </header>
 
         <ul
-          className="product-strip"
+          className={productStrip}
           role="list"
           tabIndex={0}
           aria-label="Our best sellers, scrollable"
+          aria-busy={pending}
           ref={stripRef}
         >
+          {pending ? <HomeStripSkeleton /> : null}
           {products.map((product) => {
-            const hover = product.imageUrls?.[1];
+            const hoverCandidate = product.imageUrls?.[1];
+            const hover =
+              hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
             const hasIngredientsHover = Boolean(hover && loadedHovers.has(hover));
             return (
               <li
-                className="product-card"
+                className={stripCard}
                 key={product.id}
                 style={
                   hasIngredientsHover
@@ -89,11 +99,15 @@ export function LandingProductsBand() {
                     This is the single focusable/accessible link for the
                     card; the media link and name text below are inert. */}
                 <Link
-                  className="product-card__link"
+                  className={cardLink}
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
                 />
-                {HIDE_BADGE.has(product.slug) ? null : <ProductCardTags slug={product.slug} />}
+                <ProductCardTags
+                  slug={product.slug}
+                  tags={live ? (product.tags ?? []) : undefined}
+                  collectionSlug={live ? "best-sellers" : undefined}
+                />
                 {/* Ingredients hover art — rendered as a ::before background
                     on `.product-card` (not `.product-card__media`, which
                     has overflow:hidden for the rounded-corner bottle crop),
@@ -102,19 +116,24 @@ export function LandingProductsBand() {
                     at a size close to the bottle's real, uncropped scale. */}
                 <div
                   className={
-                    hasIngredientsHover
-                      ? "product-card__media product-card__media--swap"
-                      : "product-card__media"
+                    live
+                      ? hasIngredientsHover
+                        ? `${cardMedia} ${cardMediaSwap}`
+                        : cardMedia
+                      : hasIngredientsHover
+                        ? `${cardMediaInset} ${cardMediaSwap}`
+                        : cardMediaInset
                   }
                 >
                   <Link
-                    className="product-card__media-link"
+                    className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
                     href={`/products/${product.slug}`}
                     tabIndex={-1}
                     aria-hidden="true"
                   >
                     {product.imageUrl ? (
                       <img
+                        className={hasIngredientsHover ? cardImgSwap : cardImg}
                         src={product.imageUrl}
                         alt={product.title}
                         width={600}
@@ -122,7 +141,7 @@ export function LandingProductsBand() {
                         loading="lazy"
                       />
                     ) : (
-                      <span className="bottle" aria-hidden="true" />
+                      <span className={`${bottle} ${cardBottle}`} aria-hidden="true" />
                     )}
                   </Link>
                 </div>
@@ -135,12 +154,14 @@ export function LandingProductsBand() {
                     box's exact geometry here keeps the button visually
                     anchored the same way while its z-index competes
                     directly against `::before` and wins. */}
-                <div className="product-card__add-slot">
-                  <AddToBagButton product={product} variant="product" />
-                </div>
-                <div className="product-card__body">
-                  <h3 className="product-card__name">{product.title}</h3>
-                  <p className="product-card__price">
+                {product.inStock !== false ? (
+                  <div className={cardAddSlot}>
+                    <AddToBagButton product={product} variant="product" />
+                  </div>
+                ) : null}
+                <div>
+                  <h3 className={cardName}>{product.title}</h3>
+                  <p className={cardPrice}>
                     {formatMoney(product.price, product.currency)}
                   </p>
                 </div>
@@ -149,10 +170,10 @@ export function LandingProductsBand() {
           })}
         </ul>
 
-        <div className="strip-controls">
-          <div className="strip-controls__arrows">
+        <div className={stripControls}>
+          <div className={stripArrows}>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(-1)}
             >
@@ -165,10 +186,10 @@ export function LandingProductsBand() {
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className="visually-hidden">Scroll products left</span>
+              <span className={visuallyHidden}>Scroll products left</span>
             </button>
             <button
-              className="arrow arrow--outline"
+              className={arrowOutline}
               type="button"
               onClick={() => scrollBy(1)}
             >
@@ -181,7 +202,7 @@ export function LandingProductsBand() {
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className="visually-hidden">Scroll products right</span>
+              <span className={visuallyHidden}>Scroll products right</span>
             </button>
           </div>
         </div>

@@ -11,6 +11,42 @@ import {
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
 import { useCartStore } from "@/stores/useCartStore";
+import {
+  cartCrumbs,
+  cartCrumbsList,
+  cartEm,
+  cartEyebrow,
+  cartLede,
+  collectionHeadFlush,
+  pageTitle,
+} from "@/styles/shopChrome";
+import { pageContainer } from "@/styles/siteChrome";
+import {
+  cartBadges,
+  cartContinue,
+  cartCta,
+  cartCtaGlyph,
+  cartCtaInline,
+  cartEmptyNote,
+  cartEmptyState,
+  cartHint,
+  cartItemsCol,
+  cartLayout,
+  cartMiss,
+  cartPageHead,
+  cartSummary,
+  cartSummaryTitle,
+  cartTotals,
+  cline,
+  clineActions,
+  clineBody,
+  clineMedia,
+  clineMeta,
+  clinePrice,
+  clineQty,
+  clineRemove,
+  clineRow,
+} from "@/styles/cartChrome";
 import { useCartMutations } from "../hooks/useCartMutations";
 import {
   addItemOptimistic,
@@ -21,7 +57,7 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
 
 /** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
@@ -122,11 +158,11 @@ export function CartPageView() {
   }
 
   return (
-    <div className="landing">
-      <section className="collection-head cart-head-section" aria-labelledby="cart-heading">
-        <div className="container container--full">
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <ol className="crumbs__list" role="list">
+    <div>
+      <section className={collectionHeadFlush} aria-labelledby="cart-heading">
+        <div className={pageContainer}>
+          <nav className={cartCrumbs} aria-label="Breadcrumb">
+            <ol className={cartCrumbsList} role="list">
               <li>
                 <Link href="/">Home</Link>
               </li>
@@ -134,30 +170,30 @@ export function CartPageView() {
             </ol>
           </nav>
 
-          <header className="cart-page-head">
-            <p className="collection-head__eyebrow">
+          <header className={cartPageHead}>
+            <p className={cartEyebrow}>
               Your bag · <span>{itemsLabel(itemCount)}</span>
             </p>
-            <h1 className="collection-head__title" id="cart-heading">
-              The <em className="collection-head__em">bag.</em>
+            <h1 className={pageTitle} id="cart-heading">
+              The <em className={cartEm}>bag.</em>
             </h1>
-            <p className="collection-head__intro cart-page-lede">
+            <p className={cartLede}>
               Review your selections before checkout.
             </p>
           </header>
 
           {!isEmpty ? (
-            <div className="cart-promo">
+            <div className="grid gap-3">
               <PromotionProgressRail surface="cart" />
               <PromotionQuickAdd surface="cart" />
             </div>
           ) : null}
 
           {!isEmpty ? (
-            <div className="cart-layout" id="cart-page-layout">
-              <div className="cart-items-col" aria-live="polite">
+            <div className={cartLayout} id="cart-page-layout">
+              <div className={cartItemsCol} aria-live="polite">
                 {missThis.length ? (
-                  <div className="cart-miss">
+                  <div className={cartMiss}>
                     <MissThisSwiper
                       products={missThis}
                       addingSlug={null}
@@ -167,28 +203,26 @@ export function CartPageView() {
                 ) : null}
 
                 {lines.map((line) => (
-                  <article className="cline" key={line.cartItemId ?? line.variantId}>
-                    <Link className="cline__media" href={line.slug ? `/products/${line.slug}` : "#"}>
+                  <article className={cline} key={line.cartItemId ?? line.variantId}>
+                    <Link className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
                       {line.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={line.imageUrl} alt="" />
                       ) : null}
                     </Link>
-                    <div className="cline__body">
-                      <div className="cline__row">
+                    <div className={clineBody}>
+                      <div className={clineRow}>
                         <h3>
                           <Link href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</Link>
                         </h3>
-                        <span className="cline__price" dir="ltr">
-                          {formatMoney(line.unitPrice * line.quantity, line.currency)}
-                        </span>
+                        <PromoLinePrice className={clinePrice} snapshot={promotions} line={line} />
                       </div>
-                      {line.sizeLabel ? <p className="cline__meta">{line.sizeLabel}</p> : null}
+                      {line.sizeLabel ? <p className={clineMeta}>{line.sizeLabel}</p> : null}
                       {setBundleLineLabel(promotions, line) ? (
-                        <p className="cline__meta">{setBundleLineLabel(promotions, line)}</p>
+                        <p className={clineMeta}>{setBundleLineLabel(promotions, line)}</p>
                       ) : null}
-                      <div className="cline__actions">
-                        <span className="cline__qty">
+                      <div className={clineActions}>
+                        <span className={clineQty}>
                           <button
                             type="button"
                             aria-label="Decrease"
@@ -221,7 +255,7 @@ export function CartPageView() {
                         </span>
                         <button
                           type="button"
-                          className="cline__remove"
+                          className={clineRemove}
                           onClick={() => {
                             if (line.remote || line.cartItemId) {
                               removeItemOptimistic(line.variantId);
@@ -240,10 +274,10 @@ export function CartPageView() {
                 {quotePending ? null : <GiftWithPurchase snapshot={promotions} currency={currency} />}
               </div>
 
-              <aside className="cart-summary" aria-label="Order summary">
-                <h2>Summary</h2>
+              <aside className={cartSummary} aria-label="Order summary">
+                <h2 className={cartSummaryTitle}>Summary</h2>
                 {quotePending ? (
-                  <p className="cart-hint" role="status">
+                  <p className={cartHint} role="status">
                     Updating offers…
                   </p>
                 ) : (
@@ -253,7 +287,7 @@ export function CartPageView() {
                 <GiftCardForm />
                 {quotePending ? null : (
                 <MoneySummary
-                  className="cart-totals"
+                  className={cartTotals}
                   currency={currency}
                   subtotal={subtotal}
                   discount={discount}
@@ -269,12 +303,12 @@ export function CartPageView() {
                 />
                 )}
                 {priceChanged ? (
-                  <p className="cart-hint" role="status">
+                  <p className={cartHint} role="status">
                     Prices have been updated since you added these items.
                   </p>
                 ) : null}
                 {blockingErrors.length ? (
-                  <ul className="cart-hint" role="alert">
+                  <ul className={cartHint} role="alert">
                     {blockingErrors.map((issue, index) => (
                       <li key={`${issue.type}-${issue.cartItemId ?? index}`}>
                         {cartErrorMessage(issue.type, issue.message)}
@@ -284,7 +318,7 @@ export function CartPageView() {
                 ) : null}
                 <button
                   type="button"
-                  className="cart-cta"
+                  className={cartCta}
                   onClick={goToCheckout}
                   disabled={syncing || validate.isPending || blockingErrors.length > 0}
                 >
@@ -295,15 +329,15 @@ export function CartPageView() {
                         ? "Checking availability…"
                         : "Proceed to checkout"}
                   </span>
-                  <span className="cart-cta__glyph" aria-hidden="true">
+                  <span className={cartCtaGlyph} aria-hidden="true">
                     ↗
                   </span>
                 </button>
-                <Link className="btn-secondary cart-continue" href="/products">
+                <Link className={cartContinue} href="/products">
                   Continue shopping
                 </Link>
-                <p className="cart-hint">30-day fragrance guarantee. Returns are on us.</p>
-                <div className="cart-badges">
+                <p className={cartHint}>30-day fragrance guarantee. Returns are on us.</p>
+                <div className={cartBadges}>
                   <span>SSL Secured</span>
                   <i aria-hidden="true">·</i>
                   <span>Ships from Sharjah</span>
@@ -311,12 +345,12 @@ export function CartPageView() {
               </aside>
             </div>
           ) : (
-            <section className="cart-empty-state">
-              <p className="cart-empty-note">Your bag is empty.</p>
+            <section className={cartEmptyState}>
+              <p className={cartEmptyNote}>Your bag is empty.</p>
               <EmptyBagRecovery surface="empty-cart" />
-              <Link className="cart-cta cart-cta--inline" href="/products">
+              <Link className={cartCtaInline} href="/products">
                 <span>Explore the collection</span>
-                <b className="arrow" aria-hidden="true">
+                <b aria-hidden="true">
                   ↗
                 </b>
               </Link>

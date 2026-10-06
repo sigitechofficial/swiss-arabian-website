@@ -4,27 +4,42 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
-import { CheckoutAddonRow, MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
+import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
 import {
   CATALOG_PRODUCTS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
-import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import {
+  checkoutCrumbsList,
+  collectionHeadFlush,
+  collectionTitle,
+  crumbs,
+  doneTitle,
+  pageTitle,
+  stateEyebrow,
+  stateIntro,
+} from "@/styles/shopChrome";
+import { pageContainer } from "@/styles/siteChrome";
+import {
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutDone,
+  checkoutEmpty,
+  checkoutForm,
+  checkoutHead,
+  checkoutLayout,
+  checkoutStepCurrent,
+  checkoutSteps,
+  checkoutSummaryChevron,
+  checkoutSummaryToggle,
+  checkoutSummaryToggleTotal,
+} from "@/styles/checkoutChrome";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
-  AppliedCampaigns,
-  CouponForm,
-  GiftCardForm,
-  GiftWithPurchase,
-  MoneySummary,
-  PromotionProgressRail,
   amountPayableFrom,
   checkoutQuoteSnapshot,
-  awardedGiftLines,
-  giftDisplayName,
-  setBundleLineLabel,
   shippingDiscountAmount,
   visibleGiftCards,
 } from "@/features/promotions";
@@ -35,17 +50,16 @@ import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/f
 import { useMarket } from "@/providers/MarketProvider";
 import { useCheckout } from "../hooks/useCheckout";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
-import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import type { AddressFields } from "../utils/addressSnapshot";
 import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
 import { checkoutWarningMessages } from "../utils/checkoutIssues";
-import {
-  deliveryEta,
-  deliveryFeeLabel,
-  isStripePaymentMethod,
-  paymentMethodNote,
-} from "../utils/methodLabels";
+import { isStripePaymentMethod } from "../utils/methodLabels";
+import { CheckoutBilling } from "./checkout/CheckoutBilling";
+import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
+import { CheckoutPayment } from "./checkout/CheckoutPayment";
+import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
+import { CheckoutSummary } from "./checkout/CheckoutSummary";
 
 function lineImageUrl(slug: string, fallback?: string) {
   return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
@@ -275,11 +289,11 @@ export function CheckoutPageView() {
   }
 
   return (
-    <div className="landing">
-      <section className="collection-head checkout-head-section" aria-labelledby="checkout-heading">
-        <div className="container container--full">
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <ol className="crumbs__list" role="list">
+    <div>
+      <section className={collectionHeadFlush} aria-labelledby="checkout-heading">
+        <div className={pageContainer}>
+          <nav className={crumbs} aria-label="Breadcrumb">
+            <ol className={checkoutCrumbsList} role="list">
               <li>
                 <Link href="/">Home</Link>
               </li>
@@ -290,37 +304,37 @@ export function CheckoutPageView() {
             </ol>
           </nav>
 
-          <header className="checkout-head">
-            <h1 className="collection-head__title" id="checkout-heading">
+          <header className={checkoutHead}>
+            <h1 className={pageTitle} id="checkout-heading">
               Checkout
             </h1>
-            <ol className="checkout-steps">
+            <ol className={checkoutSteps}>
               <li>
                 <Link href="/cart">Bag</Link>
               </li>
               <li aria-hidden="true">·</li>
-              <li className="is-current">Details &amp; payment</li>
+              <li className={checkoutStepCurrent}>Details &amp; payment</li>
             </ol>
           </header>
 
           {showLayout ? (
-            <div className="checkout-layout">
+            <div className={checkoutLayout}>
               <button
                 type="button"
-                className="checkout-summary-toggle"
+                className={checkoutSummaryToggle}
                 aria-expanded={summaryOpen}
                 aria-controls="checkout-summary"
                 onClick={() => setSummaryOpen((v) => !v)}
               >
                 <span>Order summary</span>
-                <span className="checkout-summary-toggle__total" dir="ltr">
+                <span className={checkoutSummaryToggleTotal} dir="ltr">
                   {formatMoney(amountPayable ?? total, currency)}
-                  <i className="checkout-summary-toggle__chev" aria-hidden="true" />
+                  <i className={checkoutSummaryChevron} aria-hidden="true" />
                 </span>
               </button>
 
               <GooglePlacesProvider>
-              <form className="checkout-form" noValidate onSubmit={handleSubmit}>
+              <form className={checkoutForm} noValidate onSubmit={handleSubmit}>
                 {missThis.length ? (
                   <MissThisSwiper
                     products={missThis}
@@ -330,427 +344,102 @@ export function CheckoutPageView() {
                   />
                 ) : null}
 
-                <section className="cbox">
-                  <header className="cbox__head">
-                    <h2>Delivery</h2>
-                  </header>
-                  <div className="cbox__grid">
-                    <label className="fld fld--full">
-                      <span>Email</span>
-                      <input
-                        type="email"
-                        name="email"
-                        required
-                        autoComplete="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </label>
-                    <label className="fld fld--full">
-                      <span>Full name</span>
-                      <input
-                        type="text"
-                        name="delName"
-                        required
-                        autoComplete="name"
-                        placeholder="First and last name"
-                        {...bindShipping("fullName")}
-                      />
-                    </label>
-                    <label className="fld fld--full">
-                      <span>Phone</span>
-                      <PhoneNumberField
-                        variant="checkout"
-                        renderLabel={false}
-                        id="delPhone"
-                        name="delPhone"
-                        required
-                        value={shipping.phone}
-                        onChange={(phone) => setShipping((prev) => ({ ...prev, phone }))}
-                      />
-                    </label>
-                    <label className="fld fld--full">
-                      <span>Address line 1</span>
-                      <PlacesAddressInput
-                        name="delAddr1"
-                        required
-                        minLength={3}
-                        placeholder="Start typing your street address"
-                        value={shipping.address1}
-                        countryCode={countryCode}
-                        onChange={(value) =>
-                          setShipping((prev) => ({ ...prev, address1: value }))
-                        }
-                        onResolved={(parsed) =>
-                          applyGooglePlace(setShipping, parsed, countryCode)
-                        }
-                      />
-                    </label>
-                    <label className="fld fld--full">
-                      <span>
-                        Address line 2 <span className="fld__hint">(optional)</span>
-                      </span>
-                      <input
-                        type="text"
-                        name="delAddr2"
-                        autoComplete="address-line2"
-                        placeholder="Apartment, suite, floor"
-                        {...bindShipping("address2")}
-                      />
-                    </label>
-                    <label className="fld">
-                      <span>City</span>
-                      <input
-                        type="text"
-                        name="delCity"
-                        required
-                        autoComplete="address-level2"
-                        {...bindShipping("city")}
-                      />
-                    </label>
-                    <label className="fld">
-                      <span>{regionSet?.label ?? "Region"}</span>
-                      <div className="fld__select">
-                        <select name="delEmirate" required autoComplete="address-level1" {...bindShipping("emirate")}>
-                          <option value="">{regionSet?.placeholder ?? "Select region"}</option>
-                          {(regionSet?.regions ?? []).map((region) => (
-                            <option key={region} value={region}>
-                              {region}
-                            </option>
-                          ))}
-                        </select>
-                        <b aria-hidden="true">▾</b>
-                      </div>
-                    </label>
-                    <label className="fld fld--full">
-                      <span>
-                        Postal code <span className="fld__hint">(optional)</span>
-                      </span>
-                      <input
-                        type="text"
-                        name="delPostal"
-                        autoComplete="postal-code"
-                        inputMode="numeric"
-                        {...bindShipping("postalCode")}
-                      />
-                    </label>
-                  </div>
-                </section>
 
-                <section className="cbox">
-                  <header className="cbox__head">
-                    <h2>Shipping method</h2>
-                  </header>
-                  {checkout.deliveryMethods.length ? (
-                    <div className="pay-options" role="radiogroup" aria-label="Shipping methods">
-                      {checkout.deliveryMethods.map((method) => {
-                        const active = method.zoneDeliveryMethodId === checkout.selectedDeliveryId;
-                        const eta = deliveryEta(method);
-                        return (
-                          <label
-                            key={method.zoneDeliveryMethodId}
-                            className={`pay-opt ${active ? "is-active" : ""}`}
-                          >
-                            <input
-                              type="radio"
-                              name="deliveryMethod"
-                              value={method.zoneDeliveryMethodId}
-                              checked={active}
-                              disabled={submitting}
-                              onChange={() => void checkout.chooseDelivery(method.zoneDeliveryMethodId)}
-                            />
-                            <span>
-                              <span className="pay-opt__title">{method.displayName}</span>
-                              <span className="pay-opt__note">
-                                {[eta, deliveryFeeLabel(method, currency)].filter(Boolean).join(" · ")}
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="pay-mock-note">
-                      {checkout.status === "loading"
-                        ? "Loading shipping options…"
-                        : "No shipping options are available right now."}
-                    </p>
-                  )}
-                </section>
-
-                <section className="cbox">
-                  <header className="cbox__head">
-                    <h2>Billing information</h2>
-                  </header>
-                  <div className="cbox__body">
-                    <label className="fld fld--check fld--full">
-                      <input
-                        type="checkbox"
-                        id="billing-same"
-                        name="billingSame"
-                        checked={billingSame}
-                        onChange={(e) => setBillingSame(e.target.checked)}
-                      />
-                      <span>Same as delivery address</span>
-                    </label>
-                    {!billingSame ? (
-                      <div className="cbox__grid" id="billing-fields">
-                        <label className="fld fld--full">
-                          <span>Billing name</span>
-                          <input type="text" name="billName" required autoComplete="billing name" {...bindBilling("fullName")} />
-                        </label>
-                        <label className="fld fld--full">
-                          <span>Billing address line 1</span>
-                          <PlacesAddressInput
-                            name="billAddr1"
-                            required
-                            minLength={3}
-                            placeholder="Start typing your street address"
-                            value={billing.address1}
-                            countryCode={countryCode}
-                            onChange={(value) =>
-                              setBilling((prev) => ({ ...prev, address1: value }))
-                            }
-                            onResolved={(parsed) =>
-                              applyGooglePlace(setBilling, parsed, countryCode)
-                            }
-                          />
-                        </label>
-                        <label className="fld fld--full">
-                          <span>
-                            Billing address line 2 <span className="fld__hint">(optional)</span>
-                          </span>
-                          <input type="text" name="billAddr2" autoComplete="billing address-line2" {...bindBilling("address2")} />
-                        </label>
-                        <label className="fld">
-                          <span>City</span>
-                          <input type="text" name="billCity" required autoComplete="billing address-level2" {...bindBilling("city")} />
-                        </label>
-                        <label className="fld">
-                          <span>{regionSet?.label ?? "Region"}</span>
-                          <div className="fld__select">
-                            <select name="billEmirate" required autoComplete="billing address-level1" {...bindBilling("emirate")}>
-                              <option value="">{regionSet?.placeholder ?? "Select region"}</option>
-                              {(regionSet?.regions ?? []).map((region) => (
-                                <option key={region} value={region}>
-                                  {region}
-                                </option>
-                              ))}
-                            </select>
-                            <b aria-hidden="true">▾</b>
-                          </div>
-                        </label>
-                      </div>
-                    ) : null}
-                  </div>
-                </section>
-
-                <section className="cbox">
-                  <header className="cbox__head">
-                    <h2>Payment method</h2>
-                  </header>
-                  <div className="pay-options" role="radiogroup" aria-label="Payment methods">
-                    {checkout.paymentMethods.map((method) => {
-                      const active = method.zonePaymentMethodId === checkout.selectedPaymentId;
-                      const note = paymentMethodNote(method);
-                      return (
-                        <label
-                          key={method.zonePaymentMethodId}
-                          className={`pay-opt ${active ? "is-active" : ""}`}
-                        >
-                          <input
-                            type="radio"
-                            name="payMethod"
-                            value={method.zonePaymentMethodId}
-                            checked={active}
-                            disabled={submitting}
-                            onChange={() => void checkout.choosePayment(method.zonePaymentMethodId)}
-                          />
-                          <span>
-                            <span className="pay-opt__title">{method.displayName}</span>
-                            {note ? <span className="pay-opt__note">{note}</span> : null}
-                          </span>
-                        </label>
-                      );
-                    })}
-                    <label className="pay-opt pay-opt--disabled">
-                      <input type="radio" name="payMethod" value="tabby" disabled />
-                      <span>
-                        <span className="pay-opt__title">Tabby</span>
-                        <span className="pay-opt__note">Pay in 4 · interest-free</span>
-                      </span>
-                      <span className="pay-opt__badge">Coming soon</span>
-                    </label>
-                    <label className="pay-opt pay-opt--disabled">
-                      <input type="radio" name="payMethod" value="tamara" disabled />
-                      <span>
-                        <span className="pay-opt__title">Tamara</span>
-                        <span className="pay-opt__note">Split payments</span>
-                      </span>
-                      <span className="pay-opt__badge">Coming soon</span>
-                    </label>
-                  </div>
-                  {!checkout.paymentMethods.length ? (
-                    <p className="pay-mock-note">
-                      {checkout.status === "loading"
-                        ? "Loading payment options…"
-                        : "No payment options are available right now."}
-                    </p>
-                  ) : (
-                    <p className="pay-mock-note">
-                      Card details are never entered on this page — they go straight to our payment partner.
-                    </p>
-                  )}
-                </section>
-
-                {checkout.errorMsg ? (
-                  <p className="checkout-error" role="alert">
-                    {checkout.errorMsg}
-                    {checkout.status === "error" ? (
-                      <>
-                        {" "}
-                        <button type="button" className="checkout-link" onClick={checkout.retry}>
-                          Try again
-                        </button>
-                      </>
-                    ) : null}
-                  </p>
-                ) : null}
-
-                <button type="submit" className="checkout-cta" id="place-order" disabled={!canSubmit}>
-                  <span>{ctaLabel}</span>
-                  <b className="arrow" aria-hidden="true">↗</b>
-                </button>
-                <p className="checkout-legal">
-                  By placing this order you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>. Payment
-                  is encrypted.
-                </p>
+                <CheckoutDelivery
+                  email={email}
+                  onEmail={setEmail}
+                  shipping={shipping}
+                  bind={bindShipping}
+                  onPhone={(phone) => setShipping((prev) => ({ ...prev, phone }))}
+                  onAddress1={(value) => setShipping((prev) => ({ ...prev, address1: value }))}
+                  onPlace={(parsed) => applyGooglePlace(setShipping, parsed, countryCode)}
+                  countryCode={countryCode}
+                  regionSet={regionSet}
+                />
+                <CheckoutShippingMethod
+                  methods={checkout.deliveryMethods}
+                  selectedId={checkout.selectedDeliveryId}
+                  status={checkout.status}
+                  submitting={submitting}
+                  currency={currency}
+                  onSelect={(id) => void checkout.chooseDelivery(id)}
+                />
+                <CheckoutBilling
+                  billingSame={billingSame}
+                  onBillingSame={setBillingSame}
+                  billing={billing}
+                  bind={bindBilling}
+                  onAddress1={(value) => setBilling((prev) => ({ ...prev, address1: value }))}
+                  onPlace={(parsed) => applyGooglePlace(setBilling, parsed, countryCode)}
+                  countryCode={countryCode}
+                  regionSet={regionSet}
+                />
+                <CheckoutPayment
+                  methods={checkout.paymentMethods}
+                  selectedId={checkout.selectedPaymentId}
+                  status={checkout.status}
+                  submitting={submitting}
+                  errorMsg={checkout.errorMsg}
+                  onRetry={checkout.retry}
+                  onSelect={(id) => void checkout.choosePayment(id)}
+                  canSubmit={canSubmit}
+                  ctaLabel={ctaLabel}
+                />
               </form>
               </GooglePlacesProvider>
 
-              <aside
-                className={`checkout-summary ${summaryOpen ? "is-open" : ""}`}
-                id="checkout-summary"
-                aria-label="Order summary"
-              >
-                <h2>Your order</h2>
-                {subtotal > 0 ? <PromotionProgressRail className="checkout-ship" surface="checkout" /> : null}
-                <div className="checkout-lines" id="checkout-lines">
-                  {orderableLines.map((line) => {
-                    const thumb = lineImageUrl(line.slug, line.imageUrl);
-                    return (
-                      <article className="coline" key={line.cartItemId ?? line.variantId}>
-                        <div className="coline__media">
-                          {thumb ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={thumb}
-                              alt={line.title}
-                              onError={(e) => {
-                                e.currentTarget.style.visibility = "hidden";
-                              }}
-                            />
-                          ) : null}
-                          <b>{line.quantity}</b>
-                        </div>
-                        <div className="coline__body">
-                          <h3>{line.title}</h3>
-                          {line.sizeLabel ? <p>{line.sizeLabel}</p> : null}
-                          {setBundleLineLabel(promoSnapshot, line) ? (
-                            <p>{setBundleLineLabel(promoSnapshot, line)}</p>
-                          ) : null}
-                        </div>
-                        <span className="coline__price" dir="ltr">
-                          {formatMoney(line.unitPrice * line.quantity, line.currency)}
-                        </span>
-                      </article>
-                    );
-                  })}
-                  <GiftWithPurchase snapshot={promoSnapshot} currency={currency} selectable={false} />
-                </div>
-                {leftOutCount > 0 ? (
-                  <p className="checkout-note">
-                    {leftOutCount === 1 ? "1 item" : `${leftOutCount} items`} in your bag can’t be ordered online and
-                    won’t be included.
-                  </p>
-                ) : null}
-                {addOns.length ? (
-                  <div className="checkout-addons">
-                    <h3 className="checkout-addons__title">Add-ons</h3>
-                    {addOns.map((product) => (
-                      <CheckoutAddonRow
-                        key={product.id}
-                        product={product}
-                        adding={false}
-                        onAdd={(p) => void addFromCheckout(p)}
-                        disabled={!canAddToOrder(product)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-                <AppliedCampaigns snapshot={promoSnapshot} />
-                <CouponForm />
-                <GiftCardForm
-                  snapshot={promoSnapshot}
-                  extraGiftCards={session?.giftCards}
-                  checkoutSessionId={session?.checkoutSessionId}
-                  onCheckoutSession={checkout.adoptSession}
-                />
-                <MoneySummary
-                  className="checkout-totals"
-                  currency={currency}
-                  subtotal={subtotal}
-                  discount={discount}
-                  shipping={shippingFee}
-                  shippingDiscount={shipDiscount}
-                  tax={tax}
-                  total={total}
-                  amountPayable={amountPayable}
-                  giftCards={giftCards}
-                  freeGifts={awardedGiftLines(promoSnapshot).map((gift) => ({
-                    name: giftDisplayName(gift),
-                    quantity: gift.quantity,
-                  }))}
-                />
-                {warnings.map((warning) => (
-                  <p className="checkout-note" key={warning} role="status">
-                    {warning}
-                  </p>
-                ))}
-                <p className="checkout-badges">SSL Encrypted · 30-day guarantee · Ships from Sharjah</p>
-              </aside>
+              <CheckoutSummary
+                open={summaryOpen}
+                orderableLines={orderableLines}
+                leftOutCount={leftOutCount}
+                subtotal={subtotal}
+                promoSnapshot={promoSnapshot}
+                currency={currency}
+                addOns={addOns}
+                onAdd={(product) => void addFromCheckout(product)}
+                canAdd={canAddToOrder}
+                session={session}
+                onCheckoutSession={checkout.adoptSession}
+                discount={discount}
+                shippingFee={shippingFee}
+                shipDiscount={shipDiscount}
+                tax={tax}
+                total={total}
+                amountPayable={amountPayable}
+                giftCards={giftCards}
+                warnings={warnings}
+              />
             </div>
           ) : null}
 
           {redirecting ? (
-            <section className="checkout-done" aria-live="polite">
-              <span className="checkout-spinner" aria-hidden="true" />
-              <p className="collection-head__eyebrow">Order placed</p>
-              <h2 className="collection-head__title">Taking you to payment…</h2>
-              <p className="collection-head__intro">Please don’t close or refresh this page.</p>
+            <section className={checkoutDone} aria-live="polite">
+              <span className="mb-4 size-8 animate-spin rounded-full border-2 border-[var(--copper,#8c4435)]/25 border-t-[var(--copper,#8c4435)]" aria-hidden="true" />
+              <p className={stateEyebrow}>Order placed</p>
+              <h2 className={collectionTitle}>Taking you to payment…</h2>
+              <p className={stateIntro}>Please don’t close or refresh this page.</p>
             </section>
           ) : null}
 
           {nothingOrderable ? (
-            <section className="checkout-empty">
-              <p className="collection-head__eyebrow">Can’t check out yet</p>
-              <h2 className="collection-head__title">These items can’t be ordered online.</h2>
+            <section className={checkoutEmpty}>
+              <p className={stateEyebrow}>Can’t check out yet</p>
+              <h2 className={doneTitle}>These items can’t be ordered online.</h2>
               <p>Please return to your bag and add them again from the collection.</p>
-              <Link className="checkout-cta checkout-cta--inline" href="/cart">
+              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
                 <span>Back to bag</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
             </section>
           ) : null}
 
           {isEmpty ? (
-            <section className="checkout-empty" id="checkout-empty">
-              <p className="collection-head__eyebrow">Empty bag</p>
-              <h2 className="collection-head__title">Nothing to check out yet.</h2>
-              <Link className="checkout-cta checkout-cta--inline" href="/products">
+            <section className={checkoutEmpty} id="checkout-empty">
+              <p className={stateEyebrow}>Empty bag</p>
+              <h2 className={doneTitle}>Nothing to check out yet.</h2>
+              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
                 <span>Explore the collection</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
             </section>
           ) : null}

@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useMarket } from "@/providers/MarketProvider";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   catalogListingQueryKey,
   fetchCatalogListing,
@@ -16,24 +15,39 @@ export function useCatalogPlp(
   source: CatalogListingSource,
   listingQuery: CatalogListingQuery,
 ) {
-  const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const market = useSelectedCatalogMarket();
+  const zoneCode = market?.zoneCode ?? "";
   const filterKey = { ...listingQuery, page: 1 };
 
   const query = useInfiniteQuery({
-    queryKey: catalogListingQueryKey(source, zoneCode, filterKey),
+    queryKey: [
+      ...catalogListingQueryKey(source, zoneCode, filterKey),
+      market?.salesChannelCode ?? "",
+    ],
     queryFn: ({ pageParam }) =>
-      fetchCatalogListing(source, zoneCode, {
-        ...listingQuery,
-        page: pageParam,
-      }),
+      fetchCatalogListing(
+        source,
+        zoneCode,
+        {
+          ...listingQuery,
+          page: pageParam,
+        },
+        market,
+      ),
+    enabled: Boolean(market),
+    placeholderData: (previous, previousQuery) => {
+      const key = previousQuery?.queryKey ?? [];
+      const channel = market?.salesChannelCode ?? "";
+      if (!zoneCode || !channel) return undefined;
+      if (!key.includes(zoneCode) || !key.includes(channel)) return undefined;
+      return previous;
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (!lastPage.facets) return undefined;
       const { page, totalPages } = lastPage.pagination;
       return page < totalPages ? page + 1 : undefined;
     },
-    placeholderData: keepPreviousData,
   });
 
   const firstPage = query.data?.pages[0];
@@ -63,7 +77,7 @@ export function useCatalogPlp(
     facets: firstPage?.facets ?? null,
     pagination: lastPage?.pagination ?? firstPage?.pagination ?? null,
     serverFiltered,
-    loading: query.isPending && !query.isError && !query.data,
+    loading: !market || (query.isPending && !query.isError && !query.data),
     isFetching: query.isFetching,
     hasNextPage: Boolean(query.hasNextPage),
     isFetchingNextPage: query.isFetchingNextPage,

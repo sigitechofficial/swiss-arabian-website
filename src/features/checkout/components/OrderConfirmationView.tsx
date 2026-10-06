@@ -5,6 +5,50 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
+import {
+  checkoutCta,
+  checkoutCtaGhost,
+  checkoutCtaInline,
+  checkoutEmpty,
+  checkoutLink,
+  checkoutNote,
+  checkoutTotals,
+  checkoutTotalsLine,
+  ocActions,
+  ocAddress,
+  ocAddressName,
+  ocAddressSame,
+  ocBadge,
+  ocBadgeFailed,
+  ocBadgeMark,
+  ocBadgePending,
+  ocBadgeRing,
+  ocBadgeSuccess,
+  ocBody,
+  ocCard,
+  ocCardCount,
+  ocCopy,
+  ocHero,
+  ocHeroIntro,
+  ocLine,
+  ocLineBody,
+  ocLineDiscount,
+  ocLineMedia,
+  ocLineName,
+  ocLinePrice,
+  ocLineSub,
+  ocLines,
+  ocMeta,
+  ocMetaNumber,
+  ocMethods,
+  ocStack,
+  ocStep,
+  ocStepDot,
+  ocStepHint,
+  ocStepLabel,
+  ocSteps,
+} from "@/styles/checkoutChrome";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
 import {
@@ -60,15 +104,18 @@ function sameAddress(a?: OrderAddressSummary, b?: OrderAddressSummary): boolean 
 
 function StatusBadge({ state }: { state: PaymentState }) {
   return (
-    <span className={`oc-badge oc-badge--${state}`} aria-hidden="true">
+    <span
+      className={`${ocBadge} ${state === "success" ? ocBadgeSuccess : state === "failed" ? ocBadgeFailed : ocBadgePending}`}
+      aria-hidden="true"
+    >
       <svg viewBox="0 0 52 52" fill="none">
-        <circle className="oc-badge__ring" cx="26" cy="26" r="24" />
+        <circle className={ocBadgeRing} cx="26" cy="26" r="24" />
         {state === "success" ? (
-          <path className="oc-badge__mark" d="M15 27l7.5 7.5L37 19" />
+          <path className={ocBadgeMark} d="M15 27l7.5 7.5L37 19" />
         ) : state === "failed" ? (
-          <path className="oc-badge__mark" d="M18 18l16 16M34 18L18 34" />
+          <path className={ocBadgeMark} d="M18 18l16 16M34 18L18 34" />
         ) : (
-          <path className="oc-badge__mark" d="M26 14v12l8 5" />
+          <path className={ocBadgeMark} d="M26 14v12l8 5" />
         )}
       </svg>
     </span>
@@ -87,7 +134,7 @@ function CopyButton({ value }: { value: string }) {
   return (
     <button
       type="button"
-      className="oc-copy"
+      className={ocCopy}
       onClick={() => {
         void navigator.clipboard?.writeText(value).then(() => setCopied(true));
       }}
@@ -101,10 +148,10 @@ function CopyButton({ value }: { value: string }) {
 function AddressBlock({ title, address }: { title: string; address: OrderAddressSummary }) {
   const cityLine = [address.city, countryName(address.countryCode)].filter(Boolean).join(", ");
   return (
-    <div className="oc-address">
+    <div className={ocAddress}>
       <h3>{title}</h3>
       <address>
-        {address.fullName ? <span className="oc-address__name">{address.fullName}</span> : null}
+        {address.fullName ? <span className={ocAddressName}>{address.fullName}</span> : null}
         {address.address1 ? <span>{address.address1}</span> : null}
         {cityLine ? <span>{cityLine}</span> : null}
       </address>
@@ -186,13 +233,13 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
   if (orderQuery.isError || !order) {
     return (
       <CheckoutStateShell current="Order confirmation">
-        <section className="checkout-empty">
-          <p className="collection-head__eyebrow">Order</p>
-          <h1 className="collection-head__title">We couldn’t load this order.</h1>
+        <section className={checkoutEmpty}>
+          <p className={stateEyebrow}>Order</p>
+          <h1 className={collectionTitle}>We couldn’t load this order.</h1>
           <p>It may belong to another session. Your confirmation email has the details.</p>
-          <Link className="checkout-cta checkout-cta--inline" href="/">
+          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
             <span>Return home</span>
-            <b className="arrow" aria-hidden="true">↗</b>
+            <b aria-hidden="true">↗</b>
           </Link>
         </section>
       </CheckoutStateShell>
@@ -227,27 +274,27 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
 
   return (
     <CheckoutStateShell current="Order confirmation">
-      <section className="oc-hero" aria-labelledby="order-heading">
+      <section className={ocHero} aria-labelledby="order-heading">
         <StatusBadge state={state} />
-        <p className="collection-head__eyebrow">
+        <p className={ocEyebrow}>
           {state === "success" ? "Order confirmed" : state === "failed" ? "Payment unsuccessful" : "Payment processing"}
         </p>
-        <h1 className="collection-head__title" id="order-heading">
+        <h1 className={ocTitle} id="order-heading">
           {state === "failed" ? (
             <>
-              Your payment <em className="collection-head__em">didn’t go through</em>.
+              Your payment <em className={ocEm}>didn’t go through</em>.
             </>
           ) : firstName ? (
             <>
-              Thank you, <em className="collection-head__em">{firstName}</em>.
+              Thank you, <em className={ocEm}>{firstName}</em>.
             </>
           ) : (
             <>
-              Thank you for <em className="collection-head__em">your order</em>.
+              Thank you for <em className={ocEm}>your order</em>.
             </>
           )}
         </h1>
-        <p className="oc-hero__intro">
+        <p className={ocHeroIntro}>
           {state === "success" ? (
             <>
               We’ll start preparing your order shortly.
@@ -267,11 +314,11 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           )}
         </p>
 
-        <dl className="oc-meta">
+        <dl className={ocMeta}>
           {order.orderNumber ? (
             <div>
               <dt>Order number</dt>
-              <dd className="oc-meta__number">
+              <dd className={ocMetaNumber}>
                 <span dir="ltr">{order.orderNumber}</span>
                 <CopyButton value={order.orderNumber} />
               </dd>
@@ -291,26 +338,26 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           </div>
         </dl>
 
-        <div className="oc-actions">
+        <div className={ocActions}>
           {state === "success" ? (
             <>
-              <Link className="checkout-cta" href="/products">
+              <Link className={checkoutCta} href="/products">
                 <span>Continue shopping</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
               {trackHref ? (
-                <Link className="checkout-cta checkout-cta--ghost" href={trackHref}>
+                <Link className={checkoutCtaGhost} href={trackHref}>
                   <span>Track order</span>
                 </Link>
               ) : null}
             </>
           ) : state === "failed" ? (
             <>
-              <Link className="checkout-cta" href={retryHref}>
+              <Link className={checkoutCta} href={retryHref}>
                 <span>Retry payment</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
-              <Link className="checkout-cta checkout-cta--ghost" href="/products">
+              <Link className={checkoutCtaGhost} href="/products">
                 <span>Continue shopping</span>
               </Link>
             </>
@@ -318,7 +365,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             <>
               <button
                 type="button"
-                className="checkout-cta"
+                className={checkoutCta}
                 disabled={settle.isFetching}
                 onClick={() => {
                   void settle.refetch();
@@ -326,40 +373,41 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 }}
               >
                 <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </button>
-              <Link className="checkout-cta checkout-cta--ghost" href={retryHref}>
+              <Link className={checkoutCtaGhost} href={retryHref}>
                 <span>Pay now</span>
               </Link>
             </>
           )}
         </div>
         {!isGuest ? (
-          <Link className="checkout-link" href="/account/orders">
+          <Link className={`${checkoutLink} mt-4`} href="/account/orders">
             View all your orders
           </Link>
         ) : order.orderNumber ? (
-          <p className="checkout-note">Keep your order number — you’ll need it if you contact us about this order.</p>
+          <p className={`${checkoutNote} mt-4`}>Keep your order number — you’ll need it if you contact us about this order.</p>
         ) : null}
       </section>
 
-      <div className="oc-body">
-        <div className="oc-main">
+      <div className={ocBody}>
+        <div className={ocStack}>
           {showProgress ? (
-            <section className="oc-card" aria-labelledby="order-progress">
+            <section className={ocCard} aria-labelledby="order-progress">
               <h2 id="order-progress">What happens next</h2>
-              <ol className="oc-steps">
+              <ol className={ocSteps}>
                 {ORDER_PROGRESS_STEPS.map((step, index) => {
                   const status = index < currentStep ? "done" : index === currentStep ? "current" : "todo";
                   return (
                     <li
                       key={step}
-                      className={`oc-step is-${status}`}
+                      className={ocStep}
+                      data-status={status}
                       aria-current={status === "current" ? "step" : undefined}
                     >
-                      <span className="oc-step__dot" aria-hidden="true" />
-                      <span className="oc-step__label">{step}</span>
-                      <span className="oc-step__hint">{STEP_HINTS[step]}</span>
+                      <span className={ocStepDot} aria-hidden="true" />
+                      <span className={ocStepLabel}>{step}</span>
+                      <span className={ocStepHint}>{STEP_HINTS[step]}</span>
                     </li>
                   );
                 })}
@@ -367,11 +415,11 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             </section>
           ) : null}
 
-          <section className="oc-card" aria-labelledby="order-items">
+          <section className={ocCard} aria-labelledby="order-items">
             <h2 id="order-items">
-              Items ordered <span className="oc-card__count">({itemCount})</span>
+              Items ordered <span className={ocCardCount}>({itemCount})</span>
             </h2>
-            <ul className="oc-lines" role="list">
+            <ul className={ocLines} role="list">
               {order.lines.map((line) => {
                 const name = line.productName ?? line.sku;
                 const qty = Number.parseInt(line.quantity, 10) || 1;
@@ -381,8 +429,8 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                     : null;
                 const thumb = line.imageUrl?.startsWith("http") ? line.imageUrl : null;
                 return (
-                  <li className="oc-line" key={line.orderLineId}>
-                    <span className="oc-line__media">
+                  <li className={ocLine} key={line.orderLineId}>
+                    <span className={ocLineMedia}>
                       {thumb ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -396,16 +444,16 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                         <span aria-hidden="true">{name.charAt(0)}</span>
                       )}
                     </span>
-                    <span className="oc-line__body">
-                      <span className="oc-line__name">{name}</span>
-                      <span className="oc-line__sub">{[variant, `Qty ${qty}`].filter(Boolean).join(" · ")}</span>
+                    <span className={ocLineBody}>
+                      <span className={ocLineName}>{name}</span>
+                      <span className={ocLineSub}>{[variant, `Qty ${qty}`].filter(Boolean).join(" · ")}</span>
                       <HistoricalLineDiscount
                         snapshot={line.promotionSnapshot}
                         currency={line.currencyCode || currency}
-                        className="oc-line__discount"
+                        className={ocLineDiscount}
                       />
                     </span>
-                    <span className="oc-line__price" dir="ltr">
+                    <span className={ocLinePrice} dir="ltr">
                       {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
                     </span>
                   </li>
@@ -415,10 +463,10 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           </section>
         </div>
 
-        <aside className="oc-side">
-          <section className="oc-card" aria-labelledby="order-summary">
+        <aside className={ocStack}>
+          <section className={ocCard} aria-labelledby="order-summary">
             <h2 id="order-summary">Order summary</h2>
-            <dl className="checkout-totals">
+            <dl className={checkoutTotals}>
               <div>
                 <dt>Subtotal</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
@@ -439,28 +487,28 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                   <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
                 </div>
               ) : null}
-              <HistoricalGiftNote snapshot={order.promotionSnapshot} className="oc-line__discount" />
-              <div className="checkout-totals-line">
+              <HistoricalGiftNote snapshot={order.promotionSnapshot} className={ocLineDiscount} />
+              <div className={checkoutTotalsLine}>
                 <dt>Total</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
               </div>
             </dl>
           </section>
 
-          <section className="oc-card" aria-labelledby="order-delivery">
+          <section className={ocCard} aria-labelledby="order-delivery">
             <h2 id="order-delivery">Delivery &amp; payment</h2>
             {shippingAddress ? <AddressBlock title="Ship to" address={shippingAddress} /> : null}
             {billingAddress ? (
               sameAddress(shippingAddress, billingAddress) ? (
-                <div className="oc-address">
+                <div className={ocAddress}>
                   <h3>Bill to</h3>
-                  <p className="oc-address__same">Same as shipping address</p>
+                  <p className={ocAddressSame}>Same as shipping address</p>
                 </div>
               ) : (
                 <AddressBlock title="Bill to" address={billingAddress} />
               )
             ) : null}
-            <dl className="oc-methods">
+            <dl className={ocMethods}>
               <div>
                 <dt>Delivery</dt>
                 <dd>{orderDeliveryLabel(order.selectedDeliveryMethod)}</dd>

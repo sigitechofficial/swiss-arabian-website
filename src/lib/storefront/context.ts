@@ -11,9 +11,8 @@ export function toAuthZoneCode(zoneCode?: string | null): string {
 }
 
 /**
- * Last-resort channel when `/storefront/markets` has not loaded yet.
- * Live markets return `platform_sa_uae` / `platform_sa_ksa`, not `platform_uae`.
- * Once a market is selected, that API `salesChannelCode` replaces this.
+ * Invented channel label. Catalog, search, and collection calls must not use
+ * this — they send the selected market's `salesChannelCode` from `/storefront/markets`.
  */
 export function toAuthSalesChannelCode(zoneCode?: string | null): string {
   const zone = (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
@@ -37,58 +36,61 @@ export function getPersistedCatalogContext(): StorefrontContextInput {
   return useUiStore.getState().catalogContext ?? {};
 }
 
-/** Old client invented `platform_uae`. Markets now return `platform_sa_uae`. */
-function isLegacyInventedChannel(code: string, zoneCode: string): boolean {
-  const zone = (zoneCode.trim() || DEFAULT_ZONE_CODE).toLowerCase();
-  return code.trim().toLowerCase() === `platform_${zone}`;
+function trimmed(value?: string | null): string {
+  return value?.trim() || "";
 }
 
+/**
+ * Catalog context for the shopper's selected market.
+ * Zone, channel, currency, language, and country come from that market.
+ * Another market's values are not reused, and a channel code is never invented.
+ */
 export function resolveStorefrontContext(
   input: StorefrontContextInput = {},
 ): StorefrontContextInput {
   const saved = getPersistedCatalogContext();
-  const zoneCode = input.zoneCode?.trim() || saved.zoneCode || DEFAULT_ZONE_CODE;
-  const sameZone = !saved.zoneCode || saved.zoneCode === zoneCode;
-  const savedChannel = sameZone ? saved.salesChannelCode?.trim() : "";
-  const usableSaved =
-    savedChannel && !isLegacyInventedChannel(savedChannel, zoneCode)
-      ? savedChannel
-      : null;
+  const requestedZone = trimmed(input.zoneCode);
+  const savedZone = trimmed(saved.zoneCode);
+  const zoneCode = requestedZone || savedZone;
+  const sameMarket = Boolean(zoneCode) && (!requestedZone || savedZone === requestedZone);
+
+  if (!zoneCode) {
+    // No market is selected yet. Keep the previous boot params and do not
+    // invent a sales channel. Catalog calls wait for a selected market instead.
+    return {
+      zoneCode: DEFAULT_ZONE_CODE,
+      languageCode: trimmed(input.languageCode) || DEFAULT_LANGUAGE_CODE,
+      currencyCode: trimmed(input.currencyCode) || DEFAULT_CURRENCY_CODE,
+      countryCode: trimmed(input.countryCode) || undefined,
+      salesChannelCode: trimmed(input.salesChannelCode) || undefined,
+    };
+  }
+
+  const fromMarket = (inputValue?: string | null, savedValue?: string | null) =>
+    trimmed(inputValue) || (sameMarket ? trimmed(savedValue) : "") || undefined;
+
   return {
     zoneCode,
-    languageCode:
-      input.languageCode?.trim() ||
-      (sameZone ? saved.languageCode : null) ||
-      DEFAULT_LANGUAGE_CODE,
-    currencyCode:
-      input.currencyCode?.trim() ||
-      (sameZone ? saved.currencyCode : null) ||
-      DEFAULT_CURRENCY_CODE,
-    countryCode:
-      input.countryCode?.trim() ||
-      (sameZone ? saved.countryCode : null) ||
-      undefined,
-    salesChannelCode:
-      input.salesChannelCode?.trim() ||
-      usableSaved ||
-      toAuthSalesChannelCode(zoneCode),
+    languageCode: fromMarket(input.languageCode, saved.languageCode),
+    currencyCode: fromMarket(input.currencyCode, saved.currencyCode),
+    countryCode: fromMarket(input.countryCode, saved.countryCode),
+    salesChannelCode: fromMarket(input.salesChannelCode, saved.salesChannelCode),
+    zoneId: fromMarket(input.zoneId, saved.zoneId),
+    brandId: trimmed(input.brandId) || (sameMarket ? saved.brandId : undefined) || undefined,
+    brandCode: trimmed(input.brandCode) || (sameMarket ? saved.brandCode : undefined) || undefined,
   };
 }
 
-/** Build `?zoneCode=…&languageCode=…` for storefront catalog/homepage routes. */
+/** Build market query params for storefront catalog routes. */
 export function storefrontContextQuery(
   input: StorefrontContextInput = {},
 ): string {
   const ctx = resolveStorefrontContext(input);
   const params = new URLSearchParams();
-  params.set("zoneCode", ctx.zoneCode || DEFAULT_ZONE_CODE);
-  params.set("languageCode", ctx.languageCode || DEFAULT_LANGUAGE_CODE);
-  params.set("currencyCode", ctx.currencyCode || DEFAULT_CURRENCY_CODE);
-  if (ctx.countryCode?.trim()) {
-    params.set("countryCode", ctx.countryCode.trim());
-  }
-  if (ctx.salesChannelCode?.trim()) {
-    params.set("salesChannelCode", ctx.salesChannelCode.trim());
-  }
+  if (ctx.zoneCode) params.set("zoneCode", ctx.zoneCode);
+  if (ctx.languageCode) params.set("languageCode", ctx.languageCode);
+  if (ctx.currencyCode) params.set("currencyCode", ctx.currencyCode);
+  if (ctx.countryCode) params.set("countryCode", ctx.countryCode);
+  if (ctx.salesChannelCode) params.set("salesChannelCode", ctx.salesChannelCode);
   return params.toString();
 }

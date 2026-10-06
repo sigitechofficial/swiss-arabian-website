@@ -3,6 +3,19 @@
 import { useRef } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
+import {
+  checkoutAddon,
+  checkoutAddonAdd,
+  checkoutAddonMedia,
+  checkoutAddonName,
+  checkoutAddonPrice,
+  checkoutMiss,
+  checkoutMissCard,
+  checkoutMissHead,
+  checkoutMissList,
+  checkoutMissNav,
+  checkoutMissTitle,
+} from "@/styles/checkoutChrome";
 
 export function CheckoutAddonRow({
   product,
@@ -20,20 +33,20 @@ export function CheckoutAddonRow({
 }) {
   const unavailableLabel = `${product.title} can’t be added yet`;
   return (
-    <article className="checkout-addon">
+    <article className={compact ? checkoutMissCard : checkoutAddon} data-addon="">
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={product.imageUrl} alt="" />
+        <img className={checkoutAddonMedia} src={product.imageUrl} alt="" />
       ) : (
-        <span className="checkout-addon__ph" aria-hidden="true" />
+        <span className={checkoutAddonMedia} data-addon-ph="" aria-hidden="true" />
       )}
       <div>
-        <p className="checkout-addon__name">{product.title}</p>
-        <p className="checkout-addon__price">{formatMoney(product.price ?? 0, product.currency)}</p>
+        <p className={checkoutAddonName}>{product.title}</p>
+        <p className={checkoutAddonPrice}>{formatMoney(product.price ?? 0, product.currency)}</p>
       </div>
       <button
         type="button"
-        className="checkout-addon__add"
+        className={checkoutAddonAdd}
         disabled={adding || disabled}
         onClick={() => onAdd(product)}
         title={disabled ? unavailableLabel : undefined}
@@ -64,20 +77,20 @@ export function MissThisSwiper({
   const step = (dir: -1 | 1) => {
     const el = scrollerRef.current;
     if (!el) return;
-    const card = el.querySelector(".checkout-addon");
+    const card = el.querySelector("[data-addon]");
     const gap = 10;
     const width = card instanceof HTMLElement ? card.getBoundingClientRect().width + gap : 200;
     el.scrollBy({ left: dir * width, behavior: "smooth" });
   };
 
   return (
-    <div className="checkout-miss-inline" aria-labelledby="checkout-miss-heading">
-      <div className="checkout-miss-inline__head">
-        <h3 className="checkout-miss-inline__title" id="checkout-miss-heading">
+    <div className={checkoutMiss} aria-labelledby="checkout-miss-heading">
+      <div className={checkoutMissHead}>
+        <h3 className={checkoutMissTitle} id="checkout-miss-heading">
           Don’t miss this
         </h3>
         {products.length > 2 ? (
-          <div className="checkout-miss-inline__nav">
+          <div className={checkoutMissNav}>
             <button type="button" onClick={() => step(-1)} aria-label="Previous products">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" />
@@ -91,7 +104,7 @@ export function MissThisSwiper({
           </div>
         ) : null}
       </div>
-      <div className="checkout-miss-inline__list" ref={scrollerRef}>
+      <div className={checkoutMissList} ref={scrollerRef}>
         {products.map((product) => (
           <CheckoutAddonRow
             key={product.id}

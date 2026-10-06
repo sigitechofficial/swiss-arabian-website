@@ -8,6 +8,7 @@ import { SEARCH_MIN_QUERY_LENGTH, useCatalogSearch } from "@/features/search";
 import { rememberSearchQuery } from "@/features/search/utils/recentSearches";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useUiStore } from "@/stores/useUiStore";
+import { visuallyHidden } from "@/styles/siteChrome";
 
 // Same eased, no-slam entrance language as the mega menu (`SiteHeader`'s
 // `megaPanelVariants`) — scrim fades while the dock scales/drops in from a
@@ -141,7 +142,7 @@ export function SearchOverlay() {
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
-              <label className="visually-hidden" htmlFor="ai-search-input">
+              <label className={visuallyHidden} htmlFor="ai-search-input">
                 Search scents
               </label>
               <input

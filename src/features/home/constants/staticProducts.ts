@@ -1,18 +1,10 @@
 import type { ProductSummary } from "@/features/catalog/types/product";
 
-/** Fully static, hand-picked product catalog used across the landing page
- *  (products band, trending grid, bundle "shop this look" panel) — no live
- *  catalog fetch, no live image URLs. Mirrors the shape the mega menu
- *  already uses in `megaProducts.ts` so the same cutout PNGs are reused
- *  everywhere. Update by hand when real catalog data is ready to swap back
- *  in via `useLandingProducts`.
+/** Hand-picked bottles for the bundle panel, and the fallback when a homepage
+ *  collection strip has nothing to show. Mirrors the cutouts in `megaProducts.ts`.
  *
- *  Every product's `imageUrls[1]` is its own ingredients hover shot — same
- *  bottle, same size/position (pixel-composited from the `-cutout.png`, so
- *  the bottle never shifts on hover), staged with its own raw ingredients
- *  behind/around it, transparent background. Card hover logic
- *  (`LandingProductsBand` / `LandingTrending`) swaps to this automatically
- *  whenever `imageUrls[1]` differs from the base `imageUrl`. */
+ *  Every product's `imageUrls[1]` is its ingredients hover shot. The best-sellers
+ *  and trending strips only use that hover while they are showing this fallback. */
 export const STATIC_PRODUCTS: ProductSummary[] = [
   {
     id: "rose-01",

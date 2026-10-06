@@ -10,6 +10,7 @@ import {
   type PromotionApplied,
   type PromotionSnapshotV1,
 } from "../types/promotions";
+import { promoAppliedList, promoAppliedRow } from "@/styles/cartChrome";
 
 function selectedTierPercent(item: PromotionApplied): string | null {
   const selected = item.metadata?.selectedTier;
@@ -35,7 +36,7 @@ export function AppliedCampaigns({
   const currency = data?.context?.currencyCode ?? "AED";
 
   return (
-    <ul className="promo-applied-list" aria-label="Applied offers">
+    <ul className={promoAppliedList} aria-label="Applied offers">
       {rows.map((item, index) => {
         const view = appliedPromotionView(item, data);
         const tierPercent = selectedTierPercent(item);
@@ -43,7 +44,7 @@ export function AppliedCampaigns({
         const partialShipping = item.level === "SHIPPING" && !isFreeShippingBenefit(item) && quotedAmount;
         const fixedBxgy = isFixedAmountBxgy(item) && quotedAmount;
         return (
-          <li className="promo-applied-row" key={`${item.kind}-${item.code ?? "row"}-${index}`}>
+          <li className={promoAppliedRow} key={`${item.kind}-${item.code ?? "row"}-${index}`}>
             <span>{view.label}</span>
             {partialShipping || fixedBxgy ? (
               <span dir="ltr">Applied · {formatMoney(view.amount ?? 0, currency)}</span>

@@ -6,7 +6,7 @@ export type NavItem = {
 export const primaryNav: NavItem[] = [
   { label: "Shop", href: "/products" },
   { label: "Collections", href: "/collections" },
-  { label: "Gift Box", href: "/gift-box" },
+  { label: "Gift Box", href: "/collections/gift-sets" },
   { label: "Gift Cards", href: "/gift-cards" },
   { label: "Subscriptions", href: "/subscriptions" },
 ];

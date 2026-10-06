@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { bottle } from "@/styles/landingChrome";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts } from "../api/catalog.service";
 import type { CatalogProduct } from "../constants/catalogProducts";
@@ -46,24 +47,24 @@ export function PdpScentFamily({
   if (items.length < 2) return null;
 
   return (
-    <section className="mt-5" aria-labelledby="pdp-scents-heading">
+    <section className="m-0 min-w-0" aria-labelledby="pdp-scents-heading">
       <p className="mb-3 text-[0.95rem]" id="pdp-scents-heading">
         Scent: <strong>{current.title}</strong>
       </p>
-      <ul className="m-0 flex list-none gap-3 overflow-x-auto p-0">
+      <ul className="m-0 flex w-full min-w-0 list-none flex-wrap items-start gap-3 p-0">
         {items.map((product) => {
           const active = product.id === current.id;
           return (
             <li className="w-[92px] shrink-0" key={product.id}>
               <Link
-                className="grid gap-1.5 text-xs leading-snug text-inherit no-underline aria-[current=true]:[&_img]:border-2 aria-[current=true]:[&_img]:border-copper aria-[current=true]:[&_.bottle]:border-2 aria-[current=true]:[&_.bottle]:border-copper"
+                className="grid gap-1.5 text-xs leading-snug text-inherit no-underline aria-[current=true]:[&>:first-child]:border-2 aria-[current=true]:[&>:first-child]:border-copper"
                 href={`/products/${product.slug}`}
                 aria-current={active ? "true" : undefined}
               >
                 {product.imageUrl ? (
                   <img className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt="" />
                 ) : (
-                  <span className="bottle aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white" aria-hidden="true" />
+                  <span className={`${bottle} aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white`} aria-hidden="true" />
                 )}
                 <span>{product.title}</span>
               </Link>

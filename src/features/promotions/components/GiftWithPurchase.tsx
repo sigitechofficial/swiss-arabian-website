@@ -11,6 +11,15 @@ import {
   giftNotice,
 } from "../utils/giftWithPurchase";
 import { GiftCartItem } from "./GiftCartItem";
+import {
+  cartHint,
+  promoGifts,
+  promoGiftsAwarded,
+  promoGiftsChange,
+  promoGiftsChoose,
+  promoGiftsPrompt,
+  promoGiftsTitle,
+} from "@/styles/cartChrome";
 
 export function GiftWithPurchase({
   snapshot,
@@ -32,29 +41,29 @@ export function GiftWithPurchase({
   if (!awards.length) return null;
 
   return (
-    <div className="promo-gifts">
+    <div className={promoGifts}>
       {awards.map((award, index) => {
         const notice = giftNotice(award);
         const key = `${award.promotionCode ?? "gift"}-${index}`;
         if (notice) {
           return (
-            <p className="cart-hint" role="status" key={key}>
+            <p className={cartHint} role="status" key={key}>
               {notice}
             </p>
           );
         }
         if (awaitingGiftChoice(award)) {
           return (
-            <div className="promo-gifts__prompt" key={key}>
-              <p className="promo-gifts__title">A free gift is waiting</p>
-              <button type="button" onClick={() => useGiftChoiceStore.getState().open(giftAwardCode(award))}>
+            <div className={promoGiftsPrompt} key={key}>
+              <p className={promoGiftsTitle}>A free gift is waiting</p>
+              <button type="button" className={promoGiftsChoose} onClick={() => useGiftChoiceStore.getState().open(giftAwardCode(award))}>
                 Choose your free gift
               </button>
             </div>
           );
         }
         return (
-          <div className="promo-gifts__awarded" aria-label="Free gifts" key={key}>
+          <div className={promoGiftsAwarded} aria-label="Free gifts" key={key}>
             {award.giftItems.map((gift) => (
               <GiftCartItem
                 key={gift.sku}
@@ -67,7 +76,7 @@ export function GiftWithPurchase({
             {selectable && canChangeGift(award) ? (
               <button
                 type="button"
-                className="promo-gifts__change"
+                className={promoGiftsChange}
                 onClick={() => useGiftChoiceStore.getState().open(giftAwardCode(award))}
               >
                 Change gift

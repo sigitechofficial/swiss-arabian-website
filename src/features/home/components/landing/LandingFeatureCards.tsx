@@ -1,20 +1,37 @@
+import { pageContainer } from "@/styles/siteChrome";
+import {
+  featureBg1,
+  featureBg2,
+  featureBg3,
+  featureBg4,
+  featureCard,
+  featureCardBg,
+  featureCardBox,
+  featureCardCopy,
+  featureCards,
+  featureCardsList,
+} from "@/styles/landingChrome";
 import { FEATURE_CARDS } from "../../constants/landingContent";
+
+const FEATURE_BG = {
+  "feature-card--1": featureBg1,
+  "feature-card--2": featureBg2,
+  "feature-card--3": featureBg3,
+  "feature-card--4": featureBg4,
+} as const;
 
 export function LandingFeatureCards() {
   return (
-    <section className="feature-cards" aria-label="Why Swiss Arabian">
-      <div className="container">
-        <div className="feature-cards-list">
+    <section className={featureCards} aria-label="Why Swiss Arabian">
+      <div className={pageContainer}>
+        <div className={featureCardsList}>
           {FEATURE_CARDS.map((card) => (
-            <article
-              key={card.className}
-              className={`feature-card ${card.className}`}
-            >
-              <div className="feature-card-box">
-                <div className="feature-card-bg">
+            <article key={card.className} className={featureCard}>
+              <div className={featureCardBox}>
+                <div className={`${featureCardBg} ${FEATURE_BG[card.className]}`}>
                   <img src={card.image} alt="" loading="lazy" />
                 </div>
-                <div className="feature-card-copy">
+                <div className={featureCardCopy}>
                   <h2>
                     {card.title[0]} <br />
                     <strong>{card.title[1]}</strong>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   CATALOG_PAGE_SIZE,
   catalogKeys,
@@ -10,9 +10,8 @@ import {
   type CatalogSearchSort,
   type ProductListResult,
 } from "@/features/catalog/api/catalog.service";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useMarket } from "@/providers/MarketProvider";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_QUERY_LENGTH, SEARCH_PAGE_SIZE } from "../constants";
 
 type UseCatalogSearchOptions = {
@@ -56,8 +55,9 @@ export function useCatalogSearch(
   rawQuery: string,
   options: UseCatalogSearchOptions = {},
 ): CatalogSearchState {
-  const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const market = useSelectedCatalogMarket();
+  const zoneCode = market?.zoneCode ?? "";
+  const salesChannelCode = market?.salesChannelCode ?? "";
   const limit = options.limit ?? SEARCH_PAGE_SIZE;
   const page = options.page ?? 1;
   const sort = options.sort ?? "newest";
@@ -69,32 +69,48 @@ export function useCatalogSearch(
   const query = (immediate ? rawQuery : debounced).trim();
   const tooShort = query.length < SEARCH_MIN_QUERY_LENGTH;
   const isPreview = tooShort && previewWhenEmpty;
+  const keepThisMarket = <T,>(
+    previous: T | undefined,
+    previousQuery: { queryKey: readonly unknown[] } | undefined,
+  ) => {
+    const key = previousQuery?.queryKey ?? [];
+    if (!zoneCode || !salesChannelCode) return undefined;
+    if (!key.includes(zoneCode) || !key.includes(salesChannelCode)) return undefined;
+    return previous;
+  };
 
   const search = useQuery({
-    queryKey: catalogKeys.search(query, zoneCode, page, limit, sort),
+    queryKey: [...catalogKeys.search(query, zoneCode, page, limit, sort), salesChannelCode],
     queryFn: () =>
-      fetchCatalogSearch(zoneCode, { q: query, page, limit, sort }),
-    enabled: !tooShort && !infinite,
-    placeholderData: keepPreviousData,
+      fetchCatalogSearch(zoneCode, { q: query, page, limit, sort, context: market }),
+    enabled: Boolean(market) && !tooShort && !infinite,
+    placeholderData: keepThisMarket,
   });
 
   const infiniteSearch = useInfiniteQuery({
-    queryKey: [...catalogKeys.search(query, zoneCode, 1, limit, sort), "infinite"],
+    queryKey: [...catalogKeys.search(query, zoneCode, 1, limit, sort), salesChannelCode, "infinite"],
     queryFn: ({ pageParam }) =>
-      fetchCatalogSearch(zoneCode, { q: query, page: pageParam, limit, sort }),
+      fetchCatalogSearch(zoneCode, {
+        q: query,
+        page: pageParam,
+        limit,
+        sort,
+        context: market,
+      }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const { page: current, totalPages } = lastPage.pagination;
       return current < totalPages ? current + 1 : undefined;
     },
-    enabled: !tooShort && infinite,
-    placeholderData: keepPreviousData,
+    enabled: Boolean(market) && !tooShort && infinite,
+    placeholderData: keepThisMarket,
   });
 
   const preview = useQuery({
     queryKey: catalogKeys.list(zoneCode, 1, limit),
-    queryFn: () => fetchProducts(zoneCode, { page: 1, limit }),
-    enabled: isPreview,
+    queryFn: () => fetchProducts(zoneCode, { page: 1, limit }, market),
+    enabled: Boolean(market) && isPreview,
+    placeholderData: keepThisMarket,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -131,7 +147,9 @@ export function useCatalogSearch(
     totalPages: pagination?.totalPages ?? 1,
     tooShort: tooShort && !previewWhenEmpty,
     isPreview,
-    isLoading: activePending.isLoading && (isPreview || !tooShort),
+    isLoading:
+      (!market && (isPreview || !tooShort)) ||
+      (activePending.isLoading && (isPreview || !tooShort)),
     isFetching: activePending.isFetching,
     isFetchingNextPage: infiniteSearch.isFetchingNextPage,
     hasNextPage: Boolean(infinite && infiniteSearch.hasNextPage),

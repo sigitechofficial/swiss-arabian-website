@@ -4,7 +4,6 @@ import { CollectionDetailPageView } from "@/features/collections";
 import { fetchCollectionBySlug } from "@/features/catalog/api/catalog.service";
 import { parseCatalogListingParams } from "@/features/catalog/types/catalogFacets";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 
 export async function generateMetadata({
   params,
@@ -12,9 +11,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const zoneCode =
-    (await cookies()).get(ZONE_COOKIE)?.value?.trim() || DEFAULT_ZONE_CODE;
-  const collection = await fetchCollectionBySlug(slug, zoneCode);
+  const zoneCode = (await cookies()).get(ZONE_COOKIE)?.value?.trim() || "";
+  const collection = zoneCode ? await fetchCollectionBySlug(slug, zoneCode) : null;
   const title = collection?.seoTitle?.trim() || collection?.name || slug;
   const description = collection?.seoDescription?.trim() || undefined;
   return {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import { addCartItems, storefrontCartQuery } from "@/features/cart/api/cart.service";
-import { CatalogProductCard } from "@/features/catalog/components/ProductCatalogView";
+import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { toCatalogProduct } from "@/features/catalog/utils/toCatalogProduct";
 import { useCartStore } from "@/stores/useCartStore";
@@ -12,6 +12,15 @@ import type { DiscoveryOffer } from "../types/discovery";
 import { rememberEmptyOrigin } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import { MoneySummary } from "./MoneySummary";
+import { cardAddButton, cardAddCheck, cardAddPlus } from "@/styles/productCard";
+import { gridBand, offerProductGrid } from "@/styles/shopChrome";
+import {
+  cartCta,
+  cartCtaDisabled,
+  cartSummary,
+  cartSummaryTitle,
+  cartTotals,
+} from "@/styles/cartChrome";
 
 type ShopProduct = {
   productId: string;
@@ -379,11 +388,11 @@ export function OfferShop({ code }: { code: string }) {
           })}
         </ul>
       </section>
-      <aside className="cart-summary min-w-0 self-start max-[959px]:order-3 min-[960px]:col-start-2 min-[960px]:row-span-3">
-        <h2>Summary</h2>
+      <aside className={`${cartSummary} self-start max-[959px]:order-3 min-[960px]:col-start-2 min-[960px]:row-span-3`}>
+        <h2 className={cartSummaryTitle}>Summary</h2>
         {subtotal != null && savings != null && total != null ? (
           <MoneySummary
-            className="cart-totals"
+            className={cartTotals}
             currency={currency}
             subtotal={subtotal}
             discount={savings}
@@ -393,7 +402,7 @@ export function OfferShop({ code }: { code: string }) {
         ) : null}
         {preview?.message ? <p className="m-0 text-base">{preview.message}</p> : null}
         {addError ? <p role="alert">{addError}</p> : null}
-        <button className={ready ? "cart-cta" : "cart-cta is-disabled"} type="button" disabled={!ready} onClick={addSelected}>
+        <button className={ready ? cartCta : `${cartCta} ${cartCtaDisabled}`} type="button" disabled={!ready} onClick={addSelected}>
           {shop.copy.add}
         </button>
       </aside>
@@ -407,7 +416,7 @@ export function OfferShop({ code }: { code: string }) {
               id={`offer-group-${group.id}`}
               aria-label={group.name}
               aria-current={activeId === group.id ? "true" : undefined}
-              className={activeId === group.id ? "grid-band products-band scroll-mt-[8.5rem]" : "grid-band products-band"}
+              className={activeId === group.id ? `${gridBand} scroll-mt-[8.5rem]` : gridBand}
             >
               <div className="grid gap-3 min-[720px]:grid-cols-[1fr_minmax(180px,260px)] min-[720px]:items-center">
                 <h2>
@@ -424,7 +433,7 @@ export function OfferShop({ code }: { code: string }) {
                   />
                 </label>
               </div>
-              <ul className="product-grid ![grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))]" role="list">
+              <ul className={offerProductGrid} role="list">
                 {visible.map((product) => {
                   const selected = selections.some((row) => row.groupId === group.id && row.sku === product.sku);
                   return (
@@ -435,7 +444,7 @@ export function OfferShop({ code }: { code: string }) {
                       note={product.inStock ? undefined : (shop.copy.soldOut || "Out of stock")}
                       addControl={
                         <button
-                          className="product-card__add"
+                          className={cardAddButton}
                           type="button"
                           aria-pressed={selected}
                           aria-label={`${selected ? shop.copy.replace : shop.copy.choose} ${product.title}`}
@@ -446,10 +455,10 @@ export function OfferShop({ code }: { code: string }) {
                             choose(group, product);
                           }}
                         >
-                          <svg className="product-card__add-plus" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                          <svg className={cardAddPlus} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                             <path d="M10 4v12M4 10h12" />
                           </svg>
-                          <svg className="product-card__add-check" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                          <svg className={cardAddCheck} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                             <path d="M5 10.5 8.5 14 15 7" />
                           </svg>
                         </button>

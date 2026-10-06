@@ -8,6 +8,7 @@ import {
   parsePhoneNumberFromString,
   type CountryCode,
 } from "libphonenumber-js";
+import { phoneCc, phoneNum } from "@/styles/checkoutChrome";
 
 /** Shown first — the markets the storefront actually ships to. */
 const PREFERRED: CountryCode[] = ["AE", "SA", "QA", "KW", "BH", "OM"];
@@ -39,20 +40,19 @@ const VARIANTS: Record<PhoneVariant, { trigger: string; input: string; wrapInput
     trigger:
       "flex h-[40px] cursor-pointer items-center gap-2 rounded-[10px] border border-sa-input bg-surface px-3 text-sm text-sa-primary outline-none sm:text-[12.5px]",
     input:
-      "auth-field-input block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px]",
+      "block w-full appearance-none border-0 bg-transparent px-4 py-2.5 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px]",
     wrapInput: true,
   },
   account: {
     trigger:
       "flex h-11 cursor-pointer items-center gap-2 rounded-md border border-sa-input bg-white px-3 text-[14px] text-sa-primary outline-none",
     input:
-      "sa-field-input h-11 w-full min-w-0 rounded-md border border-sa-input bg-white px-3.5 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted",
+      "h-11 w-full min-w-0 rounded-md border border-sa-input bg-white px-3.5 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted focus:outline-none focus-visible:outline-none",
     wrapInput: false,
   },
   checkout: {
-    // `.fld input` in v5-checkout.css styles the number; `.phone-cc` mirrors it.
-    trigger: "phone-cc",
-    input: "phone-num",
+    trigger: phoneCc,
+    input: phoneNum,
     wrapInput: false,
   },
 };
@@ -225,7 +225,7 @@ export function PhoneNumberField({
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search country or code"
                   aria-label="Search country"
-                  className="auth-field-input h-9 w-full rounded-[8px] border border-sa-input bg-surface px-2.5 text-[12.5px] text-sa-primary outline-none placeholder:text-sa-muted"
+                  className="h-9 w-full rounded-[8px] border border-sa-input bg-surface px-2.5 text-[12.5px] text-sa-primary outline-none placeholder:text-sa-muted focus:outline-none focus-visible:outline-none"
                 />
               </div>
               <ul className="max-h-64 overflow-auto py-1" role="listbox" aria-label="Country calling code">

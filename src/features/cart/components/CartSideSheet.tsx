@@ -2,17 +2,57 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import Drawer from "@mui/material/Drawer";
+import { SideSheet } from "@/components/ui/SideSheet";
 import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { EmptyBagRecovery, GiftWithPurchase, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
+import { EmptyBagRecovery, GiftWithPurchase, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
 import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
 import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
+import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { useAddToCart } from "../hooks/useAddToCart";
+import {
+  cartRec,
+  cartRecAdd,
+  cartRecCopy,
+  cartRecName,
+  cartRecPh,
+  cartRecPrice,
+  cartRecSize,
+  cartRecs,
+  cartRecsSwiper,
+  cartRecsTitle,
+  confettiCircle,
+  confettiDiamond,
+  confettiLayer,
+  confettiPiece,
+  confettiRibbon,
+  drawerBody,
+  drawerCheckout,
+  drawerClose,
+  drawerEmpty,
+  drawerFoot,
+  drawerHead,
+  drawerItems,
+  drawerLine,
+  drawerLineActions,
+  drawerLineBody,
+  drawerLineImg,
+  drawerLineMeta,
+  drawerLineName,
+  drawerLineNote,
+  drawerLinePrice,
+  drawerLineQty,
+  drawerLineRemove,
+  drawerLineTop,
+  drawerPanel,
+  drawerPanelFlash,
+  drawerTotalRow,
+  drawerViewLink,
+} from "@/styles/cartChrome";
 
 const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
 const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
@@ -75,7 +115,7 @@ export function CartSideSheet() {
     let clearConfetti: ReturnType<typeof setTimeout> | undefined;
     if (!reduce) {
       const bar =
-        panelRef.current?.querySelector(".cart-ship-track") ?? panelRef.current;
+        panelRef.current?.querySelector("[data-ship-track]") ?? panelRef.current;
       const layer = confettiLayerRef.current;
       let ox = 78;
       let oy = 22;
@@ -130,50 +170,28 @@ export function CartSideSheet() {
   const promotionRecs = useApplicablePromotions().data?.recommendations?.products ?? [];
 
   return (
-    <Drawer
-      anchor="right"
+    <SideSheet
       open={open}
       onClose={() => setCartOpen(false)}
-      slotProps={{
-        backdrop: {
-          sx: {
-            backgroundColor: "rgba(24, 20, 17, 0.4)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-          },
-        },
-        paper: {
-          sx: {
-            width: { xs: "100%", sm: 420 },
-            maxWidth: "100vw",
-            background: "transparent",
-            borderRadius: { xs: 0, sm: "18px 0 0 18px" },
-            boxShadow: "-12px 0 48px rgba(0,0,0,0.12)",
-            // Force this fixed-position Paper onto its own GPU layer up
-            // front — otherwise Chromium can leave it unpainted until a
-            // scroll event forces a re-composite (see .cart-drawer-panel).
-            willChange: "transform",
-            transform: "translateZ(0)",
-          },
-        },
-      }}
+      label="Bag"
+      className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[420px]"
     >
-      <div className={`cart-drawer-panel ${isPanelFlash || giftFlash ? "is-whoop-flash" : ""}`} ref={panelRef}>
-        <div className="cart-confetti" ref={confettiLayerRef} aria-hidden="true">
+      <div className={`${drawerPanel} ${isPanelFlash || giftFlash ? drawerPanelFlash : ""}`} ref={panelRef}>
+        <div className={confettiLayer} ref={confettiLayerRef} aria-hidden="true">
           {confetti.map((piece) => (
             <span
               key={piece.id}
-              className={`cart-confetti-piece is-${piece.shape}`}
+              className={`${confettiPiece} ${piece.shape === "circle" ? confettiCircle : piece.shape === "ribbon" ? confettiRibbon : confettiDiamond}`}
               style={piece.style as CSSProperties}
             />
           ))}
         </div>
 
-        <header className="cart-drawer-head">
+        <header className={drawerHead}>
           <h2>{itemCount > 0 ? `My Bag (${itemCount})` : "My Bag"}</h2>
           <button
             type="button"
-            className="cart-close"
+            className={drawerClose}
             onClick={() => setCartOpen(false)}
             aria-label="Close"
           >
@@ -181,14 +199,14 @@ export function CartSideSheet() {
           </button>
         </header>
 
-        <div className="cart-drawer-body">
+        <div className={drawerBody}>
           {lines.length > 0 ? (
-            <div className="cart-promo">
-              <PromotionProgressRail className="cart-ship-bar" surface="cart" />
+            <div className="grid gap-3">
+              <PromotionProgressRail surface="drawer" />
               <PromotionQuickAdd surface="cart" />
             </div>
           ) : (
-            <div className="cart-empty">
+            <div className={drawerEmpty}>
               <p>Your bag is empty.</p>
               <EmptyBagRecovery surface="empty-cart" />
               <Link href="/products" onClick={() => setCartOpen(false)}>
@@ -196,70 +214,72 @@ export function CartSideSheet() {
               </Link>
             </div>
           )}
-          <div className="cart-items">
+          <div className={drawerItems}>
             {lines.length === 0 ? null : (
               lines.map((line) => (
-                <article className="cart-line" key={line.cartItemId ?? line.variantId}>
-                  <div className="cart-line-img">
+                <article className={drawerLine} key={line.cartItemId ?? line.variantId}>
+                  <div className={drawerLineImg}>
                     {line.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={line.imageUrl} alt={line.title} />
+                      <img src={line.imageUrl} alt="" />
                     ) : null}
                   </div>
-                  <div className="cart-line-info">
-                    <p className="cart-line-name">{line.title}</p>
-                    {line.sizeLabel ? <p className="cart-line-meta">{line.sizeLabel}</p> : null}
-                    <div className="cart-line-qty">
+                  <div className={drawerLineBody}>
+                    <div className={drawerLineTop}>
+                      <p className={drawerLineName}>{line.title}</p>
+                      <PromoLinePrice className={drawerLinePrice} snapshot={promotions} line={line} />
+                    </div>
+                    {showsDistinctSize(line.title, line.sizeLabel) ? (
+                      <p className={drawerLineMeta}>{line.sizeLabel}</p>
+                    ) : null}
+                    {setBundleLineLabel(promotions, line) ? (
+                      <p className={drawerLineNote}>{setBundleLineLabel(promotions, line)}</p>
+                    ) : null}
+                    <div className={drawerLineActions}>
+                      <div className={drawerLineQty}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = Math.max(1, line.quantity - 1);
+                            if (line.remote || line.cartItemId) {
+                              setQuantityOptimistic(line.variantId, next);
+                            } else {
+                              updateLocalQuantity(line.variantId, next);
+                            }
+                          }}
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span>{line.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (line.remote || line.cartItemId) {
+                              setQuantityOptimistic(line.variantId, line.quantity + 1);
+                            } else {
+                              updateLocalQuantity(line.variantId, line.quantity + 1);
+                            }
+                          }}
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          const next = Math.max(1, line.quantity - 1);
-                          if (line.remote || line.cartItemId) {
-                            setQuantityOptimistic(line.variantId, next);
-                          } else {
-                            updateLocalQuantity(line.variantId, next);
-                          }
-                        }}
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={13} />
-                      </button>
-                      <span>{line.quantity}</span>
-                      <button
-                        type="button"
+                        className={drawerLineRemove}
                         onClick={() => {
                           if (line.remote || line.cartItemId) {
-                            setQuantityOptimistic(line.variantId, line.quantity + 1);
+                            removeItemOptimistic(line.variantId);
                           } else {
-                            updateLocalQuantity(line.variantId, line.quantity + 1);
+                            removeLocalLine(line.variantId);
                           }
                         }}
-                        aria-label="Increase quantity"
                       >
-                        <Plus size={13} />
+                        Remove
                       </button>
                     </div>
-                  </div>
-                  <div className="cart-line-side">
-                    <p className="cart-line-price">
-                      {formatMoney(line.unitPrice * line.quantity, line.currency)}
-                    </p>
-                    {setBundleLineLabel(promotions, line) ? (
-                      <p className="cart-line-price">{setBundleLineLabel(promotions, line)}</p>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="cart-line-remove"
-                      onClick={() => {
-                        if (line.remote || line.cartItemId) {
-                          removeItemOptimistic(line.variantId);
-                        } else {
-                          removeLocalLine(line.variantId);
-                        }
-                      }}
-                    >
-                      Remove
-                    </button>
                   </div>
                 </article>
               ))
@@ -268,28 +288,28 @@ export function CartSideSheet() {
           </div>
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
-            <div className="cart-recs">
-              <h3 className="cart-recs-title">Layer your scents</h3>
-              <div className="cart-recs-swiper" role="list">
+            <div className={cartRecs}>
+              <h3 className={cartRecsTitle}>Layer your scents</h3>
+              <div className={cartRecsSwiper} role="list">
                 {recs.map((product) => {
                   const canAdd = Boolean(product.variantId || product.sku);
                   const pressed = addedRecs.has(product.id);
                   return (
-                    <article className="cart-rec" key={product.id} role="listitem">
+                    <article className={cartRec} key={product.id} role="listitem">
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={product.imageUrl} alt="" />
                       ) : (
-                        <span className="cart-rec-ph" aria-hidden="true" />
+                        <span className={cartRecPh} aria-hidden="true" />
                       )}
-                      <div className="cart-rec-copy">
-                        <p className="cart-rec-name">{product.title}</p>
-                        <p className="cart-rec-price">{formatMoney(product.price, product.currency)}</p>
-                        <p className="cart-rec-size">50 ml</p>
+                      <div className={cartRecCopy}>
+                        <p className={cartRecName}>{product.title}</p>
+                        <p className={cartRecPrice}>{formatMoney(product.price, product.currency)}</p>
+                        <p className={cartRecSize}>50 ml</p>
                       </div>
                       <button
                         type="button"
-                        className="cart-rec-add"
+                        className={cartRecAdd}
                         disabled={!canAdd}
                         aria-label={pressed ? `${product.title} added` : `Add ${product.title}`}
                         aria-pressed={pressed}
@@ -322,15 +342,15 @@ export function CartSideSheet() {
           ) : null}
         </div>
 
-        <footer className="cart-drawer-foot">
-          <div className="cart-total-row">
+        <footer className={drawerFoot}>
+          <div className={drawerTotalRow}>
             <span>Total</span>
             <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
           </div>
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}
           <Link
-            className="cart-checkout"
+            className={drawerCheckout}
             href="/checkout"
             aria-disabled={lines.length === 0 || syncing}
             onClick={(event) => {
@@ -343,11 +363,11 @@ export function CartSideSheet() {
           >
             {syncing ? "Updating bag…" : "Checkout"}
           </Link>
-          <Link className="cart-view-link" href="/cart" onClick={() => setCartOpen(false)}>
+          <Link className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
             View bag
           </Link>
         </footer>
       </div>
-    </Drawer>
+    </SideSheet>
   );
 }

@@ -82,7 +82,7 @@ export function AuthOtpField({
             aria-invalid={Boolean(error)}
             aria-label={`Digit ${index + 1} of ${LENGTH}`}
             value={digit}
-            className="auth-field-input auth-otp-input h-full w-full appearance-none border-0 bg-transparent text-center text-[1.125rem] font-medium tracking-wide text-sa-primary shadow-none outline-none ring-0"
+            className="h-full w-full appearance-none border-0 bg-transparent text-center text-[1.125rem] font-medium tracking-wide text-sa-primary shadow-none outline-none ring-0 focus:outline-none focus-visible:outline-none"
             onChange={(event) => {
               const raw = event.target.value.replace(/\D/g, "");
               if (raw.length > 1) {

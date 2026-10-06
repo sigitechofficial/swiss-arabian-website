@@ -208,7 +208,7 @@ export function LoginPageView() {
               <input
                 id="remember"
                 type="checkbox"
-                className="auth-checkbox size-[16px] shrink-0"
+                className="size-[16px] shrink-0 cursor-pointer appearance-none rounded border border-sa-input bg-surface bg-center bg-no-repeat checked:border-terra checked:bg-terra checked:bg-[length:12px_12px] checked:bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2016%2016%27%20fill=%27none%27%3E%3Cpath%20d=%27M3.5%208.5L6.5%2011.5L12.5%204.5%27%20stroke=%27%23fff%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terra"
                 {...form.register("remember")}
               />
               <span>Remember me</span>

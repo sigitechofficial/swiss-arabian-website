@@ -2,6 +2,15 @@
 
 import { useEffect, useId, useRef } from "react";
 import { flagImageSrc } from "@/features/markets/utils/flagForMarket";
+import {
+  topbarCaret,
+  topbarFlag,
+  topbarFlagImg,
+  topbarMenu,
+  topbarMenuOption,
+  topbarMenuPanel,
+  topbarMenuTrigger,
+} from "@/styles/siteChrome";
 
 export type TopbarMenuOption = {
   id: string;
@@ -21,7 +30,7 @@ function TopbarFlag({
   if (countryCode) {
     return (
       <img
-        className="topbar__flag-img"
+        className={topbarFlagImg}
         src={flagImageSrc(countryCode)}
         width={16}
         height={12}
@@ -32,7 +41,7 @@ function TopbarFlag({
   }
   if (!flag) return null;
   return (
-    <span className="topbar__flag" aria-hidden="true">
+    <span className={topbarFlag} aria-hidden="true">
       {flag}
     </span>
   );
@@ -81,11 +90,12 @@ export function TopbarMenu({
 
   return (
     <div
-      className={open ? "topbar__menu is-open" : "topbar__menu"}
+      className={topbarMenu}
+      data-open={open ? "" : undefined}
       ref={rootRef}
     >
       <button
-        className="topbar__menu-trigger"
+        className={topbarMenuTrigger}
         type="button"
         aria-label={label}
         aria-haspopup="listbox"
@@ -97,7 +107,7 @@ export function TopbarMenu({
         <TopbarFlag flag={selected.flag} countryCode={selected.countryCode} />
         <span>{selected.label}</span>
         <svg
-          className="topbar__caret"
+          className={topbarCaret}
           viewBox="0 0 12 12"
           fill="none"
           stroke="currentColor"
@@ -109,7 +119,7 @@ export function TopbarMenu({
       </button>
       {open ? (
         <ul
-          className="topbar__menu-panel"
+          className={topbarMenuPanel}
           id={listId}
           role="listbox"
           aria-label={label}
@@ -117,7 +127,7 @@ export function TopbarMenu({
           {options.map((option) => (
             <li key={option.id} role="presentation">
               <button
-                className="topbar__menu-option"
+                className={topbarMenuOption}
                 type="button"
                 role="option"
                 lang={option.lang}

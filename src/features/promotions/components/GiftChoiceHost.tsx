@@ -64,8 +64,8 @@ export function GiftChoiceHost() {
   }, [openCode, award]);
 
   useEffect(() => {
-    document.body.classList.toggle("is-gift-reveal", flashing);
-    return () => document.body.classList.remove("is-gift-reveal");
+    document.body.toggleAttribute("data-gift-reveal", flashing);
+    return () => document.body.removeAttribute("data-gift-reveal");
   }, [flashing]);
 
   const choosing =

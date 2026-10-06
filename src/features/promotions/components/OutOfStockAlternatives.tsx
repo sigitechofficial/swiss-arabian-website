@@ -9,6 +9,21 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { fetchOutOfStock } from "../api/promotions.service";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import {
+  pdpOos,
+  pdpOosMessage,
+} from "@/styles/pdpChrome";
+import {
+  cartRec,
+  cartRecAdd,
+  cartRecCopy,
+  cartRecName,
+  cartRecPh,
+  cartRecPrice,
+  cartRecs,
+  cartRecsSwiper,
+  cartRecsTitle,
+} from "@/styles/cartChrome";
 
 export function OutOfStockAlternatives({ productId }: { productId: string }) {
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
@@ -25,21 +40,21 @@ export function OutOfStockAlternatives({ productId }: { productId: string }) {
   if (!state?.outOfStock) return null;
 
   return (
-    <div className="pdp-oos">
-      {state.message ? <p className="pdp-oos__message">{state.message}</p> : null}
+    <div className={pdpOos}>
+      {state.message ? <p className={pdpOosMessage}>{state.message}</p> : null}
       {state.heading && state.products.length > 0 ? (
-        <div className="cart-recs">
-          <h3 className="cart-recs-title">{state.heading}</h3>
-          <div className="cart-recs-swiper" role="list">
+        <div className={cartRecs}>
+          <h3 className={cartRecsTitle}>{state.heading}</h3>
+          <div className={cartRecsSwiper} role="list">
             {state.products.map((product) => (
-              <article className="cart-rec" key={product.sku} role="listitem">
+              <article className={cartRec} key={product.sku} role="listitem">
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.image} alt="" />
                 ) : (
-                  <span className="cart-rec-ph" aria-hidden="true" />
+                  <span className={cartRecPh} aria-hidden="true" />
                 )}
-                <div className="cart-rec-copy">
+                <div className={cartRecCopy}>
                   {product.slug ? (
                     <Link
                       href={`/products/${product.slug}`}
@@ -49,16 +64,16 @@ export function OutOfStockAlternatives({ productId }: { productId: string }) {
                         surface: "out-of-stock",
                       })}
                     >
-                      <p className="cart-rec-name">{product.title}</p>
+                      <p className={cartRecName}>{product.title}</p>
                     </Link>
                   ) : (
-                    <p className="cart-rec-name">{product.title}</p>
+                    <p className={cartRecName}>{product.title}</p>
                   )}
-                  {product.price ? <p className="cart-rec-price">{product.price}</p> : null}
+                  {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
                 </div>
                 <button
                   type="button"
-                  className="cart-rec-add"
+                  className={cartRecAdd}
                   disabled={busy === product.sku}
                   aria-label={`${state.addLabel} ${product.title}`}
                   onClick={() => {

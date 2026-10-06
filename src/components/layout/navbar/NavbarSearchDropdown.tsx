@@ -7,6 +7,23 @@ import { useCatalogSearch, SEARCH_IDLE_SHORTCUTS, SEARCH_MIN_QUERY_LENGTH } from
 import { useNewLaunchesPreview } from "@/features/search/hooks/useNewLaunchesPreview";
 import { useRecentSearches } from "@/features/search/hooks/useRecentSearches";
 import type { ProductSummary } from "@/features/catalog/types/product";
+import {
+  navSearch,
+  navSearchDrop,
+  navSearchDropAll,
+  navSearchDropBlock,
+  navSearchDropCards,
+  navSearchDropEmpty,
+  navSearchDropHits,
+  navSearchDropKicker,
+  navSearchDropName,
+  navSearchDropNewHead,
+  navSearchDropQueries,
+  navSearchDropThumb,
+  navSearchField,
+  navSearchMinimal,
+  visuallyHidden,
+} from "@/styles/siteChrome";
 
 function SearchGlyph() {
   return (
@@ -35,7 +52,7 @@ function ProductRow({
   return (
     <li>
       <Link href={`/products/${product.slug}`} onClick={onPick}>
-        <span className="nav-search-drop__thumb" aria-hidden="true">
+        <span className={navSearchDropThumb} aria-hidden="true">
           {product.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -50,7 +67,7 @@ function ProductRow({
             />
           ) : null}
         </span>
-        <span className="nav-search-drop__name">{product.title}</span>
+        <span className={navSearchDropName}>{product.title}</span>
         <ChevronGlyph />
       </Link>
     </li>
@@ -113,14 +130,13 @@ export function NavbarSearchDropdown({
   const idleKicker = recents.length ? "Recent" : "Popular";
 
   return (
-    <div className="nav-search" ref={rootRef}>
-      <label className="nav-search-field" htmlFor="nav-search-input">
+    <div className={`${navSearch} ${navSearchMinimal}`} data-nav-search ref={rootRef}>
+      <label className={navSearchField} data-search-field htmlFor="nav-search-input">
         <SearchGlyph />
-        <span className="visually-hidden">Search fragrances</span>
+        <span className={visuallyHidden}>Search fragrances</span>
         <input
           id="nav-search-input"
           ref={inputRef}
-          className="nav-search-input"
           type="search"
           placeholder={placeholder}
           autoComplete="off"
@@ -142,12 +158,12 @@ export function NavbarSearchDropdown({
       </label>
 
       {open ? (
-        <div className="nav-search-drop" id="nav-search-drop" role="dialog" aria-label="Search suggestions">
-          <div className="nav-search-drop__popular">
-            <p className="nav-search-drop__kicker">{isIdle ? idleKicker : "Results"}</p>
+        <div className={navSearchDrop} id="nav-search-drop" role="dialog" aria-label="Search suggestions">
+          <div className={navSearchDropBlock}>
+            <p className={navSearchDropKicker}>{isIdle ? idleKicker : "Results"}</p>
             {isIdle ? (
               recents.length ? (
-                <ul className="nav-search-drop__queries" role="list">
+                <ul className={navSearchDropQueries} role="list">
                   {recents.map((item) => (
                     <li key={item}>
                       <button type="button" onClick={() => goToSearch(item)}>
@@ -158,7 +174,7 @@ export function NavbarSearchDropdown({
                   ))}
                 </ul>
               ) : (
-                <ul className="nav-search-drop__queries" role="list">
+                <ul className={navSearchDropQueries} role="list">
                   {SEARCH_IDLE_SHORTCUTS.map((item) => (
                     <li key={item.href}>
                       <Link href={item.href} onClick={close}>
@@ -170,7 +186,7 @@ export function NavbarSearchDropdown({
                 </ul>
               )
             ) : hits.length ? (
-              <ul role="list">
+              <ul className={navSearchDropHits} role="list">
                 {hits.map((product) => (
                   <ProductRow
                     key={product.id}
@@ -183,24 +199,24 @@ export function NavbarSearchDropdown({
                 ))}
               </ul>
             ) : (
-              <p className="nav-search-drop__empty">No matches yet — keep typing or browse new in.</p>
+              <p className={navSearchDropEmpty}>No matches yet — keep typing or browse new in.</p>
             )}
             {isIdle ? null : (
-              <button type="button" className="nav-search-drop__all" onClick={submit}>
+              <button type="button" className={navSearchDropAll} onClick={submit}>
                 See all results
               </button>
             )}
           </div>
 
           {newest.length ? (
-            <div className="nav-search-drop__new">
-              <div className="nav-search-drop__new-head">
-                <p className="nav-search-drop__kicker">New in</p>
+            <div className={navSearchDropBlock}>
+              <div className={navSearchDropNewHead}>
+                <p className={navSearchDropKicker}>New in</p>
                 <Link href="/collections/new-launches" onClick={close}>
                   See all
                 </Link>
               </div>
-              <ul className="nav-search-drop__cards" role="list">
+              <ul className={navSearchDropCards} role="list">
                 {newest.map((product) => (
                   <li key={product.id}>
                     <Link href={`/products/${product.slug}`} onClick={close}>

@@ -4,12 +4,22 @@ import { useEffect, useRef } from "react";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import { PromotionUnlockNote } from "./PromotionUnlockNote";
+import {
+  promoMark,
+  promoMarkComplete,
+  promoMarkCurrent,
+  promoMarks,
+  promoMarkState,
+  shipBarClass,
+  shipCopy,
+  shipFill,
+  shipTrack,
+  shipVariant,
+} from "@/styles/cartChrome";
 
 export function PromotionProgressRail({
-  className = "cart-ship-banner",
   surface = "cart",
 }: {
-  className?: string;
   surface?: string;
 }) {
   const { data } = useApplicablePromotions();
@@ -40,22 +50,27 @@ export function PromotionProgressRail({
     }
   }, [progress, data?.promotions.context.zoneCode, surface]);
 
-  if (!progress) return <PromotionUnlockNote className={className} />;
+  if (!progress) return <PromotionUnlockNote surface={surface} />;
   if (!progress.primary && !progress.unlockedSummary && !progress.unlocked.length && !progress.secondary.length && !progress.marks.length) {
     return null;
   }
 
   const meter = progress.primary && progress.primaryProgress != null ? progress.primaryProgress : null;
   const methodGap = /delivery method|طريقة توصيل/i.test(progress.primary?.message ?? "");
+  const variant = shipVariant(surface);
+  const markClass = (state: string) =>
+    [promoMark, state === "complete" ? promoMarkComplete : "", state === "current" ? promoMarkCurrent : ""]
+      .filter(Boolean)
+      .join(" ");
 
   return (
-    <div className={className} aria-live="polite">
-      {progress.primary ? <p className="promo-rail__lead">{progress.primary.message}</p> : null}
+    <div className={shipBarClass(variant)} aria-live="polite">
+      {progress.primary ? <p className={shipCopy[variant]}>{progress.primary.message}</p> : null}
       {progress.marks.length > 0 ? (
-        <ol className="promo-marks">
+        <ol className={promoMarks}>
           {progress.marks.map((mark) => (
-            <li className={`promo-marks__step is-${mark.state}`} key={`${mark.label}-${mark.detail}`}>
-              <span className="promo-marks__state">{mark.detail}</span>
+            <li className={markClass(mark.state)} key={`${mark.label}-${mark.detail}`}>
+              <span className={promoMarkState}>{mark.detail}</span>
               <strong>{mark.label}</strong>
             </li>
           ))}
@@ -63,22 +78,23 @@ export function PromotionProgressRail({
       ) : null}
       {meter != null && !methodGap ? (
         <div
-          className="cart-ship-track"
+          className={shipTrack[variant]}
+          data-ship-track=""
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(meter)}
           aria-valuetext={progress.primary?.message}
         >
-          <div className="cart-ship-fill" style={{ width: `${Math.round(meter)}%` }} />
+          <div className={shipFill[variant]} style={{ width: `${Math.round(meter)}%` }} />
         </div>
       ) : null}
-      {progress.unlockedSummary ? <p className="promo-rail__unlocked">{progress.unlockedSummary}</p> : null}
+      {progress.unlockedSummary ? <p className={shipCopy[variant]}>{progress.unlockedSummary}</p> : null}
       {progress.unlocked.map((line) => (
-        <p className="promo-rail__unlocked" key={`${line.campaignCode}:${line.message}`}>{line.message}</p>
+        <p className={shipCopy[variant]} key={`${line.campaignCode}:${line.message}`}>{line.message}</p>
       ))}
       {progress.secondary.map((line) => (
-        <p className={line.mechanic === "CONFLICT" ? "promo-conflict" : "promo-rail__aside"} key={`${line.mechanic}:${line.message}`}>
+        <p className={shipCopy[variant]} key={`${line.mechanic}:${line.message}`}>
           {line.message}
         </p>
       ))}

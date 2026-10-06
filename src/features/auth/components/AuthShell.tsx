@@ -21,7 +21,7 @@ export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
             <div className="flex flex-col items-center gap-2 text-center">
               <Link className="relative block h-16 w-[150px] shrink-0" aria-label="Swiss Arabian home" href="/">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/sa-logo-clear.png" alt="" className="site-logo h-full w-full object-contain" />
+                <img src="/assets/sa-logo-clear.png" alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
               </Link>
             </div>
             <div className="mt-9 flex flex-col items-center gap-2 text-center">

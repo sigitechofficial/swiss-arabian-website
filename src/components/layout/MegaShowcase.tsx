@@ -9,8 +9,23 @@ import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { ChromeMega } from "@/features/home/constants/chromeNav";
 import { MEGA_PRODUCTS, type MegaProduct } from "@/features/home/constants/megaProducts";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
-import { useMarket } from "@/providers/MarketProvider";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import {
+  megaProd,
+  megaProdMedia,
+  megaProdMediaLoading,
+  megaProdMeta,
+  megaProdName,
+  megaProdPrice,
+  megaProducts,
+  megaPromo,
+  megaPromoCopy,
+  megaPromoCta,
+  megaPromoMedia,
+  megaPromoMediaCover,
+  megaSkel,
+  megaSkelName,
+} from "@/styles/siteChrome";
 
 const MEGA_PRODUCT_COUNT = 4;
 
@@ -27,14 +42,14 @@ function collectionSlug(href: string): string | null {
 
 function ProductTile({ product }: { product: MegaProduct }) {
   return (
-    <Link className="mega__prod" href={`/products/${product.slug}`}>
-      <span className="mega__prod-media">
+    <Link className={megaProd} href={`/products/${product.slug}`}>
+      <span className={megaProdMedia}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={product.image} alt={product.name} loading="lazy" />
       </span>
-      <span className="mega__prod-name">{product.name}</span>
-      {product.notes ? <span className="mega__prod-meta">{product.notes}</span> : null}
-      <span className="mega__prod-price">{formatMoney(product.price, product.currency)}</span>
+      <span className={megaProdName}>{product.name}</span>
+      {product.notes ? <span className={megaProdMeta}>{product.notes}</span> : null}
+      <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
     </Link>
   );
 }
@@ -52,23 +67,31 @@ export function MegaShowcase({
   item: ChromeMega;
   itemVariants: Variants;
 }) {
-  const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const market = useSelectedCatalogMarket();
+  const zoneCode = market?.zoneCode ?? "";
   const slug = collectionSlug(item.href);
 
   const liveQuery = useQuery({
-    queryKey: catalogKeys.collectionProducts(slug ?? "", zoneCode, 1, 8, undefined, {
-      page: 1,
-      limit: 8,
-      sort: "bestselling",
-    }),
-    queryFn: () =>
-      fetchCollectionProducts(slug as string, zoneCode, {
+    queryKey: [
+      ...catalogKeys.collectionProducts(slug ?? "", zoneCode, 1, 8, undefined, {
         page: 1,
         limit: 8,
         sort: "bestselling",
       }),
-    enabled: Boolean(slug),
+      market?.salesChannelCode ?? "",
+    ],
+    queryFn: () =>
+      fetchCollectionProducts(
+        slug as string,
+        zoneCode,
+        {
+          page: 1,
+          limit: 8,
+          sort: "bestselling",
+        },
+        market,
+      ),
+    enabled: Boolean(slug && market),
     staleTime: 5 * 60_000,
   });
 
@@ -102,12 +125,12 @@ export function MegaShowcase({
 
   if (waiting) {
     return (
-      <motion.div className="mega__products" variants={itemVariants} aria-busy="true">
+      <motion.div className={megaProducts} variants={itemVariants} aria-busy="true">
         {Array.from({ length: MEGA_PRODUCT_COUNT }, (_, i) => (
-          <span className="mega__prod mega__prod--loading" key={i} aria-hidden="true">
-            <span className="mega__prod-media" />
-            <span className="mega__prod-skel mega__prod-skel--name" />
-            <span className="mega__prod-skel" />
+          <span className={megaProd} key={i} aria-hidden="true">
+            <span className={megaProdMediaLoading} />
+            <span className={`${megaSkel} ${megaSkelName}`} />
+            <span className={megaSkel} />
           </span>
         ))}
       </motion.div>
@@ -121,7 +144,7 @@ export function MegaShowcase({
 
   if (products.length) {
     return (
-      <motion.div className="mega__products" variants={itemVariants} role="list">
+      <motion.div className={megaProducts} variants={itemVariants} role="list">
         {products.slice(0, MEGA_PRODUCT_COUNT).map((product) => (
           <ProductTile key={product.id} product={product} />
         ))}
@@ -130,17 +153,13 @@ export function MegaShowcase({
   }
 
   return (
-    <motion.div className="mega__promo" variants={itemVariants}>
-      <div
-        className={
-          item.promo.cover ? "mega__promo-media mega__promo-media--cover" : "mega__promo-media"
-        }
-      >
+    <motion.div className={megaPromo} variants={itemVariants}>
+      <div className={item.promo.cover ? `${megaPromoMedia} ${megaPromoMediaCover}` : megaPromoMedia}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.promo.image} alt="" loading="lazy" />
       </div>
-      <p className="mega__promo-copy">{item.promo.copy}</p>
-      <Link className="pill pill--solid mega__promo-cta" href={item.promo.href}>
+      <p className={megaPromoCopy}>{item.promo.copy}</p>
+      <Link className={megaPromoCta} href={item.promo.href}>
         {item.promo.cta}
       </Link>
     </motion.div>

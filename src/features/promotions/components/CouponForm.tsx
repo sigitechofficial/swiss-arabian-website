@@ -14,6 +14,17 @@ import {
   peekPendingCoupon,
   takePendingCoupon,
 } from "../utils/pendingCoupon";
+import {
+  couponApplied,
+  couponAppliedAmt,
+  couponAppliedCode,
+  couponAppliedName,
+  couponAppliedRemove,
+  couponBox,
+  couponError,
+  couponForm,
+  couponLabel,
+} from "@/styles/cartChrome";
 
 export function CouponForm() {
   const pathname = usePathname();
@@ -80,25 +91,25 @@ export function CouponForm() {
   const appliedView = applied ? appliedPromotionView(applied, promotions) : null;
 
   return (
-    <div className="coupon-box">
-      <p className="coupon-box__label">Promo code</p>
+    <div className={couponBox} data-coupon="">
+      <p className={couponLabel}>Promo code</p>
       {applied?.code ? (
-        <div className="coupon-applied">
+        <div className={couponApplied}>
           <div>
-            <p className="coupon-applied__name">{appliedView?.label || applied.code}</p>
-            <p className="coupon-applied__code">{applied.code}</p>
+            <p className={couponAppliedName}>{appliedView?.label || applied.code}</p>
+            <p className={couponAppliedCode}>{applied.code}</p>
           </div>
           {appliedView?.amount != null && appliedView.amount > 0 ? (
-            <span className="coupon-applied__amt" dir="ltr">
+            <span className={couponAppliedAmt} dir="ltr">
               {applied && isFixedAmountBxgy(applied) ? "Applied · " : "−"}
               {formatMoney(appliedView.amount, currency)}
             </span>
           ) : appliedView?.status ? (
-            <span className="coupon-applied__amt">{appliedView.status}</span>
+            <span className={couponAppliedAmt}>{appliedView.status}</span>
           ) : null}
           <button
             type="button"
-            className="coupon-applied__remove"
+            className={couponAppliedRemove}
             onClick={() => void onRemove()}
             disabled={busy}
           >
@@ -106,14 +117,13 @@ export function CouponForm() {
           </button>
         </div>
       ) : null}
-      <form className="coupon-form" onSubmit={(e) => void onApply(e)}>
+      <form className={couponForm} onSubmit={(e) => void onApply(e)}>
         <input
-          className={fieldError ? "is-err" : undefined}
           name="coupon"
           autoComplete="off"
           spellCheck={false}
           aria-label="Promo code"
-          aria-invalid={Boolean(fieldError)}
+          aria-invalid={fieldError ? true : undefined}
           placeholder={applied?.code ? "Replace with another code" : "Enter code"}
           value={code}
           onChange={(e) => {
@@ -127,7 +137,7 @@ export function CouponForm() {
         </button>
       </form>
       {fieldError ? (
-        <p className="coupon-box__error" role="alert">
+        <p className={couponError} role="alert">
           {fieldError}
         </p>
       ) : null}

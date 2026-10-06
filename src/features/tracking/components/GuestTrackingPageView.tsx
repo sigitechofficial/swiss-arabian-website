@@ -17,6 +17,19 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { formatOrderDate, orderStatusDisplay } from "@/features/orders/utils/orderStatus";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
+import {
+  cbox,
+  cboxBody,
+  checkoutCta,
+  checkoutCtaInline,
+  checkoutDoneActions,
+  checkoutError,
+  checkoutLegal,
+  checkoutLink,
+  checkoutNote,
+  fldFull,
+} from "@/styles/checkoutChrome";
 import { getOrderTracking, getOrderTrackingTimeline } from "../api/orderTracking.service";
 import { OrderTrackingPanel } from "./OrderTrackingPanel";
 
@@ -109,10 +122,10 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
     return (
       <CheckoutStateShell current="Track order">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 pb-16">
-          <header className="checkout-head text-center">
-            <p className="collection-head__eyebrow">Order tracking</p>
-            <h1 className="collection-head__title font-mono">{summary.orderNumber}</h1>
-            <p className="checkout-note">
+          <header className="text-center">
+            <p className={checkoutEyebrow}>Order tracking</p>
+            <h1 className={pageTitle}>{summary.orderNumber}</h1>
+            <p className={checkoutNote}>
               Placed on {formatOrderDate(summary.createdAt, { long: true })} ·{" "}
               {summary.itemCount} {summary.itemCount === 1 ? "item" : "items"} ·{" "}
               {formatMoney(Number(summary.total), summary.currency)}
@@ -124,22 +137,22 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
 
           <OrderTrackingPanel summary={summary} timeline={timelineQuery.data} />
 
-          <div className="checkout-done__actions pt-4">
+          <div className={`${checkoutDoneActions} pt-4`}>
             {accountQuery.data && !summary.isGuestOrder ? (
               <Link
-                className="checkout-cta checkout-cta--inline"
+                className={`${checkoutCta} ${checkoutCtaInline}`}
                 href={`/account/orders/${encodeURIComponent(summary.orderId)}`}
               >
                 <span>View full order</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
             ) : (
-              <Link className="checkout-cta checkout-cta--inline" href="/products">
+              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
                 <span>Continue shopping</span>
-                <b className="arrow" aria-hidden="true">↗</b>
+                <b aria-hidden="true">↗</b>
               </Link>
             )}
-            <Link className="checkout-link" href="/">
+            <Link className={checkoutLink} href="/">
               Return home
             </Link>
           </div>
@@ -154,30 +167,30 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
   return (
     <CheckoutStateShell current="Track order">
       <div className="mx-auto w-full max-w-md pb-16">
-        <header className="checkout-head text-center">
-          <p className="collection-head__eyebrow">Order tracking</p>
-          <h1 className="collection-head__title">Track your order</h1>
-          <p className="checkout-note">
+        <header className="text-center">
+          <p className={checkoutEyebrow}>Order tracking</p>
+          <h1 className={pageTitle}>Track your order</h1>
+          <p className={checkoutNote}>
             Enter the tracking token from your confirmation email for order{" "}
             <span className="font-mono text-sa-primary">{orderNumber}</span>.
           </p>
         </header>
 
         {notInAccount && !token ? (
-          <p className="checkout-note mb-4 text-center">
+          <p className={`${checkoutNote} mb-4 text-center`}>
             This order isn’t in your account. If it was placed as a guest, use its tracking token below.
           </p>
         ) : null}
 
-        <form className="cbox" onSubmit={lookup} noValidate>
-          <div className="cbox__body">
+        <form className={cbox} onSubmit={lookup} noValidate>
+          <div className={cboxBody}>
             {tokenRejected || formError ? (
-              <p className="checkout-error" role="alert">
+              <p className={checkoutError} role="alert">
                 {formError ??
                   "We couldn’t find an order with that number and token. Use the tracking token from your confirmation email — not the order number."}
               </p>
             ) : null}
-            <label className="fld fld--full">
+            <label className={fldFull}>
               <span>Tracking token</span>
               <input
                 type="text"
@@ -189,14 +202,14 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
                 onChange={(e) => setTokenInput(e.target.value)}
               />
             </label>
-            <button type="submit" className="checkout-cta">
+            <button type="submit" className={checkoutCta}>
               <span>Track order</span>
-              <b className="arrow" aria-hidden="true">↗</b>
+              <b aria-hidden="true">↗</b>
             </button>
           </div>
         </form>
 
-        <p className="checkout-legal mt-4">
+        <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
               Signed in? All your orders are in <Link href="/account/orders">Purchase History</Link>.

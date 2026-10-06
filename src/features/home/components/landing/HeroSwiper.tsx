@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { HERO_SLIDES } from "../../constants/heroSlides";
+import { heroArrow, heroArrowNext, heroArrowPrev, heroImg, heroSlide, heroSwiper } from "@/styles/landingChrome";
 
 const AUTOPLAY_MS = 5500;
 
@@ -45,7 +46,7 @@ export function HeroSwiper() {
 
   return (
     <div
-      className="hero-swiper"
+      className={heroSwiper}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -54,7 +55,7 @@ export function HeroSwiper() {
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={HERO_SLIDES[index].id}
-          className="hero-swiper__slide"
+          className={heroSlide}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -63,7 +64,7 @@ export function HeroSwiper() {
           <img
             src={HERO_SLIDES[index].image}
             alt={HERO_SLIDES[index].alt}
-            className="hero-swiper__img"
+            className={heroImg}
             style={{ objectPosition: HERO_SLIDES[index].objectPosition }}
             draggable={false}
           />
@@ -72,7 +73,7 @@ export function HeroSwiper() {
 
       <button
         type="button"
-        className="hero-swiper__arrow hero-swiper__arrow--prev"
+        className={`${heroArrow} ${heroArrowPrev}`}
         aria-label="Previous slide"
         onClick={goPrev}
       >
@@ -82,7 +83,7 @@ export function HeroSwiper() {
       </button>
       <button
         type="button"
-        className="hero-swiper__arrow hero-swiper__arrow--next"
+        className={`${heroArrow} ${heroArrowNext}`}
         aria-label="Next slide"
         onClick={goNext}
       >
