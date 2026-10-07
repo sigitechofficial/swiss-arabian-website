@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { PRIMARY_NAV, type ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { mega, megaCols, megaHeading, megaInner, megaList, primaryNav, primaryNavCaret, primaryNavItem, primaryNavLink, primaryNavLinkAccent, primaryNavList, visuallyHidden } from "@/styles/siteChrome";
@@ -41,13 +41,13 @@ export function NavbarPrimary({
           if (item.type === "link") {
             return (
               <li key={item.label} onMouseEnter={() => chrome.setOpenMega(null)}>
-                <Link
+                <LocaleLink
                   className={item.accent ? `${primaryNavLink} ${primaryNavLinkAccent}` : primaryNavLink}
                   data-primary-link
                   href={item.href}
                 >
                   {item.label}
-                </Link>
+                </LocaleLink>
               </li>
             );
           }
@@ -61,14 +61,14 @@ export function NavbarPrimary({
               data-open={isOpen ? "" : undefined}
               onMouseEnter={() => chrome.setOpenMega(item.id)}
             >
-              <Link
+              <LocaleLink
                 className={primaryNavLink}
                 data-primary-link
                 href={item.href}
                 onClick={() => chrome.setOpenMega(null)}
               >
                 {item.label}
-              </Link>
+              </LocaleLink>
               <button
                 className={primaryNavCaret}
                 data-primary-caret
@@ -103,7 +103,7 @@ export function NavbarPrimary({
                             <ul className={megaList} role="list">
                               {group.links.map((link) => (
                                 <li key={link.label}>
-                                  <Link href={link.href}>{link.label}</Link>
+                                  <LocaleLink href={link.href}>{link.label}</LocaleLink>
                                 </li>
                               ))}
                             </ul>

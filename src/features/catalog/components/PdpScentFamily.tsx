@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { bottle } from "@/styles/landingChrome";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts } from "../api/catalog.service";
@@ -56,7 +56,7 @@ export function PdpScentFamily({
           const active = product.id === current.id;
           return (
             <li className="w-[92px] shrink-0" key={product.id}>
-              <Link
+              <LocaleLink
                 className="grid gap-1.5 text-xs leading-snug text-inherit no-underline aria-[current=true]:[&>:first-child]:border-2 aria-[current=true]:[&>:first-child]:border-copper"
                 href={`/products/${product.slug}`}
                 aria-current={active ? "true" : undefined}
@@ -67,7 +67,7 @@ export function PdpScentFamily({
                   <span className={`${bottle} aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white`} aria-hidden="true" />
                 )}
                 <span>{product.title}</span>
-              </Link>
+              </LocaleLink>
             </li>
           );
         })}

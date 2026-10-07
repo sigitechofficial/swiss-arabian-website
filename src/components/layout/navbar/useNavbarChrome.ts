@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -23,6 +24,8 @@ export function useNavbarChrome() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+  const languageId = localeFromPathname(pathname || "/");
 
   useEffect(() => {
     setOpenMega(null);
@@ -30,7 +33,9 @@ export function useNavbarChrome() {
     setMobileGroup(null);
   }, [pathname]);
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
-  const [languageId, setLanguageId] = useState<(typeof TOPBAR_LANGUAGES)[number]["id"]>("en");
+  const setLanguageId = (id: (typeof TOPBAR_LANGUAGES)[number]["id"]) => {
+    router.push(withLocalePrefix(pathname || "/", id));
+  };
   const { marketId, setMarketId, regionOptions } = useMarket();
   const regionId =
     marketId ||

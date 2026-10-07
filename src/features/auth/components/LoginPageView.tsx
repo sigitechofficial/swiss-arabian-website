@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -213,12 +213,12 @@ export function LoginPageView() {
               />
               <span>Remember me</span>
             </label>
-            <Link
+            <LocaleLink
               className="shrink-0 text-[12.5px] font-normal text-sa-primary underline underline-offset-2 hover:text-terra"
               href="/forgot-password"
             >
               Forgot password?
-            </Link>
+            </LocaleLink>
           </div>
           <div className="pt-5">
             <AuthSubmitButton disabled={form.formState.isSubmitting}>
@@ -304,9 +304,9 @@ function AuthFooterLinks() {
     <>
       <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
         New to Swiss Arabian?{" "}
-        <Link className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/register">
+        <LocaleLink className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/register">
           Create an account
-        </Link>
+        </LocaleLink>
       </p>
       <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
         By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.

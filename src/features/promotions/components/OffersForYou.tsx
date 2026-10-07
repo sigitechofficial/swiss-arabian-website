@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useAddToCart } from "@/features/cart";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
@@ -331,9 +331,9 @@ function OfferRow({
             </div>
           ) : null}
           {offer.action && "href" in offer.action ? (
-            <Link className="mt-2 inline-flex min-h-11 items-center text-[0.78rem] font-bold tracking-[0.06em] text-[#8A4332] uppercase no-underline" href={offer.action.href}>
+            <LocaleLink className="mt-2 inline-flex min-h-11 items-center text-[0.78rem] font-bold tracking-[0.06em] text-[#8A4332] uppercase no-underline" href={offer.action.href}>
               {offer.action.label}
-            </Link>
+            </LocaleLink>
           ) : null}
           {offer.action && "copy" in offer.action ? (
             <button

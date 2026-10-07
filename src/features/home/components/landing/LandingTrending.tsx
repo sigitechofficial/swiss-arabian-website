@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type CSSProperties } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
@@ -62,9 +62,9 @@ export function LandingTrending() {
             <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
               Trending Now
             </h2>
-            <Link className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`} href="/collections/trending">
+            <LocaleLink className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`} href="/collections/trending">
               View all
-            </Link>
+            </LocaleLink>
           </div>
         </header>
         <ul
@@ -94,7 +94,7 @@ export function LandingTrending() {
                 {/* Real anchor (not a ::after pseudo-element) stretched over
                     the whole card — sits below the Add-to-bag button so
                     that stays usable; the single focusable link here. */}
-                <Link
+                <LocaleLink
                   className={cardLink}
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
@@ -118,7 +118,7 @@ export function LandingTrending() {
                         : trendMedia
                   }
                 >
-                  <Link
+                  <LocaleLink
                     className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
                     href={`/products/${product.slug}`}
                     tabIndex={-1}
@@ -131,7 +131,7 @@ export function LandingTrending() {
                     ) : (
                       <span className={bottle} aria-hidden="true" />
                     )}
-                  </Link>
+                  </LocaleLink>
                 </div>
                 {/* Its own slot (sibling of the media box, not nested
                     inside it) — the media box is `isolation: isolate` so

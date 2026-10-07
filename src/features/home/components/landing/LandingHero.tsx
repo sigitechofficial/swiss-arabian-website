@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { pageContainer } from "@/styles/siteChrome";
 import {
   hero,
@@ -31,9 +31,9 @@ export function LandingHero() {
           power and dynamism of the West — captured in every bottle.
         </p>
         <div className={heroCta}>
-          <Link className={heroBtnSolid} href="/products">
+          <LocaleLink className={heroBtnSolid} href="/products">
             Shop the collection
-          </Link>
+          </LocaleLink>
           <a className={heroBtnGhost} href="#story">
             Discover our story
           </a>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { Minus, Plus, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -209,9 +209,9 @@ export function CartSideSheet() {
             <div className={drawerEmpty}>
               <p>Your bag is empty.</p>
               <EmptyBagRecovery surface="empty-cart" />
-              <Link href="/products" onClick={() => setCartOpen(false)}>
+              <LocaleLink href="/products" onClick={() => setCartOpen(false)}>
                 Shop fragrances
-              </Link>
+              </LocaleLink>
             </div>
           )}
           <div className={drawerItems}>
@@ -349,7 +349,7 @@ export function CartSideSheet() {
           </div>
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}
-          <Link
+          <LocaleLink
             className={drawerCheckout}
             href="/checkout"
             aria-disabled={lines.length === 0 || syncing}
@@ -362,10 +362,10 @@ export function CartSideSheet() {
             }}
           >
             {syncing ? "Updating bag…" : "Checkout"}
-          </Link>
-          <Link className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
+          </LocaleLink>
+          <LocaleLink className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
             View bag
-          </Link>
+          </LocaleLink>
         </footer>
       </div>
     </SideSheet>

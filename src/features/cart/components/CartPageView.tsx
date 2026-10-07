@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -179,7 +179,7 @@ export function CartPageView() {
           <nav className={cartCrumbs} aria-label="Breadcrumb">
             <ol className={cartCrumbsList} role="list">
               <li>
-                <Link href="/">Home</Link>
+                <LocaleLink href="/">Home</LocaleLink>
               </li>
               <li aria-current="page">Bag</li>
             </ol>
@@ -219,16 +219,16 @@ export function CartPageView() {
 
                 {lines.map((line) => (
                   <article className={cline} key={line.cartItemId ?? line.variantId}>
-                    <Link className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
+                    <LocaleLink className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
                       {line.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={line.imageUrl} alt="" />
                       ) : null}
-                    </Link>
+                    </LocaleLink>
                     <div className={clineBody}>
                       <div className={clineRow}>
                         <h3>
-                          <Link href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</Link>
+                          <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
                         </h3>
                         <PromoLinePrice className={clinePrice} snapshot={promotions} line={line} />
                       </div>
@@ -348,9 +348,9 @@ export function CartPageView() {
                     ↗
                   </span>
                 </button>
-                <Link className={cartContinue} href="/products">
+                <LocaleLink className={cartContinue} href="/products">
                   Continue shopping
-                </Link>
+                </LocaleLink>
                 <p className={cartHint}>30-day fragrance guarantee. Returns are on us.</p>
                 <div className={cartBadges}>
                   <span>SSL Secured</span>
@@ -363,12 +363,12 @@ export function CartPageView() {
             <section className={cartEmptyState}>
               <p className={cartEmptyNote}>Your bag is empty.</p>
               <EmptyBagRecovery surface="empty-cart" />
-              <Link className={cartCtaInline} href="/products">
+              <LocaleLink className={cartCtaInline} href="/products">
                 <span>Explore the collection</span>
                 <b aria-hidden="true">
                   ↗
                 </b>
-              </Link>
+              </LocaleLink>
             </section>
           )}
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { OutOfStockAlternatives } from "@/features/promotions/components/OutOfStockAlternatives";
 import { buySlot, pdpAdd, pdpBuy, pdpBuyDocked, pdpQty, pdpQtyBtn, pdpQtyValue, pdpStatus, pdpWish } from "@/styles/pdpChrome";
 import type { CartLine } from "@/stores/useCartStore";
@@ -16,6 +17,7 @@ type PdpBuyBarProps = {
 };
 
 export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProps) {
+  const copy = useShopCopy();
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
   const [status, setStatus] = useState("");
@@ -154,7 +156,7 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
                 setStatus(`Added ${product.title} to your bag.`);
               }}
             >
-              {product.price != null ? `Add to bag · ${formatMoney(product.price, product.currency)}` : "Add to bag"}
+              {product.price != null ? `${copy("addToBag")} · ${formatMoney(product.price, product.currency)}` : copy("addToBag")}
             </button>
           )}
 

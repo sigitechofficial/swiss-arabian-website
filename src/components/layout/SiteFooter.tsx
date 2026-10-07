@@ -1,6 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { chromeNavLinks, useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import type { FormEvent } from "react";
 import {
   footerColLinks,
@@ -27,30 +30,21 @@ import {
   visuallyHidden,
 } from "@/styles/siteChrome";
 
-const SHOP_LINKS = [
-  { label: "Perfumes", href: "/collections/perfume" },
-  { label: "Hair Mist", href: "/collections/hair-mist" },
-  { label: "Perfume Oils", href: "/collections/concentrated-perfume-oils" },
-  { label: "Incense", href: "/collections/incense" },
-  { label: "Home Fragrance", href: "/collections/home-fragrance" },
-  { label: "Traditional Items", href: "/collections/traditional-items" },
-] as const;
-
 const SERVICE_LINKS = [
-  { label: "Exchange & Return", href: "/faq" },
-  { label: "Shipping & Delivery", href: "/faq" },
-  { label: "Refund Policy", href: "/faq" },
-  { label: "Terms & Conditions", href: "/faq" },
-  { label: "Privacy Policy", href: "/faq" },
-  { label: "Contact Us", href: "/faq" },
+  { key: "exchangeReturn", href: "/faq" },
+  { key: "shippingDelivery", href: "/faq" },
+  { key: "refundPolicy", href: "/faq" },
+  { key: "terms", href: "/faq" },
+  { key: "privacy", href: "/faq" },
+  { key: "contact", href: "/faq" },
 ] as const;
 
 const MORE_LINKS = [
-  { label: "About Us", href: "/our-story" },
-  { label: "FAQ's", href: "/faq" },
-  { label: "Blogs", href: "/blog" },
-  { label: "Join Our Team", href: "/our-story" },
-  { label: "Become a Sales Partner", href: "/our-story" },
+  { key: "about", href: "/our-story" },
+  { key: "faqs", href: "/faq" },
+  { key: "blogs", href: "/blog" },
+  { key: "joinTeam", href: "/our-story" },
+  { key: "salesPartner", href: "/our-story" },
 ] as const;
 
 function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
@@ -58,11 +52,15 @@ function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
 }
 
 export function SiteFooter() {
+  const copy = useShopCopy();
+  const { marketId } = useMarket();
+  const { chromeItems, isLoading } = useNavigation(marketId || undefined);
+  const shopLinks = chromeNavLinks(chromeItems);
   return (
     <footer className={siteFooter}>
       <div className={pageContainer}>
         <form className={footerNewsletter} onSubmit={onNewsletterSubmit}>
-          <h2 className={footerNewsletterTitle}>Subscribe to our newsletter</h2>
+          <h2 className={footerNewsletterTitle}>{copy("newsletter")}</h2>
           <div className={footerNewsletterRow}>
             <label className={visuallyHidden} htmlFor="footer-email">
               Email address
@@ -73,37 +71,46 @@ export function SiteFooter() {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="Email address"
+              placeholder={copy("email")}
               required
             />
             <button className={footerNewsletterSubmit} type="submit">
-              Sign up
+              {copy("signUp")}
             </button>
           </div>
         </form>
 
         <div className={footerCols}>
-          <section aria-labelledby="fc-shop">
-            <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-shop">
-              Shop
-            </h2>
-            <ul className={footerColLinks} role="list">
-              {SHOP_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href}>{link.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {isLoading && shopLinks.length === 0 ? (
+            <section aria-labelledby="fc-shop" aria-busy="true">
+              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-shop">
+                {copy("shop")}
+              </h2>
+              <span className="mt-3 block h-24 w-28 animate-pulse bg-[var(--ink)]/10" />
+            </section>
+          ) : shopLinks.length ? (
+            <section aria-labelledby="fc-shop">
+              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-shop">
+                {copy("shop")}
+              </h2>
+              <ul className={footerColLinks} role="list">
+                {shopLinks.map((link) => (
+                  <li key={link.href}>
+                    <LocaleLink href={link.href}>{link.label}</LocaleLink>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section aria-labelledby="fc-services">
             <h2 className={footerColTitle} id="fc-services">
-              Services
+              {copy("services")}
             </h2>
             <ul className={footerColLinks} role="list">
               {SERVICE_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href}>{link.label}</Link>
+                <li key={link.key}>
+                  <LocaleLink href={link.href}>{copy(link.key)}</LocaleLink>
                 </li>
               ))}
             </ul>
@@ -111,12 +118,12 @@ export function SiteFooter() {
 
           <section aria-labelledby="fc-more">
             <h2 className={footerColTitle} id="fc-more">
-              More Links
+              {copy("moreLinks")}
             </h2>
             <ul className={footerColLinks} role="list">
               {MORE_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href}>{link.label}</Link>
+                <li key={link.key}>
+                  <LocaleLink href={link.href}>{copy(link.key)}</LocaleLink>
                 </li>
               ))}
             </ul>
@@ -124,7 +131,7 @@ export function SiteFooter() {
 
           <section aria-labelledby="fc-follow">
             <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-follow">
-              Follow us
+              {copy("followUs")}
             </h2>
             <ul className={footerSocial} role="list">
               <li>

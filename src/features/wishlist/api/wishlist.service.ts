@@ -1,8 +1,5 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
-import {
-  DEFAULT_ZONE_CODE,
-  storefrontContextQuery,
-} from "@/lib/storefront/context";
+import { storefrontContextQuery } from "@/lib/storefront/context";
 import type {
   StorefrontWishlistAddResult,
   StorefrontWishlistClearResult,
@@ -17,7 +14,7 @@ import {
 
 function wishlistContextQuery(zoneCode?: string | null): string {
   return storefrontContextQuery({
-    zoneCode: zoneCode?.trim() || DEFAULT_ZONE_CODE,
+    zoneCode: zoneCode?.trim() || undefined,
   });
 }
 

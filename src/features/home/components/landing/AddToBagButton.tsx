@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { useAddToCart } from "@/features/cart";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { cardAddButton, cardAddCheck, cardAddPlus } from "@/styles/productCard";
 
 export function AddToBagButton({
@@ -12,6 +13,7 @@ export function AddToBagButton({
   product: ProductSummary;
   variant?: "product" | "trend";
 }) {
+  const copy = useShopCopy();
   const { addToCart } = useAddToCart();
   const [pressed, setPressed] = useState(false);
 
@@ -58,7 +60,7 @@ export function AddToBagButton({
       >
         <path d="M4 10.5l4 4 8-9.5" />
       </svg>
-      <span>Add to bag</span>
+      <span>{copy("addToBag")}</span>
     </button>
   );
 }

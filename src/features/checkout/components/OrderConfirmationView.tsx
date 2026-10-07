@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -237,10 +237,10 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           <p className={stateEyebrow}>Order</p>
           <h1 className={collectionTitle}>We couldn’t load this order.</h1>
           <p>It may belong to another session. Your confirmation email has the details.</p>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
             <span>Return home</span>
             <b aria-hidden="true">↗</b>
-          </Link>
+          </LocaleLink>
         </section>
       </CheckoutStateShell>
     );
@@ -341,25 +341,25 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
         <div className={ocActions}>
           {state === "success" ? (
             <>
-              <Link className={checkoutCta} href="/products">
+              <LocaleLink className={checkoutCta} href="/products">
                 <span>Continue shopping</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
               {trackHref ? (
-                <Link className={checkoutCtaGhost} href={trackHref}>
+                <LocaleLink className={checkoutCtaGhost} href={trackHref}>
                   <span>Track order</span>
-                </Link>
+                </LocaleLink>
               ) : null}
             </>
           ) : state === "failed" ? (
             <>
-              <Link className={checkoutCta} href={retryHref}>
+              <LocaleLink className={checkoutCta} href={retryHref}>
                 <span>Retry payment</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
-              <Link className={checkoutCtaGhost} href="/products">
+              </LocaleLink>
+              <LocaleLink className={checkoutCtaGhost} href="/products">
                 <span>Continue shopping</span>
-              </Link>
+              </LocaleLink>
             </>
           ) : (
             <>
@@ -375,16 +375,16 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
                 <b aria-hidden="true">↗</b>
               </button>
-              <Link className={checkoutCtaGhost} href={retryHref}>
+              <LocaleLink className={checkoutCtaGhost} href={retryHref}>
                 <span>Pay now</span>
-              </Link>
+              </LocaleLink>
             </>
           )}
         </div>
         {!isGuest ? (
-          <Link className={`${checkoutLink} mt-4`} href="/account/orders">
+          <LocaleLink className={`${checkoutLink} mt-4`} href="/account/orders">
             View all your orders
-          </Link>
+          </LocaleLink>
         ) : order.orderNumber ? (
           <p className={`${checkoutNote} mt-4`}>Keep your order number — you’ll need it if you contact us about this order.</p>
         ) : null}

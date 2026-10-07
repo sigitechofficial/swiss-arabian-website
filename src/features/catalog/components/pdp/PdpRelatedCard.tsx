@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { bottle } from "@/styles/landingChrome";
@@ -45,10 +45,10 @@ export function PdpRelatedCard({
         hasIngredientsHover ? ({ "--ingredients-bg": `url(${hover})` } as CSSProperties) : undefined
       }
     >
-      <Link className={cardLink} href={`/products/${product.slug}`} aria-label={product.title} />
+      <LocaleLink className={cardLink} href={`/products/${product.slug}`} aria-label={product.title} />
       <ProductCardTags slug={product.slug} tags={product.tags ?? []} collectionSlug={collectionSlug} />
       <div className={hasIngredientsHover ? `${cardMedia} ${cardMediaSwap}` : cardMedia}>
-        <Link
+        <LocaleLink
           className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
           href={`/products/${product.slug}`}
           tabIndex={-1}
@@ -67,7 +67,7 @@ export function PdpRelatedCard({
           ) : (
             <span className={`${bottle} ${cardBottle}`} aria-hidden="true" />
           )}
-        </Link>
+        </LocaleLink>
       </div>
       <div className={cardAddSlot}>
         <AddToBagButton product={product} variant="product" />

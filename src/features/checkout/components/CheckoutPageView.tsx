@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
@@ -295,10 +295,10 @@ export function CheckoutPageView() {
           <nav className={crumbs} aria-label="Breadcrumb">
             <ol className={checkoutCrumbsList} role="list">
               <li>
-                <Link href="/">Home</Link>
+                <LocaleLink href="/">Home</LocaleLink>
               </li>
               <li>
-                <Link href="/cart">Bag</Link>
+                <LocaleLink href="/cart">Bag</LocaleLink>
               </li>
               <li aria-current="page">Checkout</li>
             </ol>
@@ -310,7 +310,7 @@ export function CheckoutPageView() {
             </h1>
             <ol className={checkoutSteps}>
               <li>
-                <Link href="/cart">Bag</Link>
+                <LocaleLink href="/cart">Bag</LocaleLink>
               </li>
               <li aria-hidden="true">·</li>
               <li className={checkoutStepCurrent}>Details &amp; payment</li>
@@ -426,10 +426,10 @@ export function CheckoutPageView() {
               <p className={stateEyebrow}>Can’t check out yet</p>
               <h2 className={doneTitle}>These items can’t be ordered online.</h2>
               <p>Please return to your bag and add them again from the collection.</p>
-              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
                 <span>Back to bag</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
             </section>
           ) : null}
 
@@ -437,10 +437,10 @@ export function CheckoutPageView() {
             <section className={checkoutEmpty} id="checkout-empty">
               <p className={stateEyebrow}>Empty bag</p>
               <h2 className={doneTitle}>Nothing to check out yet.</h2>
-              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
+              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
                 <span>Explore the collection</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
             </section>
           ) : null}
         </div>

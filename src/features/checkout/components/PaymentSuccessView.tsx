@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -65,10 +65,10 @@ export function PaymentSuccessView() {
           <p className={stateEyebrow}>Payment</p>
           <h1 className={collectionTitle}>We couldn’t find your order.</h1>
           <p>If you completed a payment, your confirmation email has the details.</p>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
             <span>Return home</span>
             <b aria-hidden="true">↗</b>
-          </Link>
+          </LocaleLink>
         </section>
       </CheckoutStateShell>
     );
@@ -86,13 +86,13 @@ export function PaymentSuccessView() {
             We’ll email you as soon as it’s confirmed — there’s no need to pay again.
           </p>
           <div className={checkoutDoneActions}>
-            <Link className={`${checkoutCta} ${checkoutCtaInline}`} href={`/order-confirmation/${orderId}?verify=1`}>
+            <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href={`/order-confirmation/${orderId}?verify=1`}>
               <span>Check order status</span>
               <b aria-hidden="true">↗</b>
-            </Link>
-            <Link className={checkoutLink} href="/">
+            </LocaleLink>
+            <LocaleLink className={checkoutLink} href="/">
               Return home
-            </Link>
+            </LocaleLink>
           </div>
         </section>
       </CheckoutStateShell>
@@ -113,13 +113,13 @@ export function PaymentSuccessView() {
             : "We couldn’t process your payment. Your order is saved — you can try again."}
         </p>
         <div className={checkoutDoneActions}>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
             <span>Try again</span>
             <b aria-hidden="true">↗</b>
-          </Link>
-          <Link className={checkoutLink} href="/">
+          </LocaleLink>
+          <LocaleLink className={checkoutLink} href="/">
             Return home
-          </Link>
+          </LocaleLink>
         </div>
       </section>
     </CheckoutStateShell>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { brandLink, brandLinkMinimal, brandWordmark } from "@/styles/siteChrome";
 import { brandWordmarkFont } from "./brandWordmarkFont";
 
@@ -15,7 +15,7 @@ export function NavbarBrand({
 }) {
   if (wordmark) {
     return (
-      <Link
+      <LocaleLink
         className={`${brandLink} ${brandWordmark} ${brandWordmarkFont.className}`}
         data-brand
         data-brand-wordmark
@@ -23,12 +23,12 @@ export function NavbarBrand({
         aria-label="Swiss Arabian home"
       >
         Swiss{"\u00A0"}Arabian
-      </Link>
+      </LocaleLink>
     );
   }
 
   return (
-    <Link
+    <LocaleLink
       className={`${brandLink} ${centered ? brandLinkMinimal : ""}`}
       data-brand
       data-brand-crop={crop ? "" : undefined}
@@ -36,6 +36,6 @@ export function NavbarBrand({
       aria-label="Swiss Arabian home"
     >
       <img src="/assets/sa-logo-clear.png" alt="Swiss Arabian" />
-    </Link>
+    </LocaleLink>
   );
 }

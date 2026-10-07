@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { DiscoveryChrome, DiscoveryOffer, PromotionDiscovery } from "../types/discovery";
 import { badgeForProduct } from "../types/discovery";
@@ -107,7 +107,7 @@ function OfferBody({
           </button>
         ) : null}
         {offer.shopOfferAvailable && offer.shopOfferPath ? (
-          <Link
+          <LocaleLink
             className="border border-current px-3 py-2 text-inherit no-underline"
             href={offer.shopOfferPath}
             onClick={() =>
@@ -122,7 +122,7 @@ function OfferBody({
             }
           >
             {offer.details.ctaLabel || "Choose your pieces"}
-          </Link>
+          </LocaleLink>
         ) : null}
       </div>
     </article>
@@ -166,7 +166,7 @@ function Details({
       ) : null}
       {offer.shopOfferAvailable && offer.shopOfferPath ? (
         <div className="flex flex-wrap gap-2">
-          <Link className="border border-current px-3 py-2 text-inherit no-underline" href={offer.shopOfferPath}>{offer.details.ctaLabel || "Choose your pieces"}</Link>
+          <LocaleLink className="border border-current px-3 py-2 text-inherit no-underline" href={offer.shopOfferPath}>{offer.details.ctaLabel || "Choose your pieces"}</LocaleLink>
         </div>
       ) : null}
     </div>
@@ -520,13 +520,13 @@ export function PdpOffersPanel({
                             </div>
                           ) : null}
                           {canShop ? (
-                            <Link
+                            <LocaleLink
                               className="mt-3 inline-flex rounded-full bg-copper px-3.5 py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-white! no-underline hover:bg-copper-deep"
                               href={offer.shopOfferPath as string}
                               onClick={close}
                             >
                               {offer.details.ctaLabel || (arabic ? "اختَر القطع" : "Choose your pieces")}
-                            </Link>
+                            </LocaleLink>
                           ) : null}
                         </div>
                       ) : null}
@@ -638,8 +638,8 @@ export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
     return <article className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase">{copy}</article>;
   }
   return (
-    <Link className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit no-underline [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase" href={offer.shopOfferPath}>
+    <LocaleLink className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit no-underline [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase" href={offer.shopOfferPath}>
       {copy}
-    </Link>
+    </LocaleLink>
   );
 }

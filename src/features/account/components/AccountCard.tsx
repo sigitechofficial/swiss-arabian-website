@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import type { ReactNode } from "react";
 
 import { toast } from "@/components/ui/Toaster";
@@ -60,8 +60,8 @@ export function AccountCard({
   }
 
   return (
-    <Link href={href} className={CARD_CLASS}>
+    <LocaleLink href={href} className={CARD_CLASS}>
       {inner}
-    </Link>
+    </LocaleLink>
   );
 }

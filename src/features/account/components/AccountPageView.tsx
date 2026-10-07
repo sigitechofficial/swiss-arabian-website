@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { localizeHref } from "@/lib/i18n/localePath";
 import { useQuery } from "@tanstack/react-query";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
@@ -29,6 +30,7 @@ import { AccountSectionHeading } from "./AccountSectionHeading";
 function DashboardContent() {
   const user = useCurrentUser();
   const router = useRouter();
+  const pathname = usePathname() || "/";
   const firstName =
     user?.firstName?.trim() ||
     user?.fullName?.trim().split(/\s+/)[0] ||
@@ -50,7 +52,7 @@ function DashboardContent() {
       toastApiError(error);
     } finally {
       endSession();
-      router.push("/");
+      router.push(localizeHref("/", pathname));
     }
   }
 

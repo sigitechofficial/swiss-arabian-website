@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import {
   story,
   storyBg,
@@ -35,9 +35,9 @@ export function LandingStory() {
           precious beginnings to a house known the world over, that fusion turns
           deep local knowledge into fragrance of universal quality.
         </p>
-        <Link className={storyCta} href="/our-story">
+        <LocaleLink className={storyCta} href="/our-story">
           Read more
-        </Link>
+        </LocaleLink>
       </div>
     </section>
   );

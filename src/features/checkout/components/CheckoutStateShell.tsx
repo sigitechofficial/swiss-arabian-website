@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import type { ReactNode } from "react";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import {
@@ -27,7 +27,7 @@ export function CheckoutStateShell({
           <nav className={crumbs} aria-label="Breadcrumb">
             <ol className={checkoutCrumbsList} role="list">
               <li>
-                <Link href="/">Home</Link>
+                <LocaleLink href="/">Home</LocaleLink>
               </li>
               <li aria-current="page">{current}</li>
             </ol>

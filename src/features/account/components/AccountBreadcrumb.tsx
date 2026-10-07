@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 import { accountContainer } from "../constants/accountLayout";
 
@@ -11,9 +11,9 @@ export function AccountBreadcrumb({ label }: AccountBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className={`${accountContainer} py-[14px]`}>
       <p className="text-[12px] text-sa-secondary">
-        <Link href="/" className="hover:text-sa-primary">
+        <LocaleLink href="/" className="hover:text-sa-primary">
           Home
-        </Link>
+        </LocaleLink>
         <span className="px-1.5" aria-hidden>
           /
         </span>
