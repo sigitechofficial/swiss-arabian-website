@@ -24,19 +24,16 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
   const chrome = useNavbarChrome();
   // Selected country → its own menu (refetches when the country changes).
   const { marketId } = useMarket();
-  const { chromeItems } = useNavigation(marketId || undefined);
+  const { chromeItems, isLoading } = useNavigation(marketId || undefined);
   const boutique = variant === "minimal";
   const navInShell = variant === "inline" || variant === "inline-locale";
+  const designPreview = variant !== "minimal" && variant !== "classic";
 
-  // Menus come from `/storefront/navigation`; the static menu is the fallback
-  // for the first paint and for any API failure, so the header is never bare.
-  // The synthetic "Offers" entry only applies to that fallback — once the CMS
-  // is driving the nav, its own list is the source of truth.
-  const base = chromeItems.length
-    ? chromeItems
-    : boutique
+  const base = designPreview
+    ? boutique
       ? LP5_NAV
-      : PRIMARY_NAV;
+      : PRIMARY_NAV
+    : chromeItems;
 
   const navItems = navInShell
     ? base.filter((item) => !LP2_HIDDEN_MENUS.has(item.label))
@@ -46,6 +43,7 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
     <header
       className={siteHeader}
       data-navbar={variant}
+      aria-busy={!designPreview && isLoading && navItems.length === 0}
       data-home={chrome.pathname === "/" ? "true" : undefined}
       data-over-hero={chrome.pathname === "/" ? "true" : undefined}
       ref={chrome.headerRef}
@@ -56,7 +54,15 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
         hideUtils={variant === "logo-center" || variant === "inline"}
       />
       <NavbarShell chrome={chrome} variant={variant} items={navItems} />
-      {navInShell ? null : <NavbarPrimary chrome={chrome} items={navItems} />}
+      {navInShell ? null : !designPreview && isLoading && navItems.length === 0 ? (
+        <div className="flex gap-6 px-8 py-4" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <span key={index} className="block h-3 w-16 animate-pulse bg-[var(--ink)]/15" />
+          ))}
+        </div>
+      ) : (
+        <NavbarPrimary chrome={chrome} items={navItems} />
+      )}
       <NavbarMobile chrome={chrome} items={navItems} />
     </header>
   );

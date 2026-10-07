@@ -7,7 +7,7 @@ export const cartCrumbs = "pt-[clamp(1.75rem,4.5vh,2.75rem)]";
 const crumbItems =
   "m-0 flex list-none items-center gap-2 p-0 font-normal text-[var(--ink-2,#6b5f53)] [&_a]:text-inherit [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-[var(--dur,0.4s)] [&_a]:ease-[var(--ease,ease)] [&_a:hover]:text-[var(--copper,#8c4435)] [&_li+li]:before:me-2 [&_li+li]:before:text-[var(--line,#d9ccb4)] [&_li+li]:before:content-['/'] [&_li[aria-current=page]]:text-[var(--ink,#241f1b)]";
 
-export const crumbsList = `${crumbItems} text-[0.78rem] [&_li[aria-current=page]]:font-semibold`;
+export const crumbsList = `${crumbItems} text-[0.78rem] [&_li[aria-current=page]]:font-normal [&_li[aria-current=page]]:text-[var(--ink-2,#6b5f53)]`;
 
 export const checkoutCrumbsList = `${crumbItems} text-[0.7rem] [&_li[aria-current=page]]:font-semibold`;
 

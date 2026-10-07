@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { usePathname, useRouter } from "next/navigation";
+import { localizeHref } from "@/lib/i18n/localePath";
 import { useEffect } from "react";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogInfiniteSentinel } from "@/features/catalog/components/CatalogInfiniteSentinel";
@@ -51,6 +52,7 @@ export function SearchPageView({
   sort?: CatalogSearchSort;
 }) {
   const router = useRouter();
+  const pathname = usePathname() || "/";
   const trimmed = query.trim();
   const hasQuery = trimmed.length > 0;
   const tooShortQuery = hasQuery && trimmed.length < SEARCH_MIN_QUERY_LENGTH;
@@ -83,12 +85,12 @@ export function SearchPageView({
         <nav className={crumbs} aria-label="Breadcrumb">
           <ol className={crumbsList} role="list">
             <li>
-              <Link href="/">Home</Link>
+              <LocaleLink href="/">Home</LocaleLink>
             </li>
             {hasQuery ? (
               <>
                 <li>
-                  <Link href="/search">Search</Link>
+                  <LocaleLink href="/search">Search</LocaleLink>
                 </li>
                 <li aria-current="page">“{trimmed}”</li>
               </>
@@ -125,9 +127,9 @@ export function SearchPageView({
             </p>
           </div>
           {hasQuery ? (
-            <Link className="text-[0.68rem] font-semibold tracking-[0.1em] text-[var(--copper,#8c4435)] uppercase underline! underline-offset-[3px]" href="/search">
+            <LocaleLink className="text-[0.68rem] font-semibold tracking-[0.1em] text-[var(--copper,#8c4435)] uppercase underline! underline-offset-[3px]" href="/search">
               Clear
-            </Link>
+            </LocaleLink>
           ) : null}
         </header>
 
@@ -146,10 +148,13 @@ export function SearchPageView({
                 value={sort}
                 onChange={(event) => {
                   router.push(
-                    searchHref({
-                      q: trimmed,
-                      sort: event.target.value as CatalogSearchSort,
-                    }),
+                    localizeHref(
+                      searchHref({
+                        q: trimmed,
+                        sort: event.target.value as CatalogSearchSort,
+                      }),
+                      pathname,
+                    ),
                   );
                 }}
               >
@@ -228,13 +233,13 @@ function SearchDiscover({
         <ul className="mt-5 flex list-none flex-wrap justify-center gap-2 p-0" role="list">
           {SEARCH_IDLE_SHORTCUTS.map((item) => (
             <li key={item.href}>
-              <Link className="inline-flex min-h-9 items-center rounded-full border border-[var(--line,#d9ccb4)] bg-white px-[0.95rem] text-[0.72rem] font-medium tracking-[0.04em] text-[var(--ink,#241f1b)] no-underline hover:border-[var(--copper,#8c4435)] hover:text-[var(--copper,#8c4435)]" href={item.href}>{item.label}</Link>
+              <LocaleLink className="inline-flex min-h-9 items-center rounded-full border border-[var(--line,#d9ccb4)] bg-white px-[0.95rem] text-[0.72rem] font-medium tracking-[0.04em] text-[var(--ink,#241f1b)] no-underline hover:border-[var(--copper,#8c4435)] hover:text-[var(--copper,#8c4435)]" href={item.href}>{item.label}</LocaleLink>
             </li>
           ))}
         </ul>
-        <Link className={`${emptyCta} mt-5`} href="/products">
+        <LocaleLink className={`${emptyCta} mt-5`} href="/products">
           Browse all fragrances
-        </Link>
+        </LocaleLink>
       </div>
 
       {newest.length ? (
@@ -243,7 +248,7 @@ function SearchDiscover({
             <h2 className="m-0 text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ink,#241f1b)] uppercase" id="search-new-in">
               New in
             </h2>
-            <Link className="text-[0.62rem] font-semibold tracking-[0.1em] text-[var(--copper,#8c4435)] uppercase underline! underline-offset-[3px]" href="/collections/new-launches">See all</Link>
+            <LocaleLink className="text-[0.62rem] font-semibold tracking-[0.1em] text-[var(--copper,#8c4435)] uppercase underline! underline-offset-[3px]" href="/collections/new-launches">See all</LocaleLink>
           </div>
           <WishlistStatusScope>
             <ul className={searchProductGrid} role="list">

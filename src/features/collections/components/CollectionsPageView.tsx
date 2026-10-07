@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui";
 import { catalogKeys, fetchCollections } from "@/features/catalog/api/catalog.service";
@@ -22,7 +22,7 @@ export function CollectionsPageView() {
       <h1 className="font-display text-4xl text-sa-primary">Collections</h1>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(data ?? []).map((collection) => (
-          <Link
+          <LocaleLink
             key={collection.slug}
             href={`/collections/${collection.slug}`}
             className="flex h-full flex-col rounded-lg border border-sa-border bg-surface p-6"
@@ -32,7 +32,7 @@ export function CollectionsPageView() {
               <p className="mt-1 text-sm text-sa-secondary">{collection.description}</p>
             ) : null}
             <p className="mt-3 text-sm text-sa-muted">{collection.productCount ?? 0} products</p>
-          </Link>
+          </LocaleLink>
         ))}
       </div>
     </section>

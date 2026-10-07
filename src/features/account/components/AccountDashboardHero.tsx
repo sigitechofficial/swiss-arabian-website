@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 import { accountAssets } from "../constants/accountAssets";
 
@@ -51,12 +51,12 @@ export function AccountDashboardHero({
             Check your level, explore your benefits, and get the most out of
             your subscription.
           </p>
-          <Link
+          <LocaleLink
             href="/account/subscription"
             className="text-[13px] font-medium text-sa-primary hover:text-terra"
           >
             View Subscription &nbsp;→
-          </Link>
+          </LocaleLink>
         </div>
       </div>
     </section>

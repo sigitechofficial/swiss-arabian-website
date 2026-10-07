@@ -1,6 +1,7 @@
 "use client";
 
 import { TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pageContainer, topbar, topbarBoutique, topbarInner, topbarInnerBoutique, topbarSep, topbarSpacer, topbarUtils } from "@/styles/siteChrome";
 import { TopbarMenu } from "../TopbarMenu";
 import { TopbarTicker } from "../TopbarTicker";
@@ -15,6 +16,7 @@ export function NavbarTopbar({
   hideUtils?: boolean;
   boutique?: boolean;
 }) {
+  const copy = useShopCopy();
   const regionOptions =
     chrome.regionOptions.length > 0
       ? chrome.regionOptions
@@ -41,7 +43,7 @@ export function NavbarTopbar({
         {hideUtils ? null : (
           <div className={topbarUtils} data-topbar-utils>
             <TopbarMenu
-              label="Ship to"
+              label={copy("shipTo")}
               value={chrome.regionId}
               options={regionOptions}
               open={chrome.openUtil === "region"}
@@ -50,7 +52,7 @@ export function NavbarTopbar({
             />
             <span className={topbarSep} aria-hidden="true" />
             <TopbarMenu
-              label="Language"
+              label={copy("language")}
               value={chrome.languageId}
               options={languageOptions}
               open={chrome.openUtil === "lang"}

@@ -1,12 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { ProductCatalogView } from "@/features/catalog/components/ProductCatalogView";
-import { catalogKeys, fetchCollectionBySlug } from "@/features/catalog/api/catalog.service";
+import type { CatalogCollection, ProductListResult } from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
 import { metafieldMediaUrl } from "@/features/catalog/utils/collectionMetafields";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 
 /** Slugs the collections API doesn't carry — these read the full catalog. */
 const CATALOG_FALLBACK_SLUGS = new Set(["minis", "bundles"]);
@@ -14,27 +12,24 @@ const CATALOG_FALLBACK_SLUGS = new Set(["minis", "bundles"]);
 export function CollectionDetailPageView({
   slug,
   listingQuery,
+  collection,
+  initialListing,
 }: {
   slug: string;
   listingQuery: CatalogListingQuery;
+  collection: CatalogCollection | null;
+  initialListing?: ProductListResult | null;
 }) {
-  const market = useSelectedCatalogMarket();
-  const zoneCode = market?.zoneCode ?? "";
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
 
-  const { data: collection } = useQuery({
-    queryKey: [...catalogKeys.collection(slug, zoneCode), market?.salesChannelCode ?? ""],
-    queryFn: () => fetchCollectionBySlug(slug, zoneCode, market),
-    enabled: Boolean(market) && !usingFallback,
-  });
-
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage   } = useCatalogPlp(
     {
       kind: "collection",
       slug,
       fallbackToProducts: usingFallback,
     },
     listingQuery,
+    initialListing,
   );
 
   const metafieldImage = metafieldMediaUrl(
@@ -43,11 +38,11 @@ export function CollectionDetailPageView({
   const apiImage = collection?.image?.trim() ? collection.image : null;
   const heroImage = metafieldImage ?? apiImage;
 
-  const banner = heroImage
+  const banner = collection
     ? {
-        image: heroImage,
-        imageAlt: collection?.imageAlt,
-        description: collection?.description,
+        title: collection.name,
+        description: collection.description,
+        ...(heroImage ? { image: heroImage, imageAlt: collection.imageAlt } : {}),
       }
     : null;
 

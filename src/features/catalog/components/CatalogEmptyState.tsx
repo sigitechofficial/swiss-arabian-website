@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 type CatalogEmptyStateProps = {
   title?: string;
@@ -29,12 +29,12 @@ export function CatalogEmptyState({
       <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-sa-muted">
         {description}
       </p>
-      <Link
+      <LocaleLink
         href="/"
         className="mt-6 inline-flex h-[42px] cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#a25e48]"
       >
         Back to home
-      </Link>
+      </LocaleLink>
     </div>
   );
 }

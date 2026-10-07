@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
@@ -71,7 +71,7 @@ export function AuthVisualPanel() {
           <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-black/30" />
         </div>
 
-        <Link
+        <LocaleLink
           className="relative z-1 block h-14 w-44 xl:h-16 xl:w-52"
           aria-label="Swiss Arabian home"
           href="/"
@@ -82,7 +82,7 @@ export function AuthVisualPanel() {
             alt=""
             className="h-full w-full object-contain object-left [filter:brightness(0)_invert(0.93)_sepia(0.12)]"
           />
-        </Link>
+        </LocaleLink>
 
         <div className="relative z-1 min-h-[11.5rem]">
           <AnimatePresence mode="wait">

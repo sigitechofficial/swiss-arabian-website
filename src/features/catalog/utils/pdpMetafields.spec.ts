@@ -4,6 +4,7 @@ import {
   notesSectionTitle,
   pickPdpMetafields,
   pyramidFromMetafields,
+  pyramidNoteChips,
 } from "./pdpMetafields";
 
 describe("pdpMetafields", () => {
@@ -34,6 +35,27 @@ describe("pdpMetafields", () => {
         filter_by: "x",
       }),
     ).toEqual({ top_note: "Apple" });
+  });
+
+  it("picks one chip from the top, heart, and base notes", () => {
+    expect(
+      pyramidNoteChips({
+        top_note: "Plum, Apple, Cumin",
+        middle_note: "Labdanum, Amber",
+        base_note: "Musk, Vanilla",
+        fragrance_family_text: "Oriental",
+      }),
+    ).toEqual(["Plum", "Labdanum", "Musk"]);
+  });
+
+  it("skips an empty pyramid layer and a repeated note name", () => {
+    expect(
+      pyramidNoteChips({
+        top_note: "Rose",
+        base_note: "Rose, Musk",
+      }),
+    ).toEqual(["Rose", "Musk"]);
+    expect(pyramidNoteChips({})).toEqual([]);
   });
 
   it("splits family chips and defaults the notes heading", () => {

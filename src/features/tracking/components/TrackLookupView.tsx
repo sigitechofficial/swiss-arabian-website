@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
@@ -93,11 +93,11 @@ export function TrackLookupView() {
         <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
-              All your orders are in <Link href="/account/orders">Purchase History</Link>.
+              All your orders are in <LocaleLink href="/account/orders">Purchase History</LocaleLink>.
             </>
           ) : (
             <>
-              Have an account? <Link href="/login?returnTo=%2Faccount%2Forders">Sign in</Link> to see all your
+              Have an account? <LocaleLink href="/login?returnTo=%2Faccount%2Forders">Sign in</LocaleLink> to see all your
               orders.
             </>
           )}

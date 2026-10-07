@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -139,22 +139,22 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
 
           <div className={`${checkoutDoneActions} pt-4`}>
             {accountQuery.data && !summary.isGuestOrder ? (
-              <Link
+              <LocaleLink
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href={`/account/orders/${encodeURIComponent(summary.orderId)}`}
               >
                 <span>View full order</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
             ) : (
-              <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
+              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
                 <span>Continue shopping</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
             )}
-            <Link className={checkoutLink} href="/">
+            <LocaleLink className={checkoutLink} href="/">
               Return home
-            </Link>
+            </LocaleLink>
           </div>
         </div>
       </CheckoutStateShell>
@@ -212,11 +212,11 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
         <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
-              Signed in? All your orders are in <Link href="/account/orders">Purchase History</Link>.
+              Signed in? All your orders are in <LocaleLink href="/account/orders">Purchase History</LocaleLink>.
             </>
           ) : (
             <>
-              Have an account? <Link href={`/login?returnTo=${encodeURIComponent(pathname)}`}>Sign in</Link> to see
+              Have an account? <LocaleLink href={`/login?returnTo=${encodeURIComponent(pathname)}`}>Sign in</LocaleLink> to see
               your orders.
             </>
           )}

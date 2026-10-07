@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -122,9 +122,9 @@ function PaymentHistory() {
                 {formatOrderDate(order.createdAt)}
               </span>
               <div className="order-1 min-w-0 lg:order-none">
-                <Link href={detailHref} className="font-mono text-[12.5px] font-semibold text-sa-primary hover:text-terra">
+                <LocaleLink href={detailHref} className="font-mono text-[12.5px] font-semibold text-sa-primary hover:text-terra">
                   {order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase()}
-                </Link>
+                </LocaleLink>
                 <p className="text-[12px] text-sa-secondary">
                   {order.itemCount} {order.itemCount === 1 ? "item" : "items"}
                 </p>
@@ -141,16 +141,16 @@ function PaymentHistory() {
               </span>
               <span className="order-5 col-span-2 lg:order-none lg:col-span-1 lg:text-right">
                 {needsPaying(order) ? (
-                  <Link
+                  <LocaleLink
                     href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
                     className="text-[12px] font-semibold text-terra hover:underline"
                   >
                     Pay now →
-                  </Link>
+                  </LocaleLink>
                 ) : (
-                  <Link href={detailHref} className="text-[12px] font-semibold text-sa-secondary hover:text-terra">
+                  <LocaleLink href={detailHref} className="text-[12px] font-semibold text-sa-secondary hover:text-terra">
                     View order →
-                  </Link>
+                  </LocaleLink>
                 )}
               </span>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type CSSProperties } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
@@ -64,9 +64,9 @@ export function LandingProductsBand() {
               Our <em className={productsBandTitleEm}>best sellers.</em>
             </h2>
           </div>
-          <Link className={`${linkUnderline} shrink-0 whitespace-nowrap`} href="/collections/best-sellers">
+          <LocaleLink className={`${linkUnderline} shrink-0 whitespace-nowrap`} href="/collections/best-sellers">
             View all
-          </Link>
+          </LocaleLink>
         </header>
 
         <ul
@@ -98,7 +98,7 @@ export function LandingProductsBand() {
                     the Add-to-bag button (z-index) so that stays usable.
                     This is the single focusable/accessible link for the
                     card; the media link and name text below are inert. */}
-                <Link
+                <LocaleLink
                   className={cardLink}
                   href={`/products/${product.slug}`}
                   aria-label={product.title}
@@ -125,7 +125,7 @@ export function LandingProductsBand() {
                         : cardMediaInset
                   }
                 >
-                  <Link
+                  <LocaleLink
                     className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
                     href={`/products/${product.slug}`}
                     tabIndex={-1}
@@ -143,7 +143,7 @@ export function LandingProductsBand() {
                     ) : (
                       <span className={`${bottle} ${cardBottle}`} aria-hidden="true" />
                     )}
-                  </Link>
+                  </LocaleLink>
                 </div>
                 {/* Its own slot (sibling of the media box, not nested
                     inside it) — the media box is `isolation: isolate` so

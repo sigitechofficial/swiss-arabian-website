@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -191,9 +191,9 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
       {loadFailed ? (
         <p className={checkoutError} role="alert">
           We couldn’t load the secure card form. Please refresh the page or{" "}
-          <Link className={checkoutLink} href="/checkout/payment/cancel">
+          <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
             choose another way to pay
-          </Link>
+          </LocaleLink>
           .
         </p>
       ) : null}
@@ -215,9 +215,9 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
               {needsRetry ? (
                 <>
                   {" "}
-                  <Link className={checkoutLink} href="/checkout/payment/cancel">
+                  <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
                     Start a new attempt
-                  </Link>
+                  </LocaleLink>
                 </>
               ) : null}
             </p>
@@ -387,10 +387,10 @@ export function StripePaymentFormView() {
           <p className={stateEyebrow}>Payment</p>
           <h1 className={collectionTitle}>This payment session has expired.</h1>
           <p>If you already placed an order, you can finish paying for it from here.</p>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
             <span>Retry payment</span>
             <b aria-hidden="true">↗</b>
-          </Link>
+          </LocaleLink>
         </section>
       </CheckoutStateShell>
     );
@@ -459,7 +459,7 @@ export function StripePaymentFormView() {
         <h1 className={pageTitle}>Payment</h1>
         <ol className={checkoutSteps}>
           <li>
-            <Link href="/cart">Bag</Link>
+            <LocaleLink href="/cart">Bag</LocaleLink>
           </li>
           <li aria-hidden="true">·</li>
           <li>Details</li>
@@ -485,7 +485,7 @@ export function StripePaymentFormView() {
             </Elements>
           </section>
           <p className={checkoutLegal}>
-            Changed your mind? <Link href="/checkout/payment/cancel">Cancel payment</Link> — your order stays saved.
+            Changed your mind? <LocaleLink href="/checkout/payment/cancel">Cancel payment</LocaleLink> — your order stays saved.
           </p>
         </div>
 

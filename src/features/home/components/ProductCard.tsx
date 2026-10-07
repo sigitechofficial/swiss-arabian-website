@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState } from "react";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
@@ -147,7 +147,7 @@ export function ProductCard({
           <WishlistHeartButton productId={product.id} size="card" />
         </div>
       ) : null}
-      <Link href={href} className="flex flex-1 cursor-pointer flex-col">
+      <LocaleLink href={href} className="flex flex-1 cursor-pointer flex-col">
         <div
           className={`relative flex aspect-square items-center justify-center overflow-hidden ${
             compact ? "p-1.5" : "p-3"
@@ -224,7 +224,7 @@ export function ProductCard({
               : formatMoney(product.price, currency)}
           </p>
         </div>
-      </Link>
+      </LocaleLink>
 
       <div className={compact ? "pt-2" : "px-1 pb-1 pt-3"}>
         <button

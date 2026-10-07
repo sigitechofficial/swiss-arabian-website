@@ -177,6 +177,8 @@ type ApiProductDetailData = {
     name: string;
     shortDescription?: string | null;
     description?: string | null;
+    seoTitle?: string | null;
+    seoDescription?: string | null;
     brandCode?: string | null;
     brandName?: string | null;
     pdpMetafields?: Record<string, unknown> | null;
@@ -368,6 +370,8 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     subtitle: brandName || featuredCollection || variant?.sku || undefined,
     description: descriptionPlain,
     descriptionHtml: descriptionHtml || undefined,
+    seoTitle: product.seoTitle?.trim() || undefined,
+    seoDescription: product.seoDescription?.trim() || undefined,
     price,
     currency,
     imageUrl: imageUrls[0] ?? null,

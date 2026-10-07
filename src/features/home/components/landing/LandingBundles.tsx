@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { formatMoney } from "../../utils/formatMoney";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
@@ -122,12 +122,12 @@ export function LandingBundles() {
         </h2>
         <p className={visuallyHidden}>On your favorite fragrances</p>
         <div className={bundleActions} data-campaign-actions>
-          <Link className={bundlePillSolid} href="/collections/bundles">
+          <LocaleLink className={bundlePillSolid} href="/collections/bundles">
             Shop Bundles
-          </Link>
-          <Link className={bundlePillGhost} href="/collections/gift-sets">
+          </LocaleLink>
+          <LocaleLink className={bundlePillGhost} href="/collections/gift-sets">
             Shop Gift Sets
-          </Link>
+          </LocaleLink>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ export function LandingBundles() {
         <ul className={shopList} role="list">
           {bundleItems.map((product, index) => (
             <li key={product.id}>
-              <Link
+              <LocaleLink
                 className={shopItem}
                 href={`/products/${product.slug}`}
               >
@@ -179,13 +179,13 @@ export function LandingBundles() {
                 <span className={shopPrice}>
                   {formatMoney(product.price, product.currency)}
                 </span>
-              </Link>
+              </LocaleLink>
             </li>
           ))}
         </ul>
-        <Link className={shopCta} href="/collections/bundles">
+        <LocaleLink className={shopCta} href="/collections/bundles">
           Shop This Bundle
-        </Link>
+        </LocaleLink>
       </aside>
 
       <button

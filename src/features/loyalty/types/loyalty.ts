@@ -48,9 +48,19 @@ export type LoyaltyEarnPreviewView =
       eligibleAmount: number | null;
     };
 
+/** Frozen per-order redemption. Display only — never priced in the browser. */
+export type LoyaltyOrderRedemptionView =
+  | { redeemed: false }
+  | {
+      redeemed: true;
+      points: number;
+      amount: number;
+      currencyCode: string | null;
+    };
+
 /** Frozen per-order loyalty outcome read at confirmation and in history. */
 export type LoyaltyOrderRewardView =
-  | { earned: false }
+  | { earned: false; redemption: LoyaltyOrderRedemptionView }
   | {
       earned: true;
       orderId: string | null;
@@ -59,7 +69,29 @@ export type LoyaltyOrderRewardView =
       currencyCode: string | null;
       /** Present only when the server has vested the order. */
       vestedAt: string | null;
+      redemption: LoyaltyOrderRedemptionView;
     };
+
+/** Server cart/checkout redemption quote. Limits and money are never derived here. */
+export type LoyaltyRedemptionView = {
+  enabled: boolean;
+  eligible: boolean;
+  availablePoints: number;
+  minimumRedeemPoints: number;
+  incrementPoints: number;
+  maxRedeemablePoints: number;
+  appliedPoints: number;
+  appliedAmount: number;
+  currencyCode: string | null;
+  reason: string | null;
+  /** Customer-safe sentence. Raw reason codes are never printed. */
+  reasonMessage: string | null;
+};
+
+export const EMPTY_ORDER_REWARD: LoyaltyOrderRewardView = {
+  earned: false,
+  redemption: { redeemed: false },
+};
 
 const DISABLED = new Set([
   "DISABLED",
@@ -84,6 +116,22 @@ const DEFAULT_UNAVAILABLE =
 const UNAVAILABLE_COPY: Record<string, string> = {
   LOYALTY_NOT_AVAILABLE: PROGRAM_UNAVAILABLE,
   LOYALTY_NOT_AVAILABLE_IN_THIS_MARKET: DEFAULT_UNAVAILABLE,
+};
+
+/** Temporary reservation chatter is hidden unless the server marks the row visible. */
+const TRANSIENT_ACTIVITY = new Set(["POINTS_RESERVED", "POINTS_RELEASED"]);
+
+const REDEMPTION_REASON_COPY: Record<string, string> = {
+  REDEMPTION_DISABLED: "Reward points can’t be used on this order.",
+  BELOW_MINIMUM: "Enter at least the minimum number of points.",
+  INVALID_INCREMENT: "Use points in the allowed increment.",
+  INSUFFICIENT_POINTS: "You don’t have enough reward points.",
+  EXCEEDS_ORDER_COVERAGE: "That’s more points than this order can take.",
+  LOYALTY_NOT_AVAILABLE: PROGRAM_UNAVAILABLE,
+  REDEMPTION_NOT_AVAILABLE_WITH_CURRENT_OFFERS:
+    "Reward points can’t be used with the current offer.",
+  RESERVATION_EXPIRED: "Your reserved points expired. Apply them again.",
+  CART_NOT_QUALIFIED: "Reward points can’t be used on this bag yet.",
 };
 
 /**
@@ -251,6 +299,9 @@ export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] 
     if (!row) return [];
     const presentationKey =
       typeof row.type === "string" ? row.type.trim().toUpperCase() : "";
+    if (TRANSIENT_ACTIVITY.has(presentationKey) && row.customerVisible !== true && row.visible !== true) {
+      return [];
+    }
     const label =
       readText(row, ["label", "displayLabel", "title", "description"]) ??
       ACTIVITY_COPY[presentationKey] ??
@@ -306,21 +357,39 @@ export function readEarnPreview(raw: unknown): LoyaltyEarnPreviewView {
 
 const ORDER_REWARD_STATES = new Set(["PENDING", "AVAILABLE", "CANCELLED"]);
 
+function readOrderRedemption(row: Record<string, unknown> | null): LoyaltyOrderRedemptionView {
+  const redemption = asRecord(row?.redemption);
+  if (!redemption || redemption.redeemed !== true) return { redeemed: false };
+
+  const points = readNumber(redemption.points);
+  if (points == null || points <= 0) return { redeemed: false };
+
+  return {
+    redeemed: true,
+    points,
+    amount: readMoney(redemption, ["amount"]) ?? 0,
+    currencyCode: readText(redemption, ["currencyCode"]),
+  };
+}
+
 /**
  * Reads the frozen per-order outcome. Never falls back to a cart estimate, so
  * a stale preview cannot be presented as the earned result.
  */
 export function readOrderReward(raw: unknown): LoyaltyOrderRewardView {
   const row = asRecord(raw);
-  if (!row || row.earned !== true) return { earned: false };
+  if (!row) return EMPTY_ORDER_REWARD;
+
+  const redemption = readOrderRedemption(row);
+  if (row.earned !== true) return { earned: false, redemption };
 
   const points = readNumber(row.points);
-  if (points == null || points <= 0) return { earned: false };
+  if (points == null || points <= 0) return { earned: false, redemption };
 
   const stateKey = typeof row.presentationState === "string"
     ? row.presentationState.trim().toUpperCase()
     : "";
-  if (!ORDER_REWARD_STATES.has(stateKey)) return { earned: false };
+  if (!ORDER_REWARD_STATES.has(stateKey)) return { earned: false, redemption };
 
   return {
     earned: true,
@@ -329,7 +398,70 @@ export function readOrderReward(raw: unknown): LoyaltyOrderRewardView {
     state: stateKey as "PENDING" | "AVAILABLE" | "CANCELLED",
     currencyCode: readText(row, ["currencyCode"]),
     vestedAt: readText(row, ["vestedAt"]),
+    redemption,
   };
+}
+
+function isQuoteRecord(row: Record<string, unknown>): boolean {
+  return (
+    "enabled" in row ||
+    "eligible" in row ||
+    "appliedPoints" in row ||
+    "maxRedeemablePoints" in row ||
+    "availablePoints" in row
+  );
+}
+
+function parseRedemptionQuote(quote: Record<string, unknown>): LoyaltyRedemptionView {
+  const reason = typeof quote.reason === "string" ? quote.reason.trim().toUpperCase() : "";
+  return {
+    enabled: quote.enabled !== false,
+    eligible: quote.eligible === true,
+    availablePoints: readPoints(quote, ["availablePoints"]),
+    minimumRedeemPoints: readPoints(quote, ["minimumRedeemPoints"]),
+    incrementPoints: readPoints(quote, ["incrementPoints"]),
+    maxRedeemablePoints: readPoints(quote, ["maxRedeemablePoints"]),
+    appliedPoints: readPoints(quote, ["appliedPoints"]),
+    appliedAmount: readMoney(quote, ["appliedAmount"]) ?? 0,
+    currencyCode: readText(quote, ["currencyCode"]),
+    reason: reason || null,
+    reasonMessage:
+      readText(quote, ["message", "customerMessage"]) ??
+      (reason ? REDEMPTION_REASON_COPY[reason] ?? null : null),
+  };
+}
+
+/**
+ * Reads the server redemption quote. `appliedAmount` and `maxRedeemablePoints`
+ * are taken as sent — the browser never prices points or caps coverage.
+ */
+export function readLoyaltyRedemption(...sources: unknown[]): LoyaltyRedemptionView | null {
+  for (const source of sources) {
+    const row = asRecord(source);
+    if (!row) continue;
+    const nested = asRecord(row.loyaltyRedemption);
+    if (nested && isQuoteRecord(nested)) return parseRedemptionQuote(nested);
+    if (isQuoteRecord(row)) return parseRedemptionQuote(row);
+  }
+  return null;
+}
+
+export function loyaltyRedemptionSignature(quote: LoyaltyRedemptionView | null | undefined): string {
+  if (!quote) return "";
+  return `${quote.appliedPoints}:${quote.appliedAmount}`;
+}
+
+export function redemptionReasonMessage(reason: string | null | undefined): string | null {
+  if (!reason) return null;
+  const key = reason.trim().toUpperCase();
+  return REDEMPTION_REASON_COPY[key] ?? null;
+}
+
+export function isLoyaltyRedemptionHidden(quote: LoyaltyRedemptionView | null | undefined): boolean {
+  if (!quote) return true;
+  if (quote.appliedPoints > 0) return false;
+  if (quote.reason === "LOYALTY_NOT_AVAILABLE") return true;
+  return !quote.enabled && !quote.reasonMessage;
 }
 
 export function formatPoints(value: number): string {

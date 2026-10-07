@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/Toaster";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useUiStore } from "@/stores/useUiStore";
 import { useApiMutation } from "@/lib/api/queryHooks";
 import { wishlistKeys } from "../api/wishlist.keys";
@@ -38,7 +37,7 @@ function patchStatusCaches(
 export function useWishlistMutations() {
   const queryClient = useQueryClient();
   const zoneCode =
-    useUiStore((s) => s.selectedMarketId)?.trim() || DEFAULT_ZONE_CODE;
+    useUiStore((s) => s.selectedMarketId)?.trim() || "";
 
   const add = useApiMutation(
     (productId: string) => addWishlistItem(productId, zoneCode),

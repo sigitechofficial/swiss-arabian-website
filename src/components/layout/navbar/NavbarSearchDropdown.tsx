@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { usePathname, useRouter } from "next/navigation";
+import { localizeHref } from "@/lib/i18n/localePath";
 import { useCatalogSearch, SEARCH_IDLE_SHORTCUTS, SEARCH_MIN_QUERY_LENGTH } from "@/features/search";
 import { useNewLaunchesPreview } from "@/features/search/hooks/useNewLaunchesPreview";
 import { useRecentSearches } from "@/features/search/hooks/useRecentSearches";
@@ -51,7 +52,7 @@ function ProductRow({
 }) {
   return (
     <li>
-      <Link href={`/products/${product.slug}`} onClick={onPick}>
+      <LocaleLink href={`/products/${product.slug}`} onClick={onPick}>
         <span className={navSearchDropThumb} aria-hidden="true">
           {product.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -69,7 +70,7 @@ function ProductRow({
         </span>
         <span className={navSearchDropName}>{product.title}</span>
         <ChevronGlyph />
-      </Link>
+      </LocaleLink>
     </li>
   );
 }
@@ -82,6 +83,7 @@ export function NavbarSearchDropdown({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const { items: recents, remember } = useRecentSearches();
@@ -101,7 +103,7 @@ export function NavbarSearchDropdown({
     if (q.length < SEARCH_MIN_QUERY_LENGTH) return;
     remember(q);
     close();
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    router.push(localizeHref(`/search?q=${encodeURIComponent(q)}`, pathname));
   }
 
   function submit() {
@@ -177,10 +179,10 @@ export function NavbarSearchDropdown({
                 <ul className={navSearchDropQueries} role="list">
                   {SEARCH_IDLE_SHORTCUTS.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} onClick={close}>
+                      <LocaleLink href={item.href} onClick={close}>
                         <span>{item.label}</span>
                         <ChevronGlyph />
-                      </Link>
+                      </LocaleLink>
                     </li>
                   ))}
                 </ul>
@@ -212,20 +214,20 @@ export function NavbarSearchDropdown({
             <div className={navSearchDropBlock}>
               <div className={navSearchDropNewHead}>
                 <p className={navSearchDropKicker}>New in</p>
-                <Link href="/collections/new-launches" onClick={close}>
+                <LocaleLink href="/collections/new-launches" onClick={close}>
                   See all
-                </Link>
+                </LocaleLink>
               </div>
               <ul className={navSearchDropCards} role="list">
                 {newest.map((product) => (
                   <li key={product.id}>
-                    <Link href={`/products/${product.slug}`} onClick={close}>
+                    <LocaleLink href={`/products/${product.slug}`} onClick={close}>
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={product.imageUrl} alt={product.title} width={120} height={150} />
                       ) : null}
                       <span>{product.title}</span>
-                    </Link>
+                    </LocaleLink>
                   </li>
                 ))}
               </ul>

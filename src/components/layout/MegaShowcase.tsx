@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { motion, type Variants } from "framer-motion";
 import { catalogKeys, fetchCollectionProducts } from "@/features/catalog/api/catalog.service";
@@ -42,7 +42,7 @@ function collectionSlug(href: string): string | null {
 
 function ProductTile({ product }: { product: MegaProduct }) {
   return (
-    <Link className={megaProd} href={`/products/${product.slug}`}>
+    <LocaleLink className={megaProd} href={`/products/${product.slug}`}>
       <span className={megaProdMedia}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={product.image} alt={product.name} loading="lazy" />
@@ -50,7 +50,7 @@ function ProductTile({ product }: { product: MegaProduct }) {
       <span className={megaProdName}>{product.name}</span>
       {product.notes ? <span className={megaProdMeta}>{product.notes}</span> : null}
       <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
-    </Link>
+    </LocaleLink>
   );
 }
 
@@ -152,6 +152,8 @@ export function MegaShowcase({
     );
   }
 
+  if (!item.promo) return null;
+
   return (
     <motion.div className={megaPromo} variants={itemVariants}>
       <div className={item.promo.cover ? `${megaPromoMedia} ${megaPromoMediaCover}` : megaPromoMedia}>
@@ -159,9 +161,9 @@ export function MegaShowcase({
         <img src={item.promo.image} alt="" loading="lazy" />
       </div>
       <p className={megaPromoCopy}>{item.promo.copy}</p>
-      <Link className={megaPromoCta} href={item.promo.href}>
+      <LocaleLink className={megaPromoCta} href={item.promo.href}>
         {item.promo.cta}
-      </Link>
+      </LocaleLink>
     </motion.div>
   );
 }

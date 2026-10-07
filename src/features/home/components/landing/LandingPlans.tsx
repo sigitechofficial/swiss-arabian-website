@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { PLAN_FEATURES, PLANS } from "../../constants/landingContent";
 import {
   eyebrow,
@@ -61,9 +61,9 @@ export function LandingPlans() {
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>
-              <Link className={plan.featured ? planCta : planCtaGhost} href="/subscriptions">
+              <LocaleLink className={plan.featured ? planCta : planCtaGhost} href="/subscriptions">
                 Start plan
-              </Link>
+              </LocaleLink>
             </article>
           ))}
         </div>

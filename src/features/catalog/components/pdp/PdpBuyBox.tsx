@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
-import { OfferCountLink, PdpOffersPanel } from "@/features/promotions/components/PromotionOffers";
+import { OffersForYou } from "@/features/promotions/components/OffersForYou";
+import { OfferCountLink } from "@/features/promotions/components/PromotionOffers";
 import { stars } from "@/styles/landingChrome";
 import {
   pdpChip,
@@ -23,7 +24,7 @@ import type { CatalogProduct } from "../../constants/catalogProducts";
 import { noteDotColor } from "../../constants/productDetailContent";
 import type { StorefrontPdpMetafields } from "../../types/pdpMetafields";
 import type { StorefrontReviewSummary } from "../../types/pdpReviews";
-import { familyChips } from "../../utils/pdpMetafields";
+import { familyChips, pyramidNoteChips } from "../../utils/pdpMetafields";
 import { reviewStarsLabel } from "../../utils/pdpReviews";
 import { PdpScentFamily } from "../PdpScentFamily";
 import { PdpBuyBar } from "./PdpBuyBar";
@@ -45,7 +46,6 @@ type PdpBuyBoxProps = {
 export function PdpBuyBox({
   product,
   formatLabel,
-  description,
   reviewSummary,
   showReviewRating,
   metafields,
@@ -56,19 +56,28 @@ export function PdpBuyBox({
   scentFallback,
 }: PdpBuyBoxProps) {
   const [offersOpen, setOffersOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const offerOpenerRef = useRef<HTMLElement | null>(null);
+  const openOffers = () => {
+    offerOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setOffersOpen(true);
+  };
   const earnPreview = useProductEarnPreview({
     unitPrice: product.price,
-    quantity: cartLine?.quantity ?? 1,
+    quantity: cartLine?.quantity ?? quantity,
   });
 
   const family = familyChips(metafields);
-  const chips = family.length
-    ? family
-    : (product.subtitle ?? "")
-        .split("·")
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .slice(0, 3);
+  const pyramidNotes = pyramidNoteChips(metafields);
+  const chips = pyramidNotes.length
+    ? pyramidNotes
+    : family.length
+      ? family
+      : (product.subtitle ?? "")
+          .split("·")
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .slice(0, 3);
   const familyCode = family[0]?.toLowerCase().replace(/[^a-z0-9]+/g, "") || null;
 
   return (
@@ -90,11 +99,6 @@ export function PdpBuyBox({
           </span>
         </a>
       ) : null}
-      {description ? (
-        <p className="m-0 line-clamp-3 max-w-[38rem] text-[0.9375rem] leading-normal text-[#6f6152]">
-          {description}
-        </p>
-      ) : null}
 
       {chips.length ? (
         <ul className={pdpChips} role="list" aria-label="Featured notes">
@@ -111,7 +115,7 @@ export function PdpBuyBox({
         <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">
           {formatMoney(product.price, product.currency)}
         </p>
-        <OfferCountLink productId={product.id} onOpen={() => setOffersOpen(true)} />
+        <OfferCountLink productId={product.id} onOpen={openOffers} />
       </div>
       {product.price != null ? (
         <p className={pdpInstallments}>
@@ -146,8 +150,14 @@ export function PdpBuyBox({
         </ul>
       ) : null}
 
-      <PdpBuyBar product={product} cartLine={cartLine} />
-      <PdpOffersPanel productId={product.id} open={offersOpen} onOpenChange={setOffersOpen} />
+      <PdpBuyBar product={product} cartLine={cartLine} onQuantityChange={setQuantity} />
+      <OffersForYou
+        product={product}
+        quantity={quantity}
+        open={offersOpen}
+        onOpenChange={setOffersOpen}
+        openerRef={offerOpenerRef}
+      />
       <PdpScentFamily current={product} familyCode={familyCode} zoneCode={zoneCode} fallback={scentFallback} />
     </div>
   );

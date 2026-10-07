@@ -34,6 +34,7 @@ export function useEarnPreview(target: {
   const totals = useCartStore((s) => s.totals);
   const computedAt = useCartStore((s) => s.promotions?.computedAt ?? null);
   const discountTotal = useCartStore((s) => s.promotions?.totals?.discountTotal ?? null);
+  const loyaltyApplied = useCartStore((s) => s.loyaltyRedemption?.appliedPoints ?? 0);
 
   const key = target.checkoutSessionId
     ? `session:${target.checkoutSessionId}`
@@ -48,6 +49,7 @@ export function useEarnPreview(target: {
     totals?.subtotal ?? "",
     totals?.discount ?? "",
     totals?.totalQty ?? "",
+    loyaltyApplied,
   ].join("|");
 
   const query = useApiQuery(

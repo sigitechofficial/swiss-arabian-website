@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,9 +48,9 @@ export function ForgotPasswordPageView() {
           {form.formState.isSubmitting ? "Sending…" : "Send reset code"}
         </AuthSubmitButton>
         <p className="text-center text-[12.5px] font-normal text-sa-secondary">
-          <Link className="font-medium text-[var(--sa-action-primary)]" href="/login">
+          <LocaleLink className="font-medium text-[var(--sa-action-primary)]" href="/login">
             Back to sign in
-          </Link>
+          </LocaleLink>
         </p>
       </form>
     </AuthShell>

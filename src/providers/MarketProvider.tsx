@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
+import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/auth/token";
 import { createOrResolveCart, getActiveCart } from "@/features/cart/api/cart.service";
@@ -41,12 +43,15 @@ type MarketContextValue = {
 
 const MarketContext = createContext<MarketContextValue | null>(null);
 
-function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
+function contextFromMarket(
+  market: StorefrontMarket,
+  languageCode: string,
+): PersistedCatalogContext {
   const ctx = market.catalogContext;
   return {
     zoneCode: ctx.zoneCode,
     salesChannelCode: market.salesChannelCode?.trim() || ctx.salesChannelCode,
-    languageCode: ctx.languageCode ?? market.defaultLanguageCode,
+    languageCode,
     currencyCode: ctx.currencyCode ?? market.defaultCurrencyCode,
     countryCode: ctx.countryCode || market.countryCode,
     zoneId: ctx.zoneId,
@@ -57,6 +62,8 @@ function contextFromMarket(market: StorefrontMarket): PersistedCatalogContext {
 
 export function MarketProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const pathLanguage = localeFromPathname(pathname || "/");
   const marketId = useUiStore((s) => s.selectedMarketId);
   const catalogContext = useUiStore((s) => s.catalogContext);
   const selectMarket = useUiStore((s) => s.selectMarket);
@@ -113,7 +120,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
 
     if (!marketsQuery.data) {
       if (saved && !useUiStore.getState().catalogContext) {
-        selectMarket(saved, fallbackCatalogContext(saved));
+        selectMarket(saved, { ...fallbackCatalogContext(saved), languageCode: pathLanguage });
         writeZoneCookie(saved);
       }
       return;
@@ -131,20 +138,23 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     if (!pick) return;
 
     const current = useUiStore.getState();
-    const nextCtx = contextFromMarket(pick);
+    const nextCtx = contextFromMarket(pick, pathLanguage);
     if (
       current.selectedMarketId === pick.zoneCode &&
       current.catalogContext?.zoneCode === nextCtx.zoneCode &&
       current.catalogContext?.currencyCode === nextCtx.currencyCode &&
       current.catalogContext?.salesChannelCode === nextCtx.salesChannelCode
     ) {
+      if (current.catalogContext?.languageCode !== pathLanguage && current.catalogContext) {
+        selectMarket(pick.zoneCode, { ...current.catalogContext, languageCode: pathLanguage });
+      }
       writeZoneCookie(pick.zoneCode);
       return;
     }
 
     selectMarket(pick.zoneCode, nextCtx);
     writeZoneCookie(pick.zoneCode);
-  }, [hydrated, marketsQuery.data, shoppable, selectMarket]);
+  }, [hydrated, marketsQuery.data, pathLanguage, shoppable, selectMarket]);
 
   const refreshMarketScopedData = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
@@ -179,14 +189,14 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     (id: string | null) => {
       if (!id) return;
       const market = shoppable.find((item) => item.zoneCode === id);
-      const next = market
-        ? contextFromMarket(market)
-        : fallbackCatalogContext(id);
+      const next = {
+        ...(market ? contextFromMarket(market, pathLanguage) : { ...fallbackCatalogContext(id), languageCode: pathLanguage }),
+      };
       selectMarket(id, next);
       writeZoneCookie(id);
       refreshMarketScopedData();
     },
-    [refreshMarketScopedData, selectMarket, shoppable],
+    [pathLanguage, refreshMarketScopedData, selectMarket, shoppable],
   );
 
   const value = useMemo(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -11,7 +11,9 @@ import {
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRedemptionEditor";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { useCartStore } from "@/stores/useCartStore";
 import {
   cartCrumbs,
@@ -60,10 +62,11 @@ import {
   cartErrorMessage,
 } from "../constants/validationMessages";
 import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import {
+  quotedCartShipping,
+  quotedCartTotal,
+} from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
-
-/** Matches the `v5/cart.html` prototype's `SHIP_FLAT` when the API has no totals yet. */
-const SHIP_FLAT = 25;
 
 function itemsLabel(n: number) {
   return n === 1 ? "1 item" : `${n} items`;
@@ -127,18 +130,33 @@ export function CartPageView() {
   const itemCount = mounted ? persistedItemCount : 0;
 
   const promotions = useCartStore((s) => s.promotions);
+  const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
   const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
   const quotePending = syncing && totals == null;
-  const shipping = totals ? totals.shipping : quotePending || subtotal === 0 ? 0 : SHIP_FLAT;
+  const shipping =
+    !mounted || quotePending
+      ? 0
+      : quotedCartShipping(subtotal, totals?.shipping);
   const discount = totals?.discount ?? 0;
   const shipDiscount = shippingDiscountAmount(promotions);
   const giftCards = visibleGiftCards(promotions);
-  const amountPayable = amountPayableFrom(promotions, [
+  const payable = amountPayableFrom(promotions, [
     totals?.amountPayable != null ? String(totals.amountPayable) : null,
   ]);
-  const total = totals ? totals.total : subtotal + shipping;
+  const total =
+    !mounted || quotePending
+      ? subtotal
+      : quotedCartTotal({
+          merchandise: subtotal,
+          quotedTotal: totals?.total,
+          quotedShipping: totals?.shipping,
+          shipping,
+        });
+  const extraShipping = totals ? Math.max(0, shipping - totals.shipping) : 0;
+  const amountPayable =
+    payable != null && extraShipping > 0 ? payable + extraShipping : payable;
 
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
 
@@ -167,7 +185,7 @@ export function CartPageView() {
           <nav className={cartCrumbs} aria-label="Breadcrumb">
             <ol className={cartCrumbsList} role="list">
               <li>
-                <Link href="/">Home</Link>
+                <LocaleLink href="/">Home</LocaleLink>
               </li>
               <li aria-current="page">Bag</li>
             </ol>
@@ -207,16 +225,16 @@ export function CartPageView() {
 
                 {lines.map((line) => (
                   <article className={cline} key={line.cartItemId ?? line.variantId}>
-                    <Link className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
+                    <LocaleLink className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
                       {line.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={line.imageUrl} alt="" />
                       ) : null}
-                    </Link>
+                    </LocaleLink>
                     <div className={clineBody}>
                       <div className={clineRow}>
                         <h3>
-                          <Link href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</Link>
+                          <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
                         </h3>
                         <PromoLinePrice className={clinePrice} snapshot={promotions} line={line} />
                       </div>
@@ -287,6 +305,7 @@ export function CartPageView() {
                   <AppliedCampaigns />
                 )}
                 <CouponForm />
+                {quotePending ? null : <LoyaltyRedemptionEditor />}
                 <GiftCardForm />
                 {quotePending ? null : (
                 <MoneySummary
@@ -298,6 +317,7 @@ export function CartPageView() {
                   shippingDiscount={shipDiscount}
                   total={total}
                   amountPayable={amountPayable}
+                  loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
                   giftCards={giftCards}
                   freeGifts={awardedGiftLines(promotions).map((gift) => ({
                     name: giftDisplayName(gift),
@@ -339,9 +359,9 @@ export function CartPageView() {
                     ↗
                   </span>
                 </button>
-                <Link className={cartContinue} href="/products">
+                <LocaleLink className={cartContinue} href="/products">
                   Continue shopping
-                </Link>
+                </LocaleLink>
                 <p className={cartHint}>30-day fragrance guarantee. Returns are on us.</p>
                 <div className={cartBadges}>
                   <span>SSL Secured</span>
@@ -354,12 +374,12 @@ export function CartPageView() {
             <section className={cartEmptyState}>
               <p className={cartEmptyNote}>Your bag is empty.</p>
               <EmptyBagRecovery surface="empty-cart" />
-              <Link className={cartCtaInline} href="/products">
+              <LocaleLink className={cartCtaInline} href="/products">
                 <span>Explore the collection</span>
                 <b aria-hidden="true">
                   ↗
                 </b>
-              </Link>
+              </LocaleLink>
             </section>
           )}
         </div>
