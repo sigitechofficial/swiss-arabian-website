@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { getActiveCart } from "@/features/cart/api/cart.service";
+import { loyaltyRedemptionSignature } from "@/features/loyalty/types/loyalty";
 import { appliedCoupon, giftCardSignature, shippingDiscountAmount } from "@/features/promotions/types/promotions";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import {
@@ -72,6 +73,7 @@ function commerceSignature(lines: CartLine[]): string {
     merchandiseDiscount: state.totals?.discount ?? 0,
     shippingDiscount: shippingDiscountAmount(state.promotions),
     giftCards: giftCardSignature(state.promotions),
+    loyalty: loyaltyRedemptionSignature(state.loyaltyRedemption),
   });
 }
 
@@ -140,6 +142,7 @@ export function useCheckout() {
   const discountTotal = useCartStore((s) => s.totals?.discount ?? 0);
   const shippingDiscount = useCartStore((s) => shippingDiscountAmount(s.promotions));
   const giftCardsSig = useCartStore((s) => giftCardSignature(s.promotions));
+  const loyaltySig = useCartStore((s) => loyaltyRedemptionSignature(s.loyaltyRedemption));
   const clearCart = useCartStore((s) => s.clear);
   const setCartId = useCartStore((s) => s.setCartId);
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
@@ -213,6 +216,7 @@ export function useCheckout() {
       merchandiseDiscount: discountTotal,
       shippingDiscount,
       giftCards: giftCardsSig,
+      loyalty: loyaltySig,
     });
     if (!checkoutSignatureChanged(sessionSigRef.current, sig)) return;
     sessionSigRef.current = sig;
@@ -226,7 +230,7 @@ export function useCheckout() {
         setErrorMsg(checkoutErrorMessage(e));
       }
     })();
-  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, session, adopt]);
+  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, loyaltySig, session, adopt]);
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
@@ -330,8 +334,14 @@ export function useCheckout() {
       const id = session.checkoutSessionId;
       const delivery = deliveryMethods.find((d) => d.zoneDeliveryMethodId === selectedDeliveryId);
       const payment = paymentMethods.find((p) => p.zonePaymentMethodId === selectedPaymentId);
+      const payableRaw =
+        session.totalsEstimate?.amountPayable ??
+        session.promotions?.totals?.amountPayable ??
+        session.promotionSnapshot?.totals?.amountPayable;
+      const payable = payableRaw == null || payableRaw === "" ? null : Number(payableRaw);
+      const covered = payable === 0;
       if (!delivery) return setErrorMsg("Choose a shipping method to continue.");
-      if (!payment) return setErrorMsg("Choose a payment method to continue.");
+      if (!covered && !payment) return setErrorMsg("Choose a payment method to continue.");
 
       setStatus("submitting");
       setErrorMsg(null);
@@ -358,9 +368,11 @@ export function useCheckout() {
         // Re-assert both choices right before validating: the background
         // selections from the method-loading effect may still be in flight.
         await selectDeliveryMethod(id, delivery.deliveryMethodId);
-        await selectPaymentMethod(id, payment.paymentMethodId);
-        storeZonePaymentMethodId(payment.zonePaymentMethodId);
-        storePaymentMethodId(payment.paymentMethodId);
+        if (payment) {
+          await selectPaymentMethod(id, payment.paymentMethodId);
+          storeZonePaymentMethodId(payment.zonePaymentMethodId);
+          storePaymentMethodId(payment.paymentMethodId);
+        }
 
         const validated = await validateCheckout(id);
         setSession(validated);
@@ -394,9 +406,13 @@ export function useCheckout() {
         clearCartId();
         clearCheckoutSessionId();
 
+        if (covered) {
+          router.push(`/order-confirmation/${order.orderId}`);
+          return;
+        }
         await startPayment(order.orderId, (href) => router.push(href), {
-          zonePaymentMethodId: payment.zonePaymentMethodId,
-          paymentMethodId: payment.paymentMethodId,
+          zonePaymentMethodId: payment?.zonePaymentMethodId,
+          paymentMethodId: payment?.paymentMethodId,
         });
       } catch (e) {
         if (placedOrderId) {

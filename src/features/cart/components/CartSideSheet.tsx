@@ -8,6 +8,7 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import { EmptyBagRecovery, GiftWithPurchase, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { LoyaltyDrawerNote } from "@/features/loyalty/components/LoyaltyDrawerNote";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
 import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
@@ -351,6 +352,7 @@ export function CartSideSheet() {
             <span>Total</span>
             <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
           </div>
+          {quotePending ? null : <LoyaltyDrawerNote />}
           {quotePending ? null : <EarnPreviewNote preview={earnPreview.preview} />}
           {/* Checkout reads the server cart, so hold it for the second or two
               a background sync is still writing the latest bag changes. */}

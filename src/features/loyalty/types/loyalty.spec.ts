@@ -243,7 +243,12 @@ describe("live backend contract", () => {
       "REFUND_ADJUSTMENT",
     ];
     const rows = readLoyaltyTransactions({
-      items: keys.map((type, index) => ({ id: `row-${index}`, type, points: 1 })),
+      items: keys.map((type, index) => ({
+        id: `row-${index}`,
+        type,
+        points: 1,
+        customerVisible: type === "POINTS_RESERVED" || type === "POINTS_RELEASED" ? true : undefined,
+      })),
     });
     expect(rows).toHaveLength(keys.length);
     for (const row of rows) {

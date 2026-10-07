@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
 import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
@@ -500,7 +500,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             </dl>
           </section>
 
-          {orderReward?.earned ? (
+          {hasOrderLoyaltySection(orderReward) ? (
             <div className={ocCard}>
               <OrderRewardNote reward={orderReward} />
             </div>

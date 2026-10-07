@@ -4,6 +4,7 @@ import { useApiQuery } from "@/lib/api/queryHooks";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { fetchOrderReward } from "../api/loyalty.service";
 import { loyaltyKeys } from "../api/loyalty.keys";
+import { EMPTY_ORDER_REWARD } from "../types/loyalty";
 
 /**
  * Frozen loyalty outcome for one order. Read from the order snapshot, so it is
@@ -17,7 +18,7 @@ export function useOrderReward(orderId: string | null | undefined) {
   const query = useApiQuery(
     loyaltyKeys.order(id ?? ""),
     () => {
-      if (!id) return Promise.resolve({ earned: false as const });
+      if (!id) return Promise.resolve(EMPTY_ORDER_REWARD);
       return fetchOrderReward(id);
     },
     { enabled: bootstrapped && isAuthenticated && Boolean(id), staleTime: 60_000 },

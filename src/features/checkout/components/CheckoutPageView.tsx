@@ -227,11 +227,14 @@ export function CheckoutPageView() {
     (m) => m.zonePaymentMethodId === checkout.selectedPaymentId,
   );
   const submitting = checkout.status === "submitting";
+  const covered = amountPayable === 0;
   const canSubmit =
     checkout.status === "ready" &&
-    Boolean(checkout.selectedDeliveryId && checkout.selectedPaymentId);
+    Boolean(checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId));
   const ctaLabel = submitting
     ? "Placing order…"
+    : covered
+      ? "Place order"
     : selectedPayment && (selectedPayment.requiresRedirect || isStripePaymentMethod(selectedPayment))
       ? "Continue to payment"
       : "Place order";
@@ -381,6 +384,7 @@ export function CheckoutPageView() {
                   onSelect={(id) => void checkout.choosePayment(id)}
                   canSubmit={canSubmit}
                   ctaLabel={ctaLabel}
+                  amountPayable={amountPayable}
                 />
               </form>
               </GooglePlacesProvider>

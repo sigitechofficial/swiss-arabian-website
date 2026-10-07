@@ -259,6 +259,29 @@ describe("rewards account", () => {
     expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
+  it("shows reserved points while a reservation is active", async () => {
+    fetchLoyaltyWallet.mockResolvedValue(
+      wallet({ availablePoints: 5220, reservedPoints: 200, availableValue: 52.2 }),
+    );
+    fetchLoyaltyTransactions.mockResolvedValue([
+      {
+        id: "tx-redeem",
+        label: "Points redeemed",
+        detail: null,
+        points: -200,
+        occurredAt: "2026-10-06T00:00:00.000Z",
+        state: null,
+      },
+    ]);
+    renderRewards();
+    expect(await screen.findByText("200 points")).toBeInTheDocument();
+    expect(screen.getByText("Reserved")).toBeInTheDocument();
+    expect(await screen.findByText("Points redeemed")).toBeInTheDocument();
+    expect(screen.getByText("−200 points")).toBeInTheDocument();
+    expect(screen.queryByText("Points reserved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Points released")).not.toBeInTheDocument();
+  });
+
   it("shows the Qatar wallet after the market changes", async () => {
     fetchLoyaltyWallet.mockImplementation((market: { zoneCode: string }) => {
       if (market.zoneCode === "QA") {
