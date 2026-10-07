@@ -124,4 +124,66 @@ export function StaggerItem({
   );
 }
 
+/** Soft continuous float — decorative only, pauses with reduced motion */
+export function SoftFloat({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+
+  if (reduce) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      animate={{ y: [0, -6, 0] }}
+      transition={{
+        duration: 5.5,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Single item that fades up when it enters the viewport (lazy grids). */
+export function InViewItem({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement | null>(null);
+  const isInView = useInView(ref, {
+    once: true,
+    amount: 0.15,
+    margin: "0px 0px -40px 0px",
+  });
+
+  if (reduce) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={revealTransition}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export { fadeUpVariants };

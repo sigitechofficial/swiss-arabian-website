@@ -35,6 +35,7 @@ import {
   resetPayAttempt,
   storeCheckoutSessionId,
   storeGuestOrderAccessToken,
+  storeGuestOrderLines,
   storeOrderId,
   storeOrderNumber,
   storePaymentMethodId,
@@ -396,6 +397,18 @@ export function useCheckout() {
           !tracking.previouslyIssued
         ) {
           storeGuestOrderAccessToken(order.orderNumber, tracking.orderAccessToken);
+        }
+        if (order.orderNumber && order.lines?.length) {
+          storeGuestOrderLines(
+            order.orderNumber,
+            order.lines.map((line) => ({
+              orderLineId: line.orderLineId,
+              sku: line.sku,
+              productName: line.productName,
+              variantName: line.variantName,
+              quantity: Number.parseInt(line.quantity, 10) || 1,
+            })),
+          );
         }
         resetPayAttempt();
         void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });

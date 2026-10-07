@@ -67,6 +67,50 @@ export function getStoredGuestOrderAccessToken(orderNumber: string): string | nu
   return orderNumber ? read("local", `sa_order_token_${orderNumber}`) : null;
 }
 
+type StoredGuestOrderLine = {
+  orderLineId: string;
+  sku: string;
+  productName: string | null;
+  variantName: string | null;
+  quantity: number;
+};
+
+/** Cache place-order line ids so guest returns and exchanges can use them on /track. */
+export function storeGuestOrderLines(
+  orderNumber: string,
+  lines: StoredGuestOrderLine[],
+): void {
+  if (!orderNumber || lines.length === 0) return;
+  write("local", `sa_order_lines_${orderNumber}`, JSON.stringify(lines));
+}
+
+export function getStoredGuestOrderLines(orderNumber: string): StoredGuestOrderLine[] {
+  if (!orderNumber) return [];
+  const raw = read("local", `sa_order_lines_${orderNumber}`);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as Partial<StoredGuestOrderLine>;
+      if (!row.orderLineId || !row.sku) return [];
+      const quantity = Number(row.quantity);
+      return [
+        {
+          orderLineId: row.orderLineId,
+          sku: row.sku,
+          productName: row.productName ?? null,
+          variantName: row.variantName ?? null,
+          quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
+}
+
 // ─── Payment attempt (sessionStorage) ───────────────────────────────────────
 
 export const storeZonePaymentMethodId = (id: string) =>

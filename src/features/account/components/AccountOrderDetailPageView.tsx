@@ -130,7 +130,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
   if (isLoading) {
     return (
-      <AccountPageShell newsletter={false}>
+      <AccountPageShell>
         <div className={`${accountContainer} flex items-center justify-center py-24`}>
           <span className="size-8 animate-spin rounded-full border-2 border-sa-border border-t-terra" />
         </div>
@@ -140,7 +140,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
   if (isError || !data) {
     return (
-      <AccountPageShell newsletter={false}>
+      <AccountPageShell>
         <div className={`${accountContainer} py-20 text-center`}>
           <p className="text-[15px] text-sa-primary">Order not found.</p>
           <Link href="/account/orders" className="mt-3 inline-block text-[13px] text-terra underline underline-offset-4">
@@ -158,7 +158,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const currency = order.currency;
 
   return (
-    <AccountPageShell newsletter={false}>
+    <AccountPageShell>
       <div className={`${accountContainer} py-8 lg:py-10`}>
 
         {/* Back link */}
