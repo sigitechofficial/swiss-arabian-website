@@ -58,10 +58,6 @@ import {
   formatOrderDate,
   orderProgressStep,
 } from "@/features/orders/utils/orderStatus";
-import {
-  insiderPurchasePage,
-  toInsiderPurchaseValueFromOrder,
-} from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
 import type { OrderAddressSummary } from "../types/checkout";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
@@ -210,14 +206,6 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     if (paid !== "success") return;
     purchaseSent.current = true;
     trackPromotion("promotion_order_completed", { surface: "order" });
-    insiderPurchasePage(
-      toInsiderPurchaseValueFromOrder({
-        orderId: placed.orderId,
-        orderNumber: placed.orderNumber,
-        totals: placed.totals,
-        lines: placed.lines,
-      }),
-    );
   }, [orderQuery.data, settle.data?.status]);
 
   if (orderQuery.isPending || polling) {

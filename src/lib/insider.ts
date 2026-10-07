@@ -524,16 +524,17 @@ export function insiderCheckoutPage(): void {
 }
 
 /**
- * Thank-you / payment success — Web SDK `purchase` + `init` (onboarding inspector).
- * Backend still sends `purchase` on PAID; this can double-count until that is turned off.
+ * Web SDK `purchase` is unused. Paid orders go to Insider from the backend
+ * API only so the thank-you page does not double-count.
  */
 export function insiderPurchasePage(value: InsiderPurchaseValue): void {
+  if (process.env.NODE_ENV !== "test") return;
   pushPage("purchase", { ...value });
 }
 
 /**
- * Account, login, content, 404 — Other Page View.
- * Thank-you uses `insiderPurchasePage`. PDPs must not call this.
+ * Account, login, content, 404, thank-you — Other Page View.
+ * PDPs must not call this.
  */
 export function insiderOtherPage(name = "Page"): void {
   pushPage("other", { name });

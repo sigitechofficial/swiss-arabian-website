@@ -56,7 +56,7 @@ export function InsiderScripts() {
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
     if (!bootstrapped) return;
-    if (isProductDetail(pathname) || isConfirmation(pathname)) return;
+    if (isProductDetail(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
     const routePath = window.location.pathname || pathname;
     const merchandise =
@@ -108,6 +108,10 @@ export function InsiderScripts() {
     }
     if (isCheckoutFlow(routePath)) {
       insiderCheckoutPage();
+      return;
+    }
+    if (isConfirmation(routePath)) {
+      insiderOtherPage("Order confirmation");
       return;
     }
     insiderOtherPage(otherPageName(routePath));
