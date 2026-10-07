@@ -53,7 +53,7 @@ export default async function ProductDetailPage({
           { name, url: path },
         ])}
       />
-      <ProductDetailPageView product={product} />
+      <ProductDetailPageView slug={slug} product={product} />
     </>
   );
 }

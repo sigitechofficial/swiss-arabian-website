@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useQuery } from "@tanstack/react-query";
+import { PageLoading } from "@/components/ui";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { ensureInsiderProductPage } from "@/lib/insider";
+import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
 import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
@@ -14,7 +16,7 @@ import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemor
 import { pageContainer } from "@/styles/siteChrome";
 import { crumbsList } from "@/styles/shopChrome";
 import { pdpHero, pdpSplit, relatedEm } from "@/styles/pdpChrome";
-import { catalogKeys, fetchCollectionProducts } from "../api/catalog.service";
+import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
 import type { ProductDetail } from "../types/product";
 import {
   CONCENTRATION_LABELS,
@@ -46,12 +48,23 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
   return lines.find((line) => keys.includes(line.variantId) || line.slug === product.slug);
 }
 
-export function ProductDetailPageView({ product: detail }: { product: ProductDetail | null }) {
+export function ProductDetailPageView({
+  slug,
+  product: detail,
+}: {
+  slug: string;
+  product: ProductDetail | null;
+}) {
   const copy = useShopCopy();
-  const { marketId } = useMarket();
-  const zoneCode = marketId ?? "";
-  const apiProduct = detail;
-  const slug = detail?.slug ?? "";
+  const { marketId, catalogContext } = useMarket();
+  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const { data: fetched, isLoading } = useQuery({
+    queryKey: catalogKeys.detail(slug, zoneCode),
+    queryFn: () => fetchProductBySlug(slug, zoneCode, catalogContext),
+    enabled: Boolean(slug),
+    ...(detail ? { initialData: detail, initialDataUpdatedAt: 0 } : {}),
+  });
+  const apiProduct = fetched ?? detail;
 
   const product = useMemo(
     () => (apiProduct ? toCatalogProduct(apiProduct) : undefined),
@@ -158,6 +171,10 @@ export function ProductDetailPageView({ product: detail }: { product: ProductDet
       }
     });
   }, [youMayAlsoLike, related]);
+
+  if (!product && isLoading) {
+    return <PageLoading fill />;
+  }
 
   if (!product) {
     return (
