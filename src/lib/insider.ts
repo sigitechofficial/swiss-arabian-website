@@ -437,14 +437,15 @@ export function syncInsiderCart(cart: InsiderCartSnapshot): void {
 }
 
 /**
- * User + currency + basket. Must land in InsiderQueue *before* page type + init.
+ * User + currency + language. Must land in InsiderQueue *before* page type + init.
  * Language is both a user attribute and a `type: "language"` row (`en_US`).
+ * `type: "cart"` is the cart page type, not basket context — only the cart route sends it.
  */
 export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
   cart?: InsiderCartSnapshot | null;
   currency?: string | null;
-  /** Listing InOne testers treat any cart items as category products — omit type:cart. */
+  /** Omit type:cart. Required on every page except /cart — it registers a cart page view. */
   skipCart?: boolean;
 }): void {
   runWhenReady(() => {
@@ -491,7 +492,7 @@ function pushPage(type: string, value?: Record<string, unknown>): void {
   });
 }
 
-/** Last push on a route when page type is already in the queue (cart-on-every-page). */
+/** Last push on the cart route, where type:cart is already the page type. */
 export function insiderInit(): void {
   runWhenReady(() => {
     queue().push({ type: "init" });

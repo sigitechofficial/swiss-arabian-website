@@ -16,6 +16,7 @@ import {
   insiderCheckoutPage,
   insiderHomePage,
   insiderIdentify,
+  insiderInit,
   insiderListingPage,
   insiderOtherPage,
   insiderProductViewed,
@@ -43,7 +44,6 @@ describe("Insider page-view queues", () => {
       { type: "user" },
       { type: "currency" },
       { type: "language", value: "en_US" },
-      { type: "cart", value: { total: 0, items: [] } },
       { type: "init" },
     ];
     insiderProductViewed({
@@ -65,10 +65,10 @@ describe("Insider page-view queues", () => {
       "user",
       "currency",
       "language",
-      "cart",
       "product",
       "init",
     ]);
+    expect(types).not.toContain("cart");
   });
 
   it("sends documented page types, with checkout as other + init", () => {
@@ -250,20 +250,15 @@ describe("Insider page-view queues", () => {
     expect(value.items?.[0]?.shipping_cost).toBeUndefined();
   });
 
-  it("sends user, currency, and basket cart before a page init", () => {
+  it("sends user, currency, and language before home without a cart page type", () => {
     pushInsiderUserContext({
+      skipCart: true,
       cart: { total: 0, items: [] },
     });
     insiderHomePage();
     const types = (window.InsiderQueue ?? []).map((row) => row.type);
-    expect(types).toEqual([
-      "user",
-      "currency",
-      "language",
-      "cart",
-      "home",
-      "init",
-    ]);
+    expect(types).toEqual(["user", "currency", "language", "home", "init"]);
+    expect(types).not.toContain("cart");
     expect(types.filter((type) => type === "init")).toHaveLength(1);
     expect(
       (window.InsiderQueue ?? []).find((row) => row.type === "language")?.value,
@@ -274,16 +269,17 @@ describe("Insider page-view queues", () => {
     expect(
       (window.InsiderQueue ?? []).find((row) => row.type === "currency")?.value,
     ).toBe("AED");
-    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
-    expect(cart?.value).toMatchObject({
-      total: 0,
-      shipping_cost: 0,
+  });
+
+  it("pushes cart once on the cart page, before a single init", () => {
+    pushInsiderUserContext({
+      cart: { total: 0, items: [] },
     });
-    expect(cart?.value).not.toHaveProperty("subtotal");
-    expect(cart?.value).not.toHaveProperty("quantity");
-    expect(Array.isArray((cart?.value as { items?: unknown }).items)).toBe(
-      true,
-    );
+    insiderInit();
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "language", "cart", "init"]);
+    expect(types.filter((type) => type === "cart")).toHaveLength(1);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
   });
 
   it("does not push user after init (logged-in /me bootstrap)", () => {
@@ -306,11 +302,13 @@ describe("Insider page-view queues", () => {
     expect(beginInsiderRouteFlush("/")).toBe(true);
     expect(window.InsiderQueue).toEqual([]);
     pushInsiderUserContext({
+      skipCart: true,
       user: { uuid: "cust-1", email: "a@b.com" },
     });
     insiderHomePage();
     const types = (window.InsiderQueue ?? []).map((row) => row.type);
-    expect(types).toEqual(["user", "currency", "language", "cart", "home", "init"]);
+    expect(types).toEqual(["user", "currency", "language", "home", "init"]);
+    expect(types).not.toContain("cart");
     const user = (window.InsiderQueue ?? []).find((row) => row.type === "user");
     expect((user?.value as { email?: string }).email).toBe("a@b.com");
     expect(types.filter((type) => type === "init")).toHaveLength(1);

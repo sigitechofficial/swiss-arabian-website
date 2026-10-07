@@ -25,7 +25,8 @@ import { useCartStore } from "@/stores/useCartStore";
 
 /**
  * Replay queued calls after ins.js loads, then send one page type + init
- * per SPA route. PDP product+init lives in ProductDetailPageView — skip here.
+ * per SPA route. type:cart is only the cart page. PDP product+init lives in
+ * ProductDetailPageView — skip here.
  */
 export function InsiderScripts() {
   const pathname = usePathname();
@@ -72,7 +73,8 @@ export function InsiderScripts() {
       }),
       shipping,
     );
-    if (!isListing(routePath)) syncInsiderCart(snapshot);
+    const cartPage = isCart(routePath);
+    if (cartPage) syncInsiderCart(snapshot);
     if (!beginInsiderRouteFlush(routePath)) return;
     const authUser = useAuthStore.getState().user;
     pushInsiderUserContext({
@@ -87,7 +89,7 @@ export function InsiderScripts() {
           }
         : null,
       cart: snapshot,
-      skipCart: isListing(routePath),
+      skipCart: !cartPage,
     });
 
     if (isHome(routePath)) {
