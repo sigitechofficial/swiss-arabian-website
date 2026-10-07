@@ -51,16 +51,25 @@ function configuredStorefrontHost(): string | null {
 
 type ServerHostResolver = () => Promise<string | null>;
 
-let serverHostResolver: ServerHostResolver | null = null;
+const SERVER_HOST_RESOLVER = Symbol.for("swissarabian.serverStorefrontHostResolver");
 
-/** Called once from the Node server runtime. Not imported by client components. */
+type HostResolverGlobal = typeof globalThis & {
+  [SERVER_HOST_RESOLVER]?: ServerHostResolver;
+};
+
+/**
+ * Instrumentation and the page bundle are separate copies of this module.
+ * A module variable set at startup is invisible to the request, so the
+ * product page calls the API with no storefront host.
+ */
 export function setServerStorefrontHostResolver(resolver: ServerHostResolver): void {
-  serverHostResolver = resolver;
+  (globalThis as HostResolverGlobal)[SERVER_HOST_RESOLVER] = resolver;
 }
 
 export async function readRegisteredServerHost(): Promise<string | null> {
-  if (!serverHostResolver) return null;
-  return serverHostResolver();
+  const resolver = (globalThis as HostResolverGlobal)[SERVER_HOST_RESOLVER];
+  if (!resolver) return null;
+  return resolver();
 }
 
 export async function resolveStorefrontHost(): Promise<string | null> {
