@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -24,7 +24,6 @@ export function useNavbarChrome() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
   const languageId = localeFromPathname(pathname || "/");
 
   useEffect(() => {
@@ -34,7 +33,14 @@ export function useNavbarChrome() {
   }, [pathname]);
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
   const setLanguageId = (id: (typeof TOPBAR_LANGUAGES)[number]["id"]) => {
-    router.push(withLocalePrefix(pathname || "/", id));
+    const current = pathname || "/";
+    const nextPath = withLocalePrefix(current, id);
+    if (nextPath === current) return;
+    // A client navigation follows the rewritten page and stays on the English
+    // address. A full load keeps /ar in the address bar.
+    const search = window.location.search;
+    const hash = window.location.hash;
+    window.location.assign(`${nextPath}${search}${hash}`);
   };
   const { marketId, setMarketId, regionOptions } = useMarket();
   const regionId =
