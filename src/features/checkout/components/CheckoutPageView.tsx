@@ -6,10 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { addItemOptimistic } from "@/features/cart/api/optimisticCart";
-import {
-  CATALOG_PRODUCTS,
-  type CatalogProduct,
-} from "@/features/catalog/constants/catalogProducts";
+import { type CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   checkoutCrumbsList,
@@ -43,6 +40,7 @@ import {
   shippingDiscountAmount,
   visibleGiftCards,
 } from "@/features/promotions";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -60,10 +58,6 @@ import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
 import { CheckoutPayment } from "./checkout/CheckoutPayment";
 import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
-
-function lineImageUrl(slug: string, fallback?: string) {
-  return CATALOG_PRODUCTS.find((p) => p.slug === slug)?.imageUrl ?? fallback;
-}
 
 const EMPTY_ADDRESS: AddressFields = {
   fullName: "",
@@ -225,16 +219,22 @@ export function CheckoutPageView() {
     [estimate?.amountPayable],
   );
   const warnings = checkoutWarningMessages(session?.validationIssues);
+  const earnPreview = useEarnPreview({
+    checkoutSessionId: session?.checkoutSessionId,
+  });
 
   const selectedPayment = checkout.paymentMethods.find(
     (m) => m.zonePaymentMethodId === checkout.selectedPaymentId,
   );
   const submitting = checkout.status === "submitting";
+  const covered = amountPayable === 0;
   const canSubmit =
     checkout.status === "ready" &&
-    Boolean(checkout.selectedDeliveryId && checkout.selectedPaymentId);
+    Boolean(checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId));
   const ctaLabel = submitting
     ? "Placing order…"
+    : covered
+      ? "Place order"
     : selectedPayment && (selectedPayment.requiresRedirect || isStripePaymentMethod(selectedPayment))
       ? "Continue to payment"
       : "Place order";
@@ -384,6 +384,7 @@ export function CheckoutPageView() {
                   onSelect={(id) => void checkout.choosePayment(id)}
                   canSubmit={canSubmit}
                   ctaLabel={ctaLabel}
+                  amountPayable={amountPayable}
                 />
               </form>
               </GooglePlacesProvider>
@@ -408,6 +409,7 @@ export function CheckoutPageView() {
                 amountPayable={amountPayable}
                 giftCards={giftCards}
                 warnings={warnings}
+                earnPreview={earnPreview.preview}
               />
             </div>
           ) : null}

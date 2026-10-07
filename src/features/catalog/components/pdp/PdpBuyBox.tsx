@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { OffersForYou } from "@/features/promotions/components/OffersForYou";
 import { OfferCountLink } from "@/features/promotions/components/PromotionOffers";
 import { stars } from "@/styles/landingChrome";
@@ -60,6 +62,10 @@ export function PdpBuyBox({
     offerOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setOffersOpen(true);
   };
+  const earnPreview = useProductEarnPreview({
+    unitPrice: product.price,
+    quantity: cartLine?.quantity ?? quantity,
+  });
 
   const family = familyChips(metafields);
   const pyramidNotes = pyramidNoteChips(metafields);
@@ -117,6 +123,8 @@ export function PdpBuyBox({
           Tabby or Tamara.
         </p>
       ) : null}
+
+      <EarnPreviewNote preview={earnPreview.preview} />
 
       {daysLine || thresholdLine ? (
         <ul className={pdpPromises} role="list">

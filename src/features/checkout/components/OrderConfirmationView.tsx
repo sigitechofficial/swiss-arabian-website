@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
   checkoutCta,
@@ -168,6 +170,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     queryFn: () => getOrder(orderId),
     retry: 1,
   });
+
+  // Frozen order snapshot — never the last cart estimate.
+  const orderReward = useOrderReward(orderId);
 
   const loadedOrder = orderQuery.data;
   const method = loadedOrder?.selectedPaymentMethod;
@@ -494,6 +499,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
               </div>
             </dl>
           </section>
+
+          {hasOrderLoyaltySection(orderReward) ? (
+            <div className={ocCard}>
+              <OrderRewardNote reward={orderReward} />
+            </div>
+          ) : null}
 
           <section className={ocCard} aria-labelledby="order-delivery">
             <h2 id="order-delivery">Delivery &amp; payment</h2>

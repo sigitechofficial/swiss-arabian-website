@@ -10,6 +10,10 @@ import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRedemptionEditor";
+import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { useCartStore } from "@/stores/useCartStore";
 import {
   cartCrumbs,
@@ -86,6 +90,7 @@ export function CartPageView() {
   const validation = useCartStore((s) => s.validation);
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const removeLocalLine = useCartStore((s) => s.removeLine);
+  const earnPreview = useEarnPreview({ cartId });
   const router = useRouter();
 
   const blockingErrors = validation?.isValid === false ? validation.errors : [];
@@ -125,6 +130,7 @@ export function CartPageView() {
   const itemCount = mounted ? persistedItemCount : 0;
 
   const promotions = useCartStore((s) => s.promotions);
+  const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
   const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
@@ -299,6 +305,7 @@ export function CartPageView() {
                   <AppliedCampaigns />
                 )}
                 <CouponForm />
+                {quotePending ? null : <LoyaltyRedemptionEditor />}
                 <GiftCardForm />
                 {quotePending ? null : (
                 <MoneySummary
@@ -310,12 +317,16 @@ export function CartPageView() {
                   shippingDiscount={shipDiscount}
                   total={total}
                   amountPayable={amountPayable}
+                  loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
                   giftCards={giftCards}
                   freeGifts={awardedGiftLines(promotions).map((gift) => ({
                     name: giftDisplayName(gift),
                     quantity: gift.quantity,
                   }))}
                 />
+                )}
+                {quotePending ? null : (
+                  <EarnPreviewNote preview={earnPreview.preview} variant="block" showBasis />
                 )}
                 {priceChanged ? (
                   <p className={cartHint} role="status">
