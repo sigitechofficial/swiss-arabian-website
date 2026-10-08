@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
@@ -74,7 +74,7 @@ export function CatalogProductCard({
       className={dense ? gridCard : productCard}
       style={hasIngredientsHover ? ({ "--ingredients-bg": `url(${hover})` } as CSSProperties) : undefined}
     >
-      <Link className={cardLink} href={`/products/${product.slug}`} aria-label={product.title} />
+      <LocaleLink className={cardLink} href={`/products/${product.slug}`} aria-label={product.title} />
       <div className={cardTagStack}>
         <ProductCardTags slug={product.slug} tags={product.tags ?? []} collectionSlug={collectionSlug} />
         {promotionBadge ? (
@@ -84,7 +84,7 @@ export function CatalogProductCard({
         ) : null}
       </div>
       <div className={hasIngredientsHover ? `${cardMedia} ${cardMediaSwap}` : cardMedia}>
-        <Link
+        <LocaleLink
           className={hasIngredientsHover ? cardMediaLinkSwap : cardMediaLink}
           href={`/products/${product.slug}`}
           tabIndex={-1}
@@ -103,7 +103,7 @@ export function CatalogProductCard({
           ) : (
             <span className={`${bottle} ${cardBottle}`} aria-hidden="true" />
           )}
-        </Link>
+        </LocaleLink>
       </div>
       <div className={cardAction}>{action ?? <WishlistHeartButton productId={product.id} />}</div>
       {hideAdd ? null : (

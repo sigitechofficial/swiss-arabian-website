@@ -19,10 +19,12 @@ export type PersistedCatalogContext = {
 type UiState = {
   cartOpen: boolean;
   searchOpen: boolean;
+  mobileNavOpen: boolean;
   selectedMarketId: string | null;
   catalogContext: PersistedCatalogContext | null;
   setCartOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
+  setMobileNavOpen: (open: boolean) => void;
   setSelectedMarketId: (id: string | null) => void;
   setCatalogContext: (ctx: PersistedCatalogContext | null) => void;
   selectMarket: (
@@ -38,10 +40,12 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       cartOpen: false,
       searchOpen: false,
+      mobileNavOpen: false,
       selectedMarketId: null,
       catalogContext: null,
       setCartOpen: (cartOpen) => set({ cartOpen }),
       setSearchOpen: (searchOpen) => set({ searchOpen }),
+      setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
       setSelectedMarketId: (selectedMarketId) => set({ selectedMarketId }),
       setCatalogContext: (catalogContext) => set({ catalogContext }),
       selectMarket: (selectedMarketId, catalogContext) =>

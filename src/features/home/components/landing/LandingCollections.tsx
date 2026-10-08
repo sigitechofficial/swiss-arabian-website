@@ -1,7 +1,10 @@
-import Link from "next/link";
+"use client";
+
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { chromeNavLinks, useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import {
-  collectionArt,
-  collectionArtProduct,
   collectionBody,
   collectionCard,
   collectionGrid,
@@ -14,38 +17,36 @@ import {
   sectionTitle,
 } from "@/styles/landingChrome";
 import { pageContainer } from "@/styles/siteChrome";
-import { SIGNATURE_COLLECTIONS } from "../../constants/landingContent";
 
 export function LandingCollections() {
+  const copy = useShopCopy();
+  const { marketId } = useMarket();
+  const { chromeItems, isLoading } = useNavigation(marketId || undefined);
+  const doors = chromeNavLinks(chromeItems);
+
   return (
-    <section className={`${collectionsSection} pt-[clamp(1.25rem,3vw,2rem)] pb-[clamp(3.5rem,8vw,7rem)]`} aria-labelledby="collTitle">
+    <section className={`${collectionsSection} pt-[clamp(1.25rem,3vw,2rem)] pb-[clamp(3.5rem,8vw,7rem)]`} aria-labelledby="collTitle" aria-busy={isLoading && doors.length === 0}>
       <div className={pageContainer}>
         <header className={sectionHead}>
           <h2 className={sectionTitle} id="collTitle">
-            Shop by Categories
+            {copy("shopByCategories")}
           </h2>
-          <p className={lead}>Enter the World of Swiss Arabian</p>
+          <p className={lead}>{copy("enterTheHouse")}</p>
         </header>
 
         <div className={collectionGrid}>
-          {SIGNATURE_COLLECTIONS.map((collection) => (
-            <Link key={collection.title} className={collectionCard} href={collection.href}>
-              <img
-                className={
-                  "frame" in collection && collection.frame === "product"
-                    ? `${collectionArt} ${collectionArtProduct}`
-                    : collectionArt
-                }
-                src={collection.image}
-                alt={collection.alt}
-                loading="lazy"
-              />
-              <span className={collectionBody}>
-                <span className={collectionTitle}>{collection.title}</span>
-                <span className={`${linkUnderline} ${linkUnderlineLight}`}>Explore</span>
-              </span>
-            </Link>
-          ))}
+          {isLoading && doors.length === 0
+            ? Array.from({ length: 4 }, (_, index) => (
+                <span key={index} className={`${collectionCard} block h-40 animate-pulse bg-[var(--ink)]/10`} />
+              ))
+            : doors.map((door) => (
+                <LocaleLink key={door.href} className={collectionCard} href={door.href}>
+                  <span className={collectionBody}>
+                    <span className={collectionTitle}>{door.label}</span>
+                    <span className={`${linkUnderline} ${linkUnderlineLight}`}>{copy("explore")}</span>
+                  </span>
+                </LocaleLink>
+              ))}
         </div>
       </div>
     </section>

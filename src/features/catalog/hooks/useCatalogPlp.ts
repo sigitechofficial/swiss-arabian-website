@@ -8,12 +8,14 @@ import {
   fetchCatalogListing,
   type CatalogListingSource,
 } from "../api/fetchCatalogListing";
+import type { ProductListResult } from "../api/catalog.service";
 import { toCatalogProducts } from "../utils/toCatalogProduct";
 import type { CatalogListingQuery } from "../types/catalogFacets";
 
 export function useCatalogPlp(
   source: CatalogListingSource,
   listingQuery: CatalogListingQuery,
+  initialPage?: ProductListResult | null,
 ) {
   const market = useSelectedCatalogMarket();
   const zoneCode = market?.zoneCode ?? "";
@@ -35,6 +37,10 @@ export function useCatalogPlp(
         market,
       ),
     enabled: Boolean(market),
+    initialData: initialPage
+      ? { pages: [initialPage], pageParams: [1] }
+      : undefined,
+    staleTime: 30_000,
     placeholderData: (previous, previousQuery) => {
       const key = previousQuery?.queryKey ?? [];
       const channel = market?.salesChannelCode ?? "";

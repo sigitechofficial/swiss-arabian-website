@@ -5,7 +5,7 @@ export type ChromeMega = {
   label: string;
   href: string;
   groups: Array<{ heading: string; links: ChromeLink[] }>;
-  promo: { image: string; copy: string; cta: string; href: string; cover?: boolean };
+  promo?: { image: string; copy: string; cta: string; href: string; cover?: boolean };
 };
 
 export type ChromeNavItem =

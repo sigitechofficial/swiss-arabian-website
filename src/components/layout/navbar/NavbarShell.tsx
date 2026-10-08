@@ -1,6 +1,7 @@
 "use client";
 
 import { PRIMARY_NAV, type ChromeNavItem } from "@/features/home/constants/chromeNav";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { navShell, navShellMinimal, pageContainer } from "@/styles/siteChrome";
 import type { NavbarVariant } from "./types";
 import type { NavbarChrome } from "./useNavbarChrome";
@@ -20,6 +21,7 @@ export function NavbarShell({
   variant: NavbarVariant;
   items?: readonly ChromeNavItem[];
 }) {
+  const copy = useShopCopy();
   const showSplitSearch = variant === "split";
   const inlineNav = variant === "inline" || variant === "inline-locale";
   const logoLeftSearch = variant === "logo-center" || variant === "underline";
@@ -38,7 +40,7 @@ export function NavbarShell({
         </>
       ) : variant === "minimal" ? (
         <>
-          <NavbarSearchDropdown placeholder="Search for fragrances, collections..." />
+          <NavbarSearchDropdown placeholder={copy("search")} />
           <NavbarBrand centered />
           <NavbarBoutiqueActions chrome={chrome} />
         </>

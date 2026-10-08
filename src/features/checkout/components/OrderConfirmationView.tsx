@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
   checkoutCta,
@@ -56,10 +58,6 @@ import {
   formatOrderDate,
   orderProgressStep,
 } from "@/features/orders/utils/orderStatus";
-import {
-  insiderPurchasePage,
-  toInsiderPurchaseValueFromOrder,
-} from "@/lib/insider";
 import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
 import type { OrderAddressSummary } from "../types/checkout";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
@@ -169,6 +167,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     retry: 1,
   });
 
+  // Frozen order snapshot — never the last cart estimate.
+  const orderReward = useOrderReward(orderId);
+
   const loadedOrder = orderQuery.data;
   const method = loadedOrder?.selectedPaymentMethod;
   // Cash on delivery has no gateway step to wait for.
@@ -205,14 +206,6 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     if (paid !== "success") return;
     purchaseSent.current = true;
     trackPromotion("promotion_order_completed", { surface: "order" });
-    insiderPurchasePage(
-      toInsiderPurchaseValueFromOrder({
-        orderId: placed.orderId,
-        orderNumber: placed.orderNumber,
-        totals: placed.totals,
-        lines: placed.lines,
-      }),
-    );
   }, [orderQuery.data, settle.data?.status]);
 
   if (orderQuery.isPending || polling) {
@@ -237,10 +230,10 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           <p className={stateEyebrow}>Order</p>
           <h1 className={collectionTitle}>We couldn’t load this order.</h1>
           <p>It may belong to another session. Your confirmation email has the details.</p>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
             <span>Return home</span>
             <b aria-hidden="true">↗</b>
-          </Link>
+          </LocaleLink>
         </section>
       </CheckoutStateShell>
     );
@@ -341,25 +334,25 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
         <div className={ocActions}>
           {state === "success" ? (
             <>
-              <Link className={checkoutCta} href="/products">
+              <LocaleLink className={checkoutCta} href="/products">
                 <span>Continue shopping</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
+              </LocaleLink>
               {trackHref ? (
-                <Link className={checkoutCtaGhost} href={trackHref}>
+                <LocaleLink className={checkoutCtaGhost} href={trackHref}>
                   <span>Track order</span>
-                </Link>
+                </LocaleLink>
               ) : null}
             </>
           ) : state === "failed" ? (
             <>
-              <Link className={checkoutCta} href={retryHref}>
+              <LocaleLink className={checkoutCta} href={retryHref}>
                 <span>Retry payment</span>
                 <b aria-hidden="true">↗</b>
-              </Link>
-              <Link className={checkoutCtaGhost} href="/products">
+              </LocaleLink>
+              <LocaleLink className={checkoutCtaGhost} href="/products">
                 <span>Continue shopping</span>
-              </Link>
+              </LocaleLink>
             </>
           ) : (
             <>
@@ -375,16 +368,16 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
                 <b aria-hidden="true">↗</b>
               </button>
-              <Link className={checkoutCtaGhost} href={retryHref}>
+              <LocaleLink className={checkoutCtaGhost} href={retryHref}>
                 <span>Pay now</span>
-              </Link>
+              </LocaleLink>
             </>
           )}
         </div>
         {!isGuest ? (
-          <Link className={`${checkoutLink} mt-4`} href="/account/orders">
+          <LocaleLink className={`${checkoutLink} mt-4`} href="/account/orders">
             View all your orders
-          </Link>
+          </LocaleLink>
         ) : order.orderNumber ? (
           <p className={`${checkoutNote} mt-4`}>Keep your order number — you’ll need it if you contact us about this order.</p>
         ) : null}
@@ -494,6 +487,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
               </div>
             </dl>
           </section>
+
+          {hasOrderLoyaltySection(orderReward) ? (
+            <div className={ocCard}>
+              <OrderRewardNote reward={orderReward} />
+            </div>
+          ) : null}
 
           <section className={ocCard} aria-labelledby="order-delivery">
             <h2 id="order-delivery">Delivery &amp; payment</h2>

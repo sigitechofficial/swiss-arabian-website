@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { cartSnapshotFromLines } from "@/features/cart/utils/insiderCartItem";
+import {
+  cartSnapshotFromLines,
+  quotedCartShipping,
+  quotedCartTotal,
+} from "@/features/cart/utils/insiderCartItem";
 import { env } from "@/lib/config/env";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
 import {
@@ -14,17 +18,21 @@ import {
   insiderOtherPage,
   pushInsiderUserContext,
   startInsiderSdk,
+  syncInsiderCart,
 } from "@/lib/insider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 
 /**
  * Replay queued calls after ins.js loads, then send one page type + init
- * per SPA route. PDP product+init lives in ProductDetailPageView — skip here.
+ * per SPA route. type:cart is only the cart page. PDP product+init lives in
+ * ProductDetailPageView — skip here.
  */
 export function InsiderScripts() {
   const pathname = usePathname();
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
+  const lines = useCartStore((s) => s.lines);
+  const totals = useCartStore((s) => s.totals);
   const [cartHydrated, setCartHydrated] = useState(false);
 
   useEffect(() => {
@@ -48,16 +56,26 @@ export function InsiderScripts() {
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
     if (!bootstrapped) return;
-    if (isProductDetail(pathname) || isConfirmation(pathname)) return;
+    if (isProductDetail(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
     const routePath = window.location.pathname || pathname;
-    if (!beginInsiderRouteFlush(routePath)) return;
-
-    const cartState = useCartStore.getState();
+    const merchandise =
+      totals?.subtotal ??
+      lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+    const shipping = quotedCartShipping(merchandise, totals?.shipping);
     const snapshot = cartSnapshotFromLines(
-      cartState.lines,
-      cartState.totals?.total ?? cartState.subtotal(),
+      lines,
+      quotedCartTotal({
+        merchandise,
+        quotedTotal: totals?.total,
+        quotedShipping: totals?.shipping,
+        shipping,
+      }),
+      shipping,
     );
+    const cartPage = isCart(routePath);
+    if (cartPage) syncInsiderCart(snapshot);
+    if (!beginInsiderRouteFlush(routePath)) return;
     const authUser = useAuthStore.getState().user;
     pushInsiderUserContext({
       user: authUser
@@ -71,7 +89,7 @@ export function InsiderScripts() {
           }
         : null,
       cart: snapshot,
-      skipCart: isListing(routePath),
+      skipCart: !cartPage,
     });
 
     if (isHome(routePath)) {
@@ -92,8 +110,12 @@ export function InsiderScripts() {
       insiderCheckoutPage();
       return;
     }
+    if (isConfirmation(routePath)) {
+      insiderOtherPage("Order confirmation");
+      return;
+    }
     insiderOtherPage(otherPageName(routePath));
-  }, [pathname, cartHydrated, bootstrapped]);
+  }, [pathname, cartHydrated, bootstrapped, lines, totals]);
 
   return null;
 }

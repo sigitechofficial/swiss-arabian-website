@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 export function ForbiddenView({
   title = "You need to sign in",
@@ -13,12 +13,12 @@ export function ForbiddenView({
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-sa-primary">{title}</h1>
       <p className="text-sa-muted">{message}</p>
-      <Link
+      <LocaleLink
         className="inline-flex h-11 items-center justify-center rounded-md bg-terra px-5 text-sm font-semibold text-white hover:bg-[var(--sa-action-primary-hover)]"
         href="/login"
       >
         Sign in
-      </Link>
+      </LocaleLink>
     </div>
   );
 }

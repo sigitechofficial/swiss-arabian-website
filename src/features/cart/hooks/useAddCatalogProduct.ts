@@ -2,7 +2,6 @@
 
 import { toast } from "@/components/ui/Toaster";
 import { fetchProductBySlug } from "@/features/catalog/api/catalog.service";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useUiStore } from "@/stores/useUiStore";
 import { useAddToCart } from "./useAddToCart";
 
@@ -21,9 +20,13 @@ type CatalogAddOpts = {
 export function useAddCatalogProduct() {
   const { addToCart } = useAddToCart();
   const marketId = useUiStore((s) => s.selectedMarketId);
-  const zoneCode = marketId?.trim() || DEFAULT_ZONE_CODE;
+  const zoneCode = marketId?.trim() || "";
 
   return async (opts: CatalogAddOpts): Promise<void> => {
+    if (!zoneCode) {
+      toast("This product isn’t available to purchase yet.", "error");
+      return;
+    }
     const product = await fetchProductBySlug(opts.slug, zoneCode);
     if (!product || (!product.variantId && !product.sku)) {
       toast("This product isn’t available to purchase yet.", "error");

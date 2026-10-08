@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastApiError } from "@/lib/api/toastApiError";
+import { toast } from "@/components/ui/Toaster";
 import { env } from "@/lib/config/env";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
 import { useUiStore } from "@/stores/useUiStore";
 import { registerCustomer, splitFullName } from "../api/auth.service";
@@ -17,6 +19,7 @@ import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmi
 
 export function RegisterPageView() {
   const router = useRouter();
+  const copy = useShopCopy();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { fullName: "", email: "", phone: "", password: "" },
@@ -25,12 +28,15 @@ export function RegisterPageView() {
   async function onSubmit(values: RegisterFormValues) {
     try {
       const { firstName, lastName } = splitFullName(values.fullName);
-      const marketId = useUiStore.getState().selectedMarketId;
-      const context = resolveStorefrontContext({
-        zoneCode: toAuthZoneCode(marketId),
-      });
+      const saved = useUiStore.getState();
+      const zoneCode = toAuthZoneCode(saved.catalogContext?.zoneCode || saved.selectedMarketId);
+      if (!zoneCode) {
+        toast(copy("chooseCountry"), "error");
+        return;
+      }
+      const context = resolveStorefrontContext({ zoneCode });
       const result = await registerCustomer({
-        zoneCode: context.zoneCode || toAuthZoneCode(marketId),
+        zoneCode: context.zoneCode || zoneCode,
         salesChannelCode: context.salesChannelCode || undefined,
         email: values.email,
         // Already E.164 from the phone field.
@@ -103,9 +109,9 @@ export function RegisterPageView() {
         </div>
         <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
           Already registered?{" "}
-          <Link className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/login">
+          <LocaleLink className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/login">
             Sign in
-          </Link>
+          </LocaleLink>
         </p>
         <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
           By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.

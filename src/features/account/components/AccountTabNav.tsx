@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePathname } from "next/navigation";
 
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
@@ -23,7 +23,7 @@ export function AccountTabNav() {
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <Link
+            <LocaleLink
               key={item.href}
               href={item.href}
               className={`relative shrink-0 py-[15px] text-[12.5px] whitespace-nowrap transition-colors ${
@@ -39,7 +39,7 @@ export function AccountTabNav() {
                   aria-hidden
                 />
               ) : null}
-            </Link>
+            </LocaleLink>
           );
         })}
       </div>

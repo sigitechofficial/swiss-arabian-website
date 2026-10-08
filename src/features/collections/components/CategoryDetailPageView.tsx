@@ -1,27 +1,19 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { ProductCatalogView } from "@/features/catalog/components/ProductCatalogView";
-import { catalogKeys, fetchCategoryBySlug } from "@/features/catalog/api/catalog.service";
+import type { CatalogCategory } from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 
 export function CategoryDetailPageView({
   slug,
   listingQuery,
+  category,
 }: {
   slug: string;
   listingQuery: CatalogListingQuery;
+  category: CatalogCategory | null;
 }) {
-  const market = useSelectedCatalogMarket();
-  const zoneCode = market?.zoneCode ?? "";
-
-  const { data: category } = useQuery({
-    queryKey: [...catalogKeys.category(slug, zoneCode), market?.salesChannelCode ?? ""],
-    queryFn: () => fetchCategoryBySlug(slug, zoneCode, market),
-    enabled: Boolean(market),
-  });
 
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     { kind: "category", slug },

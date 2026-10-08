@@ -1,7 +1,7 @@
 import { AccountRewardsPageView } from "@/features/account";
 
 export const metadata = {
-  title: "Rewards & loyalty",
+  title: "My rewards",
 };
 
 export default function AccountRewardsPage() {

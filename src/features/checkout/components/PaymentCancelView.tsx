@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -86,10 +86,10 @@ export function PaymentCancelView() {
           <p className={stateEyebrow}>Payment</p>
           <h1 className={collectionTitle}>This payment session has ended.</h1>
           <p>Start again from your bag to place a new order.</p>
-          <Link className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+          <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
             <span>Back to bag</span>
             <b aria-hidden="true">↗</b>
-          </Link>
+          </LocaleLink>
         </section>
       </CheckoutStateShell>
     );
@@ -121,9 +121,9 @@ export function PaymentCancelView() {
             <span>{retrying ? "Opening payment…" : "Retry payment"}</span>
             <b aria-hidden="true">↗</b>
           </button>
-          <Link className={checkoutLink} href="/">
+          <LocaleLink className={checkoutLink} href="/">
             Return home
-          </Link>
+          </LocaleLink>
         </div>
       </section>
     </CheckoutStateShell>

@@ -37,6 +37,8 @@ export type ProductCollectionRef = {
 export type ProductDetail = ProductSummary & {
   description: string;
   descriptionHtml?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   variantId: string;
   brandName?: string;
   collections?: ProductCollectionRef[];

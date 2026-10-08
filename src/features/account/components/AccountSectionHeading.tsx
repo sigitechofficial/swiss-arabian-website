@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 type AccountSectionHeadingProps = {
   title: string;
@@ -18,12 +18,12 @@ export function AccountSectionHeading({
         {title}
       </h2>
       {href && linkLabel ? (
-        <Link
+        <LocaleLink
           href={href}
           className="text-[12px] font-medium text-sa-primary hover:text-terra"
         >
           {linkLabel} &nbsp;→
-        </Link>
+        </LocaleLink>
       ) : null}
     </div>
   );

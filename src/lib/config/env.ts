@@ -89,6 +89,7 @@ export const env = {
     verification:
       readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
+    paymob: readPublic(process.env.NEXT_PUBLIC_ENABLE_PAYMOB) === "true",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",

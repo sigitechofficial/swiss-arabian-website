@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -24,6 +24,8 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
 import { AppliedCampaigns } from "@/features/promotions/components/AppliedCampaigns";
 import { readPromotionSnapshot } from "@/features/promotions/types/promotions";
+import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
@@ -171,6 +173,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     retry: 1,
   });
   const orderNumber = detailQuery.data?.order.orderNumber ?? null;
+  const orderReward = useOrderReward(orderId);
 
   // Richer tracking view (carrier, estimated delivery, shipment items). The
   // detail payload is the fallback if it can't be loaded.
@@ -218,12 +221,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
       <AccountPageShell>
         <div className={`${accountContainer} py-20 text-center`}>
           <p className="text-[14.5px] text-sa-primary">We couldn’t find this order.</p>
-          <Link
+          <LocaleLink
             href="/account/orders"
             className="mt-3 inline-block text-[12px] text-terra underline underline-offset-4"
           >
             Back to Purchase History
-          </Link>
+          </LocaleLink>
         </div>
       </AccountPageShell>
     );
@@ -244,12 +247,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   return (
     <AccountPageShell>
       <div className={`${accountContainer} flex flex-col gap-5 py-8 lg:py-10`}>
-        <Link
+        <LocaleLink
           href="/account/orders"
           className="inline-flex w-fit items-center gap-1.5 text-[12px] text-sa-muted transition-colors hover:text-terra"
         >
           <span aria-hidden="true">←</span> Back to Purchase History
-        </Link>
+        </LocaleLink>
 
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -263,12 +266,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
           <div className="flex flex-wrap items-center gap-3">
             <AccountStatusPill label={label} tone={tone} />
             {payable ? (
-              <Link
+              <LocaleLink
                 href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
                 className="flex h-9 items-center bg-terra px-4 text-[11px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
               >
                 Complete payment
-              </Link>
+              </LocaleLink>
             ) : null}
           </div>
         </header>
@@ -334,6 +337,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             })}
           </ul>
         </Card>
+
+        {hasOrderLoyaltySection(orderReward) ? (
+          <Card title="Rewards">
+            <OrderRewardNote reward={orderReward} showHeading={false} />
+          </Card>
+        ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Card title="Order summary">

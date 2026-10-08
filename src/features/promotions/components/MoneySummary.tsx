@@ -15,6 +15,7 @@ export function MoneySummary({
   tax = 0,
   total,
   amountPayable,
+  loyalty = null,
   giftCards = [],
   freeGifts = [],
   surface,
@@ -29,6 +30,8 @@ export function MoneySummary({
   tax?: number;
   total: number;
   amountPayable?: number | null;
+  /** Server loyalty tender. Shown after Total and before gift cards. */
+  loyalty?: { points: number; amount: number; currency?: string | null } | null;
   giftCards?: GiftCardTender[];
   /** Display-only awarded gifts. Not added to subtotal, discount, or total. */
   freeGifts?: { name: string; quantity: number }[];
@@ -79,6 +82,18 @@ export function MoneySummary({
           </dd>
         </div>
       ))}
+      <div className={totalsLine}>
+        <dt>Total</dt>
+        <dd dir="ltr">{formatMoney(total, currency)}</dd>
+      </div>
+      {loyalty && loyalty.points > 0 ? (
+        <div>
+          <dt>Reward points</dt>
+          <dd dir="ltr">
+            −{formatMoney(loyalty.amount, loyalty.currency || currency)}
+          </dd>
+        </div>
+      ) : null}
       {giftCards.map((card, index) => {
         const amount = Number(card.amount);
         if (!(amount > 0)) return null;
@@ -89,10 +104,6 @@ export function MoneySummary({
           </div>
         );
       })}
-      <div className={totalsLine}>
-        <dt>Total</dt>
-        <dd dir="ltr">{formatMoney(total, currency)}</dd>
-      </div>
       {showPayable ? (
         <div className={totalsLine}>
           <dt>Amount due</dt>

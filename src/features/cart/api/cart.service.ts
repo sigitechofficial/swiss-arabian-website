@@ -1,5 +1,5 @@
 import { getAccessToken } from "@/lib/auth/token";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api/apiClient";
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ApiCart } from "../types/cart";
 import { getOrCreateGuestToken, getStoredCartId } from "../utils/guestToken";
@@ -154,5 +154,24 @@ export async function removeCartGiftCards(cartId: string): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiDelete<ApiCart>(
     `/storefront/cart/${encodeURIComponent(cartId)}/gift-cards?${params.toString()}`,
+  );
+}
+
+/** Sends POINTS only. The server prices the reservation. */
+export async function applyCartLoyaltyRedemption(
+  cartId: string,
+  points: number,
+): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiPut<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/loyalty-redemption?${params.toString()}`,
+    { points },
+  );
+}
+
+export async function removeCartLoyaltyRedemption(cartId: string): Promise<ApiCart> {
+  const params = buildCartParams({ cartId });
+  return apiDelete<ApiCart>(
+    `/storefront/cart/${encodeURIComponent(cartId)}/loyalty-redemption?${params.toString()}`,
   );
 }

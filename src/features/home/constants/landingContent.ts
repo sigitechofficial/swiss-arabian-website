@@ -25,34 +25,6 @@ export const FEATURE_CARDS = [
   },
 ] as const;
 
-export const SIGNATURE_COLLECTIONS = [
-  {
-    href: "/collections/perfume",
-    image: "/assets/collection-1.jpg",
-    alt: "Swiss Arabian perfumes",
-    title: "Perfumes",
-  },
-  {
-    href: "/collections/incense",
-    image: "/assets/collection-incense.png",
-    alt: "Swiss Arabian incense",
-    title: "Incense",
-  },
-  {
-    href: "/collections/gift-sets",
-    image: "/assets/collection-gift-sets.png",
-    alt: "Swiss Arabian gift sets",
-    title: "Gift sets",
-  },
-  {
-    href: "/collections/concentrated-perfume-oils",
-    image: "/assets/collection-oils.png",
-    alt: "Swiss Arabian perfume oils",
-    title: "Oils",
-    frame: "product",
-  },
-] as const;
-
 export const FRAGRANCE_NOTES = [
   {
     href: "/collections/fresh-citrus",

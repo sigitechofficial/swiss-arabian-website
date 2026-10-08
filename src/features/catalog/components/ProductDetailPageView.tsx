@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useQuery } from "@tanstack/react-query";
-import { PageLoading } from "@/components/ui";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { ensureInsiderProductPage } from "@/lib/insider";
 import { useMarket } from "@/providers/MarketProvider";
@@ -14,16 +14,13 @@ import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemor
 import { pageContainer } from "@/styles/siteChrome";
 import { crumbsList } from "@/styles/shopChrome";
 import { pdpHero, pdpSplit, relatedEm } from "@/styles/pdpChrome";
-import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
+import { catalogKeys, fetchCollectionProducts } from "../api/catalog.service";
+import type { ProductDetail } from "../types/product";
 import {
-  CATALOG_PRODUCTS,
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "../constants/catalogProducts";
-import {
-  PRODUCT_DETAIL_CONTENT,
-  type ProductDetailContent,
-} from "../constants/productDetailContent";
+import type { ProductDetailContent } from "../constants/productDetailContent";
 import { toCatalogProduct } from "../utils/toCatalogProduct";
 import { notesSectionTitle, pyramidFromMetafields } from "../utils/pdpMetafields";
 import { shippingDaysLine, shippingTabCopy, shippingThresholdLine } from "../utils/pdpShipping";
@@ -34,17 +31,12 @@ import { PdpGallery } from "./pdp/PdpGallery";
 import { PdpPrVideo } from "./pdp/PdpPrVideo";
 import { PdpRelatedRail } from "./pdp/PdpRelatedRail";
 
-const FALLBACK_CONTENT: ProductDetailContent = {
-  story: "Composed in Dubai since 1974 — a Swiss Arabian signature, worn on its own or layered.",
-  notes: [
-    { level: "Top", names: "Bergamot · Pink Pepper", bar: 42 },
-    { level: "Heart", names: "Rose · Amber", bar: 68 },
-    { level: "Base", names: "Musk · Wood", bar: 92 },
-  ],
-  wear: "Apply to pulse points — wrists, the base of the throat, behind the ears. An extrait is concentrated: two touches carry through the day.",
+const EMPTY_CONTENT: ProductDetailContent = {
+  story: "",
+  notes: [],
+  wear: "",
   shipping: "",
-  authenticity:
-    "Composed, filled and finished by Swiss Arabian in Dubai. Every bottle ships from our warehouse with its batch code intact.",
+  authenticity: "",
 };
 
 function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLine | undefined {
@@ -54,28 +46,18 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
   return lines.find((line) => keys.includes(line.variantId) || line.slug === product.slug);
 }
 
-export function ProductDetailPageView({ slug }: { slug: string }) {
+export function ProductDetailPageView({ product: detail }: { product: ProductDetail | null }) {
+  const copy = useShopCopy();
   const { marketId } = useMarket();
   const zoneCode = marketId ?? "";
+  const apiProduct = detail;
+  const slug = detail?.slug ?? "";
 
-  // Wait for the real market. The default "UAE" code is not the live zone,
-  // and a fetch against it reports a real product as missing.
-  const { data: apiProduct, isPending } = useQuery({
-    queryKey: catalogKeys.detail(slug, zoneCode),
-    queryFn: () => fetchProductBySlug(slug, zoneCode),
-    enabled: Boolean(slug && zoneCode),
-  });
-
-  const staticProduct = useMemo(() => CATALOG_PRODUCTS.find((item) => item.slug === slug), [slug]);
-
-  // Prefer live data; keep the static entry as the fallback so the designed
-  // house products keep rendering exactly as they do today.
   const product = useMemo(
-    () => (apiProduct ? toCatalogProduct(apiProduct) : staticProduct),
-    [apiProduct, staticProduct],
+    () => (apiProduct ? toCatalogProduct(apiProduct) : undefined),
+    [apiProduct],
   );
 
-  const authoredContent = (slug && PRODUCT_DETAIL_CONTENT[slug]) || null;
   const livePyramid = useMemo(() => pyramidFromMetafields(apiProduct?.pdpMetafields), [apiProduct]);
   const metafields = apiProduct?.pdpMetafields;
   const shippingPromise = apiProduct?.shippingPromise ?? null;
@@ -87,12 +69,9 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   const liveShippingCopy = shippingTabCopy(shippingPromise);
 
   const content = useMemo<ProductDetailContent>(() => {
-    const base = authoredContent ?? FALLBACK_CONTENT;
-    const shipping = liveShippingCopy ?? "";
-    if (authoredContent) return { ...base, shipping };
-    const apiStory = apiProduct?.description?.trim();
-    return apiStory ? { ...base, story: apiStory, shipping } : { ...base, shipping };
-  }, [authoredContent, apiProduct, liveShippingCopy]);
+    const story = apiProduct?.description?.trim() || "";
+    return { ...EMPTY_CONTENT, story, shipping: liveShippingCopy ?? "" };
+  }, [apiProduct, liveShippingCopy]);
 
   const [failedImages, setFailedImages] = useState<string[]>([]);
   const [reveal, setReveal] = useState(false);
@@ -180,25 +159,15 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
     });
   }, [youMayAlsoLike, related]);
 
-  if ((!zoneCode || isPending) && !product) {
-    return (
-      <div>
-        <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>
-          <PageLoading label="Loading product…" />
-        </section>
-      </div>
-    );
-  }
-
   if (!product) {
     return (
       <div>
         <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>
           <h1 className="font-display text-[2rem] leading-[1.05] font-medium tracking-[0.005em]">
-            Product not found.
+            {copy("productMissing")}
           </h1>
           <p className="mt-4 max-w-[62ch] text-base leading-[1.7] text-[var(--ink-2,#5b5148)]">
-            <Link href="/products">Back to all products</Link>
+            <LocaleLink href="/products">{copy("backToProducts")}</LocaleLink>
           </p>
         </section>
       </div>
@@ -211,9 +180,9 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
   const prVideo = apiProduct?.prVideo && !failedImages.includes(apiProduct.prVideo.url) ? apiProduct.prVideo : undefined;
   const formatLabel =
     metafields?.size?.trim() ||
-    `${product.concentration ? CONCENTRATION_LABELS[product.concentration] : "Fragrance"} · 50 ml`;
+    (product.concentration ? CONCENTRATION_LABELS[product.concentration] : "");
   const notesHeading = notesSectionTitle(metafields);
-  const notesRows = livePyramid.length > 0 ? livePyramid : authoredContent ? authoredContent.notes : [];
+  const notesRows = livePyramid;
   const description =
     apiProduct?.description && !apiProduct.description.startsWith("Product details will appear")
       ? apiProduct.description
@@ -230,11 +199,11 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
           <nav className="pt-3 pb-4" aria-label="Breadcrumb">
             <ol className={crumbsList} role="list">
               <li>
-                <Link href="/">Home</Link>
+                <LocaleLink href="/">Home</LocaleLink>
               </li>
               {moreFromCollection ? (
                 <li>
-                  <Link href={`/collections/${moreFromCollection.slug}`}>{moreFromCollection.name}</Link>
+                  <LocaleLink href={`/collections/${moreFromCollection.slug}`}>{moreFromCollection.name}</LocaleLink>
                 </li>
               ) : null}
               <li aria-current="page">{product.title}</li>
@@ -267,8 +236,8 @@ export function ProductDetailPageView({ slug }: { slug: string }) {
         notesHeading={notesHeading}
         notesRows={notesRows}
         notesBlurb={metafields?.fragrance_notes?.trim()}
-        showNotes={livePyramid.length > 0 || Boolean(authoredContent?.notes.length)}
-        showLongevityBars={livePyramid.length === 0 && notesRows.length > 0}
+        showNotes={livePyramid.length > 0}
+        showLongevityBars={false}
         shippingCopy={liveShippingCopy ?? ""}
         resetKey={slug}
       />

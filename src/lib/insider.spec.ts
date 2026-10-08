@@ -16,14 +16,20 @@ import {
   insiderCheckoutPage,
   insiderHomePage,
   insiderIdentify,
+  insiderInit,
   insiderListingPage,
   insiderOtherPage,
   insiderProductViewed,
   insiderPurchasePage,
   pushInsiderUserContext,
   resetInsiderRouteFlushForTests,
+  syncInsiderCart,
   toInsiderPurchaseValue,
 } from "@/lib/insider";
+import {
+  quotedCartShipping,
+  quotedCartTotal,
+} from "@/features/cart/utils/insiderCartItem";
 
 describe("Insider page-view queues", () => {
   beforeEach(() => {
@@ -38,7 +44,6 @@ describe("Insider page-view queues", () => {
       { type: "user" },
       { type: "currency" },
       { type: "language", value: "en_US" },
-      { type: "cart", value: { total: 0, items: [] } },
       { type: "init" },
     ];
     insiderProductViewed({
@@ -60,10 +65,10 @@ describe("Insider page-view queues", () => {
       "user",
       "currency",
       "language",
-      "cart",
       "product",
       "init",
     ]);
+    expect(types).not.toContain("cart");
   });
 
   it("sends documented page types, with checkout as other + init", () => {
@@ -209,44 +214,51 @@ describe("Insider page-view queues", () => {
     ).toHaveLength(1);
   });
 
-  it("puts stock, color, and shipping_cost on each cart line", () => {
+  it("keeps shipping on the cart and quantity on each line", () => {
     insiderCartPage({
-      total: 199,
+      total: 415,
+      shippingCost: 25,
       items: [
         {
           id: "var-1",
           sku: "SKU-1",
-          name: "Oud",
-          price: 199,
+          name: "Enigma of Taif",
+          price: 390,
           currency: "AED",
           quantity: 1,
         },
       ],
     });
     const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
-    const items = (cart?.value as { items?: Record<string, unknown>[] }).items;
-    expect(cart?.value).toMatchObject({ shipping_cost: 0 });
-    expect(items?.[0]).toMatchObject({
+    const value = cart?.value as {
+      items?: Record<string, unknown>[];
+      subtotal?: unknown;
+      quantity?: unknown;
+    };
+    expect(value).toMatchObject({
+      total: 415,
+      shipping_cost: 25,
+    });
+    expect(value.subtotal).toBeUndefined();
+    expect(value.quantity).toBeUndefined();
+    expect(value.items?.[0]).toMatchObject({
+      quantity: 1,
       stock: 0,
       color: "",
-      shipping_cost: 0,
+      unit_price: 390,
     });
+    expect(value.items?.[0]?.shipping_cost).toBeUndefined();
   });
 
-  it("sends user, currency, and basket cart before a page init", () => {
+  it("sends user, currency, and language before home without a cart page type", () => {
     pushInsiderUserContext({
+      skipCart: true,
       cart: { total: 0, items: [] },
     });
     insiderHomePage();
     const types = (window.InsiderQueue ?? []).map((row) => row.type);
-    expect(types).toEqual([
-      "user",
-      "currency",
-      "language",
-      "cart",
-      "home",
-      "init",
-    ]);
+    expect(types).toEqual(["user", "currency", "language", "home", "init"]);
+    expect(types).not.toContain("cart");
     expect(types.filter((type) => type === "init")).toHaveLength(1);
     expect(
       (window.InsiderQueue ?? []).find((row) => row.type === "language")?.value,
@@ -257,16 +269,17 @@ describe("Insider page-view queues", () => {
     expect(
       (window.InsiderQueue ?? []).find((row) => row.type === "currency")?.value,
     ).toBe("AED");
-    const cart = (window.InsiderQueue ?? []).find((row) => row.type === "cart");
-    expect(cart?.value).toMatchObject({
-      total: 0,
-      subtotal: 0,
-      shipping_cost: 0,
-      quantity: 0,
+  });
+
+  it("pushes cart once on the cart page, before a single init", () => {
+    pushInsiderUserContext({
+      cart: { total: 0, items: [] },
     });
-    expect(Array.isArray((cart?.value as { items?: unknown }).items)).toBe(
-      true,
-    );
+    insiderInit();
+    const types = (window.InsiderQueue ?? []).map((row) => row.type);
+    expect(types).toEqual(["user", "currency", "language", "cart", "init"]);
+    expect(types.filter((type) => type === "cart")).toHaveLength(1);
+    expect(types.filter((type) => type === "init")).toHaveLength(1);
   });
 
   it("does not push user after init (logged-in /me bootstrap)", () => {
@@ -289,11 +302,13 @@ describe("Insider page-view queues", () => {
     expect(beginInsiderRouteFlush("/")).toBe(true);
     expect(window.InsiderQueue).toEqual([]);
     pushInsiderUserContext({
+      skipCart: true,
       user: { uuid: "cust-1", email: "a@b.com" },
     });
     insiderHomePage();
     const types = (window.InsiderQueue ?? []).map((row) => row.type);
-    expect(types).toEqual(["user", "currency", "language", "cart", "home", "init"]);
+    expect(types).toEqual(["user", "currency", "language", "home", "init"]);
+    expect(types).not.toContain("cart");
     const user = (window.InsiderQueue ?? []).find((row) => row.type === "user");
     expect((user?.value as { email?: string }).email).toBe("a@b.com");
     expect(types.filter((type) => type === "init")).toHaveLength(1);
@@ -383,5 +398,70 @@ describe("toInsiderPurchaseValue", () => {
       quantity: 2,
       unit_price: 55,
     });
+  });
+});
+
+describe("cart shipping", () => {
+  beforeEach(() => {
+    window.InsiderQueue = [];
+    window.Insider = { initialized: true };
+    resetInsiderRouteFlushForTests();
+  });
+
+  it("adds AED 25 when the server quote is free, and keeps a real fee", () => {
+    expect(quotedCartShipping(390, 0)).toBe(25);
+    expect(
+      quotedCartTotal({
+        merchandise: 390,
+        quotedTotal: 390,
+        quotedShipping: 0,
+        shipping: quotedCartShipping(390, 0),
+      }),
+    ).toBe(415);
+    expect(quotedCartShipping(390, 40)).toBe(40);
+    expect(
+      quotedCartTotal({
+        merchandise: 390,
+        quotedTotal: 430,
+        quotedShipping: 40,
+        shipping: 40,
+      }),
+    ).toBe(430);
+    expect(quotedCartShipping(0, 0)).toBe(0);
+  });
+
+  it("updates the queued cart after shipping is added", () => {
+    window.InsiderQueue = [
+      { type: "cart", value: { total: 390, subtotal: 390, shipping_cost: 0, quantity: 1, items: [] } },
+      { type: "init" },
+    ];
+    syncInsiderCart({
+      total: 415,
+      shippingCost: 25,
+      items: [
+        {
+          id: "var-1",
+          sku: "SKU-1",
+          name: "Enigma of Taif",
+          price: 390,
+          currency: "AED",
+          quantity: 1,
+        },
+      ],
+    });
+    expect((window.InsiderQueue ?? []).map((row) => row.type)).toEqual([
+      "cart",
+      "init",
+    ]);
+    const value = window.InsiderQueue?.[0]?.value as {
+      subtotal?: unknown;
+      quantity?: unknown;
+      items?: Record<string, unknown>[];
+    };
+    expect(value).toMatchObject({ total: 415, shipping_cost: 25 });
+    expect(value.subtotal).toBeUndefined();
+    expect(value.quantity).toBeUndefined();
+    expect(value.items?.[0]).toMatchObject({ quantity: 1, unit_price: 390 });
+    expect(value.items?.[0]?.shipping_cost).toBeUndefined();
   });
 });

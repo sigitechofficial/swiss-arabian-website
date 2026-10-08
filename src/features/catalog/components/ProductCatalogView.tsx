@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { PageLoading } from "@/components/ui/PageLoading";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionDiscovery";
 import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 import { gridBand } from "@/styles/shopChrome";
 import { catalogLayout, catalogMain } from "../catalogChrome";
 import {
-  CATALOG_PRODUCTS,
   COLLECTION_LABELS,
   CONCENTRATION_LABELS,
   NOTE_LABELS,
@@ -18,7 +18,6 @@ import {
   type Concentration,
   type SortOption,
 } from "../constants/catalogProducts";
-import { getCollectionMeta } from "../constants/collectionMeta";
 import { CatalogInfiniteSentinel } from "./CatalogInfiniteSentinel";
 import { CatalogCollectionEmpty } from "./catalog/CatalogCollectionEmpty";
 import { CatalogFilters } from "./catalog/CatalogFilters";
@@ -99,22 +98,35 @@ export function ProductCatalogView({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const copy = useShopCopy();
   const urlDriven = Boolean(listingQuery);
-  const staticMeta = useMemo(() => getCollectionMeta(slug), [slug]);
-  const products = productsProp ?? CATALOG_PRODUCTS;
+  const products = productsProp ?? [];
 
   const bannerImage = banner?.image;
   const bannerDescription = banner?.description;
   const bannerTitle = banner?.title;
-  const meta = useMemo(
-    () => ({
-      ...staticMeta,
-      ...(bannerImage ? { heroImage: bannerImage } : {}),
-      ...(bannerDescription ? { intro: bannerDescription } : {}),
-      ...(bannerTitle ? { title: bannerTitle, titleEm: "" } : {}),
-    }),
-    [staticMeta, bannerImage, bannerDescription, bannerTitle],
-  );
+  const meta = useMemo(() => {
+    const name = bannerTitle?.trim() || "";
+    const description = bannerDescription?.trim() || "";
+    if (slug || name) {
+      return {
+        eyebrow: "",
+        title: name,
+        titleEm: "",
+        intro: description,
+        heroImage: bannerImage ?? "",
+        filterCollection: undefined,
+      };
+    }
+    return {
+      eyebrow: "",
+      title: copy("allProducts"),
+      titleEm: "",
+      intro: "",
+      heroImage: "",
+      filterCollection: undefined,
+    };
+  }, [bannerImage, bannerDescription, bannerTitle, copy, slug]);
   const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
 
   const facetPrice = facets?.price;
@@ -372,7 +384,7 @@ export function ProductCatalogView({
 
         {loading ? (
           <div className={pageContainer}>
-            <PageLoading label="Loading fragrances…" />
+            <PageLoading label={copy("loading")} />
           </div>
         ) : emptyCollection ? (
           <CatalogCollectionEmpty />

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 import { AccountStatusLabel } from "@/features/account/components/AccountStatus";
 
@@ -29,12 +29,12 @@ export function OrderCard({ order }: OrderCardProps) {
             {order.dateLabel}
           </span>
         </p>
-        <Link
+        <LocaleLink
           href={`/account/orders/${order.id}`}
           className="text-[12px] font-medium text-sa-primary hover:text-terra"
         >
           View Details &nbsp;→
-        </Link>
+        </LocaleLink>
       </div>
 
       <div className="flex items-start gap-4 px-5 py-6 sm:px-6 sm:py-7">

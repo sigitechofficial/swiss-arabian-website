@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -23,6 +24,7 @@ export function useNavbarChrome() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const pathname = usePathname();
+  const languageId = localeFromPathname(pathname || "/");
 
   useEffect(() => {
     setOpenMega(null);
@@ -30,7 +32,16 @@ export function useNavbarChrome() {
     setMobileGroup(null);
   }, [pathname]);
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
-  const [languageId, setLanguageId] = useState<(typeof TOPBAR_LANGUAGES)[number]["id"]>("en");
+  const setLanguageId = (id: (typeof TOPBAR_LANGUAGES)[number]["id"]) => {
+    const current = pathname || "/";
+    const nextPath = withLocalePrefix(current, id);
+    if (nextPath === current) return;
+    // A client navigation follows the rewritten page and stays on the English
+    // address. A full load keeps /ar in the address bar.
+    const search = window.location.search;
+    const hash = window.location.hash;
+    window.location.assign(`${nextPath}${search}${hash}`);
+  };
   const { marketId, setMarketId, regionOptions } = useMarket();
   const regionId =
     marketId ||

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { useShopableVideo } from "@/features/merchandising";
 import type { ShopableVideoSlide } from "@/features/merchandising/types/merch";
@@ -329,9 +329,9 @@ export function LandingReel() {
                     </div>
                   </div>
                   {href ? (
-                    <Link className={reelProduct} href={href}>
+                    <LocaleLink className={reelProduct} href={href}>
                       {productInner}
-                    </Link>
+                    </LocaleLink>
                   ) : (
                     <div className={reelProduct}>{productInner}</div>
                   )}

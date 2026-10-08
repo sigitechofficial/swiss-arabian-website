@@ -1,1 +1,8 @@
-export { Reveal, Stagger, StaggerItem, fadeUpVariants } from "./Reveal";
+export {
+  Reveal,
+  Stagger,
+  StaggerItem,
+  SoftFloat,
+  InViewItem,
+  fadeUpVariants,
+} from "./Reveal";

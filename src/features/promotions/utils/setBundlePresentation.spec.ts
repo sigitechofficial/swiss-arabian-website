@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { setBundleLineLabel, setBundleNotes } from "./setBundlePresentation";
 import type { PromotionOffer, PromotionSnapshotV1 } from "../types/promotions";
 

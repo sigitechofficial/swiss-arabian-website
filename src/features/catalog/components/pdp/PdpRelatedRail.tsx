@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { pageContainer } from "@/styles/siteChrome";
 import { related as relatedSection, relatedAll, relatedGrid, relatedHead, relatedTitle } from "@/styles/pdpChrome";
 import type { CatalogProduct } from "../../constants/catalogProducts";
@@ -29,9 +29,9 @@ export function PdpRelatedRail({
           <h2 className={relatedTitle} id={id}>
             {heading}
           </h2>
-          <Link className={relatedAll} href={seeAllHref}>
+          <LocaleLink className={relatedAll} href={seeAllHref}>
             See all
-          </Link>
+          </LocaleLink>
         </div>
         <ul className={relatedGrid} role="list">
           {products.map((item) => (

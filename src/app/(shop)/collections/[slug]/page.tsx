@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { permanentRedirect } from "next/navigation";
 import { CollectionDetailPageView } from "@/features/collections";
-import { fetchCollectionBySlug } from "@/features/catalog/api/catalog.service";
+import { breadcrumbJsonLd, CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { parseCatalogListingParams } from "@/features/catalog/types/catalogFacets";
-import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
+import { shopCopy } from "@/lib/i18n/shopCopy";
+import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { canonicalCatalogPath, catalogMetadata, loadCatalogDocument } from "@/lib/seo/catalogPage";
 
 export async function generateMetadata({
   params,
@@ -11,14 +13,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const zoneCode = (await cookies()).get(ZONE_COOKIE)?.value?.trim() || "";
-  const collection = zoneCode ? await fetchCollectionBySlug(slug, zoneCode) : null;
+  const { locale, collection } = await loadCatalogDocument("collection", slug);
+  const handle = collection?.slug || slug;
   const title = collection?.seoTitle?.trim() || collection?.name || slug;
-  const description = collection?.seoDescription?.trim() || undefined;
-  return {
+  const description = collection?.seoDescription?.trim() || collection?.description || undefined;
+  return catalogMetadata({
+    locale,
+    path: canonicalCatalogPath(`/collections/${handle}`, locale),
     title,
-    description,
-  };
+    description: description || undefined,
+  });
 }
 
 export default async function CollectionDetailPage({
@@ -29,6 +33,29 @@ export default async function CollectionDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  const loaded = await loadCatalogDocument("collection", slug);
+  const { locale, collection, listing } = loaded;
+  if (collection?.slug && collection.slug !== slug) {
+    permanentRedirect(withLocalePrefix(`/collections/${collection.slug}`, locale));
+  }
   const listingQuery = parseCatalogListingParams(await searchParams);
-  return <CollectionDetailPageView slug={slug} listingQuery={listingQuery} />;
+  const handle = collection?.slug || slug;
+  const path = canonicalCatalogPath(`/collections/${handle}`, locale);
+  const name = collection?.name || slug;
+  return (
+    <>
+      <CatalogJsonLd
+        data={breadcrumbJsonLd([
+          { name: shopCopy(locale, "home"), url: withLocalePrefix("/", locale) },
+          { name, url: path },
+        ])}
+      />
+      <CollectionDetailPageView
+        slug={handle}
+        listingQuery={listingQuery}
+        collection={collection}
+        initialListing={listingQuery.page === 1 && !listingQuery.minPrice && !listingQuery.sort ? listing : null}
+      />
+    </>
+  );
 }

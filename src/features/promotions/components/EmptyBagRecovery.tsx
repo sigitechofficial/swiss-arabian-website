@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { Plus } from "lucide-react";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { addCartItem } from "@/features/cart/api/cart.service";
@@ -55,7 +55,7 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
                 )}
                 <div className={cartRecCopy}>
                   {product.slug ? (
-                    <Link
+                    <LocaleLink
                       href={`/products/${product.slug}`}
                       onClick={() => trackPromotion("promotion_recommendation_clicked", {
                         campaignCode: group.campaignCode,
@@ -64,7 +64,7 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
                       })}
                     >
                       <p className={cartRecName}>{product.title}</p>
-                    </Link>
+                    </LocaleLink>
                   ) : (
                     <p className={cartRecName}>{product.title}</p>
                   )}

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 type CatalogPaginationProps = {
   page: number;
@@ -62,9 +62,9 @@ export function CatalogPagination({
             Prev
           </span>
         ) : (
-          <Link href={hrefForPage(page - 1)} className={`${navClass} cursor-pointer`} scroll>
+          <LocaleLink href={hrefForPage(page - 1)} className={`${navClass} cursor-pointer`} scroll>
             Prev
-          </Link>
+          </LocaleLink>
         )}
 
         {items.map((item, index) =>
@@ -85,14 +85,14 @@ export function CatalogPagination({
               {item}
             </span>
           ) : (
-            <Link
+            <LocaleLink
               key={item}
               href={hrefForPage(item)}
               className={`${navClass} cursor-pointer`}
               scroll
             >
               {item}
-            </Link>
+            </LocaleLink>
           ),
         )}
 
@@ -101,9 +101,9 @@ export function CatalogPagination({
             Next
           </span>
         ) : (
-          <Link href={hrefForPage(page + 1)} className={`${navClass} cursor-pointer`} scroll>
+          <LocaleLink href={hrefForPage(page + 1)} className={`${navClass} cursor-pointer`} scroll>
             Next
-          </Link>
+          </LocaleLink>
         )}
       </div>
     </nav>

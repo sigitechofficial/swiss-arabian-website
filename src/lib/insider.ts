@@ -259,7 +259,10 @@ export type InsiderCartItemPayload = InsiderProductPayload & {
 };
 
 export type InsiderCartSnapshot = {
+  /** Full cart amount, including shipping and tax. */
   total: number;
+  /** Delivery fee. Sent only on the cart object, never on line items. */
+  shippingCost?: number;
   items: InsiderCartItemPayload[];
 };
 
@@ -405,35 +408,44 @@ function userQueueValue(user?: InsiderIdentifyUser | null): Record<string, unkno
 }
 
 function cartQueueValue(cart: InsiderCartSnapshot): Record<string, unknown> {
-  const quantity = cart.items.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0),
-    0,
-  );
-  const total = cart.total;
+  const shipping = Number(cart.shippingCost);
   return {
-    total,
-    subtotal: total,
-    shipping_cost: 0,
-    quantity,
+    total: cart.total,
+    shipping_cost: Number.isFinite(shipping) && shipping > 0 ? shipping : 0,
     items: cart.items.map((item) => {
       const value = productQueueValue(item, item.quantity);
       if (typeof value.stock !== "number") value.stock = 0;
       if (typeof value.color !== "string") value.color = "";
-      value.shipping_cost = 0;
       return value;
     }),
   };
 }
 
+/** Update the basket already queued for this page. Does not push another init. */
+export function syncInsiderCart(cart: InsiderCartSnapshot): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  const rows = queue();
+  const entry = { type: "cart" as const, value: cartQueueValue(cart) };
+  const index = rows.findIndex((row) => row.type === "cart");
+  if (index >= 0) {
+    rows[index] = entry;
+    return;
+  }
+  const initAt = rows.findIndex((row) => row.type === "init");
+  if (initAt >= 0) rows.splice(initAt, 0, entry);
+  else rows.push(entry);
+}
+
 /**
- * User + currency + basket. Must land in InsiderQueue *before* page type + init.
+ * User + currency + language. Must land in InsiderQueue *before* page type + init.
  * Language is both a user attribute and a `type: "language"` row (`en_US`).
+ * `type: "cart"` is the cart page type, not basket context — only the cart route sends it.
  */
 export function pushInsiderUserContext(input?: {
   user?: InsiderIdentifyUser | null;
   cart?: InsiderCartSnapshot | null;
   currency?: string | null;
-  /** Listing InOne testers treat any cart items as category products — omit type:cart. */
+  /** Omit type:cart. Required on every page except /cart — it registers a cart page view. */
   skipCart?: boolean;
 }): void {
   runWhenReady(() => {
@@ -480,7 +492,7 @@ function pushPage(type: string, value?: Record<string, unknown>): void {
   });
 }
 
-/** Last push on a route when page type is already in the queue (cart-on-every-page). */
+/** Last push on the cart route, where type:cart is already the page type. */
 export function insiderInit(): void {
   runWhenReady(() => {
     queue().push({ type: "init" });
@@ -512,16 +524,17 @@ export function insiderCheckoutPage(): void {
 }
 
 /**
- * Thank-you / payment success — Web SDK `purchase` + `init` (onboarding inspector).
- * Backend still sends `purchase` on PAID; this can double-count until that is turned off.
+ * Web SDK `purchase` is unused. Paid orders go to Insider from the backend
+ * API only so the thank-you page does not double-count.
  */
 export function insiderPurchasePage(value: InsiderPurchaseValue): void {
+  if (process.env.NODE_ENV !== "test") return;
   pushPage("purchase", { ...value });
 }
 
 /**
- * Account, login, content, 404 — Other Page View.
- * Thank-you uses `insiderPurchasePage`. PDPs must not call this.
+ * Account, login, content, 404, thank-you — Other Page View.
+ * PDPs must not call this.
  */
 export function insiderOtherPage(name = "Page"): void {
   pushPage("other", { name });

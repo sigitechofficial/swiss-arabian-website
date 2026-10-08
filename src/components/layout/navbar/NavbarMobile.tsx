@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { PRIMARY_NAV, type ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { mobileNav, mobileNavLink, mobileNavList, mobileNavSub, mobileNavSubLabel } from "@/styles/siteChrome";
 import { CaretIcon } from "./NavbarIcons";
@@ -21,13 +21,13 @@ export function NavbarMobile({
           if (item.type === "link") {
             return (
               <li key={item.label}>
-                <Link
+                <LocaleLink
                   className={mobileNavLink}
                   href={item.href}
                   onClick={() => chrome.setMobileOpen(false)}
                 >
                   {item.label}
-                </Link>
+                </LocaleLink>
               </li>
             );
           }
@@ -52,18 +52,18 @@ export function NavbarMobile({
                 hidden={!expanded}
               >
                 <li>
-                  <Link href={item.href} onClick={() => chrome.setMobileOpen(false)}>
+                  <LocaleLink href={item.href} onClick={() => chrome.setMobileOpen(false)}>
                     All {item.label.toLowerCase()}
-                  </Link>
+                  </LocaleLink>
                 </li>
                 {item.groups.map((group) => (
                   <Fragment key={group.heading}>
                     <li className={mobileNavSubLabel}>{group.heading}</li>
                     {group.links.map((link) => (
                       <li key={link.label}>
-                        <Link href={link.href} onClick={() => chrome.setMobileOpen(false)}>
+                        <LocaleLink href={link.href} onClick={() => chrome.setMobileOpen(false)}>
                           {link.label}
-                        </Link>
+                        </LocaleLink>
                       </li>
                     ))}
                   </Fragment>

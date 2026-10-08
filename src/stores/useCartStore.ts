@@ -4,6 +4,10 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
 import {
+  readLoyaltyRedemption,
+  type LoyaltyRedemptionView,
+} from "@/features/loyalty/types/loyalty";
+import {
   readPromotionSnapshot,
   type PromotionSnapshotV1,
 } from "@/features/promotions/types/promotions";
@@ -43,6 +47,9 @@ type CartState = {
   cartId: string | null;
   totals: CartTotals | null;
   promotions: PromotionSnapshotV1 | null;
+  loyaltyRedemption: LoyaltyRedemptionView | null;
+  /** True when the server reduced an existing reservation after a bag change. */
+  loyaltyAdjusted: boolean;
   validation: CartValidation | null;
   /** Optimistic edits are still being written to the API in the background. */
   syncing: boolean;
@@ -52,6 +59,7 @@ type CartState = {
   removeLine: (variantId: string) => void;
   clear: () => void;
   clearPromotions: () => void;
+  clearLoyaltyAdjusted: () => void;
   setCartId: (id: string | null) => void;
   setValidation: (v: CartValidation | null) => void;
   setCartFromApi: (cart: ApiCart) => void;
@@ -68,6 +76,8 @@ export const useCartStore = create<CartState>()(
       cartId: null,
       totals: null,
       promotions: null,
+      loyaltyRedemption: null,
+      loyaltyAdjusted: false,
       validation: null,
       syncing: false,
 
@@ -121,10 +131,21 @@ export const useCartStore = create<CartState>()(
           lines: state.lines.filter((item) => item.variantId !== variantId),
         })),
 
-      clear: () => set({ lines: [], totals: null, promotions: null, validation: null }),
+      clear: () =>
+        set({
+          lines: [],
+          totals: null,
+          promotions: null,
+          loyaltyRedemption: null,
+          loyaltyAdjusted: false,
+          validation: null,
+        }),
 
       /** Drop the previous market quote. Lines stay until the next server cart. */
-      clearPromotions: () => set({ promotions: null, totals: null }),
+      clearPromotions: () =>
+        set({ promotions: null, totals: null, loyaltyRedemption: null, loyaltyAdjusted: false }),
+
+      clearLoyaltyAdjusted: () => set({ loyaltyAdjusted: false }),
 
       setCartId: (id) => set({ cartId: id }),
 
@@ -180,10 +201,22 @@ export const useCartStore = create<CartState>()(
               lines.reduce((s, l) => s + l.quantity, 0),
           };
 
+          const loyaltyRedemption = readLoyaltyRedemption(
+            cart.loyaltyRedemption,
+            cart.promotions,
+          );
+          const previousApplied = state.loyaltyRedemption?.appliedPoints ?? 0;
+          const nextApplied = loyaltyRedemption?.appliedPoints ?? 0;
+          const loyaltyAdjusted =
+            state.loyaltyAdjusted ||
+            (previousApplied > 0 && nextApplied > 0 && nextApplied < previousApplied);
+
           return {
             lines,
             totals,
             promotions: readPromotionSnapshot(cart.promotions),
+            loyaltyRedemption,
+            loyaltyAdjusted,
             cartId: cart.cartId,
             validation: cart.validation ?? null,
           };

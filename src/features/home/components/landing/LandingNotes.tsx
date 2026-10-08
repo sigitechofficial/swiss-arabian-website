@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { useFragranceNotes } from "@/features/merchandising";
 import { fragranceNotesPlpHref } from "@/features/merchandising/utils/visibleFragranceNoteTiles";
@@ -49,12 +49,12 @@ export function LandingNotes() {
             const imageUrl = resolveCatalogImageUrl(tile.imageUrl);
             return (
               <li key={tile.code || tile.fragranceFamily}>
-                <Link className={`${notesItem} group/note`} href={fragranceNotesPlpHref(tile.fragranceFamily)}>
+                <LocaleLink className={`${notesItem} group/note`} href={fragranceNotesPlpHref(tile.fragranceFamily)}>
                   <span className={notesArt}>
                     {imageUrl ? <img src={imageUrl} alt="" loading="lazy" /> : null}
                   </span>
                   <span className={notesLabel}>{tile.name}</span>
-                </Link>
+                </LocaleLink>
               </li>
             );
           })}

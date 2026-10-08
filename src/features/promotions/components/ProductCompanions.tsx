@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { addCartItems } from "@/features/cart/api/cart.service";
 import { useCartStore } from "@/stores/useCartStore";
@@ -220,9 +220,9 @@ export function ProductCompanions({
                         <SelectMark />
                       </label>
                       {product.slug ? (
-                        <Link href={`/products/${product.slug}`} className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]">
+                        <LocaleLink href={`/products/${product.slug}`} className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]">
                           {media}
-                        </Link>
+                        </LocaleLink>
                       ) : (
                         <span className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]">
                           {media}
@@ -278,9 +278,9 @@ export function ProductCompanions({
             <div className={relatedHead}>
               <h2 className={relatedTitle}>{group.heading}</h2>
               {group.seeAllPath ? (
-                <Link className={relatedAll} href={group.seeAllPath}>
+                <LocaleLink className={relatedAll} href={group.seeAllPath}>
                   {data.copy.seeAll}
-                </Link>
+                </LocaleLink>
               ) : null}
             </div>
             <ul className={relatedGrid} role="list">

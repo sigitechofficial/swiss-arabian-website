@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { usePathname, useRouter } from "next/navigation";
+import { localizeHref } from "@/lib/i18n/localePath";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { SEARCH_MIN_QUERY_LENGTH, useCatalogSearch } from "@/features/search";
 import { rememberSearchQuery } from "@/features/search/utils/recentSearches";
@@ -54,6 +55,7 @@ export function SearchOverlay() {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const pathname = usePathname() || "/";
 
   // Live catalog search, debounced and gated by the shared hook. An empty box
   // previews the products list instead of firing a blank-`q` search.
@@ -89,7 +91,7 @@ export function SearchOverlay() {
     const q = query.trim();
     if (q.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(q);
     setOpen(false);
-    router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
+    router.push(localizeHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", pathname));
   }
 
   function goToHit(index: number) {
@@ -101,7 +103,7 @@ export function SearchOverlay() {
       return;
     }
     setOpen(false);
-    router.push(`/products/${hit.slug}`);
+    router.push(localizeHref(`/products/${hit.slug}`, pathname));
   }
 
   return (
@@ -192,7 +194,7 @@ export function SearchOverlay() {
               <ul className="m-0 list-none px-2 pt-1 pb-3" id="ai-search-results" role="listbox">
                 {hits.map((product, index) => (
                   <li key={product.id} role="presentation">
-                    <Link
+                    <LocaleLink
                       id={`ai-search-hit-${product.id}`}
                       className="flex items-center gap-3.5 rounded-[14px] px-3 py-2.5 text-inherit no-underline transition-colors hover:bg-[var(--cream-2)] aria-selected:bg-[var(--cream-2)] rtl:flex-row-reverse rtl:text-right"
                       href={`/products/${product.slug}`}
@@ -214,7 +216,7 @@ export function SearchOverlay() {
                           {product.price != null ? ` · ${formatMoney(product.price, product.currency)}` : ""}
                         </p>
                       </span>
-                    </Link>
+                    </LocaleLink>
                   </li>
                 ))}
               </ul>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,9 +45,9 @@ function DetailRow({
         <p className="mt-1 truncate text-[13.5px] text-sa-secondary">{value}</p>
       </div>
       {editHref ? (
-        <Link href={editHref} className={editClass}>
+        <LocaleLink href={editHref} className={editClass}>
           Edit
-        </Link>
+        </LocaleLink>
       ) : onEdit ? (
         <button type="button" onClick={onEdit} className={editClass}>
           Edit
@@ -202,12 +202,12 @@ function ProfileContent() {
             <p className="mt-1 text-[13.5px] text-sa-secondary">
               View pending and published product reviews.
             </p>
-            <Link
+            <LocaleLink
               href="/account/reviews"
               className="mt-2 inline-block text-[12px] font-semibold text-terra hover:underline"
             >
               Manage reviews
-            </Link>
+            </LocaleLink>
           </div>
         </div>
       </section>
@@ -243,21 +243,21 @@ function ProfileContent() {
       </section>
 
       <PrefBlock title="Shipping addresses">
-        <Link
+        <LocaleLink
           href="/account/addresses"
           className="text-[13px] font-semibold text-terra hover:underline"
         >
           Manage addresses
-        </Link>
+        </LocaleLink>
       </PrefBlock>
 
       <PrefBlock title="Payment methods">
-        <Link
+        <LocaleLink
           href="/account/payments"
           className="text-[13px] font-semibold text-terra hover:underline"
         >
           View payments
-        </Link>
+        </LocaleLink>
       </PrefBlock>
 
       <PrefBlock title="Communication preferences" soft>

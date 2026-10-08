@@ -1,28 +1,5 @@
-import {
-  PRIMARY_NAV,
-  type ChromeLink,
-  type ChromeNavItem,
-} from "@/features/home/constants/chromeNav";
+import type { ChromeLink, ChromeNavItem } from "@/features/home/constants/chromeNav";
 import type { NavItem } from "../types/navigation";
-
-/**
- * `/storefront/navigation` describes structure only — it carries no artwork or
- * marketing copy for the desktop mega panels. So reuse the designed promo from
- * the matching static menu where the labels line up, and fall back to a house
- * default for menus the CMS added that the design never anticipated.
- */
-const PROMO_BY_LABEL = new Map(
-  PRIMARY_NAV.flatMap((item) =>
-    item.type === "mega" ? ([[normalize(item.label), item.promo]] as const) : [],
-  ),
-);
-
-const DEFAULT_PROMO = {
-  image: "/assets/collection-1.jpg",
-  copy: "Extrait de parfum, composed in Dubai since 1974.",
-  cta: "Shop all",
-  href: "/products",
-};
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
@@ -51,6 +28,12 @@ function toLinks(items: readonly NavItem[]): ChromeLink[] {
  * column titled after their parent. A menu with no usable children degrades to
  * a plain link rather than an empty mega panel.
  */
+export function chromeNavLinks(items: readonly ChromeNavItem[]) {
+  return items.flatMap((item) =>
+    item.href ? [{ label: item.label, href: item.href }] : [],
+  );
+}
+
 export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
   const result: ChromeNavItem[] = [];
 
@@ -87,19 +70,12 @@ export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
       continue;
     }
 
-    const promo = PROMO_BY_LABEL.get(normalize(item.label)) ?? {
-      ...DEFAULT_PROMO,
-      href,
-      cta: `Shop ${normalize(item.label)}`,
-    };
-
     result.push({
       type: "mega",
       id: slugId(item.label),
       label: item.label,
       href,
       groups,
-      promo,
     });
   }
 

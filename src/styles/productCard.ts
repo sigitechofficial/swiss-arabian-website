@@ -73,13 +73,13 @@ export const cardName =
   "my-1 font-[family-name:var(--font-display)] text-[1.05rem] text-[var(--ink,#241f1b)]";
 
 export const cardNameDense =
-  "my-1 font-[family-name:var(--font-display)] text-[0.88rem] leading-[1.35] text-[var(--ink,#241f1b)] line-clamp-2";
+  "my-1 min-h-[2lh] font-[family-name:var(--font-display)] text-[0.88rem] leading-[1.35] text-[var(--ink,#241f1b)] line-clamp-2";
 
 export const cardPrice = "text-[0.8rem] font-semibold text-[var(--copper,#8c4435)]";
 
 export const cardPriceDense = "text-[0.74rem] font-semibold text-[var(--copper,#8c4435)]";
 
-export const relatedName = `${cardName} max-[480px]:text-[0.8125rem]`;
+export const relatedName = `${cardName} line-clamp-2 min-h-[2lh] leading-[1.35] max-[480px]:text-[0.8125rem]`;
 
 export const relatedPrice = `${cardPrice} max-[480px]:text-[0.75rem]`;
 

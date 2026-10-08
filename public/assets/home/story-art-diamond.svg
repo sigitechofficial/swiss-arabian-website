@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="xMidYMid meet" overflow="visible" width="12.678" height="12.678" viewBox="0 0 12.678 12.678" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12.678 6.33901L6.33901 0L0 6.33901L6.33901 12.678L12.678 6.33901Z" fill="url(#storyArtDiamond)"/>
+  <defs>
+    <linearGradient id="storyArtDiamond" x1="6.33901" y1="0" x2="2.44414e-07" y2="6.33901" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E7D09C"/>
+      <stop offset="0.5" stop-color="#CDA766"/>
+      <stop offset="1" stop-color="#A07C3E"/>
+    </linearGradient>
+  </defs>
+</svg>

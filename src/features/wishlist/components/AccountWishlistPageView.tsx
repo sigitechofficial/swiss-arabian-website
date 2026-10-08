@@ -10,7 +10,6 @@ import { accountContainer } from "@/features/account/constants/accountLayout";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
-import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useMarket } from "@/providers/MarketProvider";
 import { wishlistKeys } from "../api/wishlist.keys";
@@ -32,7 +31,7 @@ type AccountWishlistPageViewProps = {
 export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps) {
   const searchParams = useSearchParams();
   const { marketId } = useMarket();
-  const zoneCode = marketId || DEFAULT_ZONE_CODE;
+  const zoneCode = marketId || "";
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const offset = (page - 1) * WISHLIST_LIST_PAGE_SIZE;
   const [confirmClear, setConfirmClear] = useState(false);
@@ -47,6 +46,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
         limit: WISHLIST_LIST_PAGE_SIZE,
         offset,
       }),
+    enabled: Boolean(zoneCode),
   });
 
   const items = data?.items;

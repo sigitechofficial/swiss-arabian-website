@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -40,12 +40,12 @@ function OrderRow({ order }: { order: OrderSummaryApi }) {
           <span className="text-[10px] font-bold uppercase tracking-wide text-sa-muted">Date</span>
           <span className="text-[12px] font-semibold text-sa-primary">{formatOrderDate(order.createdAt)}</span>
         </p>
-        <Link
+        <LocaleLink
           href={detailHref}
           className="text-[12px] font-medium text-sa-primary transition-colors hover:text-terra"
         >
           View Details →
-        </Link>
+        </LocaleLink>
       </div>
 
       <div className="flex flex-wrap items-start gap-4 px-5 py-5 sm:px-6">
@@ -68,26 +68,26 @@ function OrderRow({ order }: { order: OrderSummaryApi }) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           {action === "pay" ? (
-            <Link
+            <LocaleLink
               href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
               className={`${ACTION_CLASS} border-terra bg-terra text-white hover:bg-[#a25e48]`}
             >
               Complete payment →
-            </Link>
+            </LocaleLink>
           ) : action === "track" ? (
-            <Link
+            <LocaleLink
               href={`${detailHref}#tracking`}
               className={`${ACTION_CLASS} border-sa-border text-sa-primary hover:border-terra hover:text-terra`}
             >
               Track order →
-            </Link>
+            </LocaleLink>
           ) : (
-            <Link
+            <LocaleLink
               href={detailHref}
               className={`${ACTION_CLASS} border-sa-border text-sa-primary hover:border-terra hover:text-terra`}
             >
               View order →
-            </Link>
+            </LocaleLink>
           )}
         </div>
       </div>
@@ -106,12 +106,12 @@ function EmptyOrders() {
       </div>
       <p className="text-[14.5px] font-semibold text-sa-primary">No orders yet</p>
       <p className="mt-1 text-[12px] text-sa-muted">Your purchase history will appear here.</p>
-      <Link
+      <LocaleLink
         href="/products"
         className="mt-5 inline-flex h-10 items-center justify-center rounded bg-terra px-6 text-[12px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
       >
         Start Shopping
-      </Link>
+      </LocaleLink>
     </div>
   );
 }
@@ -204,7 +204,7 @@ export function PurchaseHistoryPageView() {
           ) : null}
 
           <p className={`${accountContainer} pt-6 text-[12px] text-sa-muted`}>
-            Looking for a guest order? <Link className="text-terra underline underline-offset-2" href="/track">Track it here</Link>.
+            Looking for a guest order? <LocaleLink className="text-terra underline underline-offset-2" href="/track">Track it here</LocaleLink>.
           </p>
         </>
       )}

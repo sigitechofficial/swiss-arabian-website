@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { Plus } from "lucide-react";
 import { addCartItem } from "@/features/cart/api/cart.service";
 import { useCartStore } from "@/stores/useCartStore";
@@ -42,7 +42,7 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
             )}
             <div className={cartRecCopy}>
               {product.slug ? (
-                <Link href={`/products/${product.slug}`} onClick={() => trackPromotion("promotion_recommendation_clicked", {
+                <LocaleLink href={`/products/${product.slug}`} onClick={() => trackPromotion("promotion_recommendation_clicked", {
                   campaignCode: data?.progress?.primary?.campaignCode,
                   mechanic: data?.progress?.primary?.mechanic,
                   market: data?.promotions.context.zoneCode,
@@ -50,7 +50,7 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
                 })}
                 >
                   <p className={cartRecName}>{product.title}</p>
-                </Link>
+                </LocaleLink>
               ) : (
                 <p className={cartRecName}>{product.title}</p>
               )}

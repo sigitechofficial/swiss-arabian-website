@@ -63,8 +63,10 @@ export const thumbsNext =
 export const pdpPanel =
   "relative z-[3] flex max-w-[34rem] flex-col gap-4 text-[#2a201a] max-[1023px]:max-w-none";
 
-export const pdpName =
-  "m-0 font-[family-name:var(--font-display)] text-[clamp(1.75rem,3.2vw,2.5rem)] leading-[1.05] font-normal tracking-[-0.01em] text-[#2a201a]";
+const pdpNameSize =
+  "m-0 text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.08] font-normal tracking-[-0.01em] text-[#2a201a]";
+
+export const pdpName = `${pdpNameSize} font-[family-name:var(--font-display)]`;
 
 export const pdpFormat = "m-0 text-[0.9375rem] text-[#6f6152]";
 

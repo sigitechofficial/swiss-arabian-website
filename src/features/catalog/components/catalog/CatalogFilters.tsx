@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { Concentration } from "../../constants/catalogProducts";
 import type { StorefrontFacetOption } from "../../types/catalogFacets";
 import {
@@ -88,6 +91,7 @@ export function CatalogFilters({
   onFragranceFamily,
   onApply,
 }: CatalogFiltersProps) {
+  const copy = useShopCopy();
   return (
     <>
       <button
@@ -99,7 +103,7 @@ export function CatalogFilters({
       />
       <aside className={filtersRail(open)} aria-label="Filters">
         <div className={filtersHead}>
-          <p className={filtersTitle}>Filter by</p>
+          <p className={filtersTitle}>{copy("filterBy")}</p>
           <button type="button" className={filtersClose} aria-label="Close filters" onClick={onClose}>
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <path d="M5 5l10 10M15 5L5 15" />

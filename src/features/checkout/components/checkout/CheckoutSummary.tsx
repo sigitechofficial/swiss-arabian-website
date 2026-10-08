@@ -1,5 +1,9 @@
 "use client";
 
+import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
+import { LoyaltyCheckoutReservation } from "@/features/loyalty/components/LoyaltyCheckoutReservation";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
+import { readLoyaltyRedemption, type LoyaltyEarnPreviewView } from "@/features/loyalty/types/loyalty";
 import { CheckoutAddonRow } from "@/features/cart/components/MissThisSwiper";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { CATALOG_PRODUCTS } from "@/features/catalog/constants/catalogProducts";
@@ -64,6 +68,7 @@ type CheckoutSummaryProps = {
   amountPayable: number | null;
   giftCards: ReturnType<typeof visibleGiftCards>;
   warnings: string[];
+  earnPreview?: LoyaltyEarnPreviewView | null;
 };
 
 export function CheckoutSummary({
@@ -86,8 +91,13 @@ export function CheckoutSummary({
   amountPayable,
   giftCards,
   warnings,
+  earnPreview,
 }: CheckoutSummaryProps) {
   const cartPromotions = useCartStore((state) => state.promotions);
+  const cartLoyalty = useCartStore((state) => state.loyaltyRedemption);
+  const loyaltyQuote =
+    readLoyaltyRedemption(promoSnapshot, session?.promotionSnapshot, session?.promotions) ??
+    cartLoyalty;
 
   return (
     <aside
@@ -159,6 +169,7 @@ export function CheckoutSummary({
       ) : null}
       <AppliedCampaigns snapshot={promoSnapshot} />
       <CouponForm />
+      <LoyaltyCheckoutReservation quoteOverride={loyaltyQuote} />
       <GiftCardForm
         snapshot={promoSnapshot}
         extraGiftCards={session?.giftCards}
@@ -176,12 +187,14 @@ export function CheckoutSummary({
         tax={tax}
         total={total}
         amountPayable={amountPayable}
+        loyalty={loyaltyLineFromQuote(loyaltyQuote)}
         giftCards={giftCards}
         freeGifts={awardedGiftLines(promoSnapshot).map((gift) => ({
           name: giftDisplayName(gift),
           quantity: gift.quantity,
         }))}
       />
+      {earnPreview ? <EarnPreviewNote preview={earnPreview} variant="block" /> : null}
       {warnings.map((warning) => (
         <p className={`${checkoutNote} ${checkoutSummaryNote}`} key={warning} role="status">
           {warning}

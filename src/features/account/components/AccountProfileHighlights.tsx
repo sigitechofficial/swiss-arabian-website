@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 
 import { Stagger, StaggerItem } from "@/components/motion";
 import { useApiQuery } from "@/lib/api/queryHooks";
@@ -68,9 +68,9 @@ export function AccountProfileHighlights() {
             <div className="flex h-full flex-col gap-2.5 rounded-lg border border-[#c8baa8] bg-paper px-7 py-8 dark:border-sa-border dark:bg-surface">
               <p className="text-[14.5px] font-bold text-sa-primary">{card.title}</p>
               <p className="text-[12.5px] leading-relaxed text-sa-secondary">{card.description}</p>
-              <Link href={card.href} className="mt-auto text-[12px] font-medium text-terra hover:underline">
+              <LocaleLink href={card.href} className="mt-auto text-[12px] font-medium text-terra hover:underline">
                 {card.actionLabel} &nbsp;→
-              </Link>
+              </LocaleLink>
             </div>
           </StaggerItem>
         ))}

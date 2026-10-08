@@ -5,9 +5,9 @@ export const DEFAULT_ZONE_CODE = "UAE";
 export const DEFAULT_LANGUAGE_CODE = "en";
 export const DEFAULT_CURRENCY_CODE = "AED";
 
-/** Auth / register: zone matches the markets API (`UAE`, `KSA`). */
+/** The shopper's resolved market. An empty value is not replaced with UAE. */
 export function toAuthZoneCode(zoneCode?: string | null): string {
-  return (zoneCode?.trim() || DEFAULT_ZONE_CODE).toUpperCase();
+  return zoneCode?.trim().toUpperCase() || "";
 }
 
 /**
@@ -15,8 +15,8 @@ export function toAuthZoneCode(zoneCode?: string | null): string {
  * this — they send the selected market's `salesChannelCode` from `/storefront/markets`.
  */
 export function toAuthSalesChannelCode(zoneCode?: string | null): string {
-  const zone = (zoneCode?.trim() || DEFAULT_ZONE_CODE).toLowerCase();
-  return `platform_sa_${zone}`;
+  const zone = zoneCode?.trim().toLowerCase() || "";
+  return zone ? `platform_sa_${zone}` : "";
 }
 
 export type StorefrontContextInput = {
@@ -55,12 +55,11 @@ export function resolveStorefrontContext(
   const sameMarket = Boolean(zoneCode) && (!requestedZone || savedZone === requestedZone);
 
   if (!zoneCode) {
-    // No market is selected yet. Keep the previous boot params and do not
-    // invent a sales channel. Catalog calls wait for a selected market instead.
+    // No market has been resolved from the host or the shopper's choice.
+    // Do not invent a zone. Callers wait.
     return {
-      zoneCode: DEFAULT_ZONE_CODE,
-      languageCode: trimmed(input.languageCode) || DEFAULT_LANGUAGE_CODE,
-      currencyCode: trimmed(input.currencyCode) || DEFAULT_CURRENCY_CODE,
+      languageCode: trimmed(input.languageCode) || undefined,
+      currencyCode: trimmed(input.currencyCode) || undefined,
       countryCode: trimmed(input.countryCode) || undefined,
       salesChannelCode: trimmed(input.salesChannelCode) || undefined,
     };

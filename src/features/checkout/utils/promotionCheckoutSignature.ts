@@ -1,4 +1,4 @@
-/** Bag plus coupon, merchandise discount, shipping discount, and gift-card tender. */
+/** Bag plus coupon, merchandise discount, shipping discount, gift-card tender, and loyalty. */
 
 export type CheckoutSignatureLine = {
   cartItemId?: string | null;
@@ -19,6 +19,7 @@ export function promotionCheckoutSignature(input: {
   merchandiseDiscount?: number;
   shippingDiscount?: number;
   giftCards?: string;
+  loyalty?: string;
 }): string {
   return [
     checkoutLineSignature(input.lines),
@@ -26,6 +27,7 @@ export function promotionCheckoutSignature(input: {
     `d:${input.merchandiseDiscount ?? 0}`,
     `s:${input.shippingDiscount ?? 0}`,
     `g:${input.giftCards ?? ""}`,
+    `l:${input.loyalty ?? ""}`,
   ].join("|");
 }
 

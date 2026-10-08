@@ -71,6 +71,9 @@ export type ApiCart = {
   amountPayable?: string | null;
   currency: string;
   promotions?: PromotionSnapshotV1 | null;
+  /** Server redemption quote. Display only — never priced in the browser. */
+  loyaltyRedemption?: unknown;
+  loyaltyApplied?: string | null;
   validation: CartValidation | null;
   updatedAt: string;
   metadata: Record<string, unknown> | null;

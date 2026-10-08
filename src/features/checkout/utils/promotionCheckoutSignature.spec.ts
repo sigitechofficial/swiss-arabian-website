@@ -64,4 +64,20 @@ describe("promotion checkout signature", () => {
     expect(checkoutSignatureChanged(before, withCard)).toBe(true);
     expect(checkoutSignatureChanged(before, withLine)).toBe(true);
   });
+
+  it("changes when loyalty points change so checkout is rebuilt", () => {
+    const before = promotionCheckoutSignature({
+      lines,
+      couponCode: "",
+      merchandiseDiscount: 0,
+      shippingDiscount: 0,
+      giftCards: "",
+      loyalty: "",
+    });
+    const after = promotionCheckoutSignature({
+      lines,
+      loyalty: "400:4",
+    });
+    expect(checkoutSignatureChanged(before, after)).toBe(true);
+  });
 });

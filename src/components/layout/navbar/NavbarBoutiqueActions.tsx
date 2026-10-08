@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { bagCount, bagCountOnTool, navActions, navActionsBoutique, navTool, navToolIcon, navToolLabel, navToolSep } from "@/styles/siteChrome";
 import { AccountIcon, BagIcon, HeartIcon } from "./NavbarIcons";
 import type { NavbarChrome } from "./useNavbarChrome";
@@ -8,17 +8,17 @@ import type { NavbarChrome } from "./useNavbarChrome";
 export function NavbarBoutiqueActions({ chrome }: { chrome: NavbarChrome }) {
   return (
     <div className={`${navActions} ${navActionsBoutique}`} data-nav-actions>
-      <Link
+      <LocaleLink
         className={navTool}
         href={chrome.isAuthenticated ? "/account" : "/login"}
       >
         <AccountIcon />
         <span className={navToolLabel}>Account</span>
-      </Link>
-      <Link className={navTool} href="/account/wishlist">
+      </LocaleLink>
+      <LocaleLink className={navTool} href="/account/wishlist">
         <HeartIcon />
         <span className={navToolLabel}>Wishlist</span>
-      </Link>
+      </LocaleLink>
       <span className={navToolSep} aria-hidden="true" />
       <button
         className={navTool}

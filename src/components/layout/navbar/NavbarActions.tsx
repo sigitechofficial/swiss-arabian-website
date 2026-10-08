@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { bagCount, iconBtn, navActions, navUtils, navUtilsSearch, visuallyHidden } from "@/styles/siteChrome";
 import { AccountIcon, BagIcon, SearchIcon } from "./NavbarIcons";
 import type { NavbarChrome } from "./useNavbarChrome";
@@ -14,14 +14,14 @@ export function NavbarActions({
 }) {
   return (
     <div className={navActions} data-nav-actions>
-      <Link
+      <LocaleLink
         className={iconBtn}
         data-icon-btn
         href={chrome.isAuthenticated ? "/account" : "/login"}
         aria-label="Account"
       >
         <AccountIcon />
-      </Link>
+      </LocaleLink>
       <div className={navUtils}>
         {hideSearch ? null : (
           <button
