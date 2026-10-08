@@ -21,6 +21,7 @@ const applyCartLoyaltyRedemption = vi.hoisted(() => vi.fn());
 const removeCartLoyaltyRedemption = vi.hoisted(() => vi.fn());
 const fetchLoyaltyWallet = vi.hoisted(() => vi.fn());
 const fetchLoyaltyTransactions = vi.hoisted(() => vi.fn());
+const fetchLoyaltyTierHistory = vi.hoisted(() => vi.fn());
 
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
@@ -39,6 +40,7 @@ vi.mock("@/features/cart/api/optimisticCart", () => ({
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
   fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
 }));
 
 function quote(partial: Partial<LoyaltyRedemptionView> = {}): LoyaltyRedemptionView {
@@ -76,6 +78,8 @@ beforeEach(() => {
   removeCartLoyaltyRedemption.mockReset();
   fetchLoyaltyWallet.mockReset();
   fetchLoyaltyTransactions.mockReset();
+  fetchLoyaltyTierHistory.mockReset();
+  fetchLoyaltyTierHistory.mockResolvedValue([]);
   fetchLoyaltyWallet.mockResolvedValue(
     readLoyaltyWallet({
       enabled: true,

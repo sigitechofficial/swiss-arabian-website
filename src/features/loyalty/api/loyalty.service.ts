@@ -3,10 +3,12 @@ import { storefrontContextQuery } from "@/lib/storefront/context";
 import {
   readEarnPreview,
   readLoyaltyTransactions,
+  readLoyaltyTierHistory,
   readLoyaltyWallet,
   readOrderReward,
   type LoyaltyEarnPreviewView,
   type LoyaltyOrderRewardView,
+  type LoyaltyTierHistoryView,
   type LoyaltyTransactionView,
   type LoyaltyWalletView,
 } from "../types/loyalty";
@@ -42,6 +44,15 @@ export async function fetchLoyaltyTransactions(
     `/storefront/loyalty/transactions?${loyaltyQuery(market).toString()}`,
   );
   return readLoyaltyTransactions(data);
+}
+
+export async function fetchLoyaltyTierHistory(
+  market: LoyaltyMarketQuery,
+): Promise<LoyaltyTierHistoryView[]> {
+  const data = await apiGet<unknown>(
+    `/storefront/loyalty/tier-history?${loyaltyQuery(market).toString()}`,
+  );
+  return readLoyaltyTierHistory(data);
 }
 
 /**

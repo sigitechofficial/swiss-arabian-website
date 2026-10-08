@@ -21,6 +21,7 @@ vi.mock("../api/loyalty.service", () => ({
   fetchOrderReward: (...args: unknown[]) => fetchOrderReward(...args),
   fetchLoyaltyWallet: vi.fn(),
   fetchLoyaltyTransactions: vi.fn(),
+  fetchLoyaltyTierHistory: vi.fn(),
 }));
 
 function preview(points: number, currencyCode = "AED", eligibleAmount: string | null = null) {

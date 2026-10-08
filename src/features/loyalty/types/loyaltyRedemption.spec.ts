@@ -131,6 +131,9 @@ describe("order redemption snapshot", () => {
       points: 400,
       amount: 4,
       currencyCode: "AED",
+      returnedPoints: null,
+      returnedAmount: null,
+      netPoints: null,
     });
   });
 });

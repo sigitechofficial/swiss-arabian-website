@@ -70,8 +70,9 @@ describe("loyalty wallet reader", () => {
       wallet: { availablePoints: 0, pendingPoints: 0, reservedPoints: 0 },
     });
     expect(wallet.availability).toBe("DISABLED");
+    expect(wallet.hasServerWallet).toBe(true);
     expect(wallet.unavailableMessage).toBe(
-      "Swiss Arabian Rewards is not currently available in this market.",
+      "Rewards are currently unavailable for new earning or redemption in this market.",
     );
   });
 
@@ -167,12 +168,16 @@ describe("live backend contract", () => {
     );
   });
 
-  it("leaves debt points out of the summary without a customer-safe label", () => {
+  it("reads debt points from the server wallet", () => {
     const wallet = readLoyaltyWallet({
       ...liveActive,
       wallet: { availablePoints: 0, pendingPoints: 0, reservedPoints: 0, debtPoints: 40 },
     });
-    expect(wallet.debtLabel).toBeNull();
+    expect(wallet.debtPoints).toBe(40);
+    expect(wallet.availablePoints).toBe(0);
+    expect(wallet.debtLabel).toBe(
+      "Future reward points will first be applied to this adjustment before becoming available.",
+    );
   });
 
   it("renders a real ledger row from the presentation key", () => {
@@ -241,6 +246,13 @@ describe("live backend contract", () => {
       "POINTS_REDEEMED",
       "POINTS_EXPIRED",
       "REFUND_ADJUSTMENT",
+      "POINTS_ADJUSTED_AFTER_REFUND",
+      "REWARD_POINTS_RETURNED",
+      "POINTS_RETURNED",
+      "POINTS_APPLIED_TO_ADJUSTMENT",
+      "DEBT_REPAYMENT",
+      "MANUAL_CREDIT",
+      "MANUAL_DEBIT",
     ];
     const rows = readLoyaltyTransactions({
       items: keys.map((type, index) => ({
@@ -277,7 +289,7 @@ describe("loyalty transaction reader", () => {
       ],
     });
     expect(rows[0]).toMatchObject({ label: "Order earned", detail: "Order 10842", points: 150 });
-    expect(rows[1]?.label).toBe("Reward activity");
+    expect(rows[1]?.label).toBe("Manual points credit");
     expect(rows[1]?.label).not.toBe("MANUAL_CREDIT");
   });
 });

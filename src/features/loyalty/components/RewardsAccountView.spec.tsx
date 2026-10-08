@@ -15,6 +15,7 @@ import { RewardsAccountView } from "./RewardsAccountView";
 
 const fetchLoyaltyWallet = vi.hoisted(() => vi.fn());
 const fetchLoyaltyTransactions = vi.hoisted(() => vi.fn());
+const fetchLoyaltyTierHistory = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/account/rewards",
@@ -32,19 +33,24 @@ vi.mock("next/image", () => ({
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
   fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
 }));
 
 function wallet(partial: Partial<LoyaltyWalletView>): LoyaltyWalletView {
   return {
     availability: "ACTIVE",
     unavailableMessage: null,
+    member: true,
+    hasServerWallet: true,
     zoneCode: "UAE",
     currencyCode: "AED",
     availablePoints: 0,
     pendingPoints: 0,
     reservedPoints: 0,
     availableValue: null,
+    debtPoints: 0,
     debtLabel: null,
+    tier: null,
     ...partial,
   };
 }
@@ -71,6 +77,8 @@ beforeEach(() => {
   fetchLoyaltyWallet.mockReset();
   fetchLoyaltyTransactions.mockReset();
   fetchLoyaltyTransactions.mockResolvedValue([]);
+  fetchLoyaltyTierHistory.mockReset();
+  fetchLoyaltyTierHistory.mockResolvedValue([]);
   useAuthStore.setState({
     user: { id: "customer-1", email: "member@example.com" },
     isAuthenticated: true,
@@ -149,6 +157,8 @@ describe("rewards account", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       wallet({
         availability: "DISABLED",
+        member: false,
+        hasServerWallet: false,
         unavailableMessage: "Swiss Arabian Rewards is not currently available in this market.",
       }),
     );
@@ -158,7 +168,9 @@ describe("rewards account", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
     expect(screen.queryByText("No reward activity yet.")).not.toBeInTheDocument();
-    expect(fetchLoyaltyTransactions).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(fetchLoyaltyTransactions).toHaveBeenCalled();
+    });
   });
 
   it("shows a loading state without static points", async () => {
