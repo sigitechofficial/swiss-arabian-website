@@ -145,6 +145,7 @@ describe("live L2 payloads", () => {
     expect(readOrderReward({ earned: false })).toEqual({
       earned: false,
       redemption: { redeemed: false },
+      earnAdjustment: null,
     });
   });
 });
@@ -169,6 +170,7 @@ describe("order reward reader", () => {
       currencyCode: "AED",
       vestedAt: null,
       redemption: { redeemed: false },
+      earnAdjustment: null,
     });
   });
 
@@ -190,14 +192,17 @@ describe("order reward reader", () => {
     expect(readOrderReward({ earned: false })).toEqual({
       earned: false,
       redemption: { redeemed: false },
+      earnAdjustment: null,
     });
     expect(readOrderReward({ earned: true, points: 0, presentationState: "PENDING" })).toEqual({
       earned: false,
       redemption: { redeemed: false },
+      earnAdjustment: null,
     });
     expect(readOrderReward(null)).toEqual({
       earned: false,
       redemption: { redeemed: false },
+      earnAdjustment: null,
     });
   });
 });

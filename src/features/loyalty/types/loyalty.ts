@@ -6,6 +6,10 @@ export type LoyaltyWalletView = {
   availability: LoyaltyAvailability;
   /** Customer sentence when the program is off for this market. */
   unavailableMessage: string | null;
+  /** Server `member`. True when this customer already has a Loyalty account. */
+  member: boolean;
+  /** True only when the server sent a wallet object. Never invented. */
+  hasServerWallet: boolean;
   zoneCode: string | null;
   currencyCode: string | null;
   availablePoints: number;
@@ -16,12 +20,39 @@ export type LoyaltyWalletView = {
    * Never derived from point value or reward rate.
    */
   availableValue: number | null;
+  /** Server wallet debt. Never derived from available or pending. */
+  debtPoints: number;
   /** Customer-safe note. Raw ledger language is dropped. */
   debtLabel: string | null;
+  /** Server L5 tier snapshot. Null when the program has no tiers or none were sent. */
+  tier: LoyaltyTierView | null;
 };
 
 /** Lifecycle word shown next to a row. Server-supplied, never inferred. */
 export type LoyaltyActivityState = "Pending" | "Available" | "Expired";
+
+/** One named Rewards tier. The display name is whatever the server sent. */
+export type LoyaltyTierNameView = {
+  name: string;
+};
+
+/** Server-priced progress toward the next named tier. Never derived here. */
+export type LoyaltyTierView = {
+  current: LoyaltyTierNameView | null;
+  qualifyingSpend: number | null;
+  remainingAmount: number | null;
+  next: LoyaltyTierNameView | null;
+  /** Present only when the server already computed it. */
+  progressPercent: number | null;
+  qualificationWindowDays: number | null;
+};
+
+export type LoyaltyTierHistoryView = {
+  id: string;
+  tierName: string | null;
+  label: string;
+  occurredAt: string | null;
+};
 
 export type LoyaltyTransactionView = {
   id: string;
@@ -56,11 +87,26 @@ export type LoyaltyOrderRedemptionView =
       points: number;
       amount: number;
       currencyCode: string | null;
+      /** After-sale return. Absent unless the server sends it. */
+      returnedPoints?: number | null;
+      returnedAmount?: number | null;
+      netPoints?: number | null;
     };
+
+/** After-sale earn reversal. All three numbers come from the server. */
+export type LoyaltyOrderEarnAdjustmentView = {
+  originalPoints: number;
+  adjustedPoints: number;
+  currentPoints: number;
+};
 
 /** Frozen per-order loyalty outcome read at confirmation and in history. */
 export type LoyaltyOrderRewardView =
-  | { earned: false; redemption: LoyaltyOrderRedemptionView }
+  | {
+      earned: false;
+      redemption: LoyaltyOrderRedemptionView;
+      earnAdjustment?: LoyaltyOrderEarnAdjustmentView | null;
+    }
   | {
       earned: true;
       orderId: string | null;
@@ -70,6 +116,7 @@ export type LoyaltyOrderRewardView =
       /** Present only when the server has vested the order. */
       vestedAt: string | null;
       redemption: LoyaltyOrderRedemptionView;
+      earnAdjustment?: LoyaltyOrderEarnAdjustmentView | null;
     };
 
 /** Server cart/checkout redemption quote. Limits and money are never derived here. */
@@ -91,7 +138,12 @@ export type LoyaltyRedemptionView = {
 export const EMPTY_ORDER_REWARD: LoyaltyOrderRewardView = {
   earned: false,
   redemption: { redeemed: false },
+  earnAdjustment: null,
 };
+
+/** Shown when the server reports debt without its own customer sentence. */
+export const DEFAULT_DEBT_COPY =
+  "Future reward points will first be applied to this adjustment before becoming available.";
 
 const DISABLED = new Set([
   "DISABLED",
@@ -109,6 +161,12 @@ const PROGRAM_UNAVAILABLE = "Swiss Arabian Rewards is not currently available.";
 const DEFAULT_UNAVAILABLE =
   "Swiss Arabian Rewards is not currently available in this market.";
 
+const OPERATIONS_UNAVAILABLE =
+  "Rewards are currently unavailable for new earning or redemption.";
+
+const OPERATIONS_UNAVAILABLE_MARKET =
+  "Rewards are currently unavailable for new earning or redemption in this market.";
+
 /**
  * Server reason codes for a disabled program or market. The copy is deliberately
  * coarse, matching the backend, and never names which switch is off.
@@ -116,6 +174,21 @@ const DEFAULT_UNAVAILABLE =
 const UNAVAILABLE_COPY: Record<string, string> = {
   LOYALTY_NOT_AVAILABLE: PROGRAM_UNAVAILABLE,
   LOYALTY_NOT_AVAILABLE_IN_THIS_MARKET: DEFAULT_UNAVAILABLE,
+};
+
+/** Shown when a historical wallet remains visible but new actions are off. */
+const OPERATIONS_COPY: Record<string, string> = {
+  LOYALTY_NOT_AVAILABLE: OPERATIONS_UNAVAILABLE,
+  LOYALTY_NOT_AVAILABLE_IN_THIS_MARKET: OPERATIONS_UNAVAILABLE_MARKET,
+};
+
+const TIER_HISTORY_COPY: Record<string, string> = {
+  TIER_STARTED: "Your Rewards tier started",
+  PURCHASE: "Reached after a qualifying purchase",
+  REFUND: "Adjusted after a refund",
+  EXCHANGE: "Updated after an exchange adjustment",
+  QUALIFICATION_EXPIRED: "Updated after the qualification period",
+  PROGRAM_UPDATE: "Updated after a program change",
 };
 
 /** Temporary reservation chatter is hidden unless the server marks the row visible. */
@@ -149,6 +222,19 @@ const ACTIVITY_COPY: Record<string, string> = {
   POINTS_REDEEMED: "Points redeemed",
   POINTS_EXPIRED: "Points expired",
   REFUND_ADJUSTMENT: "Refund adjustment",
+  POINTS_ADJUSTED_AFTER_REFUND: "Points adjusted after refund",
+  REWARD_POINTS_RETURNED: "Reward points returned",
+  POINTS_RETURNED: "Reward points returned",
+  REDEMPTION_RETURN: "Reward points returned",
+  REDEMPTION_REFUND: "Reward points returned",
+  REDEMPTION_REVERSAL: "Reward points returned",
+  EARN_REVERSAL: "Points adjusted after refund",
+  DEBT_REPAYMENT: "Points applied to previous adjustment",
+  POINTS_APPLIED_TO_ADJUSTMENT: "Points applied to previous adjustment",
+  MANUAL_CREDIT: "Manual points credit",
+  MANUAL_DEBIT: "Manual points adjustment",
+  CUSTOMER_CARE: "Customer care points",
+  CUSTOMER_CARE_POINTS: "Customer care points",
 };
 
 /** Server lifecycle state keys. Pending and Available stay explicit words. */
@@ -245,20 +331,30 @@ export function readLoyaltyWallet(raw: unknown): LoyaltyWalletView {
     throw new Error("We couldn't load your rewards right now.");
   }
 
-  const wallet = walletRecord(row);
+  const walletObject = asRecord(row.wallet) ?? asRecord(row.balances);
+  const hasServerWallet = walletObject != null;
+  const member = row.member === true;
+  const wallet = walletObject ?? walletRecord(row);
   const market = asRecord(row.market) ?? {};
   const equivalent = asRecord(row.monetaryEquivalent) ?? {};
   const disabled = marketDisabled(row) || marketDisabled(wallet);
   const reason = typeof row.reason === "string" ? row.reason.trim().toUpperCase() : "";
+  const historical = hasServerWallet || member;
+  const backendMessage =
+    readText(row, ["message", "customerMessage"]) ??
+    readText(wallet, ["message", "customerMessage"]);
+  const pointsSource = disabled && !hasServerWallet ? {} : wallet;
 
   return {
     availability: disabled ? "DISABLED" : "ACTIVE",
     unavailableMessage: disabled
-      ? readText(row, ["message", "customerMessage"]) ??
-        readText(wallet, ["message", "customerMessage"]) ??
+      ? backendMessage ??
+        (historical ? OPERATIONS_COPY[reason] ?? OPERATIONS_UNAVAILABLE_MARKET : null) ??
         UNAVAILABLE_COPY[reason] ??
         DEFAULT_UNAVAILABLE
       : null,
+    member,
+    hasServerWallet,
     zoneCode:
       readText(market, ["code", "zoneCode"]) ?? readText(row, ["zoneCode"]),
     currencyCode:
@@ -266,15 +362,108 @@ export function readLoyaltyWallet(raw: unknown): LoyaltyWalletView {
       readText(equivalent, ["currencyCode"]) ??
       readText(market, ["currencyCode"]) ??
       readText(row, ["currencyCode"]),
-    availablePoints: readPoints(wallet, ["availablePoints", "available", "points"]),
-    pendingPoints: readPoints(wallet, ["pendingPoints", "pending"]),
-    reservedPoints: readPoints(wallet, ["reservedPoints", "reserved"]),
+    availablePoints: readPoints(pointsSource, ["availablePoints", "available", "points"]),
+    pendingPoints: readPoints(pointsSource, ["pendingPoints", "pending"]),
+    reservedPoints: readPoints(pointsSource, ["reservedPoints", "reserved"]),
     availableValue:
-      readMoney(equivalent, ["available", "amount", "value"]) ??
-      readMoney(wallet, ["availableValue", "monetaryEquivalent", "worth"]),
+      disabled && !hasServerWallet
+        ? null
+        : readMoney(equivalent, ["available", "amount", "value"]) ??
+          readMoney(wallet, ["availableValue", "monetaryEquivalent", "worth"]),
+    debtPoints: Math.max(0, readPoints(pointsSource, ["debtPoints", "debt"])),
     debtLabel:
       readText(wallet, ["debtLabel", "debtMessage", "customerDebtMessage"]) ??
-      readText(row, ["debtLabel", "debtMessage", "customerDebtMessage"]),
+      readText(row, ["debtLabel", "debtMessage", "customerDebtMessage"]) ??
+      (readPoints(pointsSource, ["debtPoints", "debt"]) > 0 ? DEFAULT_DEBT_COPY : null),
+    tier: readLoyaltyTier(row),
+  };
+}
+
+function readTierName(value: unknown): LoyaltyTierNameView | null {
+  if (typeof value === "string") {
+    const name = customerCopy(value);
+    return name ? { name } : null;
+  }
+  const row = asRecord(value);
+  if (!row) return null;
+  const name =
+    readText(row, ["name", "displayName", "label", "title"]) ??
+    null;
+  return name ? { name } : null;
+}
+
+function readProgressPercent(value: unknown): number | null {
+  const amount = readNumber(value);
+  if (amount == null) return null;
+  if (amount < 0 || amount > 100) return null;
+  return amount;
+}
+
+function tierHistoryList(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  const row = asRecord(raw);
+  if (!row) return [];
+  if (Array.isArray(row.items)) return row.items;
+  return [];
+}
+
+function tierHistoryLabel(reason: string): string {
+  return TIER_HISTORY_COPY[reason] ?? "Tier update";
+}
+
+export function readLoyaltyTierHistory(raw: unknown): LoyaltyTierHistoryView[] {
+  return tierHistoryList(raw).flatMap((item, index) => {
+    const row = asRecord(item);
+    if (!row) return [];
+    const to = readTierName(row.to);
+    const reason = typeof row.reason === "string" ? row.reason.trim().toUpperCase() : "";
+    return [
+      {
+        id: readText(row, ["id"]) ?? `tier-history-${index}`,
+        tierName: to?.name ?? null,
+        label: tierHistoryLabel(reason),
+        occurredAt: readText(row, ["changedAt"]) ?? null,
+      },
+    ];
+  });
+}
+
+/**
+ * Reads `/me.tier`. Remaining spend is `tier.next.remainingAmount` only —
+ * the browser never subtracts qualifying spend from a threshold.
+ */
+export function readLoyaltyTier(raw: unknown): LoyaltyTierView | null {
+  const row = asRecord(raw);
+  const body = asRecord(row?.tier);
+  if (!body || body.enabled === false) return null;
+
+  const current = readTierName(body.current);
+  const nextBody = asRecord(body.next);
+  const next = readTierName(nextBody);
+  const qualifying = asRecord(body.qualifyingSpend) ?? {};
+  const qualifyingSpend = readMoney(qualifying, ["amount"]) ?? readMoney(body, ["qualifyingSpend"]);
+  const remainingAmount = nextBody ? readMoney(nextBody, ["remainingAmount"]) : null;
+  const progressPercent = next ? readProgressPercent(body.progressPercent) : null;
+  const qualificationWindowDays = readNumber(body.qualificationWindowDays);
+
+  if (
+    !current &&
+    !next &&
+    qualifyingSpend == null &&
+    remainingAmount == null &&
+    progressPercent == null &&
+    qualificationWindowDays == null
+  ) {
+    return null;
+  }
+
+  return {
+    current,
+    qualifyingSpend,
+    remainingAmount: next ? remainingAmount : null,
+    next,
+    progressPercent,
+    qualificationWindowDays,
   };
 }
 
@@ -286,6 +475,14 @@ function transactionList(raw: unknown): unknown[] {
   if (Array.isArray(row.transactions)) return row.transactions;
   if (Array.isArray(row.entries)) return row.entries;
   return [];
+}
+
+function activityCopy(presentationKey: string, points: number | null): string | null {
+  if (presentationKey === "REFUND_ADJUSTMENT") {
+    if (points != null && points > 0) return "Reward points returned";
+    if (points != null && points < 0) return "Points adjusted after refund";
+  }
+  return ACTIVITY_COPY[presentationKey] ?? null;
 }
 
 /**
@@ -302,13 +499,13 @@ export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] 
     if (TRANSIENT_ACTIVITY.has(presentationKey) && row.customerVisible !== true && row.visible !== true) {
       return [];
     }
-    const label =
-      readText(row, ["label", "displayLabel", "title", "description"]) ??
-      ACTIVITY_COPY[presentationKey] ??
-      "Reward activity";
-    const id = readText(row, ["id"]) ?? `activity-${index}`;
     const points =
       readNumber(row.points) ?? readNumber(row.pointsDelta) ?? readNumber(row.pointDelta);
+    const label =
+      readText(row, ["label", "displayLabel", "title", "description"]) ??
+      activityCopy(presentationKey, points) ??
+      "Reward activity";
+    const id = readText(row, ["id"]) ?? `activity-${index}`;
     const stateKey = typeof row.state === "string" ? row.state.trim().toUpperCase() : "";
     return [
       {
@@ -364,12 +561,53 @@ function readOrderRedemption(row: Record<string, unknown> | null): LoyaltyOrderR
   const points = readNumber(redemption.points);
   if (points == null || points <= 0) return { redeemed: false };
 
+  const returnedPoints =
+    readNumber(redemption.returnedPoints) ?? readNumber(redemption.pointsRefunded);
+  const hasReturn = returnedPoints != null && returnedPoints > 0;
+  const netPoints = readNumber(redemption.netPoints) ?? readNumber(redemption.netPointsUsed);
+
   return {
     redeemed: true,
     points,
     amount: readMoney(redemption, ["amount"]) ?? 0,
     currencyCode: readText(redemption, ["currencyCode"]),
+    returnedPoints: hasReturn ? returnedPoints : null,
+    returnedAmount: hasReturn
+      ? readMoney(redemption, ["returnedAmount", "amountRefunded"])
+      : null,
+    netPoints: hasReturn ? netPoints : null,
   };
+}
+
+function readEarnAdjustment(row: Record<string, unknown>): LoyaltyOrderEarnAdjustmentView | null {
+  const sources = [
+    asRecord(row.earnAdjustment),
+    asRecord(row.afterSale),
+    asRecord(row.adjustment),
+    asRecord(row.earning),
+    row,
+  ];
+  for (const source of sources) {
+    if (!source) continue;
+    const adjustedPoints =
+      readNumber(source.adjustedPoints) ??
+      readNumber(source.pointsReversed) ??
+      readNumber(source.earnReversalPoints) ??
+      readNumber(source.reversedPoints);
+    const currentPoints =
+      readNumber(source.currentPoints) ??
+      readNumber(source.netEarnedPoints) ??
+      readNumber(source.netPoints) ??
+      readNumber(source.remainingPoints);
+    const originalPoints =
+      readNumber(source.originalPoints) ??
+      readNumber(source.earnedPoints) ??
+      (adjustedPoints != null ? readNumber(source.points) : null);
+    if (originalPoints == null || adjustedPoints == null || currentPoints == null) continue;
+    if (adjustedPoints <= 0) continue;
+    return { originalPoints, adjustedPoints, currentPoints };
+  }
+  return null;
 }
 
 /**
@@ -381,15 +619,16 @@ export function readOrderReward(raw: unknown): LoyaltyOrderRewardView {
   if (!row) return EMPTY_ORDER_REWARD;
 
   const redemption = readOrderRedemption(row);
-  if (row.earned !== true) return { earned: false, redemption };
+  const earnAdjustment = readEarnAdjustment(row);
+  if (row.earned !== true) return { earned: false, redemption, earnAdjustment };
 
   const points = readNumber(row.points);
-  if (points == null || points <= 0) return { earned: false, redemption };
+  if (points == null || points <= 0) return { earned: false, redemption, earnAdjustment };
 
   const stateKey = typeof row.presentationState === "string"
     ? row.presentationState.trim().toUpperCase()
     : "";
-  if (!ORDER_REWARD_STATES.has(stateKey)) return { earned: false, redemption };
+  if (!ORDER_REWARD_STATES.has(stateKey)) return { earned: false, redemption, earnAdjustment };
 
   return {
     earned: true,
@@ -399,6 +638,7 @@ export function readOrderReward(raw: unknown): LoyaltyOrderRewardView {
     currencyCode: readText(row, ["currencyCode"]),
     vestedAt: readText(row, ["vestedAt"]),
     redemption,
+    earnAdjustment,
   };
 }
 
@@ -470,11 +710,27 @@ export function formatPoints(value: number): string {
   }).format(value);
 }
 
-export function isEmptyRewardsWallet(wallet: LoyaltyWalletView): boolean {
+export function hasRewardsFigures(wallet: LoyaltyWalletView): boolean {
   return (
-    wallet.availability === "ACTIVE" &&
-    wallet.availablePoints === 0 &&
-    wallet.pendingPoints === 0 &&
-    wallet.reservedPoints === 0
+    wallet.availablePoints !== 0 ||
+    wallet.pendingPoints !== 0 ||
+    wallet.reservedPoints !== 0 ||
+    wallet.debtPoints > 0 ||
+    Boolean(wallet.tier?.current)
   );
+}
+
+export function isEmptyRewardsWallet(wallet: LoyaltyWalletView): boolean {
+  return wallet.availability === "ACTIVE" && !hasRewardsFigures(wallet);
+}
+
+/** Historical balances/activity may render even when current operations are off. */
+export function hasHistoricalRewards(wallet: LoyaltyWalletView): boolean {
+  return wallet.hasServerWallet || wallet.member;
+}
+
+export function hasLoyaltyTier(wallet: LoyaltyWalletView): boolean {
+  const tier = wallet.tier;
+  if (!tier) return false;
+  return Boolean(tier.current || tier.next || tier.qualifyingSpend != null);
 }

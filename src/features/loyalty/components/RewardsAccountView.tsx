@@ -7,11 +7,16 @@ import { AccountPageShell } from "@/features/account/components/AccountPageShell
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useLoyaltyAccount } from "../hooks/useLoyaltyAccount";
 import {
+  DEFAULT_DEBT_COPY,
   formatPoints,
+  hasHistoricalRewards,
+  hasRewardsFigures,
   isEmptyRewardsWallet,
+  type LoyaltyTierHistoryView,
   type LoyaltyTransactionView,
   type LoyaltyWalletView,
 } from "../types/loyalty";
+import { RewardsTierHistory, RewardsTierSection } from "./RewardsTierSection";
 
 function activityDate(value: string | null): string | null {
   if (!value) return null;
@@ -33,7 +38,7 @@ function pointsLabel(points: number): string {
 
 function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
   const currency = wallet.currencyCode ?? "AED";
-  if (isEmptyRewardsWallet(wallet)) {
+  if (isEmptyRewardsWallet(wallet) && !wallet.tier?.current) {
     return (
       <section aria-labelledby="rewards-balance-heading">
         <p className="font-sans text-[40px] font-medium leading-none tracking-[-0.03em] text-sa-primary tabular-nums sm:text-[48px]">
@@ -68,23 +73,40 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
           Worth <span dir="ltr">{formatMoney(wallet.availableValue, currency)}</span>
         </p>
       ) : null}
+      {wallet.tier?.current ? (
+        <div className="mt-5 min-w-0">
+          <p className="break-words text-[16px] font-semibold text-sa-primary">{wallet.tier.current.name}</p>
+          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Current tier</p>
+        </div>
+      ) : null}
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-sa-border px-4 py-3">
+        <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Pending</dt>
-          <dd className="mt-1 text-[14px] font-semibold text-sa-primary tabular-nums">
+          <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
             {formatPoints(wallet.pendingPoints)} points
           </dd>
         </div>
-        <div className="rounded-lg border border-sa-border px-4 py-3">
+        <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Reserved</dt>
-          <dd className="mt-1 text-[14px] font-semibold text-sa-primary tabular-nums">
+          <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
             {formatPoints(wallet.reservedPoints)} points
           </dd>
         </div>
       </dl>
-      {wallet.debtLabel ? (
-        <p className="mt-4 max-w-[420px] text-[13px] leading-relaxed text-sa-secondary">{wallet.debtLabel}</p>
+      {wallet.debtPoints > 0 ? (
+        <div className="mt-4 min-w-0 rounded-lg border border-sa-border px-4 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
+            Rewards adjustment
+          </p>
+          <p className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
+            {formatPoints(wallet.debtPoints)} points
+          </p>
+          <p className="mt-2 text-[13px] leading-relaxed text-sa-secondary">
+            {wallet.debtLabel ?? DEFAULT_DEBT_COPY}
+          </p>
+        </div>
       ) : null}
+      <RewardsTierSection hideCurrentName={Boolean(wallet.tier?.current)} wallet={wallet} />
     </section>
   );
 }
@@ -125,9 +147,9 @@ function RewardActivity({
       ) : (
         <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
           {rows.map((row) => (
-            <li key={row.id} className="flex items-start justify-between gap-4 px-4 py-4">
+            <li key={row.id} className="flex items-start justify-between gap-3 px-4 py-4 sm:gap-4">
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-sa-primary">{row.label}</p>
+                <p className="break-words text-[13px] font-medium text-sa-primary">{row.label}</p>
                 {row.detail ? <p className="mt-0.5 text-[12px] text-sa-muted">{row.detail}</p> : null}
                 {/* The lifecycle word is spelled out, never a colour or icon. */}
                 {row.state ? (
@@ -138,7 +160,7 @@ function RewardActivity({
                 ) : null}
               </div>
               {row.points != null ? (
-                <p className="shrink-0 text-[13px] font-semibold text-sa-primary tabular-nums">
+                <p className="shrink-0 break-words text-right text-[13px] font-semibold text-sa-primary tabular-nums">
                   {pointsLabel(row.points)}
                 </p>
               ) : null}
@@ -152,7 +174,8 @@ function RewardActivity({
 
 /** Signed-in rewards account for the current Market wallet. */
 export function RewardsAccountView() {
-  const { wallet, transactions, bootstrapped, isAuthenticated, zoneCode } = useLoyaltyAccount();
+  const { wallet, transactions, tierHistory, bootstrapped, isAuthenticated, zoneCode } =
+    useLoyaltyAccount();
 
   let body;
   if (!bootstrapped || !isAuthenticated) {
@@ -173,7 +196,41 @@ export function RewardsAccountView() {
       </div>
     );
   } else if (wallet.data.availability === "DISABLED") {
-    body = (
+    const historyVisible =
+      hasHistoricalRewards(wallet.data) ||
+      hasRewardsFigures(wallet.data) ||
+      (transactions.data?.length ?? 0) > 0 ||
+      transactions.isPending;
+    body = historyVisible ? (
+      <div className="flex flex-col gap-10">
+        {wallet.data.hasServerWallet ? (
+          <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
+            <RewardsSummary wallet={wallet.data} />
+            {wallet.data.unavailableMessage ? (
+              <p className="mt-5 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
+                {wallet.data.unavailableMessage}
+              </p>
+            ) : null}
+          </div>
+        ) : wallet.data.unavailableMessage ? (
+          <p className="max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
+            {wallet.data.unavailableMessage}
+          </p>
+        ) : null}
+        <RewardActivity
+          rows={transactions.data ?? []}
+          pending={transactions.isPending}
+          error={transactions.isError}
+          onRetry={() => void transactions.refetch()}
+        />
+        <RewardsTierHistory
+          rows={tierHistory.data ?? []}
+          pending={tierHistory.isPending}
+          error={tierHistory.isError}
+          onRetry={() => void tierHistory.refetch()}
+        />
+      </div>
+    ) : (
       <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
         <p className="max-w-[520px] text-[14px] leading-relaxed text-sa-primary">
           {wallet.data.unavailableMessage}
@@ -191,6 +248,12 @@ export function RewardsAccountView() {
           pending={transactions.isPending}
           error={transactions.isError}
           onRetry={() => void transactions.refetch()}
+        />
+        <RewardsTierHistory
+          rows={tierHistory.data ?? []}
+          pending={tierHistory.isPending}
+          error={tierHistory.isError}
+          onRetry={() => void tierHistory.refetch()}
         />
       </div>
     );

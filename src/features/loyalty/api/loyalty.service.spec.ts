@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useUiStore } from "@/stores/useUiStore";
-import { fetchLoyaltyTransactions, fetchLoyaltyWallet } from "./loyalty.service";
+import {
+  fetchLoyaltyTierHistory,
+  fetchLoyaltyTransactions,
+  fetchLoyaltyWallet,
+} from "./loyalty.service";
 
 const apiGet = vi.hoisted(() => vi.fn());
 
@@ -45,6 +49,15 @@ describe("loyalty requests", () => {
     await fetchLoyaltyTransactions({ zoneCode: "QA", currencyCode: "QAR" });
     const path = String(apiGet.mock.calls[0]?.[0]);
     expect(path.startsWith("/storefront/loyalty/transactions?")).toBe(true);
+    expect(path).toContain("zoneCode=QA");
+    expect(path).not.toContain("customerId");
+  });
+
+  it("loads tier history for the same market", async () => {
+    apiGet.mockResolvedValue({ items: [] });
+    await fetchLoyaltyTierHistory({ zoneCode: "QA", currencyCode: "QAR" });
+    const path = String(apiGet.mock.calls[0]?.[0]);
+    expect(path.startsWith("/storefront/loyalty/tier-history?")).toBe(true);
     expect(path).toContain("zoneCode=QA");
     expect(path).not.toContain("customerId");
   });

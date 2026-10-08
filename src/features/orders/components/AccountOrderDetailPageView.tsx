@@ -24,6 +24,8 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
 import { AppliedCampaigns } from "@/features/promotions/components/AppliedCampaigns";
 import { readPromotionSnapshot } from "@/features/promotions/types/promotions";
+import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
+import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
@@ -171,6 +173,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     retry: 1,
   });
   const orderNumber = detailQuery.data?.order.orderNumber ?? null;
+  const orderReward = useOrderReward(orderId);
 
   // Richer tracking view (carrier, estimated delivery, shipment items). The
   // detail payload is the fallback if it can't be loaded.
@@ -334,6 +337,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             })}
           </ul>
         </Card>
+
+        {hasOrderLoyaltySection(orderReward) ? (
+          <Card title="Rewards">
+            <OrderRewardNote reward={orderReward} showHeading={false} />
+          </Card>
+        ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Card title="Order summary">

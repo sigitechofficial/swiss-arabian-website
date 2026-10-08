@@ -3,7 +3,11 @@
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { fetchLoyaltyTransactions, fetchLoyaltyWallet } from "../api/loyalty.service";
+import {
+  fetchLoyaltyTierHistory,
+  fetchLoyaltyTransactions,
+  fetchLoyaltyWallet,
+} from "../api/loyalty.service";
 import { loyaltyKeys } from "../api/loyalty.keys";
 
 /** Current Market wallet. The query does not run until that market is known. */
@@ -31,9 +35,20 @@ export function useLoyaltyAccount() {
       return fetchLoyaltyTransactions(market);
     },
     {
-      enabled: canLoad && wallet.isSuccess && wallet.data.availability === "ACTIVE",
+      enabled: canLoad && wallet.isSuccess,
     },
   );
 
-  return { wallet, transactions, zoneCode, currencyCode, bootstrapped, isAuthenticated };
+  const tierHistory = useApiQuery(
+    loyaltyKeys.tierHistory(zoneCode ?? "", currencyCode ?? ""),
+    () => {
+      if (!market) throw new Error("Rewards market is not ready.");
+      return fetchLoyaltyTierHistory(market);
+    },
+    {
+      enabled: canLoad && wallet.isSuccess,
+    },
+  );
+
+  return { wallet, transactions, tierHistory, zoneCode, currencyCode, bootstrapped, isAuthenticated };
 }

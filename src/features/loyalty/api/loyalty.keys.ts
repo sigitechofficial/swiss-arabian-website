@@ -5,6 +5,8 @@ export const loyaltyKeys = {
     [...loyaltyKeys.all, "wallet", zoneCode, currencyCode] as const,
   transactions: (zoneCode: string, currencyCode: string) =>
     [...loyaltyKeys.all, "transactions", zoneCode, currencyCode] as const,
+  tierHistory: (zoneCode: string, currencyCode: string) =>
+    [...loyaltyKeys.all, "tier-history", zoneCode, currencyCode] as const,
   /** `signature` changes whenever the server quote changes, forcing a refetch. */
   earnPreview: (zoneCode: string, target: string, signature: string) =>
     [...loyaltyKeys.all, "earn-preview", zoneCode, target, signature] as const,
