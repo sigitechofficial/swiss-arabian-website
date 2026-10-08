@@ -72,6 +72,23 @@ describe("qualification copy", () => {
     );
   });
 
+  it("uses customer-safe copy for Loyalty eligibility misses", () => {
+    expect(offerQualificationMessage({ rejected: { reason: "LOYALTY_TIER_REQUIRED" } })).toBe(
+      "This offer isn’t available with your current Rewards status.",
+    );
+    expect(offerQualificationMessage({ rejected: { reason: "LOYALTY_TIER_MISMATCH" } })).toBe(
+      "This offer isn’t available with your current Rewards status.",
+    );
+    expect(
+      offerQualificationMessage({
+        rejected: { reason: "LOYALTY_MEMBER_REQUIRED", message: "Join Rewards to use this offer." },
+      }),
+    ).toBe("Join Rewards to use this offer.");
+    expect(offerQualificationMessage({ rejected: { reason: "LOYALTY_TIER_REQUIRED" } })).not.toMatch(
+      /Gold|Silver|requiredTier/,
+    );
+  });
+
   it("renders pending method offers as information, not as applied", () => {
     expect(
       offerQualificationMessage({

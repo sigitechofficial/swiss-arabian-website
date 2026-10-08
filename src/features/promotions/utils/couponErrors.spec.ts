@@ -40,6 +40,30 @@ describe("coupon error copy", () => {
     expect(couponErrorMessage(error)).toBe("Spend AED 75.00 to use this code.");
   });
 
+  it("maps Backend Loyalty coupon reasons without naming the required tier", () => {
+    const reason = (name: string) =>
+      new ApiClientError(422, {
+        code: "COUPON_NOT_APPLICABLE",
+        context: { reason: name },
+      });
+    expect(couponErrorMessage(reason("LOYALTY_TIER_REQUIRED"))).toBe(
+      "This code isn’t available with your current Rewards status.",
+    );
+    expect(couponErrorMessage(reason("LOYALTY_TIER_MISMATCH"))).toBe(
+      "This code isn’t available with your current Rewards status.",
+    );
+    expect(couponErrorMessage(reason("LOYALTY_NOT_AVAILABLE"))).toBe(
+      "This code isn’t available with your current Rewards status.",
+    );
+    expect(couponErrorMessage(reason("LOYALTY_MEMBER_REQUIRED"))).toBe(
+      "This code is for Rewards members.",
+    );
+    expect(couponErrorMessage(reason("NOT_A_LOYALTY_MEMBER"))).toBe(
+      "This code is for Rewards members.",
+    );
+    expect(couponErrorMessage(reason("LOYALTY_TIER_REQUIRED"))).not.toMatch(/Gold|Silver|tier code/i);
+  });
+
   it("uses a safe fallback for an unknown code", () => {
     const error = new ApiClientError(422, {
       code: "COUPON_FUTURE_RULE",
