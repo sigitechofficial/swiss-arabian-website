@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
@@ -15,12 +15,10 @@ import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRe
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { useCartStore } from "@/stores/useCartStore";
+import { useUiStore } from "@/stores/useUiStore";
 import {
   cartCrumbs,
   cartCrumbsList,
-  cartEm,
-  cartEyebrow,
-  cartLede,
   collectionHeadFlush,
   pageTitle,
 } from "@/styles/shopChrome";
@@ -30,27 +28,39 @@ import {
   cartContinue,
   cartCta,
   cartCtaGlyph,
-  cartCtaInline,
-  cartEmptyNote,
+  cartEmptyHero,
+  cartEmptyRails,
   cartEmptyState,
   cartHint,
   cartItemsCol,
   cartLayout,
-  cartMiss,
+  cartLinesCard,
+  cartPageCount,
   cartPageHead,
+  cartRow,
+  cartRowActions,
+  cartRowBody,
+  cartRowMedia,
+  cartRowMeta,
+  cartRowName,
+  cartRowPrice,
+  cartRowRemove,
+  cartRowTags,
+  cartRowTop,
   cartSummary,
   cartSummaryTitle,
   cartTotals,
-  cline,
-  clineActions,
-  clineBody,
-  clineMedia,
-  clineMeta,
-  clinePrice,
-  clineQty,
-  clineRemove,
-  clineRow,
+  cartRowQty,
+  confettiLayer,
+  drawerPanelFlash,
+  drawerEmptyCopy,
+  drawerEmptyCta,
+  drawerEmptyIcon,
+  drawerEmptyTitle,
+  drawerLineTag,
+  drawerLineTagStrong,
 } from "@/styles/cartChrome";
+import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { useCartMutations } from "../hooks/useCartMutations";
 import {
   addItemOptimistic,
@@ -61,12 +71,13 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, awardedGiftLines, giftDisplayName, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
 import {
   quotedCartShipping,
   quotedCartTotal,
 } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
+import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
 function itemsLabel(n: number) {
   return n === 1 ? "1 item" : `${n} items`;
@@ -120,6 +131,29 @@ export function CartPageView() {
   // very first client render must still report an empty bag (matching SSR)
   // and only pick up the real, rehydrated cart once mounted. See the same
   // guard in `SiteHeader`'s bag-count badge.
+  // Completing a bundle on this page: bring the "You saved" banner into view,
+  // then the same party poppers + flash as the bag drawer. Skipped while the
+  // drawer is open — it celebrates there instead.
+  const drawerOpen = useUiStore((s) => s.cartOpen);
+  const itemsColRef = useRef<HTMLDivElement>(null);
+  const confettiLayerRef = useRef<HTMLDivElement>(null);
+  const [linesFlash, setLinesFlash] = useState(false);
+  const popperBurst = useBundleCelebration({
+    rootRef: itemsColRef,
+    layerRef: confettiLayerRef,
+    enabled: !drawerOpen,
+    beforeFire: (banner, reduceMotion) => {
+      if (!banner) return 0;
+      const box = banner.getBoundingClientRect();
+      const inView = box.top >= 160 && box.bottom <= window.innerHeight - 40;
+      if (inView) return 0;
+      banner.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      return 550;
+    },
+    onFire: () => setLinesFlash(true),
+    onClear: () => setLinesFlash(false),
+  });
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -192,58 +226,55 @@ export function CartPageView() {
           </nav>
 
           <header className={cartPageHead}>
-            <p className={cartEyebrow}>
-              Your bag · <span>{itemsLabel(itemCount)}</span>
-            </p>
             <h1 className={pageTitle} id="cart-heading">
-              The <em className={cartEm}>bag.</em>
+              Your bag
             </h1>
-            <p className={cartLede}>
-              Review your selections before checkout.
-            </p>
+            {!isEmpty ? <span className={cartPageCount}>{itemsLabel(itemCount)}</span> : null}
           </header>
 
           {!isEmpty ? (
-            <div className="grid gap-3">
-              <PromotionProgressRail surface="cart" />
-              <PromotionQuickAdd surface="cart" />
-            </div>
-          ) : null}
-
-          {!isEmpty ? (
             <div className={cartLayout} id="cart-page-layout">
-              <div className={cartItemsCol} aria-live="polite">
-                {missThis.length ? (
-                  <div className={cartMiss}>
-                    <MissThisSwiper
-                      products={missThis}
-                      addingSlug={null}
-                      onAdd={(p) => addFromCart(p)}
-                    />
-                  </div>
-                ) : null}
-
-                {lines.map((line) => (
-                  <article className={cline} key={line.cartItemId ?? line.variantId}>
-                    <LocaleLink className={clineMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
+              <div className={cartItemsCol} aria-live="polite" ref={itemsColRef}>
+                <div className={confettiLayer} ref={confettiLayerRef} aria-hidden="true">
+                  <PopperBurstLayer burst={popperBurst} />
+                </div>
+                <div className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}>
+                  <PromotionProgressRail surface="cart" />
+                  {bundleLinesFirst(lines, promotions).map((line) => {
+                    const bundle = setBundleLineLabel(promotions, line);
+                    return (
+                  <article className={cartRow} key={line.cartItemId ?? line.variantId}>
+                    <LocaleLink className={cartRowMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
                       {line.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={line.imageUrl} alt="" />
                       ) : null}
                     </LocaleLink>
-                    <div className={clineBody}>
-                      <div className={clineRow}>
-                        <h3>
+                    <div className={cartRowBody}>
+                      <div className={cartRowTop}>
+                        <h3 className={cartRowName}>
                           <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
                         </h3>
-                        <PromoLinePrice className={clinePrice} snapshot={promotions} line={line} />
+                        <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
                       </div>
-                      {line.sizeLabel ? <p className={clineMeta}>{line.sizeLabel}</p> : null}
-                      {setBundleLineLabel(promotions, line) ? (
-                        <p className={clineMeta}>{setBundleLineLabel(promotions, line)}</p>
+                      {showsDistinctSize(line.title, line.sizeLabel) ? (
+                        <p className={cartRowMeta}>{line.sizeLabel}</p>
                       ) : null}
-                      <div className={clineActions}>
-                        <span className={clineQty}>
+                      {bundle ? (
+                        <p className={cartRowTags}>
+                          {bundle
+                            .split("·")
+                            .map((part) => part.trim())
+                            .filter(Boolean)
+                            .map((part) => (
+                              <span className={/%|off/i.test(part) ? drawerLineTagStrong : drawerLineTag} key={part}>
+                                {part}
+                              </span>
+                            ))}
+                        </p>
+                      ) : null}
+                      <div className={cartRowActions}>
+                        <span className={cartRowQty}>
                           <button
                             type="button"
                             aria-label="Decrease"
@@ -276,7 +307,7 @@ export function CartPageView() {
                         </span>
                         <button
                           type="button"
-                          className={clineRemove}
+                          className={cartRowRemove}
                           onClick={() => {
                             if (line.remote || line.cartItemId) {
                               removeItemOptimistic(line.variantId);
@@ -290,19 +321,34 @@ export function CartPageView() {
                       </div>
                     </div>
                   </article>
-                ))}
+                    );
+                  })}
+                  {quotePending ? null : (
+                    <GiftWithPurchase snapshot={promotions} currency={currency} surface="drawer" />
+                  )}
+                </div>
 
-                {quotePending ? null : <GiftWithPurchase snapshot={promotions} currency={currency} />}
+                {missThis.length ? (
+                  <MissThisSwiper
+                    products={missThis}
+                    addingSlug={null}
+                    onAdd={(p) => addFromCart(p)}
+                  />
+                ) : null}
+                {/* The rail carries the drawer's 22px gutter; pull it flush with the column (left only, so the rail still clips at the right edge). */}
+                <div className="-ml-[22px]">
+                  <PromotionQuickAdd surface="cart" />
+                </div>
               </div>
 
               <aside className={cartSummary} aria-label="Order summary">
-                <h2 className={cartSummaryTitle}>Summary</h2>
+                <h2 className={cartSummaryTitle}>Order summary</h2>
                 {quotePending ? (
                   <p className={cartHint} role="status">
                     Updating offers…
                   </p>
                 ) : (
-                  <AppliedCampaigns />
+                  <AppliedCampaigns hideGifts />
                 )}
                 <CouponForm />
                 {quotePending ? null : <LoyaltyRedemptionEditor />}
@@ -319,10 +365,6 @@ export function CartPageView() {
                   amountPayable={amountPayable}
                   loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
                   giftCards={giftCards}
-                  freeGifts={awardedGiftLines(promotions).map((gift) => ({
-                    name: giftDisplayName(gift),
-                    quantity: gift.quantity,
-                  }))}
                 />
                 )}
                 {quotePending ? null : (
@@ -372,14 +414,19 @@ export function CartPageView() {
             </div>
           ) : (
             <section className={cartEmptyState}>
-              <p className={cartEmptyNote}>Your bag is empty.</p>
-              <EmptyBagRecovery surface="empty-cart" />
-              <LocaleLink className={cartCtaInline} href="/products">
-                <span>Explore the collection</span>
-                <b aria-hidden="true">
-                  ↗
-                </b>
-              </LocaleLink>
+              <div className={cartEmptyHero}>
+                <span className={drawerEmptyIcon} aria-hidden="true">
+                  <ShoppingBag size={24} strokeWidth={1.6} />
+                </span>
+                <p className={drawerEmptyTitle}>Your bag is empty</p>
+                <p className={drawerEmptyCopy}>Explore our fragrances, or pick up where you left off below.</p>
+                <LocaleLink className={drawerEmptyCta} href="/products">
+                  Shop fragrances
+                </LocaleLink>
+              </div>
+              <div className={cartEmptyRails}>
+                <EmptyBagRecovery surface="empty-cart" />
+              </div>
             </section>
           )}
         </div>

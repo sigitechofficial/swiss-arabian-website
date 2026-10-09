@@ -4,8 +4,6 @@ import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyCheckoutReservation } from "@/features/loyalty/components/LoyaltyCheckoutReservation";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { readLoyaltyRedemption, type LoyaltyEarnPreviewView } from "@/features/loyalty/types/loyalty";
-import { CheckoutAddonRow } from "@/features/cart/components/MissThisSwiper";
-import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { CATALOG_PRODUCTS } from "@/features/catalog/constants/catalogProducts";
 import {
   AppliedCampaigns,
@@ -15,17 +13,15 @@ import {
   MoneySummary,
   PromoLinePrice,
   PromotionProgressRail,
-  awardedGiftLines,
-  giftDisplayName,
+  bundleLinesFirst,
   setBundleLineLabel,
   visibleGiftCards,
   type PromotionSnapshotV1,
 } from "@/features/promotions";
 import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { drawerLineTag, drawerLineTagStrong } from "@/styles/cartChrome";
 import {
-  checkoutAddons,
-  checkoutAddonsTitle,
   checkoutBadges,
   checkoutLines,
   checkoutNote,
@@ -38,8 +34,8 @@ import {
   colineMedia,
   colineMeta,
   colineName,
-  colineNote,
   colinePrice,
+  colineTags,
   colineTop,
 } from "@/styles/checkoutChrome";
 import type { CheckoutSessionResponse } from "../../types/checkout";
@@ -55,9 +51,6 @@ type CheckoutSummaryProps = {
   subtotal: number;
   promoSnapshot: PromotionSnapshotV1 | null;
   currency: string;
-  addOns: CatalogProduct[];
-  onAdd: (product: CatalogProduct) => void;
-  canAdd: (product: CatalogProduct) => boolean;
   session: CheckoutSessionResponse | null | undefined;
   onCheckoutSession: (session: CheckoutSessionResponse) => void | Promise<void>;
   discount: number;
@@ -78,9 +71,6 @@ export function CheckoutSummary({
   subtotal,
   promoSnapshot,
   currency,
-  addOns,
-  onAdd,
-  canAdd,
   session,
   onCheckoutSession,
   discount,
@@ -108,7 +98,7 @@ export function CheckoutSummary({
       <h2>Your order</h2>
       {subtotal > 0 ? <PromotionProgressRail surface="checkout" /> : null}
       <div className={checkoutLines} id="checkout-lines">
-        {orderableLines.map((line) => {
+        {bundleLinesFirst(orderableLines, cartPromotions, promoSnapshot).map((line) => {
           const thumb = lineImageUrl(line.slug, line.imageUrl);
           const bundle =
             setBundleLineLabel(cartPromotions, line) ?? setBundleLineLabel(promoSnapshot, line);
@@ -140,7 +130,19 @@ export function CheckoutSummary({
                 {showsDistinctSize(line.title, line.sizeLabel) ? (
                   <p className={colineMeta}>{line.sizeLabel}</p>
                 ) : null}
-                {bundle ? <p className={colineNote}>{bundle}</p> : null}
+                {bundle ? (
+                  <p className={colineTags}>
+                    {bundle
+                      .split("·")
+                      .map((part) => part.trim())
+                      .filter(Boolean)
+                      .map((part) => (
+                        <span className={/%|off/i.test(part) ? drawerLineTagStrong : drawerLineTag} key={part}>
+                          {part}
+                        </span>
+                      ))}
+                  </p>
+                ) : null}
               </div>
             </article>
           );
@@ -153,21 +155,7 @@ export function CheckoutSummary({
           included.
         </p>
       ) : null}
-      {addOns.length ? (
-        <div className={checkoutAddons}>
-          <h3 className={checkoutAddonsTitle}>Add-ons</h3>
-          {addOns.map((product) => (
-            <CheckoutAddonRow
-              key={product.id}
-              product={product}
-              adding={false}
-              onAdd={onAdd}
-              disabled={!canAdd(product)}
-            />
-          ))}
-        </div>
-      ) : null}
-      <AppliedCampaigns snapshot={promoSnapshot} />
+      <AppliedCampaigns snapshot={promoSnapshot} hideGifts />
       <CouponForm />
       <LoyaltyCheckoutReservation quoteOverride={loyaltyQuote} />
       <GiftCardForm
@@ -189,10 +177,6 @@ export function CheckoutSummary({
         amountPayable={amountPayable}
         loyalty={loyaltyLineFromQuote(loyaltyQuote)}
         giftCards={giftCards}
-        freeGifts={awardedGiftLines(promoSnapshot).map((gift) => ({
-          name: giftDisplayName(gift),
-          quantity: gift.quantity,
-        }))}
       />
       {earnPreview ? <EarnPreviewNote preview={earnPreview} variant="block" /> : null}
       {warnings.map((warning) => (

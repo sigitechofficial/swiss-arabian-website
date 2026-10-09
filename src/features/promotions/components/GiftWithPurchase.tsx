@@ -17,6 +17,7 @@ import {
   promoGiftsAwarded,
   promoGiftsChange,
   promoGiftsChoose,
+  promoGiftsDrawer,
   promoGiftsPrompt,
   promoGiftsTitle,
 } from "@/styles/cartChrome";
@@ -25,11 +26,14 @@ export function GiftWithPurchase({
   snapshot,
   currency = "AED",
   selectable = true,
+  surface = "page",
 }: {
   snapshot?: PromotionSnapshotV1 | null;
   currency?: string;
   /** Checkout shows the awarded gift. Choice and change stay on the bag. */
   selectable?: boolean;
+  /** The bag drawer gets compact gift rows. */
+  surface?: "page" | "drawer";
 }) {
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
@@ -41,7 +45,7 @@ export function GiftWithPurchase({
   if (!awards.length) return null;
 
   return (
-    <div className={promoGifts}>
+    <div className={surface === "drawer" ? promoGiftsDrawer : promoGifts}>
       {awards.map((award, index) => {
         const notice = giftNotice(award);
         const key = `${award.promotionCode ?? "gift"}-${index}`;
@@ -70,7 +74,7 @@ export function GiftWithPurchase({
                 line={gift}
                 product={catalog.get(gift.sku)}
                 currency={currency}
-                variant={selectable ? "cart" : "checkout"}
+                variant={surface === "drawer" ? "drawer" : selectable ? "cart" : "checkout"}
               />
             ))}
             {selectable && canChangeGift(award) ? (

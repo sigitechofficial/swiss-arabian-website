@@ -468,7 +468,7 @@ function readGiftLines(raw: unknown): PromotionGiftLine[] {
   });
 }
 
-function isGiftApplied(item: unknown): boolean {
+export function isGiftApplied(item: unknown): boolean {
   const applied = asRecord(item);
   if (!applied) return false;
   const type = `${applied.type ?? ""} ${applied.kind ?? ""} ${applied.discountType ?? ""}`.toUpperCase();

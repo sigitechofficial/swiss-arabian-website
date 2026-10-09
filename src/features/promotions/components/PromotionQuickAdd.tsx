@@ -8,15 +8,14 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import {
-  cartRec,
-  cartRecAdd,
-  cartRecCopy,
-  cartRecName,
   cartRecPh,
   cartRecPrice,
   cartRecs,
   cartRecsSwiper,
   cartRecsTitle,
+  emptyBagAdd,
+  emptyBagCard,
+  emptyBagName,
 } from "@/styles/cartChrome";
 
 export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
@@ -28,19 +27,35 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
   const products = recommendations?.products ?? [];
   if (!recommendations?.heading || products.length === 0) return null;
 
+  const add = (product: (typeof products)[number]) => {
+    if (busy) return;
+    setBusy(product.sku);
+    void addCartItem({ sku: product.sku, quantity: 1, cartId })
+      .then((cart) => {
+        setCartFromApi(cart);
+        trackPromotion("promotion_recommendation_added", {
+          campaignCode: data?.progress?.primary?.campaignCode,
+          mechanic: data?.progress?.primary?.mechanic,
+          market: data?.promotions.context.zoneCode,
+          surface,
+        });
+      })
+      .finally(() => setBusy(null));
+  };
+
   return (
     <div className={cartRecs}>
       <h3 className={cartRecsTitle}>{recommendations.heading}</h3>
       <div className={cartRecsSwiper} role="list">
         {products.map((product) => (
-          <article className={cartRec} key={product.sku} role="listitem">
+          <article className={emptyBagCard} key={product.sku} role="listitem">
             {product.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image} alt="" />
             ) : (
-              <span className={cartRecPh} aria-hidden="true" />
+              <span className={`${cartRecPh} size-[72px] rounded-lg`} aria-hidden="true" />
             )}
-            <div className={cartRecCopy}>
+            <div className="flex min-w-0 flex-col pr-10">
               {product.slug ? (
                 <LocaleLink href={`/products/${product.slug}`} onClick={() => trackPromotion("promotion_recommendation_clicked", {
                   campaignCode: data?.progress?.primary?.campaignCode,
@@ -49,33 +64,19 @@ export function PromotionQuickAdd({ surface = "cart" }: { surface?: string }) {
                   surface,
                 })}
                 >
-                  <p className={cartRecName}>{product.title}</p>
+                  <p className={emptyBagName}>{product.title}</p>
                 </LocaleLink>
               ) : (
-                <p className={cartRecName}>{product.title}</p>
+                <p className={emptyBagName}>{product.title}</p>
               )}
               {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
             </div>
             <button
               type="button"
-              className={cartRecAdd}
+              className={emptyBagAdd}
               disabled={busy === product.sku}
               aria-label={`${recommendations.addLabel} ${product.title}`}
-              onClick={() => {
-                if (busy) return;
-                setBusy(product.sku);
-                void addCartItem({ sku: product.sku, quantity: 1, cartId })
-                  .then((cart) => {
-                    setCartFromApi(cart);
-                    trackPromotion("promotion_recommendation_added", {
-                      campaignCode: data?.progress?.primary?.campaignCode,
-                      mechanic: data?.progress?.primary?.mechanic,
-                      market: data?.promotions.context.zoneCode,
-                      surface,
-                    });
-                  })
-                  .finally(() => setBusy(null));
-              }}
+              onClick={() => add(product)}
             >
               <Plus size={14} strokeWidth={1.6} />
             </button>

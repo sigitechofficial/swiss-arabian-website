@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useAddToCart } from "@/features/cart";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
@@ -76,33 +75,31 @@ function OfferVoucher({
     <button
       type="button"
       dir={arabic ? "rtl" : "ltr"}
-      className="group flex w-full cursor-pointer overflow-visible rounded-2xl border border-[#E8D5B0] bg-[#FFF8EC] text-start shadow-[0_12px_28px_rgba(138,67,50,0.16)]"
+      className="offer-voucher group flex w-full cursor-pointer overflow-hidden rounded-xl border border-[#E8D5B0] bg-[#FFF8EC] text-start"
       aria-haspopup="dialog"
       aria-controls="pdp-offers-dialog"
       aria-describedby={`${titleId} ${subId}`}
       onClick={(event) => onOpen(event.currentTarget)}
     >
-      <span className="relative grid w-[132px] shrink-0 place-items-center bg-[#8A4332] px-3 py-4 text-[#FFF8EC] max-[420px]:w-[100px] ltr:rounded-l-2xl rtl:rounded-r-2xl">
-        <span className="grid justify-items-center gap-0.5">
-          <span className="text-[0.68rem] font-bold tracking-[0.16em] uppercase">{arabic ? "حتى" : "Up to"}</span>
-          <span className="font-[family-name:var(--font-display)] text-[2.15rem] leading-none max-[420px]:text-[1.7rem]">
+      <span className="grid w-[5.25rem] shrink-0 place-items-center bg-[#8A4332] px-2 py-2 text-[#FFF8EC] max-[420px]:w-[4.25rem]">
+        <span className="grid justify-items-center gap-0">
+          <span className="text-[0.56rem] font-bold tracking-[0.14em] uppercase">{arabic ? "حتى" : "Up to"}</span>
+          <span className="font-[family-name:var(--font-display)] text-[1.35rem] leading-none max-[420px]:text-[1.15rem]">
             {percent ? `${percent}%` : offers.length}
           </span>
-          <span className="text-[0.78rem] font-bold tracking-[0.14em] uppercase">{percent ? (arabic ? "خصم" : "Off") : arabic ? "عروض" : "Offers"}</span>
+          <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">{percent ? (arabic ? "خصم" : "Off") : arabic ? "عروض" : "Offers"}</span>
         </span>
-        <span aria-hidden="true" className="pointer-events-none absolute top-0 size-[22px] rounded-full border border-[#E8D5B0] bg-[var(--cream,#faf6ee)] ltr:right-0 ltr:[transform:translate(50%,-50%)] rtl:left-0 rtl:[transform:translate(-50%,-50%)]" />
-        <span aria-hidden="true" className="pointer-events-none absolute bottom-0 size-[22px] rounded-full border border-[#E8D5B0] bg-[var(--cream,#faf6ee)] ltr:right-0 ltr:[transform:translate(50%,50%)] rtl:left-0 rtl:[transform:translate(-50%,50%)]" />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1.5 border-s border-dashed border-[#E8D5B0] px-4 py-3.5">
-        <span className="flex items-center justify-between gap-3">
-          <span className="text-[0.68rem] font-bold tracking-[0.16em] text-[#8A4332] uppercase">{arabic ? "عروض لك" : "Offers for you"}</span>
-          <span className="inline-flex min-h-7 items-center rounded-full border border-[#8A4332] px-2.5 text-[0.72rem] font-semibold text-[#8A4332]">{countLabel}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-s border-dashed border-[#E8D5B0] px-3 py-2">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-[0.62rem] font-bold tracking-[0.14em] text-[#8A4332] uppercase">{arabic ? "عروض لك" : "Offers for you"}</span>
+          <span className="inline-flex min-h-6 items-center rounded-full border border-[#8A4332]/70 px-2 text-[0.68rem] font-semibold text-[#8A4332]">{countLabel}</span>
         </span>
-        <span id={titleId} className="font-[family-name:var(--font-display)] text-[19px] leading-tight text-[#211B17]">
+        <span id={titleId} className="line-clamp-1 font-[family-name:var(--font-display)] text-[0.95rem] leading-tight text-[#211B17]">
           {headline}
         </span>
         {subline ? (
-          <span id={subId} className="text-[0.82rem] leading-snug text-[#5F534A]">
+          <span id={subId} className="line-clamp-1 text-[0.75rem] leading-snug text-[#5F534A]">
             {subline}
           </span>
         ) : (
@@ -110,7 +107,7 @@ function OfferVoucher({
             {countLabel}
           </span>
         )}
-        <span className="mt-1 inline-flex items-center gap-1 text-[0.75rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase">
+        <span className="mt-0.5 inline-flex items-center gap-1 text-[0.68rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase">
           {arabic ? "عرض كل العروض" : "View all offers"}
           <svg viewBox="0 0 20 20" className="size-3.5 rtl:-scale-x-100" fill="none" aria-hidden="true">
             <path d="M7 4.5 12.5 10 7 15.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -139,7 +136,6 @@ function OffersDialog({
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState("");
   const [mounted, setMounted] = useState(false);
-  const { addToCart } = useAddToCart();
   const price = product.price ?? 0;
   const ctx: OfferContext = {
     qty: quantity,
@@ -250,37 +246,10 @@ function OffersDialog({
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-4 bottom-0 border-b border-dashed border-[#FFF8EC]/80" />
         </header>
         <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
-          {offers.map((offer) => (
-            <OfferRow key={offer.id} offer={offer} ctx={ctx} onCopy={(code) => void copyCode(code)} />
+          {offers.map((offer, index) => (
+            <OfferRow key={offer.id} offer={offer} ctx={ctx} index={index} onCopy={(code) => void copyCode(code)} />
           ))}
         </ul>
-        <footer className="flex items-center justify-between gap-3 border-t border-dashed border-[#E8D5B0] bg-[#FFFDF9] px-5 py-3.5">
-          <div>
-            <p className="m-0 text-[0.72rem] font-semibold tracking-[0.08em] text-[#5F534A] uppercase">{arabic ? "المجموع" : "Your total"}</p>
-            <p className="m-0 font-[family-name:var(--font-display)] text-[1.25rem] text-[#211B17]">{formatMoney(ctx.subtotal, product.currency)}</p>
-          </div>
-          {product.isSellable === false ? null : (
-            <button
-              type="button"
-              className="inline-flex min-h-11 cursor-pointer items-center rounded-full border-0 bg-[#8A4332] px-4 text-[0.82rem] font-semibold text-white hover:bg-[#733626]"
-              onClick={() => {
-                void addToCart({
-                  sku: product.sku,
-                  variantId: product.variantId,
-                  slug: product.slug,
-                  title: product.title,
-                  imageUrl: product.imageUrl,
-                  price: product.price,
-                  currency: product.currency,
-                  quantity,
-                });
-                requestClose();
-              }}
-            >
-              {arabic ? `أضف ${quantity} إلى الحقيبة` : `Add ${quantity} to bag`}
-            </button>
-          )}
-        </footer>
       </div>
       {toast ? (
         <p className="pointer-events-none absolute inset-x-0 bottom-4 z-10 mx-auto w-fit rounded-full bg-[#211B17] px-3 py-2 text-[0.78rem] text-[#FFF8EC]" role="status">
@@ -292,23 +261,49 @@ function OffersDialog({
   );
 }
 
+const iconWell: Record<OfferIcon, string> = {
+  bundle: "bg-[#F6E1D6] text-[#8A4332]",
+  gift: "bg-[#F1DFB8] text-[#8A4332]",
+  delivery: "bg-[#E7D3C4] text-[#8A4332]",
+  star: "bg-[#F3E2B8] text-[#8A4332]",
+  card: "bg-[#EFE4D4] text-[#5C4033]",
+  bank: "bg-[#E7DDD2] text-[#5C4033]",
+  clock: "bg-[#F6E1D6] text-[#8A4332]",
+  tag: "bg-[#F6E1D6] text-[#8A4332]",
+};
+
+function OfferActionArrow() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-3.5 transition-transform group-hover/action:translate-x-0.5 rtl:group-hover/action:-translate-x-0.5 rtl:-scale-x-100" fill="none" aria-hidden="true">
+      <path d="M7 4.5 12.5 10 7 15.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function OfferRow({
   offer,
   ctx,
+  index,
   onCopy,
 }: {
   offer: PdpOffer;
   ctx: OfferContext;
+  index: number;
   onCopy: (code: string) => void;
 }) {
   const title = resolveOfferValue(offer.title, ctx);
   const text = resolveOfferValue(offer.text, ctx);
   const progress = offer.progress?.(ctx);
   const percent = progress ? Math.round((progress.value / progress.max) * 100) : 0;
+  const actionClass =
+    "mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[#8A4332]/35 bg-white/70 px-3 text-[0.72rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase no-underline transition-colors hover:border-[#8A4332] hover:bg-[#8A4332] hover:text-white";
   return (
-    <li className={`border-b border-dashed border-[#E8D5B0] px-5 py-3.5 last:border-b-0 ${offer.featured ? "bg-[#FFFDF9]" : ""}`}>
+    <li
+      className={`offer-row border-b border-dashed border-[#E8D5B0] px-5 py-3.5 transition-colors duration-200 last:border-b-0 hover:bg-[#F6E1D6]/75 ${index % 2 === 1 ? "bg-[#F8EDE0]" : "bg-transparent"}`}
+      style={{ animationDelay: `${Math.min(index, 10) * 45}ms` }}
+    >
       <div className="flex items-start gap-3">
-        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${offer.featured ? "bg-[#8A4332] text-[#FFF8EC]" : "bg-[#F6E1D6] text-[#8A4332]"}`}>
+        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${iconWell[offer.icon]}`}>
           <OfferGlyph icon={offer.icon} />
         </span>
         <div className="min-w-0 flex-1">
@@ -331,17 +326,19 @@ function OfferRow({
             </div>
           ) : null}
           {offer.action && "href" in offer.action ? (
-            <LocaleLink className="mt-2 inline-flex min-h-11 items-center text-[0.78rem] font-bold tracking-[0.06em] text-[#8A4332] uppercase no-underline" href={offer.action.href}>
+            <LocaleLink className={`group/action ${actionClass}`} href={offer.action.href}>
               {offer.action.label}
+              <OfferActionArrow />
             </LocaleLink>
           ) : null}
           {offer.action && "copy" in offer.action ? (
             <button
               type="button"
-              className="mt-2 inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 text-[0.78rem] font-bold tracking-[0.06em] text-[#8A4332] uppercase"
+              className={`group/action cursor-pointer border-0 ${actionClass}`}
               onClick={() => onCopy(offer.action && "copy" in offer.action ? offer.action.copy : "")}
             >
               {offer.action.label}
+              <OfferActionArrow />
             </button>
           ) : null}
         </div>

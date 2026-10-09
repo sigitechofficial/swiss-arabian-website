@@ -9,9 +9,10 @@ const crumbItems =
 
 export const crumbsList = `${crumbItems} text-[0.78rem] [&_li[aria-current=page]]:font-normal [&_li[aria-current=page]]:text-[var(--ink-2,#6b5f53)]`;
 
-export const checkoutCrumbsList = `${crumbItems} text-[0.7rem] [&_li[aria-current=page]]:font-semibold`;
+/** Same plain crumbs as every other page: the current page is not bolded or darkened. */
+export const checkoutCrumbsList = crumbsList;
 
-export const cartCrumbsList = `${crumbItems} text-[0.7rem] [&_li[aria-current=page]]:font-medium`;
+export const cartCrumbsList = crumbsList;
 
 export const collectionHead = "bg-[var(--cream,#faf6ee)] pb-[clamp(2rem,4vw,3rem)]";
 

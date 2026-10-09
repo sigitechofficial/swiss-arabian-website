@@ -1,6 +1,21 @@
 import type { GiftCatalogHit } from "../hooks/useGiftCatalog";
 import type { PromotionGiftLine } from "../types/promotions";
-import { cline, clineBody, clineMedia, clineMeta, clinePrice, clineRow } from "@/styles/cartChrome";
+import {
+  cline,
+  clineBody,
+  clineMedia,
+  clineMeta,
+  clinePrice,
+  clineRow,
+  drawerLineName,
+  drawerLinePrice,
+  drawerLineTag,
+  drawerLineTop,
+  giftDrawerBody,
+  giftDrawerLine,
+  giftDrawerMedia,
+  giftDrawerMeta,
+} from "@/styles/cartChrome";
 import {
   coline,
   colineBody,
@@ -43,11 +58,36 @@ export function GiftCartItem({
   line: PromotionGiftLine;
   product?: GiftCatalogHit | null;
   currency?: string;
-  /** Checkout summary uses the bag-drawer row; cart page uses full `cline`. */
-  variant?: "checkout" | "cart";
+  /** Checkout summary uses the bag-drawer row; cart page uses full `cline`; the bag drawer a compact row. */
+  variant?: "checkout" | "cart" | "drawer";
 }) {
   const title = giftCardTitle(line, product);
   const imageUrl = product?.imageUrl || line.imageUrl;
+
+  if (variant === "drawer") {
+    return (
+      <article className={giftDrawerLine} aria-label={`Free gift: ${title}`}>
+        <div className={giftDrawerMedia}>
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="" />
+          ) : null}
+        </div>
+        <div className={giftDrawerBody}>
+          <div className={drawerLineTop}>
+            <p className={drawerLineName}>{title}</p>
+            <span className={drawerLinePrice} dir="ltr">
+              Free
+            </span>
+          </div>
+          <div className={giftDrawerMeta}>
+            <span className={drawerLineTag}>Free gift</span>
+            <span>Qty {line.quantity}</span>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   if (variant === "checkout") {
     return (
