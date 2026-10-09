@@ -111,6 +111,19 @@ export const env = {
   /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
   storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
   /**
+   * CMS Homepage integration (Phase 2C).
+   * Default enabled. Set NEXT_PUBLIC_CMS_HOME_ENABLED=false to force legacy home.
+   */
+  cmsHomeEnabled:
+    readPublic(process.env.NEXT_PUBLIC_CMS_HOME_ENABLED, "true") !== "false",
+  /**
+   * When CMS has no published Homepage, render the pre-CMS landing composition.
+   * Set NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK=false for empty/unavailable state only.
+   */
+  cmsHomeLegacyFallback:
+    readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
+    "false",
+  /**
    * Insider Web SDK. Script loads only when enabled AND accountId is set.
    * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
    */

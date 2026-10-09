@@ -4,7 +4,14 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { chromeNavLinks, useNavigation } from "@/features/navigation";
 import { useMarket } from "@/providers/MarketProvider";
+import { useQuery } from "@tanstack/react-query";
 import type { FormEvent } from "react";
+import {
+  cmsGlobalKeys,
+  fetchCmsGlobalRegion,
+  firstSectionOfType,
+} from "@/features/cms/api/cmsGlobalRegion.service";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   footerColLinks,
   footerColTitle,
@@ -54,13 +61,39 @@ function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
 export function SiteFooter() {
   const copy = useShopCopy();
   const { marketId } = useMarket();
+  const catalogMarket = useSelectedCatalogMarket();
+  const zoneCode = catalogMarket?.zoneCode ?? "";
+  const languageCode = catalogMarket?.languageCode ?? "en";
   const { chromeItems, isLoading } = useNavigation(marketId || undefined);
   const shopLinks = chromeNavLinks(chromeItems);
+
+  const cmsQuery = useQuery({
+    queryKey: cmsGlobalKeys.region("footer", zoneCode, languageCode),
+    queryFn: () =>
+      fetchCmsGlobalRegion({
+        slug: "footer",
+        zoneCode,
+        languageCode,
+      }),
+    enabled: Boolean(zoneCode),
+    staleTime: 60_000,
+  });
+  const cmsSection = firstSectionOfType(cmsQuery.data?.sections ?? [], "FOOTER");
+  const cms = (cmsSection?.data ?? {}) as {
+    newsletterHeading?: string | null;
+    newsletterPlaceholder?: string | null;
+    newsletterButtonLabel?: string | null;
+    copyrightText?: string | null;
+    showPaymentBadges?: boolean;
+  };
+
   return (
     <footer className={siteFooter}>
       <div className={pageContainer}>
         <form className={footerNewsletter} onSubmit={onNewsletterSubmit}>
-          <h2 className={footerNewsletterTitle}>{copy("newsletter")}</h2>
+          <h2 className={footerNewsletterTitle}>
+            {cms.newsletterHeading?.trim() || copy("newsletter")}
+          </h2>
           <div className={footerNewsletterRow}>
             <label className={visuallyHidden} htmlFor="footer-email">
               Email address
@@ -71,11 +104,11 @@ export function SiteFooter() {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder={copy("email")}
+              placeholder={cms.newsletterPlaceholder?.trim() || copy("email")}
               required
             />
             <button className={footerNewsletterSubmit} type="submit">
-              {copy("signUp")}
+              {cms.newsletterButtonLabel?.trim() || copy("signUp")}
             </button>
           </div>
         </form>
@@ -189,7 +222,10 @@ export function SiteFooter() {
         </div>
 
         <div className={footerLegal}>
-          <p>Copyright © 2026 Swiss Arabian Global</p>
+          <p>
+            {cms.copyrightText?.trim() || "Copyright © 2026 Swiss Arabian Global"}
+          </p>
+          {cms.showPaymentBadges === false ? null : (
           <ul className={footerPayments} aria-label="Accepted payment methods">
             <li>
               <span className={`${payMark} ${payMarkAmex}`} aria-label="American Express">
@@ -242,6 +278,7 @@ export function SiteFooter() {
               </span>
             </li>
           </ul>
+          )}
         </div>
       </div>
     </footer>

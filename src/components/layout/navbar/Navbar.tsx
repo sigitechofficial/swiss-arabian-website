@@ -55,7 +55,7 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
       />
       <NavbarShell chrome={chrome} variant={variant} items={navItems} />
       {navInShell ? null : !designPreview && isLoading && navItems.length === 0 ? (
-        <div className="flex gap-6 px-8 py-4" aria-hidden="true">
+        <div className="flex items-center justify-center gap-6 px-8 py-4" aria-hidden="true">
           {Array.from({ length: 6 }, (_, index) => (
             <span key={index} className="block h-3 w-16 animate-pulse bg-[var(--ink)]/15" />
           ))}
