@@ -2,27 +2,49 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { HERO_SLIDES } from "../../constants/heroSlides";
-import { heroArrow, heroArrowNext, heroArrowPrev, heroImg, heroSlide, heroSwiper } from "@/styles/landingChrome";
+import { HERO_SLIDES, type HeroSlide } from "../../constants/heroSlides";
+import {
+  heroArrow,
+  heroArrowNext,
+  heroArrowPrev,
+  heroImg,
+  heroSlide,
+  heroSwiper,
+} from "@/styles/landingChrome";
 
-const AUTOPLAY_MS = 5500;
+const DEFAULT_AUTOPLAY_MS = 5500;
 
-export function HeroSwiper() {
+export type HeroSwiperProps = {
+  slides?: HeroSlide[];
+  autoplay?: boolean;
+  autoplayIntervalMs?: number;
+  showNavigation?: boolean;
+};
+
+export function HeroSwiper({
+  slides = HERO_SLIDES,
+  autoplay = true,
+  autoplayIntervalMs = DEFAULT_AUTOPLAY_MS,
+  showNavigation = true,
+}: HeroSwiperProps = {}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const slideCount = HERO_SLIDES.length;
+  const slideList = slides.length ? slides : HERO_SLIDES;
+  const slideCount = slideList.length;
+  const interval = Math.min(30000, Math.max(2000, autoplayIntervalMs));
 
-  // Preload every slide up front so autoplay never advances to an
-  // image that hasn't finished downloading yet (which showed as a
-  // blank/dark frame during the crossfade).
   useEffect(() => {
-    HERO_SLIDES.forEach((slide) => {
+    slideList.forEach((slide) => {
       const img = new Image();
       img.src = slide.image;
     });
-  }, []);
+  }, [slideList]);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [slideCount]);
 
   const goTo = useCallback(
     (next: number) => {
@@ -35,14 +57,17 @@ export function HeroSwiper() {
   const goPrev = useCallback(() => goTo(index - 1), [goTo, index]);
 
   useEffect(() => {
-    if (paused || prefersReducedMotion) return;
+    if (!autoplay || paused || prefersReducedMotion || slideCount <= 1) return;
     timerRef.current = setInterval(() => {
       setIndex((current) => (current + 1) % slideCount);
-    }, AUTOPLAY_MS);
+    }, interval);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [paused, prefersReducedMotion, slideCount]);
+  }, [autoplay, paused, prefersReducedMotion, slideCount, interval]);
+
+  const current = slideList[index] ?? slideList[0];
+  if (!current) return null;
 
   return (
     <div
@@ -54,43 +79,62 @@ export function HeroSwiper() {
     >
       <AnimatePresence initial={false} mode="sync">
         <motion.div
-          key={HERO_SLIDES[index].id}
+          key={current.id}
           className={heroSlide}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: prefersReducedMotion ? 0.01 : 1.8, ease: "easeInOut" }}
+          transition={{
+            duration: prefersReducedMotion ? 0.01 : 1.8,
+            ease: "easeInOut",
+          }}
         >
           <img
-            src={HERO_SLIDES[index].image}
-            alt={HERO_SLIDES[index].alt}
+            src={current.image}
+            alt={current.alt}
             className={heroImg}
-            style={{ objectPosition: HERO_SLIDES[index].objectPosition }}
+            style={{ objectPosition: current.objectPosition }}
             draggable={false}
           />
         </motion.div>
       </AnimatePresence>
 
-      <button
-        type="button"
-        className={`${heroArrow} ${heroArrowPrev}`}
-        aria-label="Previous slide"
-        onClick={goPrev}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-          <path d="M15 5l-7 7 7 7" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={`${heroArrow} ${heroArrowNext}`}
-        aria-label="Next slide"
-        onClick={goNext}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-          <path d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+      {showNavigation && slideCount > 1 ? (
+        <>
+          <button
+            type="button"
+            className={`${heroArrow} ${heroArrowPrev}`}
+            aria-label="Previous slide"
+            onClick={goPrev}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              aria-hidden="true"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`${heroArrow} ${heroArrowNext}`}
+            aria-label="Next slide"
+            onClick={goNext}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              aria-hidden="true"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

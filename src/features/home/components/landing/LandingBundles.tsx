@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { ProductSummary } from "@/features/catalog/types/product";
 import { useLandingProducts } from "../../hooks/useLandingProducts";
 import { formatMoney } from "../../utils/formatMoney";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
@@ -70,12 +71,47 @@ const shopCta = `${pillSolid} mx-[1.85rem] mt-4 mb-[1.4rem] box-border flex w-[c
 const shopRestore =
   "absolute right-[clamp(1rem,3vw,2.5rem)] bottom-[clamp(1.25rem,3vw,2.5rem)] z-[2] inline-flex size-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-[0_12px_30px_rgba(10,6,3,0.35)] backdrop-blur-xl backdrop-saturate-[1.6] transition-[background] duration-300 hover:bg-white/24 max-[1023px]:top-[var(--chrome-edge,1rem)] max-[1023px]:right-[var(--chrome-edge,1rem)] max-[1023px]:bottom-auto max-[1023px]:z-10 max-[1023px]:size-[52px] max-[1023px]:border-copper max-[1023px]:bg-copper max-[1023px]:shadow-[0_10px_28px_rgba(10,6,3,0.45)] max-[1023px]:hover:border-copper-deep max-[1023px]:hover:bg-copper-deep [&_svg]:size-[19px]";
 
-export function LandingBundles() {
+export type LandingBundlesProps = {
+  eyebrow?: string | null;
+  heading?: string | null;
+  description?: string | null;
+  desktopImage?: string | null;
+  mobileImage?: string | null;
+  primaryCtaLabel?: string | null;
+  primaryCtaHref?: string | null;
+  secondaryCtaLabel?: string | null;
+  secondaryCtaHref?: string | null;
+  panelEnabled?: boolean;
+  panelTitle?: string | null;
+  panelCtaLabel?: string | null;
+  panelCtaHref?: string | null;
+  products?: ProductSummary[];
+};
+
+export function LandingBundles({
+  eyebrow = "Exclusive bundle offers",
+  heading = "Up to 25% off",
+  description = "On your favorite fragrances",
+  desktopImage = "/assets/bundles-hero.jpg",
+  mobileImage = "/assets/bundle-mobile-hero.webp",
+  primaryCtaLabel = "Shop Bundles",
+  primaryCtaHref = "/collections/bundles",
+  secondaryCtaLabel = "Shop Gift Sets",
+  secondaryCtaHref = "/collections/gift-sets",
+  panelEnabled = true,
+  panelTitle = "Shop this bundle",
+  panelCtaLabel = "Shop This Bundle",
+  panelCtaHref = "/collections/bundles",
+  products: productsProp,
+}: LandingBundlesProps = {}) {
   // Start closed so SSR / first paint never flash a fixed bottom sheet
   // over the hero. Desktop flips open in useLayoutEffect.
   const [open, setOpen] = useState(false);
   const { data } = useLandingProducts(8);
-  const bundleItems = (data?.products ?? []).slice(0, 2);
+  const fromCms = productsProp !== undefined;
+  const bundleItems = fromCms
+    ? productsProp.slice(0, 8)
+    : (data?.products ?? []).slice(0, 2);
 
   useLayoutEffect(() => {
     const mq = window.matchMedia(MOBILE_SHEET_BREAKPOINT);
@@ -101,13 +137,13 @@ export function LandingBundles() {
       <picture className={bundlePicture}>
         <source
           media="(max-width: 767px)"
-          srcSet="/assets/bundle-mobile-hero.webp"
+          srcSet={mobileImage || desktopImage || undefined}
           type="image/webp"
         />
         <img
           className={bundleMedia}
-          src="/assets/bundles-hero.jpg"
-          alt="Swiss Arabian Patchouli 01 perfume bottle on display"
+          src={desktopImage || "/assets/bundles-hero.jpg"}
+          alt={heading || "Bundle promotion"}
           width={2048}
           height={1152}
           loading="lazy"
@@ -116,28 +152,33 @@ export function LandingBundles() {
       </picture>
       <div className={bundleScrim} aria-hidden="true" />
       <div className={bundleContent}>
-        <p className={visuallyHidden}>Exclusive bundle offers</p>
+        <p className={visuallyHidden}>{eyebrow}</p>
         <h2 className={visuallyHidden} id="campaign-heading">
-          Up to 25% off
+          {heading}
         </h2>
-        <p className={visuallyHidden}>On your favorite fragrances</p>
+        <p className={visuallyHidden}>{description}</p>
         <div className={bundleActions} data-campaign-actions>
-          <LocaleLink className={bundlePillSolid} href="/collections/bundles">
-            Shop Bundles
-          </LocaleLink>
-          <LocaleLink className={bundlePillGhost} href="/collections/gift-sets">
-            Shop Gift Sets
-          </LocaleLink>
+          {primaryCtaHref ? (
+            <LocaleLink className={bundlePillSolid} href={primaryCtaHref}>
+              {primaryCtaLabel || "Shop Bundles"}
+            </LocaleLink>
+          ) : null}
+          {secondaryCtaHref ? (
+            <LocaleLink className={bundlePillGhost} href={secondaryCtaHref}>
+              {secondaryCtaLabel || "Shop Gift Sets"}
+            </LocaleLink>
+          ) : null}
         </div>
       </div>
 
+      {panelEnabled ? (
       <aside
         className={shopPanel}
-        aria-label="Shop this bundle"
+        aria-label={panelTitle || "Shop this bundle"}
         hidden={!open}
       >
         <div className={shopHead}>
-          <span className={shopTitle}>Shop this bundle</span>
+          <span className={shopTitle}>{panelTitle || "Shop this bundle"}</span>
           <button
             className={shopClose}
             type="button"
@@ -183,11 +224,13 @@ export function LandingBundles() {
             </li>
           ))}
         </ul>
-        <LocaleLink className={shopCta} href="/collections/bundles">
-          Shop This Bundle
+        <LocaleLink className={shopCta} href={panelCtaHref || "/collections/bundles"}>
+          {panelCtaLabel || "Shop This Bundle"}
         </LocaleLink>
       </aside>
+      ) : null}
 
+      {panelEnabled ? (
       <button
         className={shopRestore}
         type="button"
@@ -205,6 +248,7 @@ export function LandingBundles() {
         </svg>
         <span className={visuallyHidden}>Show shop this bundle panel</span>
       </button>
+      ) : null}
     </section>
   );
 }
