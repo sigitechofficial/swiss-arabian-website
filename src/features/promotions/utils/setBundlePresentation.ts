@@ -41,3 +41,21 @@ export function setBundleLineLabel(
   }
   return null;
 }
+
+/** Complete sets the priced quote kept, across every applied set-bundle campaign. */
+export function completedBundleSets(snapshot: PromotionSnapshotV1 | null | undefined): number {
+  let total = 0;
+  for (const applied of snapshot?.applied ?? []) {
+    total += asProgress(applied.metadata?.setBundle)?.completedSets ?? 0;
+  }
+  return total;
+}
+
+/** Lines the quote placed in a surviving set first, then the rest — each group keeps its bag order. */
+export function bundleLinesFirst<T extends { cartItemId?: string | null; sku?: string | null }>(
+  lines: T[],
+  ...snapshots: Array<PromotionSnapshotV1 | null | undefined>
+): T[] {
+  const inBundle = (line: T) => snapshots.some((snapshot) => setBundleLineLabel(snapshot, line) != null);
+  return [...lines.filter(inBundle), ...lines.filter((line) => !inBundle(line))];
+}

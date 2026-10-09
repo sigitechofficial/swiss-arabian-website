@@ -5,6 +5,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import {
   appliedPromotionView,
   isFixedAmountBxgy,
+  isGiftApplied,
   isFreeShippingBenefit,
   visibleApplied,
   type PromotionApplied,
@@ -25,12 +26,17 @@ function selectedTierPercent(item: PromotionApplied): string | null {
 
 export function AppliedCampaigns({
   snapshot,
+  hideGifts = false,
 }: {
   snapshot?: PromotionSnapshotV1 | null;
+  /** Checkout lists the free gift as an order line, so its "Applied" row would repeat it. */
+  hideGifts?: boolean;
 }) {
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
-  const rows = visibleApplied(data).filter((item) => item.kind !== "COUPON");
+  const rows = visibleApplied(data).filter(
+    (item) => item.kind !== "COUPON" && !(hideGifts && isGiftApplied(item)),
+  );
   if (!rows.length) return null;
 
   const currency = data?.context?.currencyCode ?? "AED";

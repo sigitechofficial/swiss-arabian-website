@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import {
@@ -13,7 +12,6 @@ import {
   checkoutMissCard,
   checkoutMissHead,
   checkoutMissList,
-  checkoutMissNav,
   checkoutMissTitle,
 } from "@/styles/checkoutChrome";
 
@@ -72,39 +70,14 @@ export function MissThisSwiper({
   /** Omit to allow adding every product (cart page behaviour). */
   canAdd?: (product: CatalogProduct) => boolean;
 }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  const step = (dir: -1 | 1) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const card = el.querySelector("[data-addon]");
-    const gap = 10;
-    const width = card instanceof HTMLElement ? card.getBoundingClientRect().width + gap : 200;
-    el.scrollBy({ left: dir * width, behavior: "smooth" });
-  };
-
   return (
     <div className={checkoutMiss} aria-labelledby="checkout-miss-heading">
       <div className={checkoutMissHead}>
         <h3 className={checkoutMissTitle} id="checkout-miss-heading">
           Don’t miss this
         </h3>
-        {products.length > 2 ? (
-          <div className={checkoutMissNav}>
-            <button type="button" onClick={() => step(-1)} aria-label="Previous products">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" />
-              </svg>
-            </button>
-            <button type="button" onClick={() => step(1)} aria-label="Next products">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <path d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        ) : null}
       </div>
-      <div className={checkoutMissList} ref={scrollerRef}>
+      <div className={checkoutMissList}>
         {products.map((product) => (
           <CheckoutAddonRow
             key={product.id}

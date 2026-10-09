@@ -11,6 +11,10 @@ export const confettiLayer =
 export const confettiPiece =
   "absolute top-[var(--y)] left-[var(--x)] h-[var(--h)] w-[var(--w)] bg-[var(--c)] opacity-0 [animation-delay:var(--d)] [will-change:transform,opacity] animate-cart-confetti";
 
+/** Party popper icon that bursts open when a bundle completes; --flip mirrors the right one. */
+export const partyPopper =
+  "absolute top-[var(--y)] left-[var(--x)] grid size-10 place-items-center rounded-full bg-white text-[var(--copper,#8c4435)] opacity-0 shadow-[0_6px_18px_rgba(140,68,53,0.28)] animate-cart-popper";
+
 export const confettiCircle = "rounded-full";
 export const confettiRibbon = "rounded-[1px]";
 export const confettiDiamond = "[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)]";
@@ -21,14 +25,37 @@ export const drawerHead =
 export const drawerClose =
   "grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[rgb(33_33_33/0.06)]";
 
+/** Bundle / promotion progress, pinned between the header and the scrolling lines. */
+export const drawerRail = "relative z-[1] shrink-0 pb-2 empty:hidden";
+
 export const drawerBody =
   "min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-0 pt-2 pb-4 [scrollbar-color:rgb(26_21_18/0.22)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgb(26_21_18/0.22)] [&::-webkit-scrollbar-track]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-[rgb(26_21_18/0.36)]";
 
 export const drawerItems = "flex flex-col";
 
 /** Direct-child empty copy and the shop link. Nested recommendation links stay plain. */
-export const drawerEmpty =
-  "px-[22px] py-9 text-center [&>a]:mt-0 [&>a]:inline-flex [&>a]:cursor-pointer [&>a]:items-center [&>a]:justify-center [&>a]:rounded-full [&>a]:border-0 [&>a]:bg-[var(--copper,#8c4435)] [&>a]:px-[18px] [&>a]:py-2.5 [&>a]:text-[0.85rem] [&>a]:text-white [&>a]:no-underline [&>a]:transition-colors [&>a]:duration-[var(--dur,0.2s)] hover:[&>a]:bg-[var(--copper-deep,#6d3428)] [&>p]:m-0 [&>p]:mb-3.5 [&>p]:text-[0.85rem] [&>p]:text-[rgb(33_33_33/0.6)]";
+/** Empty bag: a short centred message + CTA, then left-aligned recovery rails. */
+export const drawerEmpty = "flex flex-col pb-2";
+
+export const drawerEmptyHero =
+  "mx-[22px] mt-2 mb-1 flex flex-col items-center border-b border-[rgb(33_33_33/0.08)] pt-6 pb-7 text-center";
+
+export const drawerEmptyIcon =
+  "mb-3 grid size-14 place-items-center rounded-full bg-[rgb(140_68_53/0.08)] text-[var(--copper,#8c4435)]";
+
+export const drawerEmptyTitle =
+  "m-0 font-[family-name:var(--font-display)] text-[1.05rem] font-semibold text-[var(--ink,#1a1512)]";
+
+export const drawerEmptyCopy = "mt-1.5 mb-5 max-w-[30ch] text-[0.82rem] leading-snug text-[rgb(33_33_33/0.6)]";
+
+export const drawerEmptyCta =
+  "inline-flex h-11 items-center justify-center rounded-full bg-[var(--copper,#8c4435)] px-7 text-[0.85rem] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] hover:bg-[var(--copper-deep,#6d3428)]";
+
+/**
+ * Drawer rails: one card with the next peeking in, until lg (drawer 520px)
+ * fits exactly two across the swiper's content box. The rest swipe in.
+ */
+export const emptyBagCardFit = "w-[78%]! lg:w-[calc(50%-5px)]!";
 
 export const drawerLine =
   "grid min-w-0 grid-cols-[76px_minmax(0,1fr)] items-start gap-3.5 overflow-hidden border-b border-[rgb(33_33_33/0.06)] px-[22px] py-4";
@@ -36,29 +63,41 @@ export const drawerLine =
 export const drawerLineImg =
   "grid size-[76px] place-items-center overflow-hidden rounded-[12px] bg-white [&_img]:block [&_img]:size-full [&_img]:object-contain";
 
-export const drawerLineBody = "flex min-w-0 flex-col gap-1.5";
+/**
+ * Two columns so the first bundle tag and the quantity stepper share a width:
+ * tags and actions flatten into the grid (display: contents). The 7.25rem floor
+ * matches the "Part of bundle" tag, so lines without a tag get the same stepper.
+ */
+export const drawerLineBody = "grid min-w-0 grid-cols-[minmax(7.25rem,max-content)_minmax(0,1fr)] items-center gap-1.5";
 
-export const drawerLineTop = "flex min-w-0 items-start justify-between gap-3";
+export const drawerLineTop = "col-span-2 flex min-w-0 items-start justify-between gap-3";
 
 export const drawerLineName =
   "m-0 min-w-0 text-[0.8rem] leading-[1.35] font-semibold break-words text-[var(--ink,#1a1512)] line-clamp-2";
 
 export const drawerLineMeta =
-  "m-0 text-[0.75rem] leading-snug text-[rgb(33_33_33/0.55)]";
+  "col-span-2 m-0 text-[0.75rem] leading-snug text-[rgb(33_33_33/0.55)]";
 
-export const drawerLineNote =
-  "m-0 text-[0.75rem] leading-snug text-[var(--copper,#8c4435)]";
+export const drawerLineNote = "contents";
 
-export const drawerLineActions = "mt-1 flex items-center justify-between gap-3";
+/** One segment of a bundle label ("Part of bundle"). */
+export const drawerLineTag =
+  "inline-flex items-center justify-center justify-self-stretch rounded-full bg-[rgb(140_68_53/0.1)] px-2 py-0.5 text-[0.68rem] leading-[1.4] font-semibold tracking-[0.02em] text-[var(--copper,#8c4435)]";
+
+/** The discount segment of a bundle label ("25% off"). */
+export const drawerLineTagStrong =
+  "inline-flex items-center justify-self-start rounded-full bg-[var(--copper,#8c4435)] px-2 py-0.5 text-[0.68rem] leading-[1.4] font-semibold tracking-[0.02em] text-white";
+
+export const drawerLineActions = "contents";
 
 export const drawerLineQty =
-  "inline-flex items-center overflow-hidden rounded-full border border-[rgb(33_33_33/0.14)] [&_button]:inline-flex [&_button]:h-8 [&_button]:w-8 [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-base [&_button]:text-inherit [&_button]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-35 [&_span]:min-w-6 [&_span]:text-center [&_span]:text-[0.85rem]";
+  "mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[rgb(33_33_33/0.14)] [&_button]:inline-flex [&_button]:h-8 [&_button]:w-8 [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-base [&_button]:text-inherit [&_button]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-35 [&_span]:min-w-6 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.85rem]";
 
 export const drawerLinePrice =
   "m-0 shrink-0 text-[0.9rem] leading-none font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
 
 export const drawerLineRemove =
-  "cursor-pointer border-0 bg-transparent p-0 text-[0.75rem] text-[rgb(33_33_33/0.5)] underline [font:inherit]";
+  "mt-1 cursor-pointer justify-self-end border-0 bg-transparent p-0 text-[0.75rem] text-[rgb(33_33_33/0.5)] underline [font:inherit]";
 
 export const cartRecs = "px-0 pt-4 pb-1";
 
@@ -66,10 +105,20 @@ export const cartRecsTitle =
   "mx-[22px] mt-0 mb-3 text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ink,#241f1b)] uppercase";
 
 export const cartRecsSwiper =
-  "flex gap-2.5 overflow-x-auto px-[22px] pt-0 pb-2 [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden";
+  "flex gap-2.5 overflow-x-auto scroll-px-[22px] px-[22px] pt-0 pb-2 [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden";
 
 export const cartRec =
   "relative grid min-h-[108px] w-[min(78%,280px)] shrink-0 snap-start grid-cols-[92px_1fr] items-stretch gap-2.5 border border-[rgb(33_33_33/0.06)] bg-[var(--cream,#faf6ee)] p-2.5 [&_img]:size-[92px] [&_img]:self-center [&_img]:rounded-none [&_img]:bg-white [&_img]:object-contain";
+
+/** Empty-bag suggestions. White so they read against the cream drawer. */
+export const emptyBagCard =
+  "relative grid h-[104px] w-[248px] shrink-0 snap-start grid-cols-[72px_minmax(0,1fr)] items-center gap-2.5 overflow-hidden rounded-xl border border-[rgb(28_25_23/0.1)] bg-white p-2.5 text-start shadow-[0_1px_2px_rgb(28_25_23/0.04)] [&_img]:size-[72px] [&_img]:shrink-0 [&_img]:self-center [&_img]:rounded-lg [&_img]:bg-[#f3ebe0] [&_img]:object-contain";
+
+export const emptyBagName =
+  "m-0 line-clamp-2 text-[0.68rem] leading-[1.3] font-medium tracking-[0.04em] text-[var(--ink,#1a1512)] uppercase";
+
+export const emptyBagAdd =
+  "absolute top-1/2 right-2.5 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50";
 
 export const cartRecPh = "block size-[92px] self-center rounded-none bg-[#f3ebe0]";
 
@@ -87,22 +136,67 @@ export const cartRecAdd =
   "absolute right-2 bottom-2 grid size-11 cursor-pointer place-items-center border border-[var(--ink,#241f1b)] bg-transparent p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! aria-pressed:border-[var(--copper,#8c4435)] aria-pressed:bg-[var(--copper,#8c4435)]! aria-pressed:text-white!";
 
 export const drawerFoot =
-  "shrink-0 border-t border-[rgb(33_33_33/0.08)] bg-[var(--cream,#faf6ee)] px-[22px] pt-4 pb-[max(22px,env(safe-area-inset-bottom))]";
+  "shrink-0 border-t border-[rgb(33_33_33/0.08)] bg-[var(--cream,#faf6ee)] px-[22px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))]";
 
 export const drawerTotalRow =
-  "mb-3 flex items-baseline justify-between text-base text-[var(--ink,#1a1512)]";
+  "mb-2.5 flex items-baseline justify-between text-base text-[var(--ink,#1a1512)]";
+
+/** View bag + Checkout on one row to keep the footer short. */
+export const drawerActions = "grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2.5";
 
 export const drawerCheckout =
-  "mb-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[var(--copper-deep,#6d3428)] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45";
+  "flex h-11 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[var(--copper-deep,#6d3428)] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45";
 
-export const drawerViewLink = "block text-center text-[0.85rem] text-[var(--ink,#1a1512)] underline!";
+export const drawerViewLink =
+  "flex h-11 items-center justify-center rounded-full border border-[rgb(33_33_33/0.22)] text-[0.85rem] font-semibold text-[var(--ink,#1a1512)] no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:border-[var(--ink,#1a1512)]";
 
-export const cartPageHead = "mt-[1.15rem] mb-6 max-w-[640px]";
+export const cartPageHead = "mt-3 mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1";
+
+export const cartPageCount = "text-[0.82rem] text-[var(--ink-2,#5b5148)]";
 
 export const cartLayout =
-  "grid grid-cols-[1.6fr_minmax(280px,340px)] items-start gap-[clamp(20px,3vw,36px)] pb-[clamp(2.5rem,5vw,4rem)] max-[860px]:grid-cols-1 [body[data-gift-reveal]_&]:animate-cart-whoop-flash motion-reduce:[body[data-gift-reveal]_&]:animate-none";
+  "grid grid-cols-[minmax(0,1fr)_minmax(300px,360px)] items-start gap-[clamp(20px,3vw,32px)] pb-[clamp(2.5rem,5vw,4rem)] max-[860px]:grid-cols-1 [body[data-gift-reveal]_&]:animate-cart-whoop-flash motion-reduce:[body[data-gift-reveal]_&]:animate-none";
 
-export const cartItemsCol = "flex flex-col gap-3";
+/** min-w-0 so the sideways product rails scroll instead of widening the page. */
+export const cartItemsCol = "relative flex min-w-0 flex-col gap-6";
+
+/** Bag lines in one card — same row rhythm as the drawer and checkout summary. */
+export const cartLinesCard =
+  "overflow-hidden rounded-[var(--radius-lg,4px)] border border-[var(--line)] bg-white pb-1 shadow-[0_8px_28px_rgba(0,0,0,0.04)]";
+
+export const cartRow =
+  "grid min-w-0 grid-cols-[88px_minmax(0,1fr)] items-start gap-4 border-b border-[rgb(33_33_33/0.06)] px-[22px] py-5 max-[767px]:grid-cols-[72px_minmax(0,1fr)] max-[767px]:gap-3.5";
+
+export const cartRowMedia =
+  "block aspect-square overflow-hidden rounded-[12px] bg-[var(--cream-2,#f3ebda)] [&_img]:block [&_img]:size-full [&_img]:object-contain";
+
+/**
+ * Two columns so the "Part of bundle" tag and the quantity stepper share a width
+ * (tags and actions flatten into the grid). The 7.25rem floor matches the tag,
+ * so lines without one get the same stepper — same as the bag drawer.
+ */
+export const cartRowBody =
+  "grid min-w-0 grid-cols-[minmax(7.25rem,max-content)_minmax(0,1fr)] items-center gap-x-1.5 gap-y-2";
+
+export const cartRowTop = "col-span-2 flex min-w-0 items-start justify-between gap-4";
+
+export const cartRowName =
+  "m-0 min-w-0 text-[0.85rem] leading-[1.35] font-semibold text-[var(--ink,#1a1512)] [&_a]:text-inherit [&_a]:no-underline [&_a:hover]:text-[var(--copper,#8c4435)]";
+
+export const cartRowPrice =
+  "m-0 shrink-0 text-right text-[0.95rem] leading-tight font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
+
+export const cartRowMeta = "col-span-2 m-0 text-[0.75rem] leading-snug text-[rgb(33_33_33/0.55)]";
+
+export const cartRowTags = "contents";
+
+export const cartRowActions = "contents";
+
+export const cartRowQty =
+  "mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[var(--line)] [&_button]:inline-flex [&_button]:size-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--ink)]! [&_button]:[font:inherit]! [&_button]:hover:bg-[var(--cream-2,#f3ebda)] [&_span]:min-w-7 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.78rem] [&_span]:font-semibold";
+
+export const cartRowRemove =
+  "mt-1 ml-3 cursor-pointer justify-self-start border-0 bg-transparent p-0 text-[0.78rem] text-[rgb(33_33_33/0.55)] underline [font:inherit] hover:text-[var(--ink,#1a1512)]";
 
 export const cartMiss = "mb-[18px]";
 
@@ -130,8 +224,9 @@ export const clineQty =
 export const clineRemove =
   "cursor-pointer border-0 border-b border-[var(--line)] bg-transparent px-0 py-1.5 text-[0.66rem] tracking-[0.12em] text-[var(--ink-2)] uppercase [font:inherit]! hover:border-[var(--ink)] hover:text-[var(--ink)]";
 
+/** Scrolls with the page, like the checkout summary. */
 export const cartSummary =
-  "sticky top-[calc(var(--site-header-h,9.25rem)+16px)] flex min-w-0 flex-col gap-0 rounded-[var(--radius-lg,4px)] border border-[var(--line)] bg-white p-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[860px]:static max-[767px]:p-5";
+  "flex min-w-0 flex-col gap-0 rounded-[var(--radius-lg,4px)] border border-[var(--line)] bg-white p-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[860px]:static max-[767px]:p-5";
 
 export const cartSummaryTitle =
   "m-0 mb-[18px] border-b border-[var(--line)] pb-3.5 font-sans text-[0.75rem] font-semibold tracking-[0.1em] text-[var(--ink)] uppercase";
@@ -160,7 +255,14 @@ export const cartHint =
 export const cartBadges =
   "mt-[18px] flex flex-wrap items-center gap-x-2.5 gap-y-2 border-t border-[var(--line)] pt-[18px] text-[0.6875rem] tracking-[0.06em] text-[var(--ink-2)] uppercase";
 
-export const cartEmptyState = "px-5 py-[clamp(64px,10vw,120px)] text-center";
+/** Empty bag page: the drawer's empty message in a card, then left-aligned rails. */
+export const cartEmptyState = "flex flex-col gap-2 pb-[clamp(2.5rem,5vw,4rem)]";
+
+export const cartEmptyHero =
+  "mb-2 flex flex-col items-center rounded-[var(--radius-lg,4px)] border border-[var(--line)] bg-white px-6 py-10 text-center shadow-[0_8px_28px_rgba(0,0,0,0.04)]";
+
+/** Recovery rails carry the drawer's 22px gutter; pull them flush with the page column. */
+export const cartEmptyRails = "-ml-[22px] min-w-0";
 
 export const cartEmptyNote = "m-0 mb-3 text-[0.85rem] text-[rgb(33_33_33/0.62)]";
 
@@ -194,11 +296,25 @@ export const couponCheck =
 
 export const promoAppliedList = "m-0 mb-3 list-none p-0";
 
-export const promoAppliedRow = "flex justify-between gap-2.5 py-1 text-[0.82rem] text-[var(--ink)]";
+export const promoAppliedRow =
+  "flex justify-between gap-2.5 py-1 text-[0.82rem] text-[var(--ink)] [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap";
 
 export const promoGifts = "mt-1 mb-2 flex flex-col gap-3";
 
 export const promoGiftsAwarded = "flex flex-col gap-3";
+
+/** Bag drawer: gifts sit in the line gutter instead of the full cart-page card. */
+export const promoGiftsDrawer = "flex flex-col gap-2 px-[22px] py-3";
+
+export const giftDrawerLine =
+  "grid min-w-0 grid-cols-[56px_minmax(0,1fr)] items-center gap-3 rounded-[12px] border border-[rgb(33_33_33/0.08)] bg-white p-2.5";
+
+export const giftDrawerMedia =
+  "grid size-14 place-items-center overflow-hidden rounded-[8px] bg-[var(--cream,#faf6ee)] [&_img]:block [&_img]:size-full [&_img]:object-contain";
+
+export const giftDrawerBody = "flex min-w-0 flex-col gap-1.5";
+
+export const giftDrawerMeta = "flex items-center gap-2 text-[0.72rem] text-[rgb(33_33_33/0.55)]";
 
 export const promoGiftsTitle = "m-0 mb-[0.35rem] text-[0.85rem] font-semibold text-[var(--ink)]";
 

@@ -17,7 +17,7 @@ export function AccountBreadcrumb({ label }: AccountBreadcrumbProps) {
         <span className="px-1.5" aria-hidden>
           /
         </span>
-        <span className="text-sa-primary">{label}</span>
+        <span aria-current="page">{label}</span>
       </p>
     </nav>
   );

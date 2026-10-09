@@ -1,6 +1,6 @@
 /** Tailwind classes for checkout, confirmation, tracking, and form fields. */
 
-export const checkoutHead = "mt-5 mb-9";
+export const checkoutHead = "mt-5 mb-6";
 
 export const checkoutSteps =
   "m-0 flex list-none flex-wrap gap-3 pt-3.5 pb-0 text-[0.68rem] font-normal tracking-[0.04em] text-[var(--ink-2,#5b5148)] uppercase [&_a]:text-inherit [&_a]:no-underline [&_a]:transition-colors [&_a]:hover:text-copper";
@@ -17,7 +17,7 @@ export const checkoutSummaryChevron =
   "inline-block size-[0.55rem] translate-y-[-0.1em] rotate-45 border-e-[1.5px] border-b-[1.5px] border-current transition-transform duration-200 ease-linear group-aria-expanded:translate-y-[0.15em] group-aria-expanded:rotate-[225deg]";
 
 export const checkoutLayout =
-  "grid grid-cols-[minmax(0,1.4fr)_minmax(280px,420px)] items-start gap-[clamp(28px,4vw,48px)] pt-[clamp(1.5rem,3vw,2.5rem)] pb-[clamp(3rem,6vw,5rem)] max-[860px]:flex max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:gap-0";
+  "grid grid-cols-[minmax(0,1.4fr)_minmax(280px,420px)] items-start gap-[clamp(28px,4vw,48px)] pt-0 pb-[clamp(3rem,6vw,5rem)] max-[860px]:flex max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:gap-0";
 
 export const checkoutForm =
   "flex flex-col gap-5 max-[860px]:order-3 max-[860px]:w-full";
@@ -95,17 +95,19 @@ export const stripePayCta = "mt-1.5";
 export const checkoutLegal =
   "m-0 text-center text-[0.78rem] leading-[1.6] text-[var(--ink-2,#5b5148)] [&_a]:text-copper";
 
+/** Scrolls with the page (not sticky) so the whole order reads top to bottom. */
 export const checkoutSummary =
-  "sticky top-[calc(var(--site-header-h,9.25rem)+16px)] rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white px-[22px] py-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[767px]:px-5 max-[767px]:py-5 max-[860px]:static max-[860px]:order-2 max-[860px]:hidden max-[860px]:w-full max-[860px]:max-w-none max-[860px]:box-border [&_h2]:m-0 [&_h2]:mb-3.5 [&_h2]:border-b [&_h2]:border-[var(--line,#d9ccb4)] [&_h2]:pb-3 [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-[0.8rem] [&_h2]:font-medium [&_h2]:tracking-[0.04em] [&_h2]:text-[var(--ink,#241f1b)] [&_h2]:uppercase";
+  "rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white px-[22px] py-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[767px]:px-5 max-[767px]:py-5 max-[860px]:static max-[860px]:order-2 max-[860px]:hidden max-[860px]:w-full max-[860px]:max-w-none max-[860px]:box-border [&_h2]:m-0 [&_h2]:mb-3.5 [&_h2]:border-b [&_h2]:border-[var(--line,#d9ccb4)] [&_h2]:pb-3 [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-[0.8rem] [&_h2]:font-medium [&_h2]:tracking-[0.04em] [&_h2]:text-[var(--ink,#241f1b)] [&_h2]:uppercase";
 
+/** `block!` so it beats the summary's own `max-[860px]:hidden` (same variant, same property). */
 export const checkoutSummaryOpen =
-  "max-[860px]:mt-0 max-[860px]:mb-5 max-[860px]:block max-[860px]:rounded-t-none max-[860px]:border-t-0";
+  "max-[860px]:mt-0 max-[860px]:mb-5 max-[860px]:block! max-[860px]:rounded-t-none max-[860px]:border-t-0";
 
 /** Stripe payment shows the summary under the form; it is not collapsible. */
 export const stripePaySummary = "max-[860px]:mt-5 max-[860px]:block!";
 
-export const checkoutLines =
-  "mb-4 flex max-h-[420px] flex-col overflow-auto overscroll-contain border-b border-[var(--line,#d9ccb4)] pr-1.5 [scrollbar-color:auto] [scrollbar-width:auto] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:size-0 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(140,68,53,0.22)] [&::-webkit-scrollbar-track]:my-1 [&::-webkit-scrollbar-track]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-[rgba(140,68,53,0.45)] supports-[not(selector(::-webkit-scrollbar))]:[scrollbar-color:rgba(140,68,53,0.3)_transparent] supports-[not(selector(::-webkit-scrollbar))]:[scrollbar-width:thin]";
+/** Every line in full — the summary scrolls with the page, so no inner scroll box. */
+export const checkoutLines = "mb-4 flex flex-col border-b border-[var(--line,#d9ccb4)]";
 
 /** Same row rhythm as the bag drawer: 76px image, name and price on one line, 16px vertical padding. */
 export const coline =
@@ -125,6 +127,9 @@ export const colineMeta = "m-0 text-[0.75rem] leading-snug text-[rgb(33_33_33/0.
 
 export const colineNote = "m-0 text-[0.75rem] leading-snug text-[var(--copper,#8c4435)]";
 
+/** Bundle label as tags, same as the bag drawer. */
+export const colineTags = "m-0 flex flex-wrap items-center gap-1.5";
+
 export const colinePrice =
   "m-0 shrink-0 text-[0.9rem] leading-none font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
 
@@ -132,7 +137,7 @@ export const checkoutTotals =
   "m-0 mb-3 [&>div]:flex [&>div]:justify-between [&>div]:gap-3 [&>div]:py-1.5 [&>div]:text-[0.8rem] [&_dt]:m-0 [&_dt]:font-normal [&_dt]:text-[var(--ink-2,#5b5148)] [&_dd]:m-0 [&_dd]:font-medium [&_dd]:text-[var(--ink,#241f1b)]";
 
 export const checkoutTotalsLine =
-  "mt-1.5 border-t border-[var(--line,#d9ccb4)] pt-3 text-[0.9rem] font-medium";
+  "mt-2 border-t border-[var(--line,#d9ccb4)] pt-3.5 text-[1rem]! font-semibold [&_dd]:text-[1.05rem] [&_dd]:font-semibold! [&_dd]:text-[var(--ink,#1a1512)]! [&_dt]:font-semibold! [&_dt]:text-[var(--ink,#1a1512)]!";
 
 export const checkoutAddons = "m-0 mb-4";
 

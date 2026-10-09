@@ -11,18 +11,30 @@ import { fetchEmptyBag } from "../api/promotions.service";
 import { readEmptyOrigin, readViewed } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import {
-  cartRec,
-  cartRecAdd,
-  cartRecCopy,
-  cartRecName,
   cartRecPh,
   cartRecPrice,
   cartRecs,
   cartRecsSwiper,
   cartRecsTitle,
+  emptyBagAdd,
+  emptyBagCard,
+  emptyBagCardFit,
+  emptyBagName,
 } from "@/styles/cartChrome";
 
-export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string }) {
+/** Server headings arrive as sentences ("Recently viewed."); the uppercase rail title drops the stop. */
+function railHeading(heading: string): string {
+  return heading.trim().replace(/[.。]+$/, "");
+}
+
+export function EmptyBagRecovery({
+  surface = "empty-cart",
+  fit = false,
+}: {
+  surface?: string;
+  /** Bag drawer: size cards so two fit across instead of clipping the second. */
+  fit?: boolean;
+}) {
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const cartId = useCartStore((state) => state.cartId);
   const setCartFromApi = useCartStore((state) => state.setCartFromApi);
@@ -43,17 +55,17 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
     <>
       {bag.groups.map((group) => (
         <div className={cartRecs} key={group.id || group.heading}>
-          <h3 className={cartRecsTitle}>{group.heading}</h3>
+          <h3 className={cartRecsTitle}>{railHeading(group.heading)}</h3>
           <div className={cartRecsSwiper} role="list">
             {group.products.map((product) => (
-              <article className={cartRec} key={`${group.id}-${product.sku}`} role="listitem">
+              <article className={fit ? `${emptyBagCard} ${emptyBagCardFit}` : emptyBagCard} key={`${group.id}-${product.sku}`} role="listitem">
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.image} alt="" />
                 ) : (
-                  <span className={cartRecPh} aria-hidden="true" />
+                  <span className={`${cartRecPh} size-[72px] rounded-lg`} aria-hidden="true" />
                 )}
-                <div className={cartRecCopy}>
+                <div className="flex min-w-0 flex-col pr-10">
                   {product.slug ? (
                     <LocaleLink
                       href={`/products/${product.slug}`}
@@ -63,16 +75,16 @@ export function EmptyBagRecovery({ surface = "empty-cart" }: { surface?: string 
                         surface,
                       })}
                     >
-                      <p className={cartRecName}>{product.title}</p>
+                      <p className={emptyBagName}>{product.title}</p>
                     </LocaleLink>
                   ) : (
-                    <p className={cartRecName}>{product.title}</p>
+                    <p className={emptyBagName}>{product.title}</p>
                   )}
                   {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
                 </div>
                 <button
                   type="button"
-                  className={cartRecAdd}
+                  className={emptyBagAdd}
                   disabled={busy === product.sku}
                   aria-label={`${bag.addLabel} ${product.title}`}
                   onClick={() => {
