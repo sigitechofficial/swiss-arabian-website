@@ -1,65 +1,79 @@
-import { accountAssets } from "../constants/accountAssets";
+import {
+  CircleHelp,
+  CreditCard,
+  Gift,
+  Heart,
+  MapPin,
+  MessageCircle,
+  Package,
+  RotateCcw,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 export type AccountQuickLink = {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   description: string;
-  href?: string;
+  href: string;
 };
 
 export const accountQuickLinks: AccountQuickLink[] = [
   {
-    icon: accountAssets.icons.orders,
-    title: "Order History",
-    description:
-      "Track your orders and view previous purchases.",
+    icon: Package,
+    title: "Orders",
+    description: "Track a delivery and see what you’ve bought before.",
     href: "/account/orders",
   },
   {
-    icon: accountAssets.icons.payments,
-    title: "My Payments",
-    description: "Manage your saved cards and payment methods.",
-    href: "/account/payments",
-  },
-  {
-    icon: accountAssets.icons.wishlist,
-    title: "Wishlist",
-    description: "View and manage your favourite Swiss Arabian scents.",
-    href: "/account/wishlist",
-  },
-  {
-    icon: accountAssets.icons.profile,
+    icon: UserRound,
     title: "Profile",
-    description: "Edit your name, password, and manage your email.",
+    description: "Your name, email, mobile number and password.",
     href: "/account/profile",
   },
   {
-    icon: accountAssets.icons.addresses,
-    title: "My Addresses",
-    description: "Add, edit, or remove your delivery addresses.",
+    icon: MapPin,
+    title: "Addresses",
+    description: "Add, edit or remove your delivery addresses.",
     href: "/account/addresses",
+  },
+  {
+    icon: CreditCard,
+    title: "Payments",
+    description: "The payments you’ve made on your orders.",
+    href: "/account/payments",
+  },
+  {
+    icon: Heart,
+    title: "Wishlist",
+    description: "The Swiss Arabian scents you’ve saved for later.",
+    href: "/account/wishlist",
+  },
+  {
+    icon: Gift,
+    title: "Rewards",
+    description: "Your points, your tier and what they unlock.",
+    href: "/account/rewards",
   },
 ];
 
 export const accountSupportLinks: AccountQuickLink[] = [
   {
-    icon: accountAssets.icons.returnsFaq,
-    title: "Returns FAQ",
-    description:
-      "Questions about returns? Read our exchange and return policy.",
+    icon: RotateCcw,
+    title: "Returns and exchanges",
+    description: "Read our exchange and return policy.",
     href: "/faq?topic=order",
   },
   {
-    icon: accountAssets.icons.faq,
-    title: "Swiss Arabian FAQ",
-    description:
-      "Browse our FAQs — scents, orders, delivery and samples answered.",
+    icon: CircleHelp,
+    title: "Frequently asked questions",
+    description: "Scents, orders, delivery and samples answered.",
     href: "/faq",
   },
   {
-    icon: accountAssets.icons.contact,
-    title: "Contact Us",
-    description: "WhatsApp our team, email us, or find quick answers.",
+    icon: MessageCircle,
+    title: "Contact us",
+    description: "WhatsApp our team or send us an email.",
     href: "/faq#contact",
   },
 ];

@@ -1,3 +1,4 @@
+import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useUiStore } from "@/stores/useUiStore";
 
 /** Default storefront market context for browse/commerce calls. */
@@ -30,10 +31,16 @@ export type StorefrontContextInput = {
   brandCode?: string | null;
 };
 
-/** Last selected market’s catalogContext (client only; empty on the server). */
+/**
+ * Last selected market’s catalogContext (client only; empty on the server).
+ * The address decides the language: right after a language switch the saved
+ * copy still holds the previous one, and the first requests would go out in it.
+ */
 export function getPersistedCatalogContext(): StorefrontContextInput {
   if (typeof window === "undefined") return {};
-  return useUiStore.getState().catalogContext ?? {};
+  const saved = useUiStore.getState().catalogContext;
+  if (!saved) return {};
+  return { ...saved, languageCode: localeFromPathname(window.location.pathname) };
 }
 
 function trimmed(value?: string | null): string {

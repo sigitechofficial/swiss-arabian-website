@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useMarket } from "@/providers/MarketProvider";
 import type { StorefrontContextInput } from "@/lib/storefront/context";
 
@@ -10,6 +12,8 @@ import type { StorefrontContextInput } from "@/lib/storefront/context";
  */
 export function useSelectedCatalogMarket(): StorefrontContextInput | null {
   const { marketId, catalogContext } = useMarket();
+  // The address decides the language; the saved context catches up a moment later.
+  const languageCode = localeFromPathname(usePathname() || "/");
   const zoneCode = marketId?.trim() || "";
   const salesChannelCode = catalogContext?.salesChannelCode?.trim() || "";
   if (!zoneCode || catalogContext?.zoneCode?.trim() !== zoneCode || !salesChannelCode) {
@@ -18,7 +22,7 @@ export function useSelectedCatalogMarket(): StorefrontContextInput | null {
   return {
     zoneCode,
     salesChannelCode,
-    languageCode: catalogContext.languageCode,
+    languageCode,
     currencyCode: catalogContext.currencyCode,
     countryCode: catalogContext.countryCode,
     zoneId: catalogContext.zoneId,

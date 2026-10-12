@@ -26,18 +26,42 @@ export function setBundleNotes(
   return notes;
 }
 
-/** Badge for a cart line that the priced quote placed inside a surviving set. */
+type BundleRow = NonNullable<SetBundleProgress["lines"]>[number];
+
+function rowLabel(
+  rows: BundleRow[] | undefined,
+  line: { cartItemId?: string | null; sku?: string | null },
+): string | null {
+  for (const row of rows ?? []) {
+    const label = row.label?.trim();
+    if (!label) continue;
+    if (line.cartItemId && row.ref && row.ref === line.cartItemId) return label;
+    if (!line.cartItemId && line.sku && row.sku && row.sku === line.sku) return label;
+  }
+  return null;
+}
+
+/**
+ * Badge for a cart line. A line the priced quote placed inside a surviving set wins.
+ * With `offers`, a line counted toward a set that still misses a slot is badged too.
+ */
 export function setBundleLineLabel(
   snapshot: PromotionSnapshotV1 | null | undefined,
   line: { cartItemId?: string | null; sku?: string | null },
+  offers?: PromotionOffer[] | null,
 ): string | null {
   for (const applied of snapshot?.applied ?? []) {
-    for (const row of asProgress(applied.metadata?.setBundle)?.lines ?? []) {
-      const label = row.label?.trim();
-      if (!label) continue;
-      if (line.cartItemId && row.ref && row.ref === line.cartItemId) return label;
-      if (!line.cartItemId && line.sku && row.sku && row.sku === line.sku) return label;
-    }
+    const label = rowLabel(asProgress(applied.metadata?.setBundle)?.lines, line);
+    if (label) return label;
+  }
+  if (!offers) return null;
+  for (const applied of snapshot?.applied ?? []) {
+    const label = rowLabel(asProgress(applied.metadata?.setBundle)?.pendingLines, line);
+    if (label) return label;
+  }
+  for (const offer of offers) {
+    const label = rowLabel(offer.setBundle?.pendingLines, line);
+    if (label) return label;
   }
   return null;
 }

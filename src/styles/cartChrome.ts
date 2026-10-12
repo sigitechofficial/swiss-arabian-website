@@ -67,6 +67,8 @@ export const drawerLineImg =
  * Two columns so the first bundle tag and the quantity stepper share a width:
  * tags and actions flatten into the grid (display: contents). The 7.25rem floor
  * matches the "Part of bundle" tag, so lines without a tag get the same stepper.
+ * The stepper always starts its own row, so a lone tag (a set still missing a
+ * slot has no "25% off" segment) does not pull it up beside the tag.
  */
 export const drawerLineBody = "grid min-w-0 grid-cols-[minmax(7.25rem,max-content)_minmax(0,1fr)] items-center gap-1.5";
 
@@ -91,7 +93,7 @@ export const drawerLineTagStrong =
 export const drawerLineActions = "contents";
 
 export const drawerLineQty =
-  "mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[rgb(33_33_33/0.14)] [&_button]:inline-flex [&_button]:h-8 [&_button]:w-8 [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-base [&_button]:text-inherit [&_button]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-35 [&_span]:min-w-6 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.85rem]";
+  "col-start-1 mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[rgb(33_33_33/0.14)] [&_button]:inline-flex [&_button]:h-8 [&_button]:w-8 [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-base [&_button]:text-inherit [&_button]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-35 [&_span]:min-w-6 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.85rem]";
 
 export const drawerLinePrice =
   "m-0 shrink-0 text-[0.9rem] leading-none font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
@@ -193,7 +195,7 @@ export const cartRowTags = "contents";
 export const cartRowActions = "contents";
 
 export const cartRowQty =
-  "mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[var(--line)] [&_button]:inline-flex [&_button]:size-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--ink)]! [&_button]:[font:inherit]! [&_button]:hover:bg-[var(--cream-2,#f3ebda)] [&_span]:min-w-7 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.78rem] [&_span]:font-semibold";
+  "col-start-1 mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[var(--line)] [&_button]:inline-flex [&_button]:size-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--ink)]! [&_button]:[font:inherit]! [&_button]:hover:bg-[var(--cream-2,#f3ebda)] [&_span]:min-w-7 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.78rem] [&_span]:font-semibold";
 
 export const cartRowRemove =
   "mt-1 ml-3 cursor-pointer justify-self-start border-0 bg-transparent p-0 text-[0.78rem] text-[rgb(33_33_33/0.55)] underline [font:inherit] hover:text-[var(--ink,#1a1512)]";

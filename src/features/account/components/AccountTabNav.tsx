@@ -3,19 +3,18 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePathname } from "next/navigation";
 
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
+import { accountTab, accountTabs, accountTabsList } from "@/styles/accountChrome";
 
 import { accountContainer } from "../constants/accountLayout";
 
 export function AccountTabNav() {
-  const pathname = usePathname();
+  const pathname = stripLocalePrefix(usePathname() || "/");
 
   return (
-    <nav
-      className="border-b border-sa-border bg-surface"
-      aria-label="Account sections"
-    >
-      <div className={`${accountContainer} flex gap-6 overflow-x-auto sm:gap-8`}>
+    <nav className={accountTabs} aria-label="Account sections">
+      <div className={`${accountContainer} ${accountTabsList}`}>
         {accountTabNav.map((item) => {
           const active =
             item.href === "/account"
@@ -26,19 +25,10 @@ export function AccountTabNav() {
             <LocaleLink
               key={item.href}
               href={item.href}
-              className={`relative shrink-0 py-[15px] text-[12.5px] whitespace-nowrap transition-colors ${
-                active
-                  ? "font-semibold text-sa-primary"
-                  : "font-normal text-sa-secondary hover:text-sa-primary"
-              }`}
+              className={accountTab}
+              aria-current={active ? "page" : undefined}
             >
               {item.label}
-              {active ? (
-                <span
-                  className="absolute inset-x-0 bottom-0 h-0.5 bg-terra"
-                  aria-hidden
-                />
-              ) : null}
             </LocaleLink>
           );
         })}

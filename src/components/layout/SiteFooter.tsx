@@ -60,10 +60,11 @@ function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
 
 export function SiteFooter() {
   const copy = useShopCopy();
-  const { marketId } = useMarket();
+  const { marketId, contentLanguage } = useMarket();
   const catalogMarket = useSelectedCatalogMarket();
   const zoneCode = catalogMarket?.zoneCode ?? "";
-  const languageCode = catalogMarket?.languageCode ?? "en";
+  // Content is published under the market's own language code, not the one in the address.
+  const languageCode = contentLanguage ?? "";
   const { chromeItems, isLoading } = useNavigation(marketId || undefined);
   const shopLinks = chromeNavLinks(chromeItems);
 
@@ -75,7 +76,7 @@ export function SiteFooter() {
         zoneCode,
         languageCode,
       }),
-    enabled: Boolean(zoneCode),
+    enabled: Boolean(zoneCode && languageCode),
     staleTime: 60_000,
   });
   const cmsSection = firstSectionOfType(cmsQuery.data?.sections ?? [], "FOOTER");

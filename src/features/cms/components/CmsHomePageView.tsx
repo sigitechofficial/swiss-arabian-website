@@ -1,9 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
-import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import { useMarket } from "@/providers/MarketProvider";
 import { env } from "@/lib/config/env";
 import {
   cmsContentKeys,
@@ -23,14 +22,15 @@ function legacyFallbackEnabled(): boolean {
 }
 
 export function CmsHomePageView() {
-  const pathname = usePathname() || "/";
-  const languageCode = localeFromPathname(pathname);
+  // The Homepage is published under the market's own language code ("en-us"),
+  // not the "en" in the address. Wait until the market's languages are known.
+  const languageCode = useMarket().contentLanguage ?? "";
   const market = useSelectedCatalogMarket();
   const zoneCode =
     market?.zoneCode?.trim() ||
     market?.countryCode?.trim() ||
     "";
-  const enabled = cmsHomeEnabled() && Boolean(zoneCode);
+  const enabled = cmsHomeEnabled() && Boolean(zoneCode && languageCode);
 
   const query = useQuery({
     queryKey: cmsContentKeys.home(zoneCode, languageCode),
@@ -49,7 +49,7 @@ export function CmsHomePageView() {
     return <LegacyHomeFallback />;
   }
 
-  if (!zoneCode || query.isPending) {
+  if (!zoneCode || !languageCode || query.isPending) {
     return (
       <div
         className="min-h-[40vh] animate-pulse bg-[var(--cream,#faf6ee)]"
