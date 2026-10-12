@@ -146,6 +146,12 @@ export type SetBundleProgress = {
     sku?: string | null;
     label?: string | null;
   }>;
+  /** Lines counted toward a set that still misses a slot. Not discounted yet. */
+  pendingLines?: Array<{
+    ref?: string | null;
+    sku?: string | null;
+    label?: string | null;
+  }>;
 };
 
 export type PromotionOffer = {

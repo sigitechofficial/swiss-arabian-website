@@ -185,7 +185,9 @@ export function CartSideSheet() {
   });
 
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
-  const promotionRecs = useApplicablePromotions().data?.recommendations?.products ?? [];
+  const applicable = useApplicablePromotions().data;
+  const promotionRecs = applicable?.recommendations?.products ?? [];
+  const offers = applicable?.offers ?? [];
 
   return (
     <SideSheet
@@ -243,7 +245,9 @@ export function CartSideSheet() {
           )}
           <div className={drawerItems}>
             {lines.length === 0 ? null : (
-              bundleLinesFirst(lines, promotions).map((line) => (
+              bundleLinesFirst(lines, promotions).map((line) => {
+                const bundle = setBundleLineLabel(promotions, line, offers);
+                return (
                 <article className={drawerLine} key={line.cartItemId ?? line.variantId}>
                   <div className={drawerLineImg}>
                     {line.imageUrl ? (
@@ -259,9 +263,9 @@ export function CartSideSheet() {
                     {showsDistinctSize(line.title, line.sizeLabel) ? (
                       <p className={drawerLineMeta}>{line.sizeLabel}</p>
                     ) : null}
-                    {setBundleLineLabel(promotions, line) ? (
+                    {bundle ? (
                       <p className={drawerLineNote}>
-                        {setBundleLineLabel(promotions, line)!
+                        {bundle
                           .split("·")
                           .map((part) => part.trim())
                           .filter(Boolean)
@@ -319,12 +323,13 @@ export function CartSideSheet() {
                     </div>
                   </div>
                 </article>
-              ))
+                );
+              })
             )}
             {lines.length > 0 ? <GiftWithPurchase currency={currency} surface="drawer" /> : null}
           </div>
 
-          {lines.length > 0 ? <PromotionQuickAdd surface="drawer" /> : null}
+          {lines.length > 0 ? <PromotionQuickAdd surface="drawer" holdPosition /> : null}
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
             <div className={cartRecs}>

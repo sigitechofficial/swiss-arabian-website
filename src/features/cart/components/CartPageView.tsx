@@ -71,7 +71,7 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, shippingDiscountAmount, visibleGiftCards } from "@/features/promotions";
+import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, shippingDiscountAmount, useApplicablePromotions, visibleGiftCards } from "@/features/promotions";
 import {
   quotedCartShipping,
   quotedCartTotal,
@@ -193,6 +193,7 @@ export function CartPageView() {
     payable != null && extraShipping > 0 ? payable + extraShipping : payable;
 
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
+  const offers = useApplicablePromotions().data?.offers ?? [];
 
   // Instant: the line lands in the bag now; the API sync runs behind.
   function addFromCart(product: CatalogProduct) {
@@ -241,7 +242,7 @@ export function CartPageView() {
                 <div className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}>
                   <PromotionProgressRail surface="cart" />
                   {bundleLinesFirst(lines, promotions).map((line) => {
-                    const bundle = setBundleLineLabel(promotions, line);
+                    const bundle = setBundleLineLabel(promotions, line, offers);
                     return (
                   <article className={cartRow} key={line.cartItemId ?? line.variantId}>
                     <LocaleLink className={cartRowMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
