@@ -477,6 +477,23 @@ function transactionList(raw: unknown): unknown[] {
   return [];
 }
 
+function activityDetail(
+  row: Record<string, unknown>,
+  presentationKey: string,
+): string | null {
+  const explicit = readText(row, ["detail", "subtitle", "note"]);
+  if (explicit) return explicit;
+  const orderNumber = readText(row, ["orderNumber"]);
+  const parts: string[] = [];
+  if (orderNumber) parts.push(`Order ${orderNumber}`);
+  if (presentationKey === "POINTS_REDEEMED") {
+    const money = readText(row, ["moneyEquivalent"]);
+    const currency = readText(row, ["currencyCode"]);
+    if (money && currency) parts.push(`${currency} ${money}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 function activityCopy(presentationKey: string, points: number | null): string | null {
   if (presentationKey === "REFUND_ADJUSTMENT") {
     if (points != null && points > 0) return "Reward points returned";
@@ -513,7 +530,7 @@ export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] 
         occurredAt:
           readText(row, ["occurredAt", "createdAt", "postedAt", "displayDate", "date"]) ?? null,
         label,
-        detail: readText(row, ["detail", "subtitle", "note"]),
+        detail: activityDetail(row, presentationKey),
         points,
         state: ACTIVITY_STATE_COPY[stateKey] ?? null,
       },
