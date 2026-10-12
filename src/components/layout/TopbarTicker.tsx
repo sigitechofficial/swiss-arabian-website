@@ -10,6 +10,7 @@ import {
   firstSectionOfType,
 } from "@/features/cms/api/cmsGlobalRegion.service";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import { useMarket } from "@/providers/MarketProvider";
 import { topbarTicker, topbarTickerLine } from "@/styles/siteChrome";
 
 const DEFAULT_INTERVAL_MS = 3500;
@@ -17,7 +18,8 @@ const DEFAULT_INTERVAL_MS = 3500;
 export function TopbarTicker() {
   const market = useSelectedCatalogMarket();
   const zoneCode = market?.zoneCode ?? "";
-  const languageCode = market?.languageCode ?? "en";
+  // Content is published under the market's own language code, not the one in the address.
+  const languageCode = useMarket().contentLanguage ?? "";
 
   const cmsQuery = useQuery({
     queryKey: cmsGlobalKeys.region("announcement-bar", zoneCode, languageCode),
@@ -27,7 +29,7 @@ export function TopbarTicker() {
         zoneCode,
         languageCode,
       }),
-    enabled: Boolean(zoneCode),
+    enabled: Boolean(zoneCode && languageCode),
     staleTime: 60_000,
   });
 

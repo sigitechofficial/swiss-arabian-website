@@ -20,6 +20,7 @@ import {
 } from "@/features/cart/utils/guestToken";
 import { useStorefrontMarkets } from "@/features/markets";
 import { fallbackCatalogContext } from "@/features/markets/utils/fallbackCatalogContext";
+import { marketContentLanguage } from "@/features/markets/utils/marketContentLanguage";
 import { flagForMarket, isoForMarket } from "@/features/markets/utils/flagForMarket";
 import {
   readZoneCookie,
@@ -39,6 +40,11 @@ type MarketContextValue = {
   setMarketId: (id: string | null) => void;
   catalogContext: PersistedCatalogContext | null;
   regionOptions: RegionOption[];
+  /**
+   * The selected market's own code for the language being read (for example "en-us").
+   * Published content is stored under it. Null until the market's languages are known.
+   */
+  contentLanguage: string | null;
 };
 
 const MarketContext = createContext<MarketContextValue | null>(null);
@@ -156,12 +162,6 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     writeZoneCookie(pick.zoneCode);
   }, [hydrated, marketsQuery.data, pathLanguage, shoppable, selectMarket]);
 
-  const refreshMarketScopedData = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-    void queryClient.invalidateQueries({ queryKey: ["storefront", "navigation"] });
-    void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-    void queryClient.removeQueries({ queryKey: promotionKeys.all });
-    void queryClient.removeQueries({ queryKey: loyaltyKeys.all });
   // The server sets lang and dir on a full load only. Moving between an Arabic page
   // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
   useEffect(() => {
@@ -171,6 +171,12 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     if (root.dir !== dir) root.dir = dir;
   }, [pathLanguage]);
 
+  const refreshMarketScopedData = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+    void queryClient.invalidateQueries({ queryKey: ["storefront", "navigation"] });
+    void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    void queryClient.removeQueries({ queryKey: promotionKeys.all });
+    void queryClient.removeQueries({ queryKey: loyaltyKeys.all });
     clearPromotions();
     setSyncing(true);
 
@@ -208,14 +214,23 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     [pathLanguage, refreshMarketScopedData, selectMarket, shoppable],
   );
 
+  const contentLanguage = useMemo(() => {
+    const selected = shoppable.find((market) => market.zoneCode === marketId);
+    // No market list to read from: do not hold the page, ask with the address language.
+    if (!selected) return marketsQuery.isError ? pathLanguage : null;
+    // A market that does not offer this language has nothing published in it either.
+    return marketContentLanguage(selected.languages, pathLanguage) ?? pathLanguage;
+  }, [marketId, marketsQuery.isError, pathLanguage, shoppable]);
+
   const value = useMemo(
     () => ({
       marketId,
       setMarketId,
       catalogContext,
       regionOptions,
+      contentLanguage,
     }),
-    [catalogContext, marketId, regionOptions, setMarketId],
+    [catalogContext, contentLanguage, marketId, regionOptions, setMarketId],
   );
 
   return (
