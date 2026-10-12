@@ -162,6 +162,15 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     void queryClient.removeQueries({ queryKey: promotionKeys.all });
     void queryClient.removeQueries({ queryKey: loyaltyKeys.all });
+  // The server sets lang and dir on a full load only. Moving between an Arabic page
+  // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
+  useEffect(() => {
+    const root = document.documentElement;
+    const dir = pathLanguage === "ar" ? "rtl" : "ltr";
+    if (root.lang !== pathLanguage) root.lang = pathLanguage;
+    if (root.dir !== dir) root.dir = dir;
+  }, [pathLanguage]);
+
     clearPromotions();
     setSyncing(true);
 
