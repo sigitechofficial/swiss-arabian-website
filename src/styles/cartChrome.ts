@@ -195,7 +195,11 @@ export const cartRowTags = "contents";
 export const cartRowActions = "contents";
 
 export const cartRowQty =
-  "col-start-1 mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[var(--line)] [&_button]:inline-flex [&_button]:size-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--ink)]! [&_button]:[font:inherit]! [&_button]:hover:bg-[var(--cream-2,#f3ebda)] [&_span]:min-w-7 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.78rem] [&_span]:font-semibold";
+  "col-start-1 mt-1 inline-flex items-center justify-between justify-self-stretch overflow-hidden rounded-full border border-[var(--line)] [&_button]:inline-flex [&_button]:size-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--ink)]! [&_button]:[font:inherit]! [&_button]:hover:bg-[var(--cream-2,#f3ebda)] [&_span]:min-w-7 [&_span]:flex-1 [&_span]:text-center [&_span]:text-[0.78rem] [&_span]:font-semibold [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-35";
+
+/** "Only 6 available" under a line whose quantity has reached the stock in hand. */
+export const cartQtyLimit =
+  "col-span-2 m-0 text-[0.75rem] leading-snug text-[var(--copper-deep,#6d3428)]";
 
 export const cartRowRemove =
   "mt-1 ml-3 cursor-pointer justify-self-start border-0 bg-transparent p-0 text-[0.78rem] text-[rgb(33_33_33/0.55)] underline [font:inherit] hover:text-[var(--ink,#1a1512)]";

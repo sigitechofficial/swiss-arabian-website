@@ -11,11 +11,14 @@ export class ApiClientError extends Error {
   details?: unknown;
   context?: Record<string, unknown>;
   requestId?: string;
+  /** The response's `data` on a failure: the facts behind it (e.g. how many are in stock). */
+  data?: unknown;
 
   constructor(
     status: number,
     body?: ApiErrorBody | string,
     requestId?: string,
+    data?: unknown,
   ) {
     const message =
       typeof body === "string"
@@ -25,6 +28,7 @@ export class ApiClientError extends Error {
     this.name = "ApiClientError";
     this.status = status;
     this.requestId = requestId;
+    this.data = data ?? undefined;
     if (typeof body === "object" && body) {
       this.code = body.code;
       this.details = body.details;
