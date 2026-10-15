@@ -6,12 +6,13 @@
 
 export const accountTabs = "border-b border-[var(--line)] bg-[var(--cream,#faf6ee)]";
 
-/** Nine sections do not fit below ~1100px: the row scrolls, without a scrollbar. */
+/** Nine sections do not fit below ~1200px: the row scrolls, without a scrollbar. The padding leaves room for the focus ring. */
 export const accountTabsList =
-  "flex gap-7 overflow-x-auto [scrollbar-width:none] max-[599px]:gap-5 [&::-webkit-scrollbar]:hidden";
+  "flex items-center gap-0.5 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
+/** A pill per section, icon first. The current one is filled copper, like the primary buttons. */
 export const accountTab =
-  "relative shrink-0 py-4 text-[0.78rem] whitespace-nowrap text-[var(--ink-2,#5b5148)] no-underline transition-colors duration-[var(--dur,0.4s)] ease-[var(--ease,ease)] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[var(--copper,#8c4435)] after:opacity-0 after:content-[''] hover:text-[var(--ink,#241f1b)] aria-[current=page]:font-semibold aria-[current=page]:text-[var(--ink,#241f1b)] aria-[current=page]:after:opacity-100";
+  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-[11px] text-[0.75rem] whitespace-nowrap text-[var(--ink-2,#5b5148)] no-underline transition-colors duration-200 hover:bg-[rgb(140_68_53/0.08)] hover:text-[var(--ink,#241f1b)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--copper,#8c4435)] aria-[current=page]:bg-[var(--copper,#8c4435)] aria-[current=page]:px-3.5 aria-[current=page]:font-semibold aria-[current=page]:text-white aria-[current=page]:shadow-[0_4px_12px_rgba(140,68,53,0.22)] [&_svg]:shrink-0 [&_svg]:text-[var(--copper,#8c4435)] aria-[current=page]:[&_svg]:text-white";
 
 export const accountCrumbs = "pt-[clamp(1.25rem,3vh,2rem)]";
 
