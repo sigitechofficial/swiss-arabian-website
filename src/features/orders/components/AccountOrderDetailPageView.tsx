@@ -386,8 +386,11 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                             line.variantName.trim().toLowerCase() !== "default title"
                               ? line.variantName
                               : null,
+                            line.isGift ? "Free gift" : null,
                             `Qty ${quantity}`,
-                            quantity > 1 ? `${formatMoney(Number(line.unitPrice), lineCurrency)} each` : null,
+                            quantity > 1 && !line.isGift
+                              ? `${formatMoney(Number(line.unitPrice), lineCurrency)} each`
+                              : null,
                             line.sku,
                           ]
                             .filter(Boolean)
@@ -399,7 +402,9 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                           className={orderLineMeta}
                         />
                       </div>
-                      <p className={orderLinePrice}>{formatMoney(Number(line.lineTotal), lineCurrency)}</p>
+                      <p className={orderLinePrice}>
+                        {line.isGift ? "Free" : formatMoney(Number(line.lineTotal), lineCurrency)}
+                      </p>
                     </li>
                   );
                 })}
