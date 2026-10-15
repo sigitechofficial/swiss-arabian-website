@@ -11,7 +11,6 @@ import {
   pdpChips,
   pdpDot,
   pdpFormat,
-  pdpInstallments,
   pdpName,
   pdpPanel,
   pdpPromise,
@@ -27,6 +26,7 @@ import { familyChips, pyramidNoteChips } from "../../utils/pdpMetafields";
 import { reviewStarsLabel } from "../../utils/pdpReviews";
 import { PdpScentFamily } from "../PdpScentFamily";
 import { PdpBuyBar } from "./PdpBuyBar";
+import { PdpInstalments } from "./PdpInstalments";
 
 type PdpBuyBoxProps = {
   product: CatalogProduct;
@@ -109,11 +109,8 @@ export function PdpBuyBox({
       <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">
         {formatMoney(product.price, product.currency)}
       </p>
-      {product.price != null ? (
-        <p className={pdpInstallments}>
-          or 4 interest-free payments of <strong>{formatMoney(product.price / 4, product.currency)}</strong> with
-          Tabby or Tamara.
-        </p>
+      {product.price != null && product.price > 0 ? (
+        <PdpInstalments price={product.price} currency={product.currency} />
       ) : null}
 
       <EarnPreviewNote preview={earnPreview.preview} />

@@ -80,8 +80,6 @@ export const pdpChip =
 
 export const pdpDot = "size-[9px] flex-none rounded-full";
 
-export const pdpInstallments = "m-0 text-[0.8125rem] text-[#6f6152] [&_strong]:text-[#2a201a]";
-
 export const pdpPromises = "m-0 list-none p-0";
 
 export const pdpPromise =
@@ -260,3 +258,96 @@ export const videoBtn =
 export const videoClose = `${videoBtn} top-1.5 right-1.5`;
 
 export const videoExpand = `${videoBtn} bottom-1.5 left-1.5`;
+
+/* ── Pay-in-4 boxes (Tabby, Tamara) and their dialog ───────────────────────── */
+
+/** One card: the offer and its four-step schedule on top, a button per provider underneath. */
+export const pdpPay =
+  "overflow-hidden rounded-[14px] border border-[var(--line,#d9ccb4)] bg-white";
+
+export const pdpPayHead = "flex flex-col gap-4 px-[18px] pt-4 pb-[18px] max-[380px]:px-3.5";
+
+export const pdpPayTop = "flex items-start justify-between gap-3";
+
+export const pdpPayEyebrow =
+  "m-0 text-[0.66rem] leading-none font-semibold tracking-[0.18em] text-[var(--copper,#8c4435)] uppercase";
+
+export const pdpPayOffer =
+  "m-0 mt-2 text-[0.875rem] leading-[1.3] text-[#6f6152] [&_strong]:text-[1.0625rem] [&_strong]:font-semibold [&_strong]:text-[#2a201a]";
+
+export const pdpPayBadge =
+  "shrink-0 rounded-full bg-[rgb(140_68_53/0.09)] px-2.5 py-[5px] text-[0.66rem] leading-none font-semibold tracking-[0.04em] whitespace-nowrap text-[var(--copper-deep,#6d3428)]";
+
+/** Four steps on a hairline: the ring fills a quarter at a time, today's step is in ink. */
+export const pdpPayTrack = "m-0 grid list-none grid-cols-4 p-0";
+
+export const pdpPayTrackStep =
+  "relative flex flex-col items-start gap-2 text-[0.7rem] leading-none whitespace-nowrap text-[#6f6152] after:absolute after:start-[26px] after:end-1.5 after:top-[10px] after:h-px after:bg-[var(--line,#d9ccb4)] last:after:hidden data-[now=true]:font-semibold data-[now=true]:text-[#2a201a] max-[380px]:text-[0.64rem]";
+
+export const pdpPayTrackRing = "size-5 rounded-full";
+
+export const pdpPayFoot =
+  "grid grid-cols-2 border-t border-[var(--line,#d9ccb4)] bg-[#fbf7f0] max-[380px]:grid-cols-1";
+
+/** One provider: its mark, then the way into its dialog. */
+export const pdpPayBtn =
+  "group/pay flex cursor-pointer items-center justify-between gap-2 border-0 bg-transparent px-[18px] py-3 transition-colors duration-200 hover:bg-[rgb(140_68_53/0.07)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--copper,#8c4435)] max-[380px]:px-3.5 [&+&]:border-s [&+&]:border-[var(--line,#d9ccb4)] max-[380px]:[&+&]:border-s-0 max-[380px]:[&+&]:border-t";
+
+export const pdpPayBtnMore =
+  "inline-flex items-center gap-0.5 text-[0.78rem] leading-none font-medium whitespace-nowrap text-[var(--copper,#8c4435)] underline-offset-[3px] group-hover/pay:text-[var(--copper-deep,#6d3428)] group-hover/pay:underline [&_svg]:transition-transform [&_svg]:duration-200 group-hover/pay:[&_svg]:translate-x-0.5 rtl:[&_svg]:rotate-180";
+
+const pdpPayMark =
+  "inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2.5 text-[0.86rem] leading-none font-extrabold tracking-[-0.02em] lowercase select-none";
+
+export const pdpPayMarkTabby = `${pdpPayMark} bg-[#3bffc1] text-[#161616]`;
+
+export const pdpPayMarkTamara = `${pdpPayMark} bg-[linear-gradient(100deg,#f8c7a1_0%,#f5a9c6_38%,#b9a9f3_70%,#9fd9f6_100%)] text-[#161616]`;
+
+export const pdpPayDialog =
+  "relative max-h-[min(88vh,680px)] w-[min(460px,100%)] overflow-auto rounded-[18px] bg-[#fffdf8] px-6 pt-7 pb-6 text-[var(--ink,#212121)] shadow-[0_24px_60px_rgba(24,20,17,0.22)] max-[599px]:px-5";
+
+export const pdpPayClose =
+  "absolute end-3.5 top-3.5 grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-[#2a201a] transition-colors hover:bg-[rgb(42_32_26/0.07)]";
+
+export const pdpPayTitle =
+  "m-0 mt-3 font-[family-name:var(--font-display)] text-[1.35rem] leading-[1.15] font-normal tracking-[-0.01em] text-[#2a201a]";
+
+export const pdpPayLede = "m-0 mt-2 text-[0.86rem] leading-[1.55] text-[#6f6152] [&_strong]:font-semibold [&_strong]:text-[#2a201a]";
+
+/** The four payments, each with a quarter-by-quarter filling ring. */
+export const pdpPayPlan =
+  "m-0 mt-5 grid list-none grid-cols-4 gap-2 rounded-[10px] border border-[var(--line,#d9ccb4)] bg-white p-3.5 max-[420px]:grid-cols-2";
+
+export const pdpPayStep = "flex flex-col items-center gap-1.5 text-center";
+
+export const pdpPayRing = "size-9 rounded-full";
+
+export const pdpPayAmount = "m-0 text-[0.8rem] font-semibold whitespace-nowrap text-[#2a201a]";
+
+export const pdpPayWhen = "m-0 text-[0.7rem] text-[#6f6152]";
+
+export const pdpPayHeading =
+  "m-0 mt-6 text-[0.7rem] font-semibold tracking-[0.14em] text-[#2a201a] uppercase";
+
+export const pdpPaySteps =
+  "m-0 mt-3 flex list-none flex-col gap-2.5 p-0 text-[0.84rem] leading-[1.5] text-[#6f6152] [counter-reset:pay] [&_li]:flex [&_li]:items-start [&_li]:gap-3 [&_li]:[counter-increment:pay] [&_li]:before:mt-px [&_li]:before:grid [&_li]:before:size-5 [&_li]:before:shrink-0 [&_li]:before:place-items-center [&_li]:before:rounded-full [&_li]:before:bg-[rgb(140_68_53/0.1)] [&_li]:before:text-[0.68rem] [&_li]:before:font-semibold [&_li]:before:text-[var(--copper,#8c4435)] [&_li]:before:content-[counter(pay)]";
+
+export const pdpPayNote = "m-0 mt-5 text-[0.74rem] leading-[1.55] text-[rgb(42_32_26/0.55)]";
+
+export const pdpPaySoon =
+  "m-0 mt-4 rounded-[8px] bg-[rgb(140_68_53/0.08)] px-3.5 py-2.5 text-[0.78rem] leading-[1.5] text-[var(--copper-deep,#6d3428)]";
+
+/** Tabby's own pop-up page, framed. The card only supplies the corners, the close button and the height. */
+export const pdpPayFrameDialog =
+  "relative flex h-[min(88vh,720px)] w-[min(460px,100%)] flex-col overflow-hidden rounded-[18px] bg-[#f2f2f0] shadow-[0_24px_60px_rgba(24,20,17,0.22)]";
+
+export const pdpPayFrame = "min-h-0 w-full flex-1 border-0";
+
+export const pdpPayFrameClose =
+  "absolute end-3 top-3 z-[1] grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-white text-[#161616] shadow-[0_2px_10px_rgba(24,20,17,0.14)] transition-colors hover:bg-[#f2f2f0]";
+
+export const pdpPayFrameSoon =
+  "m-0 shrink-0 border-t border-[rgb(24_20_17/0.08)] bg-white px-5 py-3 text-center text-[0.78rem] leading-[1.5] text-[var(--copper-deep,#6d3428)]";
+
+export const pdpPayDone =
+  "mt-5 inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] text-[0.85rem] font-semibold text-white transition-colors [font:inherit] hover:bg-[var(--copper-deep,#6d3428)]";
