@@ -6,12 +6,13 @@
 
 export const accountTabs = "border-b border-[var(--line)] bg-[var(--cream,#faf6ee)]";
 
-/** Nine sections do not fit below ~1100px: the row scrolls, without a scrollbar. */
+/** Nine sections do not fit below ~1200px: the row scrolls, without a scrollbar. The padding leaves room for the focus ring. */
 export const accountTabsList =
-  "flex gap-7 overflow-x-auto [scrollbar-width:none] max-[599px]:gap-5 [&::-webkit-scrollbar]:hidden";
+  "flex items-center gap-0.5 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
+/** A pill per section, icon first. The current one is filled copper, like the primary buttons. */
 export const accountTab =
-  "relative shrink-0 py-4 text-[0.78rem] whitespace-nowrap text-[var(--ink-2,#5b5148)] no-underline transition-colors duration-[var(--dur,0.4s)] ease-[var(--ease,ease)] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[var(--copper,#8c4435)] after:opacity-0 after:content-[''] hover:text-[var(--ink,#241f1b)] aria-[current=page]:font-semibold aria-[current=page]:text-[var(--ink,#241f1b)] aria-[current=page]:after:opacity-100";
+  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-[11px] text-[0.75rem] whitespace-nowrap text-[var(--ink-2,#5b5148)] no-underline transition-colors duration-200 hover:bg-[rgb(140_68_53/0.08)] hover:text-[var(--ink,#241f1b)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--copper,#8c4435)] aria-[current=page]:bg-[var(--copper,#8c4435)] aria-[current=page]:px-3.5 aria-[current=page]:font-semibold aria-[current=page]:text-white aria-[current=page]:shadow-[0_4px_12px_rgba(140,68,53,0.22)] [&_svg]:shrink-0 [&_svg]:text-[var(--copper,#8c4435)] aria-[current=page]:[&_svg]:text-white";
 
 export const accountCrumbs = "pt-[clamp(1.25rem,3vh,2rem)]";
 
@@ -90,3 +91,104 @@ export const accountHelpLink =
 
 export const accountHelpNote =
   "m-0 border-t border-[var(--line)] bg-[var(--cream,#faf6ee)] px-6 py-4 text-[0.74rem] leading-[1.6] text-[var(--ink-2,#5b5148)] max-[599px]:px-5";
+
+/* ── Order detail and tracking ─────────────────────────────────────────────── */
+
+export const accountPrimaryCta =
+  "inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[var(--copper,#8c4435)] px-7 text-[0.85rem] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[var(--copper-deep,#6d3428)]";
+
+export const orderHeadMeta = "m-0 mt-3 flex flex-wrap items-center gap-x-3 gap-y-2";
+
+/** A short notice above the panels: cancelled, needs help, could not cancel. */
+export const orderNotice =
+  "m-0 rounded-[var(--radius-lg,4px)] border px-5 py-3.5 text-[0.82rem] leading-[1.55]";
+
+export const orderNoticeTone = {
+  success: "border-[#b7dfc4] bg-[#eef8f1] text-[#1a7338]",
+  info: "border-[var(--line)] bg-white text-[var(--ink,#241f1b)]",
+  error: "border-[#e3b5a8] bg-[#fbefeb] text-[#8c3a2b]",
+} as const;
+
+export const orderCancel =
+  "flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-lg,4px)] border border-[#e7d3a8] bg-[#f7efdd] px-5 py-4 text-[#6d5320]";
+
+export const orderCancelBtn =
+  "inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[#c9a45c] bg-white px-5 text-[0.78rem] font-semibold text-[#6d5320] transition-colors [font:inherit] hover:bg-[#fbf5e8] disabled:opacity-60";
+
+export const orderCancelConfirm =
+  "inline-flex h-10 cursor-pointer items-center justify-center rounded-full border-0 bg-[#8c3a2b] px-5 text-[0.78rem] font-semibold text-white transition-opacity [font:inherit] disabled:opacity-60";
+
+/** Progress: five numbered stops joined by a hairline that fills in copper. */
+export const orderSteps = "m-0 flex list-none items-start p-0 px-6 pt-6 pb-5 max-[599px]:px-3";
+
+export const orderStep = "flex min-w-0 flex-1 flex-col items-center gap-2.5 text-center";
+
+export const orderStepRail = "flex w-full items-center";
+
+export const orderStepLine = "h-px flex-1 bg-[var(--line)] data-[on=true]:bg-[var(--copper,#8c4435)] data-[edge=true]:opacity-0";
+
+export const orderStepDot =
+  "grid size-8 shrink-0 place-items-center rounded-full border border-[var(--line)] bg-white text-[0.72rem] font-semibold text-[rgb(33_33_33/0.45)] data-[state=done]:border-[var(--copper,#8c4435)] data-[state=done]:text-[var(--copper,#8c4435)] data-[state=current]:border-[var(--copper,#8c4435)] data-[state=current]:bg-[var(--copper,#8c4435)] data-[state=current]:text-white";
+
+export const orderStepLabel =
+  "text-[0.72rem] leading-tight text-[rgb(33_33_33/0.5)] data-[state=done]:text-[var(--ink,#241f1b)] data-[state=current]:font-semibold data-[state=current]:text-[var(--copper,#8c4435)]";
+
+/** Two facts under the stepper, split by a hairline. */
+export const orderFacts =
+  "grid grid-cols-2 gap-px border-t border-[var(--line)] bg-[var(--line)] max-[599px]:grid-cols-1";
+
+export const orderFact = "bg-white px-6 py-4 max-[599px]:px-5";
+
+export const orderFactLabel =
+  "m-0 text-[0.66rem] font-semibold tracking-[0.12em] text-[rgb(33_33_33/0.5)] uppercase";
+
+export const orderFactValue = "m-0 mt-1.5 text-[0.9rem] font-semibold text-[var(--ink,#241f1b)]";
+
+export const orderFactNote = "m-0 mt-1.5 text-[0.78rem] leading-[1.55] text-[var(--ink-2,#5b5148)]";
+
+export const orderLines = "m-0 list-none p-0 [&_li+li]:border-t [&_li+li]:border-[var(--line)]";
+
+export const orderLine = "flex items-center gap-4 px-6 py-4 max-[599px]:px-5";
+
+export const orderLineThumb =
+  "grid size-14 shrink-0 place-items-center overflow-hidden rounded-[var(--radius-lg,4px)] bg-[var(--cream-2,#f3ebda)] text-[var(--copper,#8c4435)] [&_img]:size-full [&_img]:object-contain";
+
+export const orderLineName = "m-0 text-[0.86rem] leading-snug font-semibold text-[var(--ink,#241f1b)]";
+
+export const orderLineMeta = "m-0 mt-1 text-[0.76rem] leading-[1.5] text-[var(--ink-2,#5b5148)]";
+
+export const orderLinePrice = "m-0 shrink-0 text-[0.88rem] font-semibold whitespace-nowrap text-[var(--ink,#241f1b)]";
+
+export const orderTotals =
+  "m-0 flex flex-col gap-2.5 text-[0.82rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-4 [&_dt]:text-[var(--ink-2,#5b5148)] [&_dd]:m-0 [&_dd]:font-medium [&_dd]:text-[var(--ink,#241f1b)]";
+
+export const orderTotalRow =
+  "mt-1 border-t border-[var(--line)] pt-3.5 text-[0.95rem] [&_dt]:font-semibold! [&_dt]:text-[var(--ink,#241f1b)]! [&_dd]:font-semibold!";
+
+export const orderSave = "text-[var(--copper,#8c4435)]!";
+
+export const orderDetailBlock = "[&+&]:mt-4 [&+&]:border-t [&+&]:border-[var(--line)] [&+&]:pt-4";
+
+export const orderDetailText =
+  "m-0 mt-1.5 text-[0.82rem] leading-[1.6] text-[var(--ink-2,#5b5148)] not-italic [&_b]:block [&_b]:font-semibold [&_b]:text-[var(--ink,#241f1b)]";
+
+export const orderShipment = "px-6 py-5 max-[599px]:px-5 [&+&]:border-t [&+&]:border-[var(--line)]";
+
+export const orderShipmentCta =
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-[rgb(33_33_33/0.22)] px-4 text-[0.74rem] font-semibold text-[var(--ink,#241f1b)] no-underline transition-colors hover:border-[var(--ink,#241f1b)]";
+
+/** Events: a dot per entry on a hairline; the newest dot is copper. */
+export const orderEvents = "m-0 flex list-none flex-col p-0";
+
+export const orderEvent = "flex gap-4 pb-4 last:pb-0";
+
+export const orderEventRail = "flex w-2 shrink-0 flex-col items-center";
+
+export const orderEventDot =
+  "mt-1.5 size-2 shrink-0 rounded-full bg-[var(--line)] data-[latest=true]:bg-[var(--copper,#8c4435)]";
+
+export const orderEventLine = "mt-1 w-px flex-1 bg-[var(--line)]";
+
+export const orderEventTitle = "m-0 text-[0.82rem] font-semibold text-[var(--ink,#241f1b)] [&_span]:font-normal [&_span]:text-[var(--ink-2,#5b5148)]";
+
+export const orderEventTime = "m-0 mt-0.5 text-[0.72rem] text-[rgb(33_33_33/0.5)]";

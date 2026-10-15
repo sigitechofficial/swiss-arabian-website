@@ -90,6 +90,9 @@ export const env = {
       readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
     paymob: readPublic(process.env.NEXT_PUBLIC_ENABLE_PAYMOB) === "true",
+    /** Pay-in-4 providers that can actually be chosen at checkout. Off: shown as coming soon. */
+    tabby: readPublic(process.env.NEXT_PUBLIC_ENABLE_TABBY) === "true",
+    tamara: readPublic(process.env.NEXT_PUBLIC_ENABLE_TAMARA) === "true",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
@@ -98,6 +101,14 @@ export const env = {
     process.env.NODE_ENV === "development"
       ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
       : "",
+  /**
+   * Tabby merchant details for their "Learn more" pop-up. Both are safe in the browser.
+   * Empty until the merchant account exists: the pop-up then shows Tabby's standard plans.
+   */
+  tabby: {
+    publicKey: readPublic(process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY),
+    merchantCode: readPublic(process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE),
+  },
   googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
   googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
   catalogMediaBaseUrl: readPublic(

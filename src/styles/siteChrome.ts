@@ -287,13 +287,14 @@ export const footerLegal =
 export const footerPayments =
   "m-0 flex list-none flex-wrap items-center justify-center gap-[0.45rem] p-0";
 
+/** No background here: each mark sets its own, so a brand colour is never overridden by white. */
 export const payMark =
-  "inline-flex h-[26px] min-w-[42px] items-center justify-center rounded px-[0.35rem] bg-white text-[0.58rem] leading-none font-extrabold tracking-[0.04em] shadow-[0_0_0_1px_rgba(60,40,25,0.08)] [&_svg]:block [&_svg]:h-4 [&_svg]:w-10";
+  "inline-flex h-[26px] min-w-[42px] items-center justify-center rounded px-[0.35rem] text-[0.58rem] leading-none font-extrabold tracking-[0.04em] shadow-[0_0_0_1px_rgba(60,40,25,0.08)] [&_svg]:block [&_svg]:h-4 [&_svg]:w-10";
 
 export const payMarkAmex = "min-w-12 bg-[#006fcf] text-white";
-export const payMarkApple = "px-[0.2rem] text-[#111]";
-export const payMarkGpay = "min-w-14 px-1 [&_svg]:w-[52px]";
-export const payMarkMc = "min-w-10 p-0 [&_svg]:h-5 [&_svg]:w-[34px]";
+export const payMarkApple = "bg-white px-[0.2rem] text-[#111]";
+export const payMarkGpay = "min-w-14 bg-white px-1 [&_svg]:w-[52px]";
+export const payMarkMc = "min-w-10 bg-white p-0 [&_svg]:h-5 [&_svg]:w-[34px]";
 export const payMarkVisa = "bg-[#1a1f71] text-white italic tracking-[0.12em]";
 
 /** Desktop layouts for /lp navbar variants. Live storefront uses minimal, which is on the shell itself. */

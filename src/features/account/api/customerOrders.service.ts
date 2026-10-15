@@ -89,6 +89,9 @@ export interface CustomerOrderDetailResponse {
       imageUrl?: string | null;
       /** Frozen at purchase. Null on orders placed before line snapshots. */
       promotionSnapshot?: OrderLinePromotionSnapshot | null;
+      /** A free gift (gift with purchase). Older backends omit it. */
+      isGift?: boolean;
+      giftOfferLabel?: string | null;
     }[];
     addresses: {
       addressType: string;
