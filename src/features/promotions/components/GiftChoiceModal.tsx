@@ -88,7 +88,7 @@ export function GiftChoiceModal({
               <li key={gift.sku} style={{ animationDelay: `${80 + index * 70}ms` }}>
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image} alt={title} width={64} height={64} />
+                  <img src={image} alt={title} width={128} height={128} />
                 ) : (
                   <span className={giftChoicePh} aria-hidden="true" />
                 )}

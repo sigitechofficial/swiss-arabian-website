@@ -340,7 +340,7 @@ export const giftChoiceBackdrop =
   "absolute inset-0 cursor-pointer border-0 bg-[rgba(24,20,17,0.46)]";
 
 export const giftChoiceDialog =
-  "relative max-h-[min(82vh,640px)] w-[min(440px,100%)] overflow-auto rounded-[18px] bg-[#fffdf8] px-[22px] pt-7 pb-5 text-[var(--ink,#212121)] shadow-[0_24px_60px_rgba(24,20,17,0.22)] [&_h2]:m-0 [&_h2]:text-[1.65rem] [&_h2]:leading-[1.1]";
+  "relative max-h-[min(86vh,680px)] w-[min(720px,100%)] overflow-auto rounded-[18px] bg-[#fffdf8] px-[22px] pt-7 pb-5 text-[var(--ink,#212121)] shadow-[0_24px_60px_rgba(24,20,17,0.22)] [&_h2]:m-0 [&_h2]:text-[1.65rem] [&_h2]:leading-[1.1]";
 
 export const giftChoiceReveal =
   "animate-gift-choice-rise motion-reduce:animate-none";
@@ -350,13 +350,14 @@ export const giftChoiceKicker =
 
 export const giftChoiceLede = "mt-2 mb-4 text-[0.92rem] text-[rgba(33,33,33,0.72)]";
 
+/** The gifts side by side: one card each, image on top, Select at the bottom. More than fit scroll sideways. */
 export const giftChoiceList =
-  "m-0 flex list-none flex-col gap-2.5 p-0 [&_button]:cursor-pointer [&_button]:rounded-full [&_button]:border-0 [&_button]:bg-[#8c4435]! [&_button]:px-[0.85rem] [&_button]:py-2 [&_button]:text-[0.78rem] [&_button]:font-[650]! [&_button]:text-white! [&_button]:[font:inherit]! [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-55 [&_img]:size-16 [&_img]:rounded-[10px] [&_img]:bg-[#f4ead8] [&_img]:object-contain [&_li]:grid [&_li]:animate-gift-choice-card [&_li]:grid-cols-[64px_1fr_auto] [&_li]:items-center [&_li]:gap-3 [&_li]:rounded-[14px] [&_li]:border [&_li]:border-[rgba(33,33,33,0.08)] [&_li]:bg-white [&_li]:p-2.5 motion-reduce:[&_li]:animate-none";
+  "m-0 grid list-none auto-cols-[minmax(160px,1fr)] grid-flow-col gap-3 overflow-x-auto overscroll-x-contain p-0 pb-1.5 [scrollbar-width:thin] snap-x snap-mandatory max-[599px]:auto-cols-[68%] [&_button]:mt-auto [&_button]:w-full [&_button]:cursor-pointer [&_button]:rounded-full [&_button]:border-0 [&_button]:bg-[#8c4435]! [&_button]:px-[0.85rem] [&_button]:py-2.5 [&_button]:text-[0.8rem] [&_button]:font-[650]! [&_button]:text-white! [&_button]:[font:inherit]! [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-55 [&_img]:aspect-square [&_img]:w-full [&_img]:max-w-[128px] [&_img]:rounded-[12px] [&_img]:object-contain [&_li]:flex [&_li]:animate-gift-choice-card [&_li]:snap-start [&_li]:flex-col [&_li]:items-center [&_li]:gap-3 [&_li]:rounded-[14px] [&_li]:border [&_li]:border-[rgba(33,33,33,0.08)] [&_li]:bg-white [&_li]:p-3.5 [&_li]:text-center motion-reduce:[&_li]:animate-none";
 
-export const giftChoicePh = "block size-16 rounded-[10px] bg-[#f4ead8]";
+export const giftChoicePh = "block aspect-square w-full max-w-[128px] rounded-[12px] bg-[rgba(33,33,33,0.04)]";
 
 export const giftChoiceName =
-  "flex flex-col gap-0.5 text-[0.95rem] font-[650] [&_small]:text-[0.75rem] [&_small]:font-medium [&_small]:text-[rgba(33,33,33,0.55)]";
+  "flex flex-col items-center gap-1 text-[0.88rem] leading-[1.3] font-[650] [&_small]:text-[0.72rem] [&_small]:font-medium [&_small]:text-[rgba(33,33,33,0.55)]";
 
 export const giftChoiceLater =
   "mx-auto mt-4 block cursor-pointer border-0 bg-transparent text-[0.85rem] text-[rgba(33,33,33,0.66)] underline [font:inherit]!";
