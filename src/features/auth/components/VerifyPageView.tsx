@@ -31,6 +31,8 @@ export function VerifyPageView() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const isLoginCode = searchParams.get("mode") === "login-code";
+  const requested = searchParams.get("returnTo") || "";
+  const returnTo = requested.startsWith("/") ? requested : "/account";
   const [resending, setResending] = useState(false);
 
   const form = useForm<VerifyFormValues>({
@@ -56,12 +58,20 @@ export function VerifyPageView() {
         const result = await confirmEmailLoginCode({ email, code: values.code });
         applyAuthResult(result);
         toast("Signed in.", "success");
-        router.push("/account");
+        router.push(returnTo);
         return;
       }
-      await confirmEmailVerification(email, values.code);
+      // A valid code also signs in, so nobody types the password twice.
+      const result = await confirmEmailVerification(email, values.code, { signIn: true });
+      if (result.token && result.customer) {
+        applyAuthResult({ token: result.token, customer: result.customer });
+        toast("Email verified. You’re signed in.", "success");
+        router.push(returnTo);
+        return;
+      }
+      // A backend that only verifies: finish with a normal sign-in.
       toast("Email verified. Please sign in.", "success");
-      router.push("/login");
+      router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     } catch (error) {
       toastApiError(error);
     }
