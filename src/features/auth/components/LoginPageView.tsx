@@ -95,7 +95,11 @@ export function LoginPageView() {
         password: values.password,
       });
       if (isEmailVerificationRequired(result)) {
-        router.push(`/verify?email=${encodeURIComponent(result.email)}`);
+        const query = new URLSearchParams({
+          email: result.email,
+          returnTo: returnTo.startsWith("/") ? returnTo : "/account",
+        });
+        router.push(`/verify?${query.toString()}`);
         return;
       }
       if (isAuthResult(result)) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toastApiError } from "@/lib/api/toastApiError";
@@ -13,12 +13,16 @@ import { useUiStore } from "@/stores/useUiStore";
 import { registerCustomer, splitFullName } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
 import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
+import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
 import { AuthShell } from "./AuthShell";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
 
 export function RegisterPageView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("returnTo") || "";
+  const returnTo = requested.startsWith("/") ? requested : "/account";
   const copy = useShopCopy();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -44,9 +48,19 @@ export function RegisterPageView() {
         password: values.password,
         firstName,
         lastName,
+        // Without the code screen there is nowhere to finish, so only ask when it is on.
+        verifyEmailFirst: env.flags.verification,
       });
-      applyAuthResult(result);
-      router.push("/account");
+      if (isEmailVerificationRequired(result)) {
+        // The account exists; the emailed code finishes the sign-up and signs in.
+        const query = new URLSearchParams({ email: result.email, returnTo });
+        router.push(`/verify?${query.toString()}`);
+        return;
+      }
+      if (isAuthResult(result)) {
+        applyAuthResult(result);
+        router.push(returnTo);
+      }
     } catch (error) {
       toastApiError(error);
     }

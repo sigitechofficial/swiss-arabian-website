@@ -40,6 +40,7 @@ import {
   cartRow,
   cartRowActions,
   cartRowBody,
+  cartQtyLimit,
   cartRowMedia,
   cartRowMeta,
   cartRowName,
@@ -61,6 +62,7 @@ import {
   drawerLineTagStrong,
 } from "@/styles/cartChrome";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
+import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
 import { useCartMutations } from "../hooks/useCartMutations";
 import {
   addItemOptimistic,
@@ -302,6 +304,7 @@ export function CartPageView() {
                           <button
                             type="button"
                             aria-label="Increase"
+                            disabled={atStockLimit(line)}
                             onClick={() => {
                               const next = line.quantity + 1;
                               if (line.remote || line.cartItemId) {
@@ -328,6 +331,11 @@ export function CartPageView() {
                           Remove
                         </button>
                       </div>
+                      {atStockLimit(line) && line.maxQuantity != null ? (
+                        <p className={cartQtyLimit} role="status">
+                          {stockLimitNote(line.maxQuantity)}
+                        </p>
+                      ) : null}
                     </div>
                   </article>
                     );

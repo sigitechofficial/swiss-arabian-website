@@ -23,6 +23,8 @@ export type CartLine = {
   unitPrice: number;
   currency: string;
   quantity: number;
+  /** Most this line can hold: what was in stock at its last add or change. Unknown: no limit shown. */
+  maxQuantity?: number;
   sizeLabel?: string;
   notes?: string[];
   isSellable?: boolean;
@@ -162,6 +164,7 @@ export const useCartStore = create<CartState>()(
             const local = vid ? localByVariant.get(vid) : undefined;
             const unitPrice = Number(item.unitPriceEstimate ?? "0");
             const quantity = parseInt(item.quantity, 10) || 1;
+            const available = Number.parseInt(item.availableQuantity ?? "", 10);
 
             return {
               cartItemId: item.cartItemId,
@@ -174,6 +177,7 @@ export const useCartStore = create<CartState>()(
               unitPrice,
               currency: item.currencyCode ?? cart.currency ?? "AED",
               quantity,
+              maxQuantity: Number.isFinite(available) && available > 0 ? available : undefined,
               sizeLabel: item.variantName ?? local?.sizeLabel,
               notes: local?.notes,
               isSellable: item.sellabilitySummary?.isSellable ?? true,

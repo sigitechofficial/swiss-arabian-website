@@ -16,6 +16,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
+import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
 import { useAddToCart } from "../hooks/useAddToCart";
 import {
   CONFETTI_COLORS,
@@ -62,6 +63,7 @@ import {
   drawerLineTagStrong,
   drawerLinePrice,
   drawerLineQty,
+  cartQtyLimit,
   drawerLineRemove,
   drawerLineTop,
   drawerPanel,
@@ -295,6 +297,7 @@ export function CartSideSheet() {
                             }
                           }}
                           aria-label="Increase quantity"
+                          disabled={atStockLimit(line)}
                         >
                           <Plus size={13} />
                         </button>
@@ -313,6 +316,11 @@ export function CartSideSheet() {
                         Remove
                       </button>
                     </div>
+                    {atStockLimit(line) && line.maxQuantity != null ? (
+                      <p className={cartQtyLimit} role="status">
+                        {stockLimitNote(line.maxQuantity)}
+                      </p>
+                    ) : null}
                   </div>
                 </article>
                 );

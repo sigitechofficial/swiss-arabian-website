@@ -439,7 +439,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                     </span>
                     <span className={ocLineBody}>
                       <span className={ocLineName}>{name}</span>
-                      <span className={ocLineSub}>{[variant, `Qty ${qty}`].filter(Boolean).join(" · ")}</span>
+                      <span className={ocLineSub}>
+                        {[line.isGift ? "Free gift" : null, variant, `Qty ${qty}`].filter(Boolean).join(" · ")}
+                      </span>
                       <HistoricalLineDiscount
                         snapshot={line.promotionSnapshot}
                         currency={line.currencyCode || currency}
@@ -447,7 +449,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                       />
                     </span>
                     <span className={ocLinePrice} dir="ltr">
-                      {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
+                      {line.isGift ? "Free" : formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
                     </span>
                   </li>
                 );
