@@ -8,7 +8,8 @@ import {
   fetchLoyaltyTransactions,
   fetchLoyaltyWallet,
 } from "../api/loyalty.service";
-import { loyaltyKeys } from "../api/loyalty.keys";
+import { loyaltyKeys, LOYALTY_ACTIVITY_PAGE_SIZE } from "../api/loyalty.keys";
+import { coerceLoyaltyActivityPage } from "../types/loyalty";
 
 /** Current Market wallet. The query does not run until that market is known. */
 export function useLoyaltyAccount() {
@@ -32,10 +33,10 @@ export function useLoyaltyAccount() {
     loyaltyKeys.transactions(zoneCode ?? "", currencyCode ?? ""),
     () => {
       if (!market) throw new Error("Rewards market is not ready.");
-      return fetchLoyaltyTransactions(market);
+      return fetchLoyaltyTransactions(market, { limit: LOYALTY_ACTIVITY_PAGE_SIZE, offset: 0 });
     },
     {
-      enabled: canLoad && wallet.isSuccess,
+      enabled: canLoad,
     },
   );
 
@@ -50,5 +51,15 @@ export function useLoyaltyAccount() {
     },
   );
 
-  return { wallet, transactions, tierHistory, zoneCode, currencyCode, bootstrapped, isAuthenticated };
+  return {
+    wallet,
+    transactions,
+    activity: coerceLoyaltyActivityPage(transactions.data),
+    market,
+    tierHistory,
+    zoneCode,
+    currencyCode,
+    bootstrapped,
+    isAuthenticated,
+  };
 }

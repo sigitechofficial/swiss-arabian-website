@@ -1,3 +1,13 @@
+import {
+  readOmnichannelLoyalty,
+  readExternalLoyaltyActivity,
+  readPageInfo,
+  EMPTY_EXTERNAL_PAGE_INFO,
+  type OmnichannelLoyaltyView,
+  type ExternalLoyaltyActivityView,
+  type LoyaltyPageInfoView,
+} from "./omnichannel";
+
 /** Customer rewards facts returned by Backend L1. Display only. */
 
 export type LoyaltyAvailability = "ACTIVE" | "DISABLED";
@@ -26,6 +36,11 @@ export type LoyaltyWalletView = {
   debtLabel: string | null;
   /** Server L5 tier snapshot. Null when the program has no tiers or none were sent. */
   tier: LoyaltyTierView | null;
+  /**
+   * Additive D365 omnichannel read. Never mixed into availablePoints.
+   * Absent when the server omitted the field.
+   */
+  omnichannel?: OmnichannelLoyaltyView | null;
 };
 
 /** Lifecycle word shown next to a row. Server-supplied, never inferred. */
@@ -376,6 +391,7 @@ export function readLoyaltyWallet(raw: unknown): LoyaltyWalletView {
       readText(row, ["debtLabel", "debtMessage", "customerDebtMessage"]) ??
       (readPoints(pointsSource, ["debtPoints", "debt"]) > 0 ? DEFAULT_DEBT_COPY : null),
     tier: readLoyaltyTier(row),
+    omnichannel: readOmnichannelLoyalty(row.omnichannel),
   };
 }
 
@@ -507,6 +523,59 @@ function activityCopy(presentationKey: string, points: number | null): string | 
  * translated here; an unmapped or internal code falls back to neutral copy and
  * is never printed raw.
  */
+export type LoyaltyActivityPageView = {
+  platformActivity: LoyaltyTransactionView[];
+  pageInfo: LoyaltyPageInfoView;
+  externalActivity: ExternalLoyaltyActivityView[];
+  externalPageInfo: LoyaltyPageInfoView;
+  lastTransactionImportSuccessAt: string | null;
+  activityIsFresh: boolean;
+};
+
+export const EMPTY_LOYALTY_ACTIVITY: LoyaltyActivityPageView = {
+  platformActivity: [],
+  pageInfo: EMPTY_EXTERNAL_PAGE_INFO,
+  externalActivity: [],
+  externalPageInfo: EMPTY_EXTERNAL_PAGE_INFO,
+  lastTransactionImportSuccessAt: null,
+  activityIsFresh: true,
+};
+
+export function readLoyaltyActivityPage(raw: unknown): LoyaltyActivityPageView {
+  if (Array.isArray(raw)) {
+    return {
+      ...EMPTY_LOYALTY_ACTIVITY,
+      platformActivity: readLoyaltyTransactions(raw),
+    };
+  }
+  const row = asRecord(raw);
+  if (!row) return { ...EMPTY_LOYALTY_ACTIVITY };
+  const platformSource = Array.isArray(row.platformActivity) ? row.platformActivity : row.items;
+  return {
+    platformActivity: readLoyaltyTransactions(
+      Array.isArray(platformSource) ? { items: platformSource } : { items: [] },
+    ),
+    pageInfo: readPageInfo(row.pageInfo),
+    externalActivity: readExternalLoyaltyActivity(row.externalActivity),
+    externalPageInfo: readPageInfo(row.externalPageInfo),
+    lastTransactionImportSuccessAt:
+      typeof row.lastTransactionImportSuccessAt === "string"
+        ? row.lastTransactionImportSuccessAt
+        : null,
+    activityIsFresh: row.activityIsFresh !== false,
+  };
+}
+
+export function coerceLoyaltyActivityPage(
+  data: LoyaltyActivityPageView | LoyaltyTransactionView[] | undefined,
+): LoyaltyActivityPageView {
+  if (!data) return EMPTY_LOYALTY_ACTIVITY;
+  if (Array.isArray(data)) {
+    return { ...EMPTY_LOYALTY_ACTIVITY, platformActivity: data };
+  }
+  return data;
+}
+
 export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] {
   return transactionList(raw).flatMap((item, index) => {
     const row = asRecord(item);
