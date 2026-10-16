@@ -9,6 +9,8 @@ export type GiftCatalogHit = {
   title: string;
   imageUrl: string | null;
   sku: string | null;
+  price: number | null;
+  currency: string;
 };
 
 /** Exact SKU, then the last token of a source id such as shopify:…:803. */
@@ -18,6 +20,8 @@ export function matchGiftProduct(
     imageUrl?: string | null;
     imageUrls?: string[];
     sku?: string | null;
+    price?: number | null;
+    currency?: string | null;
   }[],
   giftSku: string,
 ): GiftCatalogHit | null {
@@ -29,10 +33,13 @@ export function matchGiftProduct(
       : undefined;
   const product = exact ?? byTail;
   if (!product?.title?.trim()) return null;
+  const price = typeof product.price === "number" && Number.isFinite(product.price) ? product.price : null;
   return {
     title: product.title.trim(),
     imageUrl: product.imageUrl ?? product.imageUrls?.[0] ?? null,
     sku: product.sku ?? null,
+    price,
+    currency: product.currency?.trim() || "AED",
   };
 }
 

@@ -66,7 +66,6 @@ import {
   drawerLineTop,
   drawerPanel,
   drawerPanelFlash,
-  drawerRail,
   drawerTotalRow,
   drawerViewLink,
 } from "@/styles/cartChrome";
@@ -219,13 +218,6 @@ export function CartSideSheet() {
             <X size={18} />
           </button>
         </header>
-
-        {/* Pinned under the header so bundle progress stays in view while the lines scroll. */}
-        {lines.length > 0 ? (
-          <div className={drawerRail}>
-            <PromotionProgressRail surface="drawer" />
-          </div>
-        ) : null}
 
         <div className={drawerBody}>
           {lines.length > 0 ? null : (
@@ -389,12 +381,21 @@ export function CartSideSheet() {
         {/* Nothing to total or check out while the bag is empty. */}
         {lines.length > 0 ? (
           <footer className={drawerFoot}>
+            <PromotionProgressRail surface="drawer" inset={false} />
             <div className={drawerTotalRow}>
               <span>Total</span>
               <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
             </div>
             {quotePending ? null : <LoyaltyDrawerNote />}
-            {quotePending ? null : <EarnPreviewNote preview={earnPreview.preview} />}
+            {quotePending || !earnPreview.preview?.enabled ? null : (
+              <div className="mb-3 flex items-center gap-1.5 font-sans text-[0.8rem] text-[#8a7d72] [&_.loyalty-earn-note]:m-0 [&_.loyalty-earn-note]:font-sans [&_.loyalty-earn-note]:text-[0.8rem] [&_.loyalty-earn-note]:text-[#8a7d72]">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-[#8a7d72]">
+                  <rect x="1.5" y="6" width="11" height="6.5" rx="0.8" fill="none" stroke="currentColor" strokeWidth="1.1" />
+                  <path d="M1.5 6h11M7 6v6.5M3.4 6c0-1.6 1.3-2.7 2.6-1.7.5.4.9 1 .9 1.7M10.6 6c0-1.6-1.3-2.7-2.6-1.7-.5.4-.9 1-.9 1.7" fill="none" stroke="currentColor" strokeWidth="1.1" />
+                </svg>
+                <EarnPreviewNote preview={earnPreview.preview} />
+              </div>
+            )}
             <div className={drawerActions}>
               <LocaleLink className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
                 View bag

@@ -72,10 +72,7 @@ import {
   cartErrorMessage,
 } from "../constants/validationMessages";
 import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, shippingDiscountAmount, useApplicablePromotions, visibleGiftCards } from "@/features/promotions";
-import {
-  quotedCartShipping,
-  quotedCartTotal,
-} from "../utils/insiderCartItem";
+import { quotedCartTotal } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
@@ -168,13 +165,24 @@ export function CartPageView() {
   const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
 
+  const applicable = useApplicablePromotions();
   const quotePending = syncing && totals == null;
-  const shipping =
-    !mounted || quotePending
-      ? 0
-      : quotedCartShipping(subtotal, totals?.shipping);
+  const quotedShip = Number(totals?.shipping ?? 0);
   const discount = totals?.discount ?? 0;
   const shipDiscount = shippingDiscountAmount(promotions);
+  const freeDeliveryUnlocked = (applicable.data?.progress?.marks ?? []).some(
+    (mark) => mark.rewardType === "FREE_SHIPPING" && mark.state === "complete",
+  );
+  const shipping =
+    !mounted || quotePending
+      ? null
+      : quotedShip > 0
+        ? quotedShip
+        : shipDiscount > 0
+          ? shipDiscount
+          : freeDeliveryUnlocked
+            ? 0
+            : null;
   const giftCards = visibleGiftCards(promotions);
   const payable = amountPayableFrom(promotions, [
     totals?.amountPayable != null ? String(totals.amountPayable) : null,
@@ -186,14 +194,15 @@ export function CartPageView() {
           merchandise: subtotal,
           quotedTotal: totals?.total,
           quotedShipping: totals?.shipping,
-          shipping,
+          shipping: quotedShip > 0 ? quotedShip : 0,
         });
-  const extraShipping = totals ? Math.max(0, shipping - totals.shipping) : 0;
+  const extraShipping =
+    totals && quotedShip > 0 && shipping != null ? Math.max(0, shipping - totals.shipping) : 0;
   const amountPayable =
     payable != null && extraShipping > 0 ? payable + extraShipping : payable;
 
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
-  const offers = useApplicablePromotions().data?.offers ?? [];
+  const offers = applicable.data?.offers ?? [];
 
   // Instant: the line lands in the bag now; the API sync runs behind.
   function addFromCart(product: CatalogProduct) {
@@ -240,7 +249,6 @@ export function CartPageView() {
                   <PopperBurstLayer burst={popperBurst} />
                 </div>
                 <div className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}>
-                  <PromotionProgressRail surface="cart" />
                   {bundleLinesFirst(lines, promotions).map((line) => {
                     const bundle = setBundleLineLabel(promotions, line, offers);
                     return (
@@ -327,6 +335,7 @@ export function CartPageView() {
                   {quotePending ? null : (
                     <GiftWithPurchase snapshot={promotions} currency={currency} surface="drawer" />
                   )}
+                  <PromotionProgressRail surface="cart" />
                 </div>
 
                 {missThis.length ? (
@@ -336,10 +345,7 @@ export function CartPageView() {
                     onAdd={(p) => addFromCart(p)}
                   />
                 ) : null}
-                {/* The rail carries the drawer's 22px gutter; pull it flush with the column (left only, so the rail still clips at the right edge). */}
-                <div className="-ml-[22px]">
-                  <PromotionQuickAdd surface="cart" />
-                </div>
+                <PromotionQuickAdd surface="cart" />
               </div>
 
               <aside className={cartSummary} aria-label="Order summary">

@@ -121,6 +121,7 @@ export type PromotionGiftLine = {
   quantity: number;
   name: string | null;
   imageUrl: string | null;
+  tierId?: string | null;
 };
 
 /** Server gift award. Status notices are shown and are not treated as added lines. */
@@ -181,6 +182,10 @@ export type ProgressMark = {
   label: string;
   detail: string;
   state: "complete" | "current" | "next";
+  tierId?: string;
+  threshold?: string;
+  rewardType?: string;
+  amountRemaining?: string;
 };
 
 export type PromotionProgressRail = {
@@ -463,6 +468,7 @@ function readGiftLine(raw: unknown): PromotionGiftLine | null {
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     name: asString(row.name) ?? asString(row.productName),
     imageUrl: asString(row.imageUrl) ?? asString(row.image),
+    tierId: asString(row.tierId),
   };
 }
 
@@ -603,7 +609,15 @@ function readProgressRail(value: unknown): PromotionProgressRail | null {
       const detail = asString(mark?.detail)?.trim() ?? "";
       const state = asString(mark?.state);
       if (!mark || !label || (state !== "complete" && state !== "current" && state !== "next")) return [];
-      return [{ label, detail, state }];
+      return [{
+        label,
+        detail,
+        state,
+        tierId: asString(mark.tierId) ?? undefined,
+        threshold: asString(mark.threshold) ?? undefined,
+        rewardType: asString(mark.rewardType) ?? undefined,
+        amountRemaining: asString(mark.amountRemaining) ?? undefined,
+      }];
     }) : [],
   };
 }

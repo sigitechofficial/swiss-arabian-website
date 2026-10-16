@@ -36,6 +36,12 @@ export type LoyaltyTierNameView = {
   name: string;
 };
 
+/** One step on the membership ladder. Threshold is the server amount. */
+export type LoyaltyTierStepView = {
+  name: string;
+  threshold: number;
+};
+
 /** Server-priced progress toward the next named tier. Never derived here. */
 export type LoyaltyTierView = {
   current: LoyaltyTierNameView | null;
@@ -45,6 +51,8 @@ export type LoyaltyTierView = {
   /** Present only when the server already computed it. */
   progressPercent: number | null;
   qualificationWindowDays: number | null;
+  /** Full ladder when the server sent it. Empty means only current and next are known. */
+  steps: LoyaltyTierStepView[];
 };
 
 export type LoyaltyTierHistoryView = {
@@ -379,6 +387,18 @@ export function readLoyaltyWallet(raw: unknown): LoyaltyWalletView {
   };
 }
 
+function readTierSteps(value: unknown): LoyaltyTierStepView[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const row = asRecord(item);
+    if (!row) return [];
+    const name = readText(row, ["name", "displayName", "label"]);
+    const threshold = readNumber(row.threshold) ?? readMoney(row, ["threshold", "minimumQualifyingSpend"]);
+    if (!name || threshold == null) return [];
+    return [{ name, threshold }];
+  });
+}
+
 function readTierName(value: unknown): LoyaltyTierNameView | null {
   if (typeof value === "string") {
     const name = customerCopy(value);
@@ -445,6 +465,7 @@ export function readLoyaltyTier(raw: unknown): LoyaltyTierView | null {
   const remainingAmount = nextBody ? readMoney(nextBody, ["remainingAmount"]) : null;
   const progressPercent = next ? readProgressPercent(body.progressPercent) : null;
   const qualificationWindowDays = readNumber(body.qualificationWindowDays);
+  const steps = readTierSteps(body.tiers);
 
   if (
     !current &&
@@ -452,7 +473,8 @@ export function readLoyaltyTier(raw: unknown): LoyaltyTierView | null {
     qualifyingSpend == null &&
     remainingAmount == null &&
     progressPercent == null &&
-    qualificationWindowDays == null
+    qualificationWindowDays == null &&
+    steps.length === 0
   ) {
     return null;
   }
@@ -464,6 +486,7 @@ export function readLoyaltyTier(raw: unknown): LoyaltyTierView | null {
     next,
     progressPercent,
     qualificationWindowDays,
+    steps,
   };
 }
 

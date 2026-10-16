@@ -16,7 +16,7 @@ import {
   type LoyaltyTransactionView,
   type LoyaltyWalletView,
 } from "../types/loyalty";
-import { RewardsTierHistory, RewardsTierSection } from "./RewardsTierSection";
+import { MembershipTiers, RewardsTierHistory, RewardsTierSection } from "./RewardsTierSection";
 
 function activityDate(value: string | null): string | null {
   if (!value) return null;
@@ -73,12 +73,7 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
           Worth <span dir="ltr">{formatMoney(wallet.availableValue, currency)}</span>
         </p>
       ) : null}
-      {wallet.tier?.current ? (
-        <div className="mt-5 min-w-0">
-          <p className="break-words text-[16px] font-semibold text-sa-primary">{wallet.tier.current.name}</p>
-          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Current tier</p>
-        </div>
-      ) : null}
+      {wallet.tier?.steps.length ? null : <RewardsTierSection wallet={wallet} />}
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Pending</dt>
@@ -106,7 +101,6 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
           </p>
         </div>
       ) : null}
-      <RewardsTierSection hideCurrentName={Boolean(wallet.tier?.current)} wallet={wallet} />
     </section>
   );
 }
@@ -204,13 +198,16 @@ export function RewardsAccountView() {
     body = historyVisible ? (
       <div className="flex flex-col gap-10">
         {wallet.data.hasServerWallet ? (
-          <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
+          <div className="flex flex-col gap-6">
+            <MembershipTiers wallet={wallet.data} />
+            <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
             <RewardsSummary wallet={wallet.data} />
             {wallet.data.unavailableMessage ? (
               <p className="mt-5 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
                 {wallet.data.unavailableMessage}
               </p>
             ) : null}
+            </div>
           </div>
         ) : wallet.data.unavailableMessage ? (
           <p className="max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
@@ -240,8 +237,11 @@ export function RewardsAccountView() {
   } else {
     body = (
       <div className="flex flex-col gap-10">
-        <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
-          <RewardsSummary wallet={wallet.data} />
+        <div className="flex flex-col gap-6">
+          <MembershipTiers wallet={wallet.data} />
+          <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
+            <RewardsSummary wallet={wallet.data} />
+          </div>
         </div>
         <RewardActivity
           rows={transactions.data ?? []}

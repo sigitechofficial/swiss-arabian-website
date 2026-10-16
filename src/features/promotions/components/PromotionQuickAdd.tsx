@@ -8,14 +8,10 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import {
-  cartRecPh,
   cartRecPrice,
   cartRecs,
   cartRecsSwiper,
   cartRecsTitle,
-  emptyBagAdd,
-  emptyBagCard,
-  emptyBagName,
 } from "@/styles/cartChrome";
 
 /** How long after a pick lands the rail keeps its place while the bag settles. */
@@ -97,19 +93,26 @@ export function PromotionQuickAdd({
       });
   };
 
+  const inDrawer = surface === "drawer";
   return (
-    <div className={cartRecs} ref={rootRef}>
-      <h3 className={cartRecsTitle}>{recommendations.heading}</h3>
-      <div className={cartRecsSwiper} role="list">
+    <div className={inDrawer ? cartRecs : "px-0 pt-2 pb-1"} ref={rootRef}>
+      <h3 className={inDrawer ? cartRecsTitle : "mt-0 mb-3 text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ink,#241f1b)] uppercase"}>
+        {recommendations.heading}
+      </h3>
+      <div className={inDrawer ? cartRecsSwiper : "flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"} role="list">
         {products.map((product) => (
-          <article className={emptyBagCard} key={product.sku} role="listitem">
-            {product.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.image} alt="" />
-            ) : (
-              <span className={`${cartRecPh} size-[72px] rounded-lg`} aria-hidden="true" />
-            )}
-            <div className="flex min-w-0 flex-col pr-10">
+          <article
+            className={`relative flex h-[92px] shrink-0 snap-start items-center gap-3 overflow-hidden rounded-xl border border-[rgb(28_25_23/0.1)] bg-white px-3 ${inDrawer ? "w-[calc(100%-2.75rem)]" : "w-[300px]"}`}
+            key={product.sku}
+            role="listitem"
+          >
+            <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-[#f3ebe0]">
+              {product.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="size-full object-contain" src={product.image} alt="" />
+              ) : null}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col justify-center pr-11">
               {product.slug ? (
                 <LocaleLink href={`/products/${product.slug}`} onClick={() => trackPromotion("promotion_recommendation_clicked", {
                   campaignCode: data?.progress?.primary?.campaignCode,
@@ -118,16 +121,16 @@ export function PromotionQuickAdd({
                   surface,
                 })}
                 >
-                  <p className={emptyBagName}>{product.title}</p>
+                  <p className="m-0 line-clamp-2 text-[0.72rem] leading-[1.3] font-medium tracking-[0.03em] text-[var(--ink,#1a1512)] uppercase">{product.title}</p>
                 </LocaleLink>
               ) : (
-                <p className={emptyBagName}>{product.title}</p>
+                <p className="m-0 line-clamp-2 text-[0.72rem] leading-[1.3] font-medium tracking-[0.03em] text-[var(--ink,#1a1512)] uppercase">{product.title}</p>
               )}
               {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
             </div>
             <button
               type="button"
-              className={emptyBagAdd}
+              className="absolute top-1/2 right-3 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50"
               disabled={busy === product.sku}
               aria-label={`${recommendations.addLabel} ${product.title}`}
               onClick={() => add(product)}
