@@ -1,4 +1,6 @@
 /** Market is part of the cache identity so one wallet cannot render as another. */
+export const LOYALTY_ACTIVITY_PAGE_SIZE = 20;
+
 export const loyaltyKeys = {
   all: ["loyalty"] as const,
   wallet: (zoneCode: string, currencyCode: string) =>

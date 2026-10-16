@@ -22,6 +22,7 @@ vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: vi.fn(),
   fetchLoyaltyTransactions: vi.fn(),
   fetchLoyaltyTierHistory: vi.fn(),
+  requestOmnichannelRefresh: vi.fn(),
 }));
 
 function preview(points: number, currencyCode = "AED", eligibleAmount: string | null = null) {

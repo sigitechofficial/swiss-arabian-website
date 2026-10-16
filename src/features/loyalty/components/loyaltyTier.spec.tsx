@@ -28,6 +28,7 @@ vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
   fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
   fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  requestOmnichannelRefresh: vi.fn(),
 }));
 
 function renderRewards() {
