@@ -144,16 +144,16 @@ export const drawerFoot =
   "shrink-0 border-t border-[rgb(33_33_33/0.08)] bg-[var(--cream,#faf6ee)] px-[22px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))]";
 
 export const drawerTotalRow =
-  "mb-2.5 flex items-baseline justify-between text-base text-[var(--ink,#1a1512)]";
+  "mt-3.5 mb-1 flex items-baseline justify-between border-t border-[rgb(28_25_23/0.1)] pt-3.5 font-sans text-[0.95rem] text-[var(--ink,#1a1512)] [&_strong]:font-semibold [&_strong]:text-[var(--copper,#8c4435)]";
 
 /** View bag + Checkout on one row to keep the footer short. */
 export const drawerActions = "grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2.5";
 
 export const drawerCheckout =
-  "flex h-11 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[var(--copper-deep,#6d3428)] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45";
+  "flex h-11 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] font-sans text-[0.92rem] font-semibold text-white no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:bg-[var(--copper-deep,#6d3428)] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45";
 
 export const drawerViewLink =
-  "flex h-11 items-center justify-center rounded-full border border-[rgb(33_33_33/0.22)] text-[0.85rem] font-semibold text-[var(--ink,#1a1512)] no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:border-[var(--ink,#1a1512)]";
+  "flex h-11 items-center justify-center rounded-full border border-[rgb(33_33_33/0.22)] bg-transparent font-sans text-[0.92rem] font-semibold text-[var(--ink,#1a1512)] no-underline transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] hover:border-[var(--ink,#1a1512)]";
 
 export const cartPageHead = "mt-3 mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1";
 

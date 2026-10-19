@@ -96,7 +96,6 @@ export function CheckoutSummary({
       aria-label="Order summary"
     >
       <h2>Your order</h2>
-      {subtotal > 0 ? <PromotionProgressRail surface="checkout" /> : null}
       <div className={checkoutLines} id="checkout-lines">
         {bundleLinesFirst(orderableLines, cartPromotions, promoSnapshot).map((line) => {
           const thumb = lineImageUrl(line.slug, line.imageUrl);
@@ -149,6 +148,7 @@ export function CheckoutSummary({
         })}
         <GiftWithPurchase snapshot={promoSnapshot} currency={currency} selectable={false} />
       </div>
+      {subtotal > 0 ? <PromotionProgressRail surface="checkout" /> : null}
       {leftOutCount > 0 ? (
         <p className={`${checkoutNote} ${checkoutSummaryNote}`}>
           {leftOutCount === 1 ? "1 item" : `${leftOutCount} items`} in your bag can’t be ordered online and won’t be

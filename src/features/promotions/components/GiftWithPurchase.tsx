@@ -70,7 +70,7 @@ export function GiftWithPurchase({
           <div className={promoGiftsAwarded} aria-label="Free gifts" key={key}>
             {award.giftItems.map((gift) => (
               <GiftCartItem
-                key={gift.sku}
+                key={`${gift.tierId ?? "gift"}-${gift.sku}`}
                 line={gift}
                 product={catalog.get(gift.sku)}
                 currency={currency}
