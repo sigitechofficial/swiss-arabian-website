@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, LogOut, Package, ShoppingBag } from "lucide-react";
@@ -11,6 +12,7 @@ import { endSession } from "@/lib/auth/endSession";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { isNewAccount, welcomeHeading } from "@/features/auth/utils/newAccountGreeting";
 import { listOrders } from "@/features/account/api/customerOrders.service";
 import { toOrderSummaryView } from "@/features/orders/utils/toOrderSummaryView";
 import {
@@ -24,7 +26,6 @@ import {
   accountHelpList,
   accountHelpNote,
   accountLayout,
-  accountLede,
   accountOrder,
   accountOrderCta,
   accountOrderHeadline,
@@ -35,7 +36,6 @@ import {
   accountPanelHead,
   accountPanelLink,
   accountPanelTitle,
-  accountSignedInAs,
   accountSignOut,
   accountTile,
   accountTileArrow,
@@ -246,11 +246,21 @@ function HelpPanel() {
   );
 }
 
+function noopSubscribe() {
+  return () => {};
+}
+
 function DashboardContent() {
   const user = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname() || "/";
   const firstName = user?.firstName?.trim() || user?.fullName?.trim().split(/\s+/)[0] || "";
+  // Read after hydration so the server and first client render agree.
+  const isNew = useSyncExternalStore(
+    noopSubscribe,
+    () => isNewAccount(user?.email),
+    () => false,
+  );
 
   async function handleLogout() {
     try {
@@ -270,15 +280,7 @@ function DashboardContent() {
         <header className={accountHead}>
           <div className="min-w-0">
             <p className={accountEyebrow}>My account</p>
-            <h1 className={pageTitle}>{firstName ? `Welcome back, ${firstName}` : "Welcome back"}</h1>
-            <p className={accountLede}>
-              Follow your orders, keep your details up to date and pick up where you left off.
-            </p>
-            {user?.email ? (
-              <p className={accountSignedInAs}>
-                Signed in as <span>{user.email}</span>
-              </p>
-            ) : null}
+            <h1 className={pageTitle}>{welcomeHeading(firstName, isNew)}</h1>
           </div>
           <button type="button" className={accountSignOut} onClick={handleLogout}>
             <LogOut size={15} strokeWidth={1.8} aria-hidden="true" />
