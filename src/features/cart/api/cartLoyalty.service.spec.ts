@@ -39,6 +39,8 @@ describe("cart loyalty redemption requests", () => {
     expect(body).not.toHaveProperty("discount");
     expect(body).not.toHaveProperty("amountPayable");
     expect(body).not.toHaveProperty("money");
+    expect(body).not.toHaveProperty("activePoints");
+    expect(body).not.toHaveProperty("omnichannel");
   });
 
   it("DELETEs the cart reservation", async () => {

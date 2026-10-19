@@ -90,6 +90,9 @@ export const env = {
       readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
     paymob: readPublic(process.env.NEXT_PUBLIC_ENABLE_PAYMOB) === "true",
+    /** Pay-in-4 providers that can actually be chosen at checkout. Off: shown as coming soon. */
+    tabby: readPublic(process.env.NEXT_PUBLIC_ENABLE_TABBY) === "true",
+    tamara: readPublic(process.env.NEXT_PUBLIC_ENABLE_TAMARA) === "true",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
@@ -98,6 +101,14 @@ export const env = {
     process.env.NODE_ENV === "development"
       ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
       : "",
+  /**
+   * Tabby merchant details for their "Learn more" pop-up. Both are safe in the browser.
+   * Empty until the merchant account exists: the pop-up then shows Tabby's standard plans.
+   */
+  tabby: {
+    publicKey: readPublic(process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY),
+    merchantCode: readPublic(process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE),
+  },
   googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
   googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
   catalogMediaBaseUrl: readPublic(
@@ -110,6 +121,19 @@ export const env = {
   storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
   /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
   storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
+  /**
+   * CMS Homepage integration (Phase 2C).
+   * Default enabled. Set NEXT_PUBLIC_CMS_HOME_ENABLED=false to force legacy home.
+   */
+  cmsHomeEnabled:
+    readPublic(process.env.NEXT_PUBLIC_CMS_HOME_ENABLED, "true") !== "false",
+  /**
+   * When CMS has no published Homepage, render the pre-CMS landing composition.
+   * Set NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK=false for empty/unavailable state only.
+   */
+  cmsHomeLegacyFallback:
+    readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
+    "false",
   /**
    * Insider Web SDK. Script loads only when enabled AND accountId is set.
    * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.

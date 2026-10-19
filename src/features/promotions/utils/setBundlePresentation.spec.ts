@@ -66,4 +66,25 @@ describe("set bundle presentation", () => {
       "You saved 25% on 1 set. Add 1 Body Spray to complete another set.",
     ]);
   });
+
+  it("badges a line counted toward an unfinished set only when the offers are passed", () => {
+    const offers: PromotionOffer[] = [
+      {
+        applied: false,
+        setBundle: {
+          completedSets: 0,
+          pendingLines: [{ ref: "p2", sku: "OUD", label: "Part of bundle" }],
+        },
+      },
+    ];
+    expect(setBundleLineLabel(null, { cartItemId: "p2", sku: "OUD" })).toBeNull();
+    expect(setBundleLineLabel(null, { cartItemId: "p2", sku: "OUD" }, offers)).toBe("Part of bundle");
+    expect(setBundleLineLabel(null, { cartItemId: "other", sku: "OUD" }, offers)).toBeNull();
+    // A line inside a discounted set keeps that badge.
+    expect(
+      setBundleLineLabel(snapshot, { cartItemId: "p1", sku: "VAN" }, [
+        { setBundle: { pendingLines: [{ ref: "p1", sku: "VAN", label: "Part of bundle" }] } },
+      ]),
+    ).toBe("Part of set · 25% off");
+  });
 });

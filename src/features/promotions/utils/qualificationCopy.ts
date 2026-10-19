@@ -67,6 +67,20 @@ export function offerQualificationMessage(
     return "Add the required item to use this offer.";
   }
 
+  if (
+    reason === "LOYALTY_NOT_AVAILABLE" ||
+    reason === "LOYALTY_TIER_REQUIRED" ||
+    reason === "LOYALTY_TIER_MISMATCH" ||
+    reason === "LOYALTY_MEMBER_REQUIRED" ||
+    reason === "CUSTOMER_TIER" ||
+    reason === "REQUIRED_TIER"
+  ) {
+    return (
+      safeBackendMessage(offer.rejected?.message, reason) ??
+      "This offer isn’t available with your current Rewards status."
+    );
+  }
+
   if (reason === "MIN_ORDER" || offer.qualification?.remainingAmount || offer.qualification?.minOrderAmount) {
     const remaining =
       trimmed(offer.qualification?.remainingAmount) ?? trimmed(offer.rejected?.remainingAmount);

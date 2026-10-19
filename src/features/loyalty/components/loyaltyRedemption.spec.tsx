@@ -41,6 +41,7 @@ vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
   fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
   fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  requestOmnichannelRefresh: vi.fn(),
 }));
 
 function quote(partial: Partial<LoyaltyRedemptionView> = {}): LoyaltyRedemptionView {
@@ -140,6 +141,45 @@ describe("cart rewards editor", () => {
     );
     expect(await screen.findByText(/Available 5,420 points · worth AED 54.20/)).toBeInTheDocument();
     expect(screen.queryByText(/0\.010000/)).not.toBeInTheDocument();
+  });
+
+  it("does not surface D365 activePoints in cart redemption", async () => {
+    fetchLoyaltyWallet.mockResolvedValue(
+      readLoyaltyWallet({
+        enabled: true,
+        member: true,
+        market: { code: "UAE", currencyCode: "AED" },
+        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0 },
+        monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
+        omnichannel: {
+          source: "D365",
+          status: "LINKED",
+          identity: { customerGroup: "RETAIL", currency: "AED" },
+          balance: {
+            activePoints: "95.24",
+            usedPoints: "0",
+            issuedPoints: "95.24",
+            expiredPoints: "0",
+            unvestedPoints: "0",
+          },
+          sync: {
+            fetchedAt: "2026-10-15T08:00:00.000Z",
+            lastSuccessfulSyncAt: "2026-10-15T08:00:00.000Z",
+            isFresh: true,
+            source: "CACHE",
+          },
+          websiteRedemption: { enabled: false, reason: "D365_REDEMPTION_NOT_AVAILABLE" },
+        },
+      }),
+    );
+    render(
+      <Wrapper>
+        <LoyaltyRedemptionEditor />
+      </Wrapper>,
+    );
+    expect(await screen.findByText(/Available 5,420 points · worth AED 54.20/)).toBeInTheDocument();
+    expect(screen.queryByText("95.24")).not.toBeInTheDocument();
+    expect(screen.queryByText(/store points/i)).not.toBeInTheDocument();
   });
 
   it("Use maximum fills the server maxRedeemablePoints", async () => {

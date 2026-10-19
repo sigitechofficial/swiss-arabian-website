@@ -46,7 +46,12 @@ export type RegisterPayload = {
   firstName?: string;
   lastName?: string;
   salesChannelCode?: string;
+  /** Create the account but hold the session until the emailed code is confirmed. */
+  verifyEmailFirst?: boolean;
 };
+
+/** Tokens come back only when sign-in was asked for and the backend supports it. */
+export type EmailVerificationConfirmResult = { success: boolean } & Partial<AuthResult>;
 
 export type LoginPayload = {
   identifier: string;

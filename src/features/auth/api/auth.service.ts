@@ -4,6 +4,7 @@ import type {
   CustomerProfileView,
   CustomerSessionView,
   EmailLoginCodeConfirmPayload,
+  EmailVerificationConfirmResult,
   IssuedCustomerToken,
   LoginPayload,
   OtpPurpose,
@@ -42,10 +43,11 @@ export function splitFullName(fullName: string): {
   };
 }
 
+/** With `verifyEmailFirst` the answer may be EMAIL_VERIFICATION_REQUIRED and no tokens. */
 export async function registerCustomer(
   payload: RegisterPayload,
-): Promise<AuthResult> {
-  return apiPost<AuthResult>("/storefront/auth/register", payload, {
+): Promise<PasswordLoginResult> {
+  return apiPost<PasswordLoginResult>("/storefront/auth/register", payload, {
     skipAuth: true,
   });
 }
@@ -130,10 +132,15 @@ export async function requestEmailVerification(email: string) {
   );
 }
 
-export async function confirmEmailVerification(email: string, code: string) {
-  return apiPost<{ success: boolean }>(
+/** `signIn` asks for the session too, so the shopper is not sent to type the password again. */
+export async function confirmEmailVerification(
+  email: string,
+  code: string,
+  options: { signIn?: boolean } = {},
+) {
+  return apiPost<EmailVerificationConfirmResult>(
     "/storefront/auth/verify-email/confirm",
-    { email, code },
+    options.signIn ? { email, code, signIn: true } : { email, code },
     { skipAuth: true },
   );
 }

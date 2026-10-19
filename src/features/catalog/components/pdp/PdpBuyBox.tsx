@@ -5,14 +5,12 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { OffersForYou } from "@/features/promotions/components/OffersForYou";
-import { OfferCountLink } from "@/features/promotions/components/PromotionOffers";
 import { stars } from "@/styles/landingChrome";
 import {
   pdpChip,
   pdpChips,
   pdpDot,
   pdpFormat,
-  pdpInstallments,
   pdpName,
   pdpPanel,
   pdpPromise,
@@ -28,6 +26,7 @@ import { familyChips, pyramidNoteChips } from "../../utils/pdpMetafields";
 import { reviewStarsLabel } from "../../utils/pdpReviews";
 import { PdpScentFamily } from "../PdpScentFamily";
 import { PdpBuyBar } from "./PdpBuyBar";
+import { PdpInstalments } from "./PdpInstalments";
 
 type PdpBuyBoxProps = {
   product: CatalogProduct;
@@ -58,10 +57,6 @@ export function PdpBuyBox({
   const [offersOpen, setOffersOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const offerOpenerRef = useRef<HTMLElement | null>(null);
-  const openOffers = () => {
-    offerOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setOffersOpen(true);
-  };
   const earnPreview = useProductEarnPreview({
     unitPrice: product.price,
     quantity: cartLine?.quantity ?? quantity,
@@ -111,17 +106,11 @@ export function PdpBuyBox({
         </ul>
       ) : null}
 
-      <div className="m-0 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">
-          {formatMoney(product.price, product.currency)}
-        </p>
-        <OfferCountLink productId={product.id} onOpen={openOffers} />
-      </div>
-      {product.price != null ? (
-        <p className={pdpInstallments}>
-          or 4 interest-free payments of <strong>{formatMoney(product.price / 4, product.currency)}</strong> with
-          Tabby or Tamara.
-        </p>
+      <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">
+        {formatMoney(product.price, product.currency)}
+      </p>
+      {product.price != null && product.price > 0 ? (
+        <PdpInstalments price={product.price} currency={product.currency} />
       ) : null}
 
       <EarnPreviewNote preview={earnPreview.preview} />
@@ -151,6 +140,7 @@ export function PdpBuyBox({
       ) : null}
 
       <PdpBuyBar product={product} cartLine={cartLine} onQuantityChange={setQuantity} />
+      <PdpScentFamily current={product} familyCode={familyCode} zoneCode={zoneCode} fallback={scentFallback} />
       <OffersForYou
         product={product}
         quantity={quantity}
@@ -158,7 +148,6 @@ export function PdpBuyBox({
         onOpenChange={setOffersOpen}
         openerRef={offerOpenerRef}
       />
-      <PdpScentFamily current={product} familyCode={familyCode} zoneCode={zoneCode} fallback={scentFallback} />
     </div>
   );
 }

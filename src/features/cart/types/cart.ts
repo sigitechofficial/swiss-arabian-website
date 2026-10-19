@@ -49,6 +49,8 @@ export type ApiCartItem = {
   image?: string | null;
   images?: ApiCartImage[];
   quantity: string;
+  /** Units in stock as of the line's last add or change; older backends omit it. */
+  availableQuantity?: string | null;
   unitPriceEstimate: string | null;
   lineSubtotalEstimate: string | null;
   currencyCode: string | null;

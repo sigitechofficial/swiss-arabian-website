@@ -3,6 +3,7 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Package } from "lucide-react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import {
   cancelOrder,
@@ -26,17 +27,43 @@ import { AppliedCampaigns } from "@/features/promotions/components/AppliedCampai
 import { readPromotionSnapshot } from "@/features/promotions/types/promotions";
 import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
 import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
+import {
+  accountCol,
+  accountCrumbs,
+  accountEyebrow,
+  accountHead,
+  accountLayout,
+  accountLede,
+  accountPanel,
+  accountPanelBody,
+  accountPanelHead,
+  accountPanelTitle,
+  accountPrimaryCta,
+  orderCancel,
+  orderCancelBtn,
+  orderCancelConfirm,
+  orderDetailBlock,
+  orderDetailText,
+  orderFactLabel,
+  orderHeadMeta,
+  orderLine,
+  orderLineMeta,
+  orderLineName,
+  orderLinePrice,
+  orderLineThumb,
+  orderLines,
+  orderNotice,
+  orderNoticeTone,
+  orderSave,
+  orderTotalRow,
+  orderTotals,
+} from "@/styles/accountChrome";
+import { crumbsList, pageTitle } from "@/styles/shopChrome";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 
-type Feedback = { tone: "success" | "info" | "error"; text: string };
-
-const FEEDBACK_CLASS: Record<Feedback["tone"], string> = {
-  success: "border-[#b7dfc4] bg-[#eef8f1] text-[#1a7338]",
-  info: "border-sa-border bg-section-soft text-sa-primary",
-  error: "border-[#e3b5a8] bg-[#fbefeb] text-[#8c3a2b]",
-};
+type Feedback = { tone: keyof typeof orderNoticeTone; text: string };
 
 function cancelFeedback(result: CancelOrderResponse): Feedback {
   if (result.orderCancelled) {
@@ -62,14 +89,42 @@ function cancelErrorText(error: unknown): string {
   return "We couldn’t cancel this order. Please try again.";
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Panel({
+  title,
+  flush = false,
+  children,
+}: {
+  title: string;
+  /** The body brings its own padding (item rows). */
+  flush?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <section className="overflow-hidden rounded-lg border border-sa-border">
-      <div className="border-b border-sa-border bg-section-soft px-5 py-3">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-sa-muted">{title}</h2>
-      </div>
-      <div className="bg-page px-5 py-4">{children}</div>
+    <section className={accountPanel}>
+      <header className={accountPanelHead}>
+        <h2 className={accountPanelTitle}>{title}</h2>
+      </header>
+      {flush ? children : <div className={accountPanelBody}>{children}</div>}
     </section>
+  );
+}
+
+function AddressBlock({
+  label,
+  address,
+}: {
+  label: string;
+  address: { fullName: string | null; address1: string | null; city: string | null; countryCode: string | null };
+}) {
+  return (
+    <div className={orderDetailBlock}>
+      <p className={orderFactLabel}>{label}</p>
+      <address className={orderDetailText}>
+        {address.fullName ? <b>{address.fullName}</b> : null}
+        {address.address1 ? <span className="block">{address.address1}</span> : null}
+        <span className="block">{[address.city, address.countryCode].filter(Boolean).join(", ")}</span>
+      </address>
+    </div>
   );
 }
 
@@ -120,42 +175,33 @@ function CancelOrderPanel({
   const ss = String(remaining % 60).padStart(2, "0");
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#e7d3a8] bg-[#f7efdd] px-5 py-4">
+    <div className={orderCancel}>
       <div>
-        <p className="text-[13.5px] font-semibold text-[#6d5320]">You can still cancel this order</p>
-        <p className="mt-0.5 text-[12px] text-[#8a6a2f]">
+        <p className="m-0 text-[0.86rem] font-semibold">You can still cancel this order</p>
+        <p className="m-0 mt-0.5 text-[0.76rem]">
           Window closes in{" "}
-          <span className="font-mono font-bold" aria-live="off">
+          <span className="font-semibold tabular-nums" aria-live="off">
             {mm}:{ss}
           </span>
         </p>
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[12px] text-[#6d5320]">Cancel this order?</span>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onConfirm}
-            className="flex h-9 items-center rounded-md bg-[#8c3a2b] px-4 text-[11px] font-semibold uppercase tracking-wide text-white transition-opacity disabled:opacity-60"
-          >
+          <span className="text-[0.76rem]">Cancel this order?</span>
+          <button type="button" disabled={pending} onClick={onConfirm} className={orderCancelConfirm}>
             {pending ? "Cancelling…" : "Yes, cancel order"}
           </button>
           <button
             type="button"
             disabled={pending}
             onClick={() => setConfirming(false)}
-            className="text-[12px] font-medium text-[#6d5320] underline underline-offset-2"
+            className="cursor-pointer border-0 bg-transparent p-0 text-[0.76rem] font-medium text-inherit underline underline-offset-2 [font:inherit]"
           >
             Keep order
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="flex h-9 items-center rounded-md border border-[#c9a45c] bg-white px-4 text-[11px] font-semibold uppercase tracking-wide text-[#6d5320] transition-colors hover:bg-[#fbf5e8]"
-        >
+        <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
           Cancel order
         </button>
       )}
@@ -220,10 +266,10 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     return (
       <AccountPageShell>
         <div className={`${accountContainer} py-20 text-center`}>
-          <p className="text-[14.5px] text-sa-primary">We couldn’t find this order.</p>
+          <p className={`${accountLede} mx-auto mt-0!`}>We couldn’t find this order.</p>
           <LocaleLink
             href="/account/orders"
-            className="mt-3 inline-block text-[12px] text-terra underline underline-offset-4"
+            className="mt-4 inline-block text-[0.8rem] font-medium text-[var(--copper,#8c4435)] underline underline-offset-4"
           >
             Back to Purchase History
           </LocaleLink>
@@ -235,6 +281,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const { order, cancellationWindow } = data;
   const { label, tone } = orderStatusDisplay(order.status);
   const currency = order.currency;
+  const reference = order.orderNumber ?? orderId.slice(0, 8).toUpperCase();
   const shippingAddress = order.addresses.find((a) => a.addressType === "SHIPPING");
   const billingAddress = order.addresses.find((a) => a.addressType === "BILLING");
   const trackingSummary = trackingQuery.data ?? trackingSummaryFromDetail(data);
@@ -243,182 +290,187 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     Boolean(cancellationWindow?.canCancel && cancellationWindow.isInsideWindow) &&
     !cancelMutation.isSuccess;
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
+  const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
 
   return (
     <AccountPageShell>
-      <div className={`${accountContainer} flex flex-col gap-5 py-8 lg:py-10`}>
-        <LocaleLink
-          href="/account/orders"
-          className="inline-flex w-fit items-center gap-1.5 text-[12px] text-sa-muted transition-colors hover:text-terra"
-        >
-          <span aria-hidden="true">←</span> Back to Purchase History
-        </LocaleLink>
+      <div className={accountContainer}>
+        <nav aria-label="Breadcrumb" className={accountCrumbs}>
+          <ol className={crumbsList} role="list">
+            <li>
+              <LocaleLink href="/">Home</LocaleLink>
+            </li>
+            <li>
+              <LocaleLink href="/account/orders">Purchase History</LocaleLink>
+            </li>
+            <li aria-current="page">{reference}</li>
+          </ol>
+        </nav>
 
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[19px] font-bold text-sa-primary lg:text-[22px]">
-              Order <span className="font-mono">{order.orderNumber ?? orderId.slice(0, 8).toUpperCase()}</span>
-            </h1>
-            <p className="mt-1 text-[12px] text-sa-muted">
-              Placed on {formatOrderDate(order.createdAt, { long: true })}
+        <header className={accountHead}>
+          <div className="min-w-0">
+            <p className={accountEyebrow}>Order</p>
+            <h1 className={`${pageTitle} break-words`}>{reference}</h1>
+            <p className={orderHeadMeta}>
+              <AccountStatusPill label={label} tone={tone} />
+              <span className={`${accountLede} mt-0!`}>
+                Placed on {formatOrderDate(order.createdAt, { long: true })} · {itemCount}{" "}
+                {itemCount === 1 ? "item" : "items"}
+              </span>
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <AccountStatusPill label={label} tone={tone} />
-            {payable ? (
-              <LocaleLink
-                href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
-                className="flex h-9 items-center bg-terra px-4 text-[11px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#a25e48]"
-              >
-                Complete payment
-              </LocaleLink>
-            ) : null}
-          </div>
+          {payable ? (
+            <LocaleLink
+              href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
+              className={accountPrimaryCta}
+            >
+              Complete payment
+            </LocaleLink>
+          ) : null}
         </header>
 
-        {feedback ? (
-          <p className={`rounded-lg border px-5 py-3 text-[13px] ${FEEDBACK_CLASS[feedback.tone]}`} role="status">
-            {feedback.text}
-          </p>
-        ) : null}
+        {feedback || (showCancel && cancellationWindow) || needsSupport ? (
+          <div className="mb-[clamp(20px,3vw,28px)] flex flex-col gap-3">
+            {feedback ? (
+              <p className={`${orderNotice} ${orderNoticeTone[feedback.tone]}`} role="status">
+                {feedback.text}
+              </p>
+            ) : null}
 
-        {showCancel && cancellationWindow ? (
-          <CancelOrderPanel
-            window={cancellationWindow}
-            fetchedAt={detailQuery.dataUpdatedAt}
-            pending={cancelMutation.isPending}
-            onConfirm={() => {
-              setFeedback(null);
-              cancelMutation.mutate();
-            }}
-            onExpired={refreshOrder}
-          />
-        ) : null}
-
-        {needsSupport ? (
-          <p className="rounded-lg border border-sa-border bg-section-soft px-5 py-3 text-[13px] text-sa-primary">
-            Need help with this order? Please contact our customer care team and quote the order number above.
-          </p>
-        ) : null}
-
-        <OrderTrackingPanel summary={trackingSummary} timeline={timelineQuery.data} />
-
-        <Card title={`Items ordered (${order.lines.length})`}>
-          <ul className="divide-y divide-sa-border">
-            {order.lines.map((line) => {
-              const quantity = Number.parseInt(line.quantity, 10) || 1;
-              return (
-                <li key={line.orderLineId} className="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-sa-primary">
-                      {line.productName ?? line.sku}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-sa-muted">
-                      {[
-                        line.variantName && line.variantName !== line.productName ? line.variantName : null,
-                        `Qty ${quantity}`,
-                        quantity > 1 ? `${formatMoney(Number(line.unitPrice), line.currencyCode || currency)} each` : null,
-                        line.sku,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <HistoricalLineDiscount
-                      snapshot={line.promotionSnapshot}
-                      currency={line.currencyCode || currency}
-                      className="mt-1 text-[12px] text-sa-muted"
-                    />
-                  </div>
-                  <p className="shrink-0 text-[13px] font-semibold text-sa-primary">
-                    {formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-
-        {hasOrderLoyaltySection(orderReward) ? (
-          <Card title="Rewards">
-            <OrderRewardNote reward={orderReward} showHeading={false} />
-          </Card>
-        ) : null}
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Card title="Order summary">
-            <dl className="flex flex-col gap-2.5 text-[12px]">
-              <div className="flex justify-between">
-                <dt className="text-sa-muted">Subtotal</dt>
-                <dd className="font-medium text-sa-primary">{formatMoney(Number(order.totals.subtotal), currency)}</dd>
-              </div>
-              {Number(order.totals.discount) > 0 ? (
-                <div className="flex justify-between">
-                  <dt className="text-sa-muted">Discount</dt>
-                  <dd className="font-medium text-terra">−{formatMoney(Number(order.totals.discount), currency)}</dd>
-                </div>
-              ) : null}
-              <div className="flex justify-between">
-                <dt className="text-sa-muted">Shipping</dt>
-                <dd className="font-medium text-sa-primary">
-                  {Number(order.totals.shipping) > 0 ? formatMoney(Number(order.totals.shipping), currency) : "Free"}
-                </dd>
-              </div>
-              {Number(order.totals.tax) > 0 ? (
-                <div className="flex justify-between">
-                  <dt className="text-sa-muted">Tax</dt>
-                  <dd className="font-medium text-sa-primary">{formatMoney(Number(order.totals.tax), currency)}</dd>
-                </div>
-              ) : null}
-              <HistoricalGiftNote
-                snapshot={order.promotionSnapshot}
-                className="text-[12px] text-sa-muted"
+            {showCancel && cancellationWindow ? (
+              <CancelOrderPanel
+                window={cancellationWindow}
+                fetchedAt={detailQuery.dataUpdatedAt}
+                pending={cancelMutation.isPending}
+                onConfirm={() => {
+                  setFeedback(null);
+                  cancelMutation.mutate();
+                }}
+                onExpired={refreshOrder}
               />
-              <AppliedCampaigns snapshot={readPromotionSnapshot(order.promotionSnapshot)} />
-              <div className="mt-1 flex justify-between border-t border-sa-border pt-3.5">
-                <dt className="text-[13.5px] font-bold text-sa-primary">Total</dt>
-                <dd className="text-[13.5px] font-bold text-sa-primary">{formatMoney(Number(order.totals.total), currency)}</dd>
-              </div>
-            </dl>
-          </Card>
+            ) : null}
 
-          <Card title="Delivery & payment">
-            <div className="flex flex-col gap-4 text-[12px] leading-6">
-              {shippingAddress ? (
+            {needsSupport ? (
+              <p className={`${orderNotice} ${orderNoticeTone.info}`}>
+                Need help with this order? Please contact our customer care team and quote the order number above.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className={accountLayout}>
+          {/* Progress first, then what was ordered, then the shipment history. */}
+          <OrderTrackingPanel summary={trackingSummary} timeline={timelineQuery.data}>
+            <Panel title={`Items (${order.lines.length})`} flush>
+              <ul className={orderLines} role="list">
+                {order.lines.map((line) => {
+                  const quantity = Number.parseInt(line.quantity, 10) || 1;
+                  const lineCurrency = line.currencyCode || currency;
+                  return (
+                    <li key={line.orderLineId} className={orderLine}>
+                      <span className={orderLineThumb} aria-hidden="true">
+                        {line.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={line.imageUrl} alt="" loading="lazy" />
+                        ) : (
+                          <Package size={20} strokeWidth={1.6} />
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={orderLineName}>{line.productName ?? line.sku}</p>
+                        <p className={orderLineMeta}>
+                          {[
+                            // "Default Title" is the placeholder a single-variant product carries, not a size.
+                            line.variantName &&
+                            line.variantName !== line.productName &&
+                            line.variantName.trim().toLowerCase() !== "default title"
+                              ? line.variantName
+                              : null,
+                            line.isGift ? "Free gift" : null,
+                            `Qty ${quantity}`,
+                            quantity > 1 && !line.isGift
+                              ? `${formatMoney(Number(line.unitPrice), lineCurrency)} each`
+                              : null,
+                            line.sku,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        <HistoricalLineDiscount
+                          snapshot={line.promotionSnapshot}
+                          currency={lineCurrency}
+                          className={orderLineMeta}
+                        />
+                      </div>
+                      <p className={orderLinePrice}>
+                        {line.isGift ? "Free" : formatMoney(Number(line.lineTotal), lineCurrency)}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Panel>
+          </OrderTrackingPanel>
+
+          <aside className={accountCol} aria-label="Order summary and delivery">
+            <Panel title="Order summary">
+              <dl className={orderTotals}>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-sa-muted">Ship to</p>
-                  <address className="not-italic text-sa-primary">
-                    {shippingAddress.fullName ? <span className="block font-medium">{shippingAddress.fullName}</span> : null}
-                    {shippingAddress.address1 ? <span className="block text-sa-muted">{shippingAddress.address1}</span> : null}
-                    <span className="block text-sa-muted">
-                      {[shippingAddress.city, shippingAddress.countryCode].filter(Boolean).join(", ")}
-                    </span>
-                  </address>
+                  <dt>Subtotal</dt>
+                  <dd>{formatMoney(Number(order.totals.subtotal), currency)}</dd>
                 </div>
-              ) : null}
-              {billingAddress ? (
+                {Number(order.totals.discount) > 0 ? (
+                  <div>
+                    <dt>Discount</dt>
+                    <dd className={orderSave}>−{formatMoney(Number(order.totals.discount), currency)}</dd>
+                  </div>
+                ) : null}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-sa-muted">Bill to</p>
-                  <address className="not-italic text-sa-primary">
-                    {billingAddress.fullName ? <span className="block font-medium">{billingAddress.fullName}</span> : null}
-                    {billingAddress.address1 ? <span className="block text-sa-muted">{billingAddress.address1}</span> : null}
-                    <span className="block text-sa-muted">
-                      {[billingAddress.city, billingAddress.countryCode].filter(Boolean).join(", ")}
-                    </span>
-                  </address>
+                  <dt>Shipping</dt>
+                  <dd>
+                    {Number(order.totals.shipping) > 0 ? formatMoney(Number(order.totals.shipping), currency) : "Free"}
+                  </dd>
                 </div>
-              ) : null}
-              <dl className="grid grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-widest text-sa-muted">Delivery</dt>
-                  <dd className="font-medium text-sa-primary">{orderDeliveryLabel(order.selectedDeliveryMethod)}</dd>
-                </div>
-                <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-widest text-sa-muted">Payment</dt>
-                  <dd className="font-medium text-sa-primary">{orderPaymentLabel(order.selectedPaymentMethod)}</dd>
+                {Number(order.totals.tax) > 0 ? (
+                  <div>
+                    <dt>Tax</dt>
+                    <dd>{formatMoney(Number(order.totals.tax), currency)}</dd>
+                  </div>
+                ) : null}
+                <HistoricalGiftNote snapshot={order.promotionSnapshot} className={orderLineMeta} />
+                <AppliedCampaigns snapshot={readPromotionSnapshot(order.promotionSnapshot)} />
+                <div className={orderTotalRow}>
+                  <dt>Total</dt>
+                  <dd>{formatMoney(Number(order.totals.total), currency)}</dd>
                 </div>
               </dl>
-            </div>
-          </Card>
+            </Panel>
+
+            <Panel title="Delivery and payment">
+              {shippingAddress ? <AddressBlock label="Ship to" address={shippingAddress} /> : null}
+              {billingAddress ? <AddressBlock label="Bill to" address={billingAddress} /> : null}
+              <dl className={`${orderDetailBlock} m-0 grid grid-cols-2 gap-4`}>
+                <div>
+                  <dt className={orderFactLabel}>Delivery</dt>
+                  <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
+                    {orderDeliveryLabel(order.selectedDeliveryMethod)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className={orderFactLabel}>Payment</dt>
+                  <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
+                    {orderPaymentLabel(order.selectedPaymentMethod)}
+                  </dd>
+                </div>
+              </dl>
+            </Panel>
+
+            {hasOrderLoyaltySection(orderReward) ? (
+              <Panel title="Rewards">
+                <OrderRewardNote reward={orderReward} showHeading={false} />
+              </Panel>
+            ) : null}
+          </aside>
         </div>
       </div>
     </AccountPageShell>

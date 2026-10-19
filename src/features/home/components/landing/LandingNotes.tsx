@@ -19,9 +19,15 @@ import {
 } from "@/styles/landingChrome";
 import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
-export function LandingNotes() {
+export type LandingNotesProps = {
+  /** Optional CMS heading override; falls back to merchandising section title. */
+  heading?: string | null;
+};
+
+export function LandingNotes({ heading }: LandingNotesProps = {}) {
   const stripRef = useRef<HTMLUListElement>(null);
   const { tiles, sectionTitle, isReady } = useFragranceNotes();
+  const title = heading?.trim() || sectionTitle;
 
   const scrollBy = (direction: number) => {
     stripRef.current?.scrollBy({ left: direction * 160, behavior: "smooth" });
@@ -34,7 +40,7 @@ export function LandingNotes() {
       <div className={pageContainer}>
         <header className={notesHead}>
           <h2 className={`${sectionTitleClass} mt-0`} id="notesTitle">
-            {sectionTitle}
+            {title}
           </h2>
         </header>
 
@@ -42,7 +48,7 @@ export function LandingNotes() {
           className={notesStrip}
           role="list"
           tabIndex={0}
-          aria-label={`${sectionTitle}, scrollable`}
+          aria-label={`${title}, scrollable`}
           ref={stripRef}
         >
           {tiles.map((tile) => {

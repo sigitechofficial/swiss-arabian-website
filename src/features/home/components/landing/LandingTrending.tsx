@@ -4,6 +4,7 @@ import { useRef, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
+import type { ProductSummary } from "@/features/catalog/types/product";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
@@ -37,9 +38,29 @@ import {
 } from "@/styles/landingChrome";
 import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
-export function LandingTrending() {
+export type LandingTrendingProps = {
+  /** When provided, skips the trending collection fetch. */
+  products?: ProductSummary[];
+  title?: string;
+  viewAllHref?: string | null;
+  viewAllLabel?: string | null;
+  collectionSlug?: string;
+};
+
+export function LandingTrending({
+  products: productsProp,
+  title = "Trending Now",
+  viewAllHref,
+  viewAllLabel,
+  collectionSlug = "trending",
+}: LandingTrendingProps = {}) {
   const stripRef = useRef<HTMLUListElement>(null);
-  const { products, pending, live } = useHomeCollectionProducts("trending", 8);
+  const fetched = useHomeCollectionProducts("trending", 8);
+  const fromCms = productsProp !== undefined;
+  const products = fromCms ? productsProp : fetched.products;
+  const pending = fromCms ? false : fetched.pending;
+  const live = fromCms ? true : fetched.live;
+  const allHref = viewAllHref ?? `/collections/${collectionSlug}`;
 
   // Preload AND fully decode every ingredients hover image up front (so the
   // first fade-in doesn't blink), and only swap to the ones that actually
@@ -60,11 +81,16 @@ export function LandingTrending() {
         <header className={`${sectionHead} flex max-w-none flex-col items-stretch`}>
           <div className={trendTitleRow}>
             <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
-              Trending Now
+              {title}
             </h2>
-            <LocaleLink className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`} href="/collections/trending">
-              View all
-            </LocaleLink>
+            {allHref ? (
+              <LocaleLink
+                className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`}
+                href={allHref}
+              >
+                {viewAllLabel?.trim() || "View all"}
+              </LocaleLink>
+            ) : null}
           </div>
         </header>
         <ul
@@ -102,7 +128,7 @@ export function LandingTrending() {
                 <ProductCardTags
                   slug={product.slug}
                   tags={live ? (product.tags ?? []) : undefined}
-                  collectionSlug={live ? "trending" : undefined}
+                  collectionSlug={live ? collectionSlug : undefined}
                 />
                 {/* Ingredients hover art — a ::before background pseudo-
                     element on `.trend-card`, not `.trend-card__media`

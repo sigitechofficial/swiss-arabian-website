@@ -1,3 +1,4 @@
+import { refreshCustomerScopedCaches } from "@/lib/auth/sessionCache";
 import { setTokens } from "@/lib/auth/token";
 import { insiderIdentify } from "@/lib/insider";
 import { useAuthStore, type StoreUser } from "@/stores/useAuthStore";
@@ -38,6 +39,7 @@ export function applyAuthResult(result: AuthResult): StoreUser {
   useAuthStore.getState().setUser(user);
   useAuthStore.getState().setBootstrapped(true);
   stitchInsiderSession(result.customer);
+  refreshCustomerScopedCaches();
   return user;
 }
 

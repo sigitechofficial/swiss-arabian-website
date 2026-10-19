@@ -571,32 +571,6 @@ function OfferFace({
   );
 }
 
-export function OfferCountLink({
-  productId,
-  onOpen,
-}: {
-  productId?: string | null;
-  onOpen?: () => void;
-}) {
-  const query = usePromotionDiscovery(productId ? [productId] : []);
-  const count = query.data?.offers.length ?? 0;
-  if (count === 0) return null;
-  const arabic = query.data?.locale.toLowerCase().startsWith("ar");
-  const label = arabic ? `${count} مزايا` : `${count} ${count === 1 ? "offer" : "offers"}`;
-  if (onOpen) {
-    return (
-      <button className="inline-flex min-h-11 cursor-pointer items-center rounded-full border-0 bg-copper px-3 text-xs font-semibold! tracking-[0.02em] text-white!" type="button" aria-haspopup="dialog" aria-controls="pdp-offers-dialog" onClick={onOpen}>
-        {label}
-      </button>
-    );
-  }
-  return (
-    <a className="inline-flex items-center rounded-full bg-copper px-[0.7rem] py-[0.3rem] text-xs font-semibold tracking-[0.02em] text-white no-underline" href="#pdp-offers">
-      {label}
-    </a>
-  );
-}
-
 export function PromotionOffersEntry({
   productId,
   surface = "pdp",

@@ -212,6 +212,23 @@ describe("live backend contract", () => {
     expect(rows[0]?.detail).toBeNull();
   });
 
+  it("shows the order and amount on redeemed points", () => {
+    const rows = readLoyaltyTransactions({
+      items: [
+        {
+          id: "redeem-1",
+          type: "POINTS_REDEEMED",
+          points: -120,
+          currencyCode: "AED",
+          moneyEquivalent: "1.20",
+          orderNumber: "UAE-MV50EEHH-3BCD38",
+          occurredAt: "2026-10-12T08:47:45.000Z",
+        },
+      ],
+    });
+    expect(rows[0]?.detail).toBe("Order UAE-MV50EEHH-3BCD38 · AED 1.20");
+  });
+
   it("returns an empty live history for a new wallet", () => {
     expect(
       readLoyaltyTransactions({

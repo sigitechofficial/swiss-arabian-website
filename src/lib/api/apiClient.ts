@@ -145,6 +145,7 @@ async function request<T>(
       res.status,
       json?.error ?? (text || "Request failed"),
       json?.meta?.requestId,
+      json?.data,
     );
   }
 

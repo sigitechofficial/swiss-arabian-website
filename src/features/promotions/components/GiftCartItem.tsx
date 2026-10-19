@@ -1,6 +1,22 @@
 import type { GiftCatalogHit } from "../hooks/useGiftCatalog";
 import type { PromotionGiftLine } from "../types/promotions";
-import { cline, clineBody, clineMedia, clineMeta, clinePrice, clineRow } from "@/styles/cartChrome";
+import { formatMoney } from "@/features/home/utils/formatMoney";
+import {
+  cline,
+  clineBody,
+  clineMedia,
+  clineMeta,
+  clinePrice,
+  clineRow,
+  drawerLineName,
+  drawerLinePrice,
+  drawerLineTag,
+  drawerLineTop,
+  giftDrawerBody,
+  giftDrawerLine,
+  giftDrawerMedia,
+  giftDrawerMeta,
+} from "@/styles/cartChrome";
 import {
   coline,
   colineBody,
@@ -34,20 +50,46 @@ export function giftCardSku(
   return null;
 }
 
-/** Display-only gift. Same layout as a product line; price reads Free. */
+/** Display-only gift. Catalog price is struck through; the customer pays nothing. */
 export function GiftCartItem({
   line,
   product,
+  currency = "AED",
   variant = "checkout",
 }: {
   line: PromotionGiftLine;
   product?: GiftCatalogHit | null;
   currency?: string;
-  /** Checkout summary uses the bag-drawer row; cart page uses full `cline`. */
-  variant?: "checkout" | "cart";
+  /** Checkout summary uses the bag-drawer row; cart page uses full `cline`; the bag drawer a compact row. */
+  variant?: "checkout" | "cart" | "drawer";
 }) {
   const title = giftCardTitle(line, product);
   const imageUrl = product?.imageUrl || line.imageUrl;
+  const money = product?.currency?.trim() || currency;
+  const list = product?.price != null && product.price > 0 ? product.price * line.quantity : null;
+
+  if (variant === "drawer") {
+    return (
+      <article className={giftDrawerLine} aria-label={`Free gift: ${title}`}>
+        <div className={giftDrawerMedia}>
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="" />
+          ) : null}
+        </div>
+        <div className={giftDrawerBody}>
+          <div className={drawerLineTop}>
+            <p className={drawerLineName}>{title}</p>
+            <GiftPrice list={list} currency={money} className={drawerLinePrice} />
+          </div>
+          <div className={giftDrawerMeta}>
+            <span className={drawerLineTag}>Free gift</span>
+            <span>Qty {line.quantity}</span>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   if (variant === "checkout") {
     return (
@@ -68,9 +110,7 @@ export function GiftCartItem({
         <div className={colineBody}>
           <div className={colineTop}>
             <h3 className={colineName}>{title}</h3>
-            <p className={colinePrice} dir="ltr">
-              Free
-            </p>
+            <GiftPrice list={list} currency={money} className={colinePrice} />
           </div>
         </div>
       </article>
@@ -88,12 +128,31 @@ export function GiftCartItem({
       <div className={clineBody}>
         <div className={clineRow}>
           <h3>{title}</h3>
-          <span className={clinePrice} dir="ltr">
-            Free
-          </span>
+          <GiftPrice list={list} currency={money} className={clinePrice} />
         </div>
         <p className={clineMeta}>Qty {line.quantity}</p>
       </div>
     </article>
+  );
+}
+
+function GiftPrice({
+  list,
+  currency,
+  className,
+}: {
+  list: number | null;
+  currency: string;
+  className: string;
+}) {
+  return (
+    <p className={`${className} flex flex-col items-end gap-1`} dir="ltr">
+      {list != null ? (
+        <span className="text-[0.72rem] font-medium leading-none text-[rgb(33_33_33/0.45)] line-through">
+          {formatMoney(list, currency)}
+        </span>
+      ) : null}
+      <span>Free</span>
+    </p>
   );
 }

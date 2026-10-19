@@ -61,8 +61,14 @@ const reelProductTitle =
 const reelProductPrice =
   "block text-[0.75rem] leading-[1.15] text-[var(--ink-2,#5b5148)] min-[750px]:text-[0.8125rem]";
 
-export function LandingReel() {
+export type LandingReelProps = {
+  /** Optional CMS heading override; falls back to merchandising section title. */
+  heading?: string | null;
+};
+
+export function LandingReel({ heading }: LandingReelProps = {}) {
   const { slides, sectionTitle, isReady } = useShopableVideo();
+  const title = heading?.trim() || sectionTitle;
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
@@ -229,9 +235,9 @@ export function LandingReel() {
   };
 
   return (
-    <section id="scent-reel" className={reelSection} aria-label={sectionTitle}>
+    <section id="scent-reel" className={reelSection} aria-label={title}>
       <div className={`${pageContainer} text-center`}>
-        <h2 className={reelHeading}>{sectionTitle}</h2>
+        <h2 className={reelHeading}>{title}</h2>
         <div className={reelMark} aria-hidden="true">
           <svg className={reelMarkSvg} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 445 190.1" fill="none">
             <path
@@ -250,7 +256,7 @@ export function LandingReel() {
             </button>
           ) : null}
 
-          <div className={reelSlider} ref={sliderRef} aria-label={sectionTitle}>
+          <div className={reelSlider} ref={sliderRef} aria-label={title}>
             {loopSlides.map((slide, index) => {
               const isActive = active === index;
               const isPlaying = Boolean(playing[index]);

@@ -184,13 +184,12 @@ export function CheckoutPageView() {
   const orderableLines = visibleLines.filter((line) => line.cartItemId);
   const leftOutCount = visibleLines.length - orderableLines.length;
 
-  // Always show the "Don't miss this" and add-on picks. Only products with a
+  // Always show the "Don't miss this" picks. Only products with a
   // live SKU or variant can join the checkout session, so the rest stay visible
   // with a disabled add button — never added locally and silently left out.
   const inCart = new Set(visibleLines.map((l) => l.slug).filter(Boolean));
   const upsells = dontMissRail.filter((p) => !inCart.has(p.slug));
   const canAddToOrder = (p: CatalogProduct) => Boolean(p.sku || p.variantId);
-  const addOns = upsells.slice(0, 3);
   const missThis = upsells.slice(0, 4);
 
   const session = checkout.session;
@@ -396,9 +395,6 @@ export function CheckoutPageView() {
                 subtotal={subtotal}
                 promoSnapshot={promoSnapshot}
                 currency={currency}
-                addOns={addOns}
-                onAdd={(product) => void addFromCheckout(product)}
-                canAdd={canAddToOrder}
                 session={session}
                 onCheckoutSession={checkout.adoptSession}
                 discount={discount}

@@ -22,7 +22,7 @@ vi.mock("../hooks/useGiftCatalog", async () => {
       const map = new Map();
       for (const sku of skus) {
         if (sku.startsWith("shopify:")) {
-          map.set(sku, { title: "ROSE 01", imageUrl: "/rose.png", sku: "ROSE-01" });
+          map.set(sku, { title: "ROSE 01", imageUrl: "/rose.png", sku: "ROSE-01", price: 17, currency: "AED" });
         }
       }
       return map;
@@ -132,6 +132,7 @@ describe("gift with purchase", () => {
     render(<GiftWithPurchase currency="AED" snapshot={promo} selectable={false} />);
     expect(screen.getByRole("heading", { name: "ROSE 01" })).toBeInTheDocument();
     expect(document.querySelector("article img")).toHaveAttribute("src", "/rose.png");
+    expect(screen.getByText("AED 17.00")).toBeInTheDocument();
     expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.queryByText(sourceSku)).not.toBeInTheDocument();
     expect(promo.gifts?.[0]?.giftItems[0]?.sku).toBe(sourceSku);

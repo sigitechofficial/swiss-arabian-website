@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, type CSSProperties } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
+import type { ProductSummary } from "@/features/catalog/types/product";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
@@ -38,9 +39,35 @@ import {
 } from "@/styles/landingChrome";
 import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 
-export function LandingProductsBand() {
+export type LandingProductsBandProps = {
+  /** When provided, skips the best-sellers collection fetch. */
+  products?: ProductSummary[];
+  title?: ReactNode;
+  viewAllHref?: string | null;
+  viewAllLabel?: string | null;
+  collectionSlug?: string;
+};
+
+export function LandingProductsBand({
+  products: productsProp,
+  title,
+  viewAllHref,
+  viewAllLabel,
+  collectionSlug = "best-sellers",
+}: LandingProductsBandProps = {}) {
   const stripRef = useRef<HTMLUListElement>(null);
-  const { products, pending, live } = useHomeCollectionProducts("best-sellers", 8);
+  const fetched = useHomeCollectionProducts("best-sellers", 8);
+  const fromCms = productsProp !== undefined;
+  const products = fromCms ? productsProp : fetched.products;
+  const pending = fromCms ? false : fetched.pending;
+  const live = fromCms ? true : fetched.live;
+  const allHref = viewAllHref ?? `/collections/${collectionSlug}`;
+  const heading =
+    title ?? (
+      <>
+        Our <em className={productsBandTitleEm}>best sellers.</em>
+      </>
+    );
 
   // Preload AND fully decode every ingredients hover image up front (so the
   // first fade-in doesn't blink), and only swap to the ones that actually
@@ -61,12 +88,17 @@ export function LandingProductsBand() {
         <header className={productsBandHead}>
           <div>
             <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="prodTitle">
-              Our <em className={productsBandTitleEm}>best sellers.</em>
+              {heading}
             </h2>
           </div>
-          <LocaleLink className={`${linkUnderline} shrink-0 whitespace-nowrap`} href="/collections/best-sellers">
-            View all
-          </LocaleLink>
+          {allHref ? (
+            <LocaleLink
+              className={`${linkUnderline} shrink-0 whitespace-nowrap`}
+              href={allHref}
+            >
+              {viewAllLabel?.trim() || "View all"}
+            </LocaleLink>
+          ) : null}
         </header>
 
         <ul
@@ -106,7 +138,7 @@ export function LandingProductsBand() {
                 <ProductCardTags
                   slug={product.slug}
                   tags={live ? (product.tags ?? []) : undefined}
-                  collectionSlug={live ? "best-sellers" : undefined}
+                  collectionSlug={live ? collectionSlug : undefined}
                 />
                 {/* Ingredients hover art — rendered as a ::before background
                     on `.product-card` (not `.product-card__media`, which

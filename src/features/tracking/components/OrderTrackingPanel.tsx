@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Check } from "lucide-react";
 import {
   ORDER_PROGRESS_STEPS,
   customerOrderTimeline,
@@ -10,19 +11,56 @@ import {
   stoppedOrderMessage,
   trackingHistory,
 } from "@/features/orders/utils/orderStatus";
+import {
+  accountPanel,
+  accountPanelBody,
+  accountPanelHead,
+  accountPanelTitle,
+  orderEvent,
+  orderEventDot,
+  orderEventLine,
+  orderEventRail,
+  orderEventTime,
+  orderEventTitle,
+  orderEvents,
+  orderFact,
+  orderFactLabel,
+  orderFactNote,
+  orderFactValue,
+  orderFacts,
+  orderLineMeta,
+  orderLineName,
+  orderShipment,
+  orderShipmentCta,
+  orderStep,
+  orderStepDot,
+  orderStepLabel,
+  orderStepLine,
+  orderStepRail,
+  orderSteps,
+} from "@/styles/accountChrome";
 import type {
   OrderTrackingSummary,
   OrderTrackingTimeline,
   TrackingEvent,
 } from "../api/orderTracking.service";
 
-function TrackingCard({ title, children }: { title: string; children: ReactNode }) {
+function TrackingCard({
+  title,
+  flush = false,
+  children,
+}: {
+  title: string;
+  /** The body brings its own padding (stepper, shipment rows). */
+  flush?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <section className="overflow-hidden rounded-lg border border-sa-border">
-      <div className="border-b border-sa-border bg-section-soft px-5 py-3">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-sa-muted">{title}</h2>
-      </div>
-      <div className="bg-page px-5 py-4">{children}</div>
+    <section className={accountPanel}>
+      <header className={accountPanelHead}>
+        <h2 className={accountPanelTitle}>{title}</h2>
+      </header>
+      {flush ? children : <div className={accountPanelBody}>{children}</div>}
     </section>
   );
 }
@@ -30,46 +68,24 @@ function TrackingCard({ title, children }: { title: string; children: ReactNode 
 function ProgressStepper({ step }: { step: number }) {
   const last = ORDER_PROGRESS_STEPS.length - 1;
   return (
-    <ol className="flex items-start" aria-label="Delivery progress">
+    <ol className={orderSteps} aria-label="Delivery progress">
       {ORDER_PROGRESS_STEPS.map((label, idx) => {
-        const done = idx < step;
-        const current = idx === step;
+        const state = idx < step ? "done" : idx === step ? "current" : "next";
         return (
-          <li key={label} className="flex flex-1" aria-current={current ? "step" : undefined}>
-            <div className="flex w-full flex-col items-center gap-2 text-center">
-              <div className="flex w-full items-center">
-                <span
-                  aria-hidden="true"
-                  className={`h-px flex-1 ${idx === 0 ? "opacity-0" : idx <= step ? "bg-terra" : "bg-sa-border"}`}
-                />
-                <span
-                  aria-hidden="true"
-                  className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${
-                    current
-                      ? "border-terra bg-terra text-white"
-                      : done
-                        ? "border-terra bg-page text-terra"
-                        : "border-sa-border bg-page text-sa-secondary"
-                  }`}
-                >
-                  {done ? "✓" : idx + 1}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className={`h-px flex-1 ${idx === last ? "opacity-0" : idx < step ? "bg-terra" : "bg-sa-border"}`}
-                />
-              </div>
-              <span
-                className={`text-[11px] leading-tight ${
-                  current ? "font-semibold text-terra" : done ? "text-sa-primary" : "text-sa-secondary"
-                }`}
-              >
-                {label}
-                <span className="sr-only">
-                  {current ? " (current step)" : done ? " (completed)" : " (upcoming)"}
-                </span>
+          <li key={label} className={orderStep} aria-current={state === "current" ? "step" : undefined}>
+            <div className={orderStepRail} aria-hidden="true">
+              <span className={orderStepLine} data-on={idx <= step} data-edge={idx === 0} />
+              <span className={orderStepDot} data-state={state}>
+                {state === "done" ? <Check size={14} strokeWidth={2.2} /> : idx + 1}
               </span>
+              <span className={orderStepLine} data-on={idx < step} data-edge={idx === last} />
             </div>
+            <span className={orderStepLabel} data-state={state}>
+              {label}
+              <span className="sr-only">
+                {state === "current" ? " (current step)" : state === "done" ? " (completed)" : " (upcoming)"}
+              </span>
+            </span>
           </li>
         );
       })}
@@ -79,182 +95,166 @@ function ProgressStepper({ step }: { step: number }) {
 
 function DeliveryEstimate({ summary }: { summary: OrderTrackingSummary }) {
   if (summary.deliveredAt) {
-    return (
-      <p className="text-[14.5px] font-semibold text-sa-primary">
-        {formatOrderDate(summary.deliveredAt, { long: true })}
-      </p>
-    );
+    return <p className={orderFactValue}>{formatOrderDate(summary.deliveredAt, { long: true })}</p>;
   }
   if (summary.estimatedDeliveryAt) {
-    return (
-      <p className="text-[14.5px] font-semibold text-sa-primary">
-        By {formatOrderDate(summary.estimatedDeliveryAt, { long: true })}
-      </p>
-    );
+    return <p className={orderFactValue}>By {formatOrderDate(summary.estimatedDeliveryAt, { long: true })}</p>;
   }
-  return (
-    <p className="text-[12.5px] leading-relaxed text-sa-secondary">
-      We’ll share an estimated delivery date once your order ships.
-    </p>
-  );
+  return <p className={orderFactNote}>We’ll share a date once your order ships.</p>;
 }
 
 export function OrderTrackingPanel({
   summary,
   timeline,
+  children,
 }: {
   summary: OrderTrackingSummary;
   /** Full per-shipment event history; without it each shipment shows its latest event. */
   timeline?: OrderTrackingTimeline | null;
+  /** Shown between the progress card and the shipment history (the account page puts the items here). */
+  children?: ReactNode;
 }) {
   const step = orderProgressStep(summary.status);
   const eventsByShipment = new Map<string, TrackingEvent[]>(
     (timeline?.shipments ?? []).map((s) => [s.shipmentId, s.events]),
   );
-  const orderEvents = customerOrderTimeline(summary.timeline ?? []);
+  const orderEventsList = customerOrderTimeline(summary.timeline ?? []);
 
   return (
-    <div id="tracking" className="flex scroll-mt-40 flex-col gap-5">
-      <TrackingCard title="Delivery progress">
+    <div id="tracking" className="flex min-w-0 scroll-mt-40 flex-col gap-[clamp(20px,3vw,28px)]">
+      <TrackingCard title="Delivery progress" flush={step >= 0}>
         {step >= 0 ? (
-          <ProgressStepper step={step} />
+          <>
+            <ProgressStepper step={step} />
+            {/* Delivery date and the carrier's latest word share the card, so neither sits in a near-empty box. */}
+            <div className={orderFacts}>
+              <div className={orderFact}>
+                <p className={orderFactLabel}>{summary.deliveredAt ? "Delivered on" : "Estimated delivery"}</p>
+                <DeliveryEstimate summary={summary} />
+              </div>
+              <div className={orderFact}>
+                <p className={orderFactLabel}>Latest update</p>
+                {summary.latestTrackingStatus ? (
+                  <>
+                    <p className={orderFactValue}>{shipmentStatusLabel(summary.latestTrackingStatus)}</p>
+                    {summary.latestTrackingEventTime ? (
+                      <p className={orderFactNote}>
+                        {formatOrderDate(summary.latestTrackingEventTime, { time: true })}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className={orderFactNote}>No shipment updates yet. They’ll appear here once it leaves our warehouse.</p>
+                )}
+              </div>
+            </div>
+          </>
         ) : (
-          <p className="text-[12.5px] leading-relaxed text-sa-secondary">{stoppedOrderMessage(summary.status)}</p>
+          <p className={`${orderFactNote} mt-0!`}>{stoppedOrderMessage(summary.status)}</p>
         )}
       </TrackingCard>
 
-      {step >= 0 ? (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TrackingCard title={summary.deliveredAt ? "Delivered on" : "Estimated delivery"}>
-            <DeliveryEstimate summary={summary} />
-          </TrackingCard>
-          <TrackingCard title="Latest update">
-            {summary.latestTrackingStatus ? (
-              <>
-                <p className="text-[13.5px] font-semibold text-sa-primary">
-                  {shipmentStatusLabel(summary.latestTrackingStatus)}
-                </p>
-                {summary.latestTrackingEventTime ? (
-                  <p className="mt-1 text-[12px] text-sa-secondary">
-                    {formatOrderDate(summary.latestTrackingEventTime, { time: true })}
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-[12.5px] leading-relaxed text-sa-secondary">
-                No shipment updates yet — we’ll post them here as soon as your order leaves our warehouse.
-              </p>
-            )}
-          </TrackingCard>
-        </div>
-      ) : null}
+      {children}
 
       {summary.shipments.length > 0 ? (
-        <TrackingCard title={`Shipments (${summary.shipments.length})`}>
-          <div className="flex flex-col gap-4">
-            {summary.shipments.map((shipment) => {
-              const events =
-                eventsByShipment.get(shipment.shipmentId) ??
-                (shipment.latestTrackingEvent ? [shipment.latestTrackingEvent] : []);
-              const history = trackingHistory(events).reverse();
-              const carrierLine = [
-                shipment.shippingPartner?.displayName,
-                shipment.deliveryMethod?.displayName,
-              ]
-                .filter(Boolean)
-                .join(" · ");
+        <TrackingCard title={`Shipments (${summary.shipments.length})`} flush>
+          {summary.shipments.map((shipment) => {
+            const events =
+              eventsByShipment.get(shipment.shipmentId) ??
+              (shipment.latestTrackingEvent ? [shipment.latestTrackingEvent] : []);
+            const history = trackingHistory(events).reverse();
+            const carrierLine = [
+              shipment.shippingPartner?.displayName,
+              shipment.deliveryMethod?.displayName,
+            ]
+              .filter(Boolean)
+              .join(" · ");
 
-              return (
-                <article key={shipment.shipmentId} className="rounded-lg border border-sa-border bg-page p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[13.5px] font-semibold text-sa-primary">
-                        {shipmentStatusLabel(shipment.status)}
+            return (
+              <article key={shipment.shipmentId} className={orderShipment}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={orderLineName}>{shipmentStatusLabel(shipment.status)}</p>
+                    {carrierLine ? <p className={orderLineMeta}>{carrierLine}</p> : null}
+                    {shipment.trackingNumber ? (
+                      <p className={orderLineMeta}>
+                        Tracking number <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.trackingNumber}</b>
                       </p>
-                      {carrierLine ? <p className="mt-0.5 text-[12px] text-sa-secondary">{carrierLine}</p> : null}
-                      {shipment.trackingNumber ? (
-                        <p className="mt-1 text-[12px] text-sa-secondary">
-                          Tracking number{" "}
-                          <span className="font-mono text-sa-primary">{shipment.trackingNumber}</span>
-                        </p>
-                      ) : null}
-                      {shipment.shipmentNumber ? (
-                        <p className="mt-0.5 text-[12px] text-sa-secondary">
-                          Shipment <span className="font-mono text-sa-primary">{shipment.shipmentNumber}</span>
-                        </p>
-                      ) : null}
-                      {shipment.estimatedDeliveryAt && !shipment.deliveredAt ? (
-                        <p className="mt-0.5 text-[12px] text-sa-secondary">
-                          Arriving by {formatOrderDate(shipment.estimatedDeliveryAt, { long: true })}
-                        </p>
-                      ) : null}
-                    </div>
-                    {shipment.trackingUrl ? (
-                      <a
-                        href={shipment.trackingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-8 shrink-0 items-center rounded-md border border-sa-border px-3 text-[11px] font-semibold text-sa-primary transition-colors hover:border-terra hover:text-terra"
-                      >
-                        Carrier tracking ↗
-                      </a>
+                    ) : null}
+                    {shipment.shipmentNumber ? (
+                      <p className={orderLineMeta}>
+                        Shipment <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.shipmentNumber}</b>
+                      </p>
+                    ) : null}
+                    {shipment.estimatedDeliveryAt && !shipment.deliveredAt ? (
+                      <p className={orderLineMeta}>
+                        Arriving by {formatOrderDate(shipment.estimatedDeliveryAt, { long: true })}
+                      </p>
                     ) : null}
                   </div>
-
-                  {shipment.items?.length ? (
-                    <ul className="mt-3 flex flex-col gap-0.5 text-[12px] text-sa-secondary">
-                      {shipment.items.map((item) => (
-                        <li key={`${shipment.shipmentId}-${item.sku}`}>
-                          {Number.parseInt(item.quantity, 10) || 1} × {item.productName ?? item.sku}
-                        </li>
-                      ))}
-                    </ul>
+                  {shipment.trackingUrl ? (
+                    <a
+                      href={shipment.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={orderShipmentCta}
+                    >
+                      Carrier tracking ↗
+                    </a>
                   ) : null}
+                </div>
 
-                  {history.length ? (
-                    <ol className="mt-3 flex flex-col gap-3 border-t border-sa-border pt-3">
-                      {history.map((entry, idx) => (
-                        <li key={entry.key} className="flex gap-3">
-                          <span
-                            aria-hidden="true"
-                            className={`mt-1.5 size-1.5 shrink-0 rounded-full ${idx === 0 ? "bg-terra" : "bg-sa-border"}`}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-semibold text-sa-primary">
-                              {entry.label}
-                              {entry.detail ? (
-                                <span className="font-normal text-sa-secondary"> · {entry.detail}</span>
-                              ) : null}
-                            </p>
-                            <p className="text-[11px] text-sa-secondary">
-                              {[formatOrderDate(entry.occurredAt, { time: true }), entry.location]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
+                {shipment.items?.length ? (
+                  <ul className={`${orderLineMeta} mt-3! flex list-none flex-col gap-0.5 p-0`}>
+                    {shipment.items.map((item) => (
+                      <li key={`${shipment.shipmentId}-${item.sku}`}>
+                        {Number.parseInt(item.quantity, 10) || 1} × {item.productName ?? item.sku}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {history.length ? (
+                  <ol className={`${orderEvents} mt-4 border-t border-[var(--line)] pt-4`}>
+                    {history.map((entry, idx, list) => (
+                      <li key={entry.key} className={orderEvent}>
+                        <div className={orderEventRail} aria-hidden="true">
+                          <span className={orderEventDot} data-latest={idx === 0} />
+                          {idx < list.length - 1 ? <span className={orderEventLine} /> : null}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={orderEventTitle}>
+                            {entry.label}
+                            {entry.detail ? <span> · {entry.detail}</span> : null}
+                          </p>
+                          <p className={orderEventTime}>
+                            {[formatOrderDate(entry.occurredAt, { time: true }), entry.location]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+              </article>
+            );
+          })}
         </TrackingCard>
       ) : null}
 
-      {orderEvents.length > 0 ? (
+      {orderEventsList.length > 0 ? (
         <TrackingCard title="Order timeline">
-          <ol className="flex flex-col">
-            {[...orderEvents].reverse().map((event, idx, list) => (
-              <li key={event.key} className="flex gap-4 pb-4 last:pb-0">
-                <div className="flex w-3 shrink-0 flex-col items-center" aria-hidden="true">
-                  <span className={`mt-1.5 size-2 shrink-0 rounded-full ${idx === 0 ? "bg-terra" : "bg-sa-border"}`} />
-                  {idx < list.length - 1 ? <span className="mt-1 w-px flex-1 bg-sa-border" /> : null}
+          <ol className={orderEvents}>
+            {[...orderEventsList].reverse().map((event, idx, list) => (
+              <li key={event.key} className={orderEvent}>
+                <div className={orderEventRail} aria-hidden="true">
+                  <span className={orderEventDot} data-latest={idx === 0} />
+                  {idx < list.length - 1 ? <span className={orderEventLine} /> : null}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12.5px] font-semibold text-sa-primary">{event.label}</p>
-                  <p className="text-[11px] text-sa-secondary">{formatOrderDate(event.occurredAt, { time: true })}</p>
+                  <p className={orderEventTitle}>{event.label}</p>
+                  <p className={orderEventTime}>{formatOrderDate(event.occurredAt, { time: true })}</p>
                 </div>
               </li>
             ))}

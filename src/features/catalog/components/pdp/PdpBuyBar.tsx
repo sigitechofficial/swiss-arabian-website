@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
+import { atStockLimit, fullLineMessage } from "@/features/cart/utils/stockLimit";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { OutOfStockAlternatives } from "@/features/promotions/components/OutOfStockAlternatives";
@@ -117,6 +118,7 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               className={pdpQtyBtn}
               type="button"
               aria-label="Increase quantity"
+              disabled={cartLine ? atStockLimit(cartLine) : false}
               onClick={() => {
                 if (cartLine) {
                   const next = Math.min(9, cartLine.quantity + 1);
@@ -143,6 +145,10 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               className={pdpAdd}
               type="button"
               onClick={() => {
+                if (cartLine?.maxQuantity != null && atStockLimit(cartLine)) {
+                  setStatus(fullLineMessage(cartLine.maxQuantity));
+                  return;
+                }
                 void addToCart({
                   sku: product.sku,
                   variantId: product.variantId,

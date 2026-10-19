@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { EmptyBagRecovery, GiftWithPurchase, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
+import { EmptyBagRecovery, GiftWithPurchase, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyDrawerNote } from "@/features/loyalty/components/LoyaltyDrawerNote";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
@@ -16,7 +16,16 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
+import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
 import { useAddToCart } from "../hooks/useAddToCart";
+import {
+  CONFETTI_COLORS,
+  CONFETTI_SHAPES,
+  PopperBurstLayer,
+  confettiShapeClass,
+  useBundleCelebration,
+  type ConfettiPiece,
+} from "./BundleCelebration";
 import {
   cartRec,
   cartRecAdd,
@@ -28,15 +37,18 @@ import {
   cartRecs,
   cartRecsSwiper,
   cartRecsTitle,
-  confettiCircle,
-  confettiDiamond,
   confettiLayer,
   confettiPiece,
-  confettiRibbon,
+  drawerActions,
   drawerBody,
   drawerCheckout,
   drawerClose,
   drawerEmpty,
+  drawerEmptyCopy,
+  drawerEmptyCta,
+  drawerEmptyHero,
+  drawerEmptyIcon,
+  drawerEmptyTitle,
   drawerFoot,
   drawerHead,
   drawerItems,
@@ -47,8 +59,11 @@ import {
   drawerLineMeta,
   drawerLineName,
   drawerLineNote,
+  drawerLineTag,
+  drawerLineTagStrong,
   drawerLinePrice,
   drawerLineQty,
+  cartQtyLimit,
   drawerLineRemove,
   drawerLineTop,
   drawerPanel,
@@ -56,15 +71,6 @@ import {
   drawerTotalRow,
   drawerViewLink,
 } from "@/styles/cartChrome";
-
-const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
-const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
-
-type ConfettiPiece = {
-  id: string;
-  shape: (typeof CONFETTI_SHAPES)[number];
-  style: Record<string, string>;
-};
 
 export function CartSideSheet() {
   const open = useUiStore((s) => s.cartOpen);
@@ -171,25 +177,36 @@ export function CartSideSheet() {
     };
   }, [celebrateFree]);
 
+  // Party poppers + panel flash when a bundle set completes (shared with the bag page).
+  const popperBurst = useBundleCelebration({
+    rootRef: panelRef,
+    layerRef: confettiLayerRef,
+    onFire: () => setIsPanelFlash(true),
+    onClear: () => setIsPanelFlash(false),
+  });
+
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
-  const promotionRecs = useApplicablePromotions().data?.recommendations?.products ?? [];
+  const applicable = useApplicablePromotions().data;
+  const promotionRecs = applicable?.recommendations?.products ?? [];
+  const offers = applicable?.offers ?? [];
 
   return (
     <SideSheet
       open={open}
       onClose={() => setCartOpen(false)}
       label="Bag"
-      className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[420px]"
+      className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[480px] lg:w-[520px]"
     >
       <div className={`${drawerPanel} ${isPanelFlash || giftFlash ? drawerPanelFlash : ""}`} ref={panelRef}>
         <div className={confettiLayer} ref={confettiLayerRef} aria-hidden="true">
           {confetti.map((piece) => (
             <span
               key={piece.id}
-              className={`${confettiPiece} ${piece.shape === "circle" ? confettiCircle : piece.shape === "ribbon" ? confettiRibbon : confettiDiamond}`}
+              className={`${confettiPiece} ${confettiShapeClass(piece.shape)}`}
               style={piece.style as CSSProperties}
             />
           ))}
+          <PopperBurstLayer burst={popperBurst} />
         </div>
 
         <header className={drawerHead}>
@@ -205,23 +222,26 @@ export function CartSideSheet() {
         </header>
 
         <div className={drawerBody}>
-          {lines.length > 0 ? (
-            <div className="grid gap-3">
-              <PromotionProgressRail surface="drawer" />
-              <PromotionQuickAdd surface="cart" />
-            </div>
-          ) : (
+          {lines.length > 0 ? null : (
             <div className={drawerEmpty}>
-              <p>Your bag is empty.</p>
-              <EmptyBagRecovery surface="empty-cart" />
-              <LocaleLink href="/products" onClick={() => setCartOpen(false)}>
-                Shop fragrances
-              </LocaleLink>
+              <div className={drawerEmptyHero}>
+                <span className={drawerEmptyIcon} aria-hidden="true">
+                  <ShoppingBag size={24} strokeWidth={1.6} />
+                </span>
+                <p className={drawerEmptyTitle}>Your bag is empty</p>
+                <p className={drawerEmptyCopy}>Explore our fragrances, or pick up where you left off below.</p>
+                <LocaleLink className={drawerEmptyCta} href="/products" onClick={() => setCartOpen(false)}>
+                  Shop fragrances
+                </LocaleLink>
+              </div>
+              <EmptyBagRecovery surface="empty-cart" fit />
             </div>
           )}
           <div className={drawerItems}>
             {lines.length === 0 ? null : (
-              lines.map((line) => (
+              bundleLinesFirst(lines, promotions).map((line) => {
+                const bundle = setBundleLineLabel(promotions, line, offers);
+                return (
                 <article className={drawerLine} key={line.cartItemId ?? line.variantId}>
                   <div className={drawerLineImg}>
                     {line.imageUrl ? (
@@ -237,8 +257,18 @@ export function CartSideSheet() {
                     {showsDistinctSize(line.title, line.sizeLabel) ? (
                       <p className={drawerLineMeta}>{line.sizeLabel}</p>
                     ) : null}
-                    {setBundleLineLabel(promotions, line) ? (
-                      <p className={drawerLineNote}>{setBundleLineLabel(promotions, line)}</p>
+                    {bundle ? (
+                      <p className={drawerLineNote}>
+                        {bundle
+                          .split("·")
+                          .map((part) => part.trim())
+                          .filter(Boolean)
+                          .map((part) => (
+                            <span className={/%|off/i.test(part) ? drawerLineTagStrong : drawerLineTag} key={part}>
+                              {part}
+                            </span>
+                          ))}
+                      </p>
                     ) : null}
                     <div className={drawerLineActions}>
                       <div className={drawerLineQty}>
@@ -267,6 +297,7 @@ export function CartSideSheet() {
                             }
                           }}
                           aria-label="Increase quantity"
+                          disabled={atStockLimit(line)}
                         >
                           <Plus size={13} />
                         </button>
@@ -285,12 +316,20 @@ export function CartSideSheet() {
                         Remove
                       </button>
                     </div>
+                    {atStockLimit(line) && line.maxQuantity != null ? (
+                      <p className={cartQtyLimit} role="status">
+                        {stockLimitNote(line.maxQuantity)}
+                      </p>
+                    ) : null}
                   </div>
                 </article>
-              ))
+                );
+              })
             )}
-            {lines.length > 0 ? <GiftWithPurchase currency={currency} /> : null}
+            {lines.length > 0 ? <GiftWithPurchase currency={currency} surface="drawer" /> : null}
           </div>
+
+          {lines.length > 0 ? <PromotionQuickAdd surface="drawer" holdPosition /> : null}
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
             <div className={cartRecs}>
@@ -347,33 +386,47 @@ export function CartSideSheet() {
           ) : null}
         </div>
 
-        <footer className={drawerFoot}>
-          <div className={drawerTotalRow}>
-            <span>Total</span>
-            <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
-          </div>
-          {quotePending ? null : <LoyaltyDrawerNote />}
-          {quotePending ? null : <EarnPreviewNote preview={earnPreview.preview} />}
-          {/* Checkout reads the server cart, so hold it for the second or two
-              a background sync is still writing the latest bag changes. */}
-          <LocaleLink
-            className={drawerCheckout}
-            href="/checkout"
-            aria-disabled={lines.length === 0 || syncing}
-            onClick={(event) => {
-              if (lines.length === 0 || syncing) {
-                event.preventDefault();
-                return;
-              }
-              setCartOpen(false);
-            }}
-          >
-            {syncing ? "Updating bag…" : "Checkout"}
-          </LocaleLink>
-          <LocaleLink className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
-            View bag
-          </LocaleLink>
-        </footer>
+        {/* Nothing to total or check out while the bag is empty. */}
+        {lines.length > 0 ? (
+          <footer className={drawerFoot}>
+            <PromotionProgressRail surface="drawer" inset={false} />
+            <div className={drawerTotalRow}>
+              <span>Total</span>
+              <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
+            </div>
+            {quotePending ? null : <LoyaltyDrawerNote />}
+            {quotePending || !earnPreview.preview?.enabled ? null : (
+              <div className="mb-3 flex items-center gap-1.5 font-sans text-[0.8rem] text-[#8a7d72] [&_.loyalty-earn-note]:m-0 [&_.loyalty-earn-note]:font-sans [&_.loyalty-earn-note]:text-[0.8rem] [&_.loyalty-earn-note]:text-[#8a7d72]">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-[#8a7d72]">
+                  <rect x="1.5" y="6" width="11" height="6.5" rx="0.8" fill="none" stroke="currentColor" strokeWidth="1.1" />
+                  <path d="M1.5 6h11M7 6v6.5M3.4 6c0-1.6 1.3-2.7 2.6-1.7.5.4.9 1 .9 1.7M10.6 6c0-1.6-1.3-2.7-2.6-1.7-.5.4-.9 1-.9 1.7" fill="none" stroke="currentColor" strokeWidth="1.1" />
+                </svg>
+                <EarnPreviewNote preview={earnPreview.preview} />
+              </div>
+            )}
+            <div className={drawerActions}>
+              <LocaleLink className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
+                View bag
+              </LocaleLink>
+              {/* Checkout reads the server cart, so hold it for the second or two
+                  a background sync is still writing the latest bag changes. */}
+              <LocaleLink
+                className={drawerCheckout}
+                href="/checkout"
+                aria-disabled={lines.length === 0 || syncing}
+                onClick={(event) => {
+                  if (lines.length === 0 || syncing) {
+                    event.preventDefault();
+                    return;
+                  }
+                  setCartOpen(false);
+                }}
+              >
+                {syncing ? "Updating bag…" : "Checkout"}
+              </LocaleLink>
+            </div>
+          </footer>
+        ) : null}
       </div>
     </SideSheet>
   );
