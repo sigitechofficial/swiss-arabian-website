@@ -8,7 +8,6 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import {
-  cartRecPh,
   cartRecPrice,
   cartRecs,
   cartRecsSwiper,
@@ -16,6 +15,7 @@ import {
   emptyBagAdd,
   emptyBagCard,
   emptyBagName,
+  emptyBagPh,
 } from "@/styles/cartChrome";
 
 /** How long after a pick lands the rail keeps its place while the bag settles. */
@@ -107,7 +107,7 @@ export function PromotionQuickAdd({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image} alt="" />
             ) : (
-              <span className={`${cartRecPh} size-[72px] rounded-lg`} aria-hidden="true" />
+              <span className={emptyBagPh} aria-hidden="true" />
             )}
             <div className="flex min-w-0 flex-col pr-10">
               {product.slug ? (
