@@ -38,6 +38,8 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   BUSINESS_RULE_FAILED:
     "We couldn’t place your order. Please review your details and try again.",
   ORDER_NOT_PAYABLE: "This order can’t be paid — it may already be paid or cancelled.",
+  ORDER_GIFT_OUT_OF_STOCK:
+    "Your free gift just went out of stock. Go back to your bag to choose another gift.",
   PAYMENT_METHOD_VALIDATION_FAILED:
     "That payment method is unavailable. Please refresh and try again.",
   PRICING_CHANGED:
