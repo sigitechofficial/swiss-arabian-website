@@ -23,8 +23,6 @@ export const accountEyebrow =
 
 export const accountLede = "m-0 mt-3 max-w-[54ch] text-[0.82rem] leading-[1.6] text-[var(--ink-2,#5b5148)]";
 
-export const accountSignedInAs = "m-0 mt-1 text-[0.75rem] text-[rgb(33_33_33/0.5)] [&_span]:text-[var(--ink-2,#5b5148)]";
-
 export const accountSignOut =
   "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-[rgb(33_33_33/0.22)] bg-transparent px-5 text-[0.78rem] font-semibold text-[var(--ink,#241f1b)] transition-colors duration-[var(--dur,0.2s)] ease-[var(--ease,ease)] [font:inherit] hover:border-[var(--ink,#241f1b)]";
 

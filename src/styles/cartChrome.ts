@@ -116,6 +116,9 @@ export const cartRec =
 export const emptyBagCard =
   "relative grid h-[104px] w-[248px] shrink-0 snap-start grid-cols-[72px_minmax(0,1fr)] items-center gap-2.5 overflow-hidden rounded-xl border border-[rgb(28_25_23/0.1)] bg-white p-2.5 text-start shadow-[0_1px_2px_rgb(28_25_23/0.04)] [&_img]:size-[72px] [&_img]:shrink-0 [&_img]:self-center [&_img]:rounded-lg [&_img]:bg-[#f3ebe0] [&_img]:object-contain";
 
+/** No-image stand-in sized to the card's 72px image column. */
+export const emptyBagPh = "block size-[72px] self-center rounded-lg bg-[#f3ebe0]";
+
 export const emptyBagName =
   "m-0 line-clamp-2 text-[0.68rem] leading-[1.3] font-medium tracking-[0.04em] text-[var(--ink,#1a1512)] uppercase";
 

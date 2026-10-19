@@ -14,6 +14,7 @@ import { registerCustomer, splitFullName } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
 import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
 import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
+import { markNewAccount } from "../utils/newAccountGreeting";
 import { AuthShell } from "./AuthShell";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
@@ -51,6 +52,8 @@ export function RegisterPageView() {
         // Without the code screen there is nowhere to finish, so only ask when it is on.
         verifyEmailFirst: env.flags.verification,
       });
+      // The first dashboard visit says "Welcome", not "Welcome back".
+      markNewAccount(values.email);
       if (isEmailVerificationRequired(result)) {
         // The account exists; the emailed code finishes the sign-up and signs in.
         const query = new URLSearchParams({ email: result.email, returnTo });
