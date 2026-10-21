@@ -1,3 +1,4 @@
+import { env } from "@/lib/config/env";
 import { initiatePayment } from "../api/orders.service";
 import {
   getPayAttempt,
@@ -36,7 +37,7 @@ export async function startPayment(
   navigate: (href: string) => void,
   method: { zonePaymentMethodId?: string | null; paymentMethodId?: string | null } = {},
 ): Promise<PaymentStartResult> {
-  const origin = window.location.origin;
+  const origin = env.returnUrl || window.location.origin;
 
   const payment = await initiatePayment(orderId, {
     // Retries bump the attempt (`pay-<orderId>-2`…): a gateway session is single-use.

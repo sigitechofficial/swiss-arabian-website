@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/lib/config/env";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -131,11 +132,17 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
     const { error } = await stripe.confirmPayment({
       elements,
       // Only followed when the card needs a 3DS redirect; that page polls the backend.
-      confirmParams: { return_url: `${window.location.origin}/checkout/payment/success` },
+      confirmParams: {
+        return_url: `${env.returnUrl || window.location.origin}/checkout/payment/success`,
+      },
       redirect: "if_required",
     });
 
-    if (error) {
+    const alreadySucceeded =
+      error?.code === "payment_intent_unexpected_state" &&
+      error.payment_intent?.status === "succeeded";
+
+    if (error && !alreadySucceeded) {
       // Stripe-side rejection — the same PaymentIntent can be retried in place.
       setErrorMsg(stripeErrorMessage(error.code, error.decline_code));
       setPhase("idle");
