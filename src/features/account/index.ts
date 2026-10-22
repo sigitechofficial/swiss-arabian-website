@@ -4,6 +4,7 @@ export { AccountPageShell } from "./components/AccountPageShell";
 export { AccountPageTitle } from "./components/AccountPageTitle";
 export { AccountPlaceholderPageView } from "./components/AccountPlaceholderPageView";
 export { AccountRewardsPageView } from "./components/AccountRewardsPageView";
+export { EmployeeBenefitsAccountView as AccountEmployeeBenefitsPageView } from "@/features/employeeBenefits/components/EmployeeBenefitsAccountView";
 export { AccountBreadcrumb } from "./components/AccountBreadcrumb";
 export { AccountStatusLabel, AccountStatusPill } from "./components/AccountStatus";
 export type { AccountStatusTone } from "./components/AccountStatus";
