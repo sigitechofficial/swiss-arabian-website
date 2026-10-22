@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
+  BadgeCheck,
   Bookmark,
   CreditCard,
   Crown,
@@ -30,6 +31,7 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   "/account/addresses": MapPin,
   "/account/payments": CreditCard,
   "/account/rewards": Gift,
+  "/account/employee-benefits": BadgeCheck,
   "/account/membership": Crown,
   "/account/wishlist": Heart,
   "/account/saved": Bookmark,
