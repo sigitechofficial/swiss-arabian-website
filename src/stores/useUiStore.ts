@@ -11,6 +11,7 @@ export type PersistedCatalogContext = {
   currencyCode?: string | null;
   countryCode?: string | null;
   salesChannelCode?: string | null;
+  legalEntityCode?: string | null;
   zoneId?: string | null;
   brandId?: string | null;
   brandCode?: string | null;

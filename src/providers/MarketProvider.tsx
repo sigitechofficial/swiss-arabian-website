@@ -27,6 +27,7 @@ import {
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import { employeeBenefitsKeys } from "@/features/employeeBenefits/api/employeeBenefits.keys";
 import { loyaltyKeys } from "@/features/loyalty/api/loyalty.keys";
 import { promotionKeys } from "@/features/promotions/api/promotions.keys";
 import { useCartStore } from "@/stores/useCartStore";
@@ -60,6 +61,7 @@ function contextFromMarket(
     languageCode,
     currencyCode: ctx.currencyCode ?? market.defaultCurrencyCode,
     countryCode: ctx.countryCode || market.countryCode,
+    legalEntityCode: ctx.legalEntityCode ?? market.primaryLegalEntityCode ?? null,
     zoneId: ctx.zoneId,
     brandId: ctx.brandId ?? null,
     brandCode: ctx.brandCode ?? null,
@@ -149,7 +151,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       current.selectedMarketId === pick.zoneCode &&
       current.catalogContext?.zoneCode === nextCtx.zoneCode &&
       current.catalogContext?.currencyCode === nextCtx.currencyCode &&
-      current.catalogContext?.salesChannelCode === nextCtx.salesChannelCode
+      current.catalogContext?.salesChannelCode === nextCtx.salesChannelCode &&
+      current.catalogContext?.legalEntityCode === nextCtx.legalEntityCode
     ) {
       if (current.catalogContext?.languageCode !== pathLanguage && current.catalogContext) {
         selectMarket(pick.zoneCode, { ...current.catalogContext, languageCode: pathLanguage });
@@ -177,6 +180,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     void queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     void queryClient.removeQueries({ queryKey: promotionKeys.all });
     void queryClient.removeQueries({ queryKey: loyaltyKeys.all });
+    void queryClient.removeQueries({ queryKey: employeeBenefitsKeys.all });
     clearPromotions();
     setSyncing(true);
 

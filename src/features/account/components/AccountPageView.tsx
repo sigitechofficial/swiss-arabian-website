@@ -50,6 +50,7 @@ import { pageTitle } from "@/styles/shopChrome";
 import { customerAccountKeys } from "../api/customerAccount.keys";
 import { listCustomerAddresses } from "../api/customerAccount.service";
 import { accountContainer } from "../constants/accountLayout";
+import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountQuickLinks, accountSupportLinks } from "../data/accountDashboardContent";
 import { countryNameForCode } from "../schemas/addressBook.schema";
 import { AccountBreadcrumb } from "./AccountBreadcrumb";
@@ -145,6 +146,10 @@ function RecentOrderPanel() {
 }
 
 function ShortcutsPanel() {
+  const { isEmployee } = useEmployeeBenefitsAccount();
+  const links = accountQuickLinks.filter(
+    (item) => item.href !== "/account/employee-benefits" || isEmployee,
+  );
   return (
     <section className={accountPanel} aria-labelledby="account-shortcuts">
       <header className={accountPanelHead}>
@@ -153,7 +158,7 @@ function ShortcutsPanel() {
         </h2>
       </header>
       <div className={accountTiles}>
-        {accountQuickLinks.map(({ icon: Icon, title, description, href }) => (
+        {links.map(({ icon: Icon, title, description, href }) => (
           <LocaleLink className={accountTile} href={href} key={href}>
             <span className={accountTileIcon} aria-hidden="true">
               <Icon size={18} strokeWidth={1.6} />
