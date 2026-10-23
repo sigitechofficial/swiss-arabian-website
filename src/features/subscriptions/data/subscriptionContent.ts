@@ -45,7 +45,7 @@ export const whyFeatures: FeatureItem[] = [
   },
   {
     title: "Not heavy on the pocket.",
-    body: "Just 55 AED per month — one 10ml refillable atomizer with free shipping across the GCC.",
+    body: "A fixed monthly fee for this market, with free shipping on every delivery.",
     icon: subscriptionAssets.icons.why2,
   },
   {

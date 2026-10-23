@@ -6,6 +6,7 @@ import {
   MapPin,
   MessageCircle,
   Package,
+  Repeat,
   RotateCcw,
   UserRound,
   type LucideIcon,
@@ -48,6 +49,12 @@ export const accountQuickLinks: AccountQuickLink[] = [
     title: "Wishlist",
     description: "The Swiss Arabian scents you’ve saved for later.",
     href: "/account/wishlist",
+  },
+  {
+    icon: Repeat,
+    title: "Subscriptions",
+    description: "Pending agreements you have registered. No payment is collected here.",
+    href: "/account/subscription",
   },
   {
     icon: Gift,

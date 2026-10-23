@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   Bookmark,
   CreditCard,
-  Crown,
   Gift,
   Heart,
   LayoutGrid,
+  Repeat,
   MapPin,
   Package,
   UserRound,
@@ -30,23 +30,30 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   "/account/addresses": MapPin,
   "/account/payments": CreditCard,
   "/account/rewards": Gift,
-  "/account/membership": Crown,
   "/account/wishlist": Heart,
   "/account/saved": Bookmark,
+  "/account/subscription": Repeat,
 };
 
 export function AccountTabNav() {
   const pathname = stripLocalePrefix(usePathname() || "/");
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Where the row scrolls (phones, tablets), bring the current section to the middle.
+  // Scroll only far enough to reveal the current section. Centering it clips the first tab.
   useEffect(() => {
     const list = listRef.current;
     const current = list?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!list || !current || list.scrollWidth <= list.clientWidth) return;
+    if (!list || !current || list.scrollWidth <= list.clientWidth) {
+      if (list) list.scrollLeft = 0;
+      return;
+    }
     const row = list.getBoundingClientRect();
     const tab = current.getBoundingClientRect();
-    list.scrollLeft += tab.left + tab.width / 2 - (row.left + row.width / 2);
+    if (tab.left < row.left) {
+      list.scrollLeft -= row.left - tab.left;
+    } else if (tab.right > row.right) {
+      list.scrollLeft += tab.right - row.right;
+    }
   }, [pathname]);
 
   return (

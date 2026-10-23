@@ -1,8 +1,16 @@
 "use client";
 
-import { LandingPlans } from "@/features/home/components/landing/LandingPlans";
-import type { CmsLink } from "../../types/cmsHome.types";
-import { resolveCmsLink, type CmsLinkContext } from "../../utils/resolveCmsLink";
+import { useContext } from "react";
+import { QueryClientContext } from "@tanstack/react-query";
+
+import { LandingPlans, type LandingPlanCard } from "@/features/home/components/landing/LandingPlans";
+import { listSubscriptionPlans } from "@/features/subscriptions/api/subscription.api";
+import { subscriptionKeys } from "@/features/subscriptions/api/subscription.keys";
+import type { PublicSubscriptionPlan } from "@/features/subscriptions/types/subscription.types";
+import { useApiQuery } from "@/lib/api/queryHooks";
+import { useUiStore } from "@/stores/useUiStore";
+
+import type { CmsLinkContext } from "../../utils/resolveCmsLink";
 
 export type CmsSubscriptionPlansData = {
   eyebrow?: string | null;
@@ -19,7 +27,7 @@ export type CmsSubscriptionPlansData = {
     featured?: boolean;
     badgeLabel?: string | null;
     ctaLabel?: string | null;
-    link?: CmsLink | null;
+    link?: { type?: string; url?: string | null } | null;
   }>;
 };
 
@@ -28,31 +36,49 @@ type Props = {
   linkContext?: CmsLinkContext;
 };
 
-export function CmsSubscriptionPlans({ data, linkContext }: Props) {
-  const plans = (data.plans ?? [])
-    .filter((plan) => plan.name?.trim() && plan.displayPrice?.trim())
-    .map((plan, index) => ({
-      id: plan.id?.trim() || `plan-${index}`,
-      name: plan.name!.trim(),
-      displayPrice: plan.displayPrice!.trim(),
-      billingIntervalLabel: plan.billingIntervalLabel,
-      description: plan.description,
-      benefits: plan.benefits,
-      featured: Boolean(plan.featured),
-      badgeLabel: plan.badgeLabel,
-      ctaLabel: plan.ctaLabel,
-      href: resolveCmsLink(plan.link, linkContext) || "/subscriptions",
-    }));
+function intervalLabel(unit: string | null | undefined): string {
+  if (!unit || unit === "MONTH") return "/month";
+  return `/${unit.toLowerCase()}`;
+}
 
-  if (!plans.length) return null;
+export function toLandingPlanCards(plans: PublicSubscriptionPlan[]): LandingPlanCard[] {
+  return plans.map((plan, index) => {
+    const featured = plans.length > 2 && index === 1;
+    return {
+      id: plan.planCode,
+      name: plan.name,
+      displayPrice: `${plan.currencyCode} ${plan.amount}`,
+      billingIntervalLabel: intervalLabel(plan.intervalUnit),
+      description: plan.description,
+      featured,
+      badgeLabel: featured ? "Most popular" : null,
+      ctaLabel: "Start plan",
+      href: `/subscriptions/${encodeURIComponent(plan.planCode)}`,
+    };
+  });
+}
+
+function LiveSubscriptionPlans({ data, zoneCode }: { data: CmsSubscriptionPlansData; zoneCode: string }) {
+  const plans = useApiQuery(subscriptionKeys.plans(zoneCode), () => listSubscriptionPlans(zoneCode), {
+    enabled: Boolean(zoneCode),
+  });
+  const cards = plans.isSuccess ? toLandingPlanCards(plans.data) : [];
+  if (!cards.length) return null;
 
   return (
     <LandingPlans
       eyebrowText={data.eyebrow}
       heading={data.heading}
       description={data.description}
-      plans={plans}
-      editorialPricingOnly={data.editorialPricingOnly !== false}
+      plans={cards}
+      editorialPricingOnly={false}
     />
   );
+}
+
+export function CmsSubscriptionPlans({ data }: Props) {
+  const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode || state.selectedMarketId || "");
+  const queryClient = useContext(QueryClientContext);
+  if (!queryClient) return <section aria-label="Subscription plans" />;
+  return <LiveSubscriptionPlans data={data} zoneCode={zoneCode} />;
 }
