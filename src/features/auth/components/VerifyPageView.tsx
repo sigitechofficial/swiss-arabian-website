@@ -16,6 +16,8 @@ import {
   requestEmailVerification,
 } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
+import { confirmStoredPhoneWithSameCode } from "../lib/confirmStoredPhone";
+import { refreshCustomerScopedCaches } from "@/lib/auth/sessionCache";
 import { AuthShell } from "./AuthShell";
 import { AuthSubmitButton } from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
@@ -65,6 +67,15 @@ export function VerifyPageView() {
       const result = await confirmEmailVerification(email, values.code, { signIn: true });
       if (result.token && result.customer) {
         applyAuthResult({ token: result.token, customer: result.customer });
+        try {
+          await confirmStoredPhoneWithSameCode({
+            phoneE164: result.customer.phoneE164,
+            code: values.code,
+          });
+        } catch {
+          // Email ownership is already confirmed. Phone proof is optional here.
+        }
+        refreshCustomerScopedCaches();
         toast("Email verified. You’re signed in.", "success");
         router.push(returnTo);
         return;

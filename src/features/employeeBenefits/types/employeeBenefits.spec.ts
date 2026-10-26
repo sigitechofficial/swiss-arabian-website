@@ -93,6 +93,7 @@ describe("employee benefits readers", () => {
       legalEntityCode: "QTR1",
       employeeId: null,
       personnelNumber: null,
+      fullName: null,
     });
   });
 
