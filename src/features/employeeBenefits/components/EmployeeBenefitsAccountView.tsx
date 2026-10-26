@@ -1,30 +1,22 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { ReactNode } from "react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { AccountBreadcrumb } from "@/features/account/components/AccountBreadcrumb";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { accountContainer } from "@/features/account/constants/accountLayout";
-import {
-  accountBtnPrimary,
-  accountInputClass,
-} from "@/features/account/constants/accountForm";
+import { accountBtnPrimary } from "@/features/account/constants/accountForm";
+import { useLoyaltyAccount } from "@/features/loyalty/hooks/useLoyaltyAccount";
+import { formatPoints } from "@/features/loyalty/types/loyalty";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ApiClientError } from "@/lib/api/apiError";
-import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import {
-  acceptInvitationSchema,
-  type AcceptInvitationFormValues,
-} from "../schemas/acceptInvitation.schema";
 import { useEmployeeBenefitsAccount } from "../hooks/useEmployeeBenefitsAccount";
 import {
-  acceptInvitationMessage,
   EMPLOYEE_BENEFITS_COPY as COPY,
   formatBenefitQuantity,
   type EmployeeBenefitRowView,
   type EmployeeBenefitsView,
-  type EmployeeLinkView,
+  type EmployeeContextView,
 } from "../types/employeeBenefits";
 
 function Card({ children }: { children: ReactNode }) {
@@ -49,80 +41,6 @@ function syncedLabel(value: string | null): string | null {
 function quantity(value: string | null): string {
   if (!value) return "—";
   return formatBenefitQuantity(value);
-}
-
-function ConnectForm({
-  onSubmit,
-  pending,
-  error,
-}: {
-  onSubmit: (values: AcceptInvitationFormValues) => Promise<unknown>;
-  pending: boolean;
-  error: string | null;
-}) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<AcceptInvitationFormValues>({
-    resolver: zodResolver(acceptInvitationSchema),
-    defaultValues: { invitationId: "", claimSecret: "" },
-  });
-
-  useEffect(() => () => reset({ invitationId: "", claimSecret: "" }), [reset]);
-
-  return (
-    <form
-      className="mt-6 grid max-w-[480px] gap-4"
-      autoComplete="off"
-      onSubmit={handleSubmit(async (values) => {
-        try {
-          await onSubmit(values);
-          reset({ invitationId: "", claimSecret: "" });
-        } catch {
-          reset({ invitationId: values.invitationId, claimSecret: "" });
-        }
-      })}
-    >
-      <h2 className="text-[16px] font-semibold text-sa-primary">{COPY.connectHeading}</h2>
-      <p className="text-[13px] leading-relaxed text-sa-secondary">{COPY.connectHint}</p>
-      <label className="grid gap-1.5">
-        <span className="text-[12px] font-semibold text-sa-primary">{COPY.invitationId}</span>
-        <input
-          {...register("invitationId")}
-          type="text"
-          autoComplete="off"
-          className={accountInputClass}
-          disabled={pending}
-        />
-        {errors.invitationId ? (
-          <span className="text-[12px] text-red-600">{errors.invitationId.message}</span>
-        ) : null}
-      </label>
-      <label className="grid gap-1.5">
-        <span className="text-[12px] font-semibold text-sa-primary">{COPY.claimSecret}</span>
-        <input
-          {...register("claimSecret")}
-          type="password"
-          autoComplete="off"
-          className={accountInputClass}
-          disabled={pending}
-        />
-        {errors.claimSecret ? (
-          <span className="text-[12px] text-red-600">{errors.claimSecret.message}</span>
-        ) : null}
-      </label>
-      {error ? (
-        <p className="text-[13px] text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <button type="submit" className={accountBtnPrimary} disabled={pending}>
-        {pending ? COPY.connecting : COPY.submit}
-      </button>
-    </form>
-  );
 }
 
 function BenefitCard({ row }: { row: EmployeeBenefitRowView }) {
@@ -159,36 +77,60 @@ function BenefitCard({ row }: { row: EmployeeBenefitRowView }) {
   );
 }
 
+function sameLegalEntity(left: string | null | undefined, right: string | null | undefined): boolean {
+  return Boolean(left && right && left.trim().toUpperCase() === right.trim().toUpperCase());
+}
+
+function LoyaltyAside() {
+  const { wallet } = useLoyaltyAccount();
+  const points = wallet.data?.availablePoints;
+  return (
+    <Card>
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.loyaltyBalance}</p>
+      <p className="mt-2 text-[20px] font-semibold tabular-nums text-sa-primary">
+        {typeof points === "number" ? formatPoints(points) : "—"}
+      </p>
+      <p className="mt-3 max-w-[560px] text-[13px] leading-relaxed text-sa-secondary">{COPY.loyaltyUnchanged}</p>
+      <LocaleLink href="/account/rewards" className="mt-3 inline-block text-[13px] font-semibold text-terra hover:underline">
+        {COPY.rewardsSeparate}
+      </LocaleLink>
+    </Card>
+  );
+}
+
 function ConnectedSummary({
-  link,
+  context,
   benefits,
 }: {
-  link: EmployeeLinkView;
+  context: EmployeeContextView;
   benefits: EmployeeBenefitsView | undefined;
 }) {
+  const scoped =
+    !benefits?.legalEntityCode || sameLegalEntity(benefits.legalEntityCode, context.legalEntityCode)
+      ? benefits
+      : { ...benefits, benefits: [], eligible: benefits.eligible };
+  const reference = scoped?.personnelNumber ?? context.personnelNumber;
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-terra">{COPY.connected}</p>
         <p className="mt-2 max-w-[560px] text-[13px] leading-relaxed text-sa-secondary">{COPY.connectedHint}</p>
         <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-          {benefits?.personnelNumber ? (
+          {reference ? (
             <div>
               <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.employeeRef}</dt>
-              <dd className="mt-1 text-[14px] text-sa-primary">{benefits.personnelNumber}</dd>
+              <dd className="mt-1 text-[14px] text-sa-primary">{reference}</dd>
             </div>
           ) : null}
-          {benefits?.designation ? (
+          {scoped?.designation ? (
             <div>
               <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.designation}</dt>
-              <dd className="mt-1 text-[14px] text-sa-primary">{benefits.designation}</dd>
+              <dd className="mt-1 text-[14px] text-sa-primary">{scoped.designation}</dd>
             </div>
           ) : null}
           <div>
             <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.legalEntity}</dt>
-            <dd className="mt-1 text-[14px] text-sa-primary">
-              {benefits?.legalEntityCode ?? link.legalEntityCode ?? "—"}
-            </dd>
+            <dd className="mt-1 text-[14px] text-sa-primary">{context.legalEntityCode ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.authority}</dt>
@@ -196,17 +138,18 @@ function ConnectedSummary({
           </div>
         </dl>
       </Card>
-      {benefits?.eligible === false ? (
+      <LoyaltyAside />
+      {scoped?.eligible === false ? (
         <Card>
           <p className="text-[14px] text-sa-primary">{COPY.ineligible}</p>
         </Card>
       ) : null}
-      {benefits && benefits.eligible !== false && benefits.benefits.length === 0 ? (
+      {scoped && scoped.eligible !== false && scoped.benefits.length === 0 ? (
         <Card>
           <p className="text-[14px] text-sa-primary">{COPY.emptyBenefits}</p>
         </Card>
       ) : null}
-      {benefits?.benefits.map((row, index) => (
+      {scoped?.benefits.map((row, index) => (
         <BenefitCard key={`${row.affiliationName ?? "benefit"}-${index}`} row={row} />
       ))}
     </div>
@@ -223,43 +166,62 @@ function Unavailable({ status }: { status: string }) {
   );
 }
 
-function acceptErrorMessage(error: unknown): string {
-  if (error instanceof ApiClientError && error.status === 401) {
-    return "Your session has expired. Please sign in again.";
-  }
-  if (error instanceof ApiClientError) {
-    return acceptInvitationMessage(error.message);
-  }
-  return getUserFacingErrorMessage(error);
+function AdminLinkNote() {
+  return (
+    <Card>
+      <p className="max-w-[560px] text-[14px] leading-relaxed text-sa-primary">{COPY.adminLink}</p>
+      <LocaleLink href="/account/rewards" className="mt-4 inline-block text-[13px] font-semibold text-terra hover:underline">
+        {COPY.rewardsSeparate}
+      </LocaleLink>
+    </Card>
+  );
 }
 
 export function EmployeeBenefitsAccountView() {
-  const { link, benefits, accept, bootstrapped, isAuthenticated } = useEmployeeBenefitsAccount();
+  const {
+    link,
+    context,
+    benefits,
+    isEmployee,
+    zoneCode,
+    legalEntityCode,
+    bootstrapped,
+    isAuthenticated,
+  } = useEmployeeBenefitsAccount();
 
-  const connect = (values: AcceptInvitationFormValues) => accept.unwrap(values);
+  const currentLinkInEntity =
+    Boolean(legalEntityCode) && sameLegalEntity(link.data?.legalEntityCode, legalEntityCode);
+  const loadError = context.error ?? link.error;
 
   let body;
   if (!bootstrapped || !isAuthenticated) {
     body = <PageLoading label={!bootstrapped ? "Checking session…" : "Redirecting…"} />;
-  } else if (link.isPending) {
+  } else if (!zoneCode) {
+    body = <PageLoading label={COPY.waitingMarket} />;
+  } else if (context.isPending || link.isPending) {
     body = <PageLoading label="Loading Employee Benefits…" />;
-  } else if (link.isError) {
-    const status = link.error instanceof ApiClientError ? link.error.status : 0;
+  } else if (context.isError || link.isError) {
+    const status = loadError instanceof ApiClientError ? loadError.status : 0;
     body = (
       <Card>
         <p className="text-[14px] text-sa-primary">
           {status === 403 ? COPY.unavailable : COPY.loadError}
         </p>
         {status !== 401 ? (
-          <button type="button" className={`${accountBtnPrimary} mt-4`} onClick={() => void link.refetch()}>
+          <button
+            type="button"
+            className={`${accountBtnPrimary} mt-4`}
+            onClick={() => {
+              void context.refetch();
+              void link.refetch();
+            }}
+          >
             {COPY.retry}
           </button>
         ) : null}
       </Card>
     );
-  } else if (link.data?.status === "SUSPENDED" || link.data?.status === "REVOKED") {
-    body = <Unavailable status={link.data.status} />;
-  } else if (link.data?.status === "ACTIVE") {
+  } else if (isEmployee && context.data) {
     body = benefits.isError ? (
       <Card>
         <p className="text-[14px] text-sa-primary">{COPY.loadError}</p>
@@ -270,20 +232,15 @@ export function EmployeeBenefitsAccountView() {
     ) : benefits.isPending ? (
       <PageLoading label="Loading Employee Benefits…" />
     ) : (
-      <ConnectedSummary link={link.data} benefits={benefits.data} />
+      <ConnectedSummary context={context.data} benefits={benefits.data} />
     );
+  } else if (
+    currentLinkInEntity &&
+    (link.data?.status === "SUSPENDED" || link.data?.status === "REVOKED")
+  ) {
+    body = <Unavailable status={link.data.status} />;
   } else {
-    body = (
-      <Card>
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.notConnected}</p>
-        <p className="mt-3 max-w-[560px] text-[14px] leading-relaxed text-sa-primary">{COPY.intro}</p>
-        <ConnectForm
-          onSubmit={connect}
-          pending={accept.isPending}
-          error={accept.error ? acceptErrorMessage(accept.error) : null}
-        />
-      </Card>
-    );
+    body = <AdminLinkNote />;
   }
 
   return (

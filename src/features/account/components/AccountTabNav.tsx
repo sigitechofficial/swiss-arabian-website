@@ -18,6 +18,7 @@ import {
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
+import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
 import { accountTab, accountTabs, accountTabsList } from "@/styles/accountChrome";
 
@@ -40,6 +41,10 @@ const TAB_ICONS: Record<string, LucideIcon> = {
 export function AccountTabNav() {
   const pathname = stripLocalePrefix(usePathname() || "/");
   const listRef = useRef<HTMLDivElement>(null);
+  const { isEmployee } = useEmployeeBenefitsAccount();
+  const tabs = accountTabNav.filter(
+    (item) => item.href !== "/account/employee-benefits" || isEmployee,
+  );
 
   // Where the row scrolls (phones, tablets), bring the current section to the middle.
   useEffect(() => {
@@ -54,7 +59,7 @@ export function AccountTabNav() {
   return (
     <nav className={accountTabs} aria-label="Account sections">
       <div className={`${accountContainer} ${accountTabsList}`} ref={listRef}>
-        {accountTabNav.map((item) => {
+        {tabs.map((item) => {
           const active =
             item.href === "/account"
               ? pathname === "/account"

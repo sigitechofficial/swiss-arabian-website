@@ -8,6 +8,14 @@ export type EmployeeLinkView = {
   legalEntityCode: string | null;
 };
 
+export type EmployeeContextView = {
+  isEmployee: boolean;
+  employeeLinkStatus: EmployeeLinkStatus | null;
+  legalEntityCode: string | null;
+  employeeId: string | null;
+  personnelNumber: string | null;
+};
+
 export type EmployeeBenefitUnitStatus = "NOT_VERIFIED" | "VERIFIED" | string;
 
 export type EmployeeBenefitRowView = {
@@ -83,6 +91,36 @@ export function readEmployeeLink(raw: unknown): EmployeeLinkView {
   };
 }
 
+/**
+ * Backend `isEmployee` only. Never inferred from phone, name, email, or a typed personnel number.
+ * Legal entity is whatever the Backend resolved from zoneCode — never derived in the Storefront.
+ */
+export function readEmployeeContext(raw: unknown): EmployeeContextView {
+  const row = asRecord(raw) ?? {};
+  const legalEntityCode = trustedLegalEntityCode(readTrimmed(row.legalEntityCode));
+  const employeeLinkStatus = readLinkStatus(row.employeeLinkStatus);
+  const isEmployee = row.isEmployee === true;
+  return {
+    isEmployee,
+    employeeLinkStatus: isEmployee ? employeeLinkStatus ?? "ACTIVE" : employeeLinkStatus,
+    legalEntityCode,
+    employeeId: isEmployee ? readTrimmed(row.employeeId) : null,
+    personnelNumber: isEmployee ? readTrimmed(row.personnelNumber) : null,
+  };
+}
+
+/** Selected market zone from catalog context — never a customer-typed value. */
+export function trustedZoneCode(value?: string | null): string | null {
+  const code = value?.trim() || "";
+  return code || null;
+}
+
+/** Backend-resolved legal entity on a response — never sent as a GET query argument. */
+export function trustedLegalEntityCode(value?: string | null): string | null {
+  const code = value?.trim().toUpperCase() || "";
+  return code || null;
+}
+
 function readBenefitRow(raw: unknown): EmployeeBenefitRowView | null {
   const row = asRecord(raw);
   if (!row) return null;
@@ -128,14 +166,12 @@ export const EMPLOYEE_BENEFITS_COPY = {
   title: "Employee Benefits",
   eyebrow: "Staff affiliation",
   intro:
-    "Employee Benefits are available only to verified Swiss Arabian employees whose Storefront customer account has been linked through an authorised invitation.",
-  connectHeading: "Connect my employee account",
-  connectHint:
-    "Enter the invitation ID and claim code you received through the approved verification process. We never ask for an employee ID as proof of identity.",
-  invitationId: "Invitation ID",
-  claimSecret: "Invitation claim code",
-  submit: "Connect account",
-  connecting: "Connecting…",
+    "Employee Benefits are shown when this customer account has a verified active staff link in the current market.",
+  adminLink:
+    "Employee account linking for this market can be completed through Swiss Arabian Admin verification.",
+  loyaltyBalance: "Customer Loyalty balance",
+  loyaltyUnchanged:
+    "This is your existing Customer Rewards wallet. Staff allowance is not included, and linking does not add points.",
   connected: "Connected",
   connectedHint: "This Storefront account is linked to a verified employee record. Figures below are read-only.",
   notConnected: "Not connected",
@@ -156,6 +192,8 @@ export const EMPLOYEE_BENEFITS_COPY = {
   legalEntity: "Legal entity",
   notSpendable: "These figures cannot be spent online yet.",
   support: "If you believe this is a mistake, contact HR or store support through the approved process.",
+  rewardsSeparate: "Customer Rewards",
+  waitingMarket: "Waiting for the current market…",
 } as const;
 
 export function acceptInvitationMessage(message: string | undefined): string {

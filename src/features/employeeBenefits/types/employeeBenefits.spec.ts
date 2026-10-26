@@ -3,6 +3,7 @@ import {
   acceptInvitationMessage,
   formatBenefitQuantity,
   readEmployeeBenefits,
+  readEmployeeContext,
   readEmployeeLink,
 } from "./employeeBenefits";
 
@@ -66,6 +67,33 @@ describe("employee benefits readers", () => {
 
   it("formats decimal strings without numeric coercion", () => {
     expect(formatBenefitQuantity("4879.50")).toBe("4,879.50");
+  });
+
+  it("reads legal-entity context from isEmployee only", () => {
+    expect(
+      readEmployeeContext({
+        isEmployee: true,
+        employeeLinkStatus: "ACTIVE",
+        legalEntityCode: "URD1",
+        employeeId: "emp-1",
+        personnelNumber: "000123",
+      }),
+    ).toMatchObject({ isEmployee: true, personnelNumber: "000123", legalEntityCode: "URD1" });
+    expect(
+      readEmployeeContext({
+        isEmployee: false,
+        employeeLinkStatus: null,
+        legalEntityCode: "QTR1",
+        employeeId: "emp-1",
+        personnelNumber: "000123",
+      }),
+    ).toEqual({
+      isEmployee: false,
+      employeeLinkStatus: null,
+      legalEntityCode: "QTR1",
+      employeeId: null,
+      personnelNumber: null,
+    });
   });
 
   it("maps invitation errors without leaking HR internals", () => {
