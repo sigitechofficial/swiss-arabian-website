@@ -38,6 +38,7 @@ export type SubscriptionCycleSnapshot = {
 export type SubscriptionMonthRow = {
   month: number;
   fragrance: string | null;
+  imageUrl: string | null;
   billingDate: string | null;
   payment: TrackerPaymentStatus;
   orderNumber: string | null;
@@ -131,16 +132,21 @@ function fragranceName(item: SubscriptionQueueItem | undefined): string | null {
   return item.name?.trim() || item.sku;
 }
 
-function plannedFragrance(
+function plannedMonth(
   mode: SubscriptionSelectionMode,
   queue: SubscriptionQueueItem[],
   schedule: SubscriptionDetail["surpriseSchedule"],
   month: number,
-): string | null {
-  if (mode === "REPLENISHMENT") return fragranceName(queue[0]);
-  if (mode === "QUEUE") return fragranceName(queue.find((row) => row.position === month));
+): { fragrance: string | null; imageUrl: string | null } {
+  if (mode === "REPLENISHMENT") {
+    return { fragrance: fragranceName(queue[0]), imageUrl: queue[0]?.imageUrl?.trim() || null };
+  }
+  if (mode === "QUEUE") {
+    const item = queue.find((row) => row.position === month);
+    return { fragrance: fragranceName(item), imageUrl: item?.imageUrl?.trim() || null };
+  }
   const pinned = schedule?.months.find((row) => row.position === month);
-  return pinned?.sku ?? null;
+  return { fragrance: pinned?.name?.trim() || pinned?.sku || null, imageUrl: pinned?.imageUrl?.trim() || null };
 }
 
 function paymentFromCycle(status: string | undefined): TrackerPaymentStatus {
@@ -199,9 +205,11 @@ export function buildSubscriptionMonths(input: {
     const orderId = skipped ? null : cycle?.orderId?.trim() || null;
     const orderNumber = skipped ? null : cycle?.orderNumber?.trim() || null;
     const trackingUrl = cycle?.trackingUrl?.trim() || null;
+    const planned = plannedMonth(input.mode, input.queue, input.surpriseSchedule, month);
     return {
       month,
-      fragrance: cycle?.sku?.trim() || plannedFragrance(input.mode, input.queue, input.surpriseSchedule, month),
+      fragrance: planned.fragrance || cycle?.sku?.trim() || null,
+      imageUrl: planned.imageUrl,
       billingDate: !skipped && payment !== "PAID" && month === nextOpenMonth ? input.nextBillingAt : null,
       payment,
       orderNumber,

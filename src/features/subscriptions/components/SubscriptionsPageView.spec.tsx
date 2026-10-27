@@ -9,6 +9,7 @@ import { SubscriptionsPageView } from "./SubscriptionsPageView";
 
 const listSubscriptionPlans = vi.hoisted(() => vi.fn());
 const listPlanProducts = vi.hoisted(() => vi.fn());
+const getMySubscription = vi.hoisted(() => vi.fn());
 const routerPush = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
@@ -23,6 +24,7 @@ vi.mock("next/link", () => ({
 vi.mock("../api/subscription.api", () => ({
   listSubscriptionPlans: (...args: unknown[]) => listSubscriptionPlans(...args),
   listPlanProducts: (...args: unknown[]) => listPlanProducts(...args),
+  getMySubscription: (...args: unknown[]) => getMySubscription(...args),
 }));
 
 vi.mock("./SubscriptionCardSetup", () => ({
@@ -44,6 +46,7 @@ describe("subscription landing", () => {
     listPlanProducts.mockReset();
     listPlanProducts.mockResolvedValue([]);
     listSubscriptionPlans.mockReset();
+    getMySubscription.mockReset();
   });
 
   afterEach(() => {
@@ -106,7 +109,7 @@ describe("subscription landing", () => {
     expect(await screen.findByText(/Total AED 65\.00\/month/)).toBeInTheDocument();
     expect(screen.getByText(/Total AED 220\.00\/month/)).toBeInTheDocument();
     expect(screen.getAllByText(/Shipping included/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Subscribe now" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /One/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Four/ })).toBeInTheDocument();
     expect(screen.queryByText(/1449/)).not.toBeInTheDocument();
@@ -206,7 +209,7 @@ describe("subscription landing", () => {
     expect(await screen.findByText("One")).toBeInTheDocument();
     expect(screen.queryByText("Which plan?")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Two/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Subscribe now" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
   });
 
   it("sends the locked plan to subscription checkout without a card step", async () => {
@@ -240,6 +243,38 @@ describe("subscription landing", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Subscribe now" }));
     expect(routerPush).toHaveBeenCalledWith("/subscriptions/A/checkout");
     expect(screen.queryByText("Card payment")).not.toBeInTheDocument();
+  });
+
+  it("shows fragrances again when the saved agreement was cancelled", async () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      bootstrapped: true,
+      user: { id: "c", email: "a@b.c" },
+    });
+    useUiStore.getState().selectMarket("UAE", { zoneCode: "UAE", currencyCode: "AED" });
+    sessionStorage.setItem("sa-sub-agreement:A", "old-agreement");
+    getMySubscription.mockResolvedValue({ id: "old-agreement", status: "CANCELLED", planCode: "A" });
+    listSubscriptionPlans.mockResolvedValue([
+      {
+        planCode: "A",
+        name: "One",
+        description: null,
+        amount: "65.00",
+        currencyCode: "AED",
+        intervalUnit: "MONTH",
+        intervalCount: 1,
+        versionNumber: 1,
+        publishedAt: "2026-10-19T00:00:00.000Z",
+      },
+    ]);
+    listPlanProducts.mockResolvedValue([
+      { variantId: "men", productId: "p", sku: "MEN", name: "Vetiver" },
+    ]);
+    renderPage("A");
+    expect(await screen.findByRole("heading", { name: "Choose your favourite 12" })).toBeInTheDocument();
+    expect(screen.getByText("Vetiver")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
+    await waitFor(() => expect(sessionStorage.getItem("sa-sub-agreement:A")).toBeNull());
   });
 
   it("shows an empty state when the market has no plans", async () => {

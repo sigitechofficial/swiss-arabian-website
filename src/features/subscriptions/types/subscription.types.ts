@@ -18,6 +18,7 @@ export type PublicSubscriptionPlan = {
   intervalCount: number;
   versionNumber: number;
   publishedAt: string;
+  imageUrl?: string | null;
 };
 
 export type PlanProduct = {
@@ -59,6 +60,7 @@ export type SubscriptionQueueItem = {
   position: number;
   quantity: number;
   available?: boolean;
+  imageUrl?: string | null;
 };
 
 export type SubscriptionQueueView = {
@@ -93,6 +95,8 @@ export type SurpriseScheduleSnapshot = {
     variantId: string;
     productId: string;
     sku: string;
+    name?: string | null;
+    imageUrl?: string | null;
   }>;
 };
 

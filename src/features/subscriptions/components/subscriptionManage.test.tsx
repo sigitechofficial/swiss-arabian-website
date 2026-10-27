@@ -281,8 +281,9 @@ describe("subscription management controls", () => {
         })}
       />,
     );
-    expect(screen.getByText(/VORA141201/)).toHaveTextContent("Skipped");
-    expect(screen.getByText(/VORA141201/)).not.toHaveTextContent("SHOULD-NOT-SHOW");
+    const skippedMonth = screen.getByText(/VORA141201/).closest("li");
+    expect(skippedMonth).toHaveTextContent("Skipped");
+    expect(skippedMonth).not.toHaveTextContent("SHOULD-NOT-SHOW");
     expect(screen.getByText(/UAE-PAID/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Track order" })).toHaveLength(1);
   });

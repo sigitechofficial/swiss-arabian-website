@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -11,7 +11,7 @@ import { localizeHref } from "@/lib/i18n/localePath";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
 
-import { listPlanProducts, listSubscriptionPlans } from "../api/subscription.api";
+import { getMySubscription, listPlanProducts, listSubscriptionPlans } from "../api/subscription.api";
 import { subscriptionKeys } from "../api/subscription.keys";
 import type { PublicSubscriptionPlan, SubscriptionAudience, SubscriptionSelectionMode } from "../types/subscription.types";
 import {
@@ -22,6 +22,9 @@ import {
 import { subscriptionCheckoutPath } from "../utils/subscriptionCheckout";
 
 const QUEUE_LIMIT = 12;
+const SECTION_SCROLL = "scroll-mt-[calc(var(--site-header-h,9.25rem)+1rem)]";
+const STICKY_TOP = "top-[calc(var(--site-header-h,9.25rem)+1rem)]";
+const PANEL_MAX = "max-h-[calc(100vh-var(--site-header-h,9.25rem)-2rem)]";
 const TINTS = ["#8c4435", "#6d3428", "#b98a4b", "#5b5148", "#a75a49", "#2c241d"];
 
 function useZoneCode(): string {
@@ -99,11 +102,25 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   const [queueChoice, setQueueChoice] = useState<string[] | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const agreementId = useSyncExternalStore(
+  const [monthsOpen, setMonthsOpen] = useState(false);
+  const [audienceRemoved, setAudienceRemoved] = useState(0);
+  const [scrollNonce, setScrollNonce] = useState(0);
+  const pendingScroll = useRef<string | null>(null);
+  const storedAgreementId = useSyncExternalStore(
     () => () => {},
     () => (lockedPlanCode ? sessionStorage.getItem(`sa-sub-agreement:${lockedPlanCode}`) ?? "" : ""),
     () => "",
   );
+  const [releasedAgreement, setReleasedAgreement] = useState(false);
+  const savedAgreement = useApiQuery(
+    subscriptionKeys.detail(storedAgreementId, zoneCode),
+    () => getMySubscription(storedAgreementId, zoneCode),
+    { enabled: Boolean(storedAgreementId && zoneCode && authed && !releasedAgreement) },
+  );
+  const agreementId =
+    releasedAgreement || (authed && savedAgreement.data?.status !== "PENDING_ACTIVATION")
+      ? ""
+      : storedAgreementId;
 
   const plans = useApiQuery(subscriptionKeys.plans(zoneCode), () => listSubscriptionPlans(zoneCode), {
     enabled: Boolean(zoneCode),
@@ -125,6 +142,22 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   const gender =
     genderChoice && choicePlan === activePlanCode ? genderChoice : (storedGender ?? "men");
   const audience: SubscriptionAudience = gender === "men" ? "MEN" : "WOMEN";
+  useEffect(() => {
+    if (!lockedPlanCode || !storedAgreementId || releasedAgreement || !authed) return;
+    const finished = savedAgreement.isError || (savedAgreement.isSuccess && savedAgreement.data.status !== "PENDING_ACTIVATION");
+    if (!finished) return;
+    sessionStorage.removeItem(`sa-sub-agreement:${lockedPlanCode}`);
+    setReleasedAgreement(true);
+  }, [
+    lockedPlanCode,
+    storedAgreementId,
+    releasedAgreement,
+    authed,
+    savedAgreement.isError,
+    savedAgreement.isSuccess,
+    savedAgreement.data?.status,
+  ]);
+
   const products = useApiQuery(
     subscriptionKeys.products(active?.planCode ?? "", zoneCode, audience),
     () => listPlanProducts(active!.planCode, zoneCode, audience),
@@ -142,7 +175,33 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
     ? retainAudienceSelections(queue, products.data.map((item) => item.variantId))
     : { selected: queue, removed: 0 };
   const shownQueue = retained.selected;
-  const audienceNotice = audienceChangeNotice(retained.removed);
+  const audienceNotice = audienceChangeNotice(audienceRemoved || retained.removed);
+
+  useEffect(() => {
+    if (!products.isSuccess || !products.data) return;
+    const next = retainAudienceSelections(queue, products.data.map((item) => item.variantId));
+    if (next.removed < 1) return;
+    setAudienceRemoved(next.removed);
+    setQueueChoice(next.selected);
+  }, [products.isSuccess, products.data, queue]);
+
+  useEffect(() => {
+    const id = pendingScroll.current;
+    if (!id) return;
+    pendingScroll.current = null;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [mode, scrollNonce]);
+
+  function scrollToSection(id: string) {
+    pendingScroll.current = id;
+    setScrollNonce((current) => current + 1);
+  }
+
+  function pickMode(value: "choose" | "surprise") {
+    pendingScroll.current = value === "choose" ? "favourite-12" : "perfumers";
+    setModeChoice(value);
+    setScrollNonce((current) => current + 1);
+  }
 
   function rememberDraft(planCode: string, selected: string[]) {
     const selectionMode: SubscriptionSelectionMode = mode === "surprise" ? "SURPRISE" : "QUEUE";
@@ -207,7 +266,11 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   const genderLabel = gender === "men" ? "For him" : "For her";
   const modeLine = mode === "choose" ? "Your own queue of up to 12 picks" : "Hand-picked by our perfumers";
   const remaining = QUEUE_LIMIT - shownQueue.length;
-  const ring = 2 * Math.PI * 32;
+  const queueFull = shownQueue.length >= QUEUE_LIMIT;
+  const continueLabel = queueFull
+    ? "Continue to checkout"
+    : `Continue with ${shownQueue.length} ${shownQueue.length === 1 ? "pick" : "picks"}`;
+  const ring = 2 * Math.PI * 30;
   const dash = `${((ring * shownQueue.length) / QUEUE_LIMIT).toFixed(1)} ${ring.toFixed(1)}`;
 
   return (
@@ -243,7 +306,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
         </div>
       </section>
 
-      <section id="how" className="mx-auto max-w-[1240px] px-6 pt-16 pb-24" aria-labelledby="how-h">
+      <section id="how" className={`mx-auto max-w-[1240px] px-6 pt-16 pb-24 ${SECTION_SCROLL}`} aria-labelledby="how-h">
         <div className="mb-14 flex flex-col items-center gap-3 text-center">
           <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">How it works</p>
           <h2 id="how-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">Three steps to your first atomizer</h2>
@@ -263,7 +326,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
         </ol>
       </section>
 
-      <section id="plans" className="scroll-mt-28 bg-[var(--cream-2,#f3ebda)] px-6 py-24" aria-labelledby="plans-h">
+      <section id="plans" className={`${SECTION_SCROLL} bg-[var(--cream-2,#f3ebda)] px-6 py-24`} aria-labelledby="plans-h">
         <div className="mx-auto flex max-w-[1100px] flex-wrap items-stretch gap-12">
           <div className="flex min-w-0 flex-1 basis-[420px] flex-col gap-8">
             <div className="flex flex-col gap-3">
@@ -318,6 +381,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                     onClick={() => {
                       setChoicePlan(activePlanCode);
                       setGenderChoice(option);
+                      setAudienceRemoved(0);
                     }}
                     className={`min-h-12 rounded-full text-[length:var(--fs-body)] ${gender === option ? "bg-[var(--ink,#241f1b)] font-semibold text-[var(--cream,#faf6ee)]" : "bg-transparent font-medium text-[var(--ink-2,#5b5148)]"}`}
                   >
@@ -345,7 +409,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                       key={value}
                       type="button"
                       aria-pressed={selected}
-                      onClick={() => setModeChoice(value as "choose" | "surprise")}
+                      onClick={() => pickMode(value as "choose" | "surprise")}
                       className={`flex min-h-24 flex-col gap-1.5 rounded-2xl px-5 py-4 text-left ${selected ? "border-2 border-[var(--ink,#241f1b)] bg-white" : "border-2 border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)]"}`}
                     >
                       <span className="text-[length:var(--fs-body-lg)] font-semibold">{title}</span>
@@ -363,9 +427,9 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                 <span className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--gold,#b98a4b)] uppercase">Monthly plan</span>
                 <span className="rounded-full border border-white/20 px-3 py-1.5 text-[length:var(--fs-eyebrow)]">{genderLabel}</span>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none">{activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "—"}</span>
-                <span className="text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">/ month</span>
+              <div className="flex items-baseline gap-2 whitespace-nowrap">
+                <span className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none whitespace-nowrap">{activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "—"}</span>
+                <span className="text-[length:var(--fs-body)] whitespace-nowrap text-[var(--sand,#ece0c9)]">/ month</span>
               </div>
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">{active.name}</p>
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">
@@ -390,11 +454,17 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
               {!(lockedPlanCode && bootstrapped && !authed) ? (
                 <button
                   type="button"
-                  onClick={() => continueWithPlan()}
+                  onClick={() => {
+                    if (!agreementId && mode === "choose" && shownQueue.length === 0) {
+                      scrollToSection("favourite-12");
+                      return;
+                    }
+                    continueWithPlan();
+                  }}
                   disabled={!activePrice?.available}
-                  className="mt-2 flex min-h-14 items-center justify-center rounded-full bg-[var(--gold,#b98a4b)] text-[length:var(--fs-body-lg)] font-semibold text-[var(--ink,#241f1b)] disabled:opacity-50"
+                  className="mt-2 flex min-h-14 items-center justify-center rounded-full bg-[var(--gold,#b98a4b)] text-[length:var(--fs-body-lg)] font-semibold whitespace-nowrap text-[var(--ink,#241f1b)] disabled:opacity-50"
                 >
-                  {agreementId ? "Continue to checkout" : "Subscribe now"}
+                  {agreementId ? "Continue to checkout" : mode === "choose" && shownQueue.length === 0 ? "Choose your 12" : "Subscribe now"}
                 </button>
               ) : null}
               <p className="m-0 text-center text-[0.82rem] text-[var(--sand,#ece0c9)]">We ship one fragrance at the start of each month.</p>
@@ -404,7 +474,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
       </section>
 
       {active && mode === "choose" && !agreementId ? (
-        <section id="shop" className="mx-auto max-w-[1240px] px-6 py-24" aria-labelledby="pick-h">
+        <section id="favourite-12" className={`mx-auto max-w-[1240px] px-6 py-24 pb-36 min-[860px]:pb-24 ${SECTION_SCROLL}`} aria-labelledby="pick-h">
           <div className="mb-9 flex flex-wrap items-end justify-between gap-6">
             <div className="flex flex-col gap-3">
               <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">Build your queue</p>
@@ -423,50 +493,8 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             </label>
           </div>
 
-          <div className="flex flex-wrap items-start gap-8">
-            <aside className="flex w-full max-w-[280px] shrink-0 flex-col gap-7">
-              <div className="flex items-center gap-4 rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white p-5">
-                <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label={`${shownQueue.length} of 12 fragrances chosen`}>
-                  <circle cx="38" cy="38" r="32" fill="none" stroke="var(--cream-2, #f3ebda)" strokeWidth="6" />
-                  <circle cx="38" cy="38" r="32" fill="none" stroke="var(--copper, #8c4435)" strokeWidth="6" strokeLinecap="round" strokeDasharray={dash} transform="rotate(-90 38 38)" />
-                  <text x="38" y="44" textAnchor="middle" fontSize="17" fontWeight="700" fill="var(--ink, #241f1b)">{shownQueue.length}/12</text>
-                </svg>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[length:var(--fs-body-lg)] font-semibold">Your queue</span>
-                  <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)]">
-                    {remaining === 0 ? "All 12 months planned" : `${remaining} ${remaining === 1 ? "month" : "months"} left to fill`}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2.5 rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white p-5">
-                <span className="mb-1 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">Months in your queue</span>
-                <ol className="m-0 flex list-none flex-col gap-1 p-0">
-                  {Array.from({ length: QUEUE_LIMIT }, (_, index) => {
-                    const id = shownQueue[index];
-                    const item = products.data?.find((row) => row.variantId === id);
-                    return (
-                      <li key={index} className="flex min-h-10 min-w-0 items-center gap-3 overflow-hidden border-b border-[var(--cream-2,#f3ebda)]">
-                        <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">M{index + 1}</span>
-                        {item ? (
-                          <>
-                            <span className="size-2.5 shrink-0 rounded-full" style={{ background: tintFor(item.name) }} />
-                            <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold" title={item.name}>{item.name}</span>
-                            <button type="button" aria-label={`Remove ${item.name}`} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 shrink-0 place-items-center text-[var(--ink-2,#5b5148)]">×</button>
-                          </>
-                        ) : (
-                          <span className="min-w-0 flex-1 truncate text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">Perfumer&apos;s choice</span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ol>
-                <button type="button" onClick={continueWithPlan} className="mt-3 flex min-h-[52px] items-center justify-center rounded-full bg-[var(--ink,#241f1b)] text-[length:var(--fs-body)] font-semibold text-[var(--cream,#faf6ee)]">
-                  Continue with {shownQueue.length} {shownQueue.length === 1 ? "pick" : "picks"}
-                </button>
-              </div>
-            </aside>
-
-            <div className="flex min-w-0 flex-[999] basis-[560px] flex-col gap-5">
+          <div className="grid items-start gap-8 min-[860px]:grid-cols-[minmax(0,1fr)_260px]">
+            <div className="flex min-w-0 flex-col gap-5">
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">
                 {products.isSuccess ? `${visible.length} ${visible.length === 1 ? "fragrance" : "fragrances"} on this plan` : "Fragrances for this plan"}
               </p>
@@ -500,7 +528,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                           aria-pressed={queued}
                           disabled={full}
                           onClick={() => toggleFragrance(item.variantId)}
-                          className={`mt-auto flex min-h-[46px] items-center justify-center rounded-full border border-[var(--ink,#241f1b)] text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.06em] uppercase ${queued ? "bg-[var(--ink,#241f1b)] text-[var(--cream,#faf6ee)]" : "bg-white text-[var(--ink,#241f1b)]"} disabled:opacity-50`}
+                          className={`mt-auto flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border border-[var(--ink,#241f1b)] text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.06em] uppercase disabled:cursor-not-allowed ${queued ? "bg-[var(--ink,#241f1b)] text-[var(--cream,#faf6ee)]" : "bg-white text-[var(--ink,#241f1b)]"} disabled:opacity-50`}
                         >
                           {queued ? `Month ${position + 1}` : full ? "Queue full" : "Add to queue"}
                         </button>
@@ -510,16 +538,121 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                 })}
               </div>
             </div>
+
+            <aside className={`sticky ${STICKY_TOP} ${PANEL_MAX} hidden min-h-0 flex-col self-start min-[860px]:flex`}>
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white p-5">
+                <div className="flex shrink-0 items-center gap-4">
+                  <div className="relative size-[76px] shrink-0" role="img" aria-label={`${shownQueue.length} of 12 fragrances chosen`}>
+                    <svg className="size-full" viewBox="0 0 76 76" aria-hidden="true">
+                      <circle cx="38" cy="38" r="30" fill="none" stroke="var(--cream-2, #f3ebda)" strokeWidth="5" />
+                      <circle cx="38" cy="38" r="30" fill="none" stroke="var(--copper, #8c4435)" strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} transform="rotate(-90 38 38)" />
+                    </svg>
+                    <span className="absolute inset-0 flex flex-col items-center justify-center leading-none text-[var(--ink,#241f1b)]">
+                      <span className="text-[20px] font-bold tabular-nums">{shownQueue.length}</span>
+                      <span className="mt-0.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--ink-2,#5b5148)] uppercase">of 12</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[length:var(--fs-body-lg)] font-semibold">Your queue</span>
+                    <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)]">
+                      {remaining === 0 ? "All 12 months planned" : `${remaining} ${remaining === 1 ? "month" : "months"} left to fill`}
+                    </span>
+                  </div>
+                </div>
+                <span className="shrink-0 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">Months in your queue</span>
+                <ol className="m-0 flex min-h-0 flex-1 list-none flex-col gap-1 overflow-auto p-0">
+                  {Array.from({ length: QUEUE_LIMIT }, (_, index) => {
+                    const id = shownQueue[index];
+                    const item = products.data?.find((row) => row.variantId === id);
+                    return (
+                      <li key={index} className="flex min-h-10 min-w-0 items-center gap-3 overflow-hidden border-b border-[var(--cream-2,#f3ebda)]">
+                        <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">M{index + 1}</span>
+                        {item ? (
+                          <>
+                            <span className="size-2.5 shrink-0 rounded-full" style={{ background: tintFor(item.name) }} />
+                            <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold" title={item.name}>{item.name}</span>
+                            <button type="button" aria-label={`Remove ${item.name}`} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 shrink-0 cursor-pointer place-items-center text-[var(--ink-2,#5b5148)]">×</button>
+                          </>
+                        ) : (
+                          <span className="min-w-0 flex-1 truncate text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">Perfumer&apos;s choice</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+                <div className="shrink-0">
+                  <button type="button" onClick={continueWithPlan} disabled={shownQueue.length === 0} className="flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-full bg-[var(--ink,#241f1b)] px-3 text-[0.82rem] font-semibold text-[var(--cream,#faf6ee)] disabled:cursor-not-allowed disabled:opacity-50">
+                    {continueLabel}
+                  </button>
+                  <p className="m-0 mt-2 text-center text-[0.75rem] text-[var(--ink-2,#5b5148)]">Empty months are our perfumers&apos; choice</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          {monthsOpen ? (
+            <button type="button" aria-label="Close months" className="fixed inset-0 z-40 bg-[rgba(36,31,27,0.45)] min-[860px]:hidden" onClick={() => setMonthsOpen(false)} />
+          ) : null}
+          <div
+            className={`fixed inset-x-0 bottom-[7.75rem] z-50 max-h-[70vh] overflow-auto rounded-t-[20px] border border-[var(--line,#d9ccb4)] bg-white px-4 pt-3 pb-4 shadow-[0_-12px_40px_rgba(36,31,27,0.12)] transition-transform duration-300 ease-out min-[860px]:hidden ${monthsOpen ? "translate-y-0" : "pointer-events-none translate-y-[120%]"}`}
+            aria-hidden={!monthsOpen}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--line,#d9ccb4)]" />
+            <p className="m-0 mb-2 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">Months in your queue</p>
+            <ol className="m-0 list-none p-0">
+              {Array.from({ length: QUEUE_LIMIT }, (_, index) => {
+                const id = shownQueue[index];
+                const item = products.data?.find((row) => row.variantId === id);
+                return (
+                  <li key={index} className="flex min-h-10 items-center gap-3 border-b border-[var(--cream-2,#f3ebda)]">
+                    <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">M{index + 1}</span>
+                    {item ? (
+                      <>
+                        <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold">{item.name}</span>
+                        <button type="button" aria-label={`Remove ${item.name}`} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 place-items-center text-[var(--ink-2,#5b5148)]">×</button>
+                      </>
+                    ) : (
+                      <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">Perfumer&apos;s choice</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)] min-[860px]:hidden">
+            <div className="flex items-center justify-between gap-3 px-4 pt-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="relative size-11 shrink-0" role="img" aria-label={`${shownQueue.length} of 12`}>
+                  <svg className="size-full" viewBox="0 0 76 76" aria-hidden="true">
+                    <circle cx="38" cy="38" r="30" fill="none" stroke="var(--cream-2, #f3ebda)" strokeWidth="5" />
+                    <circle cx="38" cy="38" r="30" fill="none" stroke="var(--copper, #8c4435)" strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} transform="rotate(-90 38 38)" />
+                  </svg>
+                  <span className="absolute inset-0 grid place-items-center text-[12px] font-bold tabular-nums">{shownQueue.length}</span>
+                </div>
+                <p className="m-0 text-[0.95rem] font-semibold leading-tight">Your queue</p>
+              </div>
+              <button type="button" className="shrink-0 text-[0.82rem] font-semibold text-[var(--copper,#8c4435)] underline" aria-expanded={monthsOpen} onClick={() => setMonthsOpen((open) => !open)}>
+                {monthsOpen ? "Hide months" : "View months"}
+              </button>
+            </div>
+            <div className="flex justify-center px-4 pt-2 pb-3">
+              <button type="button" onClick={continueWithPlan} disabled={shownQueue.length === 0} className="flex min-h-11 w-full max-w-[18rem] items-center justify-center whitespace-nowrap rounded-full bg-[var(--ink,#241f1b)] px-4 text-[0.9rem] font-semibold text-[var(--cream,#faf6ee)] disabled:opacity-50">
+                {continueLabel}
+              </button>
+            </div>
           </div>
         </section>
       ) : null}
 
       {active && mode === "surprise" ? (
-        <section className="mx-auto flex max-w-[900px] flex-col items-center gap-4 px-6 py-24 text-center">
+        <section id="perfumers" className={`mx-auto flex max-w-[900px] flex-col items-center gap-4 px-6 py-24 text-center ${SECTION_SCROLL}`}>
           <h2 className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] font-medium">Leave it to our perfumers</h2>
           <p className="m-0 max-w-[560px] text-[length:var(--fs-body-lg)] leading-[var(--leading-body)] text-[var(--ink-2,#5b5148)]">
-            Each month our perfumers pick a {gender === "men" ? "men's or unisex" : "women's or unisex"} fragrance for you. Prefer to choose yourself? Switch to “Pick my own 12” above at any time.
+            Each month our perfumers pick a {gender === "men" ? "men's or unisex" : "women's or unisex"} fragrance for you.
           </p>
+          <button type="button" className="text-[length:var(--fs-body)] font-semibold text-[var(--copper,#8c4435)] underline" onClick={() => pickMode("choose")}>
+            Pick my own 12 instead
+          </button>
         </section>
       ) : null}
     </div>

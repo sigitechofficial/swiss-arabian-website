@@ -104,8 +104,8 @@ const EMPTY_ADDRESS: AddressFields = {
   postalCode: "",
 };
 
-function draftFor(planCode: string): { mode: "SURPRISE" | "QUEUE"; selected: string[]; audience: "MEN" | "WOMEN" } {
-  const raw = sessionStorage.getItem(`sa-sub-draft:${planCode}`) ?? "";
+function readDraft(raw: string): { mode: "SURPRISE" | "QUEUE"; selected: string[]; audience: "MEN" | "WOMEN" } {
+  if (!raw) return { mode: "QUEUE", selected: [], audience: "MEN" };
   try {
     const parsed = JSON.parse(raw) as { mode?: string; selected?: unknown; audience?: string };
     const selected = Array.isArray(parsed.selected)
@@ -114,11 +114,15 @@ function draftFor(planCode: string): { mode: "SURPRISE" | "QUEUE"; selected: str
     return {
       mode: parsed.mode === "SURPRISE" ? "SURPRISE" : "QUEUE",
       selected,
-      audience: parsed.audience === "MEN" ? "MEN" : "WOMEN",
+      audience: parsed.audience === "WOMEN" ? "WOMEN" : "MEN",
     };
   } catch {
-    return { mode: "QUEUE", selected: [], audience: "WOMEN" };
+    return { mode: "QUEUE", selected: [], audience: "MEN" };
   }
+}
+
+function draftFor(planCode: string): { mode: "SURPRISE" | "QUEUE"; selected: string[]; audience: "MEN" | "WOMEN" } {
+  return readDraft(sessionStorage.getItem(`sa-sub-draft:${planCode}`) ?? "");
 }
 
 function PayForm({
@@ -177,7 +181,8 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     () => "",
   );
   const [createdAgreementId, setCreatedAgreementId] = useState("");
-  const agreementId = createdAgreementId || storedAgreementId;
+  const [droppedStoredId, setDroppedStoredId] = useState(false);
+  const agreementId = createdAgreementId || (droppedStoredId ? "" : storedAgreementId);
   const savedAgreement = useApiQuery(
     subscriptionKeys.detail(agreementId, zoneCode),
     () => getMySubscription(agreementId, zoneCode),
@@ -199,6 +204,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   const [filledEmail, setFilledEmail] = useState(false);
   const posted = useRef(false);
   const opening = useRef(false);
+  const orderImage = plan?.imageUrl?.trim() || savedAgreement.data?.imageUrl?.trim() || null;
   const selectedMethod = deliveryMethods.find((method) => method.zoneDeliveryMethodId === selectedDeliveryId) ?? null;
 
   useEffect(() => {
@@ -326,13 +332,21 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   }
 
   useEffect(() => {
+    if (!storedAgreementId || createdAgreementId || droppedStoredId || !savedAgreement.isFetched) return;
+    if (savedAgreement.data?.status === "PENDING_ACTIVATION") return;
+    sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
+    setDroppedStoredId(true);
+  }, [storedAgreementId, createdAgreementId, droppedStoredId, savedAgreement.isFetched, savedAgreement.data?.status, planCode]);
+
+  useEffect(() => {
     if (!agreementId || !zoneCode || !authed || !activeConsent) return;
+    if (!createdAgreementId && (!savedAgreement.isFetched || savedAgreement.data?.status !== "PENDING_ACTIVATION")) return;
     void refreshPayment(agreementId).catch((err: unknown) => {
       setError(err instanceof ApiClientError ? err.message : "Checkout could not be loaded.");
     });
     // Resume an existing agreement once. Polling and Stripe confirmation read again themselves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agreementId, zoneCode, authed, activeConsent?.version]);
+  }, [agreementId, zoneCode, authed, activeConsent?.version, createdAgreementId, savedAgreement.isFetched, savedAgreement.data?.status]);
 
   function addressFields(address: StorefrontCustomerAddressView): AddressFields {
     return {
@@ -531,8 +545,18 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
             <aside className={`${checkoutSummary} ${summaryOpen ? checkoutSummaryOpen : ""}`} id="checkout-summary" aria-label="Order summary">
               <h2>Your order</h2>
               <div className={checkoutLines}>
-                <article className={coline}>
-                  <div className={colineMedia}><b>1</b></div>
+                <article className={coline} style={{ gridTemplateColumns: "112px minmax(0, 1fr)", alignItems: "center" }}>
+                  <div className={colineMedia} style={{ width: 112, height: 112 }}>
+                    {orderImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={orderImage}
+                        alt=""
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    ) : null}
+                    <b>1</b>
+                  </div>
                   <div className={colineBody}>
                     <div className={colineTop}>
                       <h3 className={colineName}>{plan?.name ?? "Scent Club"}</h3>

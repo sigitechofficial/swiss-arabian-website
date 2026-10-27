@@ -166,7 +166,7 @@ describe("subscription monthly tracker", () => {
         trackingUrl: "https://track.example/TRK1",
       }],
     });
-    expect(months[0]?.fragrance).toBe("SAVED-SKU");
+    expect(months[0]?.fragrance).toBe("First");
     expect(months[0]?.orderNumber).toBe("UAE-MVKKD8WD-8EA655");
     expect(months[0]?.trackingNumber).toBe("TRK1");
     expect(months[0]?.trackingUrl).toBe("https://track.example/TRK1");

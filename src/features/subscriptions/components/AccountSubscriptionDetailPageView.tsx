@@ -47,7 +47,6 @@ import {
   selectVariant,
   statusLabel,
   subscriptionPriceLines,
-  surpriseAccountNote,
 } from "../utils/subscriptionRules";
 
 type Props = { id: string };
@@ -143,6 +142,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
     setError(null);
     try {
       await cancelSubscription(id, zoneCode);
+      if (detail.data?.planCode) sessionStorage.removeItem(`sa-sub-agreement:${detail.data.planCode}`);
       setConfirmCancel(false);
       await refresh();
     } catch (err) {
@@ -153,9 +153,9 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
   }
 
   const months = detail.data ? monthsFromAgreement(detail.data) : [];
-  const currentMonth = months.find((row) => row.orderNumber || row.payment === "PAID" || row.payment === "PROCESSING") ?? months[0];
+  const currentMonth = [...months].reverse().find((row) => row.orderId) ?? months.find((row) => row.payment === "PROCESSING") ?? months[0];
   const price = detail.data ? subscriptionPriceLines(detail.data) : null;
-  const recorded = months.filter((row) => row.fragrance || row.orderNumber || row.payment === "PAID" || row.payment === "SKIPPED").length;
+  const completed = months.filter((row) => row.payment === "PAID" || row.payment === "SKIPPED").length;
 
   return (
     <AccountPageShell>
@@ -188,12 +188,12 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
             <section aria-label="Subscription summary" className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
               <Summary label="MONTHLY TOTAL" value={price?.available ? `${detail.data.currencyCode} ${price.totalAmount}` : "—"} hint={`${detail.data.currencyCode} ${detail.data.amount} fragrance + ${detail.data.shippingMode === "EXTRA_FIXED" ? `${detail.data.currencyCode} ${detail.data.shippingAmount} shipping` : "shipping included"}`} />
               <Summary label="NEXT BILLING" value={detail.data.nextBillingAt ? new Date(detail.data.nextBillingAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Not scheduled"} hint={detail.data.nextBillingAt ? `Next billing ${new Date(detail.data.nextBillingAt).toLocaleDateString("en-AE", { year: "numeric", month: "long", day: "numeric" })}` : detail.data.status === "PENDING_ACTIVATION" ? "No payment has been taken." : "The next saved billing date"} />
-              <Summary label="PLAN PROGRESS" value={`${recorded} of ${months.length || 12} months`} hint="Saved cycles and selected fragrances" />
+              <Summary label="PLAN PROGRESS" value={`${completed} of ${months.length || 12} months`} hint="Paid or skipped months" />
               <Summary label="QUEUE" value={detail.data.audience ? audienceLabel(detail.data.audience) : "Saved picks"} hint={audienceLabel(detail.data.audience)} />
             </section>
             <div className="flex flex-wrap items-start gap-6">
               <div className="flex min-w-0 flex-[999_1_600px] flex-col gap-6">
-                {currentMonth ? <MonthHero month={currentMonth} imageUrl={detail.data.imageUrl} /> : null}
+                {currentMonth ? <MonthHero month={currentMonth} /> : null}
                 <SubscriptionMonthlyTracker detail={detail.data} />
               </div>
               <aside className="flex min-w-0 flex-[1_1_320px] flex-col gap-5">
@@ -218,36 +218,6 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                       onSaved={refresh}
                     />
                   ) : null}
-                </section>
-                <section className="flex flex-col gap-3.5 rounded-[20px] border border-[#E6DCCB] bg-white p-[22px]">
-                  <div className="flex items-baseline justify-between">
-                    <h2 className="m-0 text-lg font-semibold">Fragrance queue</h2>
-                    <span className="text-[13px] text-[#6E5A50]">{detail.data.audience ? audienceLabel(detail.data.audience) : modeLabel(detail.data.selectionMode)}</span>
-                  </div>
-                  {detail.data.selectionMode === "SURPRISE" ? (
-                    <p className="m-0 text-sm text-[#6E5A50]">{surpriseAccountNote({
-                      schedulePinned: Boolean(detail.data.surpriseSchedule?.pinned),
-                      previewSource: detail.data.provisionalPreview?.source ?? null,
-                      previewSku: detail.data.provisionalPreview?.source === "SCHEDULE" ? detail.data.provisionalPreview.variant?.sku : null,
-                    })}</p>
-                  ) : queueRows(detail.data.queue).length === 0 ? (
-                    <p className="m-0 text-sm text-[#6E5A50]">No fragrances are saved on this agreement.</p>
-                  ) : (
-                    <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-                      {queueRows(detail.data.queue).map((row) => (
-                        <li key={row.variantId} className="flex items-center gap-3">
-                          <span className="w-5 text-[13px] font-semibold text-[#6E5A50]">{row.position}</span>
-                          <span className="flex size-12 items-center justify-center rounded-xl bg-[#F1E6D6]">
-                            <BottleMark />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <span className="block text-sm font-semibold break-words">{row.name || row.sku}{row.available === false ? " (not currently selectable)" : ""}</span>
-                            <span className="text-xs text-[#6E5A50]">{row.sku} · Month {row.position}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
                 </section>
                 {address ? (
                   <p className="m-0 text-sm break-words text-[#6E5A50]">
@@ -277,7 +247,10 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                     onPause={() => runManagement(() => pauseSubscription(id, zoneCode))}
                     onResume={() => runManagement(() => resumeSubscription(id, zoneCode))}
                     onSkip={(idempotencyKey) => runManagement(() => skipSubscriptionMonth(id, zoneCode, idempotencyKey))}
-                    onCancel={() => runManagement(() => cancelSubscription(id, zoneCode))}
+                    onCancel={() => runManagement(async () => {
+                      await cancelSubscription(id, zoneCode);
+                      if (detail.data?.planCode) sessionStorage.removeItem(`sa-sub-agreement:${detail.data.planCode}`);
+                    })}
                   />
                 ) : null}
                 {detail.data.events && detail.data.events.length > 0 ? (
@@ -387,7 +360,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
   );
 }
 
-function MonthHero({ month, imageUrl }: { month: SubscriptionMonthRow; imageUrl?: string | null }) {
+function MonthHero({ month }: { month: SubscriptionMonthRow }) {
   const paid = month.payment === "PAID" || month.delivery === "SHIPPED" || month.delivery === "DELIVERED";
   const processing = month.payment === "PROCESSING" || month.delivery === "PROCESSING" || month.delivery === "ORDER_PENDING";
   const shipped = month.delivery === "SHIPPED" || month.delivery === "DELIVERED";
@@ -405,10 +378,10 @@ function MonthHero({ month, imageUrl }: { month: SubscriptionMonthRow; imageUrl?
     <section className="flex flex-wrap gap-6 rounded-[20px] border border-[#E6DCCB] bg-white p-6">
       <div className="relative flex h-60 w-[220px] items-center justify-center overflow-hidden rounded-2xl bg-[#F1E6D6]">
         <span className="absolute top-3 left-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#2B1D17]">MONTH {month.month}</span>
-        {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-contain p-8" /> : <BottleMark large />}
+        {month.imageUrl ? <img src={month.imageUrl} alt="" className="h-full w-full object-contain p-8" /> : <BottleMark large />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <span className="text-xs font-medium tracking-[0.08em] text-[#6E5A50]">THIS MONTH&apos;S FRAGRANCE{when ? ` · ${when}` : ""}</span>
+        <span className="text-xs font-medium tracking-[0.08em] text-[#6E5A50]">{month.orderId ? "LATEST SHIPMENT" : "NEXT FRAGRANCE"}{when ? ` · ${when}` : ""}</span>
         <h2 className="m-0 text-[1.7rem] font-semibold">{month.fragrance ?? "No fragrance saved yet"}</h2>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full bg-[#E3F1E6] px-3 py-1 text-[13px] font-medium text-[#1F5B30]">{TRACKER_PAYMENT_LABEL[month.payment]}</span>
