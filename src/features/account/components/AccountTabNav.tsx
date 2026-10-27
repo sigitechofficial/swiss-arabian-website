@@ -3,8 +3,10 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
+  BadgeCheck,
   Bookmark,
   CreditCard,
+  Crown,
   Gift,
   Heart,
   LayoutGrid,
@@ -17,6 +19,7 @@ import {
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
+import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
 import { accountTab, accountTabs, accountTabsList } from "@/styles/accountChrome";
 
@@ -30,6 +33,8 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   "/account/addresses": MapPin,
   "/account/payments": CreditCard,
   "/account/rewards": Gift,
+  "/account/employee-benefits": BadgeCheck,
+  "/account/membership": Crown,
   "/account/wishlist": Heart,
   "/account/saved": Bookmark,
   "/account/subscription": Repeat,
@@ -38,6 +43,10 @@ const TAB_ICONS: Record<string, LucideIcon> = {
 export function AccountTabNav() {
   const pathname = stripLocalePrefix(usePathname() || "/");
   const listRef = useRef<HTMLDivElement>(null);
+  const { isEmployee } = useEmployeeBenefitsAccount();
+  const tabs = accountTabNav.filter(
+    (item) => item.href !== "/account/employee-benefits" || isEmployee,
+  );
 
   // Scroll only far enough to reveal the current section. Centering it clips the first tab.
   useEffect(() => {
@@ -59,7 +68,7 @@ export function AccountTabNav() {
   return (
     <nav className={accountTabs} aria-label="Account sections">
       <div className={`${accountContainer} ${accountTabsList}`} ref={listRef}>
-        {accountTabNav.map((item) => {
+        {tabs.map((item) => {
           const active =
             item.href === "/account"
               ? pathname === "/account"

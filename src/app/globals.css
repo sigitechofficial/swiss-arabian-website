@@ -433,6 +433,12 @@ html:has([data-navbar][data-topbar-hidden="true"]) .bundle-dock {
     letter-spacing: 0;
   }
 
+  /* Password fields have their own show/hide button; hide Edge's built-in one. */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none;
+  }
+
   :where(a, button, [tabindex]):focus-visible {
     outline: 2px solid var(--copper, #8c4435);
     outline-offset: 3px;

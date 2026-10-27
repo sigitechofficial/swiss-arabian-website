@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   CircleHelp,
   CreditCard,
   Gift,
@@ -61,6 +62,12 @@ export const accountQuickLinks: AccountQuickLink[] = [
     title: "Rewards",
     description: "Your points, your tier and what they unlock.",
     href: "/account/rewards",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Employee Benefits",
+    description: "Verified staff affiliation and read-only D365 staff benefit information.",
+    href: "/account/employee-benefits",
   },
 ];
 

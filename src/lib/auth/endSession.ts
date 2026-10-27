@@ -4,6 +4,7 @@ import { insiderLogout } from "@/lib/insider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { clearCartId } from "@/features/cart/utils/guestToken";
+import { clearNewAccount } from "@/features/auth/utils/newAccountGreeting";
 
 /** Clear tokens, Zustand auth, React Query cache, and local cart on logout. */
 export function endSession(): void {
@@ -14,4 +15,5 @@ export function endSession(): void {
   useCartStore.getState().clear();
   useCartStore.getState().setCartId(null);
   clearCartId();
+  clearNewAccount();
 }

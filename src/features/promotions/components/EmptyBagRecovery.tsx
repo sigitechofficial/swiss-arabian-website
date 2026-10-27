@@ -11,7 +11,6 @@ import { fetchEmptyBag } from "../api/promotions.service";
 import { readEmptyOrigin, readViewed } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import {
-  cartRecPh,
   cartRecPrice,
   cartRecs,
   cartRecsSwiper,
@@ -20,6 +19,7 @@ import {
   emptyBagCard,
   emptyBagCardFit,
   emptyBagName,
+  emptyBagPh,
 } from "@/styles/cartChrome";
 
 /** Server headings arrive as sentences ("Recently viewed."); the uppercase rail title drops the stop. */
@@ -63,7 +63,7 @@ export function EmptyBagRecovery({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.image} alt="" />
                 ) : (
-                  <span className={`${cartRecPh} size-[72px] rounded-lg`} aria-hidden="true" />
+                  <span className={emptyBagPh} aria-hidden="true" />
                 )}
                 <div className="flex min-w-0 flex-col pr-10">
                   {product.slug ? (
