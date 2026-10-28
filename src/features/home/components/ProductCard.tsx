@@ -220,7 +220,7 @@ export function ProductCard({
             } ${product.price == null ? "text-sa-muted" : "text-sa-primary"}`}
           >
             {product.price == null
-              ? "Price unavailable"
+              ? "Unavailable"
               : formatMoney(product.price, currency)}
           </p>
         </div>

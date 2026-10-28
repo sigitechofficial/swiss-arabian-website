@@ -78,6 +78,7 @@ export function CartSideSheet() {
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const syncing = useCartStore((s) => s.syncing);
+  const validation = useCartStore((s) => s.validation);
   const subtotal = useCartStore((s) => s.subtotal());
   const itemCount = useCartStore((s) => s.itemCount());
   const { addToCart } = useAddToCart();
@@ -98,6 +99,12 @@ export function CartSideSheet() {
   const earnPreview = useEarnPreview({ cartId });
   const quotePending = syncing && totals == null;
   const currency = totals?.currency ?? "AED";
+  const checkoutBlocked =
+    syncing ||
+    validation?.isValid === false ||
+    lines.some((line) => line.isSellable === false);
+  const allUnavailable =
+    lines.length > 0 && lines.every((line) => line.isSellable === false);
   const amountDue = quotePending
     ? null
     : (amountPayableFrom(promotions, [
@@ -252,7 +259,11 @@ export function CartSideSheet() {
                   <div className={drawerLineBody}>
                     <div className={drawerLineTop}>
                       <p className={drawerLineName}>{line.title}</p>
-                      <PromoLinePrice className={drawerLinePrice} snapshot={promotions} line={line} />
+                      {line.isSellable === false ? (
+                        <p className={drawerLinePrice}>Unavailable</p>
+                      ) : (
+                        <PromoLinePrice className={drawerLinePrice} snapshot={promotions} line={line} />
+                      )}
                     </div>
                     {showsDistinctSize(line.title, line.sizeLabel) ? (
                       <p className={drawerLineMeta}>{line.sizeLabel}</p>
@@ -283,6 +294,7 @@ export function CartSideSheet() {
                             }
                           }}
                           aria-label="Decrease quantity"
+                          disabled={line.isSellable === false}
                         >
                           <Minus size={13} />
                         </button>
@@ -297,7 +309,7 @@ export function CartSideSheet() {
                             }
                           }}
                           aria-label="Increase quantity"
-                          disabled={atStockLimit(line)}
+                          disabled={line.isSellable === false || atStockLimit(line)}
                         >
                           <Plus size={13} />
                         </button>
@@ -392,7 +404,13 @@ export function CartSideSheet() {
             <PromotionProgressRail surface="drawer" inset={false} />
             <div className={drawerTotalRow}>
               <span>Total</span>
-              <strong>{amountDue == null ? "Updating…" : formatMoney(amountDue, currency)}</strong>
+              <strong>
+                {allUnavailable
+                  ? "Unavailable"
+                  : amountDue == null
+                    ? "Updating…"
+                    : formatMoney(amountDue, currency)}
+              </strong>
             </div>
             {quotePending ? null : <LoyaltyDrawerNote />}
             {quotePending || !earnPreview.preview?.enabled ? null : (
@@ -413,9 +431,9 @@ export function CartSideSheet() {
               <LocaleLink
                 className={drawerCheckout}
                 href="/checkout"
-                aria-disabled={lines.length === 0 || syncing}
+                aria-disabled={checkoutBlocked}
                 onClick={(event) => {
-                  if (lines.length === 0 || syncing) {
+                  if (checkoutBlocked) {
                     event.preventDefault();
                     return;
                   }

@@ -210,7 +210,13 @@ export function ProductDetailPageView({ product: detail }: { product: ProductDet
             </ol>
           </nav>
           <div className={pdpSplit}>
-            <PdpGallery images={galleryImages} title={product.title} resetKey={slug} onImageError={markFailed} />
+            <PdpGallery
+              images={galleryImages}
+              title={product.title}
+              resetKey={slug}
+              outOfStock={product.price != null && (product.isSellable === false || product.inStock === false)}
+              onImageError={markFailed}
+            />
             <PdpBuyBox
               product={product}
               formatLabel={formatLabel}

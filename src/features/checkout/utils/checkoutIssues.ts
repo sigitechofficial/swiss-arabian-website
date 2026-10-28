@@ -26,6 +26,7 @@ const ISSUE_MESSAGES: Record<string, string> = {
 /** Envelope `error.code` → shopper copy. */
 const ERROR_CODE_MESSAGES: Record<string, string> = {
   CHECKOUT_CART_EMPTY: "Your bag is empty.",
+  CHECKOUT_CART_UNAVAILABLE: "An item in your bag is unavailable. Remove it before checkout.",
   CHECKOUT_NOT_FOUND: "Your checkout session has ended. Please try again.",
   CHECKOUT_SESSION_NOT_ACTIVE: "Your checkout session has expired. Please try again.",
   CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",

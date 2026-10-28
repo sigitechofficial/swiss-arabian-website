@@ -202,7 +202,8 @@ export function useCheckout() {
 
   // C.1 — create or resume the session, once per cart.
   useEffect(() => {
-    if (!cartId || initCartRef.current === cartId) return;
+    if (!cartId || lines.some((line) => line.isSellable === false)) return;
+    if (initCartRef.current === cartId) return;
     initCartRef.current = cartId;
     void start(cartId, lines);
   }, [cartId, lines, start]);
@@ -474,7 +475,7 @@ export function useCheckout() {
   );
 
   const retry = useCallback(() => {
-    if (!cartId) return;
+    if (!cartId || lines.some((line) => line.isSellable === false)) return;
     setErrorMsg(null);
     setStatus("loading");
     methodsSessionRef.current = null;

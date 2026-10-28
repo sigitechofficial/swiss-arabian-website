@@ -7,7 +7,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   PRODUCT_NOT_VISIBLE: "Unavailable in your market",
   PRODUCT_NOT_SELLABLE: "Unavailable",
   VARIANT_INACTIVE: "Unavailable",
-  PRICE_MISSING: "Price unavailable",
+  PRICE_MISSING: "Unavailable",
   INVENTORY_MISSING: "Out of stock",
   INSUFFICIENT_INVENTORY: "Not enough stock left",
   CURRENCY_MISMATCH: "Prices changed — refresh your bag",

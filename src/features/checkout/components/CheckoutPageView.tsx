@@ -243,7 +243,8 @@ export function CheckoutPageView() {
   const redirecting = submitting && orderableLines.length === 0;
   const isEmpty = hydrated && visibleLines.length === 0 && !submitting;
   const nothingOrderable = hydrated && visibleLines.length > 0 && orderableLines.length === 0;
-  const showLayout = hydrated && orderableLines.length > 0;
+  const hasUnavailable = visibleLines.some((line) => line.isSellable === false);
+  const showLayout = hydrated && orderableLines.length > 0 && !hasUnavailable;
 
   const bindShipping = (field: keyof AddressFields) => ({
     value: shipping[field] ?? "",
@@ -416,6 +417,18 @@ export function CheckoutPageView() {
               <p className={stateEyebrow}>Order placed</p>
               <h2 className={collectionTitle}>Taking you to payment…</h2>
               <p className={stateIntro}>Please don’t close or refresh this page.</p>
+            </section>
+          ) : null}
+
+          {hasUnavailable ? (
+            <section className={checkoutEmpty}>
+              <p className={stateEyebrow}>Can’t check out yet</p>
+              <h2 className={doneTitle}>An item in your bag is unavailable.</h2>
+              <p>Remove it from your bag, then continue.</p>
+              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+                <span>Back to bag</span>
+                <b aria-hidden="true">↗</b>
+              </LocaleLink>
             </section>
           ) : null}
 

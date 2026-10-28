@@ -5,7 +5,7 @@ import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
 import { atStockLimit, fullLineMessage } from "@/features/cart/utils/stockLimit";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { OutOfStockAlternatives } from "@/features/promotions/components/OutOfStockAlternatives";
+import { StockAlertButton } from "./StockAlertButton";
 import { buySlot, pdpAdd, pdpBuy, pdpBuyDocked, pdpQty, pdpQtyBtn, pdpQtyValue, pdpStatus, pdpWish } from "@/styles/pdpChrome";
 import type { CartLine } from "@/stores/useCartStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -29,6 +29,8 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
   const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
   const { addToCart } = useAddToCart();
   const displayQty = cartLine ? cartLine.quantity : quantity;
+  const needsAlert =
+    product.price == null || product.isSellable === false || product.inStock === false;
 
   useEffect(() => {
     setQuantity(1);
@@ -88,6 +90,9 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
         style={buyDocked && buyBarHeight ? { minHeight: buyBarHeight } : undefined}
       >
         <div ref={buyBarRef} className={`${pdpBuy}${buyDocked ? ` ${pdpBuyDocked}` : ""}`}>
+          {needsAlert && product.price == null ? (
+            <p className={`${pdpStatus} flex items-center`}>Unavailable</p>
+          ) : needsAlert ? null : (
           <div className={pdpQty}>
             <button
               className={pdpQtyBtn}
@@ -137,9 +142,10 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               </svg>
             </button>
           </div>
+          )}
 
-          {product.isSellable === false ? (
-            <OutOfStockAlternatives productId={product.id} />
+          {needsAlert ? (
+            <StockAlertButton product={product} />
           ) : (
             <button
               className={pdpAdd}

@@ -113,6 +113,7 @@ export function CartPageView() {
    * cart comes back invalid rather than letting checkout fail later.
    */
   async function goToCheckout() {
+    if (lines.some((line) => line.isSellable === false)) return;
     if (!cartId) {
       router.push("/checkout");
       return;
@@ -267,7 +268,11 @@ export function CartPageView() {
                         <h3 className={cartRowName}>
                           <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
                         </h3>
-                        <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
+                        {line.isSellable === false ? (
+                          <p className={cartRowPrice}>Unavailable</p>
+                        ) : (
+                          <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
+                        )}
                       </div>
                       {showsDistinctSize(line.title, line.sizeLabel) ? (
                         <p className={cartRowMeta}>{line.sizeLabel}</p>
@@ -290,6 +295,7 @@ export function CartPageView() {
                           <button
                             type="button"
                             aria-label="Decrease"
+                            disabled={line.isSellable === false}
                             onClick={() => {
                               const next = Math.max(1, line.quantity - 1);
                               if (line.remote || line.cartItemId) {
@@ -305,7 +311,7 @@ export function CartPageView() {
                           <button
                             type="button"
                             aria-label="Increase"
-                            disabled={atStockLimit(line)}
+                            disabled={line.isSellable === false || atStockLimit(line)}
                             onClick={() => {
                               const next = line.quantity + 1;
                               if (line.remote || line.cartItemId) {
@@ -405,7 +411,12 @@ export function CartPageView() {
                   type="button"
                   className={cartCta}
                   onClick={goToCheckout}
-                  disabled={syncing || validate.isPending || blockingErrors.length > 0}
+                  disabled={
+                    syncing ||
+                    validate.isPending ||
+                    blockingErrors.length > 0 ||
+                    lines.some((line) => line.isSellable === false)
+                  }
                 >
                   <span>
                     {syncing
