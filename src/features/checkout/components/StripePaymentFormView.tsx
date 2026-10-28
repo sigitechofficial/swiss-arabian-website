@@ -1,6 +1,5 @@
 "use client";
 
-import { env } from "@/lib/config/env";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -133,7 +132,7 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
       elements,
       // Only followed when the card needs a 3DS redirect; that page polls the backend.
       confirmParams: {
-        return_url: `${env.returnUrl || window.location.origin}/checkout/payment/success`,
+        return_url: "http://localhost:4000/checkout/payment/success",
       },
       redirect: "if_required",
     });

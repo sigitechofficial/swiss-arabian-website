@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
+import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRedemptionEditor";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
@@ -163,6 +163,7 @@ export function CartPageView() {
   const itemCount = mounted ? persistedItemCount : 0;
 
   const promotions = useCartStore((s) => s.promotions);
+  const employeeCheckout = useCartStore((s) => s.employeeCheckout);
   const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
   const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
@@ -368,6 +369,7 @@ export function CartPageView() {
                 <CouponForm />
                 {quotePending ? null : <LoyaltyRedemptionEditor />}
                 <GiftCardForm />
+                <StaffDiscountSummary checkout={employeeCheckout} currency={currency} />
                 {quotePending ? null : (
                 <MoneySummary
                   className={cartTotals}

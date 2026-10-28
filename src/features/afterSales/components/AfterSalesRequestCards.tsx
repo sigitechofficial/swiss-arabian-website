@@ -14,6 +14,7 @@ import type {
   StorefrontExchangeSummaryView,
   StorefrontReturnSummaryView,
 } from "../types/afterSales";
+import { readExchangeSettlement } from "@/features/orders/utils/orderAftercare";
 import {
   afterSalesStatusLabel,
   RETURN_REASON_LABELS,
@@ -203,9 +204,41 @@ export function ExchangeRequestCard({
               Note: {detail.data.customerNote}
             </li>
           ) : null}
+          <ExchangeSettlement detail={detail.data} />
         </ul>
       ) : null}
     </article>
+  );
+}
+
+function ExchangeSettlement({ detail }: { detail: unknown }) {
+  const settlement = readExchangeSettlement(detail);
+  if (!settlement) return null;
+  return (
+    <li className="py-2.5 text-[13px] text-sa-primary">
+      {settlement.equal ? <p>No additional payment is required.</p> : null}
+      {settlement.additionalAmount ? (
+        <p>Additional payment due: {settlement.additionalAmount}</p>
+      ) : null}
+      {settlement.paymentHref ? (
+        <Link href={settlement.paymentHref} className="font-semibold text-terra hover:underline">
+          Pay the difference
+        </Link>
+      ) : null}
+      {settlement.refundAmount ? (
+        <p>Difference refund: {settlement.refundAmount}. This follows the refund status on the exchange.</p>
+      ) : null}
+      {settlement.replacementOrderId ? (
+        <p>
+          <Link
+            href={`/account/orders/${settlement.replacementOrderId}`}
+            className="font-semibold text-terra hover:underline"
+          >
+            {settlement.replacementOrderNumber ?? "View replacement order"}
+          </Link>
+        </p>
+      ) : null}
+    </li>
   );
 }
 

@@ -76,6 +76,8 @@ export type ApiCart = {
   /** Server redemption quote. Display only — never priced in the browser. */
   loyaltyRedemption?: unknown;
   loyaltyApplied?: string | null;
+  /** Backend staff quote. Absent for a normal customer. */
+  employeeCheckout?: unknown;
   validation: CartValidation | null;
   updatedAt: string;
   metadata: Record<string, unknown> | null;

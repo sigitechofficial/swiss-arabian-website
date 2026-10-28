@@ -83,7 +83,25 @@ export function afterSalesStatusLabel(status: string): string {
       return "Closed";
     case "COMPLETED":
       return "Completed";
+    case "RECEIVED":
+      return "Received";
+    case "INSPECTED":
+      return "Inspected";
+    case "REFUND_PROCESSING":
+      return "Refund processing";
+    case "REFUND_COMPLETED":
+      return "Refund completed";
+    case "WAITING_FOR_RETURN":
+    case "WAITING_FOR_ORIGINAL_RETURN":
+      return "Waiting for the original return";
+    case "ORIGINAL_RECEIVED":
+      return "Original received";
+    case "REPLACEMENT_CREATED":
+    case "REPLACEMENT_ORDER_CREATED":
+      return "Replacement order created";
+    case "ADDITIONAL_PAYMENT_DUE":
+      return "Additional payment due";
     default:
-      return "In progress";
+      return status?.trim() ? "In progress" : "In progress";
   }
 }

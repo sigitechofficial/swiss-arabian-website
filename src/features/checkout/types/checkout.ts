@@ -105,6 +105,8 @@ export interface CheckoutSessionResponse {
   /** Same v1 shape as cart `promotions` after snapshot rebuild. */
   promotionSnapshot?: PromotionSnapshotV1 | null;
   giftCards?: unknown;
+  /** Backend staff quote for this checkout. Absent for a normal customer. */
+  employeeCheckout?: unknown;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────
