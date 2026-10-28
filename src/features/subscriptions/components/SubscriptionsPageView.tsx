@@ -57,15 +57,15 @@ function Bottle({ tint, className }: { tint: string; className?: string }) {
 }
 
 function draftChoices(raw: string): { mode: "choose" | "surprise"; selected: string[] } {
-  if (!raw) return { mode: "choose", selected: [] };
+  if (!raw) return { mode: "surprise", selected: [] };
   try {
     const parsed = JSON.parse(raw) as { mode?: string; selected?: unknown };
     const selected = Array.isArray(parsed.selected)
       ? parsed.selected.filter((id): id is string => typeof id === "string")
       : [];
-    return { mode: parsed.mode === "SURPRISE" ? "surprise" : "choose", selected };
+    return { mode: parsed.mode === "QUEUE" ? "choose" : "surprise", selected };
   } catch {
-    return { mode: "choose", selected: [] };
+    return { mode: "surprise", selected: [] };
   }
 }
 
@@ -136,7 +136,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
     () => "",
   );
   const storedGender = genderFromDraft(storedDraft);
-  const restored = lockedPlanCode ? draftChoices(storedDraft) : { mode: "choose" as const, selected: [] as string[] };
+  const restored = lockedPlanCode ? draftChoices(storedDraft) : { mode: "surprise" as const, selected: [] as string[] };
   const mode = modeChoice ?? restored.mode;
   const queue = queueChoice ?? restored.selected;
   const gender =
@@ -198,9 +198,9 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   }
 
   function pickMode(value: "choose" | "surprise") {
-    pendingScroll.current = value === "choose" ? "favourite-12" : "perfumers";
+    if (value === "choose") pendingScroll.current = "favourite-12";
     setModeChoice(value);
-    setScrollNonce((current) => current + 1);
+    if (value === "choose") setScrollNonce((current) => current + 1);
   }
 
   function rememberDraft(planCode: string, selected: string[]) {
@@ -474,7 +474,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
       </section>
 
       {active && mode === "choose" && !agreementId ? (
-        <section id="favourite-12" className={`mx-auto max-w-[1240px] px-6 py-24 pb-36 min-[860px]:pb-24 ${SECTION_SCROLL}`} aria-labelledby="pick-h">
+        <section id="favourite-12" className={`mx-auto max-w-[1240px] px-6 py-24 pb-36 lg:pb-24 ${SECTION_SCROLL}`} aria-labelledby="pick-h">
           <div className="mb-9 flex flex-wrap items-end justify-between gap-6">
             <div className="flex flex-col gap-3">
               <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">Build your queue</p>
@@ -493,7 +493,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             </label>
           </div>
 
-          <div className="grid items-start gap-8 min-[860px]:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="flex min-w-0 flex-col gap-5">
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">
                 {products.isSuccess ? `${visible.length} ${visible.length === 1 ? "fragrance" : "fragrances"} on this plan` : "Fragrances for this plan"}
@@ -539,7 +539,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
               </div>
             </div>
 
-            <aside className={`sticky ${STICKY_TOP} ${PANEL_MAX} hidden min-h-0 flex-col self-start min-[860px]:flex`}>
+            <aside className={`sticky ${STICKY_TOP} ${PANEL_MAX} hidden min-h-0 flex-col self-start lg:flex`}>
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white p-5">
                 <div className="flex shrink-0 items-center gap-4">
                   <div className="relative size-[76px] shrink-0" role="img" aria-label={`${shownQueue.length} of 12 fragrances chosen`}>
@@ -591,10 +591,10 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
           </div>
 
           {monthsOpen ? (
-            <button type="button" aria-label="Close months" className="fixed inset-0 z-40 bg-[rgba(36,31,27,0.45)] min-[860px]:hidden" onClick={() => setMonthsOpen(false)} />
+            <button type="button" aria-label="Close months" className="fixed inset-0 z-40 bg-[rgba(36,31,27,0.45)] lg:hidden" onClick={() => setMonthsOpen(false)} />
           ) : null}
           <div
-            className={`fixed inset-x-0 bottom-[7.75rem] z-50 max-h-[70vh] overflow-auto rounded-t-[20px] border border-[var(--line,#d9ccb4)] bg-white px-4 pt-3 pb-4 shadow-[0_-12px_40px_rgba(36,31,27,0.12)] transition-transform duration-300 ease-out min-[860px]:hidden ${monthsOpen ? "translate-y-0" : "pointer-events-none translate-y-[120%]"}`}
+            className={`fixed inset-x-0 bottom-[7.75rem] z-50 max-h-[70vh] overflow-auto rounded-t-[20px] border border-[var(--line,#d9ccb4)] bg-white px-4 pt-3 pb-4 shadow-[0_-12px_40px_rgba(36,31,27,0.12)] transition-transform duration-300 ease-out lg:hidden ${monthsOpen ? "translate-y-0" : "pointer-events-none translate-y-[120%]"}`}
             aria-hidden={!monthsOpen}
           >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--line,#d9ccb4)]" />
@@ -619,7 +619,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
               })}
             </ol>
           </div>
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)] min-[860px]:hidden">
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)] lg:hidden">
             <div className="flex items-center justify-between gap-3 px-4 pt-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="relative size-11 shrink-0" role="img" aria-label={`${shownQueue.length} of 12`}>

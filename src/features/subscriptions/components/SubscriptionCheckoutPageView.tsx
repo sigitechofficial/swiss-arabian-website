@@ -167,6 +167,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   const authed = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode || state.selectedMarketId || "");
+  const checkoutZoneId = useUiStore((state) => state.catalogContext?.zoneId || "");
   const { catalogContext } = useMarket();
   const countryCode = normalizeCountryCode(catalogContext?.countryCode) || "AE";
   const regionSet = regionsForCountry(countryCode);
@@ -225,6 +226,11 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     };
   }, [zoneCode, countryCode, authed]);
 
+  useEffect(() => {
+    if (!deliveryMethodsLoaded || selectedDeliveryId || deliveryMethods.length === 0) return;
+    setSelectedDeliveryId(deliveryMethods[0]?.zoneDeliveryMethodId ?? null);
+  }, [deliveryMethodsLoaded, deliveryMethods, selectedDeliveryId]);
+
   const amounts = checkout
     ? subscriptionPayToday(checkout)
     : plan
@@ -274,6 +280,10 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     }
   }
 
+  function missingSubscription(err: unknown): boolean {
+    return err instanceof ApiClientError && err.message === "Subscription not found";
+  }
+
   async function registerAndPay() {
     if (!plan || !activeConsent || busy) return;
     if (!authed) {
@@ -283,7 +293,19 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     setBusy(true);
     setError(null);
     try {
-      let id = agreementId;
+      let id = savedAgreement.isError ? "" : agreementId;
+      if (id) {
+        try {
+          await refreshPayment(id);
+          return;
+        } catch (err) {
+          if (!missingSubscription(err)) throw err;
+          sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
+          setDroppedStoredId(true);
+          setCreatedAgreementId("");
+          id = "";
+        }
+      }
       if (!id) {
         let addressId = selectedAddressId;
         if (!addressId) {
@@ -303,6 +325,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
             postalCode: shipping.postalCode,
             countryCode,
             phone: shipping.phone,
+            ...(checkoutZoneId ? { zoneId: checkoutZoneId } : {}),
           });
           addressId = createdAddress.id;
         }
@@ -332,16 +355,26 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   }
 
   useEffect(() => {
-    if (!storedAgreementId || createdAgreementId || droppedStoredId || !savedAgreement.isFetched) return;
-    if (savedAgreement.data?.status === "PENDING_ACTIVATION") return;
+    if (!storedAgreementId || createdAgreementId || droppedStoredId) return;
+    if (!savedAgreement.isFetched && !savedAgreement.isError) return;
+    const missingHere = savedAgreement.isError || savedAgreement.data?.status !== "PENDING_ACTIVATION";
+    if (!missingHere) return;
     sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
     setDroppedStoredId(true);
-  }, [storedAgreementId, createdAgreementId, droppedStoredId, savedAgreement.isFetched, savedAgreement.data?.status, planCode]);
+    setError(null);
+  }, [storedAgreementId, createdAgreementId, droppedStoredId, savedAgreement.isFetched, savedAgreement.isError, savedAgreement.data?.status, planCode]);
 
   useEffect(() => {
-    if (!agreementId || !zoneCode || !authed || !activeConsent) return;
+    if (!agreementId || !zoneCode || !authed || !activeConsent || savedAgreement.isError) return;
     if (!createdAgreementId && (!savedAgreement.isFetched || savedAgreement.data?.status !== "PENDING_ACTIVATION")) return;
     void refreshPayment(agreementId).catch((err: unknown) => {
+      if (missingSubscription(err)) {
+        sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
+        setDroppedStoredId(true);
+        setCreatedAgreementId("");
+        setError(null);
+        return;
+      }
       setError(err instanceof ApiClientError ? err.message : "Checkout could not be loaded.");
     });
     // Resume an existing agreement once. Polling and Stripe confirmation read again themselves.

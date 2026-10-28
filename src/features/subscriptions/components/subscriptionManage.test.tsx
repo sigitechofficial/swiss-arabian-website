@@ -171,7 +171,7 @@ describe("subscription management controls", () => {
     release(current);
     expect(await screen.findByText(`Paused ${billingLabel("2026-10-23T10:00:00.000Z")}.`)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume Subscription" })).toBeInTheDocument();
-    expect(screen.getByText("Month 1").parentElement).toHaveTextContent("UAE-PAID");
+    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
   });
 
   it("shows the next billing date returned after resume", async () => {
@@ -234,7 +234,7 @@ describe("subscription management controls", () => {
     await waitFor(() => expect(screen.getByText("Month 2").parentElement).toHaveTextContent("Skipped"));
     expect(screen.getByText("Month 2").parentElement).toHaveTextContent("VORA141201");
     expect(screen.getByText("Month 2").parentElement).not.toHaveTextContent("SHOULD-NOT-SHOW");
-    expect(screen.getByText("Month 1").parentElement).toHaveTextContent("UAE-PAID");
+    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
     expect(screen.getAllByRole("link", { name: "Track order" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Skip Next Month" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm skip" }));
@@ -310,7 +310,7 @@ describe("subscription management controls", () => {
       { zoneCode: "UAE", reason: undefined },
     );
     expect(screen.queryByRole("button", { name: "Cancel Subscription" })).not.toBeInTheDocument();
-    expect(screen.getByText("Month 1").parentElement).toHaveTextContent("UAE-PAID");
+    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
   });
 
   it("shows the in-progress renewal warning and the backend error without changing status", async () => {

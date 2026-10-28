@@ -32,7 +32,7 @@ export function SubscriptionMonthlyTracker({
 }: {
   detail: Pick<
     SubscriptionDetail,
-    "selectionMode" | "status" | "billingEnabled" | "nextBillingAt" | "queue" | "surpriseSchedule" | "billingCycles"
+    "selectionMode" | "status" | "billingEnabled" | "nextBillingAt" | "registeredAt" | "queue" | "surpriseSchedule" | "billingCycles"
   >;
   cycles?: SubscriptionCycleSnapshot[];
 }) {
@@ -52,8 +52,8 @@ export function SubscriptionMonthlyTracker({
           <h2 id="subscription-months" className="m-0 text-[22px] font-bold text-[#2B1D17]">Your 12-month plan</h2>
           <span className="text-sm text-[#6E5A50]">{ordered} recorded · {Math.max(0, months.length - ordered)} still open</span>
           <span className="text-sm font-medium text-[#2B1D17]">
-            {delivered.length ? `Delivered: ${delivered.map((row) => `Month ${row.month}`).join(", ")}` : "None delivered yet"}
-            {notDelivered.length ? ` · Not delivered: ${notDelivered.map((row) => `Month ${row.month}`).join(", ")}` : ""}
+            {delivered.length ? `Delivered: ${delivered.map((row) => row.label).join(", ")}` : "None delivered yet"}
+            {notDelivered.length ? ` · Not delivered: ${notDelivered.map((row) => row.label).join(", ")}` : ""}
           </span>
         </div>
         <div className="flex flex-wrap gap-3.5 text-[13px] text-[#5A463C]">
@@ -85,7 +85,7 @@ export function SubscriptionMonthlyTracker({
                 {chosen ? (row.imageUrl ? <img src={row.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <FragranceMark />) : "Not chosen yet"}
               </div>
               <div className="flex flex-col gap-1 px-0.5">
-                <strong className="text-[15px] font-bold text-[#2B1D17]">Month {row.month}</strong>
+                <strong className="text-[15px] font-bold text-[#2B1D17]">{row.label}</strong>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${chip.className}`}>{chip.label}</span>
                 <span className="text-xs text-[#6E5A50]">{row.billingDate ? formatOrderDate(row.billingDate) : ""}</span>
                 <span className={`flex min-w-0 items-baseline gap-1 text-[13px] ${chosen ? "font-semibold text-[#2B1D17]" : "text-[#6E5A50]"}`}>

@@ -109,7 +109,7 @@ describe("subscription landing", () => {
     expect(await screen.findByText(/Total AED 65\.00\/month/)).toBeInTheDocument();
     expect(screen.getByText(/Total AED 220\.00\/month/)).toBeInTheDocument();
     expect(screen.getAllByText(/Shipping included/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Subscribe now" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /One/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Four/ })).toBeInTheDocument();
     expect(screen.queryByText(/1449/)).not.toBeInTheDocument();
@@ -143,6 +143,7 @@ describe("subscription landing", () => {
       ];
     });
     renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Pick my own 12" }));
     expect(await screen.findByText("Vetiver")).toBeInTheDocument();
     expect(screen.getByText("Amber")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Add to queue" })[0]!);
@@ -209,7 +210,7 @@ describe("subscription landing", () => {
     expect(await screen.findByText("One")).toBeInTheDocument();
     expect(screen.queryByText("Which plan?")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Two/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Subscribe now" })).toBeInTheDocument();
   });
 
   it("sends the locked plan to subscription checkout without a card step", async () => {
@@ -271,6 +272,7 @@ describe("subscription landing", () => {
       { variantId: "men", productId: "p", sku: "MEN", name: "Vetiver" },
     ]);
     renderPage("A");
+    fireEvent.click(await screen.findByRole("button", { name: "Pick my own 12" }));
     expect(await screen.findByRole("heading", { name: "Choose your favourite 12" })).toBeInTheDocument();
     expect(screen.getByText("Vetiver")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();

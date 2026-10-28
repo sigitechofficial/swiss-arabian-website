@@ -37,6 +37,7 @@ export type SubscriptionCycleSnapshot = {
 
 export type SubscriptionMonthRow = {
   month: number;
+  label: string;
   fragrance: string | null;
   imageUrl: string | null;
   billingDate: string | null;
@@ -127,6 +128,15 @@ export function subscriptionCheckoutShowsPaymentForm(view: {
   return !(view.paymentState === "SUCCESS" && view.status === "ACTIVE");
 }
 
+const CALENDAR_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+export function subscriptionMonthName(registeredAt: string | null | undefined, shipment: number): string {
+  const start = registeredAt ? new Date(registeredAt) : null;
+  const base = start && !Number.isNaN(start.getTime()) ? start.getUTCMonth() : 0;
+  const index = (base + Math.max(1, shipment) - 1) % 12;
+  return CALENDAR_MONTHS[index] ?? "January";
+}
+
 function fragranceName(item: SubscriptionQueueItem | undefined): string | null {
   if (!item) return null;
   return item.name?.trim() || item.sku;
@@ -186,6 +196,7 @@ export function buildSubscriptionMonths(input: {
   status: string;
   billingEnabled: boolean;
   nextBillingAt: string | null;
+  registeredAt?: string | null;
   queue: SubscriptionQueueItem[];
   surpriseSchedule?: SubscriptionDetail["surpriseSchedule"];
   cycles?: SubscriptionCycleSnapshot[];
@@ -208,6 +219,7 @@ export function buildSubscriptionMonths(input: {
     const planned = plannedMonth(input.mode, input.queue, input.surpriseSchedule, month);
     return {
       month,
+      label: subscriptionMonthName(input.registeredAt, month),
       fragrance: planned.fragrance || cycle?.sku?.trim() || null,
       imageUrl: planned.imageUrl,
       billingDate: !skipped && payment !== "PAID" && month === nextOpenMonth ? input.nextBillingAt : null,
@@ -226,7 +238,7 @@ export function buildSubscriptionMonths(input: {
 export function monthsFromAgreement(
   detail: Pick<
     SubscriptionDetail,
-    "selectionMode" | "status" | "billingEnabled" | "nextBillingAt" | "queue" | "surpriseSchedule" | "billingCycles"
+    "selectionMode" | "status" | "billingEnabled" | "nextBillingAt" | "registeredAt" | "queue" | "surpriseSchedule" | "billingCycles"
   >,
 ): SubscriptionMonthRow[] {
   return buildSubscriptionMonths({
@@ -234,6 +246,7 @@ export function monthsFromAgreement(
     status: detail.status,
     billingEnabled: detail.billingEnabled,
     nextBillingAt: detail.nextBillingAt,
+    registeredAt: detail.registeredAt,
     queue: queueRows(detail.queue),
     surpriseSchedule: detail.surpriseSchedule,
     cycles: detail.billingCycles,

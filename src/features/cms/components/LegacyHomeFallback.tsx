@@ -3,7 +3,7 @@ import { LandingCollections } from "@/features/home/components/landing/LandingCo
 import { LandingFeatureCards } from "@/features/home/components/landing/LandingFeatureCards";
 import { LandingHero } from "@/features/home/components/landing/LandingHero";
 import { LandingNotes } from "@/features/home/components/landing/LandingNotes";
-import { LandingPlans } from "@/features/home/components/landing/LandingPlans";
+import { HomeLivePlans } from "@/features/home/components/landing/HomeLivePlans";
 import { LandingProductsBand } from "@/features/home/components/landing/LandingProductsBand";
 import { LandingReel } from "@/features/home/components/landing/LandingReel";
 import { LandingReviews } from "@/features/home/components/landing/LandingReviews";
@@ -27,7 +27,7 @@ export function LegacyHomeFallback() {
       <LandingReel />
       <LandingReviews />
       <LandingStory />
-      <LandingPlans />
+      <HomeLivePlans />
     </div>
   );
 }

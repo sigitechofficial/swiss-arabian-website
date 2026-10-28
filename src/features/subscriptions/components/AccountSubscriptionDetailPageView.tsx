@@ -377,7 +377,7 @@ function MonthHero({ month }: { month: SubscriptionMonthRow }) {
   return (
     <section className="flex flex-wrap gap-6 rounded-[20px] border border-[#E6DCCB] bg-white p-6">
       <div className="relative flex h-60 w-[220px] items-center justify-center overflow-hidden rounded-2xl bg-[#F1E6D6]">
-        <span className="absolute top-3 left-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#2B1D17]">MONTH {month.month}</span>
+        <span className="absolute top-3 left-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#2B1D17]">{month.label}</span>
         {month.imageUrl ? <img src={month.imageUrl} alt="" className="h-full w-full object-contain p-8" /> : <BottleMark large />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
