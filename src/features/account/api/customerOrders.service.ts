@@ -104,6 +104,8 @@ export interface CustomerOrderDetailResponse {
     totals: { subtotal: string; discount: string; shipping: string; tax: string; total: string };
     /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
     promotionSnapshot?: OrderLinePromotionSnapshot | null;
+    /** Backend refund records. Older payloads omit this. */
+    refunds?: unknown;
     selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
     timeline: { eventType: string; title: string | null; occurredAt: string }[];
@@ -117,6 +119,17 @@ export interface CancelOrderResponse {
   cancellationAccepted: boolean;
   orderCancelled: boolean;
   requiresRefund: boolean;
+  requiresManualReview?: boolean;
+  /** Present when the Backend registered a refund. Absent for unpaid cancellations. */
+  refund?: {
+    refundId?: string | null;
+    status?: string | null;
+    resultState?: string | null;
+    blockedCode?: string | null;
+    amount?: string | null;
+    currency?: string | null;
+    requiresManualReview?: boolean;
+  } | null;
 }
 
 /**

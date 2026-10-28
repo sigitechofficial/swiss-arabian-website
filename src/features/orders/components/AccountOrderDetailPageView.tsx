@@ -62,22 +62,16 @@ import { crumbsList, pageTitle } from "@/styles/shopChrome";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
+import { cancelOutcome, readOrderRefunds, refundCustomerStatus } from "../utils/orderAftercare";
+import { OrderAfterSalesSection } from "@/features/afterSales";
+import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
+import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
+import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
 
 type Feedback = { tone: keyof typeof orderNoticeTone; text: string };
 
 function cancelFeedback(result: CancelOrderResponse): Feedback {
-  if (result.orderCancelled) {
-    return {
-      tone: "success",
-      text: result.requiresRefund
-        ? "Your order has been cancelled. Your refund will go back to your original payment method."
-        : "Your order has been cancelled.",
-    };
-  }
-  if (result.cancellationAccepted) {
-    return { tone: "info", text: "We’ve received your cancellation request and will confirm it by email." };
-  }
-  return { tone: "error", text: "We couldn’t cancel this order. Please contact our customer care team." };
+  return cancelOutcome(result);
 }
 
 function cancelErrorText(error: unknown): string {
@@ -291,6 +285,10 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     !cancelMutation.isSuccess;
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
   const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+  const refunds = readOrderRefunds(order.refunds);
+  const staffQuote = readEmployeeCheckout(
+    (order.promotionSnapshot as { employeeCheckout?: unknown } | null | undefined)?.employeeCheckout,
+  );
 
   return (
     <AccountPageShell>
@@ -412,6 +410,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             </Panel>
           </OrderTrackingPanel>
 
+          <OrderAfterSalesSection
+            orderId={order.orderId}
+            status={order.status}
+            fulfillmentStatus={order.fulfillmentStatus}
+            lines={mapOrderLinesForAfterSales(order.lines)}
+          />
+
           <aside className={accountCol} aria-label="Order summary and delivery">
             <Panel title="Order summary">
               <dl className={orderTotals}>
@@ -468,6 +473,33 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             {hasOrderLoyaltySection(orderReward) ? (
               <Panel title="Rewards">
                 <OrderRewardNote reward={orderReward} showHeading={false} />
+              </Panel>
+            ) : null}
+
+            {refunds.length > 0 ? (
+              <Panel title="Refunds">
+                <ul className="m-0 grid list-none gap-3 p-0">
+                  {refunds.map((refund, index) => (
+                    <li key={refund.refundId ?? `refund-${index}`} className="text-[13px] leading-relaxed text-sa-primary">
+                      {refund.amount ? (
+                        <p className="m-0 font-semibold">
+                          {refund.currency ? `${refund.currency} ` : ""}
+                          {refund.amount}
+                        </p>
+                      ) : null}
+                      <p className="m-0 mt-1 text-sa-secondary">{refundCustomerStatus(refund)}</p>
+                      {refund.refundId ? (
+                        <p className="m-0 mt-1 text-[12px] text-sa-muted">Reference {refund.refundId}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            ) : null}
+
+            {staffQuote ? (
+              <Panel title="Staff discount">
+                <StaffDiscountSummary checkout={staffQuote} currency={currency} showReference={false} />
               </Panel>
             ) : null}
           </aside>

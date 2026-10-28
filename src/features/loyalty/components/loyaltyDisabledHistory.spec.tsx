@@ -179,6 +179,56 @@ describe("L4.1 historical rewards while disabled", () => {
     noActions();
   });
 
+  it("shows store activity when platform loyalty is disabled and the store balance is missing", async () => {
+    fetchLoyaltyWallet.mockResolvedValue(
+      readLoyaltyWallet({
+        enabled: false,
+        member: false,
+        reason: "LOYALTY_NOT_AVAILABLE",
+        omnichannel: {
+          source: "D365",
+          status: "LINKED",
+          balance: { activePoints: null },
+          sync: {
+            fetchedAt: null,
+            lastSuccessfulSyncAt: null,
+            isFresh: false,
+            source: "UNAVAILABLE",
+          },
+          websiteRedemption: { enabled: false, reason: "D365_REDEMPTION_NOT_AVAILABLE" },
+          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+        },
+      }),
+    );
+    fetchLoyaltyTransactions.mockResolvedValue({
+      platformActivity: [],
+      pageInfo: { total: 0, limit: 20, offset: 0, hasMore: false },
+      externalActivity: [
+        {
+          source: "D365",
+          entryType: "Earn",
+          category: "EARN",
+          points: "12.50",
+          remainingPoints: "12.50",
+          entryDate: "2026-10-01T00:00:00.000Z",
+          expirationDate: null,
+          receiptId: "R-UAE",
+          origin: "STORE",
+        },
+      ],
+      externalPageInfo: { total: 1, limit: 20, offset: 0, hasMore: false },
+      lastTransactionImportSuccessAt: "2026-10-01T00:00:00.000Z",
+      activityIsFresh: true,
+    });
+    renderRewards();
+    expect(await screen.findByText("Store point balance is not available yet.")).toBeInTheDocument();
+    expect(await screen.findByText("Store points earned")).toBeInTheDocument();
+    expect(screen.getByText("+12.50 points")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/store reward points/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
+    noActions();
+  });
+
   it("shows a disabled wallet debt without inventing a negative available", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       readLoyaltyWallet({

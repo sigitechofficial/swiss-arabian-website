@@ -136,7 +136,9 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
             className={accountSelectClass}
             {...register("requestedResolution")}
           >
-            {Object.entries(RETURN_RESOLUTION_LABELS).map(([value, label]) => (
+            {Object.entries(RETURN_RESOLUTION_LABELS)
+              .filter(([value]) => value === "REFUND" || value === "EXCHANGE")
+              .map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

@@ -101,7 +101,7 @@ export function useOmnichannelRefresh(input: {
         if (wait > 0) await sleep(wait, signal);
         if (signal.cancelled) return;
         const wallet = await input.refetchWallet();
-        const activity = input.activityLoaded ? await input.refetchTransactions() : undefined;
+        const activity = await input.refetchTransactions();
         if (signal.cancelled) return;
         const after = captureOmnichannelRefreshSnapshot(
           wallet?.omnichannel ?? null,

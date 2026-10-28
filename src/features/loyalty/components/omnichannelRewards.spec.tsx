@@ -161,6 +161,50 @@ describe("omnichannel rewards account", () => {
     expect(screen.queryByText("No store loyalty membership linked yet")).not.toBeInTheDocument();
   });
 
+  it("keeps a last-known balance visible and does not label it as confirmed", async () => {
+    fetchLoyaltyWallet.mockResolvedValue(
+      platformWallet({
+        omnichannel: omnichannel({
+          balance: {
+            activePoints: "80",
+            usedPoints: "0",
+            issuedPoints: "80",
+            expiredPoints: "0",
+            unvestedPoints: "0",
+          },
+          sync: {
+            fetchedAt: "2026-10-15T08:00:00.000Z",
+            lastSuccessfulSyncAt: "2026-10-15T08:00:00.000Z",
+            isFresh: false,
+            source: "LAST_KNOWN_GOOD",
+          },
+        }),
+      }),
+    );
+    renderRewards();
+    expect(await screen.findByText("80")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Last known active points" })).toBeInTheDocument();
+    expect(screen.getByText(/newer balance was not confirmed/i)).toBeInTheDocument();
+    expect(screen.queryByText("No store loyalty membership linked yet")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Active points" })).not.toBeInTheDocument();
+  });
+
+  it("shows linked membership without a zero when the balance is missing", async () => {
+    fetchLoyaltyWallet.mockResolvedValue(
+      platformWallet({
+        omnichannel: omnichannel({
+          balance: null,
+        }),
+      }),
+    );
+    renderRewards();
+    expect(await screen.findByText("Store point balance is not available yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Active points" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/store reward points/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("No store loyalty membership linked yet")).not.toBeInTheDocument();
+    expect(screen.getByText("5,420")).toBeInTheDocument();
+  });
+
   it("renders NOT_ENROLLED without a zero balance", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({

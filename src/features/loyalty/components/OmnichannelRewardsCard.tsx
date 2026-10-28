@@ -56,6 +56,10 @@ function CardShell({ children }: { children: ReactNode }) {
   );
 }
 
+function lastKnownBalance(omnichannel: OmnichannelLoyaltyView): boolean {
+  return omnichannel.sync.source === "LAST_KNOWN_GOOD" || omnichannel.sync.isFresh === false;
+}
+
 function LinkedBalance({
   omnichannel,
   refresh,
@@ -63,7 +67,8 @@ function LinkedBalance({
   omnichannel: OmnichannelLoyaltyView;
   refresh: OmnichannelRefreshControl | null;
 }) {
-  const active = omnichannel.balance?.activePoints ?? "0";
+  const active = omnichannel.balance?.activePoints ?? "";
+  const known = lastKnownBalance(omnichannel);
   const stale = omnichannel.sync.isFresh === false;
   const syncedAt = activityDate(omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt);
 
@@ -82,9 +87,11 @@ function LinkedBalance({
         id="store-rewards-heading"
         className="mt-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-sa-muted"
       >
-        Active points
+        {known ? OMNICHANNEL_COPY.lastKnownHeading : "Active points"}
       </h2>
-      <p className="mt-3 text-[13px] leading-relaxed text-sa-secondary">{OMNICHANNEL_COPY.linkedHint}</p>
+      <p className="mt-3 text-[13px] leading-relaxed text-sa-secondary">
+        {known ? OMNICHANNEL_COPY.lastKnownHint : OMNICHANNEL_COPY.linkedHint}
+      </p>
       {stale ? (
         <p className="mt-2 text-[13px] leading-relaxed text-sa-secondary" role="status">
           {syncedAt ? `${OMNICHANNEL_COPY.lastSynced} ${syncedAt}` : OMNICHANNEL_COPY.stale}
@@ -105,10 +112,24 @@ export function OmnichannelRewardsCard({
 }) {
   if (!omnichannel) return null;
 
-  if (omnichannel.status === "LINKED" && omnichannel.balance != null) {
+  if (omnichannel.status === "LINKED" && omnichannel.balance?.activePoints) {
     return (
       <CardShell>
         <LinkedBalance omnichannel={omnichannel} refresh={refresh} />
+      </CardShell>
+    );
+  }
+
+  if (omnichannel.status === "LINKED") {
+    return (
+      <CardShell>
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
+          {OMNICHANNEL_COPY.eyebrow}
+        </p>
+        <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary" role="status">
+          {OMNICHANNEL_COPY.balanceUnavailable}
+        </p>
+        <RefreshControl control={refresh} />
       </CardShell>
     );
   }
