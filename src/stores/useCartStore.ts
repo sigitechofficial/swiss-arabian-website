@@ -231,7 +231,7 @@ export const useCartStore = create<CartState>()(
             lines,
             totals,
             promotions: readPromotionSnapshot(cart.promotions),
-            employeeCheckout: readEmployeeCheckout(cart.employeeCheckout),
+            employeeCheckout: readEmployeeCheckout(cart.staffPurchase ?? cart.employeeCheckout),
             loyaltyRedemption,
             loyaltyAdjusted,
             cartId: cart.cartId,

@@ -76,7 +76,9 @@ export type ApiCart = {
   /** Server redemption quote. Display only — never priced in the browser. */
   loyaltyRedemption?: unknown;
   loyaltyApplied?: string | null;
-  /** Backend staff quote. Absent for a normal customer. */
+  /** Customer-safe staff purchase DTO. Absent for a normal customer. */
+  staffPurchase?: unknown;
+  /** @deprecated Prefer `staffPurchase`. Legacy Backend envelope. */
   employeeCheckout?: unknown;
   validation: CartValidation | null;
   updatedAt: string;

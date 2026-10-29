@@ -287,7 +287,19 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
   const refunds = readOrderRefunds(order.refunds);
   const staffQuote = readEmployeeCheckout(
-    (order.promotionSnapshot as { employeeCheckout?: unknown } | null | undefined)?.employeeCheckout,
+    (order as { staffPurchase?: unknown }).staffPurchase ??
+      (
+        order.promotionSnapshot as
+          | { staffPurchase?: unknown; employeeCheckout?: unknown }
+          | null
+          | undefined
+      )?.staffPurchase ??
+      (
+        order.promotionSnapshot as
+          | { staffPurchase?: unknown; employeeCheckout?: unknown }
+          | null
+          | undefined
+      )?.employeeCheckout,
   );
 
   return (
@@ -499,7 +511,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {staffQuote ? (
               <Panel title="Staff discount">
-                <StaffDiscountSummary checkout={staffQuote} currency={currency} showReference={false} />
+                <StaffDiscountSummary checkout={staffQuote} currency={currency} surface="order" />
               </Panel>
             ) : null}
           </aside>

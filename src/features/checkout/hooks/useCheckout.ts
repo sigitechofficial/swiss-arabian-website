@@ -20,6 +20,7 @@ import {
   validateCheckout,
   type SetAddressDto,
 } from "../api/checkout.service";
+import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { placeOrder } from "../api/orders.service";
 import type {
   CheckoutSessionResponse,
@@ -344,6 +345,11 @@ export function useCheckout() {
       const covered = payable === 0;
       if (!delivery) return setErrorMsg("Choose a shipping method to continue.");
       if (!covered && !payment) return setErrorMsg("Choose a payment method to continue.");
+      if (staffDiscountPaymentBlocked(readEmployeeCheckout(session.staffPurchase ?? session.employeeCheckout))) {
+        return setErrorMsg(
+          "Staff discount cannot be paid yet. This quote is a preview, so the order was not placed.",
+        );
+      }
 
       setStatus("submitting");
       setErrorMsg(null);

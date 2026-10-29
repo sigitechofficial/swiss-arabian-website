@@ -46,6 +46,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/features/account/data/regionsByCountry";
 import { useMarket } from "@/providers/MarketProvider";
+import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { useCheckout } from "../hooks/useCheckout";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
@@ -227,8 +228,12 @@ export function CheckoutPageView() {
   );
   const submitting = checkout.status === "submitting";
   const covered = amountPayable === 0;
+  const staffPaymentBlocked = staffDiscountPaymentBlocked(
+    readEmployeeCheckout(session?.staffPurchase ?? session?.employeeCheckout),
+  );
   const canSubmit =
     checkout.status === "ready" &&
+    !staffPaymentBlocked &&
     Boolean(checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId));
   const ctaLabel = submitting
     ? "Placing order…"

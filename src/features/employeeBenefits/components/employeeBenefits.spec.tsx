@@ -145,7 +145,7 @@ describe("employee benefits account", () => {
     expect(fetchEmployeeContext).toHaveBeenCalledWith("UAE");
     expect(screen.queryByLabelText("Invitation ID")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Invitation claim code")).not.toBeInTheDocument();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
   });
 
@@ -186,9 +186,9 @@ describe("employee benefits account", () => {
     expect(screen.queryByText("emp-1")).not.toBeInTheDocument();
     expect(fetchEmployeeBenefits).toHaveBeenCalledWith("UAE");
     expect(screen.getByText("URD1")).toBeInTheDocument();
-    expect(screen.getAllByText("Staff Benefit Limit").length).toBe(2);
-    expect(screen.getAllByText("Recorded Usage").length).toBe(2);
-    expect(screen.getAllByText("Remaining Staff Benefit").length).toBe(2);
+    expect(screen.getAllByText("Amount limit").length).toBe(2);
+    expect(screen.getAllByText("Amount used in D365").length).toBe(2);
+    expect(screen.getAllByText("Balance remaining in D365").length).toBe(2);
     expect(screen.getAllByText("D365 units — not verified").length).toBeGreaterThan(0);
     expect(screen.getByText("Staff-UAE")).toBeInTheDocument();
     expect(screen.getByText("Staff-QA")).toBeInTheDocument();
@@ -293,7 +293,7 @@ describe("employee benefits account", () => {
     renderView();
     expect(await screen.findByText(/currently unavailable/i)).toBeInTheDocument();
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
   });
 
   it("does not claim the customer is not an employee when the API fails with 5xx", async () => {
@@ -316,7 +316,7 @@ describe("employee benefits account", () => {
     fetchEmployeeContext.mockRejectedValue(new ApiClientError(403, "Forbidden"));
     renderView();
     expect(await screen.findByText(/currently unavailable for this account/i)).toBeInTheDocument();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
   });
 
   it("does not offer retry after 401", async () => {
@@ -357,7 +357,7 @@ describe("employee benefits account", () => {
     expect(fetchEmployeeLink).toHaveBeenCalledWith("QA");
     expect(fetchEmployeeContext).toHaveBeenCalledWith("QA");
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Customer Rewards" })).toBeInTheDocument();
   });
 
