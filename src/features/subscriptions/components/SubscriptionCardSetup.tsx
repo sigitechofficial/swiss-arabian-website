@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import { getStripe } from "@/lib/stripe/getStripe";
 
 import { accountPanel, accountPanelBody, accountPrimaryCta } from "@/styles/accountChrome";
 
@@ -123,7 +123,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
     const storedKey = subscriptionId ? sessionStorage.getItem(`${REMEMBER_PREFIX}pk:${subscriptionId}`) : null;
     const key = selectTestPublishableKey(session?.publishableKey || storedKey);
     if (!key) return;
-    const stripe = await loadStripe(key);
+    const stripe = await getStripe(key);
     if (!stripe) return;
     await stripe.confirmCardPayment(clientSecret);
   }, [session?.publishableKey, subscriptionId]);
@@ -209,7 +209,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
   }
 
   const stripePromise = useMemo(
-    () => (session ? loadStripe(session.publishableKey) : null),
+    () => (session ? getStripe(session.publishableKey) : null),
     [session],
   );
 

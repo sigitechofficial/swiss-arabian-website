@@ -121,7 +121,7 @@ export interface PaymentMethodOption {
   methodType?: string;
   displayName: string;
   isDefault: boolean;
-  /** `true` for Paymob (hosted page), `false` for Stripe (inline Elements). */
+  /** `true` when checkout should continue to a payment step (Paymob, and any hosted gateway). */
   requiresRedirect?: boolean;
   isEnabled?: boolean;
   isTestMode?: boolean | null;
@@ -275,7 +275,7 @@ export interface PaymentInitiationResponse {
   currency: string;
   /** "SUCCESS" | "PENDING_PROVIDER_EXECUTION" */
   paymentExecutionStatus: string;
-  /** "REDIRECT" = Paymob hosted page · "INLINE_CARD" = Stripe Elements · null = no gateway step */
+  /** "REDIRECT" = hosted gateway page · "INLINE_CARD" = Stripe Elements or Paymob Pixel · null = no gateway step */
   paymentAction: string | null;
   redirectUrl: string | null;
   clientSecret: string | null;

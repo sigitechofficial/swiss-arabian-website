@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import { getStripe } from "@/lib/stripe/getStripe";
 
 import { listCustomerAddresses, createCustomerAddress } from "@/features/account/api/customerAccount.service";
 import type { StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
@@ -242,7 +242,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
         })
       : null;
   const publishableKey = subscriptionCheckoutTestKey(checkout?.publishableKey);
-  const stripePromise = useMemo(() => (publishableKey ? loadStripe(publishableKey) : null), [publishableKey]);
+  const stripePromise = useMemo(() => (publishableKey ? getStripe(publishableKey) : null), [publishableKey]);
 
   async function refreshPayment(id: string) {
     if (opening.current) return;

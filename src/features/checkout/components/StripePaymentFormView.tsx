@@ -1,15 +1,16 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import {
-  loadStripe,
-  type StripeElementsOptions,
-  type StripePaymentElementOptions,
-} from "@stripe/stripe-js";
+  CheckoutElementsProvider,
+  PaymentElement,
+  useCheckoutElements,
+} from "@stripe/react-stripe-js/checkout";
+import type { StripeCheckoutElementsSdkOptions, StripeCheckoutSession } from "@stripe/stripe-js";
+import { getStripe } from "@/lib/stripe/getStripe";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -83,7 +84,6 @@ const BRAND = {
   copper: "#8c4435",
   ink: "#241f1b",
   ink2: "#5b5148",
-  line: "#d9ccb4",
   danger: "#b4483f",
 };
 const FONT_FAMILY = '"Benton Sans Wide", system-ui, sans-serif';
@@ -97,9 +97,27 @@ function LockIcon() {
   );
 }
 
-function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse | undefined }) {
-  const stripe = useStripe();
-  const elements = useElements();
+function checkoutConfirmMessage(error: {
+  message: string;
+  code?: string | null;
+  paymentFailed?: { declineCode: string | null };
+}): string {
+  if (error.code === "paymentFailed") {
+    return stripeErrorMessage("card_declined", error.paymentFailed?.declineCode ?? undefined);
+  }
+  return error.message || "Payment failed. Please try another card or contact your bank.";
+}
+
+function sessionPayable(session: StripeCheckoutSession): { amount: number; currency: string } {
+  const divisor = session.minorUnitsAmountDivisor || 100;
+  return {
+    amount: session.total.total.minorUnitsAmount / divisor,
+    currency: session.currency.toUpperCase(),
+  };
+}
+
+function StripeForm({ orderId }: { orderId: string }) {
+  const checkoutState = useCheckoutElements();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -107,48 +125,25 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [needsRetry, setNeedsRetry] = useState(false);
 
-  const shipping = order?.addresses?.find((a) => a.addressType === "SHIPPING");
-  const elementOptions: StripePaymentElementOptions = {
-    layout: "tabs",
-    // Link's "save my info" sign-up clutters a one-off card payment.
-    wallets: { link: "never" },
-    terms: { card: "never" },
-    defaultValues: {
-      billingDetails: {
-        name: order?.customer?.fullName ?? shipping?.fullName ?? undefined,
-        email: order?.customer?.email ?? undefined,
-        address: shipping?.countryCode ? { country: shipping.countryCode } : undefined,
-      },
-    },
-  };
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!stripe || !elements) return;
+  async function confirmStripePayment() {
+    if (checkoutState.type !== "success" || phase !== "idle" || needsRetry) return;
+    const { checkout } = checkoutState;
     setPhase("confirming");
     setErrorMsg(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      // Only followed when the card needs a 3DS redirect; that page polls the backend.
-      confirmParams: {
-        return_url: "http://localhost:4000/checkout/payment/success",
-      },
-      redirect: "if_required",
-    });
-
-    const alreadySucceeded =
-      error?.code === "payment_intent_unexpected_state" &&
-      error.payment_intent?.status === "succeeded";
-
-    if (error && !alreadySucceeded) {
-      // Stripe-side rejection — the same PaymentIntent can be retried in place.
-      setErrorMsg(stripeErrorMessage(error.code, error.decline_code));
+    try {
+      const confirmResult = await checkout.confirm({ redirect: "if_required" });
+      if (confirmResult.type === "error") {
+        setErrorMsg(checkoutConfirmMessage(confirmResult.error));
+        setPhase("idle");
+        return;
+      }
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Payment failed. Please try another card or contact your bank.");
       setPhase("idle");
       return;
     }
 
-    // Confirmation comes from the webhook, not from confirmPayment resolving.
     setPhase("polling");
     const result = await pollUntilPaymentSettles(orderId);
     if (result.success) {
@@ -163,7 +158,6 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
         "Your payment is taking longer than expected to confirm. Please check your email before trying again.",
       );
     } else {
-      // The backend marked it failed — this PaymentIntent is done; start a new attempt.
       setNeedsRetry(true);
       setErrorMsg(
         result.status === "DECLINED"
@@ -173,48 +167,59 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
     }
   }
 
-  if (phase === "polling") {
-    return (
-      <div className={stripePayState} aria-live="polite" aria-busy="true">
-        <LoaderMark size={84} />
-        <p className={stripePayStateTitle}>Confirming your payment…</p>
-        <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
-      </div>
-    );
-  }
-
-  const total = order ? formatMoney(Number(order.totals.total), order.currency) : null;
-
   return (
-    <form className={cboxBody} onSubmit={handleSubmit}>
-      {!ready && !loadFailed ? (
-        <div className={stripePayState} role="status" aria-live="polite">
-          <LoaderMark size={72} />
-          <p className={checkoutNote}>Loading secure card form…</p>
-        </div>
-      ) : null}
-
-      {loadFailed ? (
+    <div className={cboxBody}>
+      {checkoutState.type === "error" ? (
         <p className={checkoutError} role="alert">
-          We couldn’t load the secure card form. Please refresh the page or{" "}
+          {checkoutState.error.message || "We couldn’t load the secure card form."}{" "}
           <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
             choose another way to pay
           </LocaleLink>
-          .
         </p>
       ) : null}
 
-      {/* Stays mounted while loading so Stripe can boot it; revealed on ready. */}
-      <div className={ready ? undefined : stripePayElementLoading}>
-        <PaymentElement
-          options={elementOptions}
-          onReady={() => setReady(true)}
-          onLoadError={() => setLoadFailed(true)}
-        />
-      </div>
-
-      {ready ? (
+      {phase === "polling" ? (
+        <div className={stripePayState} aria-live="polite" aria-busy="true">
+          <LoaderMark size={84} />
+          <p className={stripePayStateTitle}>Confirming your payment…</p>
+          <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
+        </div>
+      ) : (
         <>
+          {!ready && !loadFailed && checkoutState.type !== "error" ? (
+            <div className={stripePayState} role="status" aria-live="polite">
+              <LoaderMark size={72} />
+              <p className={checkoutNote}>Loading secure card form…</p>
+            </div>
+          ) : null}
+
+          {loadFailed ? (
+            <p className={checkoutError} role="alert">
+              We couldn’t load the secure card form. Please refresh the page or{" "}
+              <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
+                choose another way to pay
+              </LocaleLink>
+              .
+            </p>
+          ) : null}
+
+          <div className={ready ? undefined : stripePayElementLoading}>
+            <PaymentElement
+              options={{
+                layout: {
+                  type: "accordion",
+                  defaultCollapsed: false,
+                  radios: "always",
+                  spacedAccordionItems: true,
+                },
+                paymentMethodOrder: ["card", "apple_pay", "google_pay", "link"],
+                wallets: { applePay: "auto", googlePay: "auto", link: "auto" },
+              }}
+              onReady={() => setReady(true)}
+              onLoadError={() => setLoadFailed(true)}
+            />
+          </div>
+
           {errorMsg ? (
             <p className={checkoutError} role="alert">
               {errorMsg}
@@ -229,26 +234,33 @@ function StripeForm({ orderId, order }: { orderId: string; order: OrderResponse 
             </p>
           ) : null}
           <button
-            type="submit"
+            type="button"
             className={`${checkoutCta} ${stripePayCta}`}
-            disabled={!stripe || !elements || phase !== "idle" || needsRetry}
+            disabled={checkoutState.type !== "success" || phase !== "idle" || needsRetry}
+            onClick={() => void confirmStripePayment()}
           >
-            <span>
-              {phase === "confirming" ? "Processing…" : total ? `Pay ${total}` : "Pay now"}
-            </span>
+            <span>{phase === "confirming" ? "Processing…" : "Pay now"}</span>
             <b aria-hidden="true">↗</b>
           </button>
-          <p className={stripePayTrust}>
-            <LockIcon />
-            <span>Secured by Stripe — your card details never touch our servers.</span>
-          </p>
         </>
-      ) : null}
-    </form>
+      )}
+      <p className={stripePayTrust}>
+        <LockIcon />
+        <span>Secured by Stripe — your card details never touch our servers.</span>
+      </p>
+    </div>
   );
 }
 
-function OrderSummary({ order, loading }: { order: OrderResponse | undefined; loading: boolean }) {
+export function OrderSummary({
+  order,
+  loading,
+  payable,
+}: {
+  order: OrderResponse | undefined;
+  loading: boolean;
+  payable?: { amount: number; currency: string } | null;
+}) {
   if (loading) {
     return (
       <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary" aria-busy="true">
@@ -330,10 +342,48 @@ function OrderSummary({ order, loading }: { order: OrderResponse | undefined; lo
         ) : null}
         <div className={checkoutTotalsLine}>
           <dt>Total</dt>
-          <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
+          <dd dir="ltr">
+            {formatMoney(payable?.amount ?? Number(totals.total), payable?.currency ?? currency)}
+          </dd>
         </div>
       </dl>
     </aside>
+  );
+}
+
+function StripeCheckoutLayout({
+  orderId,
+  order,
+  loading,
+}: {
+  orderId: string;
+  order: OrderResponse | undefined;
+  loading: boolean;
+}) {
+  const checkoutState = useCheckoutElements();
+  const payable = checkoutState.type === "success" ? sessionPayable(checkoutState.checkout) : null;
+
+  return (
+    <div className={checkoutLayout}>
+      <div className={`${checkoutForm} ${stripePayForm}`}>
+        <section className={cbox} aria-labelledby="card-payment-heading">
+          <div className={`${cboxHead} ${stripePayHead}`}>
+            <span className={`${cboxNum} ${stripePayNum}`}>
+              <LockIcon />
+            </span>
+            <h2 id="card-payment-heading">Pay with Stripe</h2>
+            <span className={stripePayBrands} aria-label="Visa, Mastercard and American Express accepted">
+              Visa · Mastercard · Amex
+            </span>
+          </div>
+          <StripeForm orderId={orderId} />
+        </section>
+        <p className={checkoutLegal}>
+          Changed your mind? <LocaleLink href="/checkout/payment/cancel">Cancel payment</LocaleLink> — your order stays saved.
+        </p>
+      </div>
+      <OrderSummary order={order} loading={loading} payable={payable} />
+    </div>
   );
 }
 
@@ -357,7 +407,7 @@ export function StripePaymentFormView() {
   const orderId = ctx?.orderId ?? null;
   // The key arrives on the initiate response — never hardcoded.
   const stripePromise = useMemo(
-    () => (publishableKey ? loadStripe(publishableKey) : null),
+    () => (publishableKey ? getStripe(publishableKey) : null),
     [publishableKey],
   );
 
@@ -378,6 +428,48 @@ export function StripePaymentFormView() {
     router.replace(`/order-confirmation/${orderId}`);
   }, [alreadyPaid, orderId, router]);
 
+  const shipping = orderQuery.data?.addresses?.find((address) => address.addressType === "SHIPPING");
+  const billingCountry = shipping?.countryCode ?? null;
+  const customerName = orderQuery.data?.customer?.fullName ?? shipping?.fullName ?? null;
+  const clientSecret = ctx?.clientSecret ?? null;
+  const options = useMemo<StripeCheckoutElementsSdkOptions | null>(() => {
+    if (!clientSecret || typeof window === "undefined") return null;
+    return {
+      clientSecret,
+      elementsOptions: {
+        fonts: [400, 500].map((weight) => ({
+          family: "Benton Sans Wide",
+          src: `url(${window.location.origin}/fonts/benton-sans-wide-${weight}.ttf)`,
+          weight: String(weight),
+        })),
+        appearance: {
+          theme: "stripe",
+          variables: {
+            fontFamily: FONT_FAMILY,
+            fontSizeBase: "14px",
+            colorPrimary: BRAND.copper,
+            colorBackground: "#ffffff",
+            colorText: BRAND.ink,
+            colorTextSecondary: BRAND.ink2,
+            colorTextPlaceholder: "#a3978a",
+            colorDanger: BRAND.danger,
+            borderRadius: "4px",
+          },
+        },
+      },
+      ...(billingCountry
+        ? {
+            defaultValues: {
+              billingAddress: {
+                name: customerName ?? undefined,
+                address: { country: billingCountry },
+              },
+            },
+          }
+        : {}),
+    };
+  }, [billingCountry, clientSecret, customerName]);
+
   if (!hydrated || alreadyPaid) {
     return (
       <CheckoutStateShell current="Payment">
@@ -386,7 +478,7 @@ export function StripePaymentFormView() {
     );
   }
 
-  if (!ctx?.clientSecret || !orderId || !stripePromise) {
+  if (!clientSecret || !orderId || !stripePromise || !options) {
     return (
       <CheckoutStateShell current="Payment">
         <section className={checkoutEmpty}>
@@ -401,63 +493,6 @@ export function StripePaymentFormView() {
       </CheckoutStateShell>
     );
   }
-
-  const options: StripeElementsOptions = {
-    clientSecret: ctx.clientSecret,
-    fonts: [400, 500].map((weight) => ({
-      family: "Benton Sans Wide",
-      src: `url(${window.location.origin}/fonts/benton-sans-wide-${weight}.ttf)`,
-      weight: String(weight),
-    })),
-    appearance: {
-      theme: "stripe",
-      variables: {
-        fontFamily: FONT_FAMILY,
-        fontSizeBase: "14px",
-        colorPrimary: BRAND.copper,
-        colorBackground: "#ffffff",
-        colorText: BRAND.ink,
-        colorTextSecondary: BRAND.ink2,
-        colorTextPlaceholder: "#a3978a",
-        colorDanger: BRAND.danger,
-        colorIcon: BRAND.ink2,
-        borderRadius: "4px",
-        spacingUnit: "4px",
-        gridRowSpacing: "16px",
-      },
-      rules: {
-        ".Label": {
-          fontSize: "10px",
-          fontWeight: "500",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: BRAND.ink2,
-          marginBottom: "6px",
-        },
-        ".Input": {
-          border: `1px solid ${BRAND.line}`,
-          boxShadow: "none",
-          padding: "12px 14px",
-        },
-        ".Input:focus": {
-          borderColor: BRAND.copper,
-          boxShadow: `0 0 0 1px ${BRAND.copper}`,
-        },
-        ".Input--invalid": {
-          borderColor: BRAND.danger,
-          boxShadow: "none",
-        },
-        ".Tab": {
-          border: `1px solid ${BRAND.line}`,
-          boxShadow: "none",
-        },
-        ".Tab--selected": {
-          borderColor: BRAND.copper,
-          boxShadow: `0 0 0 1px ${BRAND.copper}`,
-        },
-      },
-    },
-  };
 
   return (
     <CheckoutStateShell current="Payment">
@@ -474,29 +509,9 @@ export function StripePaymentFormView() {
         </ol>
       </header>
 
-      <div className={checkoutLayout}>
-        <div className={`${checkoutForm} ${stripePayForm}`}>
-          <section className={cbox} aria-labelledby="card-payment-heading">
-            <div className={`${cboxHead} ${stripePayHead}`}>
-              <span className={`${cboxNum} ${stripePayNum}`}>
-                <LockIcon />
-              </span>
-              <h2 id="card-payment-heading">Card details</h2>
-              <span className={stripePayBrands} aria-label="Visa, Mastercard and American Express accepted">
-                Visa · Mastercard · Amex
-              </span>
-            </div>
-            <Elements stripe={stripePromise} options={options}>
-              <StripeForm orderId={orderId} order={orderQuery.data} />
-            </Elements>
-          </section>
-          <p className={checkoutLegal}>
-            Changed your mind? <LocaleLink href="/checkout/payment/cancel">Cancel payment</LocaleLink> — your order stays saved.
-          </p>
-        </div>
-
-        <OrderSummary order={orderQuery.data} loading={orderQuery.isPending} />
-      </div>
+      <CheckoutElementsProvider stripe={stripePromise} options={options}>
+        <StripeCheckoutLayout orderId={orderId} order={orderQuery.data} loading={orderQuery.isPending} />
+      </CheckoutElementsProvider>
     </CheckoutStateShell>
   );
 }

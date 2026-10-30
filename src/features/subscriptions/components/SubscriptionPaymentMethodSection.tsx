@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import { getStripe } from "@/lib/stripe/getStripe";
 
 import { accountPanel, accountPanelBody, accountPrimaryCta } from "@/styles/accountChrome";
 import {
@@ -113,7 +113,7 @@ export function SubscriptionPaymentMethodSection({
   const [message, setMessage] = useState<string | null>(null);
   const last4 = maskedCardLast4(paymentMethod?.last4);
   const stripePromise = useMemo(
-    () => (session ? loadStripe(session.publishableKey) : null),
+    () => (session ? getStripe(session.publishableKey) : null),
     [session],
   );
 

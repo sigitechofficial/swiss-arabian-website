@@ -166,3 +166,20 @@ export async function removeCheckoutGiftCard(
     `/storefront/checkout/${checkoutSessionId}/gift-cards/${encodeURIComponent(usageId)}?${buildGuestParam().toString()}`,
   );
 }
+
+export type InlineFormResponse = {
+  ready: boolean;
+  provider?: "paymob" | "stripe";
+  correlationId?: string;
+  clientSecret?: string;
+  publicKey?: string;
+  publishableKey?: string;
+  providerReference?: string | null;
+};
+
+export async function openInlineForm(checkoutSessionId: string, returnUrl: string): Promise<InlineFormResponse> {
+  return apiPost<InlineFormResponse>(
+    `/storefront/checkout/${checkoutSessionId}/inline-form?${buildGuestParam().toString()}`,
+    { returnUrl },
+  );
+}

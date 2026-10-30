@@ -14,6 +14,7 @@ import {
   getCheckoutSession,
   listDeliveryMethods,
   listPaymentMethods,
+  openInlineForm,
   selectDeliveryMethod,
   selectPaymentMethod,
   setCheckoutAddress,
@@ -48,7 +49,7 @@ import {
   checkoutSignatureChanged,
   promotionCheckoutSignature,
 } from "../utils/promotionCheckoutSignature";
-import { PaymentGatewayError, startPayment } from "../utils/startPayment";
+import { PaymentGatewayError, startPayment, type InlinePaymentSession, type PreparedInlinePayment } from "../utils/startPayment";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -154,6 +155,8 @@ export function useCheckout() {
   const [session, setSession] = useState<CheckoutSessionResponse | null>(null);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethodOption[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
+  const [inlinePayment, setInlinePayment] = useState<InlinePaymentSession | null>(null);
+  const preparedRef = useRef<PreparedInlinePayment | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [status, setStatus] = useState<CheckoutStatus>("loading");
@@ -290,6 +293,47 @@ export function useCheckout() {
     })();
   }, [sessionId]);
 
+  useEffect(() => {
+    const selected = paymentMethods.find((method) => method.zonePaymentMethodId === selectedPaymentId);
+    const provider = selected?.providerCode?.toLowerCase() ?? "";
+    if (!preparedRef.current || !provider || preparedRef.current.provider === provider) return;
+    preparedRef.current = null;
+    setInlinePayment(null);
+  }, [paymentMethods, selectedPaymentId]);
+
+  const inlineKey = `${sessionId ?? ""}:${session?.selectedPaymentMethod?.providerCode ?? ""}:${session?.totalsEstimate?.total ?? ""}`;
+  useEffect(() => {
+    const provider = session?.selectedPaymentMethod?.providerCode?.toLowerCase() ?? "";
+    const total = Number(session?.totalsEstimate?.total ?? 0);
+    if (!sessionId || (provider !== "paymob" && provider !== "stripe") || !(total > 0)) return;
+    let cancelled = false;
+    void openInlineForm(sessionId, `${window.location.origin}/checkout`)
+      .then((form) => {
+        if (cancelled || !form.ready || !form.clientSecret || !form.correlationId || !form.provider) return;
+        preparedRef.current = {
+          provider: form.provider,
+          correlationId: form.correlationId,
+          clientSecret: form.clientSecret,
+          publicKey: form.publicKey,
+          publishableKey: form.publishableKey,
+          providerReference: form.providerReference,
+        };
+        setInlinePayment({
+          provider: form.provider,
+          orderId: "",
+          clientSecret: form.clientSecret,
+          publicKey: form.publicKey,
+          publishableKey: form.publishableKey,
+        });
+      })
+      .catch(() => {
+        // The card form stays closed until Pay now creates the payment.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inlineKey, sessionId]);
+
   const chooseDelivery = useCallback(
     async (zoneDeliveryMethodId: string) => {
       const method = deliveryMethods.find((d) => d.zoneDeliveryMethodId === zoneDeliveryMethodId);
@@ -335,8 +379,12 @@ export function useCheckout() {
     async (values: CheckoutSubmitValues) => {
       if (!session) return;
       const id = session.checkoutSessionId;
-      const delivery = deliveryMethods.find((d) => d.zoneDeliveryMethodId === selectedDeliveryId);
-      const payment = paymentMethods.find((p) => p.zonePaymentMethodId === selectedPaymentId);
+      const delivery = deliveryMethods.find(
+        (d) => d.zoneDeliveryMethodId === (deliveryChoiceRef.current ?? selectedDeliveryId),
+      );
+      const payment = paymentMethods.find(
+        (p) => p.zonePaymentMethodId === (paymentChoiceRef.current ?? selectedPaymentId),
+      );
       const payableRaw =
         session.totalsEstimate?.amountPayable ??
         session.promotions?.totals?.amountPayable ??
@@ -430,10 +478,27 @@ export function useCheckout() {
           router.push(`/order-confirmation/${order.orderId}`);
           return;
         }
-        await startPayment(order.orderId, (href) => router.push(href), {
-          zonePaymentMethodId: payment?.zonePaymentMethodId,
-          paymentMethodId: payment?.paymentMethodId,
-        });
+        const prepared = preparedRef.current;
+        const started = await startPayment(
+          order.orderId,
+          (href) => router.push(href),
+          {
+            zonePaymentMethodId: payment?.zonePaymentMethodId,
+            paymentMethodId: payment?.paymentMethodId,
+          },
+          { inline: true, prepared },
+        );
+        if (started.kind === "inline" && started.inline) {
+          const sameForm = Boolean(prepared && started.inline.clientSecret === prepared.clientSecret);
+          setInlinePayment({ ...started.inline, orderId: order.orderId });
+          setStatus("ready");
+          if (sameForm) {
+            window.setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("sa-inline-pay", { detail: { orderId: order.orderId } }));
+            }, 0);
+          }
+          return;
+        }
       } catch (e) {
         if (placedOrderId) {
           // The order exists and the bag is gone — send the shopper to the retry
@@ -496,12 +561,13 @@ export function useCheckout() {
     selectedPaymentId,
     // No cart means nothing to check out — unless an order was just placed
     // and consumed it, in which case we're mid-redirect to payment.
-    status: cartId || status === "submitting" ? status : ("idle" as CheckoutStatus),
+    status: cartId || status === "submitting" || inlinePayment ? status : ("idle" as CheckoutStatus),
     errorMsg,
     chooseDelivery,
     choosePayment,
     submitCheckout,
     retry,
     adoptSession,
+    inlinePayment,
   };
 }

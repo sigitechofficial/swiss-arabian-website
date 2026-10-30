@@ -31,15 +31,81 @@ export function pickDefaultPaymentMethod(
 
 export function paymentMethodNote(method: PaymentMethodOption): string {
   if (isStripePaymentMethod(method)) {
-    return "Enter your card securely with Stripe on the next step";
+    return "Stripe · Visa, Mastercard, Amex";
   }
   if (method.providerCode?.toLowerCase() === "paymob") {
-    return "Visa, Mastercard · completed on Paymob’s secure page";
+    return "Paymob · Visa, Mastercard, Amex, Jaywan";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
   }
   return "";
+}
+
+export interface UpcomingPaymentMethod {
+  id: string;
+  title: string;
+  note: string;
+  /** This row pays through a provider that is already enabled. */
+  selectsProvider?: "stripe";
+}
+
+/** Methods shoppers expect that are not a live zone method yet. */
+export function upcomingPaymentMethods(
+  countryCode: string | null | undefined,
+  methods: PaymentMethodOption[],
+): UpcomingPaymentMethod[] {
+  const country = (countryCode || "AE").toUpperCase();
+  const paymob = methods.some((method) => method.providerCode?.toLowerCase() === "paymob");
+  const stripe = methods.some((method) => isStripePaymentMethod(method));
+  const rows: UpcomingPaymentMethod[] = [];
+
+  if (paymob && (country === "AE" || country === "SA" || country === "OM")) {
+    rows.push({ id: "paymob-apple-pay", title: "Apple Pay", note: "Paymob" });
+  }
+  if (stripe) {
+    rows.push({
+      id: "stripe-apple-pay",
+      title: "Apple Pay",
+      note: "Stripe",
+      selectsProvider: "stripe",
+    });
+  }
+  if (paymob && (country === "AE" || country === "SA")) {
+    rows.push({ id: "paymob-google-pay", title: "Google Pay", note: "Paymob" });
+  }
+  if (stripe) {
+    rows.push({
+      id: "stripe-google-pay",
+      title: "Google Pay",
+      note: "Stripe",
+      selectsProvider: "stripe",
+    });
+  }
+  if (paymob && country === "SA") {
+    rows.push({ id: "mada", title: "mada", note: "Paymob" });
+    rows.push({ id: "stc-pay", title: "STC Pay", note: "Paymob" });
+  }
+  if (paymob && (country === "AE" || country === "SA")) {
+    rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
+    rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
+  }
+  if (country === "KW") {
+    rows.push({ id: "knet", title: "KNET", note: "Kuwait debit cards" });
+  }
+  if (country === "OM") {
+    rows.push({ id: "omannet", title: "OmanNet", note: "Oman debit cards" });
+  }
+  if (country === "QA") {
+    rows.push({ id: "naps", title: "NAPS", note: "Qatar debit cards" });
+  }
+  const hasCash = methods.some((method) =>
+    /cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`),
+  );
+  if (!hasCash && (country === "AE" || country === "SA" || country === "KW" || country === "OM" || country === "QA")) {
+    rows.push({ id: "cash-on-delivery", title: "Cash on delivery", note: "Pay when your order arrives" });
+  }
+  return rows;
 }
 
 // ─── Delivery ───────────────────────────────────────────────────────────────

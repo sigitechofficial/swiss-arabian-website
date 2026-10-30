@@ -14,7 +14,8 @@ import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemor
 import { pageContainer } from "@/styles/siteChrome";
 import { crumbsList } from "@/styles/shopChrome";
 import { pdpHero, pdpSplit, relatedEm } from "@/styles/pdpChrome";
-import { catalogKeys, fetchCollectionProducts } from "../api/catalog.service";
+import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import type { ProductDetail } from "../types/product";
 import {
   CONCENTRATION_LABELS,
@@ -46,12 +47,26 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
   return lines.find((line) => keys.includes(line.variantId) || line.slug === product.slug);
 }
 
-export function ProductDetailPageView({ product: detail }: { product: ProductDetail | null }) {
+export function ProductDetailPageView({
+  product: serverDetail,
+  slug: routeSlug,
+}: {
+  product: ProductDetail | null;
+  slug: string;
+}) {
   const copy = useShopCopy();
   const { marketId } = useMarket();
   const zoneCode = marketId ?? "";
+  const market = useSelectedCatalogMarket();
+  const clientProduct = useQuery({
+    queryKey: catalogKeys.detail(routeSlug, market?.zoneCode),
+    queryFn: () => fetchProductBySlug(routeSlug, market?.zoneCode, market),
+    enabled: !serverDetail && Boolean(routeSlug && market?.zoneCode),
+    retry: false,
+  });
+  const detail = serverDetail ?? clientProduct.data ?? null;
   const apiProduct = detail;
-  const slug = detail?.slug ?? "";
+  const slug = detail?.slug || routeSlug;
 
   const product = useMemo(
     () => (apiProduct ? toCatalogProduct(apiProduct) : undefined),
@@ -159,7 +174,17 @@ export function ProductDetailPageView({ product: detail }: { product: ProductDet
     });
   }, [youMayAlsoLike, related]);
 
+  const clientStillLoading =
+    !serverDetail && !clientProduct.isFetched && !clientProduct.isError;
+
   if (!product) {
+    if (clientStillLoading) {
+      return (
+        <div>
+          <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`} aria-busy="true" />
+        </div>
+      );
+    }
     return (
       <div>
         <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>
