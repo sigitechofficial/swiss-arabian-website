@@ -185,6 +185,26 @@ describe("staff discount summary", () => {
     expect(screen.queryByText("AED 100.00")).not.toBeInTheDocument();
   });
 
+  it("says staff pricing was not applied when allowance tracking is unavailable", () => {
+    const view = readEmployeeCheckout({
+      authorized: true,
+      eligible: true,
+      affiliationName: "Staff Discount 50%",
+      pricingApplied: false,
+      financialPosting: "DISABLED",
+      support: { retailMirror: "UNAVAILABLE", allowanceLedger: "UNAVAILABLE" },
+      lines: [{ sku: "ARSH099001", status: "SYNC_INCOMPLETE", percent: null, originalUnitPrice: "280.00", staffDiscountAmount: "0.00", finalLineTotal: "280.00" }],
+    });
+    render(<StaffDiscountSummary checkout={view} currency="AED" surface="checkout" />);
+    expect(screen.getByText("Staff Discount 50%")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Staff pricing was not applied. The retail discount offer and website allowance tracking are temporarily unavailable.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("50%")).not.toBeInTheDocument();
+  });
+
   it("keeps different line percentages on their own lines", () => {
     const mixed = readEmployeeCheckout({
       authorized: true,

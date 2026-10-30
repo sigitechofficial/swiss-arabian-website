@@ -63,6 +63,32 @@ describe("employee benefits readers", () => {
     expect(view.benefits).toHaveLength(2);
     expect(view.benefits[0]?.amountLimit).toBe("5000.00");
     expect(view.benefits[1]?.affiliationName).toBe("Staff-QA");
+    expect(view.websiteAccounting).toBeNull();
+  });
+
+  it("does not turn a missing usage table into zero website usage", () => {
+    const view = readEmployeeBenefits({
+      linked: true,
+      eligible: true,
+      benefits: [{ affiliationName: "Staff Discount 50%", amountLimit: "5000", amountUsed: "505", balanceRemaining: "4495" }],
+      websiteAccounting: {
+        availability: "UNAVAILABLE_SCHEMA",
+        currencyCode: "AED",
+        activeProvisionalHolds: "0.00",
+        paidUsagePendingD365: "0.00",
+        websiteAvailableAllowance: "4495.00",
+        d365ReconciliationStatus: "NONE",
+      },
+    });
+    expect(view.websiteAccounting).toEqual({
+      availability: "UNAVAILABLE_SCHEMA",
+      currencyCode: "AED",
+      activeProvisionalHolds: null,
+      paidUsagePendingD365: null,
+      websiteAvailableAllowance: null,
+      d365ReconciliationStatus: null,
+    });
+    expect(view.benefits[0]?.balanceRemaining).toBe("4495");
   });
 
   it("formats decimal strings without numeric coercion", () => {

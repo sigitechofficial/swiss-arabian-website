@@ -104,6 +104,14 @@ export function StaffDiscountSummary({
 
   const holdLabel = websiteHoldLabel(checkout.allowance?.websiteHold);
   const stageLabel = staffAccountingStageLabel(checkout.accountingStage);
+  const pricingUnavailable =
+    checkout.retailMirror === "UNAVAILABLE" || checkout.allowanceLedger === "UNAVAILABLE";
+  const unavailableCopy =
+    checkout.retailMirror === "UNAVAILABLE" && checkout.allowanceLedger === "UNAVAILABLE"
+      ? "Staff pricing was not applied. The retail discount offer and website allowance tracking are temporarily unavailable."
+      : checkout.allowanceLedger === "UNAVAILABLE"
+        ? "Staff pricing was not applied. Website allowance tracking is temporarily unavailable."
+        : "Staff pricing was not applied. The retail discount offer is temporarily unavailable.";
 
   if (!hasApplicableDiscount(checkout)) {
     return (
@@ -112,7 +120,9 @@ export function StaffDiscountSummary({
         {checkout.affiliationName ? (
           <p className="mt-2 text-[14px] font-semibold text-sa-primary">{checkout.affiliationName}</p>
         ) : null}
-        <p className="mt-3 text-[13px] text-sa-primary">Staff discount is not available on this order.</p>
+        <p className="mt-3 text-[13px] text-sa-primary">
+          {pricingUnavailable ? unavailableCopy : "Staff discount is not available on this order."}
+        </p>
         {holdLabel ? (
           <p className="mt-2 text-[13px] text-sa-secondary" role="status">
             {holdLabel}
@@ -148,7 +158,9 @@ export function StaffDiscountSummary({
       ) : null}
       {payable ? null : (
         <p className="mt-3 text-[13px] leading-relaxed text-sa-secondary" role="status">
-          Preview only. This is not the amount you pay, and it is not deducted in D365.
+          {pricingUnavailable
+            ? unavailableCopy
+            : "Preview only. This is not the amount you pay, and it is not deducted in D365."}
         </p>
       )}
       {checkout.stacking && checkout.stacking !== "NONE" && checkout.stacking !== "NO_CONFLICT" ? (

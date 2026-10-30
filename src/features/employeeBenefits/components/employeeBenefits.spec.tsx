@@ -271,6 +271,88 @@ describe("employee benefits account", () => {
     expect(screen.getByRole("link", { name: "Customer Rewards" })).toHaveAttribute("href", "/account/rewards");
   });
 
+  it("shows D365 benefits and a notice when website allowance tracking is not deployed", async () => {
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue(uaeEmployee);
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E02783",
+      fullName: "Amina Rahman",
+      designation: null,
+      legalEntityCode: "URD1",
+      benefits: [
+        {
+          affiliationName: "Staff Discount 50%",
+          amountLimit: "5000",
+          amountUsed: "505",
+          balanceRemaining: "4495",
+          lastSyncedAt: null,
+          unitStatus: "NOT_VERIFIED",
+        },
+      ],
+      websiteAccounting: {
+        availability: "UNAVAILABLE_SCHEMA",
+        currencyCode: "AED",
+        activeProvisionalHolds: null,
+        paidUsagePendingD365: null,
+        websiteAvailableAllowance: null,
+        d365ReconciliationStatus: null,
+      },
+    });
+    renderView();
+    expect(await screen.findByText("5,000")).toBeInTheDocument();
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent("Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.");
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  it("shows D365 benefits and a notice when website allowance tracking is not deployed", async () => {
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue(uaeEmployee);
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E02783",
+      fullName: "Amina Rahman",
+      designation: null,
+      legalEntityCode: "URD1",
+      benefits: [
+        {
+          affiliationName: "Staff Discount 50%",
+          amountLimit: "5000",
+          amountUsed: "505",
+          balanceRemaining: "4495",
+          lastSyncedAt: null,
+          unitStatus: "NOT_VERIFIED",
+        },
+      ],
+      websiteAccounting: {
+        availability: "UNAVAILABLE_SCHEMA",
+        currencyCode: "AED",
+        activeProvisionalHolds: null,
+        paidUsagePendingD365: null,
+        websiteAvailableAllowance: null,
+        d365ReconciliationStatus: null,
+      },
+    });
+    renderView();
+    expect(await screen.findByText("Staff Discount 50%")).toBeInTheDocument();
+    expect(screen.getByText("5,000")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("We couldn’t load Employee Benefits right now.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
   it("shows an empty benefit record without inventing an allowance", async () => {
     fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
     fetchEmployeeContext.mockResolvedValue(uaeEmployee);
