@@ -168,6 +168,18 @@ describe("staffPurchase public contract", () => {
     expect(staffPricingIsPayable(view)).toBe(false);
   });
 
+  it("allows checkout only when the Backend marks a platform purchase while D365 posting stays pending", () => {
+    const blocked = readEmployeeCheckout(appliedPurchase);
+    expect(staffDiscountPaymentBlocked(blocked)).toBe(true);
+    const allowed = readEmployeeCheckout({
+      ...appliedPurchase,
+      platformPurchase: "ALLOWED_D365_POSTING_PENDING",
+    });
+    expect(allowed?.financialPostingEnabled).toBe(false);
+    expect(staffDiscountPaymentBlocked(allowed)).toBe(false);
+    expect(staffPricingIsPayable(allowed)).toBe(false);
+  });
+
   it("allows a normal-price employee order when pricing is not applied", () => {
     const view = readEmployeeCheckout({
       authorized: true,

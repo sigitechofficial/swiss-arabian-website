@@ -62,10 +62,14 @@ export type EmployeeCheckoutView = {
   pricingApplied: boolean;
   allowanceConfirmed: boolean;
   financialPostingEnabled: boolean;
+  /** Set only when the Backend allows a website purchase while D365 posting stays pending. */
+  platformPurchase?: "DISABLED" | "ALLOWED_D365_POSTING_PENDING";
   captureBlocked: boolean;
   taxContractMismatch: boolean;
   stacking: string | null;
   accountingStage: StaffAccountingStage | null;
+  retailMirror: "READY" | "UNAVAILABLE";
+  allowanceLedger: "READY" | "UNAVAILABLE";
   lines: StaffQuoteLineView[];
   allowance: StaffAllowanceView | null;
   breakdown: StaffPurchaseBreakdown;
@@ -252,6 +256,14 @@ function readAllowance(raw: unknown): StaffAllowanceView | null {
   };
 }
 
+function readSupport(raw: unknown): { retailMirror: "READY" | "UNAVAILABLE"; allowanceLedger: "READY" | "UNAVAILABLE" } {
+  const row = asRecord(raw);
+  return {
+    retailMirror: row?.retailMirror === "UNAVAILABLE" ? "UNAVAILABLE" : "READY",
+    allowanceLedger: row?.allowanceLedger === "UNAVAILABLE" ? "UNAVAILABLE" : "READY",
+  };
+}
+
 function readBreakdown(raw: unknown): StaffPurchaseBreakdown {
   const row = asRecord(raw) ?? {};
   return {
@@ -279,9 +291,10 @@ export function extractStaffPurchaseRaw(resource: unknown): unknown {
   return root;
 }
 
-/** Discounted capture stays blocked while financial posting is disabled. */
+/** Discounted capture stays blocked while financial posting is disabled, unless the Backend explicitly allows a platform purchase. */
 export function staffDiscountPaymentBlocked(view: EmployeeCheckoutView | null | undefined): boolean {
   if (!view?.authorized || !view.pricingApplied) return false;
+  if (view.platformPurchase === "ALLOWED_D365_POSTING_PENDING") return false;
   return !view.financialPostingEnabled || view.captureBlocked;
 }
 
@@ -324,10 +337,16 @@ export function readEmployeeCheckout(raw: unknown): EmployeeCheckoutView | null 
     pricingApplied,
     allowanceConfirmed: row.allowanceConfirmed === true,
     financialPostingEnabled: postingEnabled(financialPosting),
+    platformPurchase:
+      row.platformPurchase === "ALLOWED_D365_POSTING_PENDING"
+        ? "ALLOWED_D365_POSTING_PENDING"
+        : "DISABLED",
     captureBlocked: captureBlocked(financialPosting, pricingApplied),
     taxContractMismatch: false,
     stacking: text(stacking?.status ?? stacking?.message ?? row.stacking),
     accountingStage: readAccountingStage(row.accounting),
+    retailMirror: readSupport(row.support).retailMirror,
+    allowanceLedger: readSupport(row.support).allowanceLedger,
     lines,
     allowance: readAllowance(row.allowance),
     breakdown: readBreakdown(row.breakdown),

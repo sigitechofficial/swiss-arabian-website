@@ -196,6 +196,13 @@ function ConnectedSummary({
       {scoped?.benefits.map((row, index) => (
         <BenefitCard key={`${row.affiliationName ?? "benefit"}-${index}`} row={row} />
       ))}
+      {scoped?.websiteAccounting?.availability === "UNAVAILABLE_SCHEMA" ? (
+        <Card>
+          <p className="max-w-[560px] text-[14px] leading-relaxed text-sa-primary" role="status">
+            {COPY.websiteAccountingUnavailable}
+          </p>
+        </Card>
+      ) : null}
     </div>
   );
 }

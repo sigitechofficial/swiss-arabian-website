@@ -38,6 +38,16 @@ export type EmployeeBenefitsView = {
   designation: string | null;
   legalEntityCode: string | null;
   benefits: EmployeeBenefitRowView[];
+  websiteAccounting: EmployeeWebsiteAccountingView | null;
+};
+
+export type EmployeeWebsiteAccountingView = {
+  availability: "AVAILABLE" | "UNAVAILABLE_SCHEMA";
+  currencyCode: string | null;
+  activeProvisionalHolds: string | null;
+  paidUsagePendingD365: string | null;
+  websiteAvailableAllowance: string | null;
+  d365ReconciliationStatus: string | null;
 };
 
 export type AcceptEmployeeInvitationResult = {
@@ -137,6 +147,30 @@ function readBenefitRow(raw: unknown): EmployeeBenefitRowView | null {
   };
 }
 
+function readWebsiteAccounting(raw: unknown): EmployeeWebsiteAccountingView | null {
+  const row = asRecord(raw);
+  if (!row) return null;
+  if (row.availability === "UNAVAILABLE_SCHEMA") {
+    return {
+      availability: "UNAVAILABLE_SCHEMA",
+      currencyCode: readTrimmed(row.currencyCode),
+      activeProvisionalHolds: null,
+      paidUsagePendingD365: null,
+      websiteAvailableAllowance: null,
+      d365ReconciliationStatus: null,
+    };
+  }
+  if (row.availability !== "AVAILABLE") return null;
+  return {
+    availability: "AVAILABLE",
+    currencyCode: readTrimmed(row.currencyCode),
+    activeProvisionalHolds: readTrimmed(row.activeProvisionalHolds),
+    paidUsagePendingD365: readTrimmed(row.paidUsagePendingD365),
+    websiteAvailableAllowance: readTrimmed(row.websiteAvailableAllowance),
+    d365ReconciliationStatus: readTrimmed(row.d365ReconciliationStatus),
+  };
+}
+
 export function readEmployeeBenefits(raw: unknown): EmployeeBenefitsView {
   const row = asRecord(raw) ?? {};
   const benefits = Array.isArray(row.benefits)
@@ -155,6 +189,7 @@ export function readEmployeeBenefits(raw: unknown): EmployeeBenefitsView {
     designation: readTrimmed(row.designation),
     legalEntityCode: readTrimmed(row.legalEntityCode),
     benefits,
+    websiteAccounting: readWebsiteAccounting(row.websiteAccounting),
   };
 }
 
@@ -184,6 +219,8 @@ export const EMPLOYEE_BENEFITS_COPY = {
   ineligible: "This linked account is not eligible for staff benefits right now.",
   emptyBenefits: "No staff benefit record is available for this affiliation yet.",
   loadError: "We couldn’t load Employee Benefits right now.",
+  websiteAccountingUnavailable:
+    "Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.",
   retry: "Try again",
   limit: "Amount limit",
   used: "Amount used in D365",
