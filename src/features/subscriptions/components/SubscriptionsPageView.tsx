@@ -239,7 +239,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   }
 
   const activePrice = active ? subscriptionPriceLines(active) : null;
-  const price = activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "";
+  const price = active && activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "";
 
   function continueWithPlan() {
     if (!active || !activePrice?.available) return;

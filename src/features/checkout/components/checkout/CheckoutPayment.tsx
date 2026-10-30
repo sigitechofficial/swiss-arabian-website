@@ -220,23 +220,23 @@ function paymentGroups(methods: PaymentMethodOption[], countryCode?: string | nu
   const used = new Set([stripe?.zonePaymentMethodId, paymob?.zonePaymentMethodId].filter(Boolean));
   const groups: Array<{ id: string; title: string | null; rows: PayRow[] }> = [];
 
-  const stripeGroup = stripe
+  const stripeGroup: { id: string; title: string; rows: PayRow[] } | null = stripe
     ? {
         id: "stripe",
         title: "Stripe",
         rows: [
-          { key: "apple_pay@stripe", title: "Apple Pay", wallet: "apple", zoneId: stripe.zonePaymentMethodId, surface: "apple_pay" as const, provider: "stripe" as const },
-          { key: "google_pay@stripe", title: "Google Pay", wallet: "google", zoneId: stripe.zonePaymentMethodId, surface: "google_pay" as const, provider: "stripe" as const },
-          { key: "card@stripe", title: "Credit or debit card", sub: "Visa, Mastercard, Amex", marks: ["visa", "mc", "amex"] as PayMark[], zoneId: stripe.zonePaymentMethodId, surface: "card" as const, provider: "stripe" as const },
+          { key: "apple_pay@stripe", title: "Apple Pay", wallet: "apple", zoneId: stripe.zonePaymentMethodId, surface: "apple_pay", provider: "stripe" },
+          { key: "google_pay@stripe", title: "Google Pay", wallet: "google", zoneId: stripe.zonePaymentMethodId, surface: "google_pay", provider: "stripe" },
+          { key: "card@stripe", title: "Credit or debit card", sub: "Visa, Mastercard, Amex", marks: ["visa", "mc", "amex"], zoneId: stripe.zonePaymentMethodId, surface: "card", provider: "stripe" },
         ],
       }
     : null;
-  const paymobGroup = paymob
+  const paymobGroup: { id: string; title: string; rows: PayRow[] } | null = paymob
     ? {
         id: "paymob",
         title: "Paymob",
         rows: [
-          { key: "card@paymob", title: "Credit or debit card", sub: "Visa, Mastercard", marks: ["visa", "mc"] as PayMark[], zoneId: paymob.zonePaymentMethodId, surface: "card" as const, provider: "paymob" as const },
+          { key: "card@paymob", title: "Credit or debit card", sub: "Visa, Mastercard", marks: ["visa", "mc"], zoneId: paymob.zonePaymentMethodId, surface: "card", provider: "paymob" },
         ],
       }
     : null;

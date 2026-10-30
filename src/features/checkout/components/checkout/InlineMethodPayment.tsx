@@ -106,6 +106,8 @@ function StripeDropForm({ orderId, surface }: { orderId: string; surface: Paymen
             buttonHeight: 48,
             buttonType: { applePay: "plain", googlePay: "plain" },
             buttonTheme: { applePay: "black", googlePay: "white" },
+            layout: { maxColumns: 1, maxRows: 1, overflow: "never" },
+            paymentMethodOrder: [apple ? "apple_pay" : "google_pay"],
             paymentMethods: {
               applePay: apple ? "always" : "never",
               googlePay: apple ? "never" : "always",

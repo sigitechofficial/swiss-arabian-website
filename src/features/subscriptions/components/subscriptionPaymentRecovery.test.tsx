@@ -97,11 +97,11 @@ async function confirmRetry() {
   fireEvent.click(screen.getByRole("button", { name: "Confirm retry" }));
 }
 
-function trackerMonth(month: number): HTMLElement {
+function trackerMonth(month: number): HTMLLIElement {
   const row = screen
     .getAllByText(`Month ${month}`)
     .map((node) => node.closest("li"))
-    .find((node): node is HTMLElement => node instanceof HTMLElement);
+    .find((node): node is HTMLLIElement => node instanceof HTMLLIElement);
   if (!row) throw new Error(`Month ${month} is not in the tracker`);
   return row;
 }

@@ -6,10 +6,13 @@ import { apiPost } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import { pdpAdd } from "@/styles/pdpChrome";
 import { cardAddButton } from "@/styles/productCard";
-import type { CatalogProduct } from "../constants/catalogProducts";
+import type { ProductSummary } from "../../types/product";
 
 type StockAlertButtonProps = {
-  product: Pick<CatalogProduct, "id" | "variantId" | "sku" | "title" | "slug">;
+  product: Pick<ProductSummary, "id" | "title" | "slug"> & {
+    variantId?: string;
+    sku?: string;
+  };
   appearance?: "pdp" | "card";
 };
 
