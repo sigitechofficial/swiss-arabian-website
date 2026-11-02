@@ -65,8 +65,6 @@ import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 import { cancelOutcome, readOrderRefunds, refundCustomerStatus } from "../utils/orderAftercare";
-import { OrderAfterSalesSection } from "@/features/afterSales";
-import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
 
