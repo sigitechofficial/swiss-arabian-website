@@ -59,6 +59,8 @@ import {
   orderTotals,
 } from "@/styles/accountChrome";
 import { crumbsList, pageTitle } from "@/styles/shopChrome";
+import { OrderAfterSalesSection } from "@/features/afterSales";
+import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
@@ -471,6 +473,15 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
               </Panel>
             ) : null}
           </aside>
+        </div>
+
+        <div className="mt-[clamp(20px,3vw,28px)]">
+          <OrderAfterSalesSection
+            orderId={order.orderId}
+            status={order.status}
+            fulfillmentStatus={order.fulfillmentStatus}
+            lines={mapOrderLinesForAfterSales(order.lines)}
+          />
         </div>
       </div>
     </AccountPageShell>

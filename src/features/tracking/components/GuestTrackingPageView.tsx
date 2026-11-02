@@ -30,6 +30,8 @@ import {
   checkoutNote,
   fldFull,
 } from "@/styles/checkoutChrome";
+import { GuestAfterSalesSection } from "@/features/afterSales";
+import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
 import { getOrderTracking, getOrderTrackingTimeline } from "../api/orderTracking.service";
 import { OrderTrackingPanel } from "./OrderTrackingPanel";
 
@@ -136,6 +138,16 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
           </header>
 
           <OrderTrackingPanel summary={summary} timeline={timelineQuery.data} />
+
+          {viaGuestToken && token ? (
+            <GuestAfterSalesSection
+              orderNumber={summary.orderNumber}
+              orderAccessToken={token}
+              status={summary.status}
+              fulfillmentStatus={summary.fulfillmentStatus}
+              lines={guestAfterSalesLines({ shipments: summary.shipments })}
+            />
+          ) : null}
 
           <div className={`${checkoutDoneActions} pt-4`}>
             {accountQuery.data && !summary.isGuestOrder ? (

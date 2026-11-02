@@ -5,7 +5,7 @@
 > **Source of truth:** running backend + Swagger at `/api/docs`. Never invent fields.  
 > **Prerequisite:** Account orders + guest tracking live (`STOREFRONT_ORDER_DETAIL_TRACKING_FE_GUIDE.md`). Reviews are done — do not redo them.  
 > **Short handoff:** [`STOREFRONT_RETURNS_EXCHANGES_FE_HANDOFF.md`](./STOREFRONT_RETURNS_EXCHANGES_FE_HANDOFF.md)  
-> **FE status as of 2026-09-07:** after-sales APIs are **not** called. This phase is **API wiring**. Start from `/account/orders/[id]` and `/track/[orderNumber]`.
+> **FE status as of 2026-10-22:** Returns & exchanges create/list are wired. CTAs live on `/account/orders/[id]` (`OrderAfterSalesSection`) and guest `/track/[orderNumber]` (`GuestAfterSalesSection`). History: `/account/returns`.
 
 ---
 
