@@ -15,6 +15,8 @@ import {
   getStoredPaymobPublicKey,
 } from "../utils/checkoutSession";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { usePaymobThreeDsModal } from "./PaymobThreeDsModal";
+import { finishPaidCheckout } from "../utils/paymobThreeDs";
 import { OrderSummary } from "./StripePaymentFormView";
 import { collectionTitle, pageTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
@@ -148,6 +150,7 @@ export function PaymobPaymentFormView() {
   const orderId = ctx?.orderId ?? null;
   const clientSecret = ctx?.clientSecret ?? null;
   const publicKey = ctx?.publicKey ?? null;
+  const threeDs = usePaymobThreeDsModal(orderId);
 
   const orderQuery = useQuery({
     queryKey: ["order", orderId],
@@ -167,8 +170,6 @@ export function PaymobPaymentFormView() {
 
   const orderIdRef = useRef(orderId);
   orderIdRef.current = orderId;
-  const routerRef = useRef(router);
-  routerRef.current = router;
 
   useEffect(() => {
     if (!clientSecret || !publicKey || alreadyPaid) return;
@@ -183,6 +184,7 @@ export function PaymobPaymentFormView() {
         if (!host) return;
         host.replaceChildren();
         mounted.current = true;
+        try {
         new window.Pixel({
           publicKey,
           clientSecret,
@@ -202,8 +204,7 @@ export function PaymobPaymentFormView() {
             setErrorMsg(null);
             const result = await pollUntilPaymentSettles(id);
             if (result.success) {
-              clearPaymentState();
-              routerRef.current.replace(`/order-confirmation/${id}`);
+              finishPaidCheckout(id);
               return;
             }
             setPhase("idle");
@@ -247,6 +248,9 @@ export function PaymobPaymentFormView() {
             Container_Padding: "0",
           },
         });
+        } catch {
+          if (!cancelled) setSdkFailed(true);
+        }
       })
       .catch(() => {
         if (!cancelled) setSdkFailed(true);
@@ -324,6 +328,11 @@ export function PaymobPaymentFormView() {
                 </div>
               ) : (
                 <>
+                  {threeDs.challengeError ? (
+                    <p className={checkoutError} role="alert">
+                      {threeDs.challengeError}
+                    </p>
+                  ) : null}
                   {sdkFailed ? (
                     <p className={checkoutError} role="alert">
                       We couldn’t load the secure card form. Please refresh the page or{" "}
@@ -377,6 +386,7 @@ export function PaymobPaymentFormView() {
 
         <OrderSummary order={orderQuery.data} loading={orderQuery.isPending} />
       </div>
+      {threeDs.overlay}
     </CheckoutStateShell>
   );
 }
