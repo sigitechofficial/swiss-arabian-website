@@ -20,6 +20,21 @@ export function isStripePaymentMethod(
   );
 }
 
+export function isSmokePaymentMethod(
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+): boolean {
+  const blob = `${method.providerCode ?? ""} ${method.methodCode ?? ""} ${method.displayName ?? ""}`.toLowerCase();
+  return blob.includes("smoke") || blob.includes("test payment");
+}
+
+/** Card iframes (Stripe / Paymob). Test Payment skips this and goes to confirmation. */
+export function usesInlineCardForm(
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+): boolean {
+  if (isSmokePaymentMethod(method)) return false;
+  return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
+}
+
 /** Backend default first, skipping anything explicitly disabled. */
 export function pickDefaultPaymentMethod(
   methods: PaymentMethodOption[],
