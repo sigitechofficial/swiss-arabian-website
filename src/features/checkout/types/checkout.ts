@@ -105,6 +105,10 @@ export interface CheckoutSessionResponse {
   /** Same v1 shape as cart `promotions` after snapshot rebuild. */
   promotionSnapshot?: PromotionSnapshotV1 | null;
   giftCards?: unknown;
+  /** Customer-safe staff purchase DTO. Absent for a normal customer. */
+  staffPurchase?: unknown;
+  /** @deprecated Prefer `staffPurchase`. Legacy Backend envelope. */
+  employeeCheckout?: unknown;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────
@@ -117,7 +121,7 @@ export interface PaymentMethodOption {
   methodType?: string;
   displayName: string;
   isDefault: boolean;
-  /** `true` for Paymob (hosted page), `false` for Stripe (inline Elements). */
+  /** `true` when checkout should continue to a payment step (Paymob, and any hosted gateway). */
   requiresRedirect?: boolean;
   isEnabled?: boolean;
   isTestMode?: boolean | null;
@@ -271,7 +275,7 @@ export interface PaymentInitiationResponse {
   currency: string;
   /** "SUCCESS" | "PENDING_PROVIDER_EXECUTION" */
   paymentExecutionStatus: string;
-  /** "REDIRECT" = Paymob hosted page · "INLINE_CARD" = Stripe Elements · null = no gateway step */
+  /** "REDIRECT" = hosted gateway page · "INLINE_CARD" = Stripe Elements or Paymob Pixel · null = no gateway step */
   paymentAction: string | null;
   redirectUrl: string | null;
   clientSecret: string | null;

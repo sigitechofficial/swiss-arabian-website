@@ -21,6 +21,30 @@ export type LandingHeroCta = {
   label: string;
 };
 
+function HeroCtaLink({ href, className, children }: { href: string; className: string; children: string }) {
+  if (href.startsWith("#")) {
+    return (
+      <a
+        className={className}
+        href={href}
+        onClick={(event) => {
+          const node = document.getElementById(href.slice(1));
+          if (!node) return;
+          event.preventDefault();
+          node.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <LocaleLink className={className} href={href}>
+      {children}
+    </LocaleLink>
+  );
+}
+
 export type LandingHeroProps = {
   eyebrow?: string;
   title?: string;
@@ -93,20 +117,14 @@ export function LandingHero({
         {primaryCta || secondaryCta ? (
           <div className={heroCta}>
             {primaryCta ? (
-              <LocaleLink className={heroBtnSolid} href={primaryCta.href}>
+              <HeroCtaLink className={heroBtnSolid} href={primaryCta.href}>
                 {primaryCta.label}
-              </LocaleLink>
+              </HeroCtaLink>
             ) : null}
             {secondaryCta ? (
-              secondaryCta.href.startsWith("#") ? (
-                <a className={heroBtnGhost} href={secondaryCta.href}>
-                  {secondaryCta.label}
-                </a>
-              ) : (
-                <LocaleLink className={heroBtnGhost} href={secondaryCta.href}>
-                  {secondaryCta.label}
-                </LocaleLink>
-              )
+              <HeroCtaLink className={heroBtnGhost} href={secondaryCta.href}>
+                {secondaryCta.label}
+              </HeroCtaLink>
             ) : null}
           </div>
         ) : null}

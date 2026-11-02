@@ -11,18 +11,15 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   checkoutCrumbsList,
   collectionHeadFlush,
-  collectionTitle,
   crumbs,
   doneTitle,
   pageTitle,
   stateEyebrow,
-  stateIntro,
 } from "@/styles/shopChrome";
 import { pageContainer } from "@/styles/siteChrome";
 import {
   checkoutCta,
   checkoutCtaInline,
-  checkoutDone,
   checkoutEmpty,
   checkoutForm,
   checkoutHead,
@@ -46,6 +43,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/features/account/data/regionsByCountry";
 import { useMarket } from "@/providers/MarketProvider";
+import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { useCheckout } from "../hooks/useCheckout";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
@@ -182,6 +180,14 @@ export function CheckoutPageView() {
   // Only API-backed lines are part of the checkout session. Local-only lines
   // (static catalogue items with no SKU) would never reach the order.
   const orderableLines = visibleLines.filter((line) => line.cartItemId);
+  const linesSnap = useRef(orderableLines);
+  if (orderableLines.length) linesSnap.current = orderableLines;
+  const payingInline = Boolean(checkout.inlinePayment);
+  const summaryLines = orderableLines.length
+    ? orderableLines
+    : payingInline || checkout.status === "submitting"
+      ? linesSnap.current
+      : orderableLines;
   const leftOutCount = visibleLines.length - orderableLines.length;
 
   // Always show the "Don't miss this" picks. Only products with a
@@ -227,8 +233,12 @@ export function CheckoutPageView() {
   );
   const submitting = checkout.status === "submitting";
   const covered = amountPayable === 0;
+  const staffPaymentBlocked = staffDiscountPaymentBlocked(
+    readEmployeeCheckout(session?.staffPurchase ?? session?.employeeCheckout),
+  );
   const canSubmit =
     checkout.status === "ready" &&
+    !staffPaymentBlocked &&
     Boolean(checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId));
   const ctaLabel = submitting
     ? "Placing order…"
@@ -238,12 +248,11 @@ export function CheckoutPageView() {
       ? "Continue to payment"
       : "Place order";
 
-  // Once the order is placed the bag is consumed — keep the page on a
-  // "taking you to payment" state instead of flashing the empty bag.
-  const redirecting = submitting && orderableLines.length === 0;
-  const isEmpty = hydrated && visibleLines.length === 0 && !submitting;
+  const isEmpty = hydrated && visibleLines.length === 0 && !submitting && !payingInline;
   const nothingOrderable = hydrated && visibleLines.length > 0 && orderableLines.length === 0;
-  const showLayout = hydrated && orderableLines.length > 0;
+  const hasUnavailable = visibleLines.some((line) => line.isSellable === false);
+  const showLayout =
+    hydrated && summaryLines.length > 0 && !hasUnavailable && (orderableLines.length > 0 || payingInline || submitting);
 
   const bindShipping = (field: keyof AddressFields) => ({
     value: shipping[field] ?? "",
@@ -333,7 +342,7 @@ export function CheckoutPageView() {
               </button>
 
               <GooglePlacesProvider>
-              <form className={checkoutForm} noValidate onSubmit={handleSubmit}>
+              <form id="checkout-form" className={checkoutForm} noValidate onSubmit={handleSubmit}>
                 {missThis.length ? (
                   <MissThisSwiper
                     products={missThis}
@@ -375,22 +384,29 @@ export function CheckoutPageView() {
                 />
                 <CheckoutPayment
                   methods={checkout.paymentMethods}
+                  countryCode={countryCode}
                   selectedId={checkout.selectedPaymentId}
                   status={checkout.status}
                   submitting={submitting}
                   errorMsg={checkout.errorMsg}
                   onRetry={checkout.retry}
-                  onSelect={(id) => void checkout.choosePayment(id)}
+                  onSelect={(id) => checkout.choosePayment(id)}
                   canSubmit={canSubmit}
                   ctaLabel={ctaLabel}
                   amountPayable={amountPayable}
+                  currency={currency}
+                  inlinePayment={checkout.inlinePayment}
+                  onPayNow={() => {
+                    const form = document.getElementById("checkout-form");
+                    if (form instanceof HTMLFormElement) form.requestSubmit();
+                  }}
                 />
               </form>
               </GooglePlacesProvider>
 
               <CheckoutSummary
                 open={summaryOpen}
-                orderableLines={orderableLines}
+                orderableLines={summaryLines}
                 leftOutCount={leftOutCount}
                 subtotal={subtotal}
                 promoSnapshot={promoSnapshot}
@@ -410,12 +426,15 @@ export function CheckoutPageView() {
             </div>
           ) : null}
 
-          {redirecting ? (
-            <section className={checkoutDone} aria-live="polite">
-              <span className="mb-4 size-8 animate-spin rounded-full border-2 border-[var(--copper,#8c4435)]/25 border-t-[var(--copper,#8c4435)]" aria-hidden="true" />
-              <p className={stateEyebrow}>Order placed</p>
-              <h2 className={collectionTitle}>Taking you to payment…</h2>
-              <p className={stateIntro}>Please don’t close or refresh this page.</p>
+          {hasUnavailable ? (
+            <section className={checkoutEmpty}>
+              <p className={stateEyebrow}>Can’t check out yet</p>
+              <h2 className={doneTitle}>An item in your bag is unavailable.</h2>
+              <p>Remove it from your bag, then continue.</p>
+              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+                <span>Back to bag</span>
+                <b aria-hidden="true">↗</b>
+              </LocaleLink>
             </section>
           ) : null}
 

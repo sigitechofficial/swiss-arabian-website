@@ -56,6 +56,7 @@ export type InitiatePaymentDto = {
    */
   zonePaymentMethodId?: string;
   paymentMethodId?: string;
+  metadata?: Record<string, string>;
 };
 
 export async function initiatePayment(

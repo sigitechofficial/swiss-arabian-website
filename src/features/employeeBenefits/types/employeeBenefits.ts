@@ -14,6 +14,7 @@ export type EmployeeContextView = {
   legalEntityCode: string | null;
   employeeId: string | null;
   personnelNumber: string | null;
+  fullName: string | null;
 };
 
 export type EmployeeBenefitUnitStatus = "NOT_VERIFIED" | "VERIFIED" | string;
@@ -33,9 +34,20 @@ export type EmployeeBenefitsView = {
   authority: "D365_STAFF_DISCOUNT";
   financialWriteEnabled: false;
   personnelNumber: string | null;
+  fullName: string | null;
   designation: string | null;
   legalEntityCode: string | null;
   benefits: EmployeeBenefitRowView[];
+  websiteAccounting: EmployeeWebsiteAccountingView | null;
+};
+
+export type EmployeeWebsiteAccountingView = {
+  availability: "AVAILABLE" | "UNAVAILABLE_SCHEMA";
+  currencyCode: string | null;
+  activeProvisionalHolds: string | null;
+  paidUsagePendingD365: string | null;
+  websiteAvailableAllowance: string | null;
+  d365ReconciliationStatus: string | null;
 };
 
 export type AcceptEmployeeInvitationResult = {
@@ -106,6 +118,7 @@ export function readEmployeeContext(raw: unknown): EmployeeContextView {
     legalEntityCode,
     employeeId: isEmployee ? readTrimmed(row.employeeId) : null,
     personnelNumber: isEmployee ? readTrimmed(row.personnelNumber) : null,
+    fullName: isEmployee ? readTrimmed(row.fullName) : null,
   };
 }
 
@@ -134,6 +147,30 @@ function readBenefitRow(raw: unknown): EmployeeBenefitRowView | null {
   };
 }
 
+function readWebsiteAccounting(raw: unknown): EmployeeWebsiteAccountingView | null {
+  const row = asRecord(raw);
+  if (!row) return null;
+  if (row.availability === "UNAVAILABLE_SCHEMA") {
+    return {
+      availability: "UNAVAILABLE_SCHEMA",
+      currencyCode: readTrimmed(row.currencyCode),
+      activeProvisionalHolds: null,
+      paidUsagePendingD365: null,
+      websiteAvailableAllowance: null,
+      d365ReconciliationStatus: null,
+    };
+  }
+  if (row.availability !== "AVAILABLE") return null;
+  return {
+    availability: "AVAILABLE",
+    currencyCode: readTrimmed(row.currencyCode),
+    activeProvisionalHolds: readTrimmed(row.activeProvisionalHolds),
+    paidUsagePendingD365: readTrimmed(row.paidUsagePendingD365),
+    websiteAvailableAllowance: readTrimmed(row.websiteAvailableAllowance),
+    d365ReconciliationStatus: readTrimmed(row.d365ReconciliationStatus),
+  };
+}
+
 export function readEmployeeBenefits(raw: unknown): EmployeeBenefitsView {
   const row = asRecord(raw) ?? {};
   const benefits = Array.isArray(row.benefits)
@@ -148,9 +185,11 @@ export function readEmployeeBenefits(raw: unknown): EmployeeBenefitsView {
     authority: "D365_STAFF_DISCOUNT",
     financialWriteEnabled: false,
     personnelNumber: readTrimmed(row.personnelNumber),
+    fullName: readTrimmed(row.fullName),
     designation: readTrimmed(row.designation),
     legalEntityCode: readTrimmed(row.legalEntityCode),
     benefits,
+    websiteAccounting: readWebsiteAccounting(row.websiteAccounting),
   };
 }
 
@@ -169,9 +208,10 @@ export const EMPLOYEE_BENEFITS_COPY = {
     "Employee Benefits are shown when this customer account has a verified active staff link in the current market.",
   adminLink:
     "Employee account linking for this market can be completed through Swiss Arabian Admin verification.",
-  loyaltyBalance: "Customer Loyalty balance",
+  loyaltyBalance: "Online rewards",
+  loyaltyUnavailable: "Online rewards aren’t available for this account.",
   loyaltyUnchanged:
-    "This is your existing Customer Rewards wallet. Staff allowance is not included, and linking does not add points.",
+    "This figure is the website rewards wallet. It is not the store loyalty balance and it is not the staff allowance.",
   connected: "Connected",
   connectedHint: "This Storefront account is linked to a verified employee record. Figures below are read-only.",
   notConnected: "Not connected",
@@ -179,15 +219,20 @@ export const EMPLOYEE_BENEFITS_COPY = {
   ineligible: "This linked account is not eligible for staff benefits right now.",
   emptyBenefits: "No staff benefit record is available for this affiliation yet.",
   loadError: "We couldn’t load Employee Benefits right now.",
+  websiteAccountingUnavailable:
+    "Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.",
   retry: "Try again",
-  limit: "Staff Benefit Limit",
-  used: "Recorded Usage",
-  remaining: "Remaining Staff Benefit",
+  limit: "Amount limit",
+  used: "Amount used in D365",
+  remaining: "Balance remaining in D365",
+  provisionalUse: "Website provisional consumption",
+  projectedRemaining: "Projected remaining. Not yet deducted in D365",
   affiliation: "Staff Affiliation",
   lastSynced: "Last Synced from D365",
   unitsUnverified: "D365 units — not verified",
   authority: "Source authority",
-  employeeRef: "Employee reference",
+  employeeRef: "Personnel number",
+  employeeName: "Employee name",
   designation: "Designation",
   legalEntity: "Legal entity",
   notSpendable: "These figures cannot be spent online yet.",

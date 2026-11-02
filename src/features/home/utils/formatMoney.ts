@@ -8,6 +8,6 @@ export function formatMoney(
   price: number | null | undefined,
   currency = "AED",
 ): string {
-  if (price == null) return "Price on request";
+  if (price == null) return "Unavailable";
   return `${currency} ${price.toFixed(2)}`;
 }

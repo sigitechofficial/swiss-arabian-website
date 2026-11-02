@@ -75,9 +75,20 @@ const resolvedApiBase = USE_LOCAL_API
   ? LOCAL_API_BASE
   : API_BASE_BY_ENV[APP_ENV] || DEV_API_BASE;
 
+/**
+ * A blank local base is intentional in the browser: requests stay on
+ * `/storefront` and Next rewrites them to the API. Node fetch cannot use
+ * that relative URL, so the product page was skipping the catalog call.
+ */
+const apiBaseUrl =
+  resolvedApiBase ||
+  (typeof window === "undefined" && USE_LOCAL_API
+    ? "http://127.0.0.1:3000"
+    : "");
+
 export const env = {
   appEnv: APP_ENV,
-  apiBaseUrl: resolvedApiBase,
+  apiBaseUrl,
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",
   flags: {

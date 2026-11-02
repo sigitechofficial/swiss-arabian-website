@@ -20,6 +20,7 @@ import {
   cardNameDense,
   cardNote,
   cardOfferTag,
+  cardStockChip,
   cardPriceDense,
   cardTagStack,
   gridCard,
@@ -30,6 +31,7 @@ import {
 import type { CatalogProduct } from "../../constants/catalogProducts";
 import { useLoadedImages } from "../../hooks/useLoadedImages";
 import { ProductCardTags } from "../ProductCardTags";
+import { StockAlertButton } from "../pdp/StockAlertButton";
 
 export function CatalogProductCard({
   product,
@@ -68,6 +70,7 @@ export function CatalogProductCard({
   const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
   const loadedImages = useLoadedImages([hover]);
   const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
+  const waiting = product.price == null || product.isSellable === false || product.inStock === false;
 
   return (
     <li
@@ -76,8 +79,13 @@ export function CatalogProductCard({
     >
       <LocaleLink className={cardLink} href={`/products/${product.slug}`} aria-label={product.title} />
       <div className={cardTagStack}>
+        {waiting && product.price != null ? (
+          <p className={cardStockChip}>
+            <span>Out of stock</span>
+          </p>
+        ) : null}
         <ProductCardTags slug={product.slug} tags={product.tags ?? []} collectionSlug={collectionSlug} />
-        {promotionBadge ? (
+        {promotionBadge && !waiting ? (
           <p className={cardOfferTag} aria-label={promotionLabel || promotionBadge}>
             <span>{promotionBadge}</span>
           </p>
@@ -106,12 +114,18 @@ export function CatalogProductCard({
         </LocaleLink>
       </div>
       <div className={cardAction}>{action ?? <WishlistHeartButton productId={product.id} />}</div>
-      {hideAdd ? null : (
+      {waiting ? (
+        <div className={cardAddSlot}>
+          <StockAlertButton product={product} appearance="card" />
+        </div>
+      ) : hideAdd ? null : (
         <div className={cardAddSlot}>{addControl ?? <AddToBagButton product={product} variant="product" />}</div>
       )}
       <div>
         <h3 className={dense ? cardNameDense : relatedName}>{product.title}</h3>
-        <p className={dense ? cardPriceDense : relatedPrice}>{formatMoney(product.price, product.currency)}</p>
+        <p className={dense ? cardPriceDense : relatedPrice}>
+          {product.price == null ? "Unavailable" : formatMoney(product.price, product.currency)}
+        </p>
         {note ? <p className={cardNote}>{note}</p> : null}
       </div>
     </li>

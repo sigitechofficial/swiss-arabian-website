@@ -478,6 +478,9 @@ export function formatExternalActivityPoints(row: ExternalLoyaltyActivityView): 
 export const OMNICHANNEL_COPY = {
   eyebrow: "Store rewards",
   linkedHint: "Synced with Swiss Arabian stores",
+  lastKnownHint: "Last known store balance. A newer balance was not confirmed.",
+  lastKnownHeading: "Last known active points",
+  balanceUnavailable: "Store point balance is not available yet.",
   stale: "Balance may be delayed",
   lastSynced: "Last synced",
   notEnrolled: "No store loyalty membership linked yet",

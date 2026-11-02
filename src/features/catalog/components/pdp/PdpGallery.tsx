@@ -5,6 +5,7 @@ import { bottle } from "@/styles/landingChrome";
 import {
   pdpBottle,
   pdpFloor,
+  pdpStockChip,
   pdpFrame,
   pdpGlow,
   pdpMist,
@@ -29,10 +30,11 @@ type PdpGalleryProps = {
   images: string[];
   title: string;
   resetKey: string;
+  outOfStock?: boolean;
   onImageError: (src: string) => void;
 };
 
-export function PdpGallery({ images, title, resetKey, onImageError }: PdpGalleryProps) {
+export function PdpGallery({ images, title, resetKey, outOfStock = false, onImageError }: PdpGalleryProps) {
   const [activeImage, setActiveImage] = useState(0);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const heroSrc = images[activeImage] ?? images[0] ?? null;
@@ -101,6 +103,7 @@ export function PdpGallery({ images, title, resetKey, onImageError }: PdpGallery
             <span className={bottle} aria-hidden="true" />
           )}
         </div>
+        {outOfStock ? <span className={pdpStockChip}>Out of stock</span> : null}
         <div className={pdpFloor} aria-hidden="true" />
         <div className={pdpMist} aria-hidden="true">
           <span className={puffA} />

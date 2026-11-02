@@ -31,10 +31,10 @@ vi.mock("../api/employeeBenefits.service", () => ({
   fetchEmployeeBenefits: (...args: unknown[]) => fetchEmployeeBenefits(...args),
 }));
 
+const loyaltyAccount = vi.hoisted(() => vi.fn());
+
 vi.mock("@/features/loyalty/hooks/useLoyaltyAccount", () => ({
-  useLoyaltyAccount: () => ({
-    wallet: { data: { availablePoints: 250 }, isSuccess: true },
-  }),
+  useLoyaltyAccount: () => loyaltyAccount(),
 }));
 
 function createClient() {
@@ -80,6 +80,13 @@ beforeEach(() => {
   fetchEmployeeBenefits.mockReset();
   fetchEmployeeContext.mockResolvedValue(uaeNotEmployee);
   fetchEmployeeLink.mockResolvedValue({ linked: false, status: null, legalEntityCode: null });
+  loyaltyAccount.mockReset();
+  loyaltyAccount.mockReturnValue({
+    wallet: {
+      data: { availablePoints: 250, availability: "ACTIVE", hasServerWallet: true },
+      isSuccess: true,
+    },
+  });
   useAuthStore.setState({
     user: { id: "customer-1", email: "member@example.com" },
     isAuthenticated: true,
@@ -138,7 +145,7 @@ describe("employee benefits account", () => {
     expect(fetchEmployeeContext).toHaveBeenCalledWith("UAE");
     expect(screen.queryByLabelText("Invitation ID")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Invitation claim code")).not.toBeInTheDocument();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
   });
 
@@ -174,11 +181,14 @@ describe("employee benefits account", () => {
     });
     renderView();
     expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(screen.getByText("Personnel number")).toBeInTheDocument();
+    expect(screen.getByText("000123")).toBeInTheDocument();
+    expect(screen.queryByText("emp-1")).not.toBeInTheDocument();
     expect(fetchEmployeeBenefits).toHaveBeenCalledWith("UAE");
     expect(screen.getByText("URD1")).toBeInTheDocument();
-    expect(screen.getAllByText("Staff Benefit Limit").length).toBe(2);
-    expect(screen.getAllByText("Recorded Usage").length).toBe(2);
-    expect(screen.getAllByText("Remaining Staff Benefit").length).toBe(2);
+    expect(screen.getAllByText("Amount limit").length).toBe(2);
+    expect(screen.getAllByText("Amount used in D365").length).toBe(2);
+    expect(screen.getAllByText("Balance remaining in D365").length).toBe(2);
     expect(screen.getAllByText("D365 units — not verified").length).toBeGreaterThan(0);
     expect(screen.getByText("Staff-UAE")).toBeInTheDocument();
     expect(screen.getByText("Staff-QA")).toBeInTheDocument();
@@ -187,9 +197,160 @@ describe("employee benefits account", () => {
     expect(screen.queryByText(/gift card/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/checkout discount/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/AED cash/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Online rewards")).toBeInTheDocument();
     expect(screen.getByText("250")).toBeInTheDocument();
-    expect(screen.getByText(/linking does not add points/i)).toBeInTheDocument();
+    expect(screen.getByText(/not the store loyalty balance/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Customer Rewards" })).toHaveAttribute("href", "/account/rewards");
+  });
+
+  it("shows the linked personnel number E04097 and not the employee id", async () => {
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue({
+      ...uaeEmployee,
+      employeeId: "8d6c2c1a-1111-4222-8333-444455556666",
+      personnelNumber: "E04097",
+      fullName: "Browser fixture",
+    });
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E04097",
+      fullName: "Browser fixture",
+      designation: "SA-RTL",
+      legalEntityCode: "URD1",
+      benefits: [],
+    });
+    renderView();
+    expect(await screen.findByText("E04097")).toBeInTheDocument();
+    expect(screen.getByText("Personnel number")).toBeInTheDocument();
+    expect(screen.getByText("Browser fixture")).toBeInTheDocument();
+    expect(screen.queryByText("8d6c2c1a-1111-4222-8333-444455556666")).not.toBeInTheDocument();
+  });
+
+  it("does not present a disabled platform wallet as a zero loyalty balance", async () => {
+    loyaltyAccount.mockReturnValue({
+      wallet: {
+        data: { availablePoints: 0, availability: "DISABLED", hasServerWallet: false },
+        isSuccess: true,
+      },
+    });
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue(uaeEmployee);
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E02783",
+      fullName: "Amina Rahman",
+      designation: null,
+      legalEntityCode: "URD1",
+      benefits: [
+        {
+          affiliationName: "Staff Discount 50%",
+          amountLimit: "5000",
+          amountUsed: "505",
+          balanceRemaining: "4495",
+          lastSyncedAt: null,
+          unitStatus: "NOT_VERIFIED",
+        },
+      ],
+    });
+    renderView();
+    expect(await screen.findByText("E02783")).toBeInTheDocument();
+    expect(screen.getByText("Amina Rahman")).toBeInTheDocument();
+    expect(screen.getByText("Staff Discount 50%")).toBeInTheDocument();
+    expect(screen.getByText("5,000")).toBeInTheDocument();
+    expect(screen.getByText("505")).toBeInTheDocument();
+    expect(screen.getByText("4,495")).toBeInTheDocument();
+    expect(screen.getByText("Online rewards")).toBeInTheDocument();
+    expect(screen.getByText(/aren’t available for this account/i)).toBeInTheDocument();
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Customer Rewards" })).toHaveAttribute("href", "/account/rewards");
+  });
+
+  it("shows D365 benefits and a notice when website allowance tracking is not deployed", async () => {
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue(uaeEmployee);
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E02783",
+      fullName: "Amina Rahman",
+      designation: null,
+      legalEntityCode: "URD1",
+      benefits: [
+        {
+          affiliationName: "Staff Discount 50%",
+          amountLimit: "5000",
+          amountUsed: "505",
+          balanceRemaining: "4495",
+          lastSyncedAt: null,
+          unitStatus: "NOT_VERIFIED",
+        },
+      ],
+      websiteAccounting: {
+        availability: "UNAVAILABLE_SCHEMA",
+        currencyCode: "AED",
+        activeProvisionalHolds: null,
+        paidUsagePendingD365: null,
+        websiteAvailableAllowance: null,
+        d365ReconciliationStatus: null,
+      },
+    });
+    renderView();
+    expect(await screen.findByText("5,000")).toBeInTheDocument();
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent("Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.");
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  it("shows D365 benefits and a notice when website allowance tracking is not deployed", async () => {
+    fetchEmployeeLink.mockResolvedValue({ linked: true, status: "ACTIVE", legalEntityCode: "URD1" });
+    fetchEmployeeContext.mockResolvedValue(uaeEmployee);
+    fetchEmployeeBenefits.mockResolvedValue({
+      linked: true,
+      eligible: true,
+      authority: "D365_STAFF_DISCOUNT",
+      financialWriteEnabled: false,
+      personnelNumber: "E02783",
+      fullName: "Amina Rahman",
+      designation: null,
+      legalEntityCode: "URD1",
+      benefits: [
+        {
+          affiliationName: "Staff Discount 50%",
+          amountLimit: "5000",
+          amountUsed: "505",
+          balanceRemaining: "4495",
+          lastSyncedAt: null,
+          unitStatus: "NOT_VERIFIED",
+        },
+      ],
+      websiteAccounting: {
+        availability: "UNAVAILABLE_SCHEMA",
+        currencyCode: "AED",
+        activeProvisionalHolds: null,
+        paidUsagePendingD365: null,
+        websiteAvailableAllowance: null,
+        d365ReconciliationStatus: null,
+      },
+    });
+    renderView();
+    expect(await screen.findByText("Staff Discount 50%")).toBeInTheDocument();
+    expect(screen.getByText("5,000")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your D365 employee benefit information is available. Website allowance tracking is temporarily unavailable.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("We couldn’t load Employee Benefits right now.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
   });
 
   it("shows an empty benefit record without inventing an allowance", async () => {
@@ -214,7 +375,7 @@ describe("employee benefits account", () => {
     renderView();
     expect(await screen.findByText(/currently unavailable/i)).toBeInTheDocument();
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
   });
 
   it("does not claim the customer is not an employee when the API fails with 5xx", async () => {
@@ -237,7 +398,7 @@ describe("employee benefits account", () => {
     fetchEmployeeContext.mockRejectedValue(new ApiClientError(403, "Forbidden"));
     renderView();
     expect(await screen.findByText(/currently unavailable for this account/i)).toBeInTheDocument();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
   });
 
   it("does not offer retry after 401", async () => {
@@ -278,7 +439,7 @@ describe("employee benefits account", () => {
     expect(fetchEmployeeLink).toHaveBeenCalledWith("QA");
     expect(fetchEmployeeContext).toHaveBeenCalledWith("QA");
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
-    expect(screen.queryByText("Staff Benefit Limit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Customer Rewards" })).toBeInTheDocument();
   });
 

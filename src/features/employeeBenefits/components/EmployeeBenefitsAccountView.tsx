@@ -7,6 +7,8 @@ import { AccountPageShell } from "@/features/account/components/AccountPageShell
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { accountBtnPrimary } from "@/features/account/constants/accountForm";
 import { useLoyaltyAccount } from "@/features/loyalty/hooks/useLoyaltyAccount";
+import { isPositiveServerMoney, websiteHoldLabel } from "../types/employeeCheckout";
+import { useCartStore } from "@/stores/useCartStore";
 import { formatPoints } from "@/features/loyalty/types/loyalty";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -83,17 +85,52 @@ function sameLegalEntity(left: string | null | undefined, right: string | null |
 
 function LoyaltyAside() {
   const { wallet } = useLoyaltyAccount();
-  const points = wallet.data?.availablePoints;
+  const data = wallet.data;
+  const showPoints = Boolean(
+    data?.hasServerWallet && (data.availability === "ACTIVE" || data.availablePoints !== 0),
+  );
   return (
     <Card>
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.loyaltyBalance}</p>
-      <p className="mt-2 text-[20px] font-semibold tabular-nums text-sa-primary">
-        {typeof points === "number" ? formatPoints(points) : "—"}
-      </p>
+      {showPoints && data ? (
+        <p className="mt-2 text-[20px] font-semibold tabular-nums text-sa-primary">{formatPoints(data.availablePoints)}</p>
+      ) : (
+        <p className="mt-2 text-[14px] leading-relaxed text-sa-primary">{COPY.loyaltyUnavailable}</p>
+      )}
       <p className="mt-3 max-w-[560px] text-[13px] leading-relaxed text-sa-secondary">{COPY.loyaltyUnchanged}</p>
       <LocaleLink href="/account/rewards" className="mt-3 inline-block text-[13px] font-semibold text-terra hover:underline">
         {COPY.rewardsSeparate}
       </LocaleLink>
+    </Card>
+  );
+}
+
+function CartAllowanceNote() {
+  const checkout = useCartStore((state) => state.employeeCheckout);
+  const allowance = checkout?.allowance;
+  if (!checkout?.authorized) return null;
+  const hold = websiteHoldLabel(allowance?.websiteHold);
+  const showConsumption = checkout.pricingApplied && isPositiveServerMoney(allowance?.thisPurchaseConsumption);
+  if (!hold && !showConsumption) return null;
+  return (
+    <Card>
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.provisionalUse}</p>
+      {showConsumption ? <p className="mt-2 text-[14px] text-sa-primary">{allowance?.thisPurchaseConsumption}</p> : null}
+      {showConsumption && allowance?.projectedRemaining ? (
+        <p className="mt-2 text-[13px] text-sa-secondary">
+          {COPY.projectedRemaining}: {allowance.projectedRemaining}
+          {allowance.projectedIsAuthoritative === true ? " (authoritative projection)" : " — website projection only"}
+        </p>
+      ) : null}
+      {showConsumption && isPositiveServerMoney(allowance?.otherProvisionalHolds) ? (
+        <p className="mt-2 text-[13px] text-sa-secondary">
+          Other provisional holds: {allowance?.otherProvisionalHolds}
+        </p>
+      ) : null}
+      {hold ? <p className="mt-2 text-[13px] text-sa-secondary">{hold}</p> : null}
+      <p className="mt-3 text-[12px] leading-relaxed text-sa-secondary">
+        These website figures are not confirmed D365 deductions, and they are not reduced by gift cards or reward points.
+      </p>
     </Card>
   );
 }
@@ -105,11 +142,11 @@ function ConnectedSummary({
   context: EmployeeContextView;
   benefits: EmployeeBenefitsView | undefined;
 }) {
-  const scoped =
-    !benefits?.legalEntityCode || sameLegalEntity(benefits.legalEntityCode, context.legalEntityCode)
-      ? benefits
-      : { ...benefits, benefits: [], eligible: benefits.eligible };
-  const reference = scoped?.personnelNumber ?? context.personnelNumber;
+  const sameRecord =
+    !benefits?.legalEntityCode || sameLegalEntity(benefits.legalEntityCode, context.legalEntityCode);
+  const scoped = sameRecord ? benefits : undefined;
+  const reference = (sameRecord ? benefits?.personnelNumber : null) ?? context.personnelNumber;
+  const employeeName = (sameRecord ? benefits?.fullName : null) ?? context.fullName;
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -120,6 +157,12 @@ function ConnectedSummary({
             <div>
               <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.employeeRef}</dt>
               <dd className="mt-1 text-[14px] text-sa-primary">{reference}</dd>
+            </div>
+          ) : null}
+          {employeeName ? (
+            <div>
+              <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{COPY.employeeName}</dt>
+              <dd className="mt-1 text-[14px] text-sa-primary">{employeeName}</dd>
             </div>
           ) : null}
           {scoped?.designation ? (
@@ -139,6 +182,7 @@ function ConnectedSummary({
         </dl>
       </Card>
       <LoyaltyAside />
+      <CartAllowanceNote />
       {scoped?.eligible === false ? (
         <Card>
           <p className="text-[14px] text-sa-primary">{COPY.ineligible}</p>
@@ -152,6 +196,13 @@ function ConnectedSummary({
       {scoped?.benefits.map((row, index) => (
         <BenefitCard key={`${row.affiliationName ?? "benefit"}-${index}`} row={row} />
       ))}
+      {scoped?.websiteAccounting?.availability === "UNAVAILABLE_SCHEMA" ? (
+        <Card>
+          <p className="max-w-[560px] text-[14px] leading-relaxed text-sa-primary" role="status">
+            {COPY.websiteAccountingUnavailable}
+          </p>
+        </Card>
+      ) : null}
     </div>
   );
 }

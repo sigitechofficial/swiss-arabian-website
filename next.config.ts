@@ -78,7 +78,31 @@ const nextConfig: NextConfig = {
   // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
   // already produces its own optimized deployment output.
   output: process.env.VERCEL ? undefined : "standalone",
-  allowedDevOrigins: [...lanDevOrigins(), "127.0.0.1", "localhost", "uae.swissarabian.com"],
+  allowedDevOrigins: [
+    ...lanDevOrigins(),
+    "127.0.0.1",
+    "localhost",
+    "uae.swissarabian.com",
+    "barbra-beneficent-jannette.ngrok-free.dev",
+  ],
+  async rewrites() {
+    // Same-origin /storefront on the ngrok HTTPS URL. The browser must not call
+    // http://localhost:3000 from an HTTPS page (Chrome blocks that as mixed content).
+    return [
+      {
+        source: "/storefront/:path*",
+        destination: "http://127.0.0.1:3000/storefront/:path*",
+      },
+      {
+        source: "/catalog/:path*",
+        destination: "http://127.0.0.1:3000/catalog/:path*",
+      },
+      {
+        source: "/webhooks/:path*",
+        destination: "http://127.0.0.1:3000/webhooks/:path*",
+      },
+    ];
+  },
   // Stripe Elements renders in a js.stripe.com iframe and fetches our brand
   // font cross-origin, which browsers only allow with a CORS header.
   async headers() {

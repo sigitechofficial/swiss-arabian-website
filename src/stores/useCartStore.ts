@@ -4,6 +4,10 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
 import {
+  readEmployeeCheckout,
+  type EmployeeCheckoutView,
+} from "@/features/employeeBenefits/types/employeeCheckout";
+import {
   readLoyaltyRedemption,
   type LoyaltyRedemptionView,
 } from "@/features/loyalty/types/loyalty";
@@ -50,6 +54,7 @@ type CartState = {
   totals: CartTotals | null;
   promotions: PromotionSnapshotV1 | null;
   loyaltyRedemption: LoyaltyRedemptionView | null;
+  employeeCheckout: EmployeeCheckoutView | null;
   /** True when the server reduced an existing reservation after a bag change. */
   loyaltyAdjusted: boolean;
   validation: CartValidation | null;
@@ -79,6 +84,7 @@ export const useCartStore = create<CartState>()(
       totals: null,
       promotions: null,
       loyaltyRedemption: null,
+      employeeCheckout: null,
       loyaltyAdjusted: false,
       validation: null,
       syncing: false,
@@ -96,6 +102,7 @@ export const useCartStore = create<CartState>()(
           if (existing) {
             return {
               totals: null,
+              employeeCheckout: null,
               lines: state.lines.map((item) =>
                 item.variantId === line.variantId
                   ? {
@@ -112,6 +119,7 @@ export const useCartStore = create<CartState>()(
           }
           return {
             totals: null,
+            employeeCheckout: null,
             lines: [...state.lines, { ...line, quantity: line.quantity ?? 1 }],
           };
         }),
@@ -119,6 +127,7 @@ export const useCartStore = create<CartState>()(
       updateQuantity: (variantId, quantity) =>
         set((state) => ({
           totals: null,
+          employeeCheckout: null,
           lines:
             quantity <= 0
               ? state.lines.filter((item) => item.variantId !== variantId)
@@ -130,6 +139,7 @@ export const useCartStore = create<CartState>()(
       removeLine: (variantId) =>
         set((state) => ({
           totals: null,
+          employeeCheckout: null,
           lines: state.lines.filter((item) => item.variantId !== variantId),
         })),
 
@@ -139,13 +149,14 @@ export const useCartStore = create<CartState>()(
           totals: null,
           promotions: null,
           loyaltyRedemption: null,
+          employeeCheckout: null,
           loyaltyAdjusted: false,
           validation: null,
         }),
 
       /** Drop the previous market quote. Lines stay until the next server cart. */
       clearPromotions: () =>
-        set({ promotions: null, totals: null, loyaltyRedemption: null, loyaltyAdjusted: false }),
+        set({ promotions: null, totals: null, loyaltyRedemption: null, loyaltyAdjusted: false, employeeCheckout: null }),
 
       clearLoyaltyAdjusted: () => set({ loyaltyAdjusted: false }),
 
@@ -165,6 +176,7 @@ export const useCartStore = create<CartState>()(
             const unitPrice = Number(item.unitPriceEstimate ?? "0");
             const quantity = parseInt(item.quantity, 10) || 1;
             const available = Number.parseInt(item.availableQuantity ?? "", 10);
+            const priced = Number.isFinite(unitPrice) && unitPrice > 0;
 
             return {
               cartItemId: item.cartItemId,
@@ -174,13 +186,13 @@ export const useCartStore = create<CartState>()(
               title: item.productName ?? local?.title ?? "",
               imageUrl:
                 local?.imageUrl ?? item.image ?? item.images?.[0]?.url ?? undefined,
-              unitPrice,
+              unitPrice: priced ? unitPrice : 0,
               currency: item.currencyCode ?? cart.currency ?? "AED",
               quantity,
               maxQuantity: Number.isFinite(available) && available > 0 ? available : undefined,
               sizeLabel: item.variantName ?? local?.sizeLabel,
               notes: local?.notes,
-              isSellable: item.sellabilitySummary?.isSellable ?? true,
+              isSellable: item.sellabilitySummary?.isSellable !== false && priced,
               remote: true,
             };
           });
@@ -219,6 +231,7 @@ export const useCartStore = create<CartState>()(
             lines,
             totals,
             promotions: readPromotionSnapshot(cart.promotions),
+            employeeCheckout: readEmployeeCheckout(cart.staffPurchase ?? cart.employeeCheckout),
             loyaltyRedemption,
             loyaltyAdjusted,
             cartId: cart.cartId,

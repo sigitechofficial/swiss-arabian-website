@@ -36,6 +36,7 @@ export type CreateCustomerAddressDto = {
   country?: string;
   countryCode?: string;
   phone?: string;
+  zoneId?: string;
   isDefaultShipping?: boolean;
   isDefaultBilling?: boolean;
 };

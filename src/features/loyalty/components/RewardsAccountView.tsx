@@ -131,7 +131,10 @@ export function RewardsAccountView() {
       market={market}
       pending={transactions.isLoading}
       error={transactions.isError}
-      showStore={omnichannel != null && !transactions.isError}
+      showStore={
+        !transactions.isError &&
+        (omnichannel != null || activity.externalActivity.length > 0)
+      }
       onRetry={() => void transactions.refetch()}
     />
   );
@@ -159,6 +162,7 @@ export function RewardsAccountView() {
       hasHistoricalRewards(wallet.data) ||
       hasRewardsFigures(wallet.data) ||
       activity.platformActivity.length > 0 ||
+      activity.externalActivity.length > 0 ||
       transactions.isPending ||
       omnichannel != null;
     body = historyVisible ? (

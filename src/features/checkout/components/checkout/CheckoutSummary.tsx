@@ -1,5 +1,7 @@
 "use client";
 
+import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
+import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyCheckoutReservation } from "@/features/loyalty/components/LoyaltyCheckoutReservation";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
@@ -85,6 +87,10 @@ export function CheckoutSummary({
 }: CheckoutSummaryProps) {
   const cartPromotions = useCartStore((state) => state.promotions);
   const cartLoyalty = useCartStore((state) => state.loyaltyRedemption);
+  const cartEmployeeCheckout = useCartStore((state) => state.employeeCheckout);
+  const employeeCheckout = session
+    ? readEmployeeCheckout(session.staffPurchase ?? session.employeeCheckout)
+    : cartEmployeeCheckout;
   const loyaltyQuote =
     readLoyaltyRedemption(promoSnapshot, session?.promotionSnapshot, session?.promotions) ??
     cartLoyalty;
@@ -164,6 +170,12 @@ export function CheckoutSummary({
         checkoutSessionId={session?.checkoutSessionId}
         onCheckoutSession={onCheckoutSession}
       />
+      <StaffDiscountSummary checkout={employeeCheckout} currency={currency} surface="checkout" />
+      {staffDiscountPaymentBlocked(employeeCheckout) ? (
+        <p className={`${checkoutNote} ${checkoutSummaryNote}`} role="status">
+          Staff discount cannot be paid yet. This quote is a preview, so the order cannot be placed at the discounted amount.
+        </p>
+      ) : null}
       <MoneySummary
         className={checkoutTotals}
         surface="checkout"

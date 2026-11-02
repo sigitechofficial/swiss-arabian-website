@@ -38,7 +38,10 @@ function isLoopbackHost(host: string): boolean {
 
 /** Env override for local Sapil (`NEXT_PUBLIC_STOREFRONT_HOST`). */
 function configuredStorefrontHost(): string | null {
-  const raw = env.storefrontHost?.trim();
+  const raw =
+    env.storefrontHost?.trim() ||
+    process.env.NEXT_PUBLIC_STOREFRONT_HOST?.trim() ||
+    "";
   if (!raw) return null;
   return (
     raw
@@ -76,9 +79,11 @@ export async function resolveStorefrontHost(): Promise<string | null> {
   if (typeof window !== "undefined") {
     const live = browserStorefrontHost();
     if (live && !isLoopbackHost(live)) return live;
-    return configuredStorefrontHost() ?? live;
+    // localhost is not a registered storefront. Sending it makes markets 400
+    // and the product page renders as unavailable.
+    return configuredStorefrontHost();
   }
   const server = await readRegisteredServerHost();
   if (server && !isLoopbackHost(server)) return server;
-  return configuredStorefrontHost() ?? server;
+  return configuredStorefrontHost();
 }

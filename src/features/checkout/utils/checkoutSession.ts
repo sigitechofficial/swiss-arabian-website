@@ -10,6 +10,8 @@ const PAYMENT_TRANSACTION_ID_KEY = "sa_payment_transaction_id";
 const PAY_ATTEMPT_KEY = "sa_pay_attempt";
 const STRIPE_CLIENT_SECRET_KEY = "sa_stripe_client_secret";
 const STRIPE_PUBLISHABLE_KEY_KEY = "sa_stripe_publishable_key";
+const PAYMOB_CLIENT_SECRET_KEY = "sa_paymob_client_secret";
+const PAYMOB_PUBLIC_KEY_KEY = "sa_paymob_public_key";
 
 function read(storage: "local" | "session", key: string): string | null {
   if (typeof window === "undefined") return null;
@@ -148,6 +150,8 @@ export function clearPaymentState(): void {
   remove("session", PAY_ATTEMPT_KEY);
   remove("session", STRIPE_CLIENT_SECRET_KEY);
   remove("session", STRIPE_PUBLISHABLE_KEY_KEY);
+  remove("session", PAYMOB_CLIENT_SECRET_KEY);
+  remove("session", PAYMOB_PUBLIC_KEY_KEY);
 }
 
 // ─── Stripe (sessionStorage only — never localStorage, never logged) ────────
@@ -162,3 +166,12 @@ export const storeStripePublishableKey = (key: string) =>
   write("session", STRIPE_PUBLISHABLE_KEY_KEY, key);
 export const getStoredStripePublishableKey = () =>
   read("session", STRIPE_PUBLISHABLE_KEY_KEY);
+
+/** Paymob Pixel tokens — session only, same rules as the Stripe client secret. */
+export const storePaymobClientSecret = (secret: string) =>
+  write("session", PAYMOB_CLIENT_SECRET_KEY, secret);
+export const getStoredPaymobClientSecret = () => read("session", PAYMOB_CLIENT_SECRET_KEY);
+
+export const storePaymobPublicKey = (key: string) =>
+  write("session", PAYMOB_PUBLIC_KEY_KEY, key);
+export const getStoredPaymobPublicKey = () => read("session", PAYMOB_PUBLIC_KEY_KEY);

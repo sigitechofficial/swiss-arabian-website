@@ -25,7 +25,7 @@ export const checkoutForm =
 export const stripePayForm = "gap-4";
 
 export const cbox =
-  "rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white p-[26px] max-[767px]:p-5";
+  "rounded-[var(--radius-lg,4px)] bg-white p-[26px] max-[767px]:p-5";
 
 export const cboxHead =
   "mb-[18px] flex items-center gap-3.5 border-b border-[var(--line,#d9ccb4)] pb-3.5 [&_h2]:m-0 [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-[0.82rem] [&_h2]:font-medium [&_h2]:tracking-[0.02em] [&_h2]:text-[var(--ink,#241f1b)] [&_h2]:uppercase";
@@ -43,7 +43,7 @@ export const cboxGrid =
   "grid grid-cols-2 gap-x-4 gap-y-3.5 max-[767px]:grid-cols-1";
 
 export const fld =
-  "flex flex-col gap-1.5 text-[0.8125rem] font-normal text-[var(--ink,#241f1b)] [&>span]:text-[0.62rem] [&>span]:font-normal [&>span]:tracking-[0.04em] [&>span]:text-[var(--ink-2,#5b5148)] [&>span]:uppercase [&_input]:min-h-[46px] [&_input]:rounded-lg [&_input]:border [&_input]:border-[var(--line,#d9ccb4)] [&_input]:bg-[#fffdf8] [&_input]:px-3.5 [&_input]:text-[0.875rem] [&_input]:font-normal [&_input]:text-[var(--ink,#241f1b)] [&_input]:[font-family:inherit] [&_input]:outline-none focus:[&_input]:border-[var(--line,#d9ccb4)] focus:[&_input]:outline-none focus-visible:[&_input]:outline-none [&_select]:min-h-[46px] [&_select]:rounded-lg [&_select]:border [&_select]:border-[var(--line,#d9ccb4)] [&_select]:bg-[#fffdf8] [&_select]:px-3.5 [&_select]:text-[0.875rem] [&_select]:font-normal [&_select]:text-[var(--ink,#241f1b)] [&_select]:[font-family:inherit] [&_select]:outline-none focus:[&_select]:outline-none [&_textarea]:min-h-[46px] [&_textarea]:rounded-lg [&_textarea]:border [&_textarea]:border-[var(--line,#d9ccb4)] [&_textarea]:bg-[#fffdf8] [&_textarea]:px-3.5 [&_textarea]:text-[0.875rem] [&_textarea]:font-normal [&_textarea]:text-[var(--ink,#241f1b)] [&_textarea]:[font-family:inherit] [&_textarea]:outline-none focus:[&_textarea]:outline-none [&_input[aria-invalid=true]]:border-[#b42318] [&_select[aria-invalid=true]]:border-[#b42318] [&_input[type=checkbox]]:size-[18px] [&_input[type=checkbox]]:min-h-[18px] [&_input[type=checkbox]]:p-0 [&_input[type=checkbox]]:accent-copper max-[767px]:[&_input]:text-[16px] max-[767px]:[&_select]:text-[16px] max-[767px]:[&_textarea]:text-[16px]";
+  "flex flex-col gap-1.5 text-[0.8125rem] font-normal text-[var(--ink,#241f1b)] [&>span]:text-[0.62rem] [&>span]:font-normal [&>span]:tracking-[0.04em] [&>span]:text-[var(--ink-2,#5b5148)] [&>span]:uppercase [&_input]:min-h-[46px] [&_input]:rounded-lg [&_input:not([type=checkbox])]:border-0 [&_input:not([type=checkbox])]:shadow-[inset_0_0_0_0.5px_#8a8a8a] [&_input:not([type=checkbox])]:bg-transparent [&_input]:px-3.5 [&_input]:text-[0.875rem] [&_input]:font-normal [&_input]:text-[var(--ink,#241f1b)] [&_input]:[font-family:inherit] [&_input]:outline-none focus:[&_input:not([type=checkbox])]:shadow-[inset_0_0_0_0.5px_#8a8a8a] focus:[&_input]:outline-none focus-visible:[&_input]:outline-none [&_select]:min-h-[46px] [&_select]:rounded-lg [&_select]:border-0 [&_select]:shadow-[inset_0_0_0_0.5px_#8a8a8a] [&_select]:bg-transparent [&_select]:px-3.5 [&_select]:text-[0.875rem] [&_select]:font-normal [&_select]:text-[var(--ink,#241f1b)] [&_select]:[font-family:inherit] [&_select]:outline-none focus:[&_select]:outline-none [&_textarea]:min-h-[46px] [&_textarea]:rounded-lg [&_textarea]:border-0 [&_textarea]:shadow-[inset_0_0_0_0.5px_#8a8a8a] [&_textarea]:bg-transparent [&_textarea]:px-3.5 [&_textarea]:text-[0.875rem] [&_textarea]:font-normal [&_textarea]:text-[var(--ink,#241f1b)] [&_textarea]:[font-family:inherit] [&_textarea]:outline-none focus:[&_textarea]:outline-none [&_input[aria-invalid=true]]:shadow-[inset_0_0_0_0.5px_#b42318] [&_select[aria-invalid=true]]:shadow-[inset_0_0_0_0.5px_#b42318] [&_input[type=checkbox]]:size-[18px] [&_input[type=checkbox]]:min-h-[18px] [&_input[type=checkbox]]:p-0 [&_input[type=checkbox]]:accent-copper max-[767px]:[&_input]:text-[16px] max-[767px]:[&_select]:text-[16px] max-[767px]:[&_textarea]:text-[16px]";
 
 export const fldFull = `${fld} col-span-full`;
 
@@ -57,7 +57,7 @@ export const fldSelect = "relative [&_select]:w-full [&_select]:cursor-pointer [
 
 /** Country trigger — a button, so color and font beat `.landing button`. */
 export const phoneCc =
-  "flex min-h-[46px] cursor-pointer items-center gap-2 rounded-lg border border-[var(--line,#d9ccb4)] bg-[#fffdf8] px-3 text-[0.875rem]! font-normal! text-[var(--ink,#241f1b)]! [font-family:inherit]!";
+  "flex min-h-[46px] cursor-pointer items-center gap-2 rounded-lg border-0 bg-transparent px-3 text-[0.875rem]! font-normal! text-[var(--ink,#241f1b)]! shadow-[inset_0_0_0_0.5px_#8a8a8a] [font-family:inherit]!";
 
 export const phoneNum = "min-w-0 flex-1";
 
@@ -97,7 +97,7 @@ export const checkoutLegal =
 
 /** Scrolls with the page (not sticky) so the whole order reads top to bottom. */
 export const checkoutSummary =
-  "rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white px-[22px] py-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[767px]:px-5 max-[767px]:py-5 max-[860px]:static max-[860px]:order-2 max-[860px]:hidden max-[860px]:w-full max-[860px]:max-w-none max-[860px]:box-border [&_h2]:m-0 [&_h2]:mb-3.5 [&_h2]:border-b [&_h2]:border-[var(--line,#d9ccb4)] [&_h2]:pb-3 [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-[0.8rem] [&_h2]:font-medium [&_h2]:tracking-[0.04em] [&_h2]:text-[var(--ink,#241f1b)] [&_h2]:uppercase";
+  "rounded-[var(--radius-lg,4px)] bg-white px-[22px] py-7 shadow-[0_8px_28px_rgba(0,0,0,0.04)] max-[767px]:px-5 max-[767px]:py-5 max-[860px]:static max-[860px]:order-2 max-[860px]:hidden max-[860px]:w-full max-[860px]:max-w-none max-[860px]:box-border [&_h2]:m-0 [&_h2]:mb-3.5 [&_h2]:border-b [&_h2]:border-[var(--line,#d9ccb4)] [&_h2]:pb-3 [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-[0.8rem] [&_h2]:font-medium [&_h2]:tracking-[0.04em] [&_h2]:text-[var(--ink,#241f1b)] [&_h2]:uppercase";
 
 /** `block!` so it beats the summary's own `max-[860px]:hidden` (same variant, same property). */
 export const checkoutSummaryOpen =

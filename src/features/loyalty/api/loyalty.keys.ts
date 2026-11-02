@@ -3,12 +3,12 @@ export const LOYALTY_ACTIVITY_PAGE_SIZE = 20;
 
 export const loyaltyKeys = {
   all: ["loyalty"] as const,
-  wallet: (zoneCode: string, currencyCode: string) =>
-    [...loyaltyKeys.all, "wallet", zoneCode, currencyCode] as const,
-  transactions: (zoneCode: string, currencyCode: string) =>
-    [...loyaltyKeys.all, "transactions", zoneCode, currencyCode] as const,
-  tierHistory: (zoneCode: string, currencyCode: string) =>
-    [...loyaltyKeys.all, "tier-history", zoneCode, currencyCode] as const,
+  wallet: (customerId: string, zoneCode: string, currencyCode: string) =>
+    [...loyaltyKeys.all, "wallet", customerId, zoneCode, currencyCode] as const,
+  transactions: (customerId: string, zoneCode: string, currencyCode: string) =>
+    [...loyaltyKeys.all, "transactions", customerId, zoneCode, currencyCode] as const,
+  tierHistory: (customerId: string, zoneCode: string, currencyCode: string) =>
+    [...loyaltyKeys.all, "tier-history", customerId, zoneCode, currencyCode] as const,
   /** `signature` changes whenever the server quote changes, forcing a refetch. */
   earnPreview: (zoneCode: string, target: string, signature: string) =>
     [...loyaltyKeys.all, "earn-preview", zoneCode, target, signature] as const,

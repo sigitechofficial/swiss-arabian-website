@@ -1,10 +1,5 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { AccountSubscriptionsPageView } from "@/features/subscriptions/components/AccountSubscriptionsPageView";
 
 export default function AccountSubscriptionPage() {
-  return (
-    <FeaturePlaceholder
-      title="My subscription"
-      description="Manage / pause / cancel waits on subscription APIs."
-    />
-  );
+  return <AccountSubscriptionsPageView />;
 }

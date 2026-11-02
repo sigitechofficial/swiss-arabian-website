@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import type { CountryRegionSet } from "@/features/account/data/regionsByCountry";
 import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
@@ -23,6 +23,7 @@ type CheckoutDeliveryProps = {
   onPlace: (parsed: ParsedStreetAddress) => void;
   countryCode: string;
   regionSet: CountryRegionSet | null;
+  beforeFields?: ReactNode;
 };
 
 export function CheckoutDelivery({
@@ -35,6 +36,7 @@ export function CheckoutDelivery({
   onPlace,
   countryCode,
   regionSet,
+  beforeFields,
 }: CheckoutDeliveryProps) {
   return (
     <section className={cbox}>
@@ -42,6 +44,7 @@ export function CheckoutDelivery({
         <h2>Delivery</h2>
       </header>
       <div className={cboxGrid}>
+        {beforeFields}
         <label className={fldFull}>
           <span>Email</span>
           <input

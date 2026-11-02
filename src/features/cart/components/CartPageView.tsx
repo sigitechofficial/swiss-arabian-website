@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   CONCENTRATION_LABELS,
   type CatalogProduct,
 } from "@/features/catalog/constants/catalogProducts";
+import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRedemptionEditor";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
@@ -113,6 +113,7 @@ export function CartPageView() {
    * cart comes back invalid rather than letting checkout fail later.
    */
   async function goToCheckout() {
+    if (lines.some((line) => line.isSellable === false)) return;
     if (!cartId) {
       router.push("/checkout");
       return;
@@ -163,6 +164,7 @@ export function CartPageView() {
   const itemCount = mounted ? persistedItemCount : 0;
 
   const promotions = useCartStore((s) => s.promotions);
+  const employeeCheckout = useCartStore((s) => s.employeeCheckout);
   const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
   const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
   const isEmpty = lines.length === 0;
@@ -266,7 +268,11 @@ export function CartPageView() {
                         <h3 className={cartRowName}>
                           <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
                         </h3>
-                        <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
+                        {line.isSellable === false ? (
+                          <p className={cartRowPrice}>Unavailable</p>
+                        ) : (
+                          <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
+                        )}
                       </div>
                       {showsDistinctSize(line.title, line.sizeLabel) ? (
                         <p className={cartRowMeta}>{line.sizeLabel}</p>
@@ -289,6 +295,7 @@ export function CartPageView() {
                           <button
                             type="button"
                             aria-label="Decrease"
+                            disabled={line.isSellable === false}
                             onClick={() => {
                               const next = Math.max(1, line.quantity - 1);
                               if (line.remote || line.cartItemId) {
@@ -304,7 +311,7 @@ export function CartPageView() {
                           <button
                             type="button"
                             aria-label="Increase"
-                            disabled={atStockLimit(line)}
+                            disabled={line.isSellable === false || atStockLimit(line)}
                             onClick={() => {
                               const next = line.quantity + 1;
                               if (line.remote || line.cartItemId) {
@@ -368,6 +375,7 @@ export function CartPageView() {
                 <CouponForm />
                 {quotePending ? null : <LoyaltyRedemptionEditor />}
                 <GiftCardForm />
+                <StaffDiscountSummary checkout={employeeCheckout} currency={currency} />
                 {quotePending ? null : (
                 <MoneySummary
                   className={cartTotals}
@@ -403,7 +411,12 @@ export function CartPageView() {
                   type="button"
                   className={cartCta}
                   onClick={goToCheckout}
-                  disabled={syncing || validate.isPending || blockingErrors.length > 0}
+                  disabled={
+                    syncing ||
+                    validate.isPending ||
+                    blockingErrors.length > 0 ||
+                    lines.some((line) => line.isSellable === false)
+                  }
                 >
                   <span>
                     {syncing

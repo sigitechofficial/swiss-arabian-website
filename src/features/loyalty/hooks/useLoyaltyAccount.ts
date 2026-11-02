@@ -15,13 +15,14 @@ import { coerceLoyaltyActivityPage } from "../types/loyalty";
 export function useLoyaltyAccount() {
   const zoneCode = useUiStore((s) => s.catalogContext?.zoneCode?.trim() || null);
   const currencyCode = useUiStore((s) => s.catalogContext?.currencyCode?.trim() || null);
+  const customerId = useAuthStore((s) => s.user?.id ?? "");
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const market = zoneCode ? { zoneCode, currencyCode } : null;
-  const canLoad = bootstrapped && isAuthenticated && market != null;
+  const canLoad = bootstrapped && isAuthenticated && Boolean(customerId) && market != null;
 
   const wallet = useApiQuery(
-    loyaltyKeys.wallet(zoneCode ?? "", currencyCode ?? ""),
+    loyaltyKeys.wallet(customerId, zoneCode ?? "", currencyCode ?? ""),
     () => {
       if (!market) throw new Error("Rewards market is not ready.");
       return fetchLoyaltyWallet(market);
@@ -30,7 +31,7 @@ export function useLoyaltyAccount() {
   );
 
   const transactions = useApiQuery(
-    loyaltyKeys.transactions(zoneCode ?? "", currencyCode ?? ""),
+    loyaltyKeys.transactions(customerId, zoneCode ?? "", currencyCode ?? ""),
     () => {
       if (!market) throw new Error("Rewards market is not ready.");
       return fetchLoyaltyTransactions(market, { limit: LOYALTY_ACTIVITY_PAGE_SIZE, offset: 0 });
@@ -41,7 +42,7 @@ export function useLoyaltyAccount() {
   );
 
   const tierHistory = useApiQuery(
-    loyaltyKeys.tierHistory(zoneCode ?? "", currencyCode ?? ""),
+    loyaltyKeys.tierHistory(customerId, zoneCode ?? "", currencyCode ?? ""),
     () => {
       if (!market) throw new Error("Rewards market is not ready.");
       return fetchLoyaltyTierHistory(market);

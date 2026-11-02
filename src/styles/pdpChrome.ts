@@ -17,6 +17,9 @@ export const pdpProduct =
 export const pdpFrame =
   "relative z-[1] h-[var(--bottle-h)] w-full overflow-hidden rounded-[4px] border-[0.5px] border-[var(--line,#d9ccb4)]";
 
+export const pdpStockChip =
+  "pointer-events-none absolute top-3 left-3 z-[3] rounded-full bg-[#8a8178] px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.12em] text-white uppercase";
+
 export const pdpBottle =
   `absolute inset-0 h-full w-full object-cover filter-[drop-shadow(0_20px_40px_rgb(70_45_25/0.28))] ${play}animate-pdp-bottle ${play}opacity-0 motion-reduce:transform-none motion-reduce:animate-none! motion-reduce:opacity-100! motion-reduce:filter-[drop-shadow(0_20px_40px_rgb(70_45_25/0.28))]!`;
 
