@@ -2,18 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CheckoutElementsProvider,
-  ExpressCheckoutElement,
-  PaymentElement,
-  useCheckoutElements,
-} from "@stripe/react-stripe-js/checkout";
-import type { StripeCheckoutElementsSdkOptions, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
+import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
+import type { StripeCheckoutElementsSdkOptions } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
 import { checkoutError, checkoutNote } from "@/styles/checkoutChrome";
+import { clearCartId } from "@/features/cart/utils/guestToken";
+import { useCartStore } from "@/stores/useCartStore";
 import { clearPaymentState } from "../../utils/checkoutSession";
 import { pollUntilPaymentSettles } from "../../api/orders.service";
 import type { InlinePaymentSession } from "../../utils/startPayment";
+import { stripeCheckoutElementsOptions } from "../../utils/stripeCheckoutAppearance";
+import { StripeCardPaymentForm } from "../StripeCardPaymentForm";
+
+function leaveCheckoutForOrder(orderId: string) {
+  clearPaymentState();
+  useCartStore.getState().clear();
+  useCartStore.getState().setCartId(null);
+  clearCartId();
+}
 const PIXEL_SRC = "https://cdn.jsdelivr.net/npm/paymob-pixel@1.2.10/main.js";
 
 function loadPixelScript(): Promise<void> {
@@ -42,134 +48,47 @@ function loadPixelScript(): Promise<void> {
   });
 }
 
-function StripeDropForm({ orderId, surface }: { orderId: string; surface: PaymentSurface }) {
-  const checkoutState = useCheckoutElements();
-  const router = useRouter();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const orderIdRef = useRef(orderId);
-  orderIdRef.current = orderId;
-
-  async function pay(explicitOrderId?: string, expressEvent?: StripeExpressCheckoutElementConfirmEvent) {
-    const payingOrderId = explicitOrderId || orderIdRef.current;
-    if (checkoutState.type !== "success" || busy || !payingOrderId) {
-      if (expressEvent && !payingOrderId) {
-        setErrorMsg("Fill in your details, then use the Pay button below. The wallet charge starts after the order is placed.");
-      }
-      return;
-    }
-    setBusy(true);
-    setErrorMsg(null);
-    const result = await checkoutState.checkout.confirm({
-      redirect: "if_required",
-      ...(expressEvent ? { expressCheckoutConfirmEvent: expressEvent } : {}),
-    });
-    if (result.type === "error") {
-      setErrorMsg(result.error.message || "Payment failed. Please try another method.");
-      setBusy(false);
-      return;
-    }
-    const settled = await pollUntilPaymentSettles(payingOrderId);
-    if (settled.success) {
-      clearPaymentState();
-      router.replace(`/order-confirmation/${payingOrderId}`);
-      return;
-    }
-    setBusy(false);
-    setErrorMsg("We couldn’t confirm your payment yet. If you were charged, contact us before trying again.");
-  }
-
-  useEffect(() => {
-    function onPay(event: Event) {
-      const id = (event as CustomEvent<{ orderId?: string }>).detail?.orderId;
-      if (surface === "apple_pay" || surface === "google_pay") {
-        if (id) orderIdRef.current = id;
-        return;
-      }
-      void pay(id);
-    }
-    window.addEventListener("sa-inline-pay", onPay);
-    return () => window.removeEventListener("sa-inline-pay", onPay);
-  });
-
-  if (checkoutState.type === "error") {
-    return <p className={checkoutError}>{checkoutState.error.message}</p>;
-  }
-
-  if (surface === "apple_pay" || surface === "google_pay") {
-    const apple = surface === "apple_pay";
-    return (
-      <div className="flex flex-col gap-3">
-        {errorMsg ? <p className={checkoutError}>{errorMsg}</p> : null}
-        <ExpressCheckoutElement
-          options={{
-            buttonHeight: 48,
-            buttonType: { applePay: "plain", googlePay: "plain" },
-            buttonTheme: { applePay: "black", googlePay: "white" },
-            layout: { maxColumns: 1, maxRows: 1, overflow: "never" },
-            paymentMethodOrder: [apple ? "apple_pay" : "google_pay"],
-            paymentMethods: {
-              applePay: apple ? "always" : "never",
-              googlePay: apple ? "never" : "always",
-              link: "never",
-              paypal: "never",
-              amazonPay: "never",
-            },
-          }}
-          onConfirm={(event) => {
-            void pay(orderIdRef.current, event);
-          }}
-        />
-        <p className="m-0 text-[0.82rem] leading-snug text-[var(--ink-2,#5b5148)]">
-          {apple
-            ? "You’ll confirm the payment with Face ID or Touch ID."
-            : "You’ll pick one of the cards saved in your Google account."}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      {errorMsg ? <p className={checkoutError}>{errorMsg}</p> : null}
-      <PaymentElement
-        options={{
-          layout: { type: "tabs", defaultCollapsed: false },
-          paymentMethodOrder: ["card"],
-          wallets: { applePay: "never", googlePay: "never", link: "never" },
-          fields: {
-            billingDetails: {
-              name: "always",
-              email: "never",
-              phone: "never",
-              address: "never",
-            },
-          },
-        }}
-      />
-      <CardSecureNote processor="Stripe" />
-    </div>
-  );
-}
-
 export type PaymentSurface = "card" | "apple_pay" | "google_pay";
 
 export function InlineMethodPayment({
   session,
-  surface = "card",
+  email,
+  name,
+  phone,
+  country,
 }: {
   session: InlinePaymentSession;
   surface?: PaymentSurface;
+  email?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  country?: string | null;
 }) {
   const stripeOptions = useMemo<StripeCheckoutElementsSdkOptions>(
-    () => ({ clientSecret: session.clientSecret }),
-    [session.clientSecret],
+    () =>
+      stripeCheckoutElementsOptions(session.clientSecret, {
+        email,
+        phoneNumber: phone,
+        customerName: name,
+        billingCountry: country,
+      }),
+    [session.clientSecret, email, phone, name, country],
   );
 
   if (session.provider === "stripe" && session.publishableKey) {
     return (
       <CheckoutElementsProvider stripe={getStripe(session.publishableKey)} options={stripeOptions}>
-        <StripeDropForm orderId={session.orderId} surface={surface} />
+        <StripeCardPaymentForm
+          orderId={session.orderId}
+          email={email}
+          name={name}
+          phone={phone}
+          country={country}
+          onNeedOrder={() => {
+            const form = document.getElementById("checkout-form");
+            if (form instanceof HTMLFormElement) form.requestSubmit();
+          }}
+        />
       </CheckoutElementsProvider>
     );
   }
@@ -212,11 +131,9 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
           afterPaymentComplete: async () => {
             const orderId = orderIdRef.current;
             if (!orderId) return;
-            const settled = await pollUntilPaymentSettles(orderId);
-            if (settled.success) {
-              clearPaymentState();
-              router.replace(`/order-confirmation/${orderId}`);
-            }
+            leaveCheckoutForOrder(orderId);
+            window.location.assign(`/order-confirmation/${orderId}`);
+            void pollUntilPaymentSettles(orderId);
           },
           customStyle: {
             Font_Family: "Arial",

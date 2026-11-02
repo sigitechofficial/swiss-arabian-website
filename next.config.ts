@@ -84,6 +84,7 @@ const nextConfig: NextConfig = {
     "localhost",
     "uae.swissarabian.com",
     "barbra-beneficent-jannette.ngrok-free.dev",
+    "unprolifically-unsuggestible-zackary.ngrok-free.dev",
   ],
   async rewrites() {
     // Same-origin /storefront on the ngrok HTTPS URL. The browser must not call

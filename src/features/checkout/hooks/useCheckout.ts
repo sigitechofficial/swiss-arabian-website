@@ -43,7 +43,7 @@ import {
   storePaymentMethodId,
   storeZonePaymentMethodId,
 } from "../utils/checkoutSession";
-import { pickDefaultPaymentMethod } from "../utils/methodLabels";
+import { isStripePaymentMethod, pickDefaultPaymentMethod, usesInlineCardForm } from "../utils/methodLabels";
 import {
   checkoutLineSignature,
   checkoutSignatureChanged,
@@ -169,6 +169,7 @@ export function useCheckout() {
   /** Shopper's choices, re-applied when a session is rebuilt. */
   const deliveryChoiceRef = useRef<string | null>(null);
   const paymentChoiceRef = useRef<string | null>(null);
+  const placedOrderIdRef = useRef<string | null>(null);
 
   const adopt = useCallback((next: CheckoutSessionResponse) => {
     storeCheckoutSessionId(next.checkoutSessionId);
@@ -357,7 +358,6 @@ export function useCheckout() {
     async (zonePaymentMethodId: string) => {
       const method = paymentMethods.find((p) => p.zonePaymentMethodId === zonePaymentMethodId);
       if (!method || !sessionId) return;
-      const previous = paymentChoiceRef.current;
       paymentChoiceRef.current = zonePaymentMethodId;
       setSelectedPaymentId(zonePaymentMethodId);
       storeZonePaymentMethodId(method.zonePaymentMethodId);
@@ -366,8 +366,6 @@ export function useCheckout() {
         // The response is the server re-quote, including P6 promotion eligibility.
         setSession(await selectPaymentMethod(sessionId, method.paymentMethodId));
       } catch (e) {
-        paymentChoiceRef.current = previous;
-        setSelectedPaymentId(previous);
         setErrorMsg(checkoutErrorMessage(e));
       }
     },
@@ -397,6 +395,57 @@ export function useCheckout() {
         return setErrorMsg(
           "Staff discount cannot be paid yet. This quote is a preview, so the order was not placed.",
         );
+      }
+
+      const confirmInlinePay = (orderId: string) => {
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("sa-inline-pay", { detail: { orderId } }));
+        }, 0);
+      };
+
+      const goToConfirmation = (orderId: string) => {
+        window.location.replace(`/order-confirmation/${orderId}`);
+        clearCart();
+        setCartId(null);
+        clearCartId();
+        clearCheckoutSessionId();
+      };
+
+      const usesCardForm = Boolean(payment && usesInlineCardForm(payment));
+      const preparedForMethod =
+        preparedRef.current &&
+        payment &&
+        ((isStripePaymentMethod(payment) && preparedRef.current.provider === "stripe") ||
+          (payment.providerCode?.toLowerCase() === "paymob" && preparedRef.current.provider === "paymob"))
+          ? preparedRef.current
+          : null;
+
+      const payPlacedOrder = async (orderId: string) => {
+        const started = await startPayment(
+          orderId,
+          (href) => window.location.assign(href),
+          {
+            zonePaymentMethodId: payment?.zonePaymentMethodId,
+            paymentMethodId: payment?.paymentMethodId,
+          },
+          { inline: true, prepared: preparedForMethod },
+        );
+        if (started.kind === "inline" && started.inline) {
+          setInlinePayment({ ...started.inline, orderId });
+          setStatus("ready");
+          confirmInlinePay(orderId);
+        }
+        return started;
+      };
+
+      if (placedOrderIdRef.current) {
+        setErrorMsg(null);
+        if (usesCardForm) {
+          confirmInlinePay(placedOrderIdRef.current);
+          return;
+        }
+        goToConfirmation(placedOrderIdRef.current);
+        return;
       }
 
       setStatus("submitting");
@@ -442,6 +491,7 @@ export function useCheckout() {
         // after a bag change gets its own order.
         const order = await placeOrder({ checkoutSessionId: id, idempotencyKey: `order-${id}` });
         placedOrderId = order.orderId;
+        placedOrderIdRef.current = order.orderId;
         storeOrderId(order.orderId);
         if (order.orderNumber) storeOrderNumber(order.orderNumber);
         const tracking = order.guestTracking;
@@ -468,47 +518,37 @@ export function useCheckout() {
         resetPayAttempt();
         void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
 
-        // The order consumed the cart server-side.
-        clearCart();
-        setCartId(null);
-        clearCartId();
-        clearCheckoutSessionId();
-
-        if (covered) {
-          router.push(`/order-confirmation/${order.orderId}`);
-          return;
-        }
-        const prepared = preparedRef.current;
-        const started = await startPayment(
-          order.orderId,
-          (href) => router.push(href),
-          {
-            zonePaymentMethodId: payment?.zonePaymentMethodId,
-            paymentMethodId: payment?.paymentMethodId,
-          },
-          { inline: true, prepared },
-        );
-        if (started.kind === "inline" && started.inline) {
-          const sameForm = Boolean(prepared && started.inline.clientSecret === prepared.clientSecret);
-          setInlinePayment({ ...started.inline, orderId: order.orderId });
-          setStatus("ready");
-          if (sameForm) {
-            window.setTimeout(() => {
-              window.dispatchEvent(new CustomEvent("sa-inline-pay", { detail: { orderId: order.orderId } }));
-            }, 0);
+        if (covered || !usesCardForm) {
+          // Test Payment / COD / smoke: there is no REST confirm. Leave checkout
+          // immediately, then kick initiate in the background if a charge is due.
+          goToConfirmation(order.orderId);
+          if (!covered) {
+            void startPayment(
+              order.orderId,
+              (href) => window.location.assign(href),
+              {
+                zonePaymentMethodId: payment?.zonePaymentMethodId,
+                paymentMethodId: payment?.paymentMethodId,
+              },
+            ).catch(() => {
+              // Order is already placed (e.g. Test Payment).
+            });
           }
           return;
         }
+        const started = await payPlacedOrder(order.orderId);
+        if (started.kind !== "inline") {
+          goToConfirmation(order.orderId);
+        }
+        return;
       } catch (e) {
         if (placedOrderId) {
-          // The order exists and the bag is gone — send the shopper to the retry
-          // screen instead of stranding them on an empty checkout. A gateway
-          // that couldn't open its payment page gets an explicit message there.
-          router.push(
+          setErrorMsg(
             e instanceof PaymentGatewayError
-              ? "/checkout/payment/cancel?reason=gateway"
-              : "/checkout/payment/cancel",
+              ? "Card payment couldn’t be started. Your order is saved — try Pay again."
+              : checkoutErrorMessage(e),
           );
+          setStatus("ready");
           return;
         }
         setErrorMsg(checkoutErrorMessage(e));
