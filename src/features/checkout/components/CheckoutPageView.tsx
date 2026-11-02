@@ -396,6 +396,9 @@ export function CheckoutPageView() {
                   amountPayable={amountPayable}
                   currency={currency}
                   inlinePayment={checkout.inlinePayment}
+                  shopperEmail={email}
+                  shopperName={shipping.fullName}
+                  shopperPhone={shipping.phone}
                   onPayNow={() => {
                     const form = document.getElementById("checkout-form");
                     if (form instanceof HTMLFormElement) form.requestSubmit();

@@ -33,6 +33,9 @@ type CheckoutPaymentProps = {
   currency?: string;
   inlinePayment?: InlinePaymentSession | null;
   onPayNow?: () => void;
+  shopperEmail?: string;
+  shopperName?: string;
+  shopperPhone?: string;
 };
 
 export function CheckoutPayment({
@@ -50,6 +53,9 @@ export function CheckoutPayment({
   currency = "AED",
   inlinePayment = null,
   onPayNow = () => undefined,
+  shopperEmail,
+  shopperName,
+  shopperPhone,
 }: CheckoutPaymentProps) {
   const covered = amountPayable === 0;
   const [openingPay, setOpeningPay] = useState(false);
@@ -61,7 +67,23 @@ export function CheckoutPayment({
   const fallbackKey = selected ? defaultRowKey(selected) : null;
   const activeKey = rows.some((row) => row.key === optionKey) ? optionKey : fallbackKey;
   const activeRow = rows.find((row) => row.key === activeKey) ?? null;
-  const selectedOpensHere = Boolean(activeRow?.surface);
+  const selectedOpensHere = Boolean(
+    activeRow?.surface &&
+      activeRow.provider === "paymob" &&
+      selected &&
+      selected.zonePaymentMethodId === activeRow.zoneId &&
+      selected.providerCode?.toLowerCase() === "paymob",
+  );
+
+  useEffect(() => {
+    if (!selected) return;
+    setOptionKey((current) => {
+      const all = paymentGroups(methods, countryCode).flatMap((group) => group.rows);
+      const row = all.find((entry) => entry.key === current);
+      if (row?.zoneId === selected.zonePaymentMethodId) return current;
+      return defaultRowKey(selected);
+    });
+  }, [selected, methods, countryCode]);
 
   useEffect(() => {
     if (!submitting && !inlinePayment) {
@@ -144,7 +166,14 @@ export function CheckoutPayment({
                           {on && row.surface ? (
                             <div className="px-4 pb-4 ps-12">
                               {dropReady ? (
-                                <InlineMethodPayment session={inlinePayment} surface={row.surface} />
+                                <InlineMethodPayment
+                                  session={inlinePayment}
+                                  surface={row.surface}
+                                  email={shopperEmail}
+                                  name={shopperName}
+                                  phone={shopperPhone}
+                                  country={countryCode}
+                                />
                               ) : (
                                 <p className={payMockNote}>Loading secure card form…</p>
                               )}
@@ -185,7 +214,18 @@ export function CheckoutPayment({
         </p>
       ) : null}
 
-      <button type="submit" className={checkoutCta} id="place-order" disabled={!canSubmit || openingPay} hidden={Boolean(inlinePayment) || selectedOpensHere}>
+      <button
+        type="submit"
+        className={checkoutCta}
+        id="place-order"
+        disabled={!canSubmit || openingPay}
+        hidden={
+          !covered &&
+          (Boolean(inlinePayment) ||
+            selectedOpensHere ||
+            Boolean(selected && isStripePaymentMethod(selected)))
+        }
+      >
         <span>{ctaLabel}</span>
         <b aria-hidden="true">↗</b>
       </button>
@@ -225,9 +265,15 @@ function paymentGroups(methods: PaymentMethodOption[], countryCode?: string | nu
         id: "stripe",
         title: "Stripe",
         rows: [
-          { key: "apple_pay@stripe", title: "Apple Pay", wallet: "apple", zoneId: stripe.zonePaymentMethodId, surface: "apple_pay", provider: "stripe" },
-          { key: "google_pay@stripe", title: "Google Pay", wallet: "google", zoneId: stripe.zonePaymentMethodId, surface: "google_pay", provider: "stripe" },
-          { key: "card@stripe", title: "Credit or debit card", sub: "Visa, Mastercard, Amex", marks: ["visa", "mc", "amex"], zoneId: stripe.zonePaymentMethodId, surface: "card", provider: "stripe" },
+          {
+            key: "card@stripe",
+            title: "Credit or debit card",
+            sub: "Visa, Mastercard, Amex · Apple Pay, Google Pay",
+            marks: ["visa", "mc", "amex"],
+            zoneId: stripe.zonePaymentMethodId,
+            surface: "card",
+            provider: "stripe",
+          },
         ],
       }
     : null;
