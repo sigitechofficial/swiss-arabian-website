@@ -1,25 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
 import type { StripeCheckoutElementsSdkOptions } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
 import { checkoutError, checkoutNote } from "@/styles/checkoutChrome";
-import { clearCartId } from "@/features/cart/utils/guestToken";
-import { useCartStore } from "@/stores/useCartStore";
-import { clearPaymentState } from "../../utils/checkoutSession";
 import { pollUntilPaymentSettles } from "../../api/orders.service";
 import type { InlinePaymentSession } from "../../utils/startPayment";
 import { stripeCheckoutElementsOptions } from "../../utils/stripeCheckoutAppearance";
-import { StripeCardPaymentForm } from "../StripeCardPaymentForm";
-
-function leaveCheckoutForOrder(orderId: string) {
-  clearPaymentState();
-  useCartStore.getState().clear();
-  useCartStore.getState().setCartId(null);
-  clearCartId();
-}
+import { finishPaidCheckout } from "../../utils/paymobThreeDs";
+import { StripeCardPaymentForm, StripeWalletPaymentForm } from "../StripeCardPaymentForm";
+import { usePaymobThreeDsModal } from "../PaymobThreeDsModal";
 const PIXEL_SRC = "https://cdn.jsdelivr.net/npm/paymob-pixel@1.2.10/main.js";
 
 function loadPixelScript(): Promise<void> {
@@ -52,6 +43,7 @@ export type PaymentSurface = "card" | "apple_pay" | "google_pay";
 
 export function InlineMethodPayment({
   session,
+  surface = "card",
   email,
   name,
   phone,
@@ -78,17 +70,32 @@ export function InlineMethodPayment({
   if (session.provider === "stripe" && session.publishableKey) {
     return (
       <CheckoutElementsProvider stripe={getStripe(session.publishableKey)} options={stripeOptions}>
-        <StripeCardPaymentForm
-          orderId={session.orderId}
-          email={email}
-          name={name}
-          phone={phone}
-          country={country}
-          onNeedOrder={() => {
-            const form = document.getElementById("checkout-form");
-            if (form instanceof HTMLFormElement) form.requestSubmit();
-          }}
-        />
+        {surface === "apple_pay" || surface === "google_pay" ? (
+          <StripeWalletPaymentForm
+            orderId={session.orderId}
+            wallet={surface}
+            email={email}
+            name={name}
+            phone={phone}
+            country={country}
+            onNeedOrder={() => {
+              const form = document.getElementById("checkout-form");
+              if (form instanceof HTMLFormElement) form.requestSubmit();
+            }}
+          />
+        ) : (
+          <StripeCardPaymentForm
+            orderId={session.orderId}
+            email={email}
+            name={name}
+            phone={phone}
+            country={country}
+            onNeedOrder={() => {
+              const form = document.getElementById("checkout-form");
+              if (form instanceof HTMLFormElement) form.requestSubmit();
+            }}
+          />
+        )}
       </CheckoutElementsProvider>
     );
   }
@@ -101,7 +108,7 @@ export function InlineMethodPayment({
 }
 
 function PaymobDrop({ session }: { session: InlinePaymentSession }) {
-  const router = useRouter();
+  const threeDs = usePaymobThreeDsModal(session.orderId);
   const [failed, setFailed] = useState(false);
   const hostId = "paymob-elements-inline";
   const mounted = useRef(false);
@@ -119,6 +126,7 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
         if (!host) return;
         host.replaceChildren();
         mounted.current = true;
+        try {
         new window.Pixel({
           publicKey: session.publicKey!,
           clientSecret: session.clientSecret,
@@ -131,9 +139,8 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
           afterPaymentComplete: async () => {
             const orderId = orderIdRef.current;
             if (!orderId) return;
-            leaveCheckoutForOrder(orderId);
-            window.location.assign(`/order-confirmation/${orderId}`);
-            void pollUntilPaymentSettles(orderId);
+            const result = await pollUntilPaymentSettles(orderId);
+            if (result.success) finishPaidCheckout(orderId);
           },
           customStyle: {
             Font_Family: "Arial",
@@ -161,6 +168,9 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
             Container_Padding: "0",
           },
         });
+        } catch {
+          if (!cancelled) setFailed(true);
+        }
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -169,7 +179,7 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
       cancelled = true;
       document.getElementById(hostId)?.replaceChildren();
     };
-  }, [router, session.clientSecret, session.publicKey]);
+  }, [session.clientSecret, session.publicKey]);
 
   useEffect(() => {
     function pay(event: Event) {
@@ -184,8 +194,10 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
   return (
     <div className="flex flex-col gap-3">
       {failed ? <p className={checkoutError}>We couldn’t load the card form. Please refresh and try again.</p> : null}
+      {threeDs.challengeError ? <p className={checkoutError}>{threeDs.challengeError}</p> : null}
       <div id={hostId} />
       <CardSecureNote processor="Paymob" />
+      {threeDs.overlay}
     </div>
   );
 }
