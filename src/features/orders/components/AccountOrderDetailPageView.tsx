@@ -516,15 +516,6 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             ) : null}
           </aside>
         </div>
-
-        <div className="mt-[clamp(20px,3vw,28px)]">
-          <OrderAfterSalesSection
-            orderId={order.orderId}
-            status={order.status}
-            fulfillmentStatus={order.fulfillmentStatus}
-            lines={mapOrderLinesForAfterSales(order.lines)}
-          />
-        </div>
       </div>
     </AccountPageShell>
   );
