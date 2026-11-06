@@ -126,6 +126,8 @@ export const getStoredPaymentMethodId = () => read("session", PAYMENT_METHOD_ID_
 
 export const storePaymentTransactionId = (id: string) =>
   write("session", PAYMENT_TRANSACTION_ID_KEY, id);
+export const getStoredPaymentTransactionId = () =>
+  read("session", PAYMENT_TRANSACTION_ID_KEY);
 
 /** Feeds the idempotency key `pay-{orderId}-{attempt}`; starts at 1. */
 export function getPayAttempt(): number {

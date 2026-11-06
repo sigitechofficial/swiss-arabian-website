@@ -2,6 +2,7 @@ export { CheckoutPageView } from "./components/CheckoutPageView";
 export { OrderConfirmationView } from "./components/OrderConfirmationView";
 export { PaymentSuccessView } from "./components/PaymentSuccessView";
 export { PaymentCancelView } from "./components/PaymentCancelView";
+export { TelrReturnView } from "./components/TelrReturnView";
 export { StripePaymentFormView } from "./components/StripePaymentFormView";
 export { PaymobPaymentFormView } from "./components/PaymobPaymentFormView";
 export { useCheckout } from "./hooks/useCheckout";

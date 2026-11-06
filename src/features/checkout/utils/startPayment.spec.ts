@@ -58,4 +58,32 @@ describe("startPayment", () => {
     });
     expect(window.location.assign).not.toHaveBeenCalled();
   });
+
+  it("redirects Telr HPP with /payments/telr/return URLs and REDIRECT_REQUIRED", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "telr",
+      paymentAction: "REDIRECT_REQUIRED",
+      redirectUrl: "https://secure.telr.com/gateway/process.html?o=abc",
+      warnings: [],
+    } as never);
+
+    const result = await startPayment(
+      "order-telr",
+      vi.fn(),
+      { providerCode: "telr", zonePaymentMethodId: "zpm-1" },
+    );
+
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-telr",
+      expect.objectContaining({
+        returnUrl: "http://localhost:3004/payments/telr/return",
+        cancelUrl: "http://localhost:3004/payments/telr/return?result=cancelled",
+        zonePaymentMethodId: "zpm-1",
+      }),
+    );
+    expect(window.location.assign).toHaveBeenCalledWith(
+      "https://secure.telr.com/gateway/process.html?o=abc",
+    );
+    expect(result.kind).toBe("redirect");
+  });
 });

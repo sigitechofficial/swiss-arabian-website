@@ -43,7 +43,12 @@ import {
   storePaymentMethodId,
   storeZonePaymentMethodId,
 } from "../utils/checkoutSession";
-import { isStripePaymentMethod, pickDefaultPaymentMethod, usesInlineCardForm } from "../utils/methodLabels";
+import {
+  isStripePaymentMethod,
+  pickDefaultPaymentMethod,
+  usesHostedRedirect,
+  usesInlineCardForm,
+} from "../utils/methodLabels";
 import {
   checkoutLineSignature,
   checkoutSignatureChanged,
@@ -420,14 +425,17 @@ export function useCheckout() {
           ? preparedRef.current
           : null;
 
+      const paymentMethodArg = {
+        zonePaymentMethodId: payment?.zonePaymentMethodId,
+        paymentMethodId: payment?.paymentMethodId,
+        providerCode: payment?.providerCode,
+      };
+
       const payPlacedOrder = async (orderId: string) => {
         const started = await startPayment(
           orderId,
           (href) => window.location.assign(href),
-          {
-            zonePaymentMethodId: payment?.zonePaymentMethodId,
-            paymentMethodId: payment?.paymentMethodId,
-          },
+          paymentMethodArg,
           { inline: true, prepared: preparedForMethod },
         );
         if (started.kind === "inline" && started.inline) {
@@ -442,6 +450,24 @@ export function useCheckout() {
         setErrorMsg(null);
         if (usesCardForm) {
           confirmInlinePay(placedOrderIdRef.current);
+          return;
+        }
+        if (payment && usesHostedRedirect(payment)) {
+          setStatus("submitting");
+          try {
+            await startPayment(
+              placedOrderIdRef.current,
+              (href) => window.location.assign(href),
+              paymentMethodArg,
+            );
+          } catch (e) {
+            setErrorMsg(
+              e instanceof PaymentGatewayError
+                ? "Payment couldn’t be started. Your order is saved — try Pay again."
+                : checkoutErrorMessage(e),
+            );
+            setStatus("ready");
+          }
           return;
         }
         goToConfirmation(placedOrderIdRef.current);
@@ -518,22 +544,37 @@ export function useCheckout() {
         resetPayAttempt();
         void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
 
-        if (covered || !usesCardForm) {
+        if (covered) {
+          // Wallet / gift card fully covered — no gateway step.
+          goToConfirmation(order.orderId);
+          return;
+        }
+
+        if (payment && usesHostedRedirect(payment)) {
+          // Telr (and other HPP): await initiate and redirect promptly.
+          // Do not land on confirmation first — that looked like a paid order.
+          const started = await startPayment(
+            order.orderId,
+            (href) => window.location.assign(href),
+            paymentMethodArg,
+          );
+          if (started.kind !== "redirect") {
+            goToConfirmation(order.orderId);
+          }
+          return;
+        }
+
+        if (!usesCardForm) {
           // Test Payment / COD / smoke: there is no REST confirm. Leave checkout
           // immediately, then kick initiate in the background if a charge is due.
           goToConfirmation(order.orderId);
-          if (!covered) {
-            void startPayment(
-              order.orderId,
-              (href) => window.location.assign(href),
-              {
-                zonePaymentMethodId: payment?.zonePaymentMethodId,
-                paymentMethodId: payment?.paymentMethodId,
-              },
-            ).catch(() => {
-              // Order is already placed (e.g. Test Payment).
-            });
-          }
+          void startPayment(
+            order.orderId,
+            (href) => window.location.assign(href),
+            paymentMethodArg,
+          ).catch(() => {
+            // Order is already placed (e.g. Test Payment).
+          });
           return;
         }
         const started = await payPlacedOrder(order.orderId);

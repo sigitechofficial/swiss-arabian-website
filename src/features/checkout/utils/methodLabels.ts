@@ -27,12 +27,30 @@ export function isSmokePaymentMethod(
   return blob.includes("smoke") || blob.includes("test payment");
 }
 
+export function isTelrPaymentMethod(
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+): boolean {
+  const blob = `${method.providerCode ?? ""} ${method.methodCode ?? ""} ${method.displayName ?? ""}`.toLowerCase();
+  return blob.includes("telr");
+}
+
 /** Card iframes (Stripe / Paymob). Test Payment skips this and goes to confirmation. */
 export function usesInlineCardForm(
   method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
 ): boolean {
   if (isSmokePaymentMethod(method)) return false;
   return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
+}
+
+/** Hosted redirect gateways (Telr HPP, and any method flagged `requiresRedirect`). */
+export function usesHostedRedirect(
+  method: Pick<
+    PaymentMethodOption,
+    "providerCode" | "methodCode" | "displayName" | "requiresRedirect"
+  >,
+): boolean {
+  if (isSmokePaymentMethod(method) || usesInlineCardForm(method)) return false;
+  return Boolean(method.requiresRedirect) || isTelrPaymentMethod(method);
 }
 
 /** Backend default first, skipping anything explicitly disabled. */
@@ -50,6 +68,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
   }
   if (method.providerCode?.toLowerCase() === "paymob") {
     return "Paymob · Visa, Mastercard, Amex, Jaywan";
+  }
+  if (isTelrPaymentMethod(method)) {
+    return "Telr · secure hosted checkout";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
