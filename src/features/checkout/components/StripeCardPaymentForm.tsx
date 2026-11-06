@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PaymentElement, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
+import {
+  ExpressCheckoutElement,
+  PaymentElement,
+  useCheckoutElements,
+} from "@stripe/react-stripe-js/checkout";
+import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { toE164Phone } from "@/features/auth/api/auth.service";
 import { clearPaymentState } from "../utils/checkoutSession";
@@ -232,8 +237,8 @@ export function StripeCardPaymentForm({
                   radios: "always",
                   spacedAccordionItems: true,
                 },
-                paymentMethodOrder: ["card", "apple_pay", "google_pay"],
-                wallets: { applePay: "auto", googlePay: "auto", link: "never" },
+                paymentMethodOrder: ["card"],
+                wallets: { applePay: "never", googlePay: "never", link: "never" },
                 fields: {
                   billingDetails: {
                     name: "never",
@@ -275,6 +280,100 @@ export function StripeCardPaymentForm({
       <p className={stripePayTrust}>
         <LockIcon />
         <span>Secured by Stripe — your card details never touch our servers.</span>
+      </p>
+    </div>
+  );
+}
+
+export function StripeWalletPaymentForm({
+  orderId,
+  wallet,
+  email,
+  name,
+  phone,
+  country,
+  onNeedOrder,
+}: {
+  orderId: string;
+  wallet: "apple_pay" | "google_pay";
+  email?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  country?: string | null;
+  onNeedOrder?: () => void;
+}) {
+  const checkoutState = useCheckoutElements();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const apple = wallet === "apple_pay";
+
+  async function pay(event: StripeExpressCheckoutElementConfirmEvent) {
+    if (checkoutState.type !== "success" || busy) return;
+    if (!orderId) {
+      onNeedOrder?.();
+      return;
+    }
+    const { checkout } = checkoutState;
+    const contact = resolveContact({ email, name, phone, country });
+    setBusy(true);
+    setErrorMsg(null);
+    try {
+      if (contact.phone) {
+        await ignoreIfAlreadyOnSession(() => checkout.updatePhoneNumber(contact.phone));
+      }
+      if (contact.billingAddress.name) {
+        await ignoreIfAlreadyOnSession(() => checkout.updateBillingAddress(contact.billingAddress));
+      }
+      const confirmResult = await checkout.confirm({
+        redirect: "if_required",
+        expressCheckoutConfirmEvent: event,
+        ...(contact.phone ? { phoneNumber: contact.phone } : {}),
+        billingAddress: contact.billingAddress,
+      });
+      if (confirmResult.type === "error") {
+        setErrorMsg(checkoutConfirmMessage(confirmResult.error));
+        setBusy(false);
+        return;
+      }
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Payment failed. Please try another card or contact your bank.");
+      setBusy(false);
+      return;
+    }
+    clearPaymentState();
+    window.location.replace(`/order-confirmation/${orderId}`);
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {errorMsg ? (
+        <p className={checkoutError} role="alert">
+          {errorMsg}
+        </p>
+      ) : null}
+      <ExpressCheckoutElement
+        options={{
+          buttonHeight: 48,
+          buttonType: { applePay: "plain", googlePay: "plain" },
+          buttonTheme: { applePay: "black", googlePay: "white" },
+          layout: { maxColumns: 1, maxRows: 1, overflow: "never" },
+          paymentMethodOrder: apple ? ["apple_pay"] : ["google_pay"],
+          paymentMethods: {
+            applePay: apple ? "always" : "never",
+            googlePay: apple ? "never" : "always",
+            link: "never",
+            paypal: "never",
+            amazonPay: "never",
+          },
+        }}
+        onConfirm={(event) => {
+          void pay(event);
+        }}
+      />
+      <p className="m-0 text-[0.82rem] leading-snug text-[var(--ink-2,#5b5148)]">
+        {apple
+          ? "You’ll confirm the payment with Face ID, Touch ID, or your device passcode."
+          : "You’ll pick one of the cards saved in your Google account."}
       </p>
     </div>
   );

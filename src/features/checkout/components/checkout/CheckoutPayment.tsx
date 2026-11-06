@@ -266,9 +266,25 @@ function paymentGroups(methods: PaymentMethodOption[], countryCode?: string | nu
         title: "Stripe",
         rows: [
           {
+            key: "apple_pay@stripe",
+            title: "Apple Pay",
+            wallet: "apple",
+            zoneId: stripe.zonePaymentMethodId,
+            surface: "apple_pay",
+            provider: "stripe",
+          },
+          {
+            key: "google_pay@stripe",
+            title: "Google Pay",
+            wallet: "google",
+            zoneId: stripe.zonePaymentMethodId,
+            surface: "google_pay",
+            provider: "stripe",
+          },
+          {
             key: "card@stripe",
             title: "Credit or debit card",
-            sub: "Visa, Mastercard, Amex · Apple Pay, Google Pay",
+            sub: "Visa, Mastercard, Amex",
             marks: ["visa", "mc", "amex"],
             zoneId: stripe.zonePaymentMethodId,
             surface: "card",
