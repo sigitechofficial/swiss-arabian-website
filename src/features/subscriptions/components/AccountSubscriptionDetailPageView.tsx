@@ -49,6 +49,7 @@ import {
   statusLabel,
   subscriptionPriceLines,
 } from "../utils/subscriptionRules";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type Props = { id: string };
 
@@ -379,7 +380,7 @@ function MonthHero({ month }: { month: SubscriptionMonthRow }) {
     <section className="flex flex-wrap gap-6 rounded-[20px] border border-[#E6DCCB] bg-white p-6">
       <div className="relative flex h-60 w-[220px] items-center justify-center overflow-hidden rounded-2xl bg-[#F1E6D6]">
         <span className="absolute top-3 left-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#2B1D17]">{month.label}</span>
-        {month.imageUrl ? <img src={month.imageUrl} alt="" className="h-full w-full object-contain p-8" /> : <BottleMark large />}
+        {month.imageUrl ? <MediaImage src={month.imageUrl} alt="" width={480} height={480} className="h-full w-full object-contain p-8" /> : <BottleMark large />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <span className="text-xs font-medium tracking-[0.08em] text-[#6E5A50]">{month.orderId ? "LATEST SHIPMENT" : "NEXT FRAGRANCE"}{when ? ` · ${when}` : ""}</span>

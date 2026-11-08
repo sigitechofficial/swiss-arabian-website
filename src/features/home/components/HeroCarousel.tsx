@@ -6,7 +6,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   useCallback,
   useEffect,
-  useEffectEvent,
   useRef,
   useState,
 } from "react";
@@ -89,19 +88,27 @@ function HeroCarouselFrame({
     [slides.length],
   );
 
-  const goNext = useEffectEvent(() => {
-    goTo(active + 1);
-  });
-
-  const goPrev = useEffectEvent(() => {
-    goTo(active - 1);
-  });
+  // Plain stable callbacks (not effect events): they are also button onClick
+  // handlers, and effect events may only be called from inside effects.
+  const step = useCallback(
+    (delta: number) => {
+      setActive((current) => {
+        const total = slides.length;
+        return (((current + delta) % total) + total) % total;
+      });
+      setProgressKey((key) => key + 1);
+    },
+    [slides.length],
+  );
+  const goNext = useCallback(() => step(1), [step]);
+  const goPrev = useCallback(() => step(-1), [step]);
 
   useEffect(() => {
     if (!frameActive || paused || reduce || slides.length < 2) return;
     const id = window.setInterval(() => goNext(), HERO_SLIDE_MS);
     return () => window.clearInterval(id);
-  }, [frameActive, paused, reduce, slides.length, active]);
+    // `active` restarts the timer after a manual slide change.
+  }, [frameActive, paused, reduce, slides.length, active, goNext]);
 
   useEffect(() => {
     const node = regionRef.current;
@@ -119,7 +126,7 @@ function HeroCarouselFrame({
 
     node.addEventListener("keydown", onKeyDown);
     return () => node.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [goNext, goPrev]);
 
   const slide = slides[active] ?? slides[0];
 

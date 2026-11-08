@@ -109,7 +109,7 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
             </div>
             {done ? (
               <p className="mt-6 mb-0 text-[0.95rem] leading-relaxed" role="status">
-                We'll email {email.trim()} when this is available again.
+                We’ll email {email.trim()} when this is available again.
               </p>
             ) : (
               <>

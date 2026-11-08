@@ -46,7 +46,7 @@ export function CouponForm() {
     if (!peekPendingCoupon()) return;
     const pending = takePendingCoupon();
     if (!pending) return;
-    setCode(pending);
+    // The field shows the code being applied (mutation variables) meanwhile.
     void apply
       .mutateAsync(pending)
       .then(() => {
@@ -54,6 +54,8 @@ export function CouponForm() {
         setCode("");
       })
       .catch((error: unknown) => {
+        // Keep the rejected code in the field so the shopper can fix it.
+        setCode(pending);
         setFieldError(couponErrorMessage(error, currency));
       });
     // Apply once after login; `apply` identity is not a trigger.
@@ -125,7 +127,7 @@ export function CouponForm() {
           aria-label="Promo code"
           aria-invalid={fieldError ? true : undefined}
           placeholder={applied?.code ? "Replace with another code" : "Enter code"}
-          value={code}
+          value={apply.isPending && !code ? (apply.variables ?? "") : code}
           onChange={(e) => {
             setCode(e.target.value);
             if (fieldError) setFieldError(null);

@@ -13,6 +13,8 @@ export function MoneySummary({
   shipping = null,
   shippingDiscount,
   tax = 0,
+  taxLabel = "VAT",
+  taxIncluded = false,
   total,
   amountPayable,
   loyalty = null,
@@ -28,6 +30,10 @@ export function MoneySummary({
   shipping?: number | null;
   shippingDiscount: number;
   tax?: number;
+  /** Market tax label (from the market tax policy). */
+  taxLabel?: string;
+  /** True when prices already include the tax: the row is informational, not added. */
+  taxIncluded?: boolean;
   total: number;
   amountPayable?: number | null;
   /** Server loyalty tender. Shown after Total and before gift cards. */
@@ -69,7 +75,7 @@ export function MoneySummary({
       ) : null}
       {tax > 0 ? (
         <div>
-          <dt>Tax</dt>
+          <dt>{taxIncluded ? `Includes ${taxLabel}` : taxLabel}</dt>
           <dd dir="ltr">{formatMoney(tax, currency)}</dd>
         </div>
       ) : null}

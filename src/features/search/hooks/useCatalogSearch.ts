@@ -135,9 +135,10 @@ export function useCatalogSearch(
       ? infiniteSearch.data?.pages[0]?.pagination
       : search.data?.pagination;
 
+  const { fetchNextPage: fetchNextSearchPage } = infiniteSearch;
   const fetchNextPage = useCallback(() => {
-    void infiniteSearch.fetchNextPage();
-  }, [infiniteSearch.fetchNextPage]);
+    void fetchNextSearchPage();
+  }, [fetchNextSearchPage]);
 
   const activePending = isPreview ? preview : infinite ? infiniteSearch : search;
 

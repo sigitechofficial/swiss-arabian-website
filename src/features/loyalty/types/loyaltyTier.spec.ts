@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readLoyaltyTier, readLoyaltyTierHistory, readLoyaltyWallet } from "./loyalty";
+import { readLoyaltyTierHistory, readLoyaltyWallet } from "./loyalty";
 
 const liveGold = {
   enabled: true,

@@ -8,14 +8,13 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
 import { useMarket } from "@/providers/MarketProvider";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export function useNavbarChrome() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const persistedItemCount = useCartStore((s) => s.itemCount());
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Persisted cart count is browser-only: show it after hydration.
+  const mounted = useHydrated();
   const itemCount = mounted ? persistedItemCount : 0;
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
@@ -26,11 +25,15 @@ export function useNavbarChrome() {
   const pathname = usePathname();
   const languageId = localeFromPathname(pathname || "/");
 
-  useEffect(() => {
+  // Close menus on navigation. Adjusting state while rendering (React's
+  // "reset state when a value changes" pattern) avoids an extra effect pass.
+  const [menuPathname, setMenuPathname] = useState(pathname);
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname);
     setOpenMega(null);
     setMobileOpen(false);
     setMobileGroup(null);
-  }, [pathname]);
+  }
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
   const setLanguageId = (id: (typeof TOPBAR_LANGUAGES)[number]["id"]) => {
     const current = pathname || "/";
@@ -40,6 +43,7 @@ export function useNavbarChrome() {
     // address. A full load keeps /ar in the address bar.
     const search = window.location.search;
     const hash = window.location.hash;
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full load required (see above)
     window.location.assign(`${nextPath}${search}${hash}`);
   };
   const { marketId, setMarketId, regionOptions } = useMarket();
@@ -162,28 +166,32 @@ export function useNavbarChrome() {
     };
   }, []);
 
+  // The DOM ref is returned apart from the render state: children receive
+  // `chrome` during render, and a ref must not travel inside render data.
   return {
     headerRef,
-    pathname,
-    isAuthenticated,
-    itemCount,
-    setCartOpen,
-    setSearchOpen,
-    searchOpen,
-    openMega,
-    setOpenMega,
-    mobileOpen,
-    setMobileOpen,
-    mobileGroup,
-    setMobileGroup,
-    openUtil,
-    setOpenUtil,
-    languageId,
-    setLanguageId,
-    regionId,
-    regionOptions,
-    setMarketId,
+    chrome: {
+      pathname,
+      isAuthenticated,
+      itemCount,
+      setCartOpen,
+      setSearchOpen,
+      searchOpen,
+      openMega,
+      setOpenMega,
+      mobileOpen,
+      setMobileOpen,
+      mobileGroup,
+      setMobileGroup,
+      openUtil,
+      setOpenUtil,
+      languageId,
+      setLanguageId,
+      regionId,
+      regionOptions,
+      setMarketId,
+    },
   };
 }
 
-export type NavbarChrome = ReturnType<typeof useNavbarChrome>;
+export type NavbarChrome = ReturnType<typeof useNavbarChrome>["chrome"];

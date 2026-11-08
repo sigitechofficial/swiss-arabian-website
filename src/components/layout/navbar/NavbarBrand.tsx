@@ -3,6 +3,7 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { brandLink, brandLinkMinimal, brandWordmark } from "@/styles/siteChrome";
 import { brandWordmarkFont } from "./brandWordmarkFont";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 export function NavbarBrand({
   crop = false,
@@ -35,7 +36,7 @@ export function NavbarBrand({
       href="/"
       aria-label="Swiss Arabian home"
     >
-      <img src="/assets/sa-logo-clear.png" alt="Swiss Arabian" />
+      <MediaImage src="/assets/sa-logo-clear.png" alt="Swiss Arabian" width={428} height={218} loading="eager" />
     </LocaleLink>
   );
 }

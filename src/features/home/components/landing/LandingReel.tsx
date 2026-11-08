@@ -8,6 +8,7 @@ import type { ShopableVideoSlide } from "@/features/merchandising/types/merch";
 import { parseShopablePrice } from "@/features/merchandising/utils/playableShopableSlides";
 import { formatMoney } from "../../utils/formatMoney";
 import { pageContainer } from "@/styles/siteChrome";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 function slideKey(slide: ShopableVideoSlide, index: number): string {
   return `${slide.productId}-${slide.sku ?? slide.slug ?? "slide"}-${index}`;
@@ -136,11 +137,12 @@ export function LandingReel({ heading }: LandingReelProps = {}) {
     }
   }, [trackCount]);
 
-  useEffect(() => {
+  // New start slide or track list: reset playback state.
+  useResetOnChange(`${startIndex}:${trackCount}`, () => {
     setActive(startIndex);
     setPlaying({});
     setMuted({});
-  }, [startIndex, trackCount]);
+  });
 
   useEffect(() => {
     if (!trackCount) return;

@@ -95,7 +95,6 @@ export function LandingHero({
         {useCmsMedia && cmsDesktop ? (
           <picture>
             <source media="(max-width: 700px)" srcSet={cmsMobile!} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={heroImg} src={cmsDesktop} alt={title || ""} />
           </picture>
         ) : (

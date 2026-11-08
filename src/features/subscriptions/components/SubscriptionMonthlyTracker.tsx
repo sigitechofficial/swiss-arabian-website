@@ -10,6 +10,7 @@ import {
   type SubscriptionCycleSnapshot,
   type SubscriptionMonthRow,
 } from "../utils/subscriptionMonthlyTracker";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 function monthStatusChip(row: SubscriptionMonthRow): { label: string; className: string } {
   if (row.payment === "SKIPPED") return { label: "Skipped", className: "bg-[#F3EEE6] text-[#6E5A50]" };
@@ -82,7 +83,7 @@ export function SubscriptionMonthlyTracker({
               className={`flex min-w-0 flex-col gap-2.5 rounded-[14px] bg-white p-2.5 ${border}`}
             >
               <div className={`flex aspect-square items-center justify-center overflow-hidden rounded-[10px] ${chosen ? "bg-[#F1E6D6]" : "border-2 border-dashed border-[#D9CBB6] bg-[#FBF8F2] text-[13px] font-semibold text-[#6E5A50]"}`}>
-                {chosen ? (row.imageUrl ? <img src={row.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <FragranceMark />) : "Not chosen yet"}
+                {chosen ? (row.imageUrl ? <MediaImage src={row.imageUrl} alt="" width={200} height={200} className="h-full w-full object-contain p-2" /> : <FragranceMark />) : "Not chosen yet"}
               </div>
               <div className="flex flex-col gap-1 px-0.5">
                 <strong className="text-[15px] font-bold text-[#2B1D17]">{row.label}</strong>

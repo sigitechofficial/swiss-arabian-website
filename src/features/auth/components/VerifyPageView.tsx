@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "@/components/ui/Toaster";
@@ -41,6 +41,7 @@ export function VerifyPageView() {
     resolver: zodResolver(verifySchema),
     defaultValues: { code: "" },
   });
+  const codeValue = useWatch({ control: form.control, name: "code" });
 
   if (!env.flags.verification) {
     return (
@@ -115,7 +116,7 @@ export function VerifyPageView() {
           id="code"
           label="Verification code"
           autoFocus
-          value={form.watch("code")}
+          value={codeValue}
           onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
           error={form.formState.errors.code?.message}
         />

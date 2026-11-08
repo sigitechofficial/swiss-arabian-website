@@ -58,14 +58,19 @@ export function CheckoutPayment({
   shopperPhone,
 }: CheckoutPaymentProps) {
   const covered = amountPayable === 0;
-  const [openingPay, setOpeningPay] = useState(false);
   const opening = useRef(false);
   const [optionKey, setOptionKey] = useState<string | null>(null);
   const groups = paymentGroups(methods, countryCode);
   const rows = groups.flatMap((group) => group.rows);
   const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
   const fallbackKey = selected ? defaultRowKey(selected) : null;
-  const activeKey = rows.some((row) => row.key === optionKey) ? optionKey : fallbackKey;
+  // The shopper's option applies while it belongs to the selected method;
+  // otherwise the selected method's default option is active.
+  const chosenRow = rows.find((row) => row.key === optionKey);
+  const activeKey =
+    chosenRow && (!selected || chosenRow.zoneId === selected.zonePaymentMethodId)
+      ? optionKey
+      : fallbackKey;
   const activeRow = rows.find((row) => row.key === activeKey) ?? null;
   const selectedOpensHere = Boolean(
     activeRow?.surface &&
@@ -76,20 +81,7 @@ export function CheckoutPayment({
   );
 
   useEffect(() => {
-    if (!selected) return;
-    setOptionKey((current) => {
-      const all = paymentGroups(methods, countryCode).flatMap((group) => group.rows);
-      const row = all.find((entry) => entry.key === current);
-      if (row?.zoneId === selected.zonePaymentMethodId) return current;
-      return defaultRowKey(selected);
-    });
-  }, [selected, methods, countryCode]);
-
-  useEffect(() => {
-    if (!submitting && !inlinePayment) {
-      opening.current = false;
-      setOpeningPay(false);
-    }
+    if (!submitting && !inlinePayment) opening.current = false;
   }, [submitting, inlinePayment]);
 
   function payNow() {
@@ -218,7 +210,7 @@ export function CheckoutPayment({
         type="submit"
         className={checkoutCta}
         id="place-order"
-        disabled={!canSubmit || openingPay}
+        disabled={!canSubmit}
         hidden={
           !covered &&
           (Boolean(inlinePayment) ||

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export function SideSheet({
@@ -20,8 +20,8 @@ export function SideSheet({
   labelledBy?: string;
   children: ReactNode;
 }) {
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  // Latest onClose for the key listener without re-binding it each render.
+  const handleEscapeClose = useEffectEvent(onClose);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function SideSheet({
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.classList.add("overflow-hidden");
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseRef.current();
+      if (event.key === "Escape") handleEscapeClose();
     };
     window.addEventListener("keydown", onKey);
     panelRef.current?.querySelector<HTMLElement>("button, a[href], input")?.focus();
@@ -50,7 +50,7 @@ export function SideSheet({
         type="button"
         className="absolute inset-0 cursor-pointer border-0 bg-[rgba(24,20,17,0.4)] backdrop-blur-[6px]"
         aria-label="Close"
-        onClick={() => onCloseRef.current()}
+        onClick={onClose}
       />
       <div
         ref={panelRef}

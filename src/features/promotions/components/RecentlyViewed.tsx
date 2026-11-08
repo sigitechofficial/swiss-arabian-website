@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
@@ -16,6 +16,7 @@ import {
   relatedTitle,
 } from "@/styles/pdpChrome";
 import { pageContainer } from "@/styles/siteChrome";
+import { useHydrated } from "@/hooks/useHydrated";
 
 function asCatalog(product: EmptyBagProduct, currency: string): CatalogProduct | null {
   if (!product.productId || !product.slug) return null;
@@ -39,11 +40,12 @@ function asCatalog(product: EmptyBagProduct, currency: string): CatalogProduct |
 export function RecentlyViewed({ excludeProductId }: { excludeProductId: string }) {
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const currency = useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
-  const [ids, setIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setIds(readViewed().filter((id) => id && id !== excludeProductId));
-  }, [excludeProductId]);
+  // Viewing history lives in browser storage: read it after hydration.
+  const hydrated = useHydrated();
+  const ids = useMemo(
+    () => (hydrated ? readViewed().filter((id) => id && id !== excludeProductId) : []),
+    [hydrated, excludeProductId],
+  );
 
   const query = useQuery({
     queryKey: ["pdp-recently-viewed", zoneCode, ids.join(",")],

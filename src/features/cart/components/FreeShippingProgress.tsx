@@ -22,22 +22,38 @@ type ConfettiParticle = {
   round: boolean;
 };
 
+/**
+ * Deterministic pseudo-random numbers (mulberry32). Render must be pure, so the
+ * confetti layout is derived from the burst id instead of Math.random().
+ */
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function ConfettiBurst({ burstId }: { burstId: number }) {
   const particles = useMemo((): ConfettiParticle[] => {
     if (!burstId) return [];
+    const random = seededRandom(burstId);
     return Array.from({ length: 26 }, (_, i) => {
-      const angle = (Math.PI * 2 * i) / 26 + Math.random() * 0.4;
-      const dist = 60 + Math.random() * 70;
+      const angle = (Math.PI * 2 * i) / 26 + random() * 0.4;
+      const dist = 60 + random() * 70;
       const colors = [TERRA, FOREST, GOLD, "#2c241d"];
       return {
         id: i,
         tx: Math.cos(angle) * dist,
         ty: Math.sin(angle) * dist - 20,
-        rot: Math.random() * 480 - 240,
+        rot: random() * 480 - 240,
         color: colors[i % colors.length]!,
-        delay: Math.random() * 0.12,
-        size: 5 + Math.random() * 5,
-        round: Math.random() > 0.5,
+        delay: random() * 0.12,
+        size: 5 + random() * 5,
+        round: random() > 0.5,
       };
     });
   }, [burstId]);

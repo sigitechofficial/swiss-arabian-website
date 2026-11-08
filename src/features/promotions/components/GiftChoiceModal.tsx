@@ -20,6 +20,7 @@ import {
   giftChoiceReveal,
   giftChoiceRoot,
 } from "@/styles/cartChrome";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export function GiftChoiceModal({
   award,
@@ -34,11 +35,8 @@ export function GiftChoiceModal({
   const choice = useGiftChoice();
   const catalog = useGiftCatalogMap(award.choices.map((gift) => gift.sku));
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Portal target (document.body) exists only after hydration.
+  const mounted = useHydrated();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

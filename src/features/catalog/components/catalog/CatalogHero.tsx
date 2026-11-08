@@ -15,6 +15,7 @@ import {
   crumbs,
   crumbsList,
 } from "@/styles/shopChrome";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type CatalogHeroMeta = {
   eyebrow: string;
@@ -42,13 +43,14 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
 
         <div className={collectionHero}>
           {meta.heroImage ? (
-            <img
+            <MediaImage
               className={collectionHeroMedia}
               src={meta.heroImage}
               alt={heroAlt}
               width={720}
               height={1040}
               fetchPriority="high"
+          loading="eager"
             />
           ) : null}
           <div className={collectionHeroPanel}>

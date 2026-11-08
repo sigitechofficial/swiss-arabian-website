@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
@@ -176,17 +176,24 @@ export function CheckoutPageView() {
     }));
   }
 
-  const visibleLines = hydrated ? lines : [];
+  const visibleLines = useMemo(() => (hydrated ? lines : []), [hydrated, lines]);
   // Only API-backed lines are part of the checkout session. Local-only lines
   // (static catalogue items with no SKU) would never reach the order.
-  const orderableLines = visibleLines.filter((line) => line.cartItemId);
-  const linesSnap = useRef(orderableLines);
-  if (orderableLines.length) linesSnap.current = orderableLines;
+  const orderableLines = useMemo(
+    () => visibleLines.filter((line) => line.cartItemId),
+    [visibleLines],
+  );
+  // Last non-empty lines: the cart is cleared once the order is placed, but
+  // the summary keeps showing them while payment completes.
+  const [lastOrderableLines, setLastOrderableLines] = useState(orderableLines);
+  if (orderableLines.length && lastOrderableLines !== orderableLines) {
+    setLastOrderableLines(orderableLines);
+  }
   const payingInline = Boolean(checkout.inlinePayment);
   const summaryLines = orderableLines.length
     ? orderableLines
     : payingInline || checkout.status === "submitting"
-      ? linesSnap.current
+      ? lastOrderableLines
       : orderableLines;
   const leftOutCount = visibleLines.length - orderableLines.length;
 

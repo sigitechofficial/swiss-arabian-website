@@ -25,6 +25,8 @@ import {
   thumbsCol,
   thumbsNext,
 } from "@/styles/pdpChrome";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type PdpGalleryProps = {
   images: string[];
@@ -39,9 +41,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
   const thumbsRef = useRef<HTMLDivElement>(null);
   const heroSrc = images[activeImage] ?? images[0] ?? null;
 
-  useEffect(() => {
-    setActiveImage(0);
-  }, [resetKey]);
+  useResetOnChange(resetKey, () => setActiveImage(0));
 
   useEffect(() => {
     const thumb = thumbsRef.current?.querySelector<HTMLElement>(
@@ -65,7 +65,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
                 aria-selected={index === activeImage}
                 onClick={() => setActiveImage(index)}
               >
-                <img className={thumbImg} src={src} alt="" />
+                <MediaImage className={thumbImg} src={src} alt="" width={160} height={160} />
               </button>
             ))}
           </div>
@@ -92,11 +92,14 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
         <div className={pdpGlow} aria-hidden="true" />
         <div className={pdpFrame}>
           {heroSrc ? (
-            <img
+            <MediaImage
               key={heroSrc}
               className={pdpBottle}
               src={heroSrc}
               alt={title}
+              width={1000}
+              height={1000}
+              loading="eager"
               onError={() => onImageError(heroSrc)}
             />
           ) : (

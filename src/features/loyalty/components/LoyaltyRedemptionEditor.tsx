@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   couponApplied,
@@ -35,7 +35,7 @@ export function LoyaltyRedemptionEditor({
     useLoyaltyRedemption({ quoteOverride });
   const { wallet } = useLoyaltyAccount();
   const [points, setPoints] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [editingRequested, setEditing] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const applied = Boolean(quote && quote.appliedPoints > 0);
@@ -43,9 +43,8 @@ export function LoyaltyRedemptionEditor({
   const min = quote?.minimumRedeemPoints ?? 0;
   const max = quote?.maxRedeemablePoints ?? 0;
 
-  useEffect(() => {
-    if (!applied) setEditing(false);
-  }, [applied]);
+  // Editing only applies while points are applied; removing them ends it.
+  const editing = editingRequested && applied;
 
   if (hidden || !quote) return null;
 

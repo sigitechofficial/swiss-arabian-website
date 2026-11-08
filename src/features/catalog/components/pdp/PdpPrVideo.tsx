@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { videoClose, videoEl, videoExpand, videoExpanded, videoFrame } from "@/styles/pdpChrome";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 type PdpPrVideoProps = {
   video: { url: string; name: string | null };
@@ -15,10 +16,10 @@ export function PdpPrVideo({ video, poster, title, resetKey, onError }: PdpPrVid
   const [open, setOpen] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
+  useResetOnChange(resetKey, () => {
     setOpen(true);
     setExpanded(false);
-  }, [resetKey]);
+  });
 
   if (!open) return null;
 

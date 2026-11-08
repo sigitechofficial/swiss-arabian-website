@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -91,6 +91,7 @@ function Check() {
 
 export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: string } = {}) {
   const router = useRouter();
+  const modeIdPrefix = useId();
   const pathname = usePathname() || "/";
   const zoneCode = useZoneCode();
   const authed = useAuthStore((state) => state.isAuthenticated);
@@ -142,21 +143,18 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   const gender =
     genderChoice && choicePlan === activePlanCode ? genderChoice : (storedGender ?? "men");
   const audience: SubscriptionAudience = gender === "men" ? "MEN" : "WOMEN";
+  // Release a stored agreement the server no longer has pending (decided
+  // during render; the flag keeps the decision once the query is disabled).
+  const agreementFinished =
+    Boolean(lockedPlanCode && storedAgreementId && authed) &&
+    (savedAgreement.isError ||
+      (savedAgreement.isSuccess && savedAgreement.data.status !== "PENDING_ACTIVATION"));
+  if (agreementFinished && !releasedAgreement) setReleasedAgreement(true);
   useEffect(() => {
-    if (!lockedPlanCode || !storedAgreementId || releasedAgreement || !authed) return;
-    const finished = savedAgreement.isError || (savedAgreement.isSuccess && savedAgreement.data.status !== "PENDING_ACTIVATION");
-    if (!finished) return;
-    sessionStorage.removeItem(`sa-sub-agreement:${lockedPlanCode}`);
-    setReleasedAgreement(true);
-  }, [
-    lockedPlanCode,
-    storedAgreementId,
-    releasedAgreement,
-    authed,
-    savedAgreement.isError,
-    savedAgreement.isSuccess,
-    savedAgreement.data?.status,
-  ]);
+    if (releasedAgreement && lockedPlanCode) {
+      sessionStorage.removeItem(`sa-sub-agreement:${lockedPlanCode}`);
+    }
+  }, [releasedAgreement, lockedPlanCode]);
 
   const products = useApiQuery(
     subscriptionKeys.products(active?.planCode ?? "", zoneCode, audience),
@@ -177,13 +175,12 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   const shownQueue = retained.selected;
   const audienceNotice = audienceChangeNotice(audienceRemoved || retained.removed);
 
-  useEffect(() => {
-    if (!products.isSuccess || !products.data) return;
-    const next = retainAudienceSelections(queue, products.data.map((item) => item.variantId));
-    if (next.removed < 1) return;
-    setAudienceRemoved(next.removed);
-    setQueueChoice(next.selected);
-  }, [products.isSuccess, products.data, queue]);
+  // Picks not offered for the new audience are dropped once and the count is
+  // kept for the notice (after this the retained queue removes nothing).
+  if (retained.removed > 0) {
+    setAudienceRemoved(retained.removed);
+    setQueueChoice(retained.selected);
+  }
 
   useEffect(() => {
     const id = pendingScroll.current;
@@ -409,11 +406,14 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                       key={value}
                       type="button"
                       aria-pressed={selected}
+                      // Name is the short title; the explanation is a description.
+                      aria-labelledby={`${modeIdPrefix}-${value}-title`}
+                      aria-describedby={`${modeIdPrefix}-${value}-description`}
                       onClick={() => pickMode(value as "choose" | "surprise")}
                       className={`flex min-h-24 flex-col gap-1.5 rounded-2xl px-5 py-4 text-left ${selected ? "border-2 border-[var(--ink,#241f1b)] bg-white" : "border-2 border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)]"}`}
                     >
-                      <span className="text-[length:var(--fs-body-lg)] font-semibold">{title}</span>
-                      <span className="text-[0.82rem] leading-normal text-[var(--ink-2,#5b5148)]">{description}</span>
+                      <span id={`${modeIdPrefix}-${value}-title`} className="text-[length:var(--fs-body-lg)] font-semibold">{title}</span>
+                      <span id={`${modeIdPrefix}-${value}-description`} className="text-[0.82rem] leading-normal text-[var(--ink-2,#5b5148)]">{description}</span>
                     </button>
                   );
                 })}

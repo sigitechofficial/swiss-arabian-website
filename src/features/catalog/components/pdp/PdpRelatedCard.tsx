@@ -22,6 +22,7 @@ import {
 import type { CatalogProduct } from "../../constants/catalogProducts";
 import { useLoadedImages } from "../../hooks/useLoadedImages";
 import { ProductCardTags } from "../ProductCardTags";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 export function PdpRelatedCard({
   product,
@@ -55,7 +56,7 @@ export function PdpRelatedCard({
           aria-hidden="true"
         >
           {showImage ? (
-            <img
+            <MediaImage
               className={hasIngredientsHover ? cardImgSwap : cardImg}
               src={product.imageUrl as string}
               alt={product.title}

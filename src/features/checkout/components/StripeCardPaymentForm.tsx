@@ -134,10 +134,9 @@ export function StripeCardPaymentForm({
   const [loadFailed, setLoadFailed] = useState(false);
   const [phase, setPhase] = useState<"idle" | "confirming" | "polling">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [needsRetry, setNeedsRetry] = useState(false);
 
   async function confirmStripePayment(payingOrderId = orderId) {
-    if (checkoutState.type !== "success" || phase !== "idle" || needsRetry) return;
+    if (checkoutState.type !== "success" || phase !== "idle") return;
     if (!payingOrderId) {
       onNeedOrder?.();
       return;
@@ -256,20 +255,12 @@ export function StripeCardPaymentForm({
           {errorMsg ? (
             <p className={checkoutError} role="alert">
               {errorMsg}
-              {needsRetry ? (
-                <>
-                  {" "}
-                  <a className={checkoutLink} href={cancelHref}>
-                    Start a new attempt
-                  </a>
-                </>
-              ) : null}
             </p>
           ) : null}
           <button
             type="button"
             className={`${checkoutCta} ${stripePayCta}`}
-            disabled={checkoutState.type !== "success" || phase !== "idle" || needsRetry}
+            disabled={checkoutState.type !== "success" || phase !== "idle"}
             onClick={() => void confirmStripePayment(orderId)}
           >
             <span>{phase === "confirming" ? "Processing…" : "Pay now"}</span>

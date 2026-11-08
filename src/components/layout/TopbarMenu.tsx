@@ -11,6 +11,7 @@ import {
   topbarMenuPanel,
   topbarMenuTrigger,
 } from "@/styles/siteChrome";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 export type TopbarMenuOption = {
   id: string;
@@ -29,7 +30,7 @@ function TopbarFlag({
 }) {
   if (countryCode) {
     return (
-      <img
+      <MediaImage
         className={topbarFlagImg}
         src={flagImageSrc(countryCode)}
         width={16}

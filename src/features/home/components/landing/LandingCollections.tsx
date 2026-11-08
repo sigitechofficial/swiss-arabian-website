@@ -93,7 +93,6 @@ export function LandingCollections({
             : items.map((item) => (
                 <LocaleLink key={item.id} className={cardClass} href={item.href}>
                   {item.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={item.image}
                       alt=""

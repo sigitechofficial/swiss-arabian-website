@@ -46,26 +46,6 @@ export function audienceChangeNotice(removed: number): string | null {
   return `${removed} ${picks} removed because they are not available for this audience.`;
 }
 
-/**
- * Pinned schedule copy only. A hash-pool preview is not shown as a fragrance.
- * Month SKUs beyond the provisional next one stay hidden.
- */
-export function surpriseAccountNote(input: {
-  schedulePinned: boolean;
-  previewSource?: "SCHEDULE" | "PROVISIONAL_POOL" | null;
-  previewSku?: string | null;
-}): string {
-  const pinned = input.schedulePinned || input.previewSource === "SCHEDULE";
-  if (!pinned) {
-    return "No published schedule is pinned. No fragrance is allocated and no shipment is promised.";
-  }
-  const sku =
-    input.previewSource === "SCHEDULE" && input.previewSku
-      ? ` Provisional fragrance ${input.previewSku} is not allocated.`
-      : "";
-  return `A published schedule is pinned.${sku} This is provisional and not a shipment.`;
-}
-
 /** Only an explicit published agreement can be shown or submitted. */
 export function activeRegistrationConsent(
   value: PublicSubscriptionConsent | null | undefined,

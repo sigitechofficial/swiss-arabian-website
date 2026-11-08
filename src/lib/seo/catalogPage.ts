@@ -9,6 +9,8 @@ import {
 } from "@/features/catalog/api/catalog.service";
 import { fetchStorefrontMarkets } from "@/features/markets/api/markets.service";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import type { ProductListResult } from "@/features/catalog/api/catalog.service";
+import { ApiClientError } from "@/lib/api/apiError";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontContextInput } from "@/lib/storefront/context";
 import {
@@ -57,24 +59,60 @@ export async function resolveServerCatalogMarket() {
   };
 }
 
+/**
+ * First page of a collection for server rendering.
+ * - `missing`: the API answered 404 — the collection does not exist in this
+ *   market, so the page must respond 404 (not 500, not an empty 200).
+ * - Any other failure leaves `listing` null: the page still renders and the
+ *   client view loads the grid itself (and shows its own error state).
+ */
+async function loadInitialCollectionListing(
+  slug: string,
+  zoneCode: string,
+  market: StorefrontContextInput,
+): Promise<{ listing: ProductListResult | null; missing: boolean }> {
+  try {
+    const listing = await fetchCollectionProducts(slug, zoneCode, { page: 1, limit: 24 }, market);
+    return { listing, missing: false };
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 404) {
+      return { listing: null, missing: true };
+    }
+    console.error("[catalog] collection listing prefetch failed", {
+      slug,
+      zoneCode,
+      error: error instanceof Error ? error.message : String(error),
+      requestId: error instanceof ApiClientError ? error.requestId : undefined,
+    });
+    return { listing: null, missing: false };
+  }
+}
+
 export const loadCatalogDocument = cache(async (kind: "product" | "collection" | "category", slug: string) => {
   const resolved = await resolveServerCatalogMarket();
+  const empty = { product: null, collection: null, category: null, listing: null, missing: false };
   if (!resolved.zoneCode) {
-    return { ...resolved, product: null, collection: null, category: null, listing: null };
+    return { ...resolved, ...empty };
   }
   if (kind === "product") {
     const product = await fetchProductBySlug(slug, resolved.zoneCode, resolved.market);
-    return { ...resolved, product, collection: null, category: null, listing: null };
+    return { ...resolved, ...empty, product };
   }
   if (kind === "collection") {
-    const [collection, listing] = await Promise.all([
+    const [collection, initial] = await Promise.all([
       fetchCollectionBySlug(slug, resolved.zoneCode, resolved.market),
-      fetchCollectionProducts(slug, resolved.zoneCode, { page: 1, limit: 24 }, resolved.market),
+      loadInitialCollectionListing(slug, resolved.zoneCode, resolved.market),
     ]);
-    return { ...resolved, product: null, collection, category: null, listing };
+    return {
+      ...resolved,
+      ...empty,
+      collection,
+      listing: initial.listing,
+      missing: initial.missing && !collection,
+    };
   }
   const category = await fetchCategoryBySlug(slug, resolved.zoneCode, resolved.market);
-  return { ...resolved, product: null, collection: null, category, listing: null };
+  return { ...resolved, ...empty, category };
 });
 
 export async function catalogRequestMarket() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
@@ -15,6 +15,7 @@ import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRe
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { useCartStore } from "@/stores/useCartStore";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useUiStore } from "@/stores/useUiStore";
 import {
   cartCrumbs,
@@ -154,10 +155,9 @@ export function CartPageView() {
     onClear: () => setLinesFlash(false),
   });
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Persisted cart state is browser-only: read it after hydration (no
+  // setState-in-effect "mounted" flag).
+  const mounted = useHydrated();
 
   const lines = mounted ? persistedLines : [];
   const subtotal = mounted ? persistedSubtotal : 0;
@@ -384,6 +384,9 @@ export function CartPageView() {
                   discount={discount}
                   shipping={shipping}
                   shippingDiscount={shipDiscount}
+                  tax={totals?.tax ?? 0}
+                  taxLabel={totals?.taxLabel}
+                  taxIncluded={totals?.taxIncluded}
                   total={total}
                   amountPayable={amountPayable}
                   loyalty={loyaltyLineFromQuote(loyaltyRedemption)}

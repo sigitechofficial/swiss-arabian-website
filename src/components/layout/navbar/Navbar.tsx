@@ -21,7 +21,7 @@ const LP5_NAV: ChromeNavItem[] = [
 ];
 
 export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
-  const chrome = useNavbarChrome();
+  const { headerRef, chrome } = useNavbarChrome();
   // Selected country → its own menu (refetches when the country changes).
   const { marketId } = useMarket();
   const { chromeItems, isLoading } = useNavigation(marketId || undefined);
@@ -46,7 +46,7 @@ export function Navbar({ variant = "classic" }: { variant?: NavbarVariant }) {
       aria-busy={!designPreview && isLoading && navItems.length === 0}
       data-home={chrome.pathname === "/" ? "true" : undefined}
       data-over-hero={chrome.pathname === "/" ? "true" : undefined}
-      ref={chrome.headerRef}
+      ref={headerRef}
     >
       <NavbarTopbar
         chrome={chrome}

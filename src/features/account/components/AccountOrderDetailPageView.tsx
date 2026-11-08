@@ -13,7 +13,7 @@ import {
   cancelOrder,
 } from "@/features/account/api/customerOrders.service";
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
-import type { OrderStatus, CancellationWindow } from "@/features/account/api/customerOrders.service";
+import type { CancellationWindow } from "@/features/account/api/customerOrders.service";
 import { OrderAfterSalesSection } from "@/features/afterSales";
 import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 

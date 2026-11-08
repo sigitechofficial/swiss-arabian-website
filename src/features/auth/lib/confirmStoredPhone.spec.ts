@@ -36,6 +36,8 @@ describe("stored phone confirmation on the existing verify screen", () => {
     expect(confirmed).toBe(true);
     expect(requestPhoneVerification).toHaveBeenCalledWith("+971501112233");
     expect(confirmPhoneVerification).toHaveBeenCalledWith("+971501112233", "000000");
+  });
+
   it("does not offer the email code as phone proof in production", () => {
     expect(
       shouldConfirmStoredPhoneWithSameCode({
@@ -51,7 +53,6 @@ describe("stored phone confirmation on the existing verify screen", () => {
         useLocalApi: true,
       }),
     ).toBe(false);
-  });
   });
 
   it("does not call phone verification when the customer has no stored phone", async () => {

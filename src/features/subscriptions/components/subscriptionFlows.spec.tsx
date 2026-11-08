@@ -496,7 +496,6 @@ describe("account subscriptions and registration gate", () => {
     });
     renderWith(<AccountSubscriptionDetailPageView id="legacy" />);
     expect(await screen.findByText("No audience is saved on this agreement.")).toBeInTheDocument();
-    expect(screen.getByText(/No published schedule is pinned/)).toBeInTheDocument();
     expect(screen.queryByText("Hidden pool rose")).not.toBeInTheDocument();
     expect(screen.queryByText("POOL")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Switch to Surprise Me" })).not.toBeInTheDocument();

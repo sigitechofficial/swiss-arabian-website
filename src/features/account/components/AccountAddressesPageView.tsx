@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
@@ -103,7 +103,6 @@ function AddressForm({
     handleSubmit,
     setValue,
     getValues,
-    watch,
     formState: { errors },
   } = useForm<AddressBookFormValues>({
     resolver: zodResolver(addressBookSchema),
@@ -111,7 +110,7 @@ function AddressForm({
   });
   const [countryCode, setCountryCode] = useState(defaults.countryCode);
   const regionSet = regionsForCountry(countryCode);
-  const address1 = watch("address1");
+  const address1 = useWatch({ control, name: "address1" });
 
   return (
     <GooglePlacesProvider>

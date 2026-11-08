@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { localeFromPathname } from "@/lib/i18n/localePath";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
+import { promotionKeys } from "../api/promotions.keys";
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import { addCartItems, storefrontCartQuery } from "@/features/cart/api/cart.service";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -10,6 +15,7 @@ import { useUiStore } from "@/stores/useUiStore";
 import type { DiscoveryOffer } from "../types/discovery";
 import { rememberEmptyOrigin } from "../utils/emptyBagMemory";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type ShopProduct = {
   productId: string;
@@ -117,56 +123,46 @@ function keepSellable(groups: ShopGroup[], rows: Selection[]): Selection[] {
 }
 
 export function OfferShop({ code }: { code: string }) {
-  const [shop, setShop] = useState<ShopPayload | null>(null);
-  const [missing, setMissing] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const [selections, setSelections] = useState<Selection[]>([]);
-  const [preview, setPreview] = useState<Preview | null>(null);
+  const [fetchedPreview, setFetchedPreview] = useState<Preview | null>(null);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
-  const hydrated = useRef("");
   const opened = useRef(false);
+  const locale = localeFromPathname(usePathname() || "/");
   const setCartFromApi = useCartStore((state) => state.setCartFromApi);
   const cartId = useCartStore((state) => state.cartId);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const currency = useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
 
-  useEffect(() => {
-    if (!zoneCode) return;
-    let cancel = false;
-    setShop(null);
-    setMissing(false);
-    setLoadError(false);
-    const params = storefrontCartQuery();
-    if (typeof document !== "undefined") params.set("locale", document.documentElement.lang || "en");
-    apiGet<ShopPayload | { available: false }>(`/storefront/promotions/offers/${encodeURIComponent(code)}?${params.toString()}`)
-      .then((data) => {
-        if (cancel) return;
-        if (!data || !("offer" in data)) {
-          setMissing(true);
-          return;
-        }
-        setShop(data);
-      })
-      .catch(() => {
-        if (!cancel) setLoadError(true);
-      });
-    return () => {
-      cancel = true;
-    };
-  }, [code, zoneCode]);
+  // Offer page data (market + locale scoped); React Query owns loading/error.
+  const shopQuery = useQuery({
+    queryKey: promotionKeys.offerShop(code, zoneCode, locale),
+    queryFn: () => {
+      const params = storefrontCartQuery();
+      params.set("locale", locale);
+      return apiGet<ShopPayload | { available: false }>(
+        `/storefront/promotions/offers/${encodeURIComponent(code)}?${params.toString()}`,
+      );
+    },
+    enabled: Boolean(zoneCode),
+  });
+  const shop = shopQuery.data && "offer" in shopQuery.data ? shopQuery.data : null;
+  const missing = shopQuery.isSuccess && !shop;
+  const loadError = shopQuery.isError;
+
+  // Restore the shopper's picks for this offer/market (sessionStorage) when
+  // the offer loads; the query only runs in the browser.
+  const selectionsKey = shop ? storageKey(shop.offer.marketCode, code) : "";
+  useResetOnChange(selectionsKey, () => {
+    setSelections(shop ? keepSellable(shop.groups, readSelections(selectionsKey)) : []);
+    setFetchedPreview(null);
+  });
 
   useEffect(() => {
-    if (!shop) return;
-    const key = storageKey(shop.offer.marketCode, code);
-    if (hydrated.current !== key) {
-      hydrated.current = key;
-      setSelections(keepSellable(shop.groups, readSelections(key)));
-      return;
-    }
-    sessionStorage.setItem(key, JSON.stringify(selections));
-  }, [shop, selections, code]);
+    if (!selectionsKey) return;
+    sessionStorage.setItem(selectionsKey, JSON.stringify(selections));
+  }, [selectionsKey, selections]);
 
   useEffect(() => {
     if (!shop || opened.current) return;
@@ -185,30 +181,30 @@ export function OfferShop({ code }: { code: string }) {
   }, [shop]);
 
   useEffect(() => {
-    if (!shop || selections.length === 0) {
-      setPreview(null);
-      return;
-    }
+    if (!shop || selections.length === 0) return;
     const handle = window.setTimeout(() => {
       const params = storefrontCartQuery();
       apiPost<Preview | { available: false }>(
         `/storefront/promotions/offers/${encodeURIComponent(code)}/preview?${params.toString()}`,
         {
-          locale: document.documentElement.lang || "en",
+          locale,
           selections,
         },
       ).then((data) => {
         if (!data || !("yourTotal" in data)) return;
-        setPreview(data);
+        setFetchedPreview(data);
         if (data.unavailable.length) {
           setSelections((current) => current.filter((row) =>
             !data.unavailable.some((gone) => gone.groupId === row.groupId && gone.sku === row.sku),
           ));
         }
-      }).catch(() => setPreview(null));
+      }).catch(() => setFetchedPreview(null));
     }, 350);
     return () => window.clearTimeout(handle);
-  }, [shop, selections, code]);
+  }, [shop, selections, code, locale]);
+
+  // No picks, no price preview (an older preview must not linger).
+  const preview = selections.length > 0 ? fetchedPreview : null;
 
   const productsBySku = useMemo(() => {
     const map = new Map<string, ShopProduct>();
@@ -321,7 +317,7 @@ export function OfferShop({ code }: { code: string }) {
                       {chosen ? (
                         <div className="relative">
                           <span className="grid size-[7.25rem] place-items-center overflow-hidden rounded-xl bg-[#faf7f2]">
-                            {product?.image ? <img className="h-full w-full object-contain p-1.5" src={product.image} alt="" /> : null}
+                            {product?.image ? <MediaImage className="h-full w-full object-contain p-1.5" src={product.image} alt="" width={96} height={96} /> : null}
                           </span>
                           <button
                             type="button"
@@ -405,14 +401,14 @@ export function OfferShop({ code }: { code: string }) {
                       {product.slug ? (
                         <LocaleLink className="text-inherit no-underline" href={`/products/${product.slug}`}>
                           <span className="grid aspect-square place-items-center overflow-hidden rounded-2xl bg-white">
-                            {product.image ? <img className="h-full w-full object-contain p-3" src={product.image} alt="" /> : null}
+                            {product.image ? <MediaImage className="h-full w-full object-contain p-3" src={product.image} alt="" width={240} height={240} /> : null}
                           </span>
                           <span className="mt-2.5 line-clamp-2 text-[0.82rem] leading-snug text-[#2a201a]">{product.title}</span>
                         </LocaleLink>
                       ) : (
                         <div>
                           <span className="grid aspect-square place-items-center overflow-hidden rounded-2xl bg-white">
-                            {product.image ? <img className="h-full w-full object-contain p-3" src={product.image} alt="" /> : null}
+                            {product.image ? <MediaImage className="h-full w-full object-contain p-3" src={product.image} alt="" width={240} height={240} /> : null}
                           </span>
                           <span className="mt-2.5 line-clamp-2 block text-[0.82rem] leading-snug text-[#2a201a]">{product.title}</span>
                         </div>

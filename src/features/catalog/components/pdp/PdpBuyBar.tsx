@@ -10,6 +10,7 @@ import { buySlot, pdpAdd, pdpBuy, pdpBuyDocked, pdpQty, pdpQtyBtn, pdpQtyValue, 
 import type { CartLine } from "@/stores/useCartStore";
 import { useCartStore } from "@/stores/useCartStore";
 import type { CatalogProduct } from "../../constants/catalogProducts";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 type PdpBuyBarProps = {
   product: CatalogProduct;
@@ -32,11 +33,11 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
   const needsAlert =
     product.price == null || product.isSellable === false || product.inStock === false;
 
-  useEffect(() => {
+  useResetOnChange(product.slug, () => {
     setQuantity(1);
     setWished(false);
     setStatus("");
-  }, [product.slug]);
+  });
 
   useEffect(() => {
     onQuantityChange?.(displayQty);

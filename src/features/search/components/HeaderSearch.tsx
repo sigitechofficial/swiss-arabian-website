@@ -21,6 +21,7 @@ import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import { SEARCH_MIN_QUERY_LENGTH } from "../constants";
 import { searchHref } from "../utils/searchUrl";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 const TYPEAHEAD_LIMIT = 6;
 
@@ -32,20 +33,20 @@ function HeaderSearchField() {
   const zoneCode = marketId || DEFAULT_ZONE_CODE;
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState("");
-  const [open, setOpen] = useState(false);
-
   const onSearchPage = pathname === "/search";
+  // On /search the field mirrors the URL query (and stays open).
+  const urlQuery = onSearchPage ? (searchParams.get("q") ?? "") : null;
+  const [value, setValue] = useState(urlQuery ?? "");
+  const [open, setOpen] = useState(onSearchPage);
+  useResetOnChange(urlQuery, () => {
+    if (urlQuery === null) return;
+    setValue(urlQuery);
+    setOpen(true);
+  });
+
   const expanded = open || onSearchPage;
   const q = value.trim();
   const showPanel = open && q.length >= SEARCH_MIN_QUERY_LENGTH;
-
-  useEffect(() => {
-    if (onSearchPage) {
-      setValue(searchParams.get("q") ?? "");
-      setOpen(true);
-    }
-  }, [onSearchPage, searchParams]);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {

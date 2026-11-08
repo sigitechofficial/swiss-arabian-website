@@ -1,24 +1,25 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { DiscoveryChrome, DiscoveryOffer, PromotionDiscovery } from "../types/discovery";
 import { badgeForProduct } from "../types/discovery";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import { useHydrated } from "@/hooks/useHydrated";
 
 function Overlay({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  // Portal target (document.body) exists only after hydration.
+  const ready = useHydrated();
   if (!ready) return null;
   return createPortal(children, document.body);
 }
 
 function useDialog(active: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  // Latest onClose without re-binding listeners when the parent re-renders.
+  const handleClose = useEffectEvent(onClose);
   useEffect(() => {
     if (!active) return;
     let frame = 0;
@@ -37,7 +38,7 @@ function useDialog(active: boolean, onClose: () => void) {
       const onKey = (event: KeyboardEvent) => {
         if (event.key === "Escape") {
           event.preventDefault();
-          onCloseRef.current();
+          handleClose();
           return;
         }
         if (event.key !== "Tab") return;

@@ -29,6 +29,7 @@ import {
   relatedHead,
   relatedTitle,
 } from "@/styles/pdpChrome";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 function amountOf(value: string | null | undefined): number | null {
   if (!value) return null;
@@ -106,11 +107,11 @@ export function ProductCompanions({
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ key: string; before: string | null; saving: string | null; total: string | null; message: string | null; ready: boolean } | null>(null);
 
-  useEffect(() => {
-    if (!data || seededFor === productId) return;
+  // Pre-select the current product once per product, when its data arrives.
+  if (data && seededFor !== productId) {
     setSelected(data.current?.inStock ? [data.current.sku] : []);
     setSeededFor(productId);
-  }, [data, productId, seededFor]);
+  }
 
   const products = useMemo(() => {
     const rows = new Map<string, CompanionProduct>();
@@ -122,16 +123,17 @@ export function ProductCompanions({
   }, [data]);
 
   const chosen = selected.filter((sku) => products.get(sku)?.inStock);
-  const selectionKey = chosen.slice().sort().join(",");
+  // Stable key for the current selection; the preview effect reads the SKUs
+  // from it so it re-runs only when the selection itself changes.
+  const selectionKey = chosen.slice().sort().join("|");
 
   useEffect(() => {
-    if (!chosen.length) {
-      setPreview(null);
-      return;
-    }
+    // `fresh` below ignores a preview that no longer matches the selection.
+    if (!selectionKey) return;
+    const skus = selectionKey.split("|");
     let cancel = false;
     const timer = window.setTimeout(() => {
-      void previewProductCompanions(productId, chosen.map((sku) => ({ sku }))).then((result) => {
+      void previewProductCompanions(productId, skus.map((sku) => ({ sku }))).then((result) => {
         if (cancel) return;
         setPreview({
           key: selectionKey,
@@ -199,7 +201,7 @@ export function ProductCompanions({
                   const on = selected.includes(product.sku);
                   const label = current ? data.copy.thisProduct : data.copy.addSelected;
                   const media = product.image ? (
-                    <img src={product.image} alt="" className="aspect-square w-full object-contain p-3" />
+                    <MediaImage src={product.image} alt="" width={240} height={240} className="aspect-square w-full object-contain p-3" />
                   ) : (
                     <span className={`${bottle} aspect-square w-full`} aria-hidden="true" />
                   );

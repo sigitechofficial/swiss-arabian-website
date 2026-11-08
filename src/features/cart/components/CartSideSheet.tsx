@@ -131,6 +131,7 @@ export function CartSideSheet() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let clearConfetti: ReturnType<typeof setTimeout> | undefined;
+    let showConfetti: number | undefined;
     if (!reduce) {
       const bar =
         panelRef.current?.querySelector("[data-ship-track]") ?? panelRef.current;
@@ -172,13 +173,16 @@ export function CartSideSheet() {
           },
         });
       }
-      setConfetti(pieces);
+      // Publish on the next frame (layout is measured above); state updates
+      // belong in callbacks, not synchronously in the effect body.
+      showConfetti = requestAnimationFrame(() => setConfetti(pieces));
       clearConfetti = setTimeout(() => setConfetti([]), 2100);
     }
 
     const clearFlash = setTimeout(() => setIsPanelFlash(false), 700);
     return () => {
       cancelAnimationFrame(restart);
+      if (showConfetti !== undefined) cancelAnimationFrame(showConfetti);
       clearTimeout(clearFlash);
       if (clearConfetti) clearTimeout(clearConfetti);
     };

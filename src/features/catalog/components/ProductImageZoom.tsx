@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 const ZOOM_SCALE = 1.85;
 
@@ -22,9 +23,7 @@ export function ProductImageZoom({
   const [zooming, setZooming] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
 
-  useEffect(() => {
-    setZooming(false);
-  }, [activeIndex]);
+  useResetOnChange(activeIndex, () => setZooming(false));
 
   function updateOrigin(event: MouseEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
