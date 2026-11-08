@@ -2,6 +2,7 @@
 
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
 import type { OrderLinePromotionSnapshot } from "@/features/orders/utils/historicalLineDiscount";
+import type { StorefrontTaxDisplay } from "@/features/cart/types/cart";
 
 // ─── Checkout session ────────────────────────────────────────────────────────
 
@@ -14,6 +15,8 @@ export interface CheckoutContextSummary {
   countryCode: string | null;
   currencyCode: string;
   languageCode: string | null;
+  /** Market VAT display for the policy this checkout was priced with. */
+  taxDisplay?: StorefrontTaxDisplay | null;
 }
 
 export interface CheckoutItemSummary {

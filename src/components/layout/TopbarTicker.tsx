@@ -59,9 +59,12 @@ export function TopbarTicker() {
     Math.max(2000, cmsData.rotationIntervalMs ?? DEFAULT_INTERVAL_MS),
   );
 
-  useEffect(() => {
+  // Restart from the first message when the list changes size.
+  const [messageCount, setMessageCount] = useState(messages.length);
+  if (messageCount !== messages.length) {
+    setMessageCount(messages.length);
     setIndex(0);
-  }, [messages.length]);
+  }
 
   useEffect(() => {
     if (messages.length <= 1) return undefined;

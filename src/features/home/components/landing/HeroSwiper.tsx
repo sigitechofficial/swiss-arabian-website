@@ -11,6 +11,7 @@ import {
   heroSlide,
   heroSwiper,
 } from "@/styles/landingChrome";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 
 const DEFAULT_AUTOPLAY_MS = 5500;
 
@@ -42,9 +43,7 @@ export function HeroSwiper({
     });
   }, [slideList]);
 
-  useEffect(() => {
-    setIndex(0);
-  }, [slideCount]);
+  useResetOnChange(slideCount, () => setIndex(0));
 
   const goTo = useCallback(
     (next: number) => {

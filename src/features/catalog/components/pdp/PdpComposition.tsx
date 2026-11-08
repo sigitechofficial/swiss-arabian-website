@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { pageContainer } from "@/styles/siteChrome";
 import {
   compAccBtn,
@@ -107,8 +108,6 @@ export function PdpComposition({
   shippingCopy,
   resetKey,
 }: PdpCompositionProps) {
-  const [activeTab, setActiveTab] = useState<TabId | null>("notes");
-  const [tabsPaused, setTabsPaused] = useState(false);
 
   const compositionTabs = useMemo(() => {
     return TABS.filter((tab) => {
@@ -119,16 +118,22 @@ export function PdpComposition({
   }, [showNotes, shippingCopy]);
 
   // Tabs on desktop (one panel stays open) and an accordion below 767px,
-  // where every item starts closed. useLayoutEffect runs before paint so
-  // the Notes panel does not flash open.
-  useLayoutEffect(() => {
-    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-    setActiveTab(isMobile ? null : compositionTabs[0]?.id ?? "story");
-  }, [resetKey, compositionTabs]);
+  // where every item starts closed. Until the shopper picks a tab (or the
+  // rotation moves on), the open tab is that default for the screen size.
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const defaultTab: TabId | null = isMobile ? null : compositionTabs[0]?.id ?? "story";
+  const [chosenTab, setChosenTab] = useState<TabId | null | undefined>(undefined);
+  const [tabsPaused, setTabsPaused] = useState(false);
+  const activeTab = chosenTab === undefined ? defaultTab : chosenTab;
 
-  useEffect(() => {
+  // New product or different tab set: back to the default, rotation resumed.
+  const tabsKey = `${resetKey}|${compositionTabs.map((tab) => tab.id).join(",")}`;
+  const [lastTabsKey, setLastTabsKey] = useState(tabsKey);
+  if (lastTabsKey !== tabsKey) {
+    setLastTabsKey(tabsKey);
+    setChosenTab(undefined);
     setTabsPaused(false);
-  }, [resetKey]);
+  }
 
   useEffect(() => {
     if (tabsPaused || typeof window === "undefined") return;
@@ -138,7 +143,8 @@ export function PdpComposition({
 
     const tick = () => {
       if (!desktop.matches) return;
-      setActiveTab((current) => {
+      setChosenTab((chosen) => {
+        const current = chosen === undefined ? defaultTab : chosen;
         const index = compositionTabs.findIndex((tab) => tab.id === current);
         const next = compositionTabs[(index < 0 ? 0 : index + 1) % Math.max(compositionTabs.length, 1)];
         return next?.id ?? current ?? "story";
@@ -147,7 +153,7 @@ export function PdpComposition({
 
     const id = window.setInterval(tick, 3000);
     return () => window.clearInterval(id);
-  }, [tabsPaused, resetKey, compositionTabs]);
+  }, [tabsPaused, resetKey, compositionTabs, defaultTab]);
 
   return (
     <section className={composition} aria-labelledby="composition-heading">
@@ -167,7 +173,7 @@ export function PdpComposition({
               aria-selected={activeTab === tab.id}
               onClick={() => {
                 setTabsPaused(true);
-                setActiveTab(tab.id);
+                setChosenTab(tab.id);
               }}
             >
               {tab.id === "notes" ? notesHeading : tab.label}
@@ -183,7 +189,7 @@ export function PdpComposition({
               open={activeTab === tab.id}
               onToggle={() => {
                 setTabsPaused(true);
-                setActiveTab((current) => (current === tab.id ? current : tab.id));
+                setChosenTab(tab.id);
               }}
             >
               {tab.id === "story" ? <p className={compositionIntro}>{content.story}</p> : null}

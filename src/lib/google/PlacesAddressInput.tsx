@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useRef,
   type InputHTMLAttributes,
 } from "react";
@@ -49,10 +50,11 @@ function GoogleAddressInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary("places");
   const iso = normalizeCountryCode(countryCode).toLowerCase() || undefined;
-  const onChangeRef = useRef(onChange);
-  const onResolvedRef = useRef(onResolved);
-  onChangeRef.current = onChange;
-  onResolvedRef.current = onResolved;
+  // The Places listener (bound in an effect) calls the latest callbacks.
+  const emitChange = useEffectEvent((value: string) => onChange(value));
+  const emitResolved = useEffectEvent(
+    (parsed: Parameters<NonNullable<typeof onResolved>>[0]) => onResolved?.(parsed),
+  );
 
   useEffect(() => {
     const input = inputRef.current;
@@ -66,8 +68,8 @@ function GoogleAddressInput({
 
     const listener = autocomplete.addListener("place_changed", () => {
       const parsed = parseGooglePlace(autocomplete.getPlace());
-      if (parsed.address1) onChangeRef.current(parsed.address1);
-      onResolvedRef.current?.(parsed);
+      if (parsed.address1) emitChange(parsed.address1);
+      emitResolved(parsed);
     });
 
     return () => {

@@ -42,6 +42,12 @@ type CartTotals = {
   discount: number;
   shipping: number;
   tax: number;
+  /**
+   * Market tax label (VAT) and whether prices already include it. Optional:
+   * carts persisted in the browser before tax policies existed lack them.
+   */
+  taxLabel?: string;
+  taxIncluded?: boolean;
   amountPayable: number | null;
   currency: string;
   itemCount: number;
@@ -203,6 +209,8 @@ export const useCartStore = create<CartState>()(
             discount: Number(cart.discountEstimate ?? "0"),
             shipping: Number(cart.shippingEstimate ?? "0"),
             tax: Number(cart.taxEstimate ?? "0"),
+            taxLabel: cart.context?.taxDisplay?.taxLabel || "VAT",
+            taxIncluded: cart.context?.taxDisplay?.pricesIncludeTax === true,
             amountPayable: (() => {
               const raw =
                 cart.amountPayable ?? cart.promotions?.totals?.amountPayable ?? null;

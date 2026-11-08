@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -67,7 +67,7 @@ export function PdpReviews({
     resolver: zodResolver(writeReviewSchema),
     defaultValues: { rating: 5, title: "", body: "", name: "" },
   });
-  const rating = form.watch("rating");
+  const rating = useWatch({ control: form.control, name: "rating" });
 
   const step = (dir: -1 | 1) => {
     const el = scrollerRef.current;

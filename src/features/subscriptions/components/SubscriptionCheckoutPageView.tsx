@@ -206,7 +206,9 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   const posted = useRef(false);
   const opening = useRef(false);
   const orderImage = plan?.imageUrl?.trim() || savedAgreement.data?.imageUrl?.trim() || null;
-  const selectedMethod = deliveryMethods.find((method) => method.zoneDeliveryMethodId === selectedDeliveryId) ?? null;
+  // The shopper's delivery choice, or the first available method by default.
+  const activeDeliveryId = selectedDeliveryId ?? deliveryMethods[0]?.zoneDeliveryMethodId ?? null;
+  const selectedMethod = deliveryMethods.find((method) => method.zoneDeliveryMethodId === activeDeliveryId) ?? null;
 
   useEffect(() => {
     if (!zoneCode || !authed) return;
@@ -225,11 +227,6 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
       cancelled = true;
     };
   }, [zoneCode, countryCode, authed]);
-
-  useEffect(() => {
-    if (!deliveryMethodsLoaded || selectedDeliveryId || deliveryMethods.length === 0) return;
-    setSelectedDeliveryId(deliveryMethods[0]?.zoneDeliveryMethodId ?? null);
-  }, [deliveryMethodsLoaded, deliveryMethods, selectedDeliveryId]);
 
   const amounts = checkout
     ? subscriptionPayToday(checkout)
@@ -354,15 +351,20 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     }
   }
 
-  useEffect(() => {
-    if (!storedAgreementId || createdAgreementId || droppedStoredId) return;
-    if (!savedAgreement.isFetched && !savedAgreement.isError) return;
-    const missingHere = savedAgreement.isError || savedAgreement.data?.status !== "PENDING_ACTIVATION";
-    if (!missingHere) return;
-    sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
+  // A stored agreement the server no longer has pending is dropped once
+  // (decided during render; the flag keeps the decision stable afterwards).
+  const storedAgreementGone =
+    Boolean(storedAgreementId) &&
+    !createdAgreementId &&
+    (savedAgreement.isFetched || savedAgreement.isError) &&
+    (savedAgreement.isError || savedAgreement.data?.status !== "PENDING_ACTIVATION");
+  if (storedAgreementGone && !droppedStoredId) {
     setDroppedStoredId(true);
     setError(null);
-  }, [storedAgreementId, createdAgreementId, droppedStoredId, savedAgreement.isFetched, savedAgreement.isError, savedAgreement.data?.status, planCode]);
+  }
+  useEffect(() => {
+    if (droppedStoredId) sessionStorage.removeItem(`sa-sub-agreement:${planCode}`);
+  }, [droppedStoredId, planCode]);
 
   useEffect(() => {
     if (!agreementId || !zoneCode || !authed || !activeConsent || savedAgreement.isError) return;
@@ -535,7 +537,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                 />
                 <CheckoutShippingMethod
                   methods={subscriptionDeliveryChoices(deliveryMethods, plan?.shippingAmount ?? checkout?.shippingAmount)}
-                  selectedId={selectedDeliveryId}
+                  selectedId={activeDeliveryId}
                   status={deliveryMethodsLoaded ? "ready" : "loading"}
                   submitting={busy}
                   currency={checkout?.currencyCode || plan?.currencyCode || "AED"}

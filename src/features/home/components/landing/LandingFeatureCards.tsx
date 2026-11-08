@@ -55,7 +55,6 @@ export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
               <div className={featureCardBox}>
                 <div className={`${featureCardBg} ${card.bg}`}>
                   {card.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={card.image} alt="" loading="lazy" />
                   ) : null}
                 </div>

@@ -143,6 +143,9 @@ export function NavbarSearchDropdown({
           placeholder={placeholder}
           autoComplete="off"
           value={query}
+          // ARIA 1.2 combobox: the field opens a suggestions dialog.
+          role="combobox"
+          aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls="nav-search-drop"
           onChange={(event) => {

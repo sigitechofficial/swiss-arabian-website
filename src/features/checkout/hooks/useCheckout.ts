@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { getActiveCart } from "@/features/cart/api/cart.service";
@@ -154,7 +153,6 @@ export function useCheckout() {
   const clearCart = useCartStore((s) => s.clear);
   const setCartId = useCartStore((s) => s.setCartId);
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [session, setSession] = useState<CheckoutSessionResponse | null>(null);
@@ -307,10 +305,12 @@ export function useCheckout() {
     setInlinePayment(null);
   }, [paymentMethods, selectedPaymentId]);
 
-  const inlineKey = `${sessionId ?? ""}:${session?.selectedPaymentMethod?.providerCode ?? ""}:${session?.totalsEstimate?.total ?? ""}`;
+  // Prepare the inline card form when the session, provider or total changes.
+  const inlineProvider = session?.selectedPaymentMethod?.providerCode?.toLowerCase() ?? "";
+  const inlineTotal = Number(session?.totalsEstimate?.total ?? 0);
   useEffect(() => {
-    const provider = session?.selectedPaymentMethod?.providerCode?.toLowerCase() ?? "";
-    const total = Number(session?.totalsEstimate?.total ?? 0);
+    const provider = inlineProvider;
+    const total = inlineTotal;
     if (!sessionId || (provider !== "paymob" && provider !== "stripe") || !(total > 0)) return;
     let cancelled = false;
     void openInlineForm(sessionId, `${window.location.origin}/checkout`)
@@ -338,7 +338,7 @@ export function useCheckout() {
     return () => {
       cancelled = true;
     };
-  }, [inlineKey, sessionId]);
+  }, [sessionId, inlineProvider, inlineTotal]);
 
   const chooseDelivery = useCallback(
     async (zoneDeliveryMethodId: string) => {
@@ -622,7 +622,6 @@ export function useCheckout() {
       cartId,
       setCartFromApi,
       adopt,
-      router,
     ],
   );
 

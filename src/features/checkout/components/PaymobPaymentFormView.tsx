@@ -1,7 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderMark } from "@/components/ui/PageLoading";
@@ -168,8 +168,8 @@ export function PaymobPaymentFormView() {
     router.replace(`/order-confirmation/${orderId}`);
   }, [alreadyPaid, orderId, router]);
 
-  const orderIdRef = useRef(orderId);
-  orderIdRef.current = orderId;
+  // SDK callbacks registered in the effect below read the latest order id.
+  const currentOrderId = useEffectEvent(() => orderId);
 
   useEffect(() => {
     if (!clientSecret || !publicKey || alreadyPaid) return;
@@ -198,7 +198,7 @@ export function PaymobPaymentFormView() {
           },
           beforePaymentComplete: async () => true,
           afterPaymentComplete: async () => {
-            const id = orderIdRef.current;
+            const id = currentOrderId();
             if (!id) return;
             setPhase("polling");
             setErrorMsg(null);

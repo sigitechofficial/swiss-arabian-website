@@ -7,6 +7,7 @@ import {
   type LoyaltyTierView,
   type LoyaltyWalletView,
 } from "../types/loyalty";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 function windowCopy(days: number): string {
   return days === 1 ? "Last 1 day" : `Last ${days} days`;
@@ -90,7 +91,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
                     className={`relative z-10 grid size-14 place-items-center rounded-full ${isCurrent ? "ring-2 ring-[#8d5a32] ring-offset-2 ring-offset-[#f6f0e6]" : ""}`}
                     style={{ background: MEDAL_FILLS[index] ?? MEDAL_FILLS[MEDAL_FILLS.length - 1] }}
                   >
-                    <img src="/assets/sa-logo-clear.png" alt="" className="size-7 object-contain" />
+                    <MediaImage src="/assets/sa-logo-clear.png" alt="" width={28} height={28} className="size-7 object-contain" />
                   </div>
                   <p
                     className={`mt-3 text-[10px] font-bold tracking-[0.14em] ${isCurrent ? "text-[#8d5a32]" : "invisible"}`}

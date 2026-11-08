@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Map as LeafletMap, LayerGroup } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { StoreLocation } from "../data/storesContent";
@@ -28,9 +28,9 @@ export function StoreLeafletMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
-  const onSelectRef = useRef(onSelect);
   const [mapReady, setMapReady] = useState(0);
-  onSelectRef.current = onSelect;
+  // Marker click handlers (bound in an effect) call the latest onSelect.
+  const selectStore = useEffectEvent((id: string) => onSelect(id));
 
   useEffect(() => {
     const el = containerRef.current;
@@ -94,7 +94,7 @@ export function StoreLeafletMap({
             html: pinHtml(String(index + 1), active),
           }),
         });
-        marker.on("click", () => onSelectRef.current(store.id));
+        marker.on("click", () => selectStore(store.id));
         marker.addTo(layer);
         bounds.extend([store.lat, store.lng]);
       });

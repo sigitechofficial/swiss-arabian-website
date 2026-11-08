@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchProducts } from "../api/catalog.service";
 import type { CatalogProduct } from "../constants/catalogProducts";
 import { toCatalogProduct } from "../utils/toCatalogProduct";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 export function PdpScentFamily({
   current,
@@ -62,7 +63,7 @@ export function PdpScentFamily({
                 aria-current={active ? "true" : undefined}
               >
                 {product.imageUrl ? (
-                  <img className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt="" />
+                  <MediaImage className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt="" width={240} height={240} />
                 ) : (
                   <span className={`${bottle} aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white`} aria-hidden="true" />
                 )}

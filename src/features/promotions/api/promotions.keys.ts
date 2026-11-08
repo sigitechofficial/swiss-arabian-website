@@ -16,4 +16,7 @@ export const promotionKeys = {
     ] as const,
   discovery: (zoneCode: string | null, customerId: string | null, productKey: string) =>
     [...promotionKeys.all, "discovery", zoneCode ?? "", customerId ?? "guest", productKey] as const,
+  /** Public offer builder page (/offers/[code]). */
+  offerShop: (code: string, zoneCode: string, locale: string) =>
+    [...promotionKeys.all, "offer-shop", code, zoneCode, locale] as const,
 };

@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -33,6 +32,7 @@ import { promotionKeys } from "@/features/promotions/api/promotions.keys";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore, type PersistedCatalogContext } from "@/stores/useUiStore";
 import { filterMarketsForTenant } from "@/lib/storefront/brand";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 type RegionOption = { id: string; label: string; flag?: string; countryCode?: string };
 
@@ -79,16 +79,12 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const setCartId = useCartStore((s) => s.setCartId);
   const clearPromotions = useCartStore((s) => s.clearPromotions);
   const setSyncing = useCartStore((s) => s.setSyncing);
-  const [hydrated, setHydrated] = useState(false);
+  const hydrated = usePersistHydrated(useUiStore);
   const marketsQuery = useStorefrontMarkets();
 
   useEffect(() => {
-    const unsub = useUiStore.persist.onFinishHydration(() => {
-      setHydrated(true);
-    });
+    // The UI store skips automatic hydration; load it once on the client.
     void useUiStore.persist.rehydrate();
-    if (useUiStore.persist.hasHydrated()) setHydrated(true);
-    return unsub;
   }, []);
 
   const shoppable = useMemo(() => {

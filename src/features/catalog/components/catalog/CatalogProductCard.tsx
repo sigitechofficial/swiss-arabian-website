@@ -32,6 +32,7 @@ import type { CatalogProduct } from "../../constants/catalogProducts";
 import { useLoadedImages } from "../../hooks/useLoadedImages";
 import { ProductCardTags } from "../ProductCardTags";
 import { StockAlertButton } from "../pdp/StockAlertButton";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 export function CatalogProductCard({
   product,
@@ -99,7 +100,7 @@ export function CatalogProductCard({
           aria-hidden="true"
         >
           {showImage ? (
-            <img
+            <MediaImage
               className={hasIngredientsHover ? cardImgSwap : cardImg}
               src={product.imageUrl as string}
               alt={product.title}

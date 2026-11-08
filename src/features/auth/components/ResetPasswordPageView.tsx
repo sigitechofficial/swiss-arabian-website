@@ -2,7 +2,7 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
 import { toastApiError } from "@/lib/api/toastApiError";
@@ -26,6 +26,7 @@ export function ResetPasswordPageView() {
       newPassword: "",
     },
   });
+  const codeValue = useWatch({ control: form.control, name: "code" });
 
   async function onSubmit(values: ResetPasswordFormValues) {
     try {
@@ -55,7 +56,7 @@ export function ResetPasswordPageView() {
         <AuthOtpField
           id="code"
           label="Reset code"
-          value={form.watch("code")}
+          value={codeValue}
           onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
           error={form.formState.errors.code?.message}
         />

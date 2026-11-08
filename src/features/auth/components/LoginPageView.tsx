@@ -3,7 +3,7 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toastApiError } from "@/lib/api/toastApiError";
@@ -77,6 +77,7 @@ export function LoginPageView() {
     resolver: zodResolver(codeSchema),
     defaultValues: { code: "" },
   });
+  const codeValue = useWatch({ control: codeForm.control, name: "code" });
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -267,7 +268,7 @@ export function LoginPageView() {
             id="login-code"
             label="Sign-in code"
             autoFocus
-            value={codeForm.watch("code")}
+            value={codeValue}
             onChange={(code) => codeForm.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
             error={codeForm.formState.errors.code?.message}
           />

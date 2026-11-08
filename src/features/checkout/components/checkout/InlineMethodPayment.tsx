@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
 import type { StripeCheckoutElementsSdkOptions } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
@@ -112,8 +112,8 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
   const [failed, setFailed] = useState(false);
   const hostId = "paymob-elements-inline";
   const mounted = useRef(false);
-  const orderIdRef = useRef(session.orderId);
-  orderIdRef.current = session.orderId;
+  // SDK callbacks registered in the effect below read the latest order id.
+  const currentOrderId = useEffectEvent(() => session.orderId);
 
   useEffect(() => {
     if (!session.publicKey) return;
@@ -137,7 +137,7 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
           forceSaveCard: false,
           beforePaymentComplete: async () => true,
           afterPaymentComplete: async () => {
-            const orderId = orderIdRef.current;
+            const orderId = currentOrderId();
             if (!orderId) return;
             const result = await pollUntilPaymentSettles(orderId);
             if (result.success) finishPaidCheckout(orderId);

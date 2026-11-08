@@ -13,6 +13,7 @@ import { listMySubscriptions } from "../api/subscription.api";
 import { subscriptionKeys } from "../api/subscription.keys";
 import { audienceLabel, statusLabel, subscriptionPriceLines } from "../utils/subscriptionRules";
 import type { SubscriptionSummary } from "../types/subscription.types";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type ListFilter = "all" | "active" | "pending";
 
@@ -106,7 +107,7 @@ export function AccountSubscriptionsPageView() {
                     <li key={item.id} className="flex flex-col overflow-hidden rounded-[20px] border border-[#E6DCCB] bg-white">
                       <div className={`relative flex h-[170px] items-center justify-center overflow-hidden ${pendingCard ? "bg-[#F3EEE6]" : "bg-[#F1E6D6]"}`}>
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt="" className="h-full w-full object-contain p-6" />
+                          <MediaImage src={item.imageUrl} alt="" width={360} height={360} className="h-full w-full object-contain p-6" />
                         ) : (
                           <FragrancePair muted={pendingCard} />
                         )}

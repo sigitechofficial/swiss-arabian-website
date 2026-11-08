@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { trackerMonth } from "../testing/trackerMonth";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -171,7 +172,7 @@ describe("subscription management controls", () => {
     release(current);
     expect(await screen.findByText(`Paused ${billingLabel("2026-10-23T10:00:00.000Z")}.`)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume Subscription" })).toBeInTheDocument();
-    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
+    expect(trackerMonth(1)).toHaveTextContent("UAE-PAID");
   });
 
   it("shows the next billing date returned after resume", async () => {
@@ -231,10 +232,10 @@ describe("subscription management controls", () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(2));
     const secondKey = (apiPost.mock.calls[1]?.[2] as { headers: { "Idempotency-Key": string } }).headers["Idempotency-Key"];
     expect(secondKey).toBe(firstKey);
-    await waitFor(() => expect(screen.getByText("Month 2").parentElement).toHaveTextContent("Skipped"));
-    expect(screen.getByText("Month 2").parentElement).toHaveTextContent("VORA141201");
-    expect(screen.getByText("Month 2").parentElement).not.toHaveTextContent("SHOULD-NOT-SHOW");
-    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
+    await waitFor(() => expect(trackerMonth(2)).toHaveTextContent("Skipped"));
+    expect(trackerMonth(2)).toHaveTextContent("VORA141201");
+    expect(trackerMonth(2)).not.toHaveTextContent("SHOULD-NOT-SHOW");
+    expect(trackerMonth(1)).toHaveTextContent("UAE-PAID");
     expect(screen.getAllByRole("link", { name: "Track order" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Skip Next Month" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm skip" }));
@@ -310,7 +311,7 @@ describe("subscription management controls", () => {
       { zoneCode: "UAE", reason: undefined },
     );
     expect(screen.queryByRole("button", { name: "Cancel Subscription" })).not.toBeInTheDocument();
-    expect(screen.getByText("October").parentElement).toHaveTextContent("UAE-PAID");
+    expect(trackerMonth(1)).toHaveTextContent("UAE-PAID");
   });
 
   it("shows the in-progress renewal warning and the backend error without changing status", async () => {

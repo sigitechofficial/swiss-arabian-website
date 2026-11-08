@@ -16,6 +16,21 @@ const eslintConfig = defineConfig([
     "scripts/**",
   ]),
   {
+    rules: {
+      // A leading underscore marks a deliberately unused binding (e.g. a prop
+      // a component accepts for API compatibility but does not read).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
     files: [
       "src/features/home/components/**/*.tsx",
       "src/components/layout/SiteHeader.tsx",

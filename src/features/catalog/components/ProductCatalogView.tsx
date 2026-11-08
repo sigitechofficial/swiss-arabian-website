@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { useDebounce } from "@/hooks/useDebounce";
 import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionDiscovery";
 import { pageContainer, visuallyHidden } from "@/styles/siteChrome";
 import { gridBand } from "@/styles/shopChrome";
@@ -100,7 +99,7 @@ export function ProductCatalogView({
   const pathname = usePathname();
   const copy = useShopCopy();
   const urlDriven = Boolean(listingQuery);
-  const products = productsProp ?? [];
+  const products = useMemo(() => productsProp ?? [], [productsProp]);
 
   const bannerImage = banner?.image;
   const bannerDescription = banner?.description;
@@ -153,7 +152,7 @@ export function ProductCatalogView({
   const [priceMin, setPriceMin] = useState(PRICE_FLOOR);
   const [priceMax, setPriceMax] = useState(PRICE_CEIL);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const skipPriceSync = useRef(true);
+  const pricePushTimer = useRef<number | undefined>(undefined);
 
   const concentration = urlDriven
     ? (listingQuery?.concentration as Concentration | undefined) ?? "all"
@@ -174,7 +173,6 @@ export function ProductCatalogView({
     ceil: PRICE_CEIL,
   });
   if (seededBounds.floor !== PRICE_FLOOR || seededBounds.ceil !== PRICE_CEIL) {
-    skipPriceSync.current = true;
     setSeededBounds({ floor: PRICE_FLOOR, ceil: PRICE_CEIL });
     const urlMin = listingQuery?.minPrice ? Number(listingQuery.minPrice) : PRICE_FLOOR;
     const urlMax = listingQuery?.maxPrice ? Number(listingQuery.maxPrice) : PRICE_CEIL;
@@ -242,22 +240,30 @@ export function ProductCatalogView({
     setLocalSort(value);
   };
 
-  const debouncedMin = useDebounce(priceMin, 400);
-  const debouncedMax = useDebounce(priceMax, 400);
-  useEffect(() => {
+  // The slider writes the price range to the URL from the shopper's own
+  // action (debounced), so seeding the slider from the URL never echoes back.
+  const schedulePricePush = (min: number, max: number) => {
+    window.clearTimeout(pricePushTimer.current);
     if (!urlDriven || !listingQuery) return;
-    if (skipPriceSync.current) {
-      skipPriceSync.current = false;
-      return;
-    }
-    const atBounds = debouncedMin === PRICE_FLOOR && debouncedMax === PRICE_CEIL;
-    const minPrice = atBounds ? undefined : String(debouncedMin);
-    const maxPrice = atBounds ? undefined : String(debouncedMax);
-    if (minPrice === listingQuery.minPrice && maxPrice === listingQuery.maxPrice) {
-      return;
-    }
-    pushListing({ ...listingQuery, minPrice, maxPrice, page: 1 });
-  }, [debouncedMin, debouncedMax, PRICE_FLOOR, PRICE_CEIL]);
+    const query = listingQuery;
+    pricePushTimer.current = window.setTimeout(() => {
+      const atBounds = min === PRICE_FLOOR && max === PRICE_CEIL;
+      const minPrice = atBounds ? undefined : String(min);
+      const maxPrice = atBounds ? undefined : String(max);
+      if (minPrice === query.minPrice && maxPrice === query.maxPrice) return;
+      pushListing({ ...query, minPrice, maxPrice, page: 1 });
+    }, 400);
+  };
+  useEffect(() => () => window.clearTimeout(pricePushTimer.current), []);
+
+  const onPriceMin = (value: number) => {
+    setPriceMin(value);
+    schedulePricePush(value, priceMax);
+  };
+  const onPriceMax = (value: number) => {
+    setPriceMax(value);
+    schedulePricePush(priceMin, value);
+  };
 
   const filtered = useMemo(() => {
     if (serverFiltered) return products;
@@ -361,6 +367,7 @@ export function ProductCatalogView({
   const fillRight = 100 - ((priceMax - PRICE_FLOOR) / span) * 100;
 
   const applyFilters = () => {
+    window.clearTimeout(pricePushTimer.current);
     if (urlDriven && listingQuery) {
       const atBounds = priceMin === PRICE_FLOOR && priceMax === PRICE_CEIL;
       pushListing({
@@ -400,8 +407,8 @@ export function ProductCatalogView({
               priceMax={priceMax}
               fillLeft={fillLeft}
               fillRight={fillRight}
-              onPriceMin={setPriceMin}
-              onPriceMax={setPriceMax}
+              onPriceMin={onPriceMin}
+              onPriceMax={onPriceMax}
               showPrice={showPrice}
               allCount={allCount}
               serverFiltered={serverFiltered}

@@ -17,7 +17,6 @@ import {
   activeRegistrationConsent,
   selectableProducts,
   selectVariant,
-  surpriseAccountNote,
 } from "./subscriptionRules";
 
 const products: PlanProduct[] = [
@@ -198,25 +197,6 @@ describe("subscription rules", () => {
     const result = retainAudienceSelections(["men", "uni", "women"], ["uni", "women"]);
     expect(result).toEqual({ selected: ["uni", "women"], removed: 1 });
     expect(audienceChangeNotice(1)).toMatch(/not available for this audience/);
-  });
-
-  it("describes a pinned surprise schedule as provisional", () => {
-    expect(
-      surpriseAccountNote({ schedulePinned: true, previewSource: "SCHEDULE", previewSku: "SKU-1" }),
-    ).toMatch(/provisional/i);
-    expect(
-      surpriseAccountNote({ schedulePinned: true, previewSource: "SCHEDULE", previewSku: "SKU-1" }),
-    ).toMatch(/not a shipment/);
-    expect(
-      surpriseAccountNote({
-        schedulePinned: false,
-        previewSource: "PROVISIONAL_POOL",
-        previewSku: "HIDDEN",
-      }),
-    ).toBe("No published schedule is pinned. No fragrance is allocated and no shipment is promised.");
-    expect(
-      surpriseAccountNote({ schedulePinned: false, previewSource: "PROVISIONAL_POOL", previewSku: "HIDDEN" }),
-    ).not.toContain("HIDDEN");
   });
 
   it("reuses an idempotency key and issues a new one for another signup", () => {

@@ -27,7 +27,6 @@ export function CmsImageBanner({ data, linkContext }: Props) {
   const media = (
     <picture>
       <source media="(max-width: 700px)" srcSet={mobile} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={desktop}
         alt={alt}

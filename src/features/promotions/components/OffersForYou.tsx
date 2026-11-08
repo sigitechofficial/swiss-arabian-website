@@ -8,6 +8,7 @@ import type { CatalogProduct } from "@/features/catalog/constants/catalogProduct
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { OfferContext, OfferIcon, PdpOffer } from "../types/offerVoucher";
 import { bundlePercent, mapDiscoveryOffers, resolveOfferValue, voucherSubline } from "../utils/offerVoucher";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export function OffersForYou({
   product,
@@ -135,7 +136,8 @@ function OffersDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState("");
-  const [mounted, setMounted] = useState(false);
+  // Portal target (document.body) exists only after hydration.
+  const mounted = useHydrated();
   const price = product.price ?? 0;
   const ctx: OfferContext = {
     qty: quantity,
@@ -145,7 +147,6 @@ function OffersDialog({
   };
   const percent = bundlePercent(offers);
 
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const node = dialogRef.current;

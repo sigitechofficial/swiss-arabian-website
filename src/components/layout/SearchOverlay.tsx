@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePathname, useRouter } from "next/navigation";
 import { localizeHref } from "@/lib/i18n/localePath";
@@ -10,6 +10,7 @@ import { rememberSearchQuery } from "@/features/search/utils/recentSearches";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useUiStore } from "@/stores/useUiStore";
 import { visuallyHidden } from "@/styles/siteChrome";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 // Same eased, no-slam entrance language as the mega menu (`SiteHeader`'s
 // `megaPanelVariants`) — scrim fades while the dock scales/drops in from a
@@ -79,13 +80,16 @@ export function SearchOverlay() {
     };
   }, [open, setOpen]);
 
-  useEffect(() => {
-    if (!open) setQuery("");
-  }, [open]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
+  // Clear the search when the overlay closes (it can be closed from the store
+  // elsewhere), adjusting state during render instead of in an effect.
+  const [lastOpen, setLastOpen] = useState(open);
+  if (lastOpen !== open) {
+    setLastOpen(open);
+    if (!open) {
+      setQuery("");
+      setActiveIndex(0);
+    }
+  }
 
   function goToResults() {
     const q = query.trim();
@@ -161,7 +165,10 @@ export function SearchOverlay() {
                 aria-activedescendant={hits[activeIndex] ? `ai-search-hit-${hits[activeIndex].id}` : undefined}
                 className="h-full min-w-0 flex-1 border-0 bg-transparent px-2 font-[inherit] text-[0.95rem] text-[var(--white)] outline-none placeholder:text-white/50 [&::-webkit-search-cancel-button]:hidden"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveIndex(0);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown") {
                     e.preventDefault();
@@ -204,10 +211,9 @@ export function SearchOverlay() {
                       onClick={() => setOpen(false)}
                     >
                       {product.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className="size-[52px] shrink-0 rounded-[10px] bg-[var(--sand)] object-contain" src={product.imageUrl} alt="" />
+                        <MediaImage className="size-[52px] shrink-0 rounded-[10px] bg-[var(--sand)] object-contain" src={product.imageUrl} alt="" width={52} height={52} />
                       ) : (
-                        <img className="size-[52px] shrink-0 rounded-[10px] bg-[#efeae2] object-contain" alt="" />
+                        <span className="block size-[52px] shrink-0 rounded-[10px] bg-[#efeae2]" aria-hidden="true" />
                       )}
                       <span className="min-w-0">
                         <p className="m-0 text-[0.95rem] font-semibold text-[var(--ink)]">{product.title}</p>

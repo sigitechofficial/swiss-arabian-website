@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { trackerMonth } from "../testing/trackerMonth";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -97,15 +98,6 @@ async function confirmRetry() {
   fireEvent.click(screen.getByRole("button", { name: "Confirm retry" }));
 }
 
-function trackerMonth(month: number): HTMLLIElement {
-  const row = screen
-    .getAllByText(`Month ${month}`)
-    .map((node) => node.closest("li"))
-    .find((node): node is HTMLLIElement => node instanceof HTMLLIElement);
-  if (!row) throw new Error(`Month ${month} is not in the tracker`);
-  return row;
-}
-
 describe("subscription payment recovery", () => {
   beforeEach(() => {
     current = agreement();
@@ -129,7 +121,7 @@ describe("subscription payment recovery", () => {
     expect(await screen.findByRole("heading", { name: "Payment recovery" })).toBeInTheDocument();
     expect(screen.getByText("The renewal payment did not complete. This month has not moved forward.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry Payment" })).toBeEnabled();
-    expect(screen.getAllByText("Month 2").length).toBeGreaterThan(0);
+    expect(trackerMonth(2)).toBeInTheDocument();
   });
 
   it("hides Retry Payment when the backend says it is not eligible", async () => {

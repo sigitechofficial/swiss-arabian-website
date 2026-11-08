@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { pollUntilPaymentSettles } from "../api/orders.service";
 import {
@@ -9,6 +9,7 @@ import {
   installPaymobThreeDsCapture,
   paymobIframeReturnAction,
 } from "../utils/paymobThreeDs";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export function usePaymobThreeDsModal(orderId: string | null) {
   const [challengeUrl, setChallengeUrl] = useState<string | null>(null);
@@ -52,13 +53,19 @@ export function usePaymobThreeDsModal(orderId: string | null) {
     onSuccess();
   }
 
+  // Effects below call the latest handlers without restarting polling.
+  const settleSuccess = useEffectEvent(() => onSuccess());
+  const checkFrameLocation = useEffectEvent((frame: HTMLIFrameElement | null) =>
+    handleFrameLocation(frame),
+  );
+
   useEffect(() => {
     if (!challengeUrl || !orderId) return;
     let cancelled = false;
     void pollUntilPaymentSettles(orderId, { attempts: 40, delayMs: 2000 }).then((result) => {
       if (cancelled || finishing.current) return;
       if (result.success) {
-        onSuccess();
+        settleSuccess();
         return;
       }
       if (result.status === "TIMEOUT") return;
@@ -76,7 +83,7 @@ export function usePaymobThreeDsModal(orderId: string | null) {
 
   useEffect(() => {
     if (!challengeUrl) return;
-    const tick = () => handleFrameLocation(frameRef.current);
+    const tick = () => checkFrameLocation(frameRef.current);
     const timer = window.setInterval(tick, 400);
     return () => window.clearInterval(timer);
   }, [challengeUrl, orderId]);
@@ -102,10 +109,10 @@ function PaymobThreeDsModal({
   frameRef: RefObject<HTMLIFrameElement | null>;
   onFrameLoad: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
+  // Portal target (document.body) exists only after hydration.
+  const mounted = useHydrated();
 
   useEffect(() => {
-    setMounted(true);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {

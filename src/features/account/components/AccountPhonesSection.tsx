@@ -11,7 +11,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   accountBtnGhost,
   accountBtnPrimary,
-  accountInputClass,
 } from "../constants/accountForm";
 import { useCustomerPhones } from "../hooks/useCustomerPhones";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   cartSnapshotFromLines,
@@ -22,6 +22,7 @@ import {
 } from "@/lib/insider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 /**
  * Replay queued calls after ins.js loads, then send one page type + init
@@ -33,24 +34,11 @@ export function InsiderScripts() {
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
-  const [cartHydrated, setCartHydrated] = useState(false);
+  const cartHydrated = usePersistHydrated(useCartStore);
 
   useEffect(() => {
     if (!env.insider.enabled || !env.insider.accountId) return;
     startInsiderSdk();
-  }, []);
-
-  useEffect(() => {
-    const persist = useCartStore.persist;
-    if (!persist?.hasHydrated) {
-      setCartHydrated(true);
-      return;
-    }
-    if (persist.hasHydrated()) {
-      setCartHydrated(true);
-      return;
-    }
-    return persist.onFinishHydration(() => setCartHydrated(true));
   }, []);
 
   useEffect(() => {

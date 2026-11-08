@@ -2,6 +2,15 @@
 
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
 
+/** Market VAT display from the backend (follows the market tax policy the cart was priced with). */
+export type StorefrontTaxDisplay = {
+  pricesIncludeTax: boolean;
+  taxRatePercent: string;
+  shippingTaxed: boolean;
+  taxLabel: string;
+  pdpShowsTaxInclusive: boolean;
+};
+
 export type CartContext = {
   zoneId: string;
   zoneCode: string;
@@ -11,6 +20,7 @@ export type CartContext = {
   countryCode?: string | null;
   currencyCode: string;
   languageCode?: string | null;
+  taxDisplay?: StorefrontTaxDisplay | null;
 };
 
 export type CartSellabilitySummary = {

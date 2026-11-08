@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CollectionDetailPageView } from "@/features/collections";
 import { breadcrumbJsonLd, CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { parseCatalogListingParams } from "@/features/catalog/types/catalogFacets";
@@ -13,7 +13,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { locale, collection } = await loadCatalogDocument("collection", slug);
+  const { locale, collection, missing } = await loadCatalogDocument("collection", slug);
+  if (missing) notFound();
   const handle = collection?.slug || slug;
   const title = collection?.seoTitle?.trim() || collection?.name || slug;
   const description = collection?.seoDescription?.trim() || collection?.description || undefined;
@@ -35,6 +36,8 @@ export default async function CollectionDetailPage({
   const { slug } = await params;
   const loaded = await loadCatalogDocument("collection", slug);
   const { locale, collection, listing } = loaded;
+  // The collection does not exist in this market: a real 404, not a crash.
+  if (loaded.missing) notFound();
   if (collection?.slug && collection.slug !== slug) {
     permanentRedirect(withLocalePrefix(`/collections/${collection.slug}`, locale));
   }

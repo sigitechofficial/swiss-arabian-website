@@ -274,7 +274,8 @@ describe("subscription landing", () => {
     renderPage("A");
     fireEvent.click(await screen.findByRole("button", { name: "Pick my own 12" }));
     expect(await screen.findByRole("heading", { name: "Choose your favourite 12" })).toBeInTheDocument();
-    expect(screen.getByText("Vetiver")).toBeInTheDocument();
+    // The fragrance pool loads after the heading renders.
+    expect(await screen.findByText("Vetiver")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Choose your 12" })).toBeInTheDocument();
     await waitFor(() => expect(sessionStorage.getItem("sa-sub-agreement:A")).toBeNull());
   });

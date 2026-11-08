@@ -74,9 +74,10 @@ export function useCatalogPlp(
     return toCatalogProducts(merged, { guessFacets: !serverFiltered });
   }, [query.data?.pages, query.isError, serverFiltered]);
 
+  const { fetchNextPage: fetchNextQueryPage } = query;
   const fetchNextPage = useCallback(() => {
-    void query.fetchNextPage();
-  }, [query.fetchNextPage]);
+    void fetchNextQueryPage();
+  }, [fetchNextQueryPage]);
 
   return {
     products,

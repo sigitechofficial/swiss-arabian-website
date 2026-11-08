@@ -19,6 +19,9 @@ export function CrashFallback({ onRetry }: CrashFallbackProps) {
       <button type="button" className={retryClass} onClick={onRetry}>
         Try again
       </button>
+      {/* Deliberate full document load: after a crash the client state may be
+          corrupt, so a soft <Link> navigation would keep it. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a className="text-sm text-sa-muted underline underline-offset-4" href="/">
         Back home
       </a>
