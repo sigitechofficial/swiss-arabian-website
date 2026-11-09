@@ -8,6 +8,7 @@ import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { ensureInsiderProductPage } from "@/lib/insider";
 import { useMarket } from "@/providers/MarketProvider";
 import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
+import { useBrowsedCollection } from "@/features/merchandising/utils/browsedCollection";
 import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
 import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
 import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemory";
@@ -132,7 +133,11 @@ export function ProductDetailPageView({
 
   const youMayAlsoLikeRail = useMerchRail(MERCH_RAIL_SLUGS.pdpAlsoLike, product?.id ? [product.id] : []);
 
-  const moreFromCollection = pickMoreFromCollection(apiProduct?.collections);
+  // The collection the shopper came from (when the product is in it), else the
+  // product's own best collection.
+  const browsedCollection = useBrowsedCollection(apiProduct?.collections);
+  const moreFromCollection =
+    browsedCollection ?? pickMoreFromCollection(apiProduct?.collections);
   const { data: moreFromFeed } = useQuery({
     queryKey: catalogKeys.collectionProducts(moreFromCollection?.slug ?? "", zoneCode, 1, 12, true),
     queryFn: () =>

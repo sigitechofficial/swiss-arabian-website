@@ -49,7 +49,9 @@ function ProductTile({ product }: { product: MegaProduct }) {
       </span>
       <span className={megaProdName}>{product.name}</span>
       {product.notes ? <span className={megaProdMeta}>{product.notes}</span> : null}
-      <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
+      {product.price != null ? (
+        <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
+      ) : null}
     </LocaleLink>
   );
 }
@@ -112,8 +114,11 @@ export function MegaShowcase({
       notes: p.subtitle ? cardEyebrow(stripHtml(p.subtitle)) : undefined,
     }));
 
-  const curated =
-    MEGA_PRODUCTS[item.id] ?? MEGA_PRODUCTS[CURATED_ALIAS[item.id]] ?? MEGA_PRODUCTS.perfumes ?? [];
+  // Curated tiles are pictures and names only: their prices are not the
+  // market's live price (or even its currency), so none is shown.
+  const curated = (
+    MEGA_PRODUCTS[item.id] ?? MEGA_PRODUCTS[CURATED_ALIAS[item.id]] ?? MEGA_PRODUCTS.perfumes ?? []
+  ).map((product) => ({ ...product, price: null }));
 
   // Hold the tiles until the live lineup is known, so the panel never flashes
   // the fallback products and then swaps them out.

@@ -1,4 +1,5 @@
 import { apiGet } from "@/lib/api/apiClient";
+import { ApiClientError } from "@/lib/api/apiError";
 import {
   storefrontContextQuery,
   type StorefrontContextInput,
@@ -510,12 +511,19 @@ export async function fetchProducts(
   return mapProductList(data, page, limit);
 }
 
-export async function fetchProductBySlug(
+/**
+ * Product by public address, telling "does not exist" apart from "could not load".
+ * - `missing`: the API answered 404 and no product has this exact slug/SKU/id,
+ *   so the page must respond 404 (never a 200 page or another product).
+ * - Any other failure: product null, missing false (page renders; the client retries).
+ */
+export async function fetchProductBySlugOutcome(
   slug: string,
   zoneCode?: string | null,
   market?: StorefrontContextInput | null,
-): Promise<ProductDetail | null> {
+): Promise<{ product: ProductDetail | null; missing: boolean }> {
   const qs = contextQs(zoneCode, market);
+  let detailMissing = false;
 
   try {
     const data = await apiGet<ApiProductDetailData>(
@@ -523,26 +531,39 @@ export async function fetchProductBySlug(
       { skipAuth: true },
     );
     const mapped = mapProductDetail(data);
-    if (mapped) return mapped;
-  } catch {
-    // continue
+    if (mapped) return { product: mapped, missing: false };
+    detailMissing = true;
+  } catch (error) {
+    detailMissing = error instanceof ApiClientError && error.status === 404;
   }
 
+  // Fallback for SKU / product-id links only. An exact match is required:
+  // a fuzzy "first search result" would open a different product.
   try {
     const bySearch = await apiGet<ApiProductListData>(
       `/storefront/catalog/search?${qs}&q=${encodeURIComponent(slug)}&limit=5`,
       { skipAuth: true },
     );
-    const hit =
-      bySearch.products?.find(
-        (p) => p.slug === slug || p.sku === slug || p.productId === slug,
-      ) ?? bySearch.products?.[0];
-    if (hit) return mapProduct(hit);
+    const wanted = slug.trim().toLowerCase();
+    const hit = bySearch.products?.find(
+      (p) =>
+        p.slug?.toLowerCase() === wanted ||
+        p.sku?.toLowerCase() === wanted ||
+        p.productId === slug,
+    );
+    if (hit) return { product: mapProduct(hit), missing: false };
+    return { product: null, missing: detailMissing };
   } catch {
-    // continue
+    return { product: null, missing: false };
   }
+}
 
-  return null;
+export async function fetchProductBySlug(
+  slug: string,
+  zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
+): Promise<ProductDetail | null> {
+  return (await fetchProductBySlugOutcome(slug, zoneCode, market)).product;
 }
 
 export type CatalogCollection = {
@@ -553,10 +574,12 @@ export type CatalogCollection = {
   description?: string | null;
   sortOrder?: number;
   productCount?: number;
-  /** Collection banner. Supported by the API but unset on every collection
-   *  today — the storefront falls back to its designed hero when null. */
+  /** Collection banner for the page language (imported from the store's
+   *  theme banners); null → the storefront's designed hero. */
   image?: string | null;
   imageAlt?: string | null;
+  /** Banner version for small screens, when the store has one. */
+  imageMobile?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   customMetafields?: Record<string, unknown> | null;
@@ -581,6 +604,7 @@ function mapCollectionDetail(
     productCount: item.productCount,
     image: item.image,
     imageAlt: item.imageAlt,
+    imageMobile: item.imageMobile ?? null,
     seoTitle: item.seoTitle ?? raw?.seoTitle,
     seoDescription: item.seoDescription ?? raw?.seoDescription,
     customMetafields: item.customMetafields ?? raw?.customMetafields ?? null,
@@ -617,19 +641,32 @@ export type CatalogCategory = {
 };
 
 /** GET /storefront/catalog/categories/:slug — `null` when it doesn't resolve. */
+/** Category by slug; `missing` only when the API answered 404 (page must 404). */
+export async function fetchCategoryBySlugOutcome(
+  slug: string,
+  zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
+): Promise<{ category: CatalogCategory | null; missing: boolean }> {
+  try {
+    const category = await apiGet<CatalogCategory>(
+      `/storefront/catalog/categories/${encodeURIComponent(slug)}?${contextQs(zoneCode, market)}`,
+      { skipAuth: true },
+    );
+    return { category, missing: false };
+  } catch (error) {
+    return {
+      category: null,
+      missing: error instanceof ApiClientError && error.status === 404,
+    };
+  }
+}
+
 export async function fetchCategoryBySlug(
   slug: string,
   zoneCode?: string | null,
   market?: StorefrontContextInput | null,
 ): Promise<CatalogCategory | null> {
-  try {
-    return await apiGet<CatalogCategory>(
-      `/storefront/catalog/categories/${encodeURIComponent(slug)}?${contextQs(zoneCode, market)}`,
-      { skipAuth: true },
-    );
-  } catch {
-    return null;
-  }
+  return (await fetchCategoryBySlugOutcome(slug, zoneCode, market)).category;
 }
 
 /** GET /storefront/catalog/categories/:slug/products */

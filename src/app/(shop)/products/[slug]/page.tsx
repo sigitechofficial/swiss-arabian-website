@@ -1,4 +1,4 @@
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ProductDetailPageView } from "@/features/catalog";
 import {
   breadcrumbJsonLd,
@@ -15,12 +15,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { locale, product } = await loadCatalogDocument("product", slug);
+  const { locale, product, missing } = await loadCatalogDocument("product", slug);
+  if (missing) notFound();
   const handle = product?.slug || slug;
   const path = canonicalCatalogPath(`/products/${handle}`, locale);
   const title = product?.seoTitle || product?.title || slug;
   const description = product?.seoDescription || product?.description;
-  return catalogMetadata({ locale, path, title, description });
+  return catalogMetadata({ locale, path, title, description, image: product?.imageUrl });
 }
 
 export default async function ProductDetailPage({
@@ -29,7 +30,8 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { locale, product } = await loadCatalogDocument("product", slug);
+  const { locale, product, missing } = await loadCatalogDocument("product", slug);
+  if (missing) notFound();
   if (product?.slug && product.slug !== slug) {
     permanentRedirect(withLocalePrefix(`/products/${product.slug}`, locale));
   }
@@ -45,6 +47,17 @@ export default async function ProductDetailPage({
           sku: product?.sku,
           url: path,
           image: product?.imageUrl,
+          images: product?.imageUrls,
+          brand: product?.brandName,
+          price: product?.price,
+          currency: product?.currency,
+          inStock: product ? product.inStock !== false && product.isSellable !== false : null,
+          rating: product?.reviews?.summary
+            ? {
+                average: product.reviews.summary.averageRating,
+                count: product.reviews.summary.reviewCount,
+              }
+            : null,
         })}
       />
       <CatalogJsonLd

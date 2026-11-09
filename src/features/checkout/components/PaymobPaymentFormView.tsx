@@ -161,7 +161,11 @@ export function PaymobPaymentFormView() {
   });
 
   const paymentStatus = orderQuery.data?.paymentStatus?.toUpperCase();
-  const alreadyPaid = paymentStatus === "PAID" || paymentStatus === "AUTHORIZED";
+  const alreadyPaid =
+    paymentStatus === "PAID" ||
+    paymentStatus === "AUTHORIZED" ||
+    paymentStatus === "PARTIALLY_REFUNDED" ||
+    paymentStatus === "REFUNDED";
   useEffect(() => {
     if (!alreadyPaid || !orderId) return;
     clearPaymentState();

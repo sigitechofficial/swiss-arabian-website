@@ -2,10 +2,10 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import {
-  fetchCategoryBySlug,
+  fetchCategoryBySlugOutcome,
   fetchCollectionBySlug,
   fetchCollectionProducts,
-  fetchProductBySlug,
+  fetchProductBySlugOutcome,
 } from "@/features/catalog/api/catalog.service";
 import { fetchStorefrontMarkets } from "@/features/markets/api/markets.service";
 import type { StorefrontMarket } from "@/features/markets/types/market";
@@ -95,8 +95,12 @@ export const loadCatalogDocument = cache(async (kind: "product" | "collection" |
     return { ...resolved, ...empty };
   }
   if (kind === "product") {
-    const product = await fetchProductBySlug(slug, resolved.zoneCode, resolved.market);
-    return { ...resolved, ...empty, product };
+    const { product, missing } = await fetchProductBySlugOutcome(
+      slug,
+      resolved.zoneCode,
+      resolved.market,
+    );
+    return { ...resolved, ...empty, product, missing };
   }
   if (kind === "collection") {
     const [collection, initial] = await Promise.all([
@@ -111,8 +115,12 @@ export const loadCatalogDocument = cache(async (kind: "product" | "collection" |
       missing: initial.missing && !collection,
     };
   }
-  const category = await fetchCategoryBySlug(slug, resolved.zoneCode, resolved.market);
-  return { ...resolved, ...empty, category };
+  const { category, missing } = await fetchCategoryBySlugOutcome(
+    slug,
+    resolved.zoneCode,
+    resolved.market,
+  );
+  return { ...resolved, ...empty, category, missing };
 });
 
 export async function catalogRequestMarket() {
@@ -124,16 +132,30 @@ export function catalogMetadata(input: {
   path: string;
   title: string;
   description?: string;
+  /** Share image (product main image / collection banner). */
+  image?: string | null;
 }): Metadata {
   const alternates = catalogAlternates(input.path, input.locale);
+  const images = input.image ? [{ url: input.image }] : undefined;
   return {
-    title: input.title,
+    // Imported SEO titles already name the brand ("… | Swiss Arabian UAE"):
+    // do not add the site suffix a second time.
+    title: /swiss\s*arabian/i.test(input.title) ? { absolute: input.title } : input.title,
     description: input.description,
     alternates,
     openGraph: {
       title: input.title,
       description: input.description,
       url: alternates.canonical,
+      siteName: "Swiss Arabian",
+      locale: input.locale === "ar" ? "ar_AE" : "en_AE",
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: images ? "summary_large_image" : "summary",
+      title: input.title,
+      description: input.description,
+      ...(images ? { images: images.map((i) => i.url) } : {}),
     },
   };
 }

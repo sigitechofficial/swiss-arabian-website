@@ -1,4 +1,4 @@
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CategoryDetailPageView } from "@/features/collections/components/CategoryDetailPageView";
 import { breadcrumbJsonLd, CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { parseCatalogListingParams } from "@/features/catalog/types/catalogFacets";
@@ -12,7 +12,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { locale, category } = await loadCatalogDocument("category", slug);
+  const { locale, category, missing } = await loadCatalogDocument("category", slug);
+  if (missing) notFound();
   const handle = category?.slug || slug;
   return catalogMetadata({
     locale,
@@ -30,7 +31,8 @@ export default async function CategoryPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
-  const { locale, category } = await loadCatalogDocument("category", slug);
+  const { locale, category, missing } = await loadCatalogDocument("category", slug);
+  if (missing) notFound();
   if (category?.slug && category.slug !== slug) {
     permanentRedirect(withLocalePrefix(`/categories/${category.slug}`, locale));
   }

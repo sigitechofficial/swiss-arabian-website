@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isLocaleSwitchablePath, withLocalePrefix } from "@/lib/i18n/localePath";
+import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,6 +11,14 @@ export function proxy(request: NextRequest) {
     pathname.includes(".")
   ) {
     return NextResponse.next();
+  }
+
+  // Old Shopify URL shapes (nested product URLs, /account/*, /pages/*, /blogs/*).
+  const legacyTarget = shopifyLegacyRedirect(pathname);
+  if (legacyTarget) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacyTarget;
+    return NextResponse.redirect(url, 301);
   }
 
   const isArabic = pathname === "/ar" || pathname.startsWith("/ar/");

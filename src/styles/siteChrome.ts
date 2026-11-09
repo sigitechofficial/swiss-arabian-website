@@ -28,11 +28,16 @@ export const topbarInnerBoutique = "min-h-9";
 /** Balances the desktop ticker. Hidden once the bar becomes ticker + locale, or it steals the first column and pushes the arrow onto a second line. */
 export const topbarSpacer = "max-[1200px]:hidden";
 
+/**
+ * Ticker cell. Always clipped to its own grid column and one line high: long CMS messages
+ * must never spill over the ship-to / language menus or grow the bar (the fixed header
+ * assumes a one-line topbar when it slides the bar away).
+ */
 export const topbarTicker =
-  "grid min-w-0 items-center justify-items-center overflow-visible max-[1200px]:justify-self-stretch max-[1200px]:overflow-hidden";
+  "grid min-w-0 items-center justify-items-center overflow-hidden max-[1200px]:justify-self-stretch";
 
 export const topbarTickerLine =
-  "col-start-1 row-start-1 m-0 max-w-full min-w-0 overflow-visible text-center text-[0.62rem] leading-[1.2] font-normal tracking-[0.08em] text-white uppercase max-[1200px]:w-full max-[1200px]:overflow-hidden max-[1200px]:text-start max-[1200px]:text-ellipsis max-[1200px]:whitespace-nowrap max-[1200px]:tracking-[0.04em] max-[600px]:text-center! max-[600px]:text-[0.56rem] motion-reduce:transform-none!";
+  "col-start-1 row-start-1 m-0 w-full max-w-full min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap text-[0.62rem] leading-[1.2] font-normal tracking-[0.08em] text-white uppercase max-[1200px]:text-start max-[1200px]:tracking-[0.04em] max-[600px]:text-center! max-[600px]:text-[0.56rem] motion-reduce:transform-none!";
 
 export const topbarUtils =
   "flex shrink-0 flex-nowrap items-center justify-self-end gap-[0.55rem] max-[480px]:gap-2 max-[360px]:gap-[0.35rem]";

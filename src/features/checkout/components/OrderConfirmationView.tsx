@@ -68,7 +68,10 @@ type PaymentState = "success" | "pending" | "failed";
 
 function paymentState(status?: string | null): PaymentState {
   const s = status?.toUpperCase() ?? "";
-  if (s === "PAID" || s === "AUTHORIZED") return "success";
+  // A refund (partial or full) only happens after the payment was confirmed.
+  if (s === "PAID" || s === "AUTHORIZED" || s === "PARTIALLY_REFUNDED" || s === "REFUNDED") {
+    return "success";
+  }
   if (s === "FAILED" || s === "DECLINED" || s === "CANCELLED") return "failed";
   return "pending";
 }

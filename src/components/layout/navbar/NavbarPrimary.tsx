@@ -99,7 +99,13 @@ export function NavbarPrimary({
                       <div className={megaCols}>
                         {item.groups.map((group) => (
                           <motion.div key={group.heading} variants={megaItemVariants}>
-                            <p className={megaHeading}>{group.heading}</p>
+                            <p className={megaHeading}>
+                              {group.href ? (
+                                <LocaleLink href={group.href}>{group.heading}</LocaleLink>
+                              ) : (
+                                group.heading
+                              )}
+                            </p>
                             <ul className={megaList} role="list">
                               {group.links.map((link) => (
                                 <li key={link.label}>

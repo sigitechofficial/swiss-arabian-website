@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { rememberBrowsedCollection } from "@/features/merchandising/utils/browsedCollection";
 import { ProductCatalogView } from "@/features/catalog/components/ProductCatalogView";
 import type { CatalogCollection, ProductListResult } from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
@@ -32,17 +34,32 @@ export function CollectionDetailPageView({
     initialListing,
   );
 
+  useEffect(() => {
+    if (collection?.slug && collection.name) {
+      rememberBrowsedCollection({ slug: collection.slug, name: collection.name });
+    }
+  }, [collection?.slug, collection?.name]);
+
   const metafieldImage = metafieldMediaUrl(
     collection?.customMetafields?.collection_banner,
   );
   const apiImage = collection?.image?.trim() ? collection.image : null;
-  const heroImage = metafieldImage ?? apiImage;
+  // The imported banner (per language, desktop + mobile) wins.
+  const heroImage = apiImage ?? metafieldImage;
 
   const banner = collection
     ? {
         title: collection.name,
         description: collection.description,
-        ...(heroImage ? { image: heroImage, imageAlt: collection.imageAlt } : {}),
+        ...(heroImage
+          ? {
+              image: heroImage,
+              imageAlt: collection.imageAlt,
+              mobileImage: apiImage ? (collection.imageMobile ?? null) : null,
+              // Store banners are wide artwork: shown full width, never cropped.
+              wide: Boolean(apiImage),
+            }
+          : {}),
       }
     : null;
 

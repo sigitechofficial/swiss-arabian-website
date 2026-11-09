@@ -2,10 +2,11 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { chromeNavLinks, useNavigation } from "@/features/navigation";
+import { useNavigation } from "@/features/navigation";
+import type { NavItem } from "@/features/navigation/types/navigation";
 import { useMarket } from "@/providers/MarketProvider";
 import { useQuery } from "@tanstack/react-query";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   cmsGlobalKeys,
   fetchCmsGlobalRegion,
@@ -37,22 +38,111 @@ import {
   visuallyHidden,
 } from "@/styles/siteChrome";
 
-const SERVICE_LINKS = [
-  { key: "exchangeReturn", href: "/faq" },
-  { key: "shippingDelivery", href: "/faq" },
-  { key: "refundPolicy", href: "/faq" },
-  { key: "terms", href: "/faq" },
-  { key: "privacy", href: "/faq" },
-  { key: "contact", href: "/faq" },
-] as const;
+type FooterLink = { label: string; href: string };
+type FooterColumn = { id: string; heading: string; links: FooterLink[] };
 
-const MORE_LINKS = [
-  { key: "about", href: "/our-story" },
-  { key: "faqs", href: "/faq" },
-  { key: "blogs", href: "/blog" },
-  { key: "joinTeam", href: "/our-story" },
-  { key: "salesPartner", href: "/our-story" },
-] as const;
+/** The market's footer menu: each heading with links becomes a column. */
+export function footerColumns(items: readonly NavItem[]): FooterColumn[] {
+  const columns: FooterColumn[] = [];
+  const loose: FooterLink[] = [];
+  for (const item of items) {
+    const links = (item.children ?? []).flatMap((child) =>
+      child.href ? [{ label: child.label, href: child.href }] : [],
+    );
+    if (links.length) {
+      columns.push({ id: item.id, heading: item.label, links });
+    } else if (item.href) {
+      loose.push({ label: item.label, href: item.href });
+    }
+  }
+  if (loose.length) columns.push({ id: "links", heading: "", links: loose });
+  return columns;
+}
+
+function isExternal(href: string) {
+  return /^https?:\/\//i.test(href);
+}
+
+function FooterAnchor({ link }: { link: FooterLink }) {
+  return isExternal(link.href) ? (
+    <a href={link.href} target="_blank" rel="noopener noreferrer">
+      {link.label}
+    </a>
+  ) : (
+    <LocaleLink href={link.href}>{link.label}</LocaleLink>
+  );
+}
+
+const SOCIAL_NETWORKS: Record<string, { label: string; icon: ReactNode }> = {
+  facebook: {
+    label: "Facebook",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.3-1.4 1.5-1.4h1.3V5.6c-.6-.1-1.4-.2-2.3-.2-2.3 0-3.8 1.4-3.8 3.9v2H8v2.8h2.4V21h3.1z" />
+                  </svg>
+    ),
+  },
+  youtube: {
+    label: "YouTube",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M21.6 8.2c-.2-1-.9-1.7-1.9-1.9C18 6 12 6 12 6s-6 0-7.7.3c-1 .2-1.7.9-1.9 1.9C2.2 9.9 2.2 12 2.2 12s0 2.1.2 3.8c.2 1 .9 1.7 1.9 1.9C6 18 12 18 12 18s6 0 7.7-.3c1-.2 1.7-.9 1.9-1.9.2-1.7.2-3.8.2-3.8s0-2.1-.2-3.8zM10 15V9l5 3-5 3z" />
+                  </svg>
+    ),
+  },
+  instagram: {
+    label: "Instagram",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2zm0 7.9A3.1 3.1 0 1 1 12 8.9a3.1 3.1 0 0 1 0 6.2zM17.4 6.8a1.12 1.12 0 1 1-2.24 0 1.12 1.12 0 0 1 2.24 0z" />
+                    <path d="M12 3.4c2.2 0 2.5 0 3.4.1 1.7.1 2.6.4 3.2 1 .6.6.9 1.5 1 3.2.1.9.1 1.2.1 3.4s0 2.5-.1 3.4c-.1 1.7-.4 2.6-1 3.2-.6.6-1.5.9-3.2 1-.9.1-1.2.1-3.4.1s-2.5 0-3.4-.1c-1.7-.1-2.6-.4-3.2-1-.6-.6-.9-1.5-1-3.2-.1-.9-.1-1.2-.1-3.4s0-2.5.1-3.4c.1-1.7.4-2.6 1-3.2.6-.6 1.5-.9 3.2-1 .9-.1 1.2-.1 3.4-.1zm0-1.6c-2.3 0-2.6 0-3.5.1-1.9.1-3.2.4-4.3 1.5-1.1 1.1-1.4 2.4-1.5 4.3-.1.9-.1 1.2-.1 3.5s0 2.6.1 3.5c.1 1.9.4 3.2 1.5 4.3 1.1 1.1 2.4 1.4 4.3 1.5.9.1 1.2.1 3.5.1s2.6 0 3.5-.1c1.9-.1 3.2-.4 4.3-1.5 1.1-1.1 1.4-2.4 1.5-4.3.1-.9.1-1.2.1-3.5s0-2.6-.1-3.5c-.1-1.9-.4-3.2-1.5-4.3-1.1-1.1-2.4-1.4-4.3-1.5-.9-.1-1.2-.1-3.5-.1z" />
+                  </svg>
+    ),
+  },
+  whatsapp: {
+    label: "WhatsApp",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M19.1 4.9A9.9 9.9 0 0 0 3.3 17.2L2 22l4.9-1.3A9.9 9.9 0 0 0 19.1 4.9zm-7.1 15.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.7.9-.1.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.1.1-.3.2-.4 0-.1 0-.3 0-.4 0-.1-.5-1.3-.7-1.8-.2-.5-.4-.4-.5-.4h-.4c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4 1.5.6 2 .7 2.7.6.4-.1 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1-.1 0-.3-.1-.5-.2z" />
+                  </svg>
+    ),
+  },
+  tiktok: {
+    label: "TikTok",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M16 4c.3 2 1.5 3.4 3.5 3.6v2.4c-1.2 0-2.4-.4-3.5-1.1v5.4c0 2.9-2.1 5-4.9 5-2.7 0-4.8-2-4.8-4.7 0-2.8 2.3-4.9 5.3-4.6v2.5c-.4-.1-.8-.2-1.1-.2-1.2 0-2.1.9-2.1 2.1 0 1.3.9 2.2 2.2 2.2 1.3 0 2.3-1 2.3-2.6V4H16z" />
+                  </svg>
+    ),
+  },
+  snapchat: {
+    label: "Snapchat",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 3.2c2.4 0 4.4 1.7 4.4 4.6v.3c1.1.2 1.8 1 1.8 2.1 0 .5-.2.9-.6 1.2.1.5.5 1.4 1.5 1.9.3.2.4.6.2.9-.2.3-.6.4-1 .3-.8-.2-1.5-.1-2.1.2-.3.9-.9 1.6-2.1 2 .4.3 1.2.7 1.2 1.3 0 .5-.5.8-1.2.8-.3 0-.6 0-.8-.1-.1 1.1-.6 2.1-2.3 2.1s-2.2-1-2.3-2.1c-.2.1-.5.1-.8.1-.7 0-1.2-.3-1.2-.8 0-.6.8-1 1.2-1.3-1.2-.4-.9-1.1-2.1-2-.6-.3-1.3-.4-2.1-.2-.4.1-1 0-1-.3-.2-.3-.1-.7.2-.9 1-.5.9-1.4 1.5-1.9-.4-.3-.6-.7-.6-1.2 0-1.1.7-1.9 1.8-2.1v-.3c0-2.9 2-4.6 4.4-4.6z" />
+                  </svg>
+    ),
+  },
+  linkedin: {
+    label: "LinkedIn",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M6.5 9.2H4V20h2.5V9.2zM5.2 4A1.5 1.5 0 1 0 5.2 7a1.5 1.5 0 0 0 0-3zM20 20h-2.5v-5.6c0-1.5-.5-2.5-1.8-2.5-1 0-1.5.7-1.8 1.3-.1.2-.1.6-.1.9V20H11V9.2h2.4v1.5c.4-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8V20z" />
+                  </svg>
+    ),
+  },
+};
+
+/** Which network a configured social link is (by id, label or address). */
+export function socialNetwork(link: { id: string; label: string; href: string }) {
+  const text = `${link.id} ${link.label} ${link.href}`.toLowerCase();
+  if (text.includes("wa.me")) return SOCIAL_NETWORKS.whatsapp;
+  if (text.includes("youtu")) return SOCIAL_NETWORKS.youtube;
+  return (
+    Object.entries(SOCIAL_NETWORKS).find(([key]) => text.includes(key))?.[1] ??
+    null
+  );
+}
 
 function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
   event.preventDefault();
@@ -65,8 +155,8 @@ export function SiteFooter() {
   const zoneCode = catalogMarket?.zoneCode ?? "";
   // Content is published under the market's own language code, not the one in the address.
   const languageCode = contentLanguage ?? "";
-  const { chromeItems, isLoading } = useNavigation(marketId || undefined);
-  const shopLinks = chromeNavLinks(chromeItems);
+  const { footerItems, isLoading } = useNavigation(marketId || undefined);
+  const columns = footerColumns(footerItems);
 
   const cmsQuery = useQuery({
     queryKey: cmsGlobalKeys.region("footer", zoneCode, languageCode),
@@ -86,7 +176,12 @@ export function SiteFooter() {
     newsletterButtonLabel?: string | null;
     copyrightText?: string | null;
     showPaymentBadges?: boolean;
+    socialLinks?: Array<{ id: string; label: string; href: string }> | null;
   };
+  const socialLinks = (cms.socialLinks ?? []).flatMap((link) => {
+    const network = socialNetwork(link);
+    return network ? [{ ...link, network }] : [];
+  });
 
   return (
     <footer className={siteFooter}>
@@ -115,111 +210,55 @@ export function SiteFooter() {
         </form>
 
         <div className={footerCols}>
-          {isLoading && shopLinks.length === 0 ? (
-            <section aria-labelledby="fc-shop" aria-busy="true">
-              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-shop">
-                {copy("shop")}
-              </h2>
+          {isLoading && columns.length === 0 ? (
+            <section aria-busy="true" aria-label={copy("shop")}>
               <span className="mt-3 block h-24 w-28 animate-pulse bg-[var(--ink)]/10" />
             </section>
-          ) : shopLinks.length ? (
-            <section aria-labelledby="fc-shop">
-              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-shop">
-                {copy("shop")}
+          ) : (
+            columns.map((column) => (
+              <section
+                key={column.id}
+                aria-labelledby={column.heading ? `fc-${column.id}` : undefined}
+                aria-label={column.heading ? undefined : copy("moreLinks")}
+              >
+                {column.heading ? (
+                  <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id={`fc-${column.id}`}>
+                    {column.heading}
+                  </h2>
+                ) : null}
+                <ul className={footerColLinks} role="list">
+                  {column.links.map((link) => (
+                    <li key={`${link.href}-${link.label}`}>
+                      <FooterAnchor link={link} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          )}
+
+          {socialLinks.length ? (
+            <section aria-labelledby="fc-follow">
+              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-follow">
+                {copy("followUs")}
               </h2>
-              <ul className={footerColLinks} role="list">
-                {shopLinks.map((link) => (
-                  <li key={link.href}>
-                    <LocaleLink href={link.href}>{link.label}</LocaleLink>
+              <ul className={footerSocial} role="list">
+                {socialLinks.map((link) => (
+                  <li key={link.id}>
+                    <a
+                      className={socialLink}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.network.label}
+                    >
+                      {link.network.icon}
+                    </a>
                   </li>
                 ))}
               </ul>
             </section>
           ) : null}
-
-          <section aria-labelledby="fc-services">
-            <h2 className={footerColTitle} id="fc-services">
-              {copy("services")}
-            </h2>
-            <ul className={footerColLinks} role="list">
-              {SERVICE_LINKS.map((link) => (
-                <li key={link.key}>
-                  <LocaleLink href={link.href}>{copy(link.key)}</LocaleLink>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section aria-labelledby="fc-more">
-            <h2 className={footerColTitle} id="fc-more">
-              {copy("moreLinks")}
-            </h2>
-            <ul className={footerColLinks} role="list">
-              {MORE_LINKS.map((link) => (
-                <li key={link.key}>
-                  <LocaleLink href={link.href}>{copy(link.key)}</LocaleLink>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section aria-labelledby="fc-follow">
-            <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-follow">
-              {copy("followUs")}
-            </h2>
-            <ul className={footerSocial} role="list">
-              <li>
-                <a className={socialLink} href="https://www.facebook.com" aria-label="Facebook">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.3-1.4 1.5-1.4h1.3V5.6c-.6-.1-1.4-.2-2.3-.2-2.3 0-3.8 1.4-3.8 3.9v2H8v2.8h2.4V21h3.1z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://www.youtube.com" aria-label="YouTube">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M21.6 8.2c-.2-1-.9-1.7-1.9-1.9C18 6 12 6 12 6s-6 0-7.7.3c-1 .2-1.7.9-1.9 1.9C2.2 9.9 2.2 12 2.2 12s0 2.1.2 3.8c.2 1 .9 1.7 1.9 1.9C6 18 12 18 12 18s6 0 7.7-.3c1-.2 1.7-.9 1.9-1.9.2-1.7.2-3.8.2-3.8s0-2.1-.2-3.8zM10 15V9l5 3-5 3z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://www.instagram.com" aria-label="Instagram">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2zm0 7.9A3.1 3.1 0 1 1 12 8.9a3.1 3.1 0 0 1 0 6.2zM17.4 6.8a1.12 1.12 0 1 1-2.24 0 1.12 1.12 0 0 1 2.24 0z" />
-                    <path d="M12 3.4c2.2 0 2.5 0 3.4.1 1.7.1 2.6.4 3.2 1 .6.6.9 1.5 1 3.2.1.9.1 1.2.1 3.4s0 2.5-.1 3.4c-.1 1.7-.4 2.6-1 3.2-.6.6-1.5.9-3.2 1-.9.1-1.2.1-3.4.1s-2.5 0-3.4-.1c-1.7-.1-2.6-.4-3.2-1-.6-.6-.9-1.5-1-3.2-.1-.9-.1-1.2-.1-3.4s0-2.5.1-3.4c.1-1.7.4-2.6 1-3.2.6-.6 1.5-.9 3.2-1 .9-.1 1.2-.1 3.4-.1zm0-1.6c-2.3 0-2.6 0-3.5.1-1.9.1-3.2.4-4.3 1.5-1.1 1.1-1.4 2.4-1.5 4.3-.1.9-.1 1.2-.1 3.5s0 2.6.1 3.5c.1 1.9.4 3.2 1.5 4.3 1.1 1.1 2.4 1.4 4.3 1.5.9.1 1.2.1 3.5.1s2.6 0 3.5-.1c1.9-.1 3.2-.4 4.3-1.5 1.1-1.1 1.4-2.4 1.5-4.3.1-.9.1-1.2.1-3.5s0-2.6-.1-3.5c-.1-1.9-.4-3.2-1.5-4.3-1.1-1.1-2.4-1.4-4.3-1.5-.9-.1-1.2-.1-3.5-.1z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://wa.me" aria-label="WhatsApp">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M19.1 4.9A9.9 9.9 0 0 0 3.3 17.2L2 22l4.9-1.3A9.9 9.9 0 0 0 19.1 4.9zm-7.1 15.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.7.9-.1.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.1.1-.3.2-.4 0-.1 0-.3 0-.4 0-.1-.5-1.3-.7-1.8-.2-.5-.4-.4-.5-.4h-.4c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4 1.5.6 2 .7 2.7.6.4-.1 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1-.1 0-.3-.1-.5-.2z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://www.tiktok.com" aria-label="TikTok">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M16 4c.3 2 1.5 3.4 3.5 3.6v2.4c-1.2 0-2.4-.4-3.5-1.1v5.4c0 2.9-2.1 5-4.9 5-2.7 0-4.8-2-4.8-4.7 0-2.8 2.3-4.9 5.3-4.6v2.5c-.4-.1-.8-.2-1.1-.2-1.2 0-2.1.9-2.1 2.1 0 1.3.9 2.2 2.2 2.2 1.3 0 2.3-1 2.3-2.6V4H16z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://www.snapchat.com" aria-label="Snapchat">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 3.2c2.4 0 4.4 1.7 4.4 4.6v.3c1.1.2 1.8 1 1.8 2.1 0 .5-.2.9-.6 1.2.1.5.5 1.4 1.5 1.9.3.2.4.6.2.9-.2.3-.6.4-1 .3-.8-.2-1.5-.1-2.1.2-.3.9-.9 1.6-2.1 2 .4.3 1.2.7 1.2 1.3 0 .5-.5.8-1.2.8-.3 0-.6 0-.8-.1-.1 1.1-.6 2.1-2.3 2.1s-2.2-1-2.3-2.1c-.2.1-.5.1-.8.1-.7 0-1.2-.3-1.2-.8 0-.6.8-1 1.2-1.3-1.2-.4-.9-1.1-2.1-2-.6-.3-1.3-.4-2.1-.2-.4.1-1 0-1-.3-.2-.3-.1-.7.2-.9 1-.5.9-1.4 1.5-1.9-.4-.3-.6-.7-.6-1.2 0-1.1.7-1.9 1.8-2.1v-.3c0-2.9 2-4.6 4.4-4.6z" />
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <a className={socialLink} href="https://www.linkedin.com" aria-label="LinkedIn">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M6.5 9.2H4V20h2.5V9.2zM5.2 4A1.5 1.5 0 1 0 5.2 7a1.5 1.5 0 0 0 0-3zM20 20h-2.5v-5.6c0-1.5-.5-2.5-1.8-2.5-1 0-1.5.7-1.8 1.3-.1.2-.1.6-.1.9V20H11V9.2h2.4v1.5c.4-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8V20z" />
-                  </svg>
-                </a>
-              </li>
-            </ul>
-          </section>
         </div>
 
         <div className={footerLegal}>

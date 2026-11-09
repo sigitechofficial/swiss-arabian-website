@@ -57,7 +57,8 @@ export function isActiveOrder(status: string): boolean {
 /** Placed but not paid — offer to complete payment. */
 export function needsPayment(status: string, paymentStatus?: string | null): boolean {
   const pay = paymentStatus?.toUpperCase();
-  return status === "PAYMENT_PENDING" && pay !== "PAID" && pay !== "AUTHORIZED";
+  const settled = pay === "PAID" || pay === "AUTHORIZED" || pay === "PARTIALLY_REFUNDED" || pay === "REFUNDED";
+  return status === "PAYMENT_PENDING" && !settled;
 }
 
 export type OrderPrimaryAction = "pay" | "track" | "view";

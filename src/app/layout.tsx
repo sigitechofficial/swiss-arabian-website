@@ -2,10 +2,23 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { env } from "@/lib/config/env";
+import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { AppProviders } from "./providers";
 import "./globals.css";
 
-export const metadata: Metadata = {
+/**
+ * metadataBase = this market's domain, so canonical, hreflang and og:url are
+ * absolute addresses (Google ignores relative hreflang).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const origin = await requestOrigin();
+  return {
+    ...(origin ? { metadataBase: new URL(origin) } : {}),
+    ...baseMetadata,
+  };
+}
+
+const baseMetadata: Metadata = {
   title: {
     default: "Swiss Arabian",
     template: "%s · Swiss Arabian",

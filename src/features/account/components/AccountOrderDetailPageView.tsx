@@ -1,5 +1,6 @@
 "use client";
 
+import { orderPaymentLabel } from "@/features/checkout/utils/methodLabels";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -276,7 +277,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                 {order.selectedPaymentMethod ? (
                   <div className="border border-sa-border px-4 py-3">
                     <p className="mb-1 text-[10px] uppercase tracking-widest text-sa-muted">Payment</p>
-                    <p className="text-[13px] font-medium text-sa-primary">{order.selectedPaymentMethod.methodCode ?? "—"}</p>
+                    <p className="text-[13px] font-medium text-sa-primary">{orderPaymentLabel(order.selectedPaymentMethod)}</p>
                   </div>
                 ) : null}
               </div>

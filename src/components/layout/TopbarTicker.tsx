@@ -92,6 +92,7 @@ export function TopbarTicker() {
         <motion.p
           className={topbarTickerLine}
           key={messages[index]}
+          title={messages[index]}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

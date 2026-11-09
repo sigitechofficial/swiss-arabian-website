@@ -24,6 +24,7 @@ function toLinks(items: readonly NavItem[]): ChromeLink[] {
  * The API nests three levels, and a top-level menu mixes two child styles:
  *   item → GROUP_HEADER → links   (a titled column, e.g. PERFUMES → TYPE)
  *   item → links                  (loose links, e.g. INCENSE → DUKHOON…)
+ *   item → link → links           (a linked column, e.g. PERFUMES → HAIR MIST → products)
  * Loose links have no heading of their own, so they're gathered into a single
  * column titled after their parent. A menu with no usable children degrades to
  * a plain link rather than an empty mega panel.
@@ -42,13 +43,20 @@ export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
     if (item.type === "GROUP_HEADER") continue;
 
     const children = item.children ?? [];
-    const groups: Array<{ heading: string; links: ChromeLink[] }> = [];
+    const groups: Array<{ heading: string; href?: string; links: ChromeLink[] }> = [];
     const loose: NavItem[] = [];
 
     for (const child of children) {
+      const childLinks = toLinks(child.children ?? []);
       if (child.type === "GROUP_HEADER") {
-        const links = toLinks(child.children ?? []);
-        if (links.length) groups.push({ heading: child.label, links });
+        if (childLinks.length) groups.push({ heading: child.label, links: childLinks });
+      } else if (childLinks.length) {
+        // A link with its own links is a column whose heading is that link.
+        groups.push({
+          heading: child.label,
+          ...(child.href ? { href: child.href } : {}),
+          links: childLinks,
+        });
       } else {
         loose.push(child);
       }

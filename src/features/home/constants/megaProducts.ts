@@ -2,7 +2,8 @@ export type MegaProduct = {
   id: string;
   name: string;
   slug: string;
-  price: number;
+  /** Live market price; null for curated tiles (never show a hard-coded price). */
+  price: number | null;
   currency: string;
   image: string;
   notes?: string;

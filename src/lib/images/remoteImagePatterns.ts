@@ -60,7 +60,6 @@ export const REMOTE_IMAGE_PATTERNS: RemoteImagePattern[] = [
     hostname: "stswissarabiandev.blob.core.windows.net",
     pathname: "/catalog-images/**",
   },
-  { protocol: "https", hostname: "dossier.eu", pathname: "/cdn/shop/files/**" },
   { protocol: "https", hostname: "swissarabian.com", pathname: "/cdn/shop/files/**" },
   ...catalogMediaPatterns,
 ];

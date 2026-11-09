@@ -146,11 +146,14 @@ export function CheckoutPayment({
                               disabled={submitting || row.disabled}
                               onChange={() => pick(row)}
                               className="size-[18px] accent-copper"
+                              // Name the option by what the shopper sees, never by the internal key in `value`.
+                              aria-label={row.title}
+                              aria-describedby={row.sub ? `pay-opt-note-${row.key}` : undefined}
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
-                              {row.sub ? <span className={payOptNote}>{row.sub}</span> : null}
+                              {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}
                             </span>
                             {row.marks ? <BrandMarks marks={row.marks} /> : null}
                             {row.badge ? <span className={payOptBadge}>{row.badge}</span> : null}

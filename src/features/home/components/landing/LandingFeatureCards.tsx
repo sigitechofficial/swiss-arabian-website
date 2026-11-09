@@ -11,7 +11,6 @@ import {
   featureCards,
   featureCardsList,
 } from "@/styles/landingChrome";
-import { FEATURE_CARDS } from "../../constants/landingContent";
 
 const FEATURE_BG = [featureBg1, featureBg2, featureBg3, featureBg4] as const;
 
@@ -36,13 +35,8 @@ export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
       text: item.text ?? "",
       bg: FEATURE_BG[index % FEATURE_BG.length],
     })) ??
-    FEATURE_CARDS.map((card, index) => ({
-      id: card.className,
-      image: card.image,
-      title: card.title as unknown as [string, string],
-      text: card.text,
-      bg: FEATURE_BG[index % FEATURE_BG.length],
-    }));
+    // Only brand claims entered in the CMS. No built-in claims or stock images.
+    [];
 
   if (!cards.length) return null;
 

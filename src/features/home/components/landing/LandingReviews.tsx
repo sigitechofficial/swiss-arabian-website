@@ -1,4 +1,3 @@
-import { REVIEWS } from "../../constants/landingContent";
 import {
   eyebrow,
   reviewBody,
@@ -58,13 +57,8 @@ export function LandingReviews({
         .join(" · "),
       rating: item.rating ?? 5,
     })) ??
-    REVIEWS.map((review, index) => ({
-      id: `legacy-${index}`,
-      body: review.body,
-      name: review.name,
-      product: review.product,
-      rating: 5,
-    }));
+    // Only real reviews (CMS / review data). Never placeholder testimonials.
+    [];
 
   if (!reviews.length) return null;
 

@@ -4,7 +4,8 @@ export type ChromeMega = {
   id: string;
   label: string;
   href: string;
-  groups: Array<{ heading: string; links: ChromeLink[] }>;
+  /** A heading may itself be a link (e.g. HAIR MIST above its products). */
+  groups: Array<{ heading: string; href?: string; links: ChromeLink[] }>;
   promo?: { image: string; copy: string; cta: string; href: string; cover?: boolean };
 };
 

@@ -169,9 +169,12 @@ export function deliveryFeeLabel(method: DeliveryMethodOption, currency: string)
 // ─── Order summaries (confirmation page) ────────────────────────────────────
 
 export function orderPaymentLabel(
-  method: { providerCode: string | null; methodCode: string | null } | null,
+  method: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null,
 ): string {
   if (!method) return "—";
+  // The backend sends the shopper-facing PaymentMethod.displayName; codes are a fallback only.
+  const displayName = method.displayName?.trim();
+  if (displayName) return displayName;
   const provider = method.providerCode?.toLowerCase();
   if (provider === "paymob") return "Card · Paymob";
   if (provider === "stripe") return "Card · Stripe";

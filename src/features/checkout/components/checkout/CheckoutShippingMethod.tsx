@@ -41,10 +41,15 @@ export function CheckoutShippingMethod({
                   checked={active}
                   disabled={submitting}
                   onChange={() => onSelect(method.zoneDeliveryMethodId)}
+                  // Name the option by what the shopper sees, never by the method id in `value`.
+                  aria-label={method.displayName}
+                  aria-describedby={`ship-opt-note-${method.zoneDeliveryMethodId}`}
                 />
                 <span>
                   <span className={payOptTitle}>{method.displayName}</span>
-                  <span className={payOptNote}>{[eta, deliveryFeeLabel(method, currency)].filter(Boolean).join(" · ")}</span>
+                  <span id={`ship-opt-note-${method.zoneDeliveryMethodId}`} className={payOptNote}>
+                    {[eta, deliveryFeeLabel(method, currency)].filter(Boolean).join(" · ")}
+                  </span>
                 </span>
               </label>
             );
