@@ -279,6 +279,7 @@ Found while testing storefront, admin, returns, refunds and simulated shipping o
 | Document | What it is | Where |
 | --- | --- | --- |
 | This handover | What was fixed and why, by area | `docs/PLATFORM_FIXES_HANDOVER_2026-11.md` in each repo (same file) |
+| Product URLs and SEO | Why products have one address (`/products/{handle}`), how old Shopify collection links redirect, breadcrumbs, and the product page SEO tags | Storefront repo: `docs/storefront/PRODUCT_URLS_AND_SEO.md` |
 | Platform Production Readiness Plan | The overall rebuild plan, decisions log and findings log | https://claude.ai/artifact/QYxofBqEu35LdakLNLP3k7 |
 | End-to-end QA report | Results of the order lifecycle test run (order, payment, D365, returns, refunds, exchanges) | https://claude.ai/artifact/3pCeyGXCeoMPfieZpck6rV |
 | Integrations and accounts plan | How the admin will show which account each brand uses, sharing, test/live, phases | Backend repo: `docs/integrations/INTEGRATIONS_ACCOUNTS_PLAN.md` |
