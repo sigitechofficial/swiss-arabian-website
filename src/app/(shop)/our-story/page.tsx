@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import {
+  CatalogJsonLd,
+  pageBreadcrumbJsonLd,
+} from "@/features/catalog/components/CatalogJsonLd";
 import { faqDrawers } from "@/features/faq/data/faqContent";
 import { SitePageView } from "@/features/site-pages/components/SitePageView";
 import {
@@ -25,6 +29,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function OurStoryPage() {
   const { locale, page } = await loadStory();
-  if (page) return <SitePageView page={page} locale={locale} />;
+  if (page) {
+    return (
+      <>
+        <CatalogJsonLd data={pageBreadcrumbJsonLd(locale, { name: page.title, path: "/our-story" })} />
+        <SitePageView page={page} locale={locale} />
+      </>
+    );
+  }
   return <FeaturePlaceholder title="Our story" description={BRAND_HISTORY} />;
 }

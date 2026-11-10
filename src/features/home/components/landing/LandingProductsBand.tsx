@@ -90,9 +90,9 @@ export function LandingProductsBand({
       <div className={pageContainer}>
         <header className={productsBandHead}>
           <div>
-            <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="prodTitle">
+            <p className={`${sectionTitle} ${sectionTitleFlush}`} id="prodTitle">
               {heading}
-            </h2>
+            </p>
           </div>
           {allHref ? (
             <LocaleLink
@@ -195,7 +195,7 @@ export function LandingProductsBand({
                   </div>
                 ) : null}
                 <div>
-                  <h3 className={cardName}>{product.title}</h3>
+                  <p className={cardName}>{product.title}</p>
                   <p className={cardPrice}>
                     {formatMoney(product.price, product.currency)}
                   </p>

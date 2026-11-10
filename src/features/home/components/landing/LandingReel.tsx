@@ -239,7 +239,7 @@ export function LandingReel({ heading }: LandingReelProps = {}) {
   return (
     <section id="scent-reel" className={reelSection} aria-label={title}>
       <div className={`${pageContainer} text-center`}>
-        <h2 className={reelHeading}>{title}</h2>
+        <p className={reelHeading}>{title}</p>
         <div className={reelMark} aria-hidden="true">
           <svg className={reelMarkSvg} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 445 190.1" fill="none">
             <path

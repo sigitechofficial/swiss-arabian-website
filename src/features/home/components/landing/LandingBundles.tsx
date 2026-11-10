@@ -152,9 +152,9 @@ export function LandingBundles({
       <div className={bundleScrim} aria-hidden="true" />
       <div className={bundleContent}>
         <p className={visuallyHidden}>{eyebrow}</p>
-        <h2 className={visuallyHidden} id="campaign-heading">
+        <p className={visuallyHidden} id="campaign-heading">
           {heading}
-        </h2>
+        </p>
         <p className={visuallyHidden}>{description}</p>
         <div className={bundleActions} data-campaign-actions>
           {primaryCtaHref ? (

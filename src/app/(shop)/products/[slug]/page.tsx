@@ -15,6 +15,7 @@ import {
 import { loadBrandIdentityFor } from "@/lib/seo/brandIdentity";
 import { applySeoOverrides } from "@/lib/seo/pageSeo";
 import { effectiveProductSeo, parseSchemaOverride } from "@/lib/seo/productSeo";
+import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
 
 export async function generateMetadata({
   params,
@@ -66,6 +67,12 @@ export default async function ProductDetailPage({
   const seo = effectiveProductSeo(product?.seo, market.zoneId);
   const schemaOverride = parseSchemaOverride(seo?.schemaOverride);
   const brand = await loadBrandIdentityFor(locale, market.zoneCode ?? "");
+  // Share buttons point at the same canonical address as the page head.
+  const origin = await requestOrigin();
+  const share = {
+    url: absoluteUrl(origin, seo?.canonicalUrl || path),
+    image: product?.imageUrl ? absoluteUrl(origin, product.imageUrl) : null,
+  };
   return (
     <>
       {seo?.schemaEnabled === false ? null : schemaOverride ? (
@@ -103,7 +110,7 @@ export default async function ProductDetailPage({
           { name, url: path },
         ])}
       />
-      <ProductDetailPageView product={product} slug={slug} />
+      <ProductDetailPageView product={product} slug={slug} share={share} />
     </>
   );
 }

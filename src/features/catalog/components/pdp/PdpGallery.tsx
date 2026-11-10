@@ -36,6 +36,12 @@ type PdpGalleryProps = {
   onImageError: (src: string) => void;
 };
 
+/** Alt text per gallery image: the product name, numbered when there are several. */
+export function galleryImageAlt(title: string, index: number, count: number): string {
+  const name = title.trim();
+  return count > 1 ? `${name} – image ${index + 1} of ${count}` : name;
+}
+
 export function PdpGallery({ images, title, resetKey, outOfStock = false, onImageError }: PdpGalleryProps) {
   const [activeImage, setActiveImage] = useState(0);
   const thumbsRef = useRef<HTMLDivElement>(null);
@@ -65,7 +71,13 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
                 aria-selected={index === activeImage}
                 onClick={() => setActiveImage(index)}
               >
-                <MediaImage className={thumbImg} src={src} alt="" width={160} height={160} />
+                <MediaImage
+                  className={thumbImg}
+                  src={src}
+                  alt={galleryImageAlt(title, index, images.length)}
+                  width={160}
+                  height={160}
+                />
               </button>
             ))}
           </div>
@@ -96,7 +108,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
               key={heroSrc}
               className={pdpBottle}
               src={heroSrc}
-              alt={title}
+              alt={galleryImageAlt(title, activeImage, images.length)}
               width={1000}
               height={1000}
               loading="eager"

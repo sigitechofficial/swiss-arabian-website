@@ -61,9 +61,9 @@ export function LandingPlans({
       <div className={pageContainer}>
         <header className={sectionHead}>
           {eyebrowText ? <p className={eyebrow}>{eyebrowText}</p> : null}
-          <h2 className={sectionTitle} id="plansTitle">
+          <p className={sectionTitle} id="plansTitle">
             {heading}
-          </h2>
+          </p>
           {description ? <p className={lead}>{description}</p> : null}
           {editorialPricingOnly && plans ? (
             <p className={lead}>
@@ -85,7 +85,7 @@ export function LandingPlans({
                 }
               >
                 <div className={planHead}>
-                  <h3 className={planName}>{plan.name}</h3>
+                  <p className={planName}>{plan.name}</p>
                   {plan.featured || plan.badgeLabel ? (
                     <span className={planBadge}>
                       {plan.badgeLabel || "Most popular"}

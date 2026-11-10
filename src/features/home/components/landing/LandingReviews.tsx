@@ -67,9 +67,9 @@ export function LandingReviews({
       <div className={pageContainer}>
         <header className={reviewsHead}>
           {eyebrowText ? <p className={eyebrow}>{eyebrowText}</p> : null}
-          <h2 className={sectionTitle} id="reviews-heading">
+          <p className={sectionTitle} id="reviews-heading">
             {heading}
-          </h2>
+          </p>
           {summaryLabel ? (
             <p className={reviewsRating}>
               <span className={reviewStars} aria-hidden="true">

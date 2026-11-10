@@ -123,7 +123,7 @@ export function CatalogProductCard({
         <div className={cardAddSlot}>{addControl ?? <AddToBagButton product={product} variant="product" />}</div>
       )}
       <div>
-        <h3 className={dense ? cardNameDense : relatedName}>{product.title}</h3>
+        <p className={dense ? cardNameDense : relatedName}>{product.title}</p>
         <p className={dense ? cardPriceDense : relatedPrice}>
           {product.price == null ? "Unavailable" : formatMoney(product.price, product.currency)}
         </p>

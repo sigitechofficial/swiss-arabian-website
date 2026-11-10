@@ -130,9 +130,9 @@ export function PdpReviews({
         <header className={reviewsHead}>
           <div className={reviewsCopy}>
             <p className={compositionEyebrow}>Customer reviews</p>
-            <h2 className={reviewsTitle} id="pdp-reviews-heading">
+            <p className={reviewsTitle} id="pdp-reviews-heading">
               What customers <em className={compositionEm}>say.</em>
-            </h2>
+            </p>
           </div>
           <div className={reviewsActions}>
             {items.length > 1 ? (
@@ -158,7 +158,7 @@ export function PdpReviews({
         {open ? (
           <form className={reviewForm} noValidate onSubmit={form.handleSubmit(onSubmit)}>
             <div className={reviewIntro}>
-              <h3>Write a review</h3>
+              <div data-heading>Write a review</div>
               <p>Share how {productTitle} wears on you. It appears after approval.</p>
             </div>
             <div className={reviewGrid}>

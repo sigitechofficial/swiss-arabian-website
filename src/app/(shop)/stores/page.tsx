@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import {
+  CatalogJsonLd,
+  pageBreadcrumbJsonLd,
+} from "@/features/catalog/components/CatalogJsonLd";
 import { SitePageView } from "@/features/site-pages/components/SitePageView";
 import {
   loadMarketFixedPage,
@@ -18,7 +22,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function StoresPage() {
   const { locale, page } = await loadStores();
-  if (page) return <SitePageView page={page} locale={locale} />;
+  if (page) {
+    return (
+      <>
+        <CatalogJsonLd data={pageBreadcrumbJsonLd(locale, { name: page.title, path: "/stores" })} />
+        <SitePageView page={page} locale={locale} />
+      </>
+    );
+  }
   return (
     <FeaturePlaceholder
       title={locale === "ar" ? "متاجرنا" : "Our stores"}

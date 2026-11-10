@@ -228,12 +228,12 @@ export function ProductCompanions({
       {bundle && pieces.length > 0 ? (
         <section className="bg-warm py-16" aria-labelledby="companion-heading">
           <div className={pageContainer}>
-            <div className="mb-8 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_h2]:m-0 [&_h2]:text-[clamp(1.6rem,3vw,2.2rem)] [&_h2]:font-medium">
+            <div className="mb-8 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_[data-heading]]:m-0 [&_[data-heading]]:text-[clamp(1.6rem,3vw,2.2rem)] [&_[data-heading]]:font-medium">
               <div>
                 <p className="m-0 mb-1.5 text-[0.72rem] font-bold tracking-[0.08em] text-copper uppercase">
                   Often bought together
                 </p>
-                <h2 id="companion-heading">{bundle.heading}</h2>
+                <div data-heading id="companion-heading">{bundle.heading}</div>
               </div>
               {fresh?.message ? <p className="m-0">{fresh.message}</p> : null}
             </div>
@@ -295,9 +295,9 @@ export function ProductCompanions({
                         </span>
                       )}
                       <div className="flex flex-1 flex-col gap-1 px-2 pt-3 pb-2">
-                        <h3 className="m-0 font-[family-name:var(--font-display)] text-[0.98rem] leading-snug text-[#2a201a]">
+                        <p className="m-0 font-[family-name:var(--font-display)] text-[0.98rem] leading-snug text-[#2a201a]">
                           {product.title}
-                        </h3>
+                        </p>
                         {product.price ? (
                           <p className="m-0 text-[0.85rem] font-semibold text-copper">
                             {product.price}
@@ -309,7 +309,7 @@ export function ProductCompanions({
                 })}
               </ul>
               <aside className={cartSummary}>
-                <h2 className={cartSummaryTitle}>Summary</h2>
+                <p className={cartSummaryTitle}>Summary</p>
                 {subtotal != null && total != null && discount != null ? (
                   <MoneySummary
                     className={cartTotals}
@@ -356,7 +356,7 @@ export function ProductCompanions({
         <section className={related} key={group.id}>
           <div className={pageContainer}>
             <div className={relatedHead}>
-              <h2 className={relatedTitle}>{group.heading}</h2>
+              <p className={relatedTitle}>{group.heading}</p>
               {group.seeAllPath ? (
                 <LocaleLink className={relatedAll} href={group.seeAllPath}>
                   {data.copy.seeAll}

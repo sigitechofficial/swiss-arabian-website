@@ -11,11 +11,12 @@ export function NavbarBoutiqueActions({ chrome }: { chrome: NavbarChrome }) {
       <LocaleLink
         className={navTool}
         href={chrome.isAuthenticated ? "/account" : "/login"}
+        aria-label="Account"
       >
         <AccountIcon />
         <span className={navToolLabel}>Account</span>
       </LocaleLink>
-      <LocaleLink className={navTool} href="/account/wishlist">
+      <LocaleLink className={navTool} href="/account/wishlist" aria-label="Wishlist">
         <HeartIcon />
         <span className={navToolLabel}>Wishlist</span>
       </LocaleLink>
@@ -24,6 +25,7 @@ export function NavbarBoutiqueActions({ chrome }: { chrome: NavbarChrome }) {
         className={navTool}
         type="button"
         aria-controls="cart-drawer"
+        aria-label={chrome.itemCount > 0 ? `Cart, ${chrome.itemCount} items` : "Cart"}
         onClick={() => chrome.setCartOpen(true)}
       >
         <span className={navToolIcon}>

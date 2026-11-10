@@ -53,10 +53,11 @@ export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
                   ) : null}
                 </div>
                 <div className={featureCardCopy}>
-                  <h2>
+                  {/* A label, not a heading (SEO audit); styled via data-feature-title. */}
+                  <div data-feature-title>
                     {card.title[0]} <br />
                     <strong>{card.title[1]}</strong>
-                  </h2>
+                  </div>
                   {card.text ? <p>{card.text}</p> : null}
                 </div>
               </div>

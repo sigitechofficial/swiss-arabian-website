@@ -8,7 +8,8 @@ import {
   type LoyaltyTierView,
   type LoyaltyWalletView,
 } from "../types/loyalty";
-import { MediaImage } from "@/components/ui/MediaImage";
+import { MediaImage } from "@/components/ui/MediaImage";
+import { storefrontLogo } from "@/lib/storefront/brand";
 
 function windowCopy(days: number): string {
   return days === 1 ? "Last 1 day" : `Last ${days} days`;
@@ -126,7 +127,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
                     }}
                   >
                     <MediaImage
-                      src="/assets/sa-logo-clear.png"
+                      src={storefrontLogo().src}
                       alt=""
                       width={28}
                       height={28}

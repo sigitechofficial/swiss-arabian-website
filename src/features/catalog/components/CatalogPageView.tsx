@@ -3,16 +3,24 @@
 import { ProductCatalogView } from "./ProductCatalogView";
 import { useCatalogPlp } from "../hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "../types/catalogFacets";
+import type { ProductListResult } from "../api/catalog.service";
 
 /** All fragrances — `GET /storefront/catalog/products` with listing facets. */
 export function CatalogPageView({
   listingQuery,
+  initialListing,
+  initialZoneCode,
 }: {
   listingQuery: CatalogListingQuery;
+  /** Products the server already rendered (crawlable). */
+  initialListing?: ProductListResult | null;
+  initialZoneCode?: string | null;
 }) {
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     { kind: "products" },
     listingQuery,
+    initialListing,
+    initialZoneCode,
   );
 
   return (

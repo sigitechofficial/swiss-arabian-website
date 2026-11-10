@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
+import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { env } from "@/lib/config/env";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
@@ -42,7 +43,18 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className="h-full antialiased" suppressHydrationWarning>
       <head>
-        <link href="https://fonts.cdnfonts.com/css/bentonsans-regular" rel="stylesheet" />
+        {/* Main site font weights load first (page speed). The "BentonSans Regular" option in
+            globals.css also needs https://fonts.cdnfonts.com/css/bentonsans-regular here. */}
+        {[400, 500, 700].map((weight) => (
+          <link
+            key={weight}
+            rel="preload"
+            href={`/fonts/benton-sans-wide-${weight}.woff2`}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {env.insider.enabled && env.insider.accountId ? (
           <>
@@ -59,6 +71,7 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="flex min-h-dvh flex-col">
+        <AnalyticsScripts />
         <InsiderScripts />
         <AppProviders>{children}</AppProviders>
       </body>

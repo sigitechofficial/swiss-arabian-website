@@ -2,7 +2,8 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { storefrontLogo } from "@/lib/storefront/brand";
 
 /** Mirrors the reference auth pages (`/login`, `/register`, `/forgot-password`)
  *  on the production storefront — a slow, auto-rotating brand slideshow with
@@ -78,7 +79,7 @@ export function AuthVisualPanel() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/sa-logo-clear.png"
+            src={storefrontLogo().src}
             alt=""
             className="h-full w-full object-contain object-left [filter:brightness(0)_invert(0.93)_sepia(0.12)]"
           />

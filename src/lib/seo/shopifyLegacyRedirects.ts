@@ -36,7 +36,32 @@ const PAGE_REDIRECTS: Record<string, string> = {
   subscriptions: "/subscriptions",
 };
 
+/**
+ * Old links with a market folder (e.g. "/uae/return-policy/" in imported FAQ text).
+ * The market is chosen by the shopper here, so the folder is dropped.
+ */
+const MARKET_FOLDER = /^\/(uae|ae|ksa|sa|qatar|qa)(\/.*)?$/i;
+
+/** Short Shopify paths (no "/pages/") seen in imported content. */
+const SHORT_PAGE_REDIRECTS: Record<string, string> = {
+  "return-policy": "/policies/refund-policy",
+  "returns": "/policies/refund-policy",
+  "refund-policy": "/policies/refund-policy",
+  "track-order": "/track",
+  "track-your-order": "/track",
+};
+
 function rewriteBare(path: string): string | null {
+  const folder = MARKET_FOLDER.exec(path);
+  if (folder) {
+    const rest = folder[2] && folder[2] !== "/" ? folder[2] : "/";
+    return rewriteBare(rest) ?? rest.replace(/(.)\/$/, "$1");
+  }
+  const short = /^\/([^/]+)\/?$/.exec(path);
+  if (short && SHORT_PAGE_REDIRECTS[short[1].toLowerCase()]) {
+    return SHORT_PAGE_REDIRECTS[short[1].toLowerCase()];
+  }
+
   // /collections/{collection}/products/{product} → canonical product URL.
   const nested = /^\/collections\/[^/]+\/products\/([^/]+)\/?$/.exec(path);
   if (nested) return `/products/${nested[1]}`;

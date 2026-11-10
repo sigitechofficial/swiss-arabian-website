@@ -60,6 +60,14 @@ export function CollectionDetailPageView({
               image: heroImage,
               imageAlt: collection.imageAlt,
               mobileImage: apiImage ? (collection.imageMobile ?? null) : null,
+              size: apiImage
+                ? {
+                    width: collection.imageWidth ?? null,
+                    height: collection.imageHeight ?? null,
+                    mobileWidth: collection.imageMobileWidth ?? null,
+                    mobileHeight: collection.imageMobileHeight ?? null,
+                  }
+                : null,
               // Store banners are wide artwork: shown full width, never cropped.
               wide: Boolean(apiImage),
             }

@@ -22,6 +22,11 @@ describe("shopifyLegacyRedirect", () => {
       "/ar/products/shaghaf-oud-75ml",
     ],
     ["/ar/account/login", "/ar/login"],
+    ["/uae/return-policy/", "/policies/refund-policy"],
+    ["/uae/track-order/", "/track"],
+    ["/ksa/pages/faq", "/faq"],
+    ["/uae/products/rose-01", "/products/rose-01"],
+    ["/ar/uae/return-policy", "/ar/policies/refund-policy"],
   ])("%s → %s", (from, to) => {
     expect(shopifyLegacyRedirect(from)).toBe(to);
   });

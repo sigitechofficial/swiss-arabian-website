@@ -165,9 +165,9 @@ function PayDialog({
         </button>
 
         <span className={mark}>{name}</span>
-        <h2 className={pdpPayTitle} id={titleId}>
+        <p className={pdpPayTitle} id={titleId}>
           Pay in 4, interest-free
-        </h2>
+        </p>
         <p className={pdpPayLede}>
           Split <strong>{formatMoney(price, currency)}</strong> into 4 payments with {name}. No interest.
         </p>
@@ -182,7 +182,7 @@ function PayDialog({
           ))}
         </ol>
 
-        <h3 className={pdpPayHeading}>How it works</h3>
+        <p className={pdpPayHeading}>How it works</p>
         <ol className={pdpPaySteps}>
           <li>Add your fragrances to the bag and go to checkout.</li>
           <li>Choose {name} as your payment method.</li>

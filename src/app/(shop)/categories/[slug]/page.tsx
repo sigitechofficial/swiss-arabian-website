@@ -11,6 +11,7 @@ import {
   canonicalCatalogPath,
   catalogMetadata,
   loadCatalogDocument,
+  loadServerListing,
 } from "@/lib/seo/catalogPage";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 
@@ -62,6 +63,11 @@ export default async function CategoryPage({
   }
   const listingQuery = parseCatalogListingParams(await searchParams);
   const handle = category?.slug || slug;
+  // Plain pages (no sort / price filter) are server-rendered so crawlers see the products.
+  const serverRendered = !listingQuery.minPrice && !listingQuery.sort;
+  const { listing, zoneCode } = serverRendered
+    ? await loadServerListing("category", handle, listingQuery.page)
+    : { listing: null, zoneCode: "" };
   const path = canonicalCatalogPath(`/categories/${handle}`, locale);
   const name = category?.name || slug;
   return (
@@ -79,6 +85,8 @@ export default async function CategoryPage({
         slug={handle}
         listingQuery={listingQuery}
         category={category}
+        initialListing={listing}
+        initialZoneCode={zoneCode}
       />
     </>
   );

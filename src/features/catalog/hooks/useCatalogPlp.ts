@@ -27,7 +27,8 @@ export function useCatalogPlp(
     initialPage && (!zoneCode || !initialZoneCode || zoneCode === initialZoneCode)
       ? initialPage
       : null;
-  const filterKey = { ...listingQuery, page: 1 };
+  const firstPageParam = Math.max(1, listingQuery.page || 1);
+  const filterKey = { ...listingQuery, page: firstPageParam };
 
   const query = useInfiniteQuery({
     queryKey: [
@@ -46,7 +47,7 @@ export function useCatalogPlp(
       ),
     enabled: Boolean(market),
     initialData: initialForThisMarket
-      ? { pages: [initialForThisMarket], pageParams: [1] }
+      ? { pages: [initialForThisMarket], pageParams: [firstPageParam] }
       : undefined,
     staleTime: 30_000,
     placeholderData: (previous, previousQuery) => {
@@ -56,7 +57,7 @@ export function useCatalogPlp(
       if (!key.includes(zoneCode) || !key.includes(channel)) return undefined;
       return previous;
     },
-    initialPageParam: 1,
+    initialPageParam: firstPageParam,
     getNextPageParam: (lastPage) => {
       if (!lastPage.facets) return undefined;
       const { page, totalPages } = lastPage.pagination;
@@ -92,7 +93,9 @@ export function useCatalogPlp(
     facets: firstPage?.facets ?? null,
     pagination: lastPage?.pagination ?? firstPage?.pagination ?? null,
     serverFiltered,
-    loading: !market || (query.isPending && !query.isError && !query.data),
+    // Server-rendered products show at once (also before the market is known in the
+    // browser), so the HTML search engines read has the product grid.
+    loading: !query.data && (!market || (query.isPending && !query.isError)),
     isFetching: query.isFetching,
     hasNextPage: Boolean(query.hasNextPage),
     isFetchingNextPage: query.isFetchingNextPage,

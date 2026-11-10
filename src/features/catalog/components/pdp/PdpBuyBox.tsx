@@ -27,6 +27,7 @@ import { reviewStarsLabel } from "../../utils/pdpReviews";
 import { PdpScentFamily } from "../PdpScentFamily";
 import { PdpBuyBar } from "./PdpBuyBar";
 import { PdpInstalments } from "./PdpInstalments";
+import { PdpShare } from "./PdpShare";
 
 type PdpBuyBoxProps = {
   product: CatalogProduct;
@@ -40,6 +41,8 @@ type PdpBuyBoxProps = {
   zoneCode: string;
   cartLine: CartLine | undefined;
   scentFallback: CatalogProduct[];
+  /** Canonical product address and share image; no share row without it. */
+  share?: { url: string; image?: string | null } | null;
 };
 
 export function PdpBuyBox({
@@ -53,6 +56,7 @@ export function PdpBuyBox({
   zoneCode,
   cartLine,
   scentFallback,
+  share,
 }: PdpBuyBoxProps) {
   const [offersOpen, setOffersOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -140,6 +144,7 @@ export function PdpBuyBox({
       ) : null}
 
       <PdpBuyBar product={product} cartLine={cartLine} onQuantityChange={setQuantity} />
+      {share ? <PdpShare url={share.url} title={product.title} image={share.image} /> : null}
       <PdpScentFamily current={product} familyCode={familyCode} zoneCode={zoneCode} fallback={scentFallback} />
       <OffersForYou
         product={product}

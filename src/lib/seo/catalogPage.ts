@@ -4,11 +4,16 @@ import type { Metadata } from "next";
 import { loadBrandIdentityFor, namesBrand, type BrandIdentity } from "@/lib/seo/brandIdentity";
 import {
   fetchCategoryBySlugOutcome,
+  fetchCategoryProducts,
   fetchCollectionBySlug,
   fetchCollectionProducts,
   fetchProductBySlugOutcome,
+  fetchProducts,
 } from "@/features/catalog/api/catalog.service";
 import { fetchStorefrontMarkets } from "@/features/markets/api/markets.service";
+import { marketContentLanguage } from "@/features/markets/utils/marketContentLanguage";
+import { fetchPublishedHome } from "@/features/cms/api/cmsContent.service";
+import type { CmsHomeResult } from "@/features/cms/types/cmsHome.types";
 import type { StorefrontMarket } from "@/features/markets/types/market";
 import type { ProductListResult } from "@/features/catalog/api/catalog.service";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -65,7 +70,31 @@ export async function resolveServerCatalogMarket() {
     locale,
     zoneCode,
     market: chosen ? marketContext(chosen, locale) : { languageCode: locale },
+    /** Code the market publishes content under for this language (e.g. "en-us"). */
+    contentLanguage: chosen
+      ? (marketContentLanguage(chosen.languages, locale) ?? locale)
+      : "",
   };
+}
+
+/**
+ * Published homepage sections, loaded on the server so the first HTML already has
+ * the homepage (search engines, no layout jump). Null when it can't load: the
+ * browser then loads it as before.
+ */
+export async function loadServerHome(): Promise<{
+  zoneCode: string;
+  languageCode: string;
+  data: CmsHomeResult;
+} | null> {
+  const { zoneCode, contentLanguage } = await resolveServerCatalogMarket();
+  if (!zoneCode || !contentLanguage) return null;
+  try {
+    const data = await fetchPublishedHome({ zoneCode, languageCode: contentLanguage });
+    return { zoneCode, languageCode: contentLanguage, data };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -79,12 +108,13 @@ async function loadInitialCollectionListing(
   slug: string,
   zoneCode: string,
   market: StorefrontContextInput,
+  page = 1,
 ): Promise<{ listing: ProductListResult | null; missing: boolean }> {
   try {
     const listing = await fetchCollectionProducts(
       slug,
       zoneCode,
-      { page: 1, limit: 24 },
+      { page, limit: 24 },
       market,
     );
     return { listing, missing: false };
@@ -103,7 +133,12 @@ async function loadInitialCollectionListing(
 }
 
 export const loadCatalogDocument = cache(
-  async (kind: "product" | "collection" | "category", slug: string) => {
+  async (
+    kind: "product" | "collection" | "category",
+    slug: string,
+    /** Collections: which page of products the server renders (?page=N). */
+    listingPage = 1,
+  ) => {
     const resolved = await resolveServerCatalogMarket();
     const empty = {
       product: null,
@@ -126,7 +161,12 @@ export const loadCatalogDocument = cache(
     if (kind === "collection") {
       const [collection, initial] = await Promise.all([
         fetchCollectionBySlug(slug, resolved.zoneCode, resolved.market),
-        loadInitialCollectionListing(slug, resolved.zoneCode, resolved.market),
+        loadInitialCollectionListing(
+          slug,
+          resolved.zoneCode,
+          resolved.market,
+          listingPage,
+        ),
       ]);
       return {
         ...resolved,
@@ -142,6 +182,37 @@ export const loadCatalogDocument = cache(
       resolved.market,
     );
     return { ...resolved, ...empty, category, missing };
+  },
+);
+
+/**
+ * One page of "all products" or a category, rendered on the server so the HTML
+ * search engines read already has the product links. Null when it can't load
+ * (the browser then loads the products as before).
+ */
+export const loadServerListing = cache(
+  async (
+    kind: "products" | "category",
+    slug: string,
+    page: number,
+  ): Promise<{ listing: ProductListResult | null; zoneCode: string }> => {
+    const resolved = await resolveServerCatalogMarket();
+    if (!resolved.zoneCode) return { listing: null, zoneCode: "" };
+    const options = { page: Math.max(1, page || 1), limit: 24 };
+    try {
+      const listing =
+        kind === "products"
+          ? await fetchProducts(resolved.zoneCode, options, resolved.market)
+          : await fetchCategoryProducts(
+              slug,
+              resolved.zoneCode,
+              options,
+              resolved.market,
+            );
+      return { listing, zoneCode: resolved.zoneCode };
+    } catch {
+      return { listing: null, zoneCode: resolved.zoneCode };
+    }
   },
 );
 

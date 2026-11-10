@@ -76,9 +76,9 @@ export function LandingCollections({
     >
       <div className={pageContainer}>
         <header className={sectionHead}>
-          <h2 className={sectionTitle} id="collTitle">
+          <p className={sectionTitle} id="collTitle">
             {title}
-          </h2>
+          </p>
           {leadText ? <p className={lead}>{leadText}</p> : null}
         </header>
 
