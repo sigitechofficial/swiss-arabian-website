@@ -56,6 +56,14 @@ describe("redirectLocation", () => {
     );
   });
 
+  it("drops a trailing slash from a site target (one hop, not two)", () => {
+    expect(redirectLocation("/collections/", request).toString()).toBe(
+      "https://uae.swissarabian.com/collections?utm_source=ig",
+    );
+    expect(redirectLocation("/ar/", request).pathname).toBe("/ar");
+    expect(redirectLocation("/", request).pathname).toBe("/");
+  });
+
   it("keeps the target's own query and other sites as they are", () => {
     expect(
       redirectLocation("/collections/oud?sort=new", request).toString(),

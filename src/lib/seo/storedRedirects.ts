@@ -71,9 +71,15 @@ export function matchRedirect(
   return null;
 }
 
-/** Full redirect address: a site target keeps the shopper's query (utm etc.) unless it has its own. */
+/**
+ * Full redirect address: a site target keeps the shopper's query (utm etc.) unless it has its own.
+ * A site target loses its trailing slash (Shopify stored many as "/collections/"),
+ * which the site would otherwise answer with a second redirect.
+ */
 export function redirectLocation(target: string, requestUrl: URL): URL {
   const url = new URL(target, requestUrl.origin);
+  if (isSitePath(target) && url.pathname.length > 1)
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
   if (isSitePath(target) && !url.search && requestUrl.search)
     url.search = requestUrl.search;
   return url;
