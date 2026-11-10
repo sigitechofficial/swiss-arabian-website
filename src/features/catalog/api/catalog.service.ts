@@ -262,7 +262,7 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
   const descriptionPlain =
     stripHtml(raw.description) ||
     stripHtml(raw.shortDescription) ||
-    "Product details will appear once the catalog is fully refreshed.";
+    PRODUCT_DESCRIPTION_PLACEHOLDER;
 
   return {
     id: raw.productId,
@@ -352,7 +352,7 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
   const descriptionPlain =
     stripHtml(product.description) ||
     stripHtml(product.shortDescription) ||
-    "Product details will appear once the catalog is fully refreshed.";
+    PRODUCT_DESCRIPTION_PLACEHOLDER;
 
   const collections: ProductCollectionRef[] = (raw.collections ?? [])
     .filter((c) => c.slug && c.name)
@@ -496,6 +496,47 @@ export async function fetchCatalogSearch(
       total: Math.max(mapped.pagination.total, mapped.products.length),
     },
   };
+}
+
+/**
+ * Shown on the product page when a product has no description. Never use it as
+ * the meta description or in structured data (search engines would index it).
+ */
+export const PRODUCT_DESCRIPTION_PLACEHOLDER =
+  "Product details will appear once the catalog is fully refreshed.";
+
+/** The product's own description, or undefined when it only has the placeholder. */
+export function realProductDescription(
+  description: string | null | undefined,
+): string | undefined {
+  const text = description?.trim();
+  return text && text !== PRODUCT_DESCRIPTION_PLACEHOLDER ? text : undefined;
+}
+
+/**
+ * Meta description for a product with no SEO description (same idea as Shopify):
+ * the start of its own description as plain text, cut at a word near 160 characters.
+ */
+export function productMetaDescription(
+  description: string | null | undefined,
+  maxLength = 160,
+): string | undefined {
+  const real = realProductDescription(description);
+  if (!real) return undefined;
+  const text = real
+    // Some imported texts carry "\n" as two characters.
+    .replace(/\\[nrt]/g, " ")
+    .replace(/Â(?=[\s ])/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  if (text.length <= maxLength) return text;
+  const cut = text.slice(0, maxLength - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
 }
 
 export async function fetchProducts(

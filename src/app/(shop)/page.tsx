@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { HomePageView } from "@/features/home";
-import { CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
+import {
+  CatalogJsonLd,
+  ORGANIZATION_ID,
+  WEBSITE_ID,
+} from "@/features/catalog/components/CatalogJsonLd";
+import { storefrontLogo } from "@/lib/storefront/brand";
 import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import {
@@ -51,12 +56,15 @@ export default async function HomePage() {
       : {
           "@context": "https://schema.org",
           "@type": "Organization",
+          // Product offers name this Organization as their seller (same @id).
+          "@id": ORGANIZATION_ID,
           name: brand.name,
           ...(brand.names.length > 1
             ? { alternateName: brand.names.filter((n) => n !== brand.name) }
             : {}),
           url: brand.url || home,
-          ...(brand.logo || brand.squareLogo ? { logo: brand.squareLogo || brand.logo } : {}),
+          // Brand identity logo, else the site's own logo file.
+          logo: brand.squareLogo || brand.logo || storefrontLogo().src,
           ...(brand.description ? { description: brand.description } : {}),
           ...(brand.sameAs.length ? { sameAs: brand.sameAs } : {}),
         },
@@ -65,12 +73,18 @@ export default async function HomePage() {
       : {
           "@context": "https://schema.org",
           "@type": "WebSite",
+          "@id": WEBSITE_ID,
           name: brand.name,
           url: home,
           inLanguage: locale,
+          publisher: { "@id": ORGANIZATION_ID },
           potentialAction: {
             "@type": "SearchAction",
-            target: `${withLocalePrefix("/search", locale)}?q={search_term_string}`,
+            // Google needs a full address here ("url" fields are made absolute for us).
+            target: {
+              "@type": "EntryPoint",
+              url: `${withLocalePrefix("/search", locale)}?q={search_term_string}`,
+            },
             "query-input": "required name=search_term_string",
           },
         },
