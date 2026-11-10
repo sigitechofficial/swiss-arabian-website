@@ -70,7 +70,7 @@ export const HERO_SLIDES = [
     id: "gift-sets",
     src: `${home}/hero-gift-sets.jpg`,
     alt: "Unbox happiness — elevate every occasion with a perfect gift set. Shop now.",
-    href: "/gift-box",
+    href: "/collections",
   },
 ] as const;
 
@@ -98,7 +98,7 @@ export const HERO_SLIDES_MOBILE = [
     id: "gift-sets",
     src: `${home}/hero-mobile-gift-sets.jpg`,
     alt: "Unbox happiness — elevate every occasion with a perfect gift set. Shop now.",
-    href: "/gift-box",
+    href: "/collections",
   },
   {
     id: "summer-essentials",

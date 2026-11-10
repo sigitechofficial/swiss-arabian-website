@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useState, type FormEvent } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
@@ -20,7 +21,11 @@ import { useLoyaltyRedemption } from "../hooks/useLoyaltyRedemption";
 import { formatPoints, type LoyaltyRedemptionView } from "../types/loyalty";
 import { loyaltyRedemptionErrorMessage } from "../utils/redemptionErrors";
 
-function availableCopy(quote: LoyaltyRedemptionView, worth: number | null, currency: string) {
+function availableCopy(
+  quote: LoyaltyRedemptionView,
+  worth: number | null,
+  currency: string,
+) {
   const points = `${formatPoints(quote.availablePoints)} points`;
   if (worth == null) return `Available ${points}`;
   return `Available ${points} · worth ${formatMoney(worth, currency)}`;
@@ -31,8 +36,16 @@ export function LoyaltyRedemptionEditor({
 }: {
   quoteOverride?: unknown;
 } = {}) {
-  const { quote, hidden, cartId, adjusted, acknowledgeAdjustment, apply, remove } =
-    useLoyaltyRedemption({ quoteOverride });
+  const marketCurrency = useMarketCurrency();
+  const {
+    quote,
+    hidden,
+    cartId,
+    adjusted,
+    acknowledgeAdjustment,
+    apply,
+    remove,
+  } = useLoyaltyRedemption({ quoteOverride });
   const { wallet } = useLoyaltyAccount();
   const [points, setPoints] = useState("");
   const [editingRequested, setEditing] = useState(false);
@@ -48,7 +61,8 @@ export function LoyaltyRedemptionEditor({
 
   if (hidden || !quote) return null;
 
-  const currency = quote.currencyCode ?? wallet.data?.currencyCode ?? "AED";
+  const currency =
+    quote.currencyCode ?? wallet.data?.currencyCode ?? marketCurrency;
   const worth = wallet.data?.availableValue ?? null;
   const busy = apply.isPending || remove.isPending;
   const ready = Boolean(cartId);
@@ -96,7 +110,9 @@ export function LoyaltyRedemptionEditor({
       {applied && !editing ? (
         <div className={couponApplied}>
           <div>
-            <p className={couponAppliedName}>{`${formatPoints(quote.appliedPoints)} points applied`}</p>
+            <p
+              className={couponAppliedName}
+            >{`${formatPoints(quote.appliedPoints)} points applied`}</p>
             <p className={couponAppliedCode}>Reserved on this bag</p>
           </div>
           {quote.appliedAmount > 0 ? (
@@ -141,7 +157,9 @@ export function LoyaltyRedemptionEditor({
               min={min || undefined}
               max={max || undefined}
               step={increment || undefined}
-              placeholder={min > 0 ? `Minimum ${formatPoints(min)}` : "Enter points"}
+              placeholder={
+                min > 0 ? `Minimum ${formatPoints(min)}` : "Enter points"
+              }
               value={points}
               onChange={(e) => {
                 setPoints(e.target.value);

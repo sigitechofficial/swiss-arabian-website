@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isLocaleSwitchablePath, withLocalePrefix } from "@/lib/i18n/localePath";
+import {
+  isLocaleSwitchablePath,
+  withLocalePrefix,
+} from "@/lib/i18n/localePath";
+import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
+import {
+  matchRedirect,
+  redirectHost,
+  redirectLocation,
+  redirectsFor,
+} from "@/lib/seo/storedRedirects";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (
     pathname.startsWith("/_next") ||
@@ -10,6 +20,25 @@ export function proxy(request: NextRequest) {
     pathname.includes(".")
   ) {
     return NextResponse.next();
+  }
+
+  // URL redirects from the admin (imported from Shopify or added by hand).
+  const host = redirectHost(request.headers);
+  if (host) {
+    const target = matchRedirect(await redirectsFor(host), pathname);
+    if (target)
+      return NextResponse.redirect(
+        redirectLocation(target, request.nextUrl),
+        301,
+      );
+  }
+
+  // Old Shopify URL shapes (nested product URLs, /account/*, /pages/*, /blogs/*).
+  const legacyTarget = shopifyLegacyRedirect(pathname);
+  if (legacyTarget) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacyTarget;
+    return NextResponse.redirect(url, 301);
   }
 
   const isArabic = pathname === "/ar" || pathname.startsWith("/ar/");

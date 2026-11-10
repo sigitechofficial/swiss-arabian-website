@@ -23,7 +23,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("next/image", () => ({
@@ -32,8 +34,10 @@ vi.mock("next/image", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
   requestOmnichannelRefresh: vi.fn(),
 }));
 
@@ -57,7 +61,9 @@ function wallet(partial: Partial<LoyaltyWalletView>): LoyaltyWalletView {
 }
 
 function renderRewards() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <RewardsAccountView />
@@ -86,7 +92,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -108,15 +118,23 @@ describe("rewards account", () => {
     );
     renderRewards();
     expect(await screen.findByText("5,420")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "My rewards" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Available points" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "My rewards" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Available points" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("AED 54.20")).toBeInTheDocument();
     expect(screen.getByText("800 points")).toBeInTheDocument();
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByText("0 points")).toBeInTheDocument();
     expect(screen.getByText("Reserved")).toBeInTheDocument();
-    expect(await screen.findByText("No reward activity yet.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /redeem/i })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("No reward activity yet."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /redeem/i }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("slider")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
@@ -125,11 +143,15 @@ describe("rewards account", () => {
   it("shows a new member with no sample activity", async () => {
     fetchLoyaltyWallet.mockResolvedValue(wallet({}));
     renderRewards();
-    expect(await screen.findByText("Start earning rewards with eligible purchases.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Start earning rewards with eligible purchases."),
+    ).toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.queryByText("Pending")).not.toBeInTheDocument();
     expect(screen.queryByText(/Worth/)).not.toBeInTheDocument();
-    expect(await screen.findByText("No reward activity yet.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("No reward activity yet."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("1,240")).not.toBeInTheDocument();
     expect(screen.queryByText(/Gold/)).not.toBeInTheDocument();
   });
@@ -145,7 +167,9 @@ describe("rewards account", () => {
         state: null,
       },
     ];
-    fetchLoyaltyWallet.mockResolvedValue(wallet({ availablePoints: 150, availableValue: 1.5 }));
+    fetchLoyaltyWallet.mockResolvedValue(
+      wallet({ availablePoints: 150, availableValue: 1.5 }),
+    );
     fetchLoyaltyTransactions.mockResolvedValue(rows);
     renderRewards();
     expect(await screen.findByText("Order earned")).toBeInTheDocument();
@@ -160,15 +184,22 @@ describe("rewards account", () => {
         availability: "DISABLED",
         member: false,
         hasServerWallet: false,
-        unavailableMessage: "Swiss Arabian Rewards is not currently available in this market.",
+        unavailableMessage:
+          "Swiss Arabian Rewards is not currently available in this market.",
       }),
     );
     renderRewards();
     expect(
-      await screen.findByText("Swiss Arabian Rewards is not currently available in this market."),
+      await screen.findByText(
+        "Swiss Arabian Rewards is not currently available in this market.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
-    expect(screen.queryByText("No reward activity yet.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Available points" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("No reward activity yet."),
+    ).not.toBeInTheDocument();
     await waitFor(() => {
       expect(fetchLoyaltyTransactions).toHaveBeenCalled();
     });
@@ -177,7 +208,9 @@ describe("rewards account", () => {
   it("shows a loading state without static points", async () => {
     fetchLoyaltyWallet.mockReturnValue(new Promise(() => undefined));
     renderRewards();
-    expect(await screen.findByRole("status")).toHaveTextContent("Loading your rewards…");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Loading your rewards…",
+    );
     expect(screen.queryByText("1,240")).not.toBeInTheDocument();
     expect(screen.queryByText("5,420")).not.toBeInTheDocument();
   });
@@ -185,16 +218,24 @@ describe("rewards account", () => {
   it("recovers from an error without dummy points", async () => {
     const user = userEvent.setup();
     fetchLoyaltyWallet.mockRejectedValueOnce(new Error("network"));
-    fetchLoyaltyWallet.mockResolvedValueOnce(wallet({ availablePoints: 20, availableValue: 0.2 }));
+    fetchLoyaltyWallet.mockResolvedValueOnce(
+      wallet({ availablePoints: 20, availableValue: 0.2 }),
+    );
     renderRewards();
-    expect(await screen.findByText("We couldn't load your rewards right now.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("We couldn't load your rewards right now."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("1,240")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("20")).toBeInTheDocument();
   });
 
   it("does not call the wallet for a signed-out customer", async () => {
-    useAuthStore.setState({ user: null, isAuthenticated: false, bootstrapped: true });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      bootstrapped: true,
+    });
     renderRewards();
     expect(await screen.findByText("Redirecting…")).toBeInTheDocument();
     expect(fetchLoyaltyWallet).not.toHaveBeenCalled();
@@ -205,18 +246,34 @@ describe("rewards account", () => {
     fetchLoyaltyWallet.mockImplementation((market: { zoneCode: string }) => {
       if (market.zoneCode === "QA") return new Promise(() => undefined);
       return Promise.resolve(
-        wallet({ availablePoints: 5420, pendingPoints: 800, availableValue: 54.2, currencyCode: "AED" }),
+        wallet({
+          availablePoints: 5420,
+          pendingPoints: 800,
+          availableValue: 54.2,
+          currencyCode: "AED",
+        }),
       );
     });
     renderRewards();
     expect(await screen.findByText("5,420")).toBeInTheDocument();
-    useUiStore.getState().setCatalogContext({ zoneCode: "QA", currencyCode: "QAR", languageCode: "en" });
+    useUiStore
+      .getState()
+      .setCatalogContext({
+        zoneCode: "QA",
+        currencyCode: "QAR",
+        languageCode: "en",
+      });
     await waitFor(() => {
       expect(screen.queryByText("5,420")).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("status")).toHaveTextContent("Loading your rewards…");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading your rewards…",
+    );
     expect(screen.queryByText("AED 54.20")).not.toBeInTheDocument();
-    expect(fetchLoyaltyWallet).toHaveBeenCalledWith({ zoneCode: "QA", currencyCode: "QAR" });
+    expect(fetchLoyaltyWallet).toHaveBeenCalledWith({
+      zoneCode: "QA",
+      currencyCode: "QAR",
+    });
   });
 
   it("renders the live backend payload end to end", async () => {
@@ -225,9 +282,17 @@ describe("rewards account", () => {
       readLoyaltyWallet({
         enabled: true,
         member: true,
-        program: { code: "SWISS_ARABIAN_LOYALTY", name: "Swiss Arabian Loyalty" },
+        program: {
+          code: "SWISS_ARABIAN_LOYALTY",
+          name: "Swiss Arabian Loyalty",
+        },
         market: { code: "UAE", currencyCode: "AED" },
-        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 5420,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
         policy: { rewardRatePercent: "5.0000", pointValue: "0.010000" },
       }),
@@ -262,19 +327,31 @@ describe("rewards account", () => {
 
   it("renders the live disabled payload", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
-      readLoyaltyWallet({ enabled: false, member: false, reason: "LOYALTY_NOT_AVAILABLE" }),
+      readLoyaltyWallet({
+        enabled: false,
+        member: false,
+        reason: "LOYALTY_NOT_AVAILABLE",
+      }),
     );
     renderRewards();
     expect(
-      await screen.findByText("Swiss Arabian Rewards is not currently available."),
+      await screen.findByText(
+        "Swiss Arabian Rewards is not currently available.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Available points" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
   it("shows reserved points while a reservation is active", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
-      wallet({ availablePoints: 5220, reservedPoints: 200, availableValue: 52.2 }),
+      wallet({
+        availablePoints: 5220,
+        reservedPoints: 200,
+        availableValue: 52.2,
+      }),
     );
     fetchLoyaltyTransactions.mockResolvedValue([
       {
@@ -307,11 +384,19 @@ describe("rewards account", () => {
           }),
         );
       }
-      return Promise.resolve(wallet({ availablePoints: 5420, availableValue: 54.2 }));
+      return Promise.resolve(
+        wallet({ availablePoints: 5420, availableValue: 54.2 }),
+      );
     });
     renderRewards();
     expect(await screen.findByText("5,420")).toBeInTheDocument();
-    useUiStore.getState().setCatalogContext({ zoneCode: "QA", currencyCode: "QAR", languageCode: "en" });
+    useUiStore
+      .getState()
+      .setCatalogContext({
+        zoneCode: "QA",
+        currencyCode: "QAR",
+        languageCode: "en",
+      });
     expect(await screen.findByText("QAR 1.00")).toBeInTheDocument();
     expect(screen.queryByText("5,420")).not.toBeInTheDocument();
     expect(screen.queryByText("AED 54.20")).not.toBeInTheDocument();

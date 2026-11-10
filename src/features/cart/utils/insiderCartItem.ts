@@ -1,4 +1,7 @@
-import type { InsiderCartItemPayload, InsiderCartSnapshot } from "@/lib/insider";
+import type {
+  InsiderCartItemPayload,
+  InsiderCartSnapshot,
+} from "@/lib/insider";
 import type { CartLine } from "@/stores/useCartStore";
 
 export function productPageUrl(slug: string): string | undefined {

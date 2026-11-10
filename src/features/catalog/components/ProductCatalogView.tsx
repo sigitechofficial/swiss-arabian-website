@@ -63,6 +63,8 @@ export type CatalogBanner = {
   imageAlt?: string | null;
   description?: string | null;
   title?: string | null;
+  /** Wide banner artwork (store banners): full width above the title. */
+  wide?: boolean;
 };
 
 export function ProductCatalogView({
@@ -102,6 +104,8 @@ export function ProductCatalogView({
   const products = useMemo(() => productsProp ?? [], [productsProp]);
 
   const bannerImage = banner?.image;
+  const bannerMobileImage = banner?.mobileImage ?? "";
+  const bannerWide = banner?.wide === true;
   const bannerDescription = banner?.description;
   const bannerTitle = banner?.title;
   const meta = useMemo(() => {
@@ -114,6 +118,8 @@ export function ProductCatalogView({
         titleEm: "",
         intro: description,
         heroImage: bannerImage ?? "",
+        heroImageMobile: bannerMobileImage,
+        wide: bannerWide,
         filterCollection: undefined,
       };
     }
@@ -123,9 +129,11 @@ export function ProductCatalogView({
       titleEm: "",
       intro: "",
       heroImage: "",
+      heroImageMobile: "",
+      wide: false,
       filterCollection: undefined,
     };
-  }, [bannerImage, bannerDescription, bannerTitle, copy, slug]);
+  }, [bannerImage, bannerMobileImage, bannerWide, bannerDescription, bannerTitle, copy, slug]);
   const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
 
   const facetPrice = facets?.price;

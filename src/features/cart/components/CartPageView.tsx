@@ -1,5 +1,7 @@
 "use client";
 
+import { cartCurrency } from "@/features/cart/utils/cartCurrency";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import { useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useRouter } from "next/navigation";
@@ -74,7 +76,23 @@ import {
   PRICE_CHANGED,
   cartErrorMessage,
 } from "../constants/validationMessages";
-import { CouponForm, AppliedCampaigns, EmptyBagRecovery, GiftCardForm, GiftWithPurchase, MoneySummary, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, shippingDiscountAmount, useApplicablePromotions, visibleGiftCards } from "@/features/promotions";
+import {
+  CouponForm,
+  AppliedCampaigns,
+  EmptyBagRecovery,
+  GiftCardForm,
+  GiftWithPurchase,
+  MoneySummary,
+  PromoLinePrice,
+  PromotionProgressRail,
+  PromotionQuickAdd,
+  amountPayableFrom,
+  bundleLinesFirst,
+  setBundleLineLabel,
+  shippingDiscountAmount,
+  useApplicablePromotions,
+  visibleGiftCards,
+} from "@/features/promotions";
 import { quotedCartTotal } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
@@ -148,7 +166,10 @@ export function CartPageView() {
       const box = banner.getBoundingClientRect();
       const inView = box.top >= 160 && box.bottom <= window.innerHeight - 40;
       if (inView) return 0;
-      banner.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      banner.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
       return 550;
     },
     onFire: () => setLinesFlash(true),
@@ -166,7 +187,12 @@ export function CartPageView() {
   const promotions = useCartStore((s) => s.promotions);
   const employeeCheckout = useCartStore((s) => s.employeeCheckout);
   const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
-  const currency = totals?.currency ?? promotions?.context?.currencyCode ?? "AED";
+  const marketCurrency = useSelectedCatalogMarket()?.currencyCode;
+  const currency = cartCurrency({
+    totalsCurrency: totals?.currency ?? promotions?.context?.currencyCode,
+    lines,
+    marketCurrency,
+  });
   const isEmpty = lines.length === 0;
 
   const applicable = useApplicablePromotions();
@@ -201,7 +227,9 @@ export function CartPageView() {
           shipping: quotedShip > 0 ? quotedShip : 0,
         });
   const extraShipping =
-    totals && quotedShip > 0 && shipping != null ? Math.max(0, shipping - totals.shipping) : 0;
+    totals && quotedShip > 0 && shipping != null
+      ? Math.max(0, shipping - totals.shipping)
+      : 0;
   const amountPayable =
     payable != null && extraShipping > 0 ? payable + extraShipping : payable;
 
@@ -243,112 +271,154 @@ export function CartPageView() {
             <h1 className={pageTitle} id="cart-heading">
               Your bag
             </h1>
-            {!isEmpty ? <span className={cartPageCount}>{itemsLabel(itemCount)}</span> : null}
+            {!isEmpty ? (
+              <span className={cartPageCount}>{itemsLabel(itemCount)}</span>
+            ) : null}
           </header>
 
           {!isEmpty ? (
             <div className={cartLayout} id="cart-page-layout">
-              <div className={cartItemsCol} aria-live="polite" ref={itemsColRef}>
-                <div className={confettiLayer} ref={confettiLayerRef} aria-hidden="true">
+              <div
+                className={cartItemsCol}
+                aria-live="polite"
+                ref={itemsColRef}
+              >
+                <div
+                  className={confettiLayer}
+                  ref={confettiLayerRef}
+                  aria-hidden="true"
+                >
                   <PopperBurstLayer burst={popperBurst} />
                 </div>
-                <div className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}>
+                <div
+                  className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}
+                >
                   {bundleLinesFirst(lines, promotions).map((line) => {
                     const bundle = setBundleLineLabel(promotions, line, offers);
                     return (
-                  <article className={cartRow} key={line.cartItemId ?? line.variantId}>
-                    <LocaleLink className={cartRowMedia} href={line.slug ? `/products/${line.slug}` : "#"}>
-                      {line.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={line.imageUrl} alt="" />
-                      ) : null}
-                    </LocaleLink>
-                    <div className={cartRowBody}>
-                      <div className={cartRowTop}>
-                        <h3 className={cartRowName}>
-                          <LocaleLink href={line.slug ? `/products/${line.slug}` : "#"}>{line.title}</LocaleLink>
-                        </h3>
-                        {line.isSellable === false ? (
-                          <p className={cartRowPrice}>Unavailable</p>
-                        ) : (
-                          <PromoLinePrice className={cartRowPrice} snapshot={promotions} line={line} />
-                        )}
-                      </div>
-                      {showsDistinctSize(line.title, line.sizeLabel) ? (
-                        <p className={cartRowMeta}>{line.sizeLabel}</p>
-                      ) : null}
-                      {bundle ? (
-                        <p className={cartRowTags}>
-                          {bundle
-                            .split("·")
-                            .map((part) => part.trim())
-                            .filter(Boolean)
-                            .map((part) => (
-                              <span className={/%|off/i.test(part) ? drawerLineTagStrong : drawerLineTag} key={part}>
-                                {part}
-                              </span>
-                            ))}
-                        </p>
-                      ) : null}
-                      <div className={cartRowActions}>
-                        <span className={cartRowQty}>
-                          <button
-                            type="button"
-                            aria-label="Decrease"
-                            disabled={line.isSellable === false}
-                            onClick={() => {
-                              const next = Math.max(1, line.quantity - 1);
-                              if (line.remote || line.cartItemId) {
-                                setQuantityOptimistic(line.variantId, next);
-                              } else {
-                                updateLocalQuantity(line.variantId, next);
-                              }
-                            }}
-                          >
-                            <Minus size={13} />
-                          </button>
-                          <span dir="ltr">{line.quantity}</span>
-                          <button
-                            type="button"
-                            aria-label="Increase"
-                            disabled={line.isSellable === false || atStockLimit(line)}
-                            onClick={() => {
-                              const next = line.quantity + 1;
-                              if (line.remote || line.cartItemId) {
-                                setQuantityOptimistic(line.variantId, next);
-                              } else {
-                                updateLocalQuantity(line.variantId, next);
-                              }
-                            }}
-                          >
-                            <Plus size={13} />
-                          </button>
-                        </span>
-                        <button
-                          type="button"
-                          className={cartRowRemove}
-                          onClick={() => {
-                            if (line.remote || line.cartItemId) {
-                              removeItemOptimistic(line.variantId);
-                            } else {
-                              removeLocalLine(line.variantId);
-                            }
-                          }}
+                      <article
+                        className={cartRow}
+                        key={line.cartItemId ?? line.variantId}
+                      >
+                        <LocaleLink
+                          className={cartRowMedia}
+                          href={line.slug ? `/products/${line.slug}` : "#"}
                         >
-                          Remove
-                        </button>
-                      </div>
-                      {atStockLimit(line) && line.maxQuantity != null ? (
-                        <p className={cartQtyLimit} role="status">
-                          {stockLimitNote(line.maxQuantity)}
-                        </p>
-                      ) : null}
-                    </div>
-                  </article>
+                          {line.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={line.imageUrl} alt="" />
+                          ) : null}
+                        </LocaleLink>
+                        <div className={cartRowBody}>
+                          <div className={cartRowTop}>
+                            <h3 className={cartRowName}>
+                              <LocaleLink
+                                href={
+                                  line.slug ? `/products/${line.slug}` : "#"
+                                }
+                              >
+                                {line.title}
+                              </LocaleLink>
+                            </h3>
+                            {line.isSellable === false ? (
+                              <p className={cartRowPrice}>Unavailable</p>
+                            ) : (
+                              <PromoLinePrice
+                                className={cartRowPrice}
+                                snapshot={promotions}
+                                line={line}
+                              />
+                            )}
+                          </div>
+                          {showsDistinctSize(line.title, line.sizeLabel) ? (
+                            <p className={cartRowMeta}>{line.sizeLabel}</p>
+                          ) : null}
+                          {bundle ? (
+                            <p className={cartRowTags}>
+                              {bundle
+                                .split("·")
+                                .map((part) => part.trim())
+                                .filter(Boolean)
+                                .map((part) => (
+                                  <span
+                                    className={
+                                      /%|off/i.test(part)
+                                        ? drawerLineTagStrong
+                                        : drawerLineTag
+                                    }
+                                    key={part}
+                                  >
+                                    {part}
+                                  </span>
+                                ))}
+                            </p>
+                          ) : null}
+                          <div className={cartRowActions}>
+                            <span className={cartRowQty}>
+                              <button
+                                type="button"
+                                aria-label="Decrease"
+                                disabled={line.isSellable === false}
+                                onClick={() => {
+                                  const next = Math.max(1, line.quantity - 1);
+                                  if (line.remote || line.cartItemId) {
+                                    setQuantityOptimistic(line.variantId, next);
+                                  } else {
+                                    updateLocalQuantity(line.variantId, next);
+                                  }
+                                }}
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <span dir="ltr">{line.quantity}</span>
+                              <button
+                                type="button"
+                                aria-label="Increase"
+                                disabled={
+                                  line.isSellable === false ||
+                                  atStockLimit(line)
+                                }
+                                onClick={() => {
+                                  const next = line.quantity + 1;
+                                  if (line.remote || line.cartItemId) {
+                                    setQuantityOptimistic(line.variantId, next);
+                                  } else {
+                                    updateLocalQuantity(line.variantId, next);
+                                  }
+                                }}
+                              >
+                                <Plus size={13} />
+                              </button>
+                            </span>
+                            <button
+                              type="button"
+                              className={cartRowRemove}
+                              onClick={() => {
+                                if (line.remote || line.cartItemId) {
+                                  removeItemOptimistic(line.variantId);
+                                } else {
+                                  removeLocalLine(line.variantId);
+                                }
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          {atStockLimit(line) && line.maxQuantity != null ? (
+                            <p className={cartQtyLimit} role="status">
+                              {stockLimitNote(line.maxQuantity)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </article>
                     );
                   })}
                   {quotePending ? null : (
-                    <GiftWithPurchase snapshot={promotions} currency={currency} surface="drawer" />
+                    <GiftWithPurchase
+                      snapshot={promotions}
+                      currency={currency}
+                      surface="drawer"
+                    />
                   )}
                   <PromotionProgressRail surface="cart" />
                 </div>
@@ -375,26 +445,33 @@ export function CartPageView() {
                 <CouponForm />
                 {quotePending ? null : <LoyaltyRedemptionEditor />}
                 <GiftCardForm />
-                <StaffDiscountSummary checkout={employeeCheckout} currency={currency} />
-                {quotePending ? null : (
-                <MoneySummary
-                  className={cartTotals}
+                <StaffDiscountSummary
+                  checkout={employeeCheckout}
                   currency={currency}
-                  subtotal={subtotal}
-                  discount={discount}
-                  shipping={shipping}
-                  shippingDiscount={shipDiscount}
-                  tax={totals?.tax ?? 0}
-                  taxLabel={totals?.taxLabel}
-                  taxIncluded={totals?.taxIncluded}
-                  total={total}
-                  amountPayable={amountPayable}
-                  loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
-                  giftCards={giftCards}
                 />
+                {quotePending ? null : (
+                  <MoneySummary
+                    className={cartTotals}
+                    currency={currency}
+                    subtotal={subtotal}
+                    discount={discount}
+                    shipping={shipping}
+                    shippingDiscount={shipDiscount}
+                    tax={totals?.tax ?? 0}
+                    taxLabel={totals?.taxLabel}
+                    taxIncluded={totals?.taxIncluded}
+                    total={total}
+                    amountPayable={amountPayable}
+                    loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
+                    giftCards={giftCards}
+                  />
                 )}
                 {quotePending ? null : (
-                  <EarnPreviewNote preview={earnPreview.preview} variant="block" showBasis />
+                  <EarnPreviewNote
+                    preview={earnPreview.preview}
+                    variant="block"
+                    showBasis
+                  />
                 )}
                 {priceChanged ? (
                   <p className={cartHint} role="status">
@@ -435,11 +512,10 @@ export function CartPageView() {
                 <LocaleLink className={cartContinue} href="/products">
                   Continue shopping
                 </LocaleLink>
-                <p className={cartHint}>30-day fragrance guarantee. Returns are on us.</p>
+                {/* Returns and shipping terms are the market's own policies,
+                    linked from the footer: no fixed promises here. */}
                 <div className={cartBadges}>
                   <span>SSL Secured</span>
-                  <i aria-hidden="true">·</i>
-                  <span>Ships from Sharjah</span>
                 </div>
               </aside>
             </div>
@@ -450,7 +526,9 @@ export function CartPageView() {
                   <ShoppingBag size={24} strokeWidth={1.6} />
                 </span>
                 <p className={drawerEmptyTitle}>Your bag is empty</p>
-                <p className={drawerEmptyCopy}>Explore our fragrances, or pick up where you left off below.</p>
+                <p className={drawerEmptyCopy}>
+                  Explore our fragrances, or pick up where you left off below.
+                </p>
                 <LocaleLink className={drawerEmptyCta} href="/products">
                   Shop fragrances
                 </LocaleLink>

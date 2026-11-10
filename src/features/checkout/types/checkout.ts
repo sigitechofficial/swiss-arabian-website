@@ -247,7 +247,7 @@ export interface OrderResponse {
   addresses: OrderAddressSummary[];
   totals: OrderTotals;
   currency: string;
-  selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
+  selectedPaymentMethod: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null;
   selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
   timeline: OrderTimelineEvent[];
   /** Frozen header snapshot when the order was placed. Not used to recompute totals. */

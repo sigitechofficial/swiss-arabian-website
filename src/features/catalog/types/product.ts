@@ -1,3 +1,4 @@
+import type { ProductSeoPackage } from "@/lib/seo/productSeo";
 import type { StorefrontPdpMetafields } from "./pdpMetafields";
 import type { StorefrontPdpReviews } from "./pdpReviews";
 import type { StorefrontShippingPromise } from "./pdpShipping";
@@ -39,6 +40,8 @@ export type ProductDetail = ProductSummary & {
   descriptionHtml?: string;
   seoTitle?: string;
   seoDescription?: string;
+  /** Admin product SEO package (canonical, robots, social, structured data). */
+  seo?: ProductSeoPackage | null;
   variantId: string;
   brandName?: string;
   collections?: ProductCollectionRef[];

@@ -106,7 +106,7 @@ export interface CustomerOrderDetailResponse {
     promotionSnapshot?: OrderLinePromotionSnapshot | null;
     /** Backend refund records. Older payloads omit this. */
     refunds?: unknown;
-    selectedPaymentMethod: { providerCode: string | null; methodCode: string | null } | null;
+    selectedPaymentMethod: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
     timeline: { eventType: string; title: string | null; occurredAt: string }[];
     shipments: ShipmentDetail[];

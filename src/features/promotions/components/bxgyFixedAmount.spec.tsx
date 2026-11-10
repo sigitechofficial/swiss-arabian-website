@@ -29,7 +29,12 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [],
     lineAllocations: [],
     totals: { discountTotal: "0" },
@@ -38,7 +43,10 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   };
 }
 
-function bxgy(partial: Partial<PromotionApplied> & Pick<PromotionApplied, "label" | "amount">): PromotionApplied {
+function bxgy(
+  partial: Partial<PromotionApplied> &
+    Pick<PromotionApplied, "label" | "amount">,
+): PromotionApplied {
   return {
     kind: "AUTOMATIC",
     code: "BXGY",
@@ -102,7 +110,9 @@ describe("BXGY fixed amount presentation", () => {
       metadata: { rewardType: "FIXED_AMOUNT", rewardValue: "25", getQty: 2 },
     });
     expect(appliedPromotionView(item).amount).toBe(Number(item.amount));
-    expect(appliedPromotionView(item).amount).not.toBe(Number(item.discountValue));
+    expect(appliedPromotionView(item).amount).not.toBe(
+      Number(item.discountValue),
+    );
     render(<AppliedCampaigns snapshot={quote({ applied: [item] })} />);
     expect(screen.getByText("Applied · AED 50.00")).toBeInTheDocument();
     expect(screen.queryByText("Applied · AED 25.00")).not.toBeInTheDocument();
@@ -115,7 +125,14 @@ describe("BXGY fixed amount presentation", () => {
       discountValue: "30",
       metadata: { rewardType: "FIXED_AMOUNT", rewardValue: "30" },
     });
-    render(<AppliedCampaigns snapshot={quote({ applied: [item], totals: { discountTotal: "20.00" } })} />);
+    render(
+      <AppliedCampaigns
+        snapshot={quote({
+          applied: [item],
+          totals: { discountTotal: "20.00" },
+        })}
+      />,
+    );
     expect(screen.getByText("Applied · AED 20.00")).toBeInTheDocument();
     expect(screen.queryByText("Applied · AED 30.00")).not.toBeInTheDocument();
   });
@@ -136,7 +153,12 @@ describe("BXGY fixed amount presentation", () => {
       <AppliedCampaigns
         snapshot={quote({
           applied: [uae],
-          context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+          context: {
+            brandCode: null,
+            zoneCode: "UAE",
+            currencyCode: "AED",
+            salesChannelCode: null,
+          },
         })}
       />,
     );
@@ -146,7 +168,12 @@ describe("BXGY fixed amount presentation", () => {
       <AppliedCampaigns
         snapshot={quote({
           applied: [ksa],
-          context: { brandCode: null, zoneCode: "KSA", currencyCode: "SAR", salesChannelCode: null },
+          context: {
+            brandCode: null,
+            zoneCode: "KSA",
+            currencyCode: "SAR",
+            salesChannelCode: null,
+          },
         })}
       />,
     );
@@ -156,8 +183,25 @@ describe("BXGY fixed amount presentation", () => {
 
   it("clears the previous market quote without touching bag lines", () => {
     useCartStore.setState({
-      lines: [{ variantId: "v1", slug: "rose", title: "Rose", unitPrice: 100, currency: "AED", quantity: 1 }],
-      promotions: quote({ applied: [bxgy({ label: "AED 30 off", amount: "30.00", metadata: { rewardType: "FIXED_AMOUNT" } })] }),
+      lines: [
+        {
+          variantId: "v1",
+          slug: "rose",
+          title: "Rose",
+          unitPrice: 100,
+          currency: "AED",
+          quantity: 1,
+        },
+      ],
+      promotions: quote({
+        applied: [
+          bxgy({
+            label: "AED 30 off",
+            amount: "30.00",
+            metadata: { rewardType: "FIXED_AMOUNT" },
+          }),
+        ],
+      }),
       totals: {
         subtotal: 100,
         total: 70,
@@ -185,7 +229,9 @@ describe("BXGY fixed amount presentation", () => {
     });
     const shown = appliedPromotionView(item).amount;
     expect(shown).toBe(50);
-    expect(shown).not.toBe(Number(item.metadata?.rewardValue) * Number(item.metadata?.getQty));
+    expect(shown).not.toBe(
+      Number(item.metadata?.rewardValue) * Number(item.metadata?.getQty),
+    );
     expect(shown).not.toBe(Number(item.discountValue));
   });
 
@@ -199,7 +245,9 @@ describe("BXGY fixed amount presentation", () => {
               promotionCode: "GWP",
               status: null,
               message: null,
-              giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Sample", imageUrl: null }],
+              giftItems: [
+                { sku: "SAMPLE", quantity: 1, name: "Sample", imageUrl: null },
+              ],
               choices: [],
             },
           ],
@@ -236,8 +284,12 @@ describe("BXGY fixed amount presentation", () => {
         freeGifts={[{ name: "Sample", quantity: 1 }]}
       />,
     );
-    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 20.00");
-    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 80.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent(
+      "−AED 20.00",
+    );
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(
+      "AED 80.00",
+    );
     expect(screen.getByText(/Sample/)).toHaveTextContent("AED 0.00");
     expect(screen.queryByText("Amount due")).not.toBeInTheDocument();
     const quoted = checkoutQuoteSnapshot({ promotions: snap }, null);
@@ -249,10 +301,23 @@ describe("BXGY fixed amount presentation", () => {
     const snapshot = {
       v: 1,
       discountTotal: "20.00",
-      allocations: [{ kind: "AUTOMATIC", code: "BXGY", discountType: "BUY_X_GET_Y", amount: "30.00" }],
+      allocations: [
+        {
+          kind: "AUTOMATIC",
+          code: "BXGY",
+          discountType: "BUY_X_GET_Y",
+          amount: "30.00",
+        },
+      ],
     };
     expect(historicalLineDiscount(snapshot)).toBe(20);
-    render(<HistoricalLineDiscount snapshot={snapshot} currency="AED" className="line-discount" />);
+    render(
+      <HistoricalLineDiscount
+        snapshot={snapshot}
+        currency="AED"
+        className="line-discount"
+      />,
+    );
     expect(screen.getByText("−AED 20.00")).toBeInTheDocument();
     expect(screen.queryByText("−AED 30.00")).not.toBeInTheDocument();
   });

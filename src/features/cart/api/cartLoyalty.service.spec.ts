@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { applyCartLoyaltyRedemption, removeCartLoyaltyRedemption } from "./cart.service";
+import {
+  applyCartLoyaltyRedemption,
+  removeCartLoyaltyRedemption,
+} from "./cart.service";
 
 const apiPut = vi.hoisted(() => vi.fn());
 const apiDelete = vi.hoisted(() => vi.fn());
@@ -32,7 +35,9 @@ describe("cart loyalty redemption requests", () => {
     await applyCartLoyaltyRedemption("cart-1", 400);
     expect(apiPut).toHaveBeenCalledTimes(1);
     const [path, body] = apiPut.mock.calls[0] ?? [];
-    expect(String(path)).toContain("/storefront/cart/cart-1/loyalty-redemption");
+    expect(String(path)).toContain(
+      "/storefront/cart/cart-1/loyalty-redemption",
+    );
     expect(body).toEqual({ points: 400 });
     expect(body).not.toHaveProperty("amount");
     expect(body).not.toHaveProperty("appliedAmount");
@@ -46,6 +51,8 @@ describe("cart loyalty redemption requests", () => {
   it("DELETEs the cart reservation", async () => {
     await removeCartLoyaltyRedemption("cart-1");
     const [path] = apiDelete.mock.calls[0] ?? [];
-    expect(String(path)).toContain("/storefront/cart/cart-1/loyalty-redemption");
+    expect(String(path)).toContain(
+      "/storefront/cart/cart-1/loyalty-redemption",
+    );
   });
 });

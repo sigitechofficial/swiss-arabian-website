@@ -44,10 +44,14 @@ export function MoneySummary({
   /** Checkout rows use the summary total rule. Cart is the default. */
   surface?: "cart" | "checkout";
 }) {
-  const checkout = surface ? surface === "checkout" : className.includes("checkout");
+  const checkout = surface
+    ? surface === "checkout"
+    : className.includes("checkout");
   const totalsLine = checkout ? checkoutTotalsLine : cartTotalsLine;
   const showPayable =
-    amountPayable != null && Number.isFinite(amountPayable) && amountPayable !== total;
+    amountPayable != null &&
+    Number.isFinite(amountPayable) &&
+    amountPayable !== total;
 
   return (
     <dl className={className}>
@@ -64,7 +68,9 @@ export function MoneySummary({
       {shipping != null ? (
         <div>
           <dt>Shipping</dt>
-          <dd dir="ltr">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd>
+          <dd dir="ltr">
+            {shipping === 0 ? "Free" : formatMoney(shipping, currency)}
+          </dd>
         </div>
       ) : null}
       {shippingDiscount > 0 ? (
@@ -84,7 +90,8 @@ export function MoneySummary({
           <dt>Free gift</dt>
           <dd dir="ltr">
             {gift.name}
-            {gift.quantity > 1 ? ` ×${gift.quantity}` : ""} {formatMoney(0, currency)}
+            {gift.quantity > 1 ? ` ×${gift.quantity}` : ""}{" "}
+            {formatMoney(0, currency)}
           </dd>
         </div>
       ))}
@@ -106,7 +113,9 @@ export function MoneySummary({
         return (
           <div key={card.usageId ?? card.maskedCode ?? index}>
             <dt>Gift card{card.maskedCode ? ` (${card.maskedCode})` : ""}</dt>
-            <dd dir="ltr">−{formatMoney(amount, card.currencyCode || currency)}</dd>
+            <dd dir="ltr">
+              −{formatMoney(amount, card.currencyCode || currency)}
+            </dd>
           </div>
         );
       })}

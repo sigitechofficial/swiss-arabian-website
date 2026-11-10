@@ -1,12 +1,33 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/config/env";
+import { requestOrigin } from "@/lib/seo/requestOrigin";
 
 /**
- * Demo / staging must stay out of Google until go-live (SEO audit).
- * Only production allows crawling.
+ * Nothing is crawled until indexing is switched on for the production site
+ * (env.seoIndexingEnabled: production + NEXT_PUBLIC_SEO_INDEXING_ENABLED=true).
  */
-export default function robots(): MetadataRoute.Robots {
-  if (env.appEnv !== "production") {
+const PRIVATE_PATHS = [
+  "/cart",
+  "/checkout",
+  "/account",
+  "/order-confirmation",
+  "/payments",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify",
+  "/search",
+  "/track",
+  "/preview",
+  "/api",
+  "/*?*sort=",
+  "/*?*q=",
+];
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const origin = await requestOrigin();
+  if (!env.seoIndexingEnabled) {
     return {
       rules: {
         userAgent: "*",
@@ -19,6 +40,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      // Private or endless pages (like Shopify's robots.txt): never in search results.
+      disallow: PRIVATE_PATHS.flatMap((path) => [path, `/ar${path}`]),
     },
+    ...(origin ? { sitemap: `${origin}/sitemap.xml`, host: origin } : {}),
   };
 }

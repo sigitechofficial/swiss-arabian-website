@@ -224,7 +224,7 @@ export const ocBadgeMark =
   "stroke-current [stroke-dasharray:48] [stroke-dashoffset:48] animate-oc-draw motion-reduce:animate-none motion-reduce:[stroke-dashoffset:0]";
 
 export const ocMeta =
-  "mb-7 grid w-full grid-cols-[minmax(max-content,1.6fr)_repeat(3,minmax(0,1fr))] rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white text-left max-[640px]:grid-cols-1 [&_dt]:m-0 [&_dt]:mb-1.5 [&_dt]:text-[0.6rem] [&_dt]:font-medium [&_dt]:tracking-[0.1em] [&_dt]:text-[var(--ink-2,#5b5148)] [&_dt]:uppercase [&_dd]:m-0 [&_dd]:text-[0.85rem] [&_dd]:font-medium [&_dd]:whitespace-nowrap [&_dd]:text-[var(--ink,#241f1b)] [&>div]:border-s [&>div]:border-[var(--line,#d9ccb4)] [&>div]:px-5 [&>div]:py-4 [&>div:first-child]:border-s-0 max-[640px]:[&_dt]:mb-0 max-[640px]:[&_dd]:text-right max-[640px]:[&>div]:flex max-[640px]:[&>div]:min-w-0 max-[640px]:[&>div]:flex-wrap max-[640px]:[&>div]:items-center max-[640px]:[&>div]:justify-between max-[640px]:[&>div]:gap-x-3 max-[640px]:[&>div]:gap-y-1.5 max-[640px]:[&>div]:border-s-0 max-[640px]:[&>div]:border-t max-[640px]:[&>div]:px-4 max-[640px]:[&>div]:py-3 max-[640px]:[&>div:first-child]:border-t-0";
+  "mb-7 grid w-full grid-cols-[minmax(max-content,1.6fr)_repeat(3,minmax(0,1fr))] rounded-[var(--radius-lg,4px)] border border-[var(--line,#d9ccb4)] bg-white text-left max-[640px]:grid-cols-1 [&_dt]:m-0 [&_dt]:mb-1.5 [&_dt]:text-[0.6rem] [&_dt]:font-medium [&_dt]:tracking-[0.1em] [&_dt]:text-[var(--ink-2,#5b5148)] [&_dt]:uppercase [&_dd]:m-0 [&_dd]:text-[0.85rem] [&_dd]:font-medium [&_dd]:break-words [&_dd[dir=ltr]]:whitespace-nowrap [&_dd]:text-[var(--ink,#241f1b)] [&>div]:min-w-0 [&>div]:border-s [&>div]:border-[var(--line,#d9ccb4)] [&>div]:px-5 [&>div]:py-4 [&>div:first-child]:border-s-0 max-[640px]:[&_dt]:mb-0 max-[640px]:[&_dd]:text-right max-[640px]:[&>div]:flex max-[640px]:[&>div]:min-w-0 max-[640px]:[&>div]:flex-wrap max-[640px]:[&>div]:items-center max-[640px]:[&>div]:justify-between max-[640px]:[&>div]:gap-x-3 max-[640px]:[&>div]:gap-y-1.5 max-[640px]:[&>div]:border-s-0 max-[640px]:[&>div]:border-t max-[640px]:[&>div]:px-4 max-[640px]:[&>div]:py-3 max-[640px]:[&>div:first-child]:border-t-0";
 
 export const ocMetaNumber = "flex items-center gap-2 [&_span]:tracking-[0.02em] [&_span]:whitespace-nowrap";
 
@@ -285,7 +285,7 @@ export const ocAddressName = "font-medium";
 export const ocAddressSame = "m-0 text-[0.82rem] text-[var(--ink-2,#5b5148)]";
 
 export const ocMethods =
-  "mt-[18px] grid grid-cols-2 gap-3 border-t border-[var(--line,#d9ccb4)] pt-4 [&_dt]:m-0 [&_dt]:mb-1 [&_dt]:text-[0.6rem] [&_dt]:font-medium [&_dt]:tracking-[0.1em] [&_dt]:text-[var(--ink-2,#5b5148)] [&_dt]:uppercase [&_dd]:m-0 [&_dd]:text-[0.82rem] [&_dd]:text-[var(--ink,#241f1b)]";
+  "mt-[18px] grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[var(--line,#d9ccb4)] pt-4 [&_dt]:m-0 [&_dt]:mb-1 [&_dt]:text-[0.6rem] [&_dt]:font-medium [&_dt]:tracking-[0.1em] [&_dt]:text-[var(--ink-2,#5b5148)] [&_dt]:uppercase [&_dd]:m-0 [&_dd]:text-[0.82rem] [&_dd]:break-words [&_dd]:text-[var(--ink,#241f1b)] [&>div]:min-w-0";
 
 export const stripePayBrands =
   "ms-auto text-[0.62rem] tracking-[0.06em] text-[var(--ink-2,#5b5148)] uppercase";

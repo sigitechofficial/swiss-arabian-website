@@ -7,15 +7,23 @@ function vestingDate(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long" }).format(date);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
 }
 
 /** True when confirmation or order history should show the Rewards card. */
-export function hasOrderLoyaltySection(reward: LoyaltyOrderRewardView | null | undefined): boolean {
+export function hasOrderLoyaltySection(
+  reward: LoyaltyOrderRewardView | null | undefined,
+): boolean {
   if (!reward) return false;
   const earned = reward.earned && reward.state !== "CANCELLED";
-  const returned = reward.redemption.redeemed && reward.redemption.returnedPoints != null;
-  return Boolean(earned || reward.redemption.redeemed || reward.earnAdjustment || returned);
+  const returned =
+    reward.redemption.redeemed && reward.redemption.returnedPoints != null;
+  return Boolean(
+    earned || reward.redemption.redeemed || reward.earnAdjustment || returned,
+  );
 }
 
 /**
@@ -39,9 +47,15 @@ export function OrderRewardNote({
   const adjustment = reward.earnAdjustment;
 
   return (
-    <section className="loyalty-order-reward min-w-0 space-y-2" aria-labelledby="order-rewards-heading">
+    <section
+      className="loyalty-order-reward min-w-0 space-y-2"
+      aria-labelledby="order-rewards-heading"
+    >
       {showHeading ? (
-        <h2 id="order-rewards-heading" className="loyalty-order-reward__title text-[16px] font-semibold text-sa-primary">
+        <h2
+          id="order-rewards-heading"
+          className="loyalty-order-reward__title text-[16px] font-semibold text-sa-primary"
+        >
           Rewards
         </h2>
       ) : (
@@ -51,12 +65,17 @@ export function OrderRewardNote({
       )}
       {redemption ? (
         <>
-          <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">You used</p>
+          <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">
+            You used
+          </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
             {`${formatPoints(redemption.points)} points`}
           </p>
           {redemption.amount > 0 ? (
-            <p className="loyalty-order-reward__note text-[13px] text-sa-secondary" dir="ltr">
+            <p
+              className="loyalty-order-reward__note text-[13px] text-sa-secondary"
+              dir="ltr"
+            >
               {formatMoney(redemption.amount, redemption.currencyCode ?? "AED")}
             </p>
           ) : null}
@@ -68,9 +87,16 @@ export function OrderRewardNote({
               <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
                 {`${formatPoints(redemption.returnedPoints)} points`}
               </p>
-              {redemption.returnedAmount != null && redemption.returnedAmount > 0 ? (
-                <p className="loyalty-order-reward__note text-[13px] text-sa-secondary" dir="ltr">
-                  {formatMoney(redemption.returnedAmount, redemption.currencyCode ?? "AED")}
+              {redemption.returnedAmount != null &&
+              redemption.returnedAmount > 0 ? (
+                <p
+                  className="loyalty-order-reward__note text-[13px] text-sa-secondary"
+                  dir="ltr"
+                >
+                  {formatMoney(
+                    redemption.returnedAmount,
+                    redemption.currencyCode ?? "AED",
+                  )}
                 </p>
               ) : null}
             </>
@@ -89,7 +115,9 @@ export function OrderRewardNote({
       ) : null}
       {adjustment ? (
         <>
-          <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">You earned</p>
+          <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
+            You earned
+          </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
             {`${formatPoints(adjustment.originalPoints)} points`}
           </p>
@@ -109,7 +137,9 @@ export function OrderRewardNote({
       ) : earned && reward.earned ? (
         reward.state === "AVAILABLE" ? (
           <>
-            <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">You earned</p>
+            <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
+              You earned
+            </p>
             <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
               {`${formatPoints(reward.points)} points available`}
             </p>
@@ -119,7 +149,9 @@ export function OrderRewardNote({
           </>
         ) : (
           <>
-            <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">You earned</p>
+            <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
+              You earned
+            </p>
             <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
               {`${formatPoints(reward.points)} points pending`}
             </p>

@@ -58,7 +58,15 @@ export function NavbarMobile({
                 </li>
                 {item.groups.map((group) => (
                   <Fragment key={group.heading}>
-                    <li className={mobileNavSubLabel}>{group.heading}</li>
+                    <li className={mobileNavSubLabel}>
+                      {group.href ? (
+                        <LocaleLink href={group.href} onClick={() => chrome.setMobileOpen(false)}>
+                          {group.heading}
+                        </LocaleLink>
+                      ) : (
+                        group.heading
+                      )}
+                    </li>
                     {group.links.map((link) => (
                       <li key={link.label}>
                         <LocaleLink href={link.href} onClick={() => chrome.setMobileOpen(false)}>

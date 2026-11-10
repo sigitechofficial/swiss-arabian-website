@@ -21,7 +21,10 @@ vi.mock("@/features/cart/hooks/useCouponMutations", () => ({
 }));
 
 const applicable = vi.hoisted(() => ({
-  data: null as { promotions: PromotionSnapshotV1; offers: PromotionOffer[] } | null,
+  data: null as {
+    promotions: PromotionSnapshotV1;
+    offers: PromotionOffer[];
+  } | null,
 }));
 
 vi.mock("../hooks/useApplicablePromotions", () => ({
@@ -32,7 +35,12 @@ function snapshot(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [],
     lineAllocations: [],
     totals: { discountTotal: "0" },
@@ -68,7 +76,9 @@ describe("promotion rendering", () => {
       }),
     });
     render(<CouponForm />);
-    expect(screen.getByText("Buy 2 Perfumes, Get 1 Body Spray Free")).toBeInTheDocument();
+    expect(
+      screen.getByText("Buy 2 Perfumes, Get 1 Body Spray Free"),
+    ).toBeInTheDocument();
     expect(screen.getByText("−AED 50.00")).toBeInTheDocument();
     expect(screen.queryByText(/maxRewardQuantity/)).not.toBeInTheDocument();
   });
@@ -88,7 +98,11 @@ describe("promotion rendering", () => {
             amount: "0",
           },
         ],
-        totals: { discountTotal: "0.00", shippingDiscount: "25.00", amountPayable: "100.00" },
+        totals: {
+          discountTotal: "0.00",
+          shippingDiscount: "25.00",
+          amountPayable: "100.00",
+        },
       }),
     });
     render(<CouponForm />);
@@ -145,10 +159,18 @@ describe("promotion rendering", () => {
         giftCards={[{ usageId: "u1", maskedCode: "••••XM", amount: "50.00" }]}
       />,
     );
-    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 20.00");
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 18.00");
-    expect(screen.getByText("Gift card (••••XM)").nextElementSibling).toHaveTextContent("−AED 50.00");
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 87.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent(
+      "−AED 20.00",
+    );
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 18.00");
+    expect(
+      screen.getByText("Gift card (••••XM)").nextElementSibling,
+    ).toHaveTextContent("−AED 50.00");
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 87.00",
+    );
   });
 
   it("shows amount due from the current checkout payable, not a stale cart figure", () => {
@@ -164,7 +186,9 @@ describe("promotion rendering", () => {
         amountPayable={199}
       />,
     );
-    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 199.00");
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(
+      "AED 199.00",
+    );
     expect(screen.queryByText("Amount due")).not.toBeInTheDocument();
   });
 
@@ -182,8 +206,12 @@ describe("promotion rendering", () => {
         giftCards={[{ usageId: "u1", maskedCode: null, amount: "50.00" }]}
       />,
     );
-    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 200.00");
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 150.00");
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(
+      "AED 200.00",
+    );
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 150.00",
+    );
   });
 
   it("omits Discount when only a gift card is applied", () => {
@@ -221,7 +249,11 @@ describe("promotion rendering", () => {
                 amount: "50.00",
               },
             ],
-            totals: { discountTotal: "20.00", shippingDiscount: "50.00", amountPayable: "150.00" },
+            totals: {
+              discountTotal: "20.00",
+              shippingDiscount: "50.00",
+              amountPayable: "150.00",
+            },
           })}
         />
         <MoneySummary
@@ -239,11 +271,21 @@ describe("promotion rendering", () => {
     );
     expect(screen.getByText("50% off shipping")).toBeInTheDocument();
     expect(screen.getByText("Applied · AED 50.00")).toBeInTheDocument();
-    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("AED 50.00");
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 50.00");
-    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 20.00");
-    expect(screen.getByText("Gift card").nextElementSibling).toHaveTextContent("−AED 100.00");
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 150.00");
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent(
+      "AED 50.00",
+    );
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 50.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent(
+      "−AED 20.00",
+    );
+    expect(screen.getByText("Gift card").nextElementSibling).toHaveTextContent(
+      "−AED 100.00",
+    );
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 150.00",
+    );
   });
 
   it("shows a fixed shipping discount beside the server shipping amount", () => {
@@ -259,8 +301,12 @@ describe("promotion rendering", () => {
         amountPayable={180}
       />,
     );
-    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("AED 80.00");
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 20.00");
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent(
+      "AED 80.00",
+    );
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 20.00");
     expect(screen.queryByText(/^Free$/)).not.toBeInTheDocument();
   });
 
@@ -277,7 +323,9 @@ describe("promotion rendering", () => {
         amountPayable={100}
       />,
     );
-    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent("Free");
+    expect(screen.getByText("Shipping").nextElementSibling).toHaveTextContent(
+      "Free",
+    );
   });
 
   it("does not invent a shipping discount when the cart shipping fee is zero", () => {
@@ -298,13 +346,21 @@ describe("promotion rendering", () => {
 
   it("renders a promotion conflict as a quiet note", () => {
     const promo = snapshot({
-      rejected: [{ reason: "PROMOTION_CONFLICT", message: "Another offer didn’t combine with the one already on your bag." }],
+      rejected: [
+        {
+          reason: "PROMOTION_CONFLICT",
+          message:
+            "Another offer didn’t combine with the one already on your bag.",
+        },
+      ],
     });
     applicable.data = { promotions: promo, offers: [] };
     useCartStore.setState({ promotions: promo, cartId: "cart-1" });
     render(<PromotionUnlockNote />);
     expect(
-      screen.getByText("Another offer didn’t combine with the one already on your bag."),
+      screen.getByText(
+        "Another offer didn’t combine with the one already on your bag.",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -318,13 +374,20 @@ describe("promotion rendering", () => {
       promotions: promo,
       offers: [
         {
-          qualification: { status: "INELIGIBLE", remainingAmount: "75.00", minOrderAmount: "300.00" },
+          qualification: {
+            status: "INELIGIBLE",
+            remainingAmount: "75.00",
+            minOrderAmount: "300.00",
+          },
           rejected: { reason: "MIN_ORDER" },
         },
         {
           title: "Card offer",
           selected: true,
-          qualification: { status: "PENDING", pendingReason: "PAYMENT_METHOD_REQUIRED" },
+          qualification: {
+            status: "PENDING",
+            pendingReason: "PAYMENT_METHOD_REQUIRED",
+          },
         },
       ],
     };
@@ -335,12 +398,22 @@ describe("promotion rendering", () => {
         <PromotionUnlockNote />
       </>,
     );
-    expect(screen.getByText("Spend AED 75.00 to unlock free shipping.")).toBeInTheDocument();
     expect(
-      screen.getByText("Select an eligible payment method at checkout to use this offer."),
+      screen.getByText("Spend AED 75.00 to unlock free shipping."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Free shipping applied.")).not.toBeInTheDocument();
-    expect(screen.queryByText(/unlocked free shipping/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("list", { name: "Applied offers" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Select an eligible payment method at checkout to use this offer.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Free shipping applied."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/unlocked free shipping/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("list", { name: "Applied offers" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { fetchLoyaltyTransactions, type LoyaltyMarketQuery } from "../api/loyalty.service";
+import {
+  fetchLoyaltyTransactions,
+  type LoyaltyMarketQuery,
+} from "../api/loyalty.service";
 import { LOYALTY_ACTIVITY_PAGE_SIZE } from "../api/loyalty.keys";
 import {
   coerceLoyaltyActivityPage,
@@ -53,7 +56,10 @@ function OnlineActivity({
 }) {
   return (
     <section aria-labelledby="online-activity-heading">
-      <h2 id="online-activity-heading" className="text-[16px] font-semibold text-sa-primary sm:text-[18px]">
+      <h2
+        id="online-activity-heading"
+        className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
+      >
         {OMNICHANNEL_COPY.onlineActivity}
       </h2>
       {pending ? (
@@ -62,7 +68,9 @@ function OnlineActivity({
         </p>
       ) : error ? (
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
-          <p className="text-[14px] text-sa-primary">We couldn&apos;t load your rewards right now.</p>
+          <p className="text-[14px] text-sa-primary">
+            We couldn&apos;t load your rewards right now.
+          </p>
           <button
             type="button"
             onClick={onRetry}
@@ -72,18 +80,35 @@ function OnlineActivity({
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">{OMNICHANNEL_COPY.onlineEmpty}</p>
+        <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">
+          {OMNICHANNEL_COPY.onlineEmpty}
+        </p>
       ) : (
         <>
           <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
             {rows.map((row) => (
-              <li key={row.id} className="flex items-start justify-between gap-3 px-4 py-4 sm:gap-4">
+              <li
+                key={row.id}
+                className="flex items-start justify-between gap-3 px-4 py-4 sm:gap-4"
+              >
                 <div className="min-w-0">
-                  <p className="break-words text-[13px] font-medium text-sa-primary">{row.label}</p>
-                  {row.detail ? <p className="mt-0.5 text-[12px] text-sa-muted">{row.detail}</p> : null}
-                  {row.state ? <p className="mt-0.5 text-[12px] text-sa-secondary">{row.state}</p> : null}
+                  <p className="break-words text-[13px] font-medium text-sa-primary">
+                    {row.label}
+                  </p>
+                  {row.detail ? (
+                    <p className="mt-0.5 text-[12px] text-sa-muted">
+                      {row.detail}
+                    </p>
+                  ) : null}
+                  {row.state ? (
+                    <p className="mt-0.5 text-[12px] text-sa-secondary">
+                      {row.state}
+                    </p>
+                  ) : null}
                   {activityDate(row.occurredAt) ? (
-                    <p className="mt-1 text-[12px] text-sa-muted">{activityDate(row.occurredAt)}</p>
+                    <p className="mt-1 text-[12px] text-sa-muted">
+                      {activityDate(row.occurredAt)}
+                    </p>
                   ) : null}
                 </div>
                 {row.points != null ? (
@@ -131,7 +156,10 @@ function StoreActivity({
 }) {
   return (
     <section aria-labelledby="store-activity-heading">
-      <h2 id="store-activity-heading" className="text-[16px] font-semibold text-sa-primary sm:text-[18px]">
+      <h2
+        id="store-activity-heading"
+        className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
+      >
         {OMNICHANNEL_COPY.activityHeading}
       </h2>
       {stale && !pending && !error ? (
@@ -145,7 +173,9 @@ function StoreActivity({
         </p>
       ) : error ? (
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
-          <p className="text-[14px] text-sa-primary">{OMNICHANNEL_COPY.activityError}</p>
+          <p className="text-[14px] text-sa-primary">
+            {OMNICHANNEL_COPY.activityError}
+          </p>
           <button
             type="button"
             onClick={onRetry}
@@ -155,7 +185,9 @@ function StoreActivity({
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">{OMNICHANNEL_COPY.activityEmpty}</p>
+        <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">
+          {OMNICHANNEL_COPY.activityEmpty}
+        </p>
       ) : (
         <>
           <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
@@ -173,14 +205,24 @@ function StoreActivity({
                       {externalActivityLabel(row)}
                     </p>
                     {originLabel ? (
-                      <p className="mt-0.5 text-[12px] text-sa-muted">{originLabel}</p>
+                      <p className="mt-0.5 text-[12px] text-sa-muted">
+                        {originLabel}
+                      </p>
                     ) : null}
-                    {receipt ? <p className="mt-0.5 text-[12px] text-sa-muted">{receipt}</p> : null}
+                    {receipt ? (
+                      <p className="mt-0.5 text-[12px] text-sa-muted">
+                        {receipt}
+                      </p>
+                    ) : null}
                     {expires ? (
-                      <p className="mt-0.5 text-[12px] text-sa-secondary">Expires {expires}</p>
+                      <p className="mt-0.5 text-[12px] text-sa-secondary">
+                        Expires {expires}
+                      </p>
                     ) : null}
                     {activityDate(row.entryDate) ? (
-                      <p className="mt-1 text-[12px] text-sa-muted">{activityDate(row.entryDate)}</p>
+                      <p className="mt-1 text-[12px] text-sa-muted">
+                        {activityDate(row.entryDate)}
+                      </p>
                     ) : null}
                   </div>
                   <p className="shrink-0 break-words text-right text-[13px] font-semibold text-sa-primary tabular-nums">
@@ -222,10 +264,18 @@ export function RewardsActivitySections({
   onRetry: () => void;
 }) {
   const firstPage = coerceLoyaltyActivityPage(page);
-  const [extraPlatform, setExtraPlatform] = useState<LoyaltyTransactionView[]>([]);
-  const [extraExternal, setExtraExternal] = useState<ExternalLoyaltyActivityView[]>([]);
-  const [platformHasMore, setPlatformHasMore] = useState(firstPage.pageInfo.hasMore);
-  const [externalHasMore, setExternalHasMore] = useState(firstPage.externalPageInfo.hasMore);
+  const [extraPlatform, setExtraPlatform] = useState<LoyaltyTransactionView[]>(
+    [],
+  );
+  const [extraExternal, setExtraExternal] = useState<
+    ExternalLoyaltyActivityView[]
+  >([]);
+  const [platformHasMore, setPlatformHasMore] = useState(
+    firstPage.pageInfo.hasMore,
+  );
+  const [externalHasMore, setExternalHasMore] = useState(
+    firstPage.externalPageInfo.hasMore,
+  );
   const [loadingMorePlatform, setLoadingMorePlatform] = useState(false);
   const [loadingMoreExternal, setLoadingMoreExternal] = useState(false);
 

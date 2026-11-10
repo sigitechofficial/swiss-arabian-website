@@ -1,32 +1,55 @@
 import type { MetadataRoute } from "next";
-import { headers } from "next/headers";
-import { fetchCollections } from "@/features/catalog/api/catalog.service";
+import { fetchCatalogSitemap } from "@/features/catalog/api/catalog.service";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
+import { requestOrigin } from "@/lib/seo/requestOrigin";
+import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
+import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
 
-const STATIC_PATHS = ["/", "/products", "/collections", "/search"];
+/** Public pages that are not catalog entities (search is noindex, so not listed). */
+// Placeholder pages (blog, our story, stores) join when their CMS content exists.
+const STATIC_PATHS = ["/", "/collections", "/faq"];
 
 function absolute(origin: string, path: string) {
   return `${origin}${path === "/" ? "" : path}`;
 }
 
+/**
+ * This market's sitemap: fixed pages plus every product, collection and
+ * category visible in the market (market product addresses), English and
+ * Arabic, with last-updated dates. Served per market domain.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") || headerStore.get("host") || "";
-  const proto = headerStore.get("x-forwarded-proto") || "https";
-  const origin = host ? `${proto}://${host}` : "";
-  const paths = new Set(STATIC_PATHS);
+  const origin = (await requestOrigin()) ?? "";
+  const entries: Array<{ path: string; lastModified?: string }> = STATIC_PATHS.map((path) => ({ path }));
 
   try {
-    const collections = await fetchCollections();
-    for (const collection of collections) {
-      if (collection.slug) paths.add(`/collections/${collection.slug}`);
+    const { zoneCode, market } = await resolveServerCatalogMarket();
+    const catalog = await fetchCatalogSitemap(zoneCode, market);
+    for (const entry of catalog) {
+      if (entry.noindex || !entry.path) continue;
+      entries.push({ path: entry.path, lastModified: entry.updatedAt ?? undefined });
     }
   } catch {
-    // A missing market still publishes the static addresses.
+    // The market cannot be read: still publish the fixed pages.
   }
 
-  const entries: MetadataRoute.Sitemap = [];
-  for (const path of paths) {
+  try {
+    const { zoneCode } = await resolveServerCatalogMarket();
+    for (const page of await fetchSitePages(zoneCode)) {
+      // Addresses that redirect to a platform page (e.g. /pages/faqs → /faq) are not listed.
+      if (shopifyLegacyRedirect(page.path)) continue;
+      entries.push({ path: page.path, lastModified: page.updatedAt });
+    }
+  } catch {
+    // Pages cannot be read: the rest of the sitemap still publishes.
+  }
+
+  const seen = new Set<string>();
+  const out: MetadataRoute.Sitemap = [];
+  for (const { path, lastModified } of entries) {
+    if (seen.has(path)) continue;
+    seen.add(path);
     const english = withLocalePrefix(path, "en");
     const arabic = withLocalePrefix(path, "ar");
     const languages = origin
@@ -36,14 +59,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           "x-default": absolute(origin, english),
         }
       : undefined;
-    entries.push({
-      url: origin ? absolute(origin, english) : english,
-      alternates: languages ? { languages } : undefined,
-    });
-    entries.push({
-      url: origin ? absolute(origin, arabic) : arabic,
-      alternates: languages ? { languages } : undefined,
-    });
+    for (const url of [english, arabic]) {
+      out.push({
+        url: origin ? absolute(origin, url) : url,
+        ...(lastModified ? { lastModified } : {}),
+        alternates: languages ? { languages } : undefined,
+      });
+    }
   }
-  return entries;
+  return out;
 }

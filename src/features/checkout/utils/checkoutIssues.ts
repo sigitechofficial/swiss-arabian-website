@@ -77,8 +77,12 @@ export function checkoutIssueMessage(issues: CheckoutValidationIssue[] | undefin
 export function checkoutWarningMessages(
   issues: CheckoutValidationIssue[] | undefined,
 ): string[] {
+  // Only warnings written for shoppers. Internal notices (e.g. the D365
+  // customer mapping, which only affects back-office posting) never show.
   const warnings = (issues ?? []).filter(
-    (i) => (i.severity ?? "").toUpperCase() === "WARNING",
+    (i) =>
+      (i.severity ?? "").toUpperCase() === "WARNING" &&
+      Boolean(ISSUE_MESSAGES[i.issueType] ?? (i.code ? ISSUE_MESSAGES[i.code] : undefined)),
   );
   return [...new Set(warnings.map(issueCopy))];
 }

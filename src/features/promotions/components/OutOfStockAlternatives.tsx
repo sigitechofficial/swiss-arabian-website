@@ -9,10 +9,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { fetchOutOfStock } from "../api/promotions.service";
 import { trackPromotion } from "../utils/promotionAnalytics";
-import {
-  pdpOos,
-  pdpOosMessage,
-} from "@/styles/pdpChrome";
+import { pdpOos, pdpOosMessage } from "@/styles/pdpChrome";
 import {
   cartRec,
   cartRecAdd,
@@ -58,18 +55,22 @@ export function OutOfStockAlternatives({ productId }: { productId: string }) {
                   {product.slug ? (
                     <LocaleLink
                       href={`/products/${product.slug}`}
-                      onClick={() => trackPromotion("promotion_recommendation_clicked", {
-                        campaignCode: state.campaignCode,
-                        market: zoneCode,
-                        surface: "out-of-stock",
-                      })}
+                      onClick={() =>
+                        trackPromotion("promotion_recommendation_clicked", {
+                          campaignCode: state.campaignCode,
+                          market: zoneCode,
+                          surface: "out-of-stock",
+                        })
+                      }
                     >
                       <p className={cartRecName}>{product.title}</p>
                     </LocaleLink>
                   ) : (
                     <p className={cartRecName}>{product.title}</p>
                   )}
-                  {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
+                  {product.price ? (
+                    <p className={cartRecPrice}>{product.price}</p>
+                  ) : null}
                 </div>
                 <button
                   type="button"

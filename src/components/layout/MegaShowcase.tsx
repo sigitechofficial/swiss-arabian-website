@@ -7,7 +7,7 @@ import { catalogKeys, fetchCollectionProducts } from "@/features/catalog/api/cat
 import { imagesSettled, useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { ChromeMega } from "@/features/home/constants/chromeNav";
-import { MEGA_PRODUCTS, type MegaProduct } from "@/features/home/constants/megaProducts";
+import type { MegaProduct } from "@/features/home/constants/megaProducts";
 import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
@@ -29,12 +29,6 @@ import {
 
 const MEGA_PRODUCT_COUNT = 4;
 
-/** Live menu ids whose hand-picked lineup is stored under a shorter key. */
-const CURATED_ALIAS: Record<string, string> = {
-  "perfume-oils": "oils",
-  "best-sellers": "best",
-};
-
 function collectionSlug(href: string): string | null {
   const match = href.match(/^\/collections\/([^/?#]+)/);
   return match ? decodeURIComponent(match[1]) : null;
@@ -49,7 +43,9 @@ function ProductTile({ product }: { product: MegaProduct }) {
       </span>
       <span className={megaProdName}>{product.name}</span>
       {product.notes ? <span className={megaProdMeta}>{product.notes}</span> : null}
-      <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
+      {product.price != null ? (
+        <span className={megaProdPrice}>{formatMoney(product.price, product.currency)}</span>
+      ) : null}
     </LocaleLink>
   );
 }
@@ -112,9 +108,6 @@ export function MegaShowcase({
       notes: p.subtitle ? cardEyebrow(stripHtml(p.subtitle)) : undefined,
     }));
 
-  const curated =
-    MEGA_PRODUCTS[item.id] ?? MEGA_PRODUCTS[CURATED_ALIAS[item.id]] ?? MEGA_PRODUCTS.perfumes ?? [];
-
   // Hold the tiles until the live lineup is known, so the panel never flashes
   // the fallback products and then swaps them out.
   const waiting =
@@ -137,10 +130,9 @@ export function MegaShowcase({
     );
   }
 
-  // A panel always shows a full, matching row: the live lineup only when four
-  // of its images load (many catalog media URLs 404), otherwise the curated
-  // cutouts — never a half-live, half-cutout mix.
-  const products = live.length >= MEGA_PRODUCT_COUNT ? live : curated;
+  // Only the market's real products (those whose images load); none → the
+  // promo or nothing. Never sample products.
+  const products = live;
 
   if (products.length) {
     return (

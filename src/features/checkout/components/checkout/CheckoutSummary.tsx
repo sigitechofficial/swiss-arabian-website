@@ -198,7 +198,7 @@ export function CheckoutSummary({
           {warning}
         </p>
       ))}
-      <p className={checkoutBadges}>SSL Encrypted · 30-day guarantee · Ships from Sharjah</p>
+      <p className={checkoutBadges}>SSL encrypted</p>
     </aside>
   );
 }

@@ -16,9 +16,12 @@ export function StorefrontShell({
    * rendering every option.
    */
   navbarVariant = "minimal",
+  beforeFooter,
 }: {
   children: ReactNode;
   navbarVariant?: NavbarVariant;
+  /** Server content just above the footer (market SEO text). */
+  beforeFooter?: ReactNode;
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--cream)] font-sans text-[var(--ink)]">
@@ -30,6 +33,7 @@ export function StorefrontShell({
       <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>
+      {beforeFooter}
       <SiteFooter />
       <CartSideSheet />
       <GiftChoiceHost />

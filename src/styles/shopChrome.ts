@@ -21,6 +21,16 @@ export const collectionHeadFlush = "bg-[var(--cream,#faf6ee)] pb-0";
 export const collectionHero =
   "mt-[clamp(1rem,2.5vh,1.75rem)] grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] overflow-hidden rounded-[4px] border border-[var(--line,#d9ccb4)] bg-white max-[860px]:grid-cols-1";
 
+/** Store banner artwork (wide): full width, natural height, never cropped. */
+export const collectionBanner =
+  "mt-[clamp(1rem,2.5vh,1.75rem)] block overflow-hidden rounded-[4px] border border-[var(--line,#d9ccb4)] bg-white";
+
+export const collectionBannerImage = "block h-auto w-full";
+
+/** Title panel under a wide banner (no side image). */
+export const collectionHeroWide =
+  "mt-3 grid grid-cols-1 overflow-hidden rounded-[4px] border border-[var(--line,#d9ccb4)] bg-white";
+
 export const collectionHeroMedia =
   "h-full max-h-[clamp(360px,48vh,480px)] min-h-[clamp(280px,36vh,420px)] w-full object-cover object-[center_42%] max-[860px]:max-h-[320px] max-[860px]:min-h-[260px]";
 

@@ -1,12 +1,33 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type RefObject } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
 import { PartyPopper } from "lucide-react";
 import { completedBundleSets } from "@/features/promotions";
 import { useCartStore } from "@/stores/useCartStore";
-import { confettiCircle, confettiDiamond, confettiPiece, confettiRibbon, partyPopper } from "@/styles/cartChrome";
+import {
+  confettiCircle,
+  confettiDiamond,
+  confettiPiece,
+  confettiRibbon,
+  partyPopper,
+} from "@/styles/cartChrome";
 
-export const CONFETTI_COLORS = ["#2f7d4a", "#3aa05a", "#c9a227", "#e0bd78", "#8c4435", "#fff", "#f4ead8"];
+export const CONFETTI_COLORS = [
+  "#2f7d4a",
+  "#3aa05a",
+  "#c9a227",
+  "#e0bd78",
+  "#8c4435",
+  "#fff",
+  "#f4ead8",
+];
 export const CONFETTI_SHAPES = ["circle", "ribbon", "diamond"] as const;
 
 export type ConfettiPiece = {
@@ -21,17 +42,26 @@ export type PopperBurst = {
 };
 
 export function confettiShapeClass(shape: ConfettiPiece["shape"]): string {
-  return shape === "circle" ? confettiCircle : shape === "ribbon" ? confettiRibbon : confettiDiamond;
+  return shape === "circle"
+    ? confettiCircle
+    : shape === "ribbon"
+      ? confettiRibbon
+      : confettiDiamond;
 }
 
 /**
  * Two party poppers at the ends of the "You saved" bundle banner, each firing
  * confetti inward, plus a light fall from the top of the layer.
  */
-export function partyPopperBurst(root: HTMLElement | null, layer: HTMLElement | null): PopperBurst {
+export function partyPopperBurst(
+  root: HTMLElement | null,
+  layer: HTMLElement | null,
+): PopperBurst {
   const lr = layer?.getBoundingClientRect();
   const width = lr?.width || 420;
-  const banner = root?.querySelector("[data-bundle-saved]")?.getBoundingClientRect();
+  const banner = root
+    ?.querySelector("[data-bundle-saved]")
+    ?.getBoundingClientRect();
   const y = banner && lr ? banner.top - lr.top + banner.height / 2 : 130;
   const left = banner && lr ? banner.left - lr.left + 20 : 40;
   const right = banner && lr ? banner.right - lr.left - 20 : width - 40;
@@ -131,10 +161,13 @@ export function useBundleCelebration({
 
   const celebrate = useEffectEvent(() => {
     if (!enabled) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     let waits = 0;
     const fire = () => {
-      const banner = rootRef.current?.querySelector("[data-bundle-saved]") ?? null;
+      const banner =
+        rootRef.current?.querySelector("[data-bundle-saved]") ?? null;
       if (!banner && waits++ < 15) {
         timerRef.current = setTimeout(fire, 100);
         return;
@@ -181,7 +214,11 @@ export function PopperBurstLayer({ burst }: { burst: PopperBurst | null }) {
         />
       ))}
       {burst.poppers.map((popper) => (
-        <span key={popper.id} className={partyPopper} style={popper.style as CSSProperties}>
+        <span
+          key={popper.id}
+          className={partyPopper}
+          style={popper.style as CSSProperties}
+        >
           <PartyPopper size={22} strokeWidth={1.8} />
         </span>
       ))}

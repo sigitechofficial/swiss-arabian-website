@@ -3,6 +3,7 @@ import type { ShopLocale } from "./localePath";
 const COPY = {
   en: {
     home: "Home",
+    page: "Page",
     language: "Language",
     shipTo: "Ship to",
     search: "Search for fragrances, collections...",
@@ -20,6 +21,8 @@ const COPY = {
     moreLinks: "More links",
     followUs: "Follow us",
     productMissing: "This product is not available.",
+    productLoadFailed: "We couldn’t load this product right now.",
+    tryAgain: "Try again",
     backToProducts: "Back to all products",
     loadingProduct: "Loading product…",
     shopByCategories: "Shop by categories",
@@ -40,6 +43,7 @@ const COPY = {
   },
   ar: {
     home: "الرئيسية",
+    page: "صفحة",
     language: "اللغة",
     shipTo: "التوصيل إلى",
     search: "ابحث عن العطور والمجموعات...",
@@ -57,6 +61,8 @@ const COPY = {
     moreLinks: "روابط أخرى",
     followUs: "تابعنا",
     productMissing: "هذا المنتج غير متاح.",
+    productLoadFailed: "تعذّر تحميل هذا المنتج الآن.",
+    tryAgain: "حاول مرة أخرى",
     backToProducts: "العودة إلى كل المنتجات",
     loadingProduct: "جارٍ تحميل المنتج…",
     shopByCategories: "تسوق حسب الفئة",

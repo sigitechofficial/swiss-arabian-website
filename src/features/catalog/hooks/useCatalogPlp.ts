@@ -16,9 +16,17 @@ export function useCatalogPlp(
   source: CatalogListingSource,
   listingQuery: CatalogListingQuery,
   initialPage?: ProductListResult | null,
+  /** Market the server rendered `initialPage` for. */
+  initialZoneCode?: string | null,
 ) {
   const market = useSelectedCatalogMarket();
   const zoneCode = market?.zoneCode ?? "";
+  // The server's first page belongs to one market: never show it (as fresh
+  // data) after the shopper switches to another market.
+  const initialForThisMarket =
+    initialPage && (!zoneCode || !initialZoneCode || zoneCode === initialZoneCode)
+      ? initialPage
+      : null;
   const filterKey = { ...listingQuery, page: 1 };
 
   const query = useInfiniteQuery({
@@ -37,8 +45,8 @@ export function useCatalogPlp(
         market,
       ),
     enabled: Boolean(market),
-    initialData: initialPage
-      ? { pages: [initialPage], pageParams: [1] }
+    initialData: initialForThisMarket
+      ? { pages: [initialForThisMarket], pageParams: [1] }
       : undefined,
     staleTime: 30_000,
     placeholderData: (previous, previousQuery) => {

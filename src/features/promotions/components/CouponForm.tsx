@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useEffect, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -7,7 +8,11 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useCouponMutations } from "@/features/cart/hooks/useCouponMutations";
-import { appliedCoupon, appliedPromotionView, isFixedAmountBxgy } from "../types/promotions";
+import {
+  appliedCoupon,
+  appliedPromotionView,
+  isFixedAmountBxgy,
+} from "../types/promotions";
 import { couponErrorMessage } from "../utils/couponErrors";
 import {
   couponLoginHref,
@@ -33,8 +38,9 @@ export function CouponForm() {
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const promotions = useCartStore((s) => s.promotions);
   const totals = useCartStore((s) => s.totals);
+  const marketCurrency = useMarketCurrency();
   const currency =
-    promotions?.context?.currencyCode ?? totals?.currency ?? "AED";
+    promotions?.context?.currencyCode ?? totals?.currency ?? marketCurrency;
   const { apply, remove, cartId } = useCouponMutations();
 
   const [code, setCode] = useState("");
@@ -71,7 +77,10 @@ export function CouponForm() {
       await apply.mutateAsync(next);
       setCode("");
     } catch (error) {
-      if (error instanceof ApiClientError && error.code === "COUPON_REQUIRES_LOGIN") {
+      if (
+        error instanceof ApiClientError &&
+        error.code === "COUPON_REQUIRES_LOGIN"
+      ) {
         router.push(couponLoginHref(pathname || "/cart", next));
         return;
       }
@@ -90,7 +99,9 @@ export function CouponForm() {
   }
 
   const busy = apply.isPending || remove.isPending;
-  const appliedView = applied ? appliedPromotionView(applied, promotions) : null;
+  const appliedView = applied
+    ? appliedPromotionView(applied, promotions)
+    : null;
 
   return (
     <div className={couponBox} data-coupon="">
@@ -98,7 +109,9 @@ export function CouponForm() {
       {applied?.code ? (
         <div className={couponApplied}>
           <div>
-            <p className={couponAppliedName}>{appliedView?.label || applied.code}</p>
+            <p className={couponAppliedName}>
+              {appliedView?.label || applied.code}
+            </p>
             <p className={couponAppliedCode}>{applied.code}</p>
           </div>
           {appliedView?.amount != null && appliedView.amount > 0 ? (
@@ -126,7 +139,9 @@ export function CouponForm() {
           spellCheck={false}
           aria-label="Promo code"
           aria-invalid={fieldError ? true : undefined}
-          placeholder={applied?.code ? "Replace with another code" : "Enter code"}
+          placeholder={
+            applied?.code ? "Replace with another code" : "Enter code"
+          }
           value={apply.isPending && !code ? (apply.variables ?? "") : code}
           onChange={(e) => {
             setCode(e.target.value);

@@ -27,7 +27,10 @@ vi.mock("@/features/cart/hooks/useCouponMutations", () => ({
 }));
 
 const applicable = vi.hoisted(() => ({
-  data: null as { promotions: PromotionSnapshotV1; offers: PromotionOffer[] } | null,
+  data: null as {
+    promotions: PromotionSnapshotV1;
+    offers: PromotionOffer[];
+  } | null,
 }));
 
 vi.mock("../hooks/useApplicablePromotions", () => ({
@@ -35,7 +38,8 @@ vi.mock("../hooks/useApplicablePromotions", () => ({
 }));
 
 function row(
-  partial: Partial<PromotionApplied> & Pick<PromotionApplied, "kind" | "amount">,
+  partial: Partial<PromotionApplied> &
+    Pick<PromotionApplied, "kind" | "amount">,
 ): PromotionApplied {
   return {
     code: null,
@@ -51,7 +55,12 @@ function snap(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [],
     lineAllocations: [],
     totals: { discountTotal: "0" },
@@ -101,8 +110,12 @@ describe("P7 stacking presentation", () => {
         <PromotionUnlockNote />
       </>,
     );
-    expect(screen.getByText("Another offer was applied instead.")).toBeInTheDocument();
-    expect(screen.queryByRole("list", { name: "Applied offers" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Another offer was applied instead."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("list", { name: "Applied offers" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/0\.00/)).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -112,8 +125,18 @@ describe("P7 stacking presentation", () => {
       <AppliedCampaigns
         snapshot={snap({
           applied: [
-            row({ kind: "AUTOMATIC", code: "AUTO_A", label: "Layer offer", amount: "10.00" }),
-            row({ kind: "AUTOMATIC", code: "AUTO_B", label: "Set offer", amount: "8.00" }),
+            row({
+              kind: "AUTOMATIC",
+              code: "AUTO_A",
+              label: "Layer offer",
+              amount: "10.00",
+            }),
+            row({
+              kind: "AUTOMATIC",
+              code: "AUTO_B",
+              label: "Set offer",
+              amount: "8.00",
+            }),
           ],
         })}
       />,
@@ -172,8 +195,12 @@ describe("P7 stacking presentation", () => {
     expect(screen.getByText("−AED 30.00")).toBeInTheDocument();
     expect(screen.getByText("Shipping offer")).toBeInTheDocument();
     expect(screen.getAllByText("−AED 25.00")).toHaveLength(2);
-    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 130.00");
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 25.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent(
+      "−AED 130.00",
+    );
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 25.00");
   });
 
   it("keeps a coupon and an automatic offer, with the server discount total", () => {
@@ -186,7 +213,12 @@ describe("P7 stacking presentation", () => {
           discountValue: "50",
           amount: "20.00",
         }),
-        row({ kind: "AUTOMATIC", code: "AUTO", label: "Automatic offer", amount: "15.00" }),
+        row({
+          kind: "AUTOMATIC",
+          code: "AUTO",
+          label: "Automatic offer",
+          amount: "15.00",
+        }),
       ],
       totals: { discountTotal: "32.00", shippingDiscount: "0.00" },
     });
@@ -211,15 +243,28 @@ describe("P7 stacking presentation", () => {
     expect(screen.getByText("−AED 20.00")).toBeInTheDocument();
     expect(screen.getByText("Automatic offer")).toBeInTheDocument();
     expect(screen.getByText("−AED 15.00")).toBeInTheDocument();
-    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent("−AED 32.00");
+    expect(screen.getByText("Discount").nextElementSibling).toHaveTextContent(
+      "−AED 32.00",
+    );
     expect(screen.queryByText(/50/)).not.toBeInTheDocument();
   });
 
   it("does not show a conflicting coupon as applied", () => {
     const promo = snap({
-      applied: [row({ kind: "AUTOMATIC", code: "AUTO", label: "Automatic offer", amount: "15.00" })],
+      applied: [
+        row({
+          kind: "AUTOMATIC",
+          code: "AUTO",
+          label: "Automatic offer",
+          amount: "15.00",
+        }),
+      ],
       rejected: [
-        { code: "LOSER", reason: "PROMOTION_CONFLICT", message: "Another offer was applied instead." },
+        {
+          code: "LOSER",
+          reason: "PROMOTION_CONFLICT",
+          message: "Another offer was applied instead.",
+        },
       ],
     });
     applicable.data = { promotions: promo, offers: [] };
@@ -231,7 +276,9 @@ describe("P7 stacking presentation", () => {
       </>,
     );
     expect(screen.queryByText("LOSER")).not.toBeInTheDocument();
-    expect(screen.getByText("Another offer was applied instead.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Another offer was applied instead."),
+    ).toBeInTheDocument();
   });
 
   it("collapses identical conflict fallbacks and keeps distinct messages", () => {
@@ -239,15 +286,23 @@ describe("P7 stacking presentation", () => {
       rejected: [
         { code: "A", reason: "PROMOTION_CONFLICT" },
         { code: "B", reason: "PROMOTION_CONFLICT" },
-        { code: "C", reason: "PROMOTION_CONFLICT", message: "The shipping offer was kept." },
+        {
+          code: "C",
+          reason: "PROMOTION_CONFLICT",
+          message: "The shipping offer was kept.",
+        },
       ],
     });
     applicable.data = { promotions: promo, offers: [] };
     render(<PromotionUnlockNote />);
     expect(
-      screen.getAllByText("Another offer didn’t combine with the one already on your bag."),
+      screen.getAllByText(
+        "Another offer didn’t combine with the one already on your bag.",
+      ),
     ).toHaveLength(1);
-    expect(screen.getByText("The shipping offer was kept.")).toBeInTheDocument();
+    expect(
+      screen.getByText("The shipping offer was kept."),
+    ).toBeInTheDocument();
   });
 
   it("does not sum shipping rows into the shipping discount", () => {
@@ -282,27 +337,41 @@ describe("P7 stacking presentation", () => {
         total={103}
       />,
     );
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 22.00");
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 22.00");
     expect(screen.queryByText("Discount")).not.toBeInTheDocument();
   });
 
   it("keeps a pending offer distinct from a conflict", () => {
     const promo = snap({
-      rejected: [{ reason: "PROMOTION_CONFLICT", message: "Another offer was applied instead." }],
+      rejected: [
+        {
+          reason: "PROMOTION_CONFLICT",
+          message: "Another offer was applied instead.",
+        },
+      ],
     });
     applicable.data = {
       promotions: promo,
       offers: [
         {
-          qualification: { status: "PENDING", pendingReason: "SHIPPING_METHOD_REQUIRED" },
+          qualification: {
+            status: "PENDING",
+            pendingReason: "SHIPPING_METHOD_REQUIRED",
+          },
         },
       ],
     };
     render(<PromotionUnlockNote />);
     expect(
-      screen.getByText("Select an eligible delivery method at checkout to use this offer."),
+      screen.getByText(
+        "Select an eligible delivery method at checkout to use this offer.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Another offer was applied instead.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Another offer was applied instead."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/unlocked/i)).not.toBeInTheDocument();
   });
 

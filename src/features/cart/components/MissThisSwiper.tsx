@@ -31,16 +31,25 @@ export function CheckoutAddonRow({
 }) {
   const unavailableLabel = `${product.title} can’t be added yet`;
   return (
-    <article className={compact ? checkoutMissCard : checkoutAddon} data-addon="">
+    <article
+      className={compact ? checkoutMissCard : checkoutAddon}
+      data-addon=""
+    >
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img className={checkoutAddonMedia} src={product.imageUrl} alt="" />
       ) : (
-        <span className={checkoutAddonMedia} data-addon-ph="" aria-hidden="true" />
+        <span
+          className={checkoutAddonMedia}
+          data-addon-ph=""
+          aria-hidden="true"
+        />
       )}
       <div>
         <p className={checkoutAddonName}>{product.title}</p>
-        <p className={checkoutAddonPrice}>{formatMoney(product.price ?? 0, product.currency)}</p>
+        <p className={checkoutAddonPrice}>
+          {formatMoney(product.price ?? 0, product.currency)}
+        </p>
       </div>
       <button
         type="button"
@@ -49,7 +58,11 @@ export function CheckoutAddonRow({
         onClick={() => onAdd(product)}
         title={disabled ? unavailableLabel : undefined}
         aria-label={
-          disabled ? unavailableLabel : adding ? `Adding ${product.title}` : `Add ${product.title}`
+          disabled
+            ? unavailableLabel
+            : adding
+              ? `Adding ${product.title}`
+              : `Add ${product.title}`
         }
       >
         {compact ? (adding ? "…" : "+") : adding ? "Adding" : "+ Add"}

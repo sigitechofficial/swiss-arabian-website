@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import {
@@ -32,6 +33,7 @@ export function AppliedCampaigns({
   /** Checkout lists the free gift as an order line, so its "Applied" row would repeat it. */
   hideGifts?: boolean;
 }) {
+  const marketCurrency = useMarketCurrency();
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
   const rows = visibleApplied(data).filter(
@@ -39,7 +41,7 @@ export function AppliedCampaigns({
   );
   if (!rows.length) return null;
 
-  const currency = data?.context?.currencyCode ?? "AED";
+  const currency = data?.context?.currencyCode ?? marketCurrency;
 
   return (
     <ul className={promoAppliedList} aria-label="Applied offers">
@@ -47,17 +49,25 @@ export function AppliedCampaigns({
         const view = appliedPromotionView(item, data);
         const tierPercent = selectedTierPercent(item);
         const quotedAmount = view.amount != null && view.amount > 0;
-        const partialShipping = item.level === "SHIPPING" && !isFreeShippingBenefit(item) && quotedAmount;
+        const partialShipping =
+          item.level === "SHIPPING" &&
+          !isFreeShippingBenefit(item) &&
+          quotedAmount;
         const fixedBxgy = isFixedAmountBxgy(item) && quotedAmount;
         return (
-          <li className={promoAppliedRow} key={`${item.kind}-${item.code ?? "row"}-${index}`}>
+          <li
+            className={promoAppliedRow}
+            key={`${item.kind}-${item.code ?? "row"}-${index}`}
+          >
             <span>{view.label}</span>
             {partialShipping || fixedBxgy ? (
-              <span dir="ltr">Applied · {formatMoney(view.amount ?? 0, currency)}</span>
+              <span dir="ltr">
+                Applied · {formatMoney(view.amount ?? 0, currency)}
+              </span>
             ) : view.amount != null && view.amount > 0 ? (
               <span dir="ltr">
-                {tierPercent ? `${tierPercent}% off · ` : null}
-                −{formatMoney(view.amount, currency)}
+                {tierPercent ? `${tierPercent}% off · ` : null}−
+                {formatMoney(view.amount, currency)}
               </span>
             ) : (
               <span>{view.status ?? "Applied"}</span>

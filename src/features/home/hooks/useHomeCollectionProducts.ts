@@ -11,7 +11,6 @@ import {
 } from "@/features/catalog/hooks/useLoadedImages";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
-import { STATIC_PRODUCTS } from "../constants/staticProducts";
 
 /**
  * Homepage strip for one catalog collection.
@@ -49,7 +48,9 @@ export function useHomeCollectionProducts(slug: string, limit = 8) {
     !query.isError &&
     (!market || query.isPending || (candidates.length > 0 && !imagesReady));
 
-  const products = pending ? [] : live.length > 0 ? live : STATIC_PRODUCTS.slice(0, limit);
+  // Only real products of the market: when the collection is empty or cannot
+  // be read, the strip hides itself (never sample products or prices).
+  const products = pending ? [] : live;
 
   return { products, pending, live: !pending && live.length > 0 };
 }

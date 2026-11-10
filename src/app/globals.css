@@ -494,3 +494,36 @@ html:has([data-navbar][data-topbar-hidden="true"]) .bundle-dock {
 .pac-matched {
   color: #b46e57;
 }
+
+/* Text pages and policies (/pages/…, /policies/…): HTML from the admin or Shopify. */
+.site-page-body {
+  color: var(--ink-2, #4a4036);
+  font-size: 0.975rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.site-page-body > * + * { margin-top: 1em; }
+.site-page-body h1,
+.site-page-body h2,
+.site-page-body h3,
+.site-page-body h4 {
+  color: var(--ink, #241f1b);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.75em;
+}
+.site-page-body h1 { font-size: 1.6rem; }
+.site-page-body h2 { font-size: 1.35rem; }
+.site-page-body h3 { font-size: 1.15rem; }
+.site-page-body h4 { font-size: 1rem; }
+.site-page-body ul { list-style: disc; padding-inline-start: 1.5em; }
+.site-page-body ol { list-style: decimal; padding-inline-start: 1.5em; }
+.site-page-body li + li { margin-top: 0.35em; }
+.site-page-body a { color: var(--sa-primary, #8a5a44); text-decoration: underline; text-underline-offset: 2px; }
+.site-page-body img { max-width: 100%; height: auto; border-radius: 6px; }
+.site-page-body iframe { width: 100%; aspect-ratio: 16 / 9; height: auto; border: 0; }
+.site-page-body blockquote { border-inline-start: 3px solid currentColor; padding-inline-start: 1em; opacity: 0.9; }
+.site-page-body table { width: 100%; border-collapse: collapse; display: block; overflow-x: auto; }
+.site-page-body th,
+.site-page-body td { border: 1px solid rgba(0, 0, 0, 0.12); padding: 0.5em 0.75em; text-align: start; vertical-align: top; }
+.site-page-body hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); }

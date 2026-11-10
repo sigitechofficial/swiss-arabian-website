@@ -19,7 +19,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("next/image", () => ({
@@ -28,13 +30,17 @@ vi.mock("next/image", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
   requestOmnichannelRefresh: vi.fn(),
 }));
 
 function renderRewards() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <RewardsAccountView />
@@ -43,7 +49,9 @@ function renderRewards() {
 }
 
 function noActions() {
-  expect(screen.queryByRole("button", { name: /use points/i })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /use points/i }),
+  ).not.toBeInTheDocument();
   expect(screen.queryByText(/earn approximately/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/claim/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("slider")).not.toBeInTheDocument();
@@ -70,7 +78,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -88,18 +100,27 @@ describe("L4.1 historical rewards while disabled", () => {
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE",
         market: { code: "UAE", currencyCode: "AED" },
-        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 5420,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
       }),
     );
     renderRewards();
     expect(await screen.findByText("5,420")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Available points" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Available points" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("AED 54.20")).toBeInTheDocument();
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByText("Reserved")).toBeInTheDocument();
     expect(
-      screen.getByText("Rewards are currently unavailable for new earning or redemption."),
+      screen.getByText(
+        "Rewards are currently unavailable for new earning or redemption.",
+      ),
     ).toBeInTheDocument();
     noActions();
   });
@@ -110,7 +131,12 @@ describe("L4.1 historical rewards while disabled", () => {
         enabled: false,
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE",
-        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 5420,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
       }),
     );
@@ -139,7 +165,12 @@ describe("L4.1 historical rewards while disabled", () => {
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE_IN_THIS_MARKET",
         market: { code: "UAE", currencyCode: "AED" },
-        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 5420,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
       }),
     );
@@ -152,7 +183,9 @@ describe("L4.1 historical rewards while disabled", () => {
     );
     renderRewards();
     expect(await screen.findByText("5,420")).toBeInTheDocument();
-    expect(await screen.findByText("Reward points returned")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reward points returned"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Rewards are currently unavailable for new earning or redemption in this market.",
@@ -171,11 +204,17 @@ describe("L4.1 historical rewards while disabled", () => {
     );
     renderRewards();
     expect(
-      await screen.findByText("Swiss Arabian Rewards is not currently available."),
+      await screen.findByText(
+        "Swiss Arabian Rewards is not currently available.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Available points" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("0")).not.toBeInTheDocument();
-    expect(screen.queryByText("No reward activity yet.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("No reward activity yet."),
+    ).not.toBeInTheDocument();
     noActions();
   });
 
@@ -195,8 +234,16 @@ describe("L4.1 historical rewards while disabled", () => {
             isFresh: false,
             source: "UNAVAILABLE",
           },
-          websiteRedemption: { enabled: false, reason: "D365_REDEMPTION_NOT_AVAILABLE" },
-          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+          websiteRedemption: {
+            enabled: false,
+            reason: "D365_REDEMPTION_NOT_AVAILABLE",
+          },
+          refresh: {
+            enabled: true,
+            refreshable: true,
+            reason: "READY",
+            retryAfterSeconds: null,
+          },
         },
       }),
     );
@@ -221,11 +268,17 @@ describe("L4.1 historical rewards while disabled", () => {
       activityIsFresh: true,
     });
     renderRewards();
-    expect(await screen.findByText("Store point balance is not available yet.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Store point balance is not available yet."),
+    ).toBeInTheDocument();
     expect(await screen.findByText("Store points earned")).toBeInTheDocument();
     expect(screen.getByText("+12.50 points")).toBeInTheDocument();
-    expect(screen.queryByLabelText(/store reward points/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Available points" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/store reward points/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Available points" }),
+    ).not.toBeInTheDocument();
     noActions();
   });
 
@@ -235,7 +288,12 @@ describe("L4.1 historical rewards while disabled", () => {
         enabled: false,
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE",
-        wallet: { availablePoints: 0, pendingPoints: 0, reservedPoints: 0, debtPoints: 400 },
+        wallet: {
+          availablePoints: 0,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 400,
+        },
         monetaryEquivalent: { available: "0.00", currencyCode: "AED" },
       }),
     );
@@ -253,7 +311,12 @@ describe("L4.1 historical rewards while disabled", () => {
         enabled: false,
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE",
-        wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 5420,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
       }),
     );
@@ -288,7 +351,9 @@ describe("L4.1 historical rewards while disabled", () => {
     );
     expect(screen.getByText("You earned")).toBeInTheDocument();
     expect(screen.getByText("950 points available")).toBeInTheDocument();
-    expect(screen.queryByText(/not currently available/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/not currently available/i),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show an earning claim when current Loyalty is disabled", () => {

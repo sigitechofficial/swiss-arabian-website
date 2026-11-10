@@ -17,7 +17,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("next/image", () => ({
@@ -26,13 +28,17 @@ vi.mock("next/image", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
   requestOmnichannelRefresh: vi.fn(),
 }));
 
 function renderRewards() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <RewardsAccountView />
@@ -44,7 +50,12 @@ const liveMe = {
   enabled: true,
   member: true,
   market: { code: "UAE", currencyCode: "AED" },
-  wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+  wallet: {
+    availablePoints: 5420,
+    pendingPoints: 0,
+    reservedPoints: 0,
+    debtPoints: 0,
+  },
   monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
 };
 
@@ -69,7 +80,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -84,7 +99,12 @@ describe("L5.1 live Rewards tier presentation", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       readLoyaltyWallet({
         ...liveMe,
-        wallet: { availablePoints: 0, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 0,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "0.00", currencyCode: "AED" },
         tier: {
           enabled: true,
@@ -104,8 +124,12 @@ describe("L5.1 live Rewards tier presentation", () => {
     renderRewards();
     expect(await screen.findByText("Member")).toBeInTheDocument();
     expect(screen.getAllByText("AED 0.00").length).toBeGreaterThan(0);
-    expect(screen.getByText("AED 1000.00 away from Silver")).toBeInTheDocument();
-    expect(screen.getByText("Qualification period: Last 365 days")).toBeInTheDocument();
+    expect(
+      screen.getByText("AED 1000.00 away from Silver"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Qualification period: Last 365 days"),
+    ).toBeInTheDocument();
   });
 
   it("shows Gold remaining spend and progressPercent from next", async () => {
@@ -130,11 +154,12 @@ describe("L5.1 live Rewards tier presentation", () => {
     renderRewards();
     expect(await screen.findByText("Gold")).toBeInTheDocument();
     expect(screen.getByText("AED 3450.00")).toBeInTheDocument();
-    expect(screen.getByText("AED 4050.00 away from Platinum")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Progress toward Platinum" })).toHaveAttribute(
-      "aria-valuenow",
-      "46",
-    );
+    expect(
+      screen.getByText("AED 4050.00 away from Platinum"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Progress toward Platinum" }),
+    ).toHaveAttribute("aria-valuenow", "46");
   });
 
   it("shows highest-tier copy when next is null", async () => {
@@ -152,7 +177,9 @@ describe("L5.1 live Rewards tier presentation", () => {
     );
     renderRewards();
     expect(await screen.findByText("Platinum")).toBeInTheDocument();
-    expect(screen.getByText("You've reached the highest current Rewards tier.")).toBeInTheDocument();
+    expect(
+      screen.getByText("You've reached the highest current Rewards tier."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/away from/i)).not.toBeInTheDocument();
   });
 
@@ -160,7 +187,12 @@ describe("L5.1 live Rewards tier presentation", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       readLoyaltyWallet({
         ...liveMe,
-        wallet: { availablePoints: 200, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 200,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "2.00", currencyCode: "AED" },
         tier: {
           enabled: true,
@@ -171,16 +203,37 @@ describe("L5.1 live Rewards tier presentation", () => {
       }),
     );
     fetchLoyaltyTierHistory.mockResolvedValue([
-      { id: "1", tierName: "Gold", label: "Reached after a qualifying purchase", occurredAt: "2026-10-08T00:00:00.000Z" },
-      { id: "2", tierName: "Silver", label: "Adjusted after a refund", occurredAt: "2026-10-08T01:00:00.000Z" },
-      { id: "3", tierName: "Gold", label: "Updated after an exchange adjustment", occurredAt: "2026-10-08T02:00:00.000Z" },
+      {
+        id: "1",
+        tierName: "Gold",
+        label: "Reached after a qualifying purchase",
+        occurredAt: "2026-10-08T00:00:00.000Z",
+      },
+      {
+        id: "2",
+        tierName: "Silver",
+        label: "Adjusted after a refund",
+        occurredAt: "2026-10-08T01:00:00.000Z",
+      },
+      {
+        id: "3",
+        tierName: "Gold",
+        label: "Updated after an exchange adjustment",
+        occurredAt: "2026-10-08T02:00:00.000Z",
+      },
     ]);
     renderRewards();
-    expect(await screen.findByText("Reached after a qualifying purchase")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reached after a qualifying purchase"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Tier history")).toBeInTheDocument();
-    expect(screen.getByText("Reached after a qualifying purchase")).toBeInTheDocument();
+    expect(
+      screen.getByText("Reached after a qualifying purchase"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Adjusted after a refund")).toBeInTheDocument();
-    expect(screen.getByText("Updated after an exchange adjustment")).toBeInTheDocument();
+    expect(
+      screen.getByText("Updated after an exchange adjustment"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("PURCHASE")).not.toBeInTheDocument();
     expect(fetchLoyaltyTierHistory).toHaveBeenCalled();
   });
@@ -189,7 +242,12 @@ describe("L5.1 live Rewards tier presentation", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       readLoyaltyWallet({
         ...liveMe,
-        wallet: { availablePoints: 2000, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 2000,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "20.00", currencyCode: "AED" },
         giftCard: { appliedAmount: "50.00" },
         tier: {
@@ -225,9 +283,13 @@ describe("L5.1 live Rewards tier presentation", () => {
     renderRewards();
     expect(await screen.findByText("Gold")).toBeInTheDocument();
     expect(
-      screen.getByText("Rewards are currently unavailable for new earning or redemption."),
+      screen.getByText(
+        "Rewards are currently unavailable for new earning or redemption.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /use points/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /use points/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("drops the previous market tier while the next market loads", async () => {
@@ -247,10 +309,18 @@ describe("L5.1 live Rewards tier presentation", () => {
     });
     renderRewards();
     expect(await screen.findByText("Gold")).toBeInTheDocument();
-    useUiStore.getState().setCatalogContext({ zoneCode: "KSA", currencyCode: "SAR", languageCode: "en" });
+    useUiStore
+      .getState()
+      .setCatalogContext({
+        zoneCode: "KSA",
+        currencyCode: "SAR",
+        languageCode: "en",
+      });
     await waitFor(() => {
       expect(screen.queryByText("Gold")).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("status")).toHaveTextContent("Loading your rewards…");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading your rewards…",
+    );
   });
 });

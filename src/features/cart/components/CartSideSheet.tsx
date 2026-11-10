@@ -1,12 +1,24 @@
 "use client";
 
+import { cartCurrency } from "@/features/cart/utils/cartCurrency";
+import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
-import { EmptyBagRecovery, GiftWithPurchase, PromoLinePrice, PromotionProgressRail, PromotionQuickAdd, amountPayableFrom, bundleLinesFirst, setBundleLineLabel, useFreeShippingBar } from "@/features/promotions";
+import {
+  EmptyBagRecovery,
+  GiftWithPurchase,
+  PromoLinePrice,
+  PromotionProgressRail,
+  PromotionQuickAdd,
+  amountPayableFrom,
+  bundleLinesFirst,
+  setBundleLineLabel,
+  useFreeShippingBar,
+} from "@/features/promotions";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyDrawerNote } from "@/features/loyalty/components/LoyaltyDrawerNote";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
@@ -14,7 +26,10 @@ import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicab
 import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { removeItemOptimistic, setQuantityOptimistic } from "../api/optimisticCart";
+import {
+  removeItemOptimistic,
+  setQuantityOptimistic,
+} from "../api/optimisticCart";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
 import { useAddToCart } from "../hooks/useAddToCart";
@@ -98,7 +113,12 @@ export function CartSideSheet() {
   const { unlocked } = useFreeShippingBar();
   const earnPreview = useEarnPreview({ cartId });
   const quotePending = syncing && totals == null;
-  const currency = totals?.currency ?? "AED";
+  const marketCurrency = useSelectedCatalogMarket()?.currencyCode;
+  const currency = cartCurrency({
+    totalsCurrency: totals?.currency,
+    lines,
+    marketCurrency,
+  });
   const checkoutBlocked =
     syncing ||
     validation?.isValid === false ||
@@ -134,7 +154,8 @@ export function CartSideSheet() {
     let showConfetti: number | undefined;
     if (!reduce) {
       const bar =
-        panelRef.current?.querySelector("[data-ship-track]") ?? panelRef.current;
+        panelRef.current?.querySelector("[data-ship-track]") ??
+        panelRef.current;
       const layer = confettiLayerRef.current;
       let ox = 78;
       let oy = 22;
@@ -208,8 +229,15 @@ export function CartSideSheet() {
       label="Bag"
       className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[480px] lg:w-[520px]"
     >
-      <div className={`${drawerPanel} ${isPanelFlash || giftFlash ? drawerPanelFlash : ""}`} ref={panelRef}>
-        <div className={confettiLayer} ref={confettiLayerRef} aria-hidden="true">
+      <div
+        className={`${drawerPanel} ${isPanelFlash || giftFlash ? drawerPanelFlash : ""}`}
+        ref={panelRef}
+      >
+        <div
+          className={confettiLayer}
+          ref={confettiLayerRef}
+          aria-hidden="true"
+        >
           {confetti.map((piece) => (
             <span
               key={piece.id}
@@ -240,8 +268,14 @@ export function CartSideSheet() {
                   <ShoppingBag size={24} strokeWidth={1.6} />
                 </span>
                 <p className={drawerEmptyTitle}>Your bag is empty</p>
-                <p className={drawerEmptyCopy}>Explore our fragrances, or pick up where you left off below.</p>
-                <LocaleLink className={drawerEmptyCta} href="/products" onClick={() => setCartOpen(false)}>
+                <p className={drawerEmptyCopy}>
+                  Explore our fragrances, or pick up where you left off below.
+                </p>
+                <LocaleLink
+                  className={drawerEmptyCta}
+                  href="/products"
+                  onClick={() => setCartOpen(false)}
+                >
                   Shop fragrances
                 </LocaleLink>
               </div>
@@ -249,103 +283,129 @@ export function CartSideSheet() {
             </div>
           )}
           <div className={drawerItems}>
-            {lines.length === 0 ? null : (
-              bundleLinesFirst(lines, promotions).map((line) => {
-                const bundle = setBundleLineLabel(promotions, line, offers);
-                return (
-                <article className={drawerLine} key={line.cartItemId ?? line.variantId}>
-                  <div className={drawerLineImg}>
-                    {line.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={line.imageUrl} alt="" />
-                    ) : null}
-                  </div>
-                  <div className={drawerLineBody}>
-                    <div className={drawerLineTop}>
-                      <p className={drawerLineName}>{line.title}</p>
-                      {line.isSellable === false ? (
-                        <p className={drawerLinePrice}>Unavailable</p>
-                      ) : (
-                        <PromoLinePrice className={drawerLinePrice} snapshot={promotions} line={line} />
-                      )}
-                    </div>
-                    {showsDistinctSize(line.title, line.sizeLabel) ? (
-                      <p className={drawerLineMeta}>{line.sizeLabel}</p>
-                    ) : null}
-                    {bundle ? (
-                      <p className={drawerLineNote}>
-                        {bundle
-                          .split("·")
-                          .map((part) => part.trim())
-                          .filter(Boolean)
-                          .map((part) => (
-                            <span className={/%|off/i.test(part) ? drawerLineTagStrong : drawerLineTag} key={part}>
-                              {part}
-                            </span>
-                          ))}
-                      </p>
-                    ) : null}
-                    <div className={drawerLineActions}>
-                      <div className={drawerLineQty}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = Math.max(1, line.quantity - 1);
-                            if (line.remote || line.cartItemId) {
-                              setQuantityOptimistic(line.variantId, next);
-                            } else {
-                              updateLocalQuantity(line.variantId, next);
-                            }
-                          }}
-                          aria-label="Decrease quantity"
-                          disabled={line.isSellable === false}
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span>{line.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (line.remote || line.cartItemId) {
-                              setQuantityOptimistic(line.variantId, line.quantity + 1);
-                            } else {
-                              updateLocalQuantity(line.variantId, line.quantity + 1);
-                            }
-                          }}
-                          aria-label="Increase quantity"
-                          disabled={line.isSellable === false || atStockLimit(line)}
-                        >
-                          <Plus size={13} />
-                        </button>
+            {lines.length === 0
+              ? null
+              : bundleLinesFirst(lines, promotions).map((line) => {
+                  const bundle = setBundleLineLabel(promotions, line, offers);
+                  return (
+                    <article
+                      className={drawerLine}
+                      key={line.cartItemId ?? line.variantId}
+                    >
+                      <div className={drawerLineImg}>
+                        {line.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={line.imageUrl} alt="" />
+                        ) : null}
                       </div>
-                      <button
-                        type="button"
-                        className={drawerLineRemove}
-                        onClick={() => {
-                          if (line.remote || line.cartItemId) {
-                            removeItemOptimistic(line.variantId);
-                          } else {
-                            removeLocalLine(line.variantId);
-                          }
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    {atStockLimit(line) && line.maxQuantity != null ? (
-                      <p className={cartQtyLimit} role="status">
-                        {stockLimitNote(line.maxQuantity)}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-                );
-              })
-            )}
-            {lines.length > 0 ? <GiftWithPurchase currency={currency} surface="drawer" /> : null}
+                      <div className={drawerLineBody}>
+                        <div className={drawerLineTop}>
+                          <p className={drawerLineName}>{line.title}</p>
+                          {line.isSellable === false ? (
+                            <p className={drawerLinePrice}>Unavailable</p>
+                          ) : (
+                            <PromoLinePrice
+                              className={drawerLinePrice}
+                              snapshot={promotions}
+                              line={line}
+                            />
+                          )}
+                        </div>
+                        {showsDistinctSize(line.title, line.sizeLabel) ? (
+                          <p className={drawerLineMeta}>{line.sizeLabel}</p>
+                        ) : null}
+                        {bundle ? (
+                          <p className={drawerLineNote}>
+                            {bundle
+                              .split("·")
+                              .map((part) => part.trim())
+                              .filter(Boolean)
+                              .map((part) => (
+                                <span
+                                  className={
+                                    /%|off/i.test(part)
+                                      ? drawerLineTagStrong
+                                      : drawerLineTag
+                                  }
+                                  key={part}
+                                >
+                                  {part}
+                                </span>
+                              ))}
+                          </p>
+                        ) : null}
+                        <div className={drawerLineActions}>
+                          <div className={drawerLineQty}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = Math.max(1, line.quantity - 1);
+                                if (line.remote || line.cartItemId) {
+                                  setQuantityOptimistic(line.variantId, next);
+                                } else {
+                                  updateLocalQuantity(line.variantId, next);
+                                }
+                              }}
+                              aria-label="Decrease quantity"
+                              disabled={line.isSellable === false}
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span>{line.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (line.remote || line.cartItemId) {
+                                  setQuantityOptimistic(
+                                    line.variantId,
+                                    line.quantity + 1,
+                                  );
+                                } else {
+                                  updateLocalQuantity(
+                                    line.variantId,
+                                    line.quantity + 1,
+                                  );
+                                }
+                              }}
+                              aria-label="Increase quantity"
+                              disabled={
+                                line.isSellable === false || atStockLimit(line)
+                              }
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className={drawerLineRemove}
+                            onClick={() => {
+                              if (line.remote || line.cartItemId) {
+                                removeItemOptimistic(line.variantId);
+                              } else {
+                                removeLocalLine(line.variantId);
+                              }
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        {atStockLimit(line) && line.maxQuantity != null ? (
+                          <p className={cartQtyLimit} role="status">
+                            {stockLimitNote(line.maxQuantity)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+            {lines.length > 0 ? (
+              <GiftWithPurchase currency={currency} surface="drawer" />
+            ) : null}
           </div>
 
-          {lines.length > 0 ? <PromotionQuickAdd surface="drawer" holdPosition /> : null}
+          {lines.length > 0 ? (
+            <PromotionQuickAdd surface="drawer" holdPosition />
+          ) : null}
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
             <div className={cartRecs}>
@@ -355,7 +415,11 @@ export function CartSideSheet() {
                   const canAdd = Boolean(product.variantId || product.sku);
                   const pressed = addedRecs.has(product.id);
                   return (
-                    <article className={cartRec} key={product.id} role="listitem">
+                    <article
+                      className={cartRec}
+                      key={product.id}
+                      role="listitem"
+                    >
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={product.imageUrl} alt="" />
@@ -364,14 +428,20 @@ export function CartSideSheet() {
                       )}
                       <div className={cartRecCopy}>
                         <p className={cartRecName}>{product.title}</p>
-                        <p className={cartRecPrice}>{formatMoney(product.price, product.currency)}</p>
+                        <p className={cartRecPrice}>
+                          {formatMoney(product.price, product.currency)}
+                        </p>
                         <p className={cartRecSize}>50 ml</p>
                       </div>
                       <button
                         type="button"
                         className={cartRecAdd}
                         disabled={!canAdd}
-                        aria-label={pressed ? `${product.title} added` : `Add ${product.title}`}
+                        aria-label={
+                          pressed
+                            ? `${product.title} added`
+                            : `Add ${product.title}`
+                        }
                         aria-pressed={pressed}
                         onClick={() => {
                           if (!canAdd) return;
@@ -419,15 +489,39 @@ export function CartSideSheet() {
             {quotePending ? null : <LoyaltyDrawerNote />}
             {quotePending || !earnPreview.preview?.enabled ? null : (
               <div className="mb-3 flex items-center gap-1.5 font-sans text-[0.8rem] text-[#8a7d72] [&_.loyalty-earn-note]:m-0 [&_.loyalty-earn-note]:font-sans [&_.loyalty-earn-note]:text-[0.8rem] [&_.loyalty-earn-note]:text-[#8a7d72]">
-                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-[#8a7d72]">
-                  <rect x="1.5" y="6" width="11" height="6.5" rx="0.8" fill="none" stroke="currentColor" strokeWidth="1.1" />
-                  <path d="M1.5 6h11M7 6v6.5M3.4 6c0-1.6 1.3-2.7 2.6-1.7.5.4.9 1 .9 1.7M10.6 6c0-1.6-1.3-2.7-2.6-1.7-.5.4-.9 1-.9 1.7" fill="none" stroke="currentColor" strokeWidth="1.1" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  aria-hidden="true"
+                  className="shrink-0 text-[#8a7d72]"
+                >
+                  <rect
+                    x="1.5"
+                    y="6"
+                    width="11"
+                    height="6.5"
+                    rx="0.8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.1"
+                  />
+                  <path
+                    d="M1.5 6h11M7 6v6.5M3.4 6c0-1.6 1.3-2.7 2.6-1.7.5.4.9 1 .9 1.7M10.6 6c0-1.6-1.3-2.7-2.6-1.7-.5.4-.9 1-.9 1.7"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.1"
+                  />
                 </svg>
                 <EarnPreviewNote preview={earnPreview.preview} />
               </div>
             )}
             <div className={drawerActions}>
-              <LocaleLink className={drawerViewLink} href="/cart" onClick={() => setCartOpen(false)}>
+              <LocaleLink
+                className={drawerViewLink}
+                href="/cart"
+                onClick={() => setCartOpen(false)}
+              >
                 View bag
               </LocaleLink>
               {/* Checkout reads the server cart, so hold it for the second or two

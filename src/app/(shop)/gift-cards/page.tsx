@@ -1,10 +1,10 @@
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+import { notFound } from "next/navigation";
 
+/**
+ * Not built yet (no purchase flow behind it). Answers "not found" so shoppers
+ * and search engines never land on an empty page; restore the page when the
+ * feature ships.
+ */
 export default function GiftCardsPage() {
-  return (
-    <FeaturePlaceholder
-      title="Gift cards"
-      description="Gift card purchase flow is not wired yet."
-    />
-  );
+  notFound();
 }

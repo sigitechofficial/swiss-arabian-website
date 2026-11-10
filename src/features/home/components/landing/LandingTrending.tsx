@@ -71,6 +71,9 @@ export function LandingTrending({
     ),
   );
 
+  // Nothing real to show (empty collection or the request failed): no strip.
+  if (!pending && products.length === 0) return null;
+
   const scrollBy = (direction: number) => {
     stripRef.current?.scrollBy({ left: direction * 280, behavior: "smooth" });
   };

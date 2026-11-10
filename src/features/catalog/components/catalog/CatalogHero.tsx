@@ -7,8 +7,11 @@ import {
   collectionEm,
   collectionEyebrow,
   collectionHead,
+  collectionBanner,
+  collectionBannerImage,
   collectionHero,
   collectionHeroMedia,
+  collectionHeroWide,
   collectionHeroPanel,
   collectionIntro,
   collectionTitle,
@@ -23,6 +26,10 @@ type CatalogHeroMeta = {
   titleEm: string;
   intro: string;
   heroImage: string;
+  /** Small-screen banner version (store banners). */
+  heroImageMobile?: string;
+  /** Wide banner artwork: full width above the title, never cropped. */
+  wide?: boolean;
 };
 
 export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt: string }) {
@@ -41,8 +48,24 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
           </ol>
         </nav>
 
-        <div className={collectionHero}>
-          {meta.heroImage ? (
+        {meta.wide && meta.heroImage ? (
+          <picture className={collectionBanner}>
+            {meta.heroImageMobile ? (
+              <source media="(max-width: 767px)" srcSet={meta.heroImageMobile} />
+            ) : null}
+            {/* Art-directed <picture>: the mobile banner is a different image, not a resize. */}
+            <img
+              className={collectionBannerImage}
+              src={meta.heroImage}
+              alt={heroAlt}
+              fetchPriority="high"
+              loading="eager"
+            />
+          </picture>
+        ) : null}
+
+        <div className={meta.wide && meta.heroImage ? collectionHeroWide : collectionHero}>
+          {meta.heroImage && !meta.wide ? (
             <MediaImage
               className={collectionHeroMedia}
               src={meta.heroImage}

@@ -43,7 +43,9 @@ export function GiftChoiceHost() {
     const seen = seenRef.current;
     const current = readGiftAwards(useCartStore.getState().promotions);
     const awaitingCodes = current.filter(awaitingGiftChoice).map(giftAwardCode);
-    const awardedCodes = current.filter((item) => item.giftItems.length > 0).map(giftAwardCode);
+    const awardedCodes = current
+      .filter((item) => item.giftItems.length > 0)
+      .map(giftAwardCode);
     const next = nextGiftReveal({
       awaitingCodes,
       awardedCodes,
@@ -74,5 +76,11 @@ export function GiftChoiceHost() {
     (awaitingGiftChoice(award) || award.selectionMode === "CUSTOMER_CHOICE");
   if (!award || !choosing) return null;
 
-  return <GiftChoiceModal award={award} celebrate={celebrate} onClose={() => useGiftChoiceStore.getState().close()} />;
+  return (
+    <GiftChoiceModal
+      award={award}
+      celebrate={celebrate}
+      onClose={() => useGiftChoiceStore.getState().close()}
+    />
+  );
 }

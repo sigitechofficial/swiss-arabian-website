@@ -1,5 +1,4 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { PLAN_FEATURES, PLANS } from "../../constants/landingContent";
 import {
   eyebrow,
   lead,
@@ -47,23 +46,13 @@ export type LandingPlansProps = {
 export function LandingPlans({
   eyebrowText = "Plans",
   heading = "Choose your plan",
-  description = "Every plan includes free shipping and full flexibility — change, skip or cancel whenever you like.",
+  description = null,
   plans,
   editorialPricingOnly = true,
 }: LandingPlansProps = {}) {
   const cards: LandingPlanCard[] =
-    plans ??
-    PLANS.map((plan, index) => ({
-      id: `legacy-${index}`,
-      name: plan.name,
-      displayPrice: plan.amount,
-      billingIntervalLabel: "/month",
-      description: plan.desc,
-      featured: plan.featured,
-      badgeLabel: plan.featured ? "Most popular" : null,
-      ctaLabel: "Start plan",
-      href: "/subscriptions",
-    }));
+    // Only real plans (subscription service / CMS). Never built-in prices.
+    plans ?? [];
 
   if (!cards.length) return null;
 
@@ -86,10 +75,7 @@ export function LandingPlans({
 
         <div className={plansGrid}>
           {cards.map((plan) => {
-            const benefits =
-              plan.benefits && plan.benefits.length
-                ? plan.benefits
-                : [...PLAN_FEATURES];
+            const benefits = plan.benefits ?? [];
             const href = plan.href?.trim() || "/subscriptions";
             return (
               <article

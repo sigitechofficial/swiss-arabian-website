@@ -4,8 +4,10 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { createOrResolveCart, getActiveCart } from "@/features/cart/api/cart.service";
+import { ApiClientError } from "@/lib/api/apiError";
 import {
   getStoredCartId,
+  readGuestToken,
   storeCartId,
   clearCartId,
   clearGuestToken,
@@ -46,15 +48,18 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
           .catch(() => {
             // Soft failure — local lines remain from Zustand persist.
           });
-      } else if (cartId) {
+      } else if (cartId || readGuestToken()) {
+        // A guest's cart for this market (by cart id, else by guest token).
         void getActiveCart(cartId)
           .then((cart) => {
             storeCartId(cart.cartId);
             setCartId(cart.cartId);
             setCartFromApi(cart);
           })
-          .catch(() => {
-            clearCartId();
+          .catch((error: unknown) => {
+            // Forget the id only when the cart is really gone; a server that
+            // is briefly down must not lose the shopper's cart.
+            if (error instanceof ApiClientError && error.status === 404) clearCartId();
           });
       }
 

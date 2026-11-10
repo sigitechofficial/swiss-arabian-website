@@ -23,7 +23,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("next/image", () => ({
@@ -32,8 +34,10 @@ vi.mock("next/image", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
   requestOmnichannelRefresh: vi.fn(),
 }));
 
@@ -57,7 +61,9 @@ function wallet(partial: Partial<LoyaltyWalletView> = {}): LoyaltyWalletView {
 }
 
 function renderRewards() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <RewardsAccountView />
@@ -86,7 +92,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -98,7 +108,9 @@ afterEach(() => {
 
 describe("L4 rewards debt presentation", () => {
   it("does not show a rewards adjustment card when debt is zero", async () => {
-    fetchLoyaltyWallet.mockResolvedValue(wallet({ availablePoints: 200, availableValue: 2 }));
+    fetchLoyaltyWallet.mockResolvedValue(
+      wallet({ availablePoints: 200, availableValue: 2 }),
+    );
     renderRewards();
     expect(await screen.findByText("200")).toBeInTheDocument();
     expect(screen.queryByText("Rewards adjustment")).not.toBeInTheDocument();
@@ -110,7 +122,8 @@ describe("L4 rewards debt presentation", () => {
       wallet({
         availablePoints: 0,
         debtPoints: 400,
-        debtLabel: "Future reward points will first be applied to this adjustment before becoming available.",
+        debtLabel:
+          "Future reward points will first be applied to this adjustment before becoming available.",
       }),
     );
     renderRewards();
@@ -144,7 +157,12 @@ describe("L4 activity rendering", () => {
       readLoyaltyTransactions({
         items: [
           { id: "e", type: "POINTS_EARNED", points: 950 },
-          { id: "a", type: "REFUND_ADJUSTMENT", points: -475, state: "PENDING" },
+          {
+            id: "a",
+            type: "REFUND_ADJUSTMENT",
+            points: -475,
+            state: "PENDING",
+          },
           { id: "r", type: "REWARD_POINTS_RETURNED", points: 1000 },
           { id: "c", type: "MANUAL_CREDIT", points: 500 },
           { id: "d", type: "MANUAL_DEBIT", points: -200 },
@@ -154,12 +172,16 @@ describe("L4 activity rendering", () => {
     );
     renderRewards();
     expect(await screen.findByText("Points earned")).toBeInTheDocument();
-    expect(screen.getByText("Points adjusted after refund")).toBeInTheDocument();
+    expect(
+      screen.getByText("Points adjusted after refund"),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Pending").length).toBeGreaterThan(0);
     expect(screen.getByText("Reward points returned")).toBeInTheDocument();
     expect(screen.getByText("Manual points credit")).toBeInTheDocument();
     expect(screen.getByText("Manual points adjustment")).toBeInTheDocument();
-    expect(screen.getByText("Points applied to previous adjustment")).toBeInTheDocument();
+    expect(
+      screen.getByText("Points applied to previous adjustment"),
+    ).toBeInTheDocument();
     expect(screen.getByText("−475 points")).toBeInTheDocument();
     expect(screen.getByText("+1,000 points")).toBeInTheDocument();
     expect(screen.queryByText("EARN_REVERSAL")).not.toBeInTheDocument();
@@ -177,20 +199,31 @@ describe("L4 disabled program history", () => {
         enabled: false,
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE",
-        wallet: { availablePoints: 180, pendingPoints: 0, reservedPoints: 0, debtPoints: 40 },
+        wallet: {
+          availablePoints: 180,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 40,
+        },
         monetaryEquivalent: { available: "1.80", currencyCode: "AED" },
       }),
     );
     fetchLoyaltyTransactions.mockResolvedValue(
-      readLoyaltyTransactions({ items: [{ id: "a", type: "REFUND_ADJUSTMENT", points: -40 }] }),
+      readLoyaltyTransactions({
+        items: [{ id: "a", type: "REFUND_ADJUSTMENT", points: -40 }],
+      }),
     );
     renderRewards();
     expect(await screen.findByText("180")).toBeInTheDocument();
     expect(screen.getByText("Rewards adjustment")).toBeInTheDocument();
     expect(
-      screen.getByText("Rewards are currently unavailable for new earning or redemption."),
+      screen.getByText(
+        "Rewards are currently unavailable for new earning or redemption.",
+      ),
     ).toBeInTheDocument();
-    expect(await screen.findByText("Points adjusted after refund")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Points adjusted after refund"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/You owe/i)).not.toBeInTheDocument();
   });
 
@@ -200,7 +233,12 @@ describe("L4 disabled program history", () => {
         enabled: false,
         member: true,
         reason: "LOYALTY_NOT_AVAILABLE_IN_THIS_MARKET",
-        wallet: { availablePoints: 12, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+        wallet: {
+          availablePoints: 12,
+          pendingPoints: 0,
+          reservedPoints: 0,
+          debtPoints: 0,
+        },
         monetaryEquivalent: { available: "0.12", currencyCode: "AED" },
       }),
     );
@@ -211,13 +249,17 @@ describe("L4 disabled program history", () => {
     );
     renderRewards();
     expect(await screen.findByText("12")).toBeInTheDocument();
-    expect(await screen.findByText("Reward points returned")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reward points returned"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Rewards are currently unavailable for new earning or redemption in this market.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /use points/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /use points/i }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -247,7 +289,9 @@ describe("L4 order reward after-sale presentation", () => {
     expect(screen.getByText("950 points")).toBeInTheDocument();
     expect(screen.getByText("Adjusted after refund")).toBeInTheDocument();
     expect(screen.getByText("−475 points")).toBeInTheDocument();
-    expect(screen.getByText("Current reward from this order")).toBeInTheDocument();
+    expect(
+      screen.getByText("Current reward from this order"),
+    ).toBeInTheDocument();
   });
 
   it("shows a full earn reversal", () => {
@@ -256,7 +300,11 @@ describe("L4 order reward after-sale presentation", () => {
         reward={{
           earned: false,
           redemption: { redeemed: false },
-          earnAdjustment: { originalPoints: 900, adjustedPoints: 900, currentPoints: 0 },
+          earnAdjustment: {
+            originalPoints: 900,
+            adjustedPoints: 900,
+            currentPoints: 0,
+          },
         }}
       />,
     );
@@ -330,7 +378,11 @@ describe("L4 order reward after-sale presentation", () => {
             returnedAmount: 20,
             netPoints: 0,
           },
-          earnAdjustment: { originalPoints: 900, adjustedPoints: 900, currentPoints: 0 },
+          earnAdjustment: {
+            originalPoints: 900,
+            adjustedPoints: 900,
+            currentPoints: 0,
+          },
         }}
       />,
     );
@@ -343,7 +395,10 @@ describe("L4 order reward after-sale presentation", () => {
   });
 
   it("wraps long point values on a narrow viewport", () => {
-    Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 375,
+    });
     render(
       <OrderRewardNote
         reward={{

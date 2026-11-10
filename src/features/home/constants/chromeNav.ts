@@ -4,7 +4,8 @@ export type ChromeMega = {
   id: string;
   label: string;
   href: string;
-  groups: Array<{ heading: string; links: ChromeLink[] }>;
+  /** A heading may itself be a link (e.g. HAIR MIST above its products). */
+  groups: Array<{ heading: string; href?: string; links: ChromeLink[] }>;
   promo?: { image: string; copy: string; cta: string; href: string; cover?: boolean };
 };
 
@@ -35,12 +36,6 @@ export const TOPBAR_CURRENCIES = [
   { id: "QAR", label: "QAR" },
   { id: "BHD", label: "BHD" },
   { id: "OMR", label: "OMR" },
-] as const;
-
-export const TOPBAR_TICKER = [
-  "Orders will be delivered within 3-7 working days",
-  "Complimentary delivery on selected orders",
-  "Easy 7-day returns, no questions asked",
 ] as const;
 
 export const PRIMARY_NAV: ChromeNavItem[] = [

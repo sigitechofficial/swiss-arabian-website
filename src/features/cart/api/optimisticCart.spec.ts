@@ -8,7 +8,12 @@ function promo(label: string, amount: string): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [
       {
         kind: "AUTOMATIC",
@@ -26,7 +31,11 @@ function promo(label: string, amount: string): PromotionSnapshotV1 {
   };
 }
 
-function cart(id: string, discount: string, promotions: PromotionSnapshotV1 | null): ApiCart {
+function cart(
+  id: string,
+  discount: string,
+  promotions: PromotionSnapshotV1 | null,
+): ApiCart {
   return {
     cartId: "cart-1",
     status: "ACTIVE",
@@ -98,7 +107,9 @@ describe("queued cart commercial state", () => {
       await gate;
       return cart("first", "10.00", promo("First", "10.00"));
     });
-    const second = runQueuedCart(async () => cart("second", "20.00", promo("Second", "20.00")));
+    const second = runQueuedCart(async () =>
+      cart("second", "20.00", promo("Second", "20.00")),
+    );
     releaseFirst();
     await first;
     await second;
@@ -111,7 +122,9 @@ describe("queued cart commercial state", () => {
   });
 
   it("keeps the current cart when a later coupon quote fails", async () => {
-    await runQueuedCart(async () => cart("kept", "15.00", promo("Kept", "15.00")));
+    await runQueuedCart(async () =>
+      cart("kept", "15.00", promo("Kept", "15.00")),
+    );
     await expect(
       runQueuedCart(async () => {
         throw new Error("COUPON_NOT_APPLICABLE");

@@ -16,9 +16,21 @@ import {
   shipWhoopCheck,
 } from "@/styles/cartChrome";
 
-export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) {
-  const { isFree, unlocked, progress, remaining, threshold, currency, snapshot, offers } =
-    useFreeShippingBar();
+export function PromotionUnlockNote({
+  surface = "cart",
+}: {
+  surface?: string;
+}) {
+  const {
+    isFree,
+    unlocked,
+    progress,
+    remaining,
+    threshold,
+    currency,
+    snapshot,
+    offers,
+  } = useFreeShippingBar();
   const [whoop, setWhoop] = useState(false);
   const wasFreeRef = useRef<boolean | null>(null);
 
@@ -41,7 +53,13 @@ export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) 
     return () => window.clearTimeout(id);
   }, [unlocked]);
 
-  if (!showBar && !qualificationNotes.length && !conflicts.length && !bundleNotes.length) return null;
+  if (
+    !showBar &&
+    !qualificationNotes.length &&
+    !conflicts.length &&
+    !bundleNotes.length
+  )
+    return null;
 
   const variant = shipVariant(surface);
   const classes = shipBarClass(variant);
@@ -61,7 +79,13 @@ export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) 
     >
       {showBar ? (
         <>
-          <p className={unlocked ? `${shipCopy[variant]} ${shipCopyFree[variant]}` : shipCopy[variant]}>
+          <p
+            className={
+              unlocked
+                ? `${shipCopy[variant]} ${shipCopyFree[variant]}`
+                : shipCopy[variant]
+            }
+          >
             {unlocked ? (
               <>
                 <span className={shipWhoopCheck} aria-hidden="true" />
@@ -71,7 +95,14 @@ export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) 
               barCopy
             )}
           </p>
-          <div className={shipTrack[variant]} data-ship-track="" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+          <div
+            className={shipTrack[variant]}
+            data-ship-track=""
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
             <div
               className={shipFill[variant]}
               style={{ width: `${Math.round(progress * 100)}%` }}
@@ -83,7 +114,9 @@ export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) 
         ? qualificationNotes.filter((note) => !/free shipping/i.test(note))
         : qualificationNotes
       ).map((note) => (
-        <p className={shipCopy[variant]} key={note}>{note}</p>
+        <p className={shipCopy[variant]} key={note}>
+          {note}
+        </p>
       ))}
       {conflicts.map((note) => (
         <p className={shipCopy[variant]} key={note}>
@@ -91,7 +124,9 @@ export function PromotionUnlockNote({ surface = "cart" }: { surface?: string }) 
         </p>
       ))}
       {bundleNotes.map((note) => (
-        <p className={shipCopy[variant]} key={note}>{note}</p>
+        <p className={shipCopy[variant]} key={note}>
+          {note}
+        </p>
       ))}
     </div>
   );

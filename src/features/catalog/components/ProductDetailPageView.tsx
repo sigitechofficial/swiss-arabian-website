@@ -8,6 +8,7 @@ import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { ensureInsiderProductPage } from "@/lib/insider";
 import { useMarket } from "@/providers/MarketProvider";
 import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
+import { useBrowsedCollection } from "@/features/merchandising/utils/browsedCollection";
 import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
 import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
 import { rememberViewedProduct } from "@/features/promotions/utils/emptyBagMemory";
@@ -132,7 +133,11 @@ export function ProductDetailPageView({
 
   const youMayAlsoLikeRail = useMerchRail(MERCH_RAIL_SLUGS.pdpAlsoLike, product?.id ? [product.id] : []);
 
-  const moreFromCollection = pickMoreFromCollection(apiProduct?.collections);
+  // The collection the shopper came from (when the product is in it), else the
+  // product's own best collection.
+  const browsedCollection = useBrowsedCollection(apiProduct?.collections);
+  const moreFromCollection =
+    browsedCollection ?? pickMoreFromCollection(apiProduct?.collections);
   const { data: moreFromFeed } = useQuery({
     queryKey: catalogKeys.collectionProducts(moreFromCollection?.slug ?? "", zoneCode, 1, 12, true),
     queryFn: () =>
@@ -182,6 +187,28 @@ export function ProductDetailPageView({
       return (
         <div>
           <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`} aria-busy="true" />
+        </div>
+      );
+    }
+    // A product that does not exist answers 404 on the server. Getting here
+    // after a failed request means the store could not be reached: say so.
+    if (clientProduct.isError) {
+      return (
+        <div>
+          <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`} role="alert">
+            <h1 className="font-display text-[2rem] leading-[1.05] font-medium tracking-[0.005em]">
+              {copy("productLoadFailed")}
+            </h1>
+            <p className="mt-4">
+              <button
+                type="button"
+                className="underline underline-offset-2"
+                onClick={() => void clientProduct.refetch()}
+              >
+                {copy("tryAgain")}
+              </button>
+            </p>
+          </section>
         </div>
       );
     }

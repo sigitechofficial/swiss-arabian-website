@@ -39,7 +39,11 @@ export function EarnPreviewNote({
   }
 
   return (
-    <section className="loyalty-earn-block" aria-labelledby="rewards-earn-heading" data-testid="earn-preview">
+    <section
+      className="loyalty-earn-block"
+      aria-labelledby="rewards-earn-heading"
+      data-testid="earn-preview"
+    >
       <h3 id="rewards-earn-heading" className="loyalty-earn-block__title">
         Rewards
       </h3>

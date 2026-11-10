@@ -40,6 +40,16 @@ export function getOrCreateGuestToken(): string {
   }
 }
 
+/** The guest token if one exists (never creates one). */
+export function readGuestToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(guestKey());
+  } catch {
+    return null;
+  }
+}
+
 export function clearGuestToken(): void {
   if (typeof window === "undefined") return;
   try {

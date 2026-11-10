@@ -9,6 +9,8 @@ import { z } from "zod";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { toast } from "@/components/ui/Toaster";
 import { env } from "@/lib/config/env";
+import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
+import { useMarket } from "@/providers/MarketProvider";
 import {
   confirmEmailLoginCode,
   loginCustomer,
@@ -20,14 +22,24 @@ import { applyAuthResult } from "../lib/applyAuthSession";
 import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
 import { loginSchema, type LoginFormValues } from "../schemas/auth.schema";
 import { AuthShell } from "./AuthShell";
-import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
+import {
+  AuthDivider,
+  AuthField,
+  AuthPasswordField,
+  AuthSocialButtons,
+  AuthSubmitButton,
+} from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
 
 /** Seconds before "Resend code" becomes available again. */
 const RESEND_SECONDS = 30;
 
 const emailOnlySchema = z.object({
-  email: z.string().trim().min(1, "Enter your email").email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Enter your email")
+    .email("Enter a valid email address"),
 });
 type EmailOnlyValues = z.infer<typeof emailOnlySchema>;
 
@@ -57,6 +69,16 @@ const linkButtonClass =
 
 export function LoginPageView() {
   const router = useRouter();
+  // The phone hint shows the selected market's dial code (+974 in Qatar).
+  const marketCountry =
+    useMarket().catalogContext?.countryCode?.toUpperCase() || "AE";
+  const marketDialCode = (() => {
+    try {
+      return getCountryCallingCode(marketCountry as CountryCode);
+    } catch {
+      return "971";
+    }
+  })();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/account";
   // The one-time-code flow stays on this page: request → enter code → signed in.
@@ -81,7 +103,10 @@ export function LoginPageView() {
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
-    const id = window.setTimeout(() => setResendSeconds((seconds) => seconds - 1), 1000);
+    const id = window.setTimeout(
+      () => setResendSeconds((seconds) => seconds - 1),
+      1000,
+    );
     return () => window.clearTimeout(id);
   }, [resendSeconds]);
 
@@ -134,7 +159,10 @@ export function LoginPageView() {
       setResendSeconds(RESEND_SECONDS);
       setStep({ kind: "email-code-confirm", email });
       // Deliberately vague — never reveal whether an account exists.
-      toast("If an account exists for this email, a code is on its way.", "success");
+      toast(
+        "If an account exists for this email, a code is on its way.",
+        "success",
+      );
     } catch (error) {
       toastApiError(error);
     }
@@ -143,7 +171,10 @@ export function LoginPageView() {
   async function onConfirmCode(values: CodeValues) {
     if (step.kind !== "email-code-confirm") return;
     try {
-      const result = await confirmEmailLoginCode({ email: step.email, code: values.code.trim() });
+      const result = await confirmEmailLoginCode({
+        email: step.email,
+        code: values.code.trim(),
+      });
       applyAuthResult(result);
       toast("Signed in.", "success");
       finishLogin();
@@ -180,7 +211,10 @@ export function LoginPageView() {
   return (
     <AuthShell heading={heading} subtitle={subtitle}>
       {step.kind === "password" ? (
-        <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="flex w-full flex-col"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           {env.flags.oauth ? (
             <>
               <AuthSocialButtons />
@@ -191,7 +225,7 @@ export function LoginPageView() {
             <AuthField
               id="identifier"
               label="Email or phone"
-              placeholder="you@example.com or +971…"
+              placeholder={`you@example.com or +${marketDialCode}…`}
               autoComplete="username"
               {...form.register("identifier")}
               error={form.formState.errors.identifier?.message}
@@ -231,7 +265,11 @@ export function LoginPageView() {
             </AuthSubmitButton>
           </div>
           {env.flags.verification ? (
-            <button type="button" className={linkButtonClass} onClick={switchToEmailCode}>
+            <button
+              type="button"
+              className={linkButtonClass}
+              onClick={switchToEmailCode}
+            >
               Email me a one-time sign-in code instead
             </button>
           ) : null}
@@ -240,7 +278,10 @@ export function LoginPageView() {
       ) : null}
 
       {step.kind === "email-code-request" ? (
-        <form className="flex w-full flex-col" onSubmit={emailForm.handleSubmit(onRequestCode)}>
+        <form
+          className="flex w-full flex-col"
+          onSubmit={emailForm.handleSubmit(onRequestCode)}
+        >
           <AuthField
             id="code-email"
             label="Email address"
@@ -252,10 +293,16 @@ export function LoginPageView() {
           />
           <div className="pt-5">
             <AuthSubmitButton disabled={emailForm.formState.isSubmitting}>
-              {emailForm.formState.isSubmitting ? "Sending…" : "Email me a code"}
+              {emailForm.formState.isSubmitting
+                ? "Sending…"
+                : "Email me a code"}
             </AuthSubmitButton>
           </div>
-          <button type="button" className={linkButtonClass} onClick={() => switchToPassword()}>
+          <button
+            type="button"
+            className={linkButtonClass}
+            onClick={() => switchToPassword()}
+          >
             Sign in with password instead
           </button>
           <AuthFooterLinks />
@@ -263,13 +310,21 @@ export function LoginPageView() {
       ) : null}
 
       {step.kind === "email-code-confirm" ? (
-        <form className="flex w-full flex-col gap-5" onSubmit={codeForm.handleSubmit(onConfirmCode)}>
+        <form
+          className="flex w-full flex-col gap-5"
+          onSubmit={codeForm.handleSubmit(onConfirmCode)}
+        >
           <AuthOtpField
             id="login-code"
             label="Sign-in code"
             autoFocus
             value={codeValue}
-            onChange={(code) => codeForm.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
+            onChange={(code) =>
+              codeForm.setValue("code", code, {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
+            }
             error={codeForm.formState.errors.code?.message}
           />
           <AuthSubmitButton disabled={codeForm.formState.isSubmitting}>
@@ -309,12 +364,16 @@ function AuthFooterLinks() {
     <>
       <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
         New to Swiss Arabian?{" "}
-        <LocaleLink className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/register">
+        <LocaleLink
+          className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]"
+          href="/register"
+        >
           Create an account
         </LocaleLink>
       </p>
       <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
-        By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.
+        By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions
+        and Privacy Policy.
       </p>
     </>
   );
