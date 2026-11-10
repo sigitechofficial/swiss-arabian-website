@@ -240,6 +240,11 @@ export type CatalogMetadataInput = {
   description?: string;
   /** Share image (product main image / collection banner). */
   image?: string | null;
+  /**
+   * "product": the product page writes og:type=product and its price itself
+   * (Next has no product type). Every other page is og:type=website (as Shopify).
+   */
+  ogType?: "website" | "product";
 };
 
 /** Page metadata for the request's market, named after its brand identity. */
@@ -257,7 +262,9 @@ export function buildCatalogMetadata(
   context: { brand: Pick<BrandIdentity, "name" | "names">; countryCode?: string | null },
 ): Metadata {
   const alternates = catalogAlternates(input.path, input.locale);
-  const images = input.image ? [{ url: input.image }] : undefined;
+  // Alt text on the share image (Shopify sends none).
+  const images = input.image ? [{ url: input.image, alt: input.title }] : undefined;
+  const otherLocale = input.locale === "ar" ? "en" : "ar";
   return {
     // Imported SEO titles often name the brand already ("… | Swiss Arabian UAE"):
     // the site suffix is not added a second time (any language of the name).
@@ -267,11 +274,14 @@ export function buildCatalogMetadata(
     description: input.description,
     alternates,
     openGraph: {
+      ...(input.ogType === "product" ? {} : { type: "website" as const }),
       title: input.title,
       description: input.description,
       url: alternates.canonical,
       siteName: context.brand.name,
       locale: openGraphLocale(input.locale, context.countryCode),
+      // The same page exists in the other language (hreflang twin for social apps).
+      alternateLocale: [openGraphLocale(otherLocale, context.countryCode)],
       ...(images ? { images } : {}),
     },
     twitter: {
