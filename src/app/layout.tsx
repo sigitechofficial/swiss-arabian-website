@@ -18,7 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await loadRequestBrandIdentity();
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
-    title: { default: brand.name, template: `%s · ${brand.name}` },
+    // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
+    title: { default: brand.name, template: `%s – ${brand.name}` },
     ...(brand.description ? { description: brand.description } : {}),
     robots: env.seoIndexingEnabled
       ? { index: true, follow: true }

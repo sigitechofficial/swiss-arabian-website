@@ -48,11 +48,17 @@ export const loadBrandIdentityFor = cache(
   },
 );
 
-/** True when the title already contains the brand name (in any language). */
+/**
+ * True when the title already contains the market's site name (in any language),
+ * as Shopify does: "… – Swiss Arabian UAE" is not added twice. A shorter name that
+ * is part of a full one ("Swiss Arabian" in "Swiss Arabian UAE") does not count:
+ * "Shumoukh Al Ghutra 100ml - Swiss Arabian" still gets " – Swiss Arabian UAE".
+ */
 export function namesBrand(title: string, names: readonly string[]): boolean {
   const lower = title.toLocaleLowerCase();
-  return names.some((name) => {
-    const n = name.trim().toLocaleLowerCase();
-    return n.length > 0 && lower.includes(n);
-  });
+  const all = names.map((name) => name.trim().toLocaleLowerCase()).filter(Boolean);
+  const siteNames = all.filter(
+    (n) => !all.some((other) => other !== n && other.includes(n)),
+  );
+  return siteNames.some((n) => lower.includes(n));
 }

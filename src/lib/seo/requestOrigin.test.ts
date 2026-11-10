@@ -122,4 +122,18 @@ describe("SEO addresses and product data", () => {
       openGraph: { locale: "ar_QA" },
     });
   });
+
+  it("adds the market name unless the title has the full market name (as Shopify)", () => {
+    const brand = { name: "Swiss Arabian UAE", names: ["Swiss Arabian UAE", "Swiss Arabian"] };
+    const title = (t: string) =>
+      buildCatalogMetadata({ locale: "en", path: "/products/x", title: t }, { brand }).title;
+    // Shopify: "Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian – Swiss Arabian UAE"
+    expect(title("Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian")).toBe(
+      "Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian",
+    );
+    expect(title("SWISS ARABIAN EXCLUSIVE COLLECTION")).toBe("SWISS ARABIAN EXCLUSIVE COLLECTION");
+    expect(title("Valencia EDP | Amber Floral – Swiss Arabian UAE")).toEqual({
+      absolute: "Valencia EDP | Amber Floral – Swiss Arabian UAE",
+    });
+  });
 });
