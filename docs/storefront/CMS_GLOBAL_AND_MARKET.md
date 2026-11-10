@@ -100,10 +100,20 @@ A reviewer pass tested the CMS from the admin UI, the API and the logs in UAE, Q
 - Seed (dry run first) and Copy from language (reason required) were added.
 - "Publish global" is disabled while the global page is empty.
 
-**Still open (low)**
-- The section hash includes row ids, so republishing a restored version creates a new version.
-- There is no "unpublish global".
-- A draft conflict returns error code `DUPLICATE_RECORD`.
-- Most audit entries have no market or details (the reasons are stored).
-- A seed dry run creates an empty global row.
-- The admin has no "open on storefront" link (`/preview/home` exists on the website).
+**Follow-ups closed (11 Nov 2026, handover R54)**
+- **Unpublish:** "Unpublish" on the home page, announcement bar and footer (global or market), with a reason.
+  - `POST /admin/content/page-variants/:id/unpublish` `{ reason }`, permission `content.publish`.
+  - The draft and every version are kept; publish again to bring the page back.
+  - Global page: needs every market of the brand. Markets then show only their own added sections, else the website's built-in layout. The admin is told which markets still show their own sections.
+  - Market page: that market shows the global page again.
+- **Republishing a restored version** no longer creates a new version. The content hash leaves out row ids, and "unpublished changes" / "no change" compare the content itself, so rows saved before this change need no backfill.
+- **Draft conflicts** return code `DRAFT_CHANGED` with "This page was changed by someone else … Reload the page" (was `DUPLICATE_RECORD`, shown as "This record already exists").
+- **Audit:** one shared writer (`content-audit.util.ts`). Every CMS audit row has brand, market (none = global), page type, language, action, reason and details (section type and key, version numbers, manifest).
+- **Seed dry run** only reads; it no longer creates an empty global row.
+- **Admin:**
+  - "Open on storefront" opens the market's website address from SEO settings (local: the local website); `/ar` for Arabic. The website has no market switch in the URL, so the tooltip says to choose the market on the site when markets share one address.
+  - Section lists show an image thumbnail (hero slides, banners, tiles). Website paths such as `/assets/...` are loaded from the storefront address; the preview does the same.
+  - Header buttons wrap under the title on narrow screens.
+
+**Still open**
+- None from the review. The `/account` hydration warning came from three website files that did not compile at the time; it no longer happens after those were fixed (checked on `/account` and `/account/addresses`).
