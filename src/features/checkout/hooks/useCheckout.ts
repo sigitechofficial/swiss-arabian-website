@@ -7,6 +7,7 @@ import { getActiveCart } from "@/features/cart/api/cart.service";
 import { loyaltyRedemptionSignature } from "@/features/loyalty/types/loyalty";
 import { appliedCoupon, giftCardSignature, shippingDiscountAmount } from "@/features/promotions/types/promotions";
 import { useCartStore, type CartLine } from "@/stores/useCartStore";
+import { useOptionalMarket } from "@/providers/MarketProvider";
 import {
   cancelCheckout,
   createCheckoutFromCart,
@@ -142,9 +143,25 @@ async function resolveSession(
     : created;
 }
 
+/**
+ * Which bag the checkout is for: the market and its cart. Each market keeps its own
+ * cart, so a market switch is a different checkout, not a change to this one.
+ */
+export function checkoutScopeKey(
+  zoneCode: string | null | undefined,
+  cartId: string | null | undefined,
+): string | null {
+  if (!cartId) return null;
+  return `${(zoneCode ?? "").trim().toUpperCase()}|${cartId}`;
+}
+
 export function useCheckout() {
   const cartId = useCartStore((s) => s.cartId);
   const lines = useCartStore((s) => s.lines);
+  /** True while the bag is being reloaded (market switch): its id and lines are in flux. */
+  const cartSyncing = useCartStore((s) => s.syncing);
+  const zoneCode = useOptionalMarket()?.catalogContext?.zoneCode ?? null;
+  const scopeKey = checkoutScopeKey(zoneCode, cartId);
   const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
   const discountTotal = useCartStore((s) => s.totals?.discount ?? 0);
   const shippingDiscount = useCartStore((s) => shippingDiscountAmount(s.promotions));
@@ -208,18 +225,48 @@ export function useCheckout() {
     [adopt],
   );
 
-  // C.1 — create or resume the session, once per cart.
+  // Market or cart changed (market switch on this page): the current session belongs
+  // to the other market's bag. Drop it here (it stays on the server and resumes when
+  // the shopper switches back) and start over for the new bag.
+  const scopeRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!cartId || lines.some((line) => line.isSellable === false)) return;
-    if (initCartRef.current === cartId) return;
-    initCartRef.current = cartId;
+    if (cartSyncing || !scopeKey) return;
+    const previous = scopeRef.current;
+    scopeRef.current = scopeKey;
+    if (previous === null || previous === scopeKey) return;
+    clearCheckoutSessionId();
+    initCartRef.current = null;
+    methodsSessionRef.current = null;
+    sessionSigRef.current = null;
+    preparedRef.current = null;
+    setSession(null);
+    setDeliveryMethods([]);
+    setPaymentMethods([]);
+    setInlinePayment(null);
+    setSelectedDeliveryId(null);
+    setSelectedPaymentId(null);
+    setErrorMsg(null);
+    setStatus("loading");
+  }, [cartSyncing, scopeKey]);
+
+  // C.1 — create or resume the session, once per market + cart. Waits while the bag
+  // is switching markets, and an empty bag has nothing to check out.
+  useEffect(() => {
+    if (cartSyncing || !cartId || !scopeKey || lines.length === 0) return;
+    if (lines.some((line) => line.isSellable === false)) return;
+    if (scopeRef.current !== scopeKey) return;
+    if (initCartRef.current === scopeKey) return;
+    initCartRef.current = scopeKey;
     void start(cartId, lines);
-  }, [cartId, lines, start]);
+  }, [cartId, cartSyncing, lines, scopeKey, start]);
 
   // Bag changed after the session was built (an add-on, a quantity change in
   // another tab…). Rebuild it so the placed order matches what's on screen.
   useEffect(() => {
-    if (!cartId || !session || sessionSigRef.current === null) return;
+    if (cartSyncing || !cartId || !session || sessionSigRef.current === null) return;
+    // A session of another cart (market switch in progress) is replaced above, not rebuilt.
+    if (session.cartId !== cartId || scopeRef.current !== scopeKey) return;
+    if (lines.length === 0) return;
     const sig = promotionCheckoutSignature({
       lines,
       couponCode,
@@ -240,7 +287,7 @@ export function useCheckout() {
         setErrorMsg(checkoutErrorMessage(e));
       }
     })();
-  }, [cartId, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, loyaltySig, session, adopt]);
+  }, [cartId, cartSyncing, scopeKey, lines, couponCode, discountTotal, shippingDiscount, giftCardsSig, loyaltySig, session, adopt]);
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
