@@ -15,9 +15,10 @@ export function SitePageView({
   contactDetails?: SitePage | null;
   locale: "en" | "ar";
 }) {
-  const body = sanitizePageHtml(page.bodyHtml);
+  // The page title below is the page's one H1.
+  const body = sanitizePageHtml(page.bodyHtml, { demoteH1: true });
   const contact = contactDetails
-    ? sanitizePageHtml(contactDetails.bodyHtml)
+    ? sanitizePageHtml(contactDetails.bodyHtml, { demoteH1: true })
     : "";
   return (
     <article className="mx-auto w-full max-w-3xl px-4 py-12 sm:py-16">

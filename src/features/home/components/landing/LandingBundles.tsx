@@ -3,8 +3,11 @@
 import { useLayoutEffect, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import type { ProductSummary } from "@/features/catalog/types/product";
+import { chromeNavLinks, useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { formatMoney } from "../../utils/formatMoney";
+import { giftSetsHref } from "../../utils/giftSetsHref";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
 
 /** Shop-this-bundle switches from a corner card to a fixed bottom sheet. */
@@ -97,7 +100,7 @@ export function LandingBundles({
   primaryCtaLabel = "Shop Bundles",
   primaryCtaHref = "/collections/bundles",
   secondaryCtaLabel = "Shop Gift Sets",
-  secondaryCtaHref = "/collections/gift-sets",
+  secondaryCtaHref,
   panelEnabled = true,
   panelTitle = "Shop this bundle",
   panelCtaLabel = "Shop This Bundle",
@@ -107,6 +110,17 @@ export function LandingBundles({
   // Start closed so SSR / first paint never flash a fixed bottom sheet
   // over the hero. Desktop flips open in useLayoutEffect.
   const [open, setOpen] = useState(false);
+  const { marketId } = useMarket();
+  const { chromeItems } = useNavigation(marketId || undefined);
+  // Not set by the CMS (undefined): the market's own gift sets collection.
+  const menuLinks = [
+    ...chromeNavLinks(chromeItems),
+    ...chromeItems.flatMap((item) =>
+      item.type === "mega" ? item.groups.flatMap((group) => group.links) : [],
+    ),
+  ];
+  const secondaryHref =
+    secondaryCtaHref === undefined ? giftSetsHref(menuLinks) : secondaryCtaHref;
   // Real products of the market's bundles collection (none: the list is empty).
   const fetched = useHomeCollectionProducts("bundles", 2);
   const fromCms = productsProp !== undefined;
@@ -162,8 +176,8 @@ export function LandingBundles({
               {primaryCtaLabel || "Shop Bundles"}
             </LocaleLink>
           ) : null}
-          {secondaryCtaHref ? (
-            <LocaleLink className={bundlePillGhost} href={secondaryCtaHref}>
+          {secondaryHref ? (
+            <LocaleLink className={bundlePillGhost} href={secondaryHref}>
               {secondaryCtaLabel || "Shop Gift Sets"}
             </LocaleLink>
           ) : null}

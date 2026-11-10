@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   matchRedirect,
   normalizeRequestPath,
   redirectLocation,
+  redirectsFor,
+  redirectZone,
 } from "./storedRedirects";
 
 const map = new Map([
@@ -61,5 +63,63 @@ describe("redirectLocation", () => {
     expect(
       redirectLocation("https://example.com/story", request).toString(),
     ).toBe("https://example.com/story");
+  });
+});
+
+describe("redirectZone", () => {
+  it("accepts a market code and ignores anything else", () => {
+    expect(redirectZone(" QTR ")).toBe("QTR");
+    expect(redirectZone("URD1")).toBe("URD1");
+    expect(redirectZone("")).toBeNull();
+    expect(redirectZone(undefined)).toBeNull();
+    expect(redirectZone("QTR&x=1")).toBeNull();
+  });
+});
+
+describe("redirectsFor", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubBackend(lists: Record<string, Array<{ from: string; to: string }> | null>) {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      const zone = url.searchParams.get("zoneCode") ?? "DOMAIN";
+      const redirects = lists[zone];
+      return new Response(
+        JSON.stringify({
+          data: {
+            zoneCode: redirects ? (zone === "DOMAIN" ? "URD1" : zone) : null,
+            redirects: redirects ?? [],
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("uses the redirects of the shopper's market", async () => {
+    const fetchMock = stubBackend({
+      DOMAIN: [{ from: "/pages/contact", to: "/pages/contact-us" }],
+      QTR: [{ from: "/pages/product-catalogue1", to: "/pages/download-product-catalogue" }],
+    });
+    const qatar = await redirectsFor("market-a.example", "QTR");
+    expect(qatar.get("/pages/product-catalogue1")).toBe("/pages/download-product-catalogue");
+    expect(qatar.has("/pages/contact")).toBe(false);
+    const domain = await redirectsFor("market-a.example");
+    expect(domain.get("/pages/contact")).toBe("/pages/contact-us");
+    expect(String(fetchMock.mock.calls[0][0])).toContain("zoneCode=QTR");
+    expect(String(fetchMock.mock.calls[1][0])).not.toContain("zoneCode");
+  });
+
+  it("falls back to the domain's market for a market the website does not have", async () => {
+    stubBackend({
+      DOMAIN: [{ from: "/pages/contact", to: "/pages/contact-us" }],
+      KSA: null,
+    });
+    const map = await redirectsFor("market-b.example", "KSA");
+    expect(map.get("/pages/contact")).toBe("/pages/contact-us");
   });
 });
