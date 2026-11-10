@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CategoryDetailPageView } from "@/features/collections/components/CategoryDetailPageView";
 import {
@@ -17,10 +18,13 @@ import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
   const { slug } = await params;
+  const { page } = parseCatalogListingParams(await searchParams);
   const { locale, category, missing } = await loadCatalogDocument(
     "category",
     slug,
@@ -29,11 +33,15 @@ export async function generateMetadata({
   const handle = category?.slug || slug;
   // SEO Management (a page for this address) wins, then the category's own SEO fields.
   const { seo } = await loadPublishedPageSeo(`/categories/${handle}`);
-  return applySeoOverrides(
+  const title =
+    seo?.title || category?.seoTitle?.trim() || category?.name || slug;
+  const path = canonicalCatalogPath(`/categories/${handle}`, locale);
+  const metadata = applySeoOverrides(
     await catalogMetadata({
       locale,
-      path: canonicalCatalogPath(`/categories/${handle}`, locale),
-      title: seo?.title || category?.seoTitle?.trim() || category?.name || slug,
+      path,
+      title:
+        page > 1 ? `${title} – ${shopCopy(locale, "page")} ${page}` : title,
       description:
         seo?.description ||
         category?.seoDescription?.trim() ||
@@ -41,8 +49,17 @@ export async function generateMetadata({
         undefined,
       image: seo?.ogImage || category?.image || null,
     }),
-    seo,
+    // Page 2+ keeps its own canonical below.
+    page > 1 && seo ? { ...seo, canonicalUrl: undefined } : seo,
   );
+  // Page 2+ is its own page for search engines (self-canonical), as on collections.
+  if (page > 1) {
+    metadata.alternates = {
+      ...metadata.alternates,
+      canonical: `${path}?page=${page}`,
+    };
+  }
+  return metadata;
 }
 
 export default async function CategoryPage({
