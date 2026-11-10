@@ -74,7 +74,7 @@ export const featureBg4 =
   "top-[-10px] right-[-20px] w-[120px] max-[767px]:top-[-59px] max-[767px]:right-[-40px] max-[767px]:w-[110px] rtl:right-auto rtl:left-[-20px] max-[767px]:rtl:left-[-40px]";
 
 export const featureCardCopy =
-  "relative z-[2] max-w-[70%] max-[767px]:max-w-[75%] rtl:ms-auto rtl:text-right [&_h2]:m-0 [&_h2]:mb-[3px] [&_h2]:font-[family-name:var(--font-display)] [&_h2]:text-sm [&_h2]:leading-5 [&_h2]:font-normal [&_h2]:tracking-[0.02em] [&_h2]:text-[var(--ink,#241f1b)] max-[767px]:[&_h2]:mb-1 max-[767px]:[&_h2]:text-[13px] max-[767px]:[&_h2]:leading-[18px] [&_strong]:font-semibold [&_p]:m-0 [&_p]:text-[9px] [&_p]:leading-[14px] [&_p]:tracking-[0.02em] [&_p]:text-[var(--ink-2,#5b5148)]";
+  "relative z-[2] max-w-[70%] max-[767px]:max-w-[75%] rtl:ms-auto rtl:text-right [&_[data-feature-title]]:m-0 [&_[data-feature-title]]:mb-[3px] [&_[data-feature-title]]:font-[family-name:var(--font-display)] [&_[data-feature-title]]:text-sm [&_[data-feature-title]]:leading-5 [&_[data-feature-title]]:font-normal [&_[data-feature-title]]:tracking-[0.02em] [&_[data-feature-title]]:text-[var(--ink,#241f1b)] max-[767px]:[&_[data-feature-title]]:mb-1 max-[767px]:[&_[data-feature-title]]:text-[13px] max-[767px]:[&_[data-feature-title]]:leading-[18px] [&_strong]:font-semibold [&_p]:m-0 [&_p]:text-[9px] [&_p]:leading-[14px] [&_p]:tracking-[0.02em] [&_p]:text-[var(--ink-2,#5b5148)]";
 
 export const sectionBlock = "py-[clamp(3.5rem,8vw,7rem)]";
 

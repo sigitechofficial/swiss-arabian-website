@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { AuthVisualPanel } from "./AuthVisualPanel";
+import { AuthVisualPanel } from "./AuthVisualPanel";
+import { storefrontLogo } from "@/lib/storefront/brand";
 
 type AuthShellProps = {
   heading: string;
@@ -21,7 +22,7 @@ export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
             <div className="flex flex-col items-center gap-2 text-center">
               <LocaleLink className="relative block h-16 w-[150px] shrink-0" aria-label="Swiss Arabian home" href="/">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/sa-logo-clear.png" alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
+                <img src={storefrontLogo().src} alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
               </LocaleLink>
             </div>
             <div className="mt-9 flex flex-col items-center gap-2 text-center">

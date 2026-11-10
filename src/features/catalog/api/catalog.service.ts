@@ -1,4 +1,5 @@
 import type { ProductSeoPackage } from "@/lib/seo/productSeo";
+import type { CollectionSeoContent } from "@/features/seo-footer/collectionSeoTextView";
 import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
 import {
@@ -582,8 +583,15 @@ export type CatalogCollection = {
   imageAlt?: string | null;
   /** Banner version for small screens, when the store has one. */
   imageMobile?: string | null;
+  /** Banner pixel sizes (when known): the page reserves the space, no layout shift. */
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  imageMobileWidth?: number | null;
+  imageMobileHeight?: number | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  /** SEO text block above the footer (market + language); null when none. */
+  seoContent?: CollectionSeoContent | null;
   customMetafields?: Record<string, unknown> | null;
 };
 
@@ -607,8 +615,13 @@ function mapCollectionDetail(
     image: item.image,
     imageAlt: item.imageAlt,
     imageMobile: item.imageMobile ?? null,
+    imageWidth: item.imageWidth ?? null,
+    imageHeight: item.imageHeight ?? null,
+    imageMobileWidth: item.imageMobileWidth ?? null,
+    imageMobileHeight: item.imageMobileHeight ?? null,
     seoTitle: item.seoTitle ?? raw?.seoTitle,
     seoDescription: item.seoDescription ?? raw?.seoDescription,
+    seoContent: item.seoContent ?? raw?.seoContent ?? null,
     customMetafields: item.customMetafields ?? raw?.customMetafields ?? null,
   };
 }

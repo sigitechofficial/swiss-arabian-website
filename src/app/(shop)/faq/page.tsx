@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {
+  CatalogJsonLd,
+  faqPageJsonLd,
+  pageBreadcrumbJsonLd,
+} from "@/features/catalog/components/CatalogJsonLd";
 import { FaqPageView } from "@/features/faq";
 import {
   loadMarketFixedPage,
@@ -6,6 +11,9 @@ import {
 } from "@/features/site-pages/marketFixedPage";
 import { SitePageView } from "@/features/site-pages/components/SitePageView";
 import { pickFaqPage } from "@/features/site-pages/utils/pickMarketPage";
+import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
+import { shopCopy } from "@/lib/i18n/shopCopy";
+import { faqEntriesFromHtml } from "@/lib/seo/faqContent";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 
 /**
@@ -35,7 +43,26 @@ export default async function FaqPage({
   searchParams: Promise<{ topic?: string }>;
 }) {
   const { locale, page } = await loadMarketFaq();
-  if (page) return <SitePageView page={page} locale={locale} />;
+  if (page) {
+    // The same questions and answers the page shows (its cleaned HTML), as plain text.
+    const entries = faqEntriesFromHtml(sanitizePageHtml(page.bodyHtml));
+    return (
+      <>
+        <CatalogJsonLd data={pageBreadcrumbJsonLd(locale, { name: page.title, path: "/faq" })} />
+        {entries.length ? <CatalogJsonLd data={faqPageJsonLd(entries)} /> : null}
+        <SitePageView page={page} locale={locale} />
+      </>
+    );
+  }
   const { topic } = await searchParams;
-  return <FaqPageView initialDrawer={topic} />;
+  // The built-in FAQ shows an answer only once its question is opened, so it
+  // carries no FAQPage data (Google requires the answers on the page).
+  return (
+    <>
+      <CatalogJsonLd
+        data={pageBreadcrumbJsonLd(locale, { name: shopCopy(locale, "faqs"), path: "/faq" })}
+      />
+      <FaqPageView initialDrawer={topic} />
+    </>
+  );
 }

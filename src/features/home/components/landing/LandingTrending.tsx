@@ -83,9 +83,9 @@ export function LandingTrending({
       <div className={pageContainer}>
         <header className={`${sectionHead} flex max-w-none flex-col items-stretch`}>
           <div className={trendTitleRow}>
-            <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
+            <p className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
               {title}
-            </h2>
+            </p>
             {allHref ? (
               <LocaleLink
                 className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`}
@@ -177,7 +177,7 @@ export function LandingTrending({
                   </div>
                 ) : null}
                 <div className={trendBody}>
-                  <h3 className={cardName}>{product.title}</h3>
+                  <p className={cardName}>{product.title}</p>
                   <p className={cardPrice}>
                     {formatMoney(product.price, product.currency)}
                   </p>

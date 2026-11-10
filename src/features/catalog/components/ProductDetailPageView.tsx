@@ -51,9 +51,12 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
 export function ProductDetailPageView({
   product: serverDetail,
   slug: routeSlug,
+  share = null,
 }: {
   product: ProductDetail | null;
   slug: string;
+  /** Canonical product address (absolute) and share image, from the server. */
+  share?: { url: string; image?: string | null } | null;
 }) {
   const copy = useShopCopy();
   const { marketId } = useMarket();
@@ -281,6 +284,7 @@ export function ProductDetailPageView({
               zoneCode={zoneCode}
               cartLine={cartLine}
               scentFallback={related}
+              share={share}
             />
           </div>
         </div>

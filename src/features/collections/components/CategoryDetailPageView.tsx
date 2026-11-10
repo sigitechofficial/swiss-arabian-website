@@ -1,7 +1,10 @@
 "use client";
 
 import { ProductCatalogView } from "@/features/catalog/components/ProductCatalogView";
-import type { CatalogCategory } from "@/features/catalog/api/catalog.service";
+import type {
+  CatalogCategory,
+  ProductListResult,
+} from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
 
@@ -9,15 +12,21 @@ export function CategoryDetailPageView({
   slug,
   listingQuery,
   category,
+  initialListing,
+  initialZoneCode,
 }: {
   slug: string;
   listingQuery: CatalogListingQuery;
   category: CatalogCategory | null;
+  /** Products the server already rendered (crawlable). */
+  initialListing?: ProductListResult | null;
+  initialZoneCode?: string | null;
 }) {
-
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
     { kind: "category", slug },
     listingQuery,
+    initialListing,
+    initialZoneCode,
   );
 
   const banner = category

@@ -76,13 +76,34 @@ export function isSapilStorefront(): boolean {
   return resolveStorefrontHost().includes("sapil");
 }
 
-export function storefrontLogo(): { src: string; alt: string; name: string } {
+export type StorefrontLogo = {
+  src: string;
+  /** Descriptive alt text (SEO audit): "<brand> Online Perfume Store". */
+  alt: string;
+  name: string;
+  width: number;
+  height: number;
+};
+
+/**
+ * The brand's logo. File names describe the image for search engines; the old
+ * files (sa-logo-clear.png, sapil-logo.png) stay so existing links keep working.
+ */
+export function storefrontLogo(): StorefrontLogo {
   if (isSapilStorefront()) {
-    return { src: "/assets/sapil-logo.png", alt: "Sapil", name: "Sapil" };
+    return {
+      src: "/assets/sapil-online-perfume-store.png",
+      alt: "Sapil Online Perfume Store",
+      name: "Sapil",
+      width: 195,
+      height: 80,
+    };
   }
   return {
-    src: "/assets/sa-logo-clear.png",
-    alt: "Swiss Arabian",
+    src: "/assets/swiss-arabian-online-perfume-store.png",
+    alt: "Swiss Arabian Online Perfume Store",
     name: "Swiss Arabian",
+    width: 428,
+    height: 218,
   };
 }

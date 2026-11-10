@@ -1,3 +1,6 @@
+import { shopCopy } from "@/lib/i18n/shopCopy";
+import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
+import type { OpeningHoursSpecification } from "@/lib/seo/openingHours";
 import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
 
 const URL_KEYS = new Set(["url", "item", "image", "@id"]);
@@ -94,5 +97,87 @@ export function itemListJsonLd(name: string, urls: string[]) {
       position: index + 1,
       url,
     })),
+  };
+}
+
+/** Home › page, for a page directly under the home page (site pages, FAQ, store list …). */
+export function pageBreadcrumbJsonLd(
+  locale: ShopLocale,
+  page: { name: string; path: string },
+) {
+  return breadcrumbJsonLd([
+    { name: shopCopy(locale, "home"), url: withLocalePrefix("/", locale) },
+    { name: page.name, url: withLocalePrefix(page.path, locale) },
+  ]);
+}
+
+/** Questions and answers shown on the page, as plain text (Google: FAQPage). */
+export function faqPageJsonLd(entries: ReadonlyArray<{ question: string; answer: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: entries.map((entry) => ({
+      "@type": "Question",
+      name: entry.question,
+      acceptedAnswer: { "@type": "Answer", text: entry.answer },
+    })),
+  };
+}
+
+export type StoreJsonLdInput = {
+  /** Stable id within the page, used for the store's `@id` (`<url>#store-<id>`). */
+  id: string;
+  name: string;
+  /** The page that lists the store. */
+  url: string;
+  /** Full address as shown on the page. */
+  streetAddress?: string | null;
+  addressLocality?: string | null;
+  /** ISO country code of the market, e.g. "AE". */
+  addressCountry?: string | null;
+  telephone?: string | null;
+  geo?: { latitude: number; longitude: number } | null;
+  openingHours?: OpeningHoursSpecification[] | null;
+};
+
+/**
+ * One physical shop (schema.org Store, a LocalBusiness) — only the fields the
+ * page actually shows; missing ones are left out, never guessed.
+ */
+export function storeJsonLd(store: StoreJsonLdInput, brandName?: string | null) {
+  const hasAddress = Boolean(store.streetAddress?.trim() || store.addressLocality?.trim());
+  const geo =
+    store.geo && Number.isFinite(store.geo.latitude) && Number.isFinite(store.geo.longitude)
+      ? store.geo
+      : null;
+  return {
+    "@type": "Store",
+    "@id": `${store.url}#store-${store.id}`,
+    name: store.name,
+    url: store.url,
+    address: hasAddress
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: store.streetAddress?.trim() || undefined,
+          addressLocality: store.addressLocality?.trim() || undefined,
+          addressCountry: store.addressCountry?.trim() || undefined,
+        }
+      : undefined,
+    geo: geo
+      ? { "@type": "GeoCoordinates", latitude: geo.latitude, longitude: geo.longitude }
+      : undefined,
+    telephone: store.telephone?.trim() || undefined,
+    openingHoursSpecification: store.openingHours?.length ? store.openingHours : undefined,
+    parentOrganization: brandName?.trim()
+      ? { "@type": "Organization", name: brandName.trim() }
+      : undefined,
+  };
+}
+
+/** Every shop on a store-list page, as one graph. */
+export function storesJsonLd(stores: StoreJsonLdInput[], brandName?: string | null) {
+  return {
+    "@context": "https://schema.org",
+    "@graph": stores.map((store) => storeJsonLd(store, brandName)),
   };
 }

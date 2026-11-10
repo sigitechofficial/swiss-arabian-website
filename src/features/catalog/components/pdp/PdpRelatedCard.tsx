@@ -74,7 +74,7 @@ export function PdpRelatedCard({
         <AddToBagButton product={product} variant="product" />
       </div>
       <div>
-        <h3 className={relatedName}>{product.title}</h3>
+        <p className={relatedName}>{product.title}</p>
         <p className={relatedPrice}>{formatMoney(product.price, product.currency)}</p>
       </div>
     </li>

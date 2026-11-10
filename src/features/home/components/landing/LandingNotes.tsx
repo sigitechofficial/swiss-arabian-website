@@ -39,9 +39,9 @@ export function LandingNotes({ heading }: LandingNotesProps = {}) {
     <section className={notesShop} aria-labelledby="notesTitle">
       <div className={pageContainer}>
         <header className={notesHead}>
-          <h2 className={`${sectionTitleClass} mt-0`} id="notesTitle">
+          <p className={`${sectionTitleClass} mt-0`} id="notesTitle">
             {title}
-          </h2>
+          </p>
         </header>
 
         <ul

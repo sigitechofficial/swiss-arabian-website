@@ -57,3 +57,17 @@ Code: `src/providers/MarketProvider.tsx`, `src/providers/CartSessionProvider.tsx
 | G13 | Signed-in account pages not checked | Orders, addresses, wishlist and rewards across markets | Run Mailpit locally (or a verified test account), then check |
 
 Test order placed (local, dev-only Test Payment): `KSA-MWA2G6H3-315777`, SAR 238.00.
+
+## Checkout page (11 Nov 2026, handover R55)
+
+Switching market on `/checkout` used to restart the checkout session again and again. Now:
+- The checkout belongs to one market and its cart. While the bag reloads for the new market, the checkout waits.
+- Then it starts one session for the new bag (none if that bag is empty).
+- The other market's session is kept on the server: switching back resumes it.
+- Code: `useCheckout` (`checkoutScopeKey`); test: `checkoutMarketSwitch.spec.tsx`.
+
+## Server-rendered first page (11 Nov 2026, handover R58)
+
+- The homepage and the collection, category and all-products listings are now rendered on the server for the request's market (the `sa-zone-code` cookie, else the default market).
+- The browser uses that server copy only while it is for the same market (and, for the homepage, the same content language). After a market switch it loads the new market's content as before; the server copy is never shown for another market.
+- Code: `useCatalogPlp.ts` (`initialListing` + `initialZoneCode`), `CmsHomePageView.tsx` (`initial`), loaders in `lib/seo/catalogPage.ts` (`loadServerListing`, `loadServerHome`).

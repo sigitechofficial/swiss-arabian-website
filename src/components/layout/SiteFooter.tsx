@@ -187,9 +187,9 @@ export function SiteFooter() {
     <footer className={siteFooter}>
       <div className={pageContainer}>
         <form className={footerNewsletter} onSubmit={onNewsletterSubmit}>
-          <h2 className={footerNewsletterTitle}>
+          <p className={footerNewsletterTitle}>
             {cms.newsletterHeading?.trim() || copy("newsletter")}
-          </h2>
+          </p>
           <div className={footerNewsletterRow}>
             <label className={visuallyHidden} htmlFor="footer-email">
               Email address
@@ -222,9 +222,9 @@ export function SiteFooter() {
                 aria-label={column.heading ? undefined : copy("moreLinks")}
               >
                 {column.heading ? (
-                  <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id={`fc-${column.id}`}>
+                  <p className={`${footerColTitle} ${footerColTitleCaps}`} id={`fc-${column.id}`}>
                     {column.heading}
-                  </h2>
+                  </p>
                 ) : null}
                 <ul className={footerColLinks} role="list">
                   {column.links.map((link) => (
@@ -239,9 +239,9 @@ export function SiteFooter() {
 
           {socialLinks.length ? (
             <section aria-labelledby="fc-follow">
-              <h2 className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-follow">
+              <p className={`${footerColTitle} ${footerColTitleCaps}`} id="fc-follow">
                 {copy("followUs")}
-              </h2>
+              </p>
               <ul className={footerSocial} role="list">
                 {socialLinks.map((link) => (
                   <li key={link.id}>
@@ -268,12 +268,12 @@ export function SiteFooter() {
           {cms.showPaymentBadges === false ? null : (
           <ul className={footerPayments} aria-label="Accepted payment methods">
             <li>
-              <span className={`${payMark} ${payMarkAmex}`} aria-label="American Express">
+              <span className={`${payMark} ${payMarkAmex}`} role="img" aria-label="American Express">
                 AMEX
               </span>
             </li>
             <li>
-              <span className={`${payMark} ${payMarkApple}`} aria-label="Apple Pay">
+              <span className={`${payMark} ${payMarkApple}`} role="img" aria-label="Apple Pay">
                 <svg viewBox="0 0 40 16" aria-hidden="true">
                   <path
                     fill="currentColor"
@@ -286,7 +286,7 @@ export function SiteFooter() {
               </span>
             </li>
             <li>
-              <span className={`${payMark} ${payMarkGpay}`} aria-label="Google Pay">
+              <span className={`${payMark} ${payMarkGpay}`} role="img" aria-label="Google Pay">
                 <svg viewBox="0 0 48 16" aria-hidden="true">
                   <text x="0" y="12.4" fontSize="9" fontWeight="700" fontFamily="Arial, sans-serif">
                     <tspan fill="#4285F4">G</tspan>
@@ -301,7 +301,7 @@ export function SiteFooter() {
               </span>
             </li>
             <li>
-              <span className={`${payMark} ${payMarkMc}`} aria-label="Mastercard">
+              <span className={`${payMark} ${payMarkMc}`} role="img" aria-label="Mastercard">
                 <svg viewBox="0 0 32 20" aria-hidden="true">
                   <circle cx="12.5" cy="10" r="7.2" fill="#eb001b" />
                   <circle cx="19.5" cy="10" r="7.2" fill="#f79e1b" />
@@ -313,7 +313,7 @@ export function SiteFooter() {
               </span>
             </li>
             <li>
-              <span className={`${payMark} ${payMarkVisa}`} aria-label="Visa">
+              <span className={`${payMark} ${payMarkVisa}`} role="img" aria-label="Visa">
                 VISA
               </span>
             </li>

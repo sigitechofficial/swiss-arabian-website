@@ -9,6 +9,7 @@ import {
   fetchPublishedHome,
 } from "../api/cmsContent.service";
 import { CmsSectionList } from "./CmsSectionList";
+import type { CmsHomeResult } from "../types/cmsHome.types";
 import { LegacyHomeFallback } from "./LegacyHomeFallback";
 
 function cmsHomeEnabled(): boolean {
@@ -21,7 +22,14 @@ function legacyFallbackEnabled(): boolean {
   return env.cmsHomeLegacyFallback !== false;
 }
 
-export function CmsHomePageView() {
+/** Homepage the server already loaded, and which market and language it is for. */
+export type CmsHomeInitial = {
+  zoneCode: string;
+  languageCode: string;
+  data: CmsHomeResult;
+};
+
+export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null } = {}) {
   // The Homepage is published under the market's own language code ("en-us"),
   // not the "en" in the address. Wait until the market's languages are known.
   const languageCode = useMarket().contentLanguage ?? "";
@@ -31,6 +39,11 @@ export function CmsHomePageView() {
     market?.countryCode?.trim() ||
     "";
   const enabled = cmsHomeEnabled() && Boolean(zoneCode && languageCode);
+  // The server's homepage is for one market + language: use it only for that one,
+  // or while the browser has not worked out the market yet (same as the server's).
+  const known = Boolean(zoneCode && languageCode);
+  const initialMatches =
+    initial && known && initial.zoneCode === zoneCode && initial.languageCode === languageCode;
 
   const query = useQuery({
     queryKey: cmsContentKeys.home(zoneCode, languageCode),
@@ -40,6 +53,7 @@ export function CmsHomePageView() {
         languageCode,
       }),
     enabled,
+    initialData: initialMatches ? initial.data : undefined,
     staleTime: 60_000,
     // Bound revalidation: refetch on window focus / reconnect for publish visibility.
     refetchOnWindowFocus: true,
@@ -49,7 +63,9 @@ export function CmsHomePageView() {
     return <LegacyHomeFallback />;
   }
 
-  if (!zoneCode || !languageCode || query.isPending) {
+  const shown = query.data ?? (!known ? initial?.data : undefined);
+
+  if (!shown && (!known || query.isPending)) {
     return (
       <div
         className="min-h-[40vh] animate-pulse bg-[var(--cream,#faf6ee)]"
@@ -59,7 +75,7 @@ export function CmsHomePageView() {
     );
   }
 
-  if (query.isError) {
+  if (!shown && query.isError) {
     if (legacyFallbackEnabled()) return <LegacyHomeFallback />;
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
@@ -74,7 +90,7 @@ export function CmsHomePageView() {
     );
   }
 
-  const result = query.data;
+  const result = shown;
   const hasCms =
     Boolean(result?.page) && Array.isArray(result?.sections) && result.sections.length > 0;
 

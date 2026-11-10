@@ -208,7 +208,7 @@ export const reviewsNav = "m-0 flex items-center gap-[0.35rem] [&_button]:inline
 export const reviewForm =
   "mb-6 w-full rounded-[4px] border border-[var(--line,#d9ccb4)] bg-white px-[1.4rem] pt-[1.35rem] pb-[1.25rem] [&_label>span:first-child]:text-[0.62rem]! [&_label>span:first-child]:font-medium! [&_label>span:first-child]:tracking-[0.06em]! [&_label>span:first-child]:text-[var(--ink-2,#5b5148)]! [&_label>span:first-child]:uppercase [&_input]:min-h-[46px] [&_input]:bg-[#fffdf8] [&_input]:px-[14px]! [&_input]:py-[0.7rem]! [&_textarea]:min-h-[120px]! [&_textarea]:resize-y [&_textarea]:bg-[#fffdf8] [&_textarea]:px-[14px]! [&_textarea]:py-[0.7rem]!";
 
-export const reviewIntro = "mb-[1.15rem] border-b border-[var(--line,#d9ccb4)] pb-4 [&_h3]:m-0 [&_h3]:mb-[0.3rem] [&_h3]:text-[1.05rem] [&_h3]:font-semibold [&_p]:m-0 [&_p]:text-[0.85rem] [&_p]:text-[var(--ink-2,#5b5148)]";
+export const reviewIntro = "mb-[1.15rem] border-b border-[var(--line,#d9ccb4)] pb-4 [&_[data-heading]]:m-0 [&_[data-heading]]:mb-[0.3rem] [&_[data-heading]]:text-[1.05rem] [&_[data-heading]]:font-semibold [&_p]:m-0 [&_p]:text-[0.85rem] [&_p]:text-[var(--ink-2,#5b5148)]";
 
 export const reviewGrid = "grid grid-cols-2 gap-x-[1.1rem] gap-y-4 max-[767px]:grid-cols-1";
 
@@ -354,3 +354,17 @@ export const pdpPayFrameSoon =
 
 export const pdpPayDone =
   "mt-5 inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper,#8c4435)] text-[0.85rem] font-semibold text-white transition-colors [font:inherit] hover:bg-[var(--copper-deep,#6d3428)]";
+
+/* ── Share row (WhatsApp, Facebook, X, Pinterest, copy link) ──────────────── */
+
+export const pdpShare = "flex flex-wrap items-center gap-x-3 gap-y-2";
+
+export const pdpShareLabel =
+  "text-[0.66rem] leading-none font-semibold tracking-[0.18em] text-[#6f6152] uppercase";
+
+export const pdpShareList = "m-0 flex list-none items-center gap-1.5 p-0";
+
+export const pdpShareBtn =
+  "inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--line,#d9ccb4)] bg-transparent p-0 text-[#6f6152]! no-underline transition-[border-color,color] duration-[var(--dur,0.4s)] ease-[var(--ease,ease)] hover:border-copper! hover:text-copper! focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-copper [&_svg]:size-4";
+
+export const pdpShareStatus = "text-[0.75rem] text-copper";

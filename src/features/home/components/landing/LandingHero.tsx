@@ -109,9 +109,9 @@ export function LandingHero({
       </div>
       <div className={`${pageContainer} ${heroInner}`}>
         {eyebrow ? <p className={heroEyebrow}>{eyebrow}</p> : null}
-        <h1 className={heroTitle} id="heroTitle">
+        <p className={heroTitle} id="heroTitle">
           {title}
-        </h1>
+        </p>
         {lead ? <p className={heroLead}>{lead}</p> : null}
         {primaryCta || secondaryCta ? (
           <div className={heroCta}>

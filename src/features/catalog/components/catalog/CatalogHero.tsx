@@ -28,6 +28,13 @@ type CatalogHeroMeta = {
   heroImage: string;
   /** Small-screen banner version (store banners). */
   heroImageMobile?: string;
+  /** Banner pixel sizes: the space is reserved before the image loads (no layout shift). */
+  heroSize?: {
+    width: number | null;
+    height: number | null;
+    mobileWidth: number | null;
+    mobileHeight: number | null;
+  } | null;
   /** Wide banner artwork: full width above the title, never cropped. */
   wide?: boolean;
 };
@@ -51,13 +58,20 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
         {meta.wide && meta.heroImage ? (
           <picture className={collectionBanner}>
             {meta.heroImageMobile ? (
-              <source media="(max-width: 767px)" srcSet={meta.heroImageMobile} />
+              <source
+                media="(max-width: 767px)"
+                srcSet={meta.heroImageMobile}
+                width={meta.heroSize?.mobileWidth ?? undefined}
+                height={meta.heroSize?.mobileHeight ?? undefined}
+              />
             ) : null}
             {/* Art-directed <picture>: the mobile banner is a different image, not a resize. */}
             <img
               className={collectionBannerImage}
               src={meta.heroImage}
               alt={heroAlt}
+              width={meta.heroSize?.width ?? undefined}
+              height={meta.heroSize?.height ?? undefined}
               fetchPriority="high"
               loading="eager"
             />

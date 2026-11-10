@@ -56,10 +56,19 @@ function uiSortToListing(sort: SortOption): CatalogListingSort | undefined {
   return undefined;
 }
 
+export type CatalogBannerSize = {
+  width: number | null;
+  height: number | null;
+  mobileWidth: number | null;
+  mobileHeight: number | null;
+};
+
 /** Banner supplied by the collections API; falls back to the static hero. */
 export type CatalogBanner = {
   image?: string | null;
   mobileImage?: string | null;
+  /** Pixel sizes of the banner images (reserve the space while they load). */
+  size?: CatalogBannerSize | null;
   imageAlt?: string | null;
   description?: string | null;
   title?: string | null;
@@ -106,6 +115,7 @@ export function ProductCatalogView({
   const bannerImage = banner?.image;
   const bannerMobileImage = banner?.mobileImage ?? "";
   const bannerWide = banner?.wide === true;
+  const bannerSize = banner?.size ?? null;
   const bannerDescription = banner?.description;
   const bannerTitle = banner?.title;
   const meta = useMemo(() => {
@@ -119,6 +129,7 @@ export function ProductCatalogView({
         intro: description,
         heroImage: bannerImage ?? "",
         heroImageMobile: bannerMobileImage,
+        heroSize: bannerSize,
         wide: bannerWide,
         filterCollection: undefined,
       };
@@ -133,8 +144,9 @@ export function ProductCatalogView({
       wide: false,
       filterCollection: undefined,
     };
-  }, [bannerImage, bannerMobileImage, bannerWide, bannerDescription, bannerTitle, copy, slug]);
-  const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
+  }, [bannerImage, bannerMobileImage, bannerSize, bannerWide, bannerDescription, bannerTitle, copy, slug]);
+  // Banners without their own alt text are described by the collection name.
+  const heroAlt = bannerImage ? banner?.imageAlt?.trim() || meta.title : "";
 
   const facetPrice = facets?.price;
   const { floor: PRICE_FLOOR, ceil: PRICE_CEIL } = useMemo(() => {
@@ -393,9 +405,9 @@ export function ProductCatalogView({
       <CatalogHero meta={meta} heroAlt={heroAlt} />
 
       <section className={gridBand} aria-labelledby="grid-heading">
-        <h2 className={visuallyHidden} id="grid-heading">
+        <p className={visuallyHidden} id="grid-heading">
           Products
-        </h2>
+        </p>
 
         {loading ? (
           <div className={pageContainer}>
@@ -456,6 +468,11 @@ export function ProductCatalogView({
               />
               {serverFiltered && onLoadMore ? (
                 <CatalogInfiniteSentinel
+                  nextHref={
+                    pagination && pagination.page < pagination.totalPages
+                      ? `${pathname}?page=${pagination.page + 1}`
+                      : null
+                  }
                   disabled={!hasNextPage}
                   loading={isFetchingNextPage}
                   onVisible={onLoadMore}

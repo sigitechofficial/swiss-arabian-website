@@ -1,3 +1,5 @@
+import { cleanGa4Id, cleanGtmId } from "@/lib/analytics/analyticsIds";
+
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
 const AZURE_DEV_API =
@@ -159,6 +161,11 @@ export const env = {
    * Insider Web SDK. Script loads only when enabled AND accountId is set.
    * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
    */
+  /** Google Tag Manager or GA4. Nothing loads until an ID is set. */
+  analytics: {
+    gtmId: cleanGtmId(readPublic(process.env.NEXT_PUBLIC_GTM_ID, "")),
+    ga4Id: cleanGa4Id(readPublic(process.env.NEXT_PUBLIC_GA4_ID, "")),
+  },
   insider: {
     enabled:
       readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",

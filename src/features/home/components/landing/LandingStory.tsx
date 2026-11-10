@@ -51,9 +51,9 @@ export function LandingStory({
       <div className={storyScrim} aria-hidden="true" />
       <div className={storyInner}>
         {eyebrow ? <p className={storyEyebrow}>{eyebrow}</p> : null}
-        <h2 className={storyTitle} id="storyHeading">
+        <p className={storyTitle} id="storyHeading">
           {heading}
-        </h2>
+        </p>
         {body ? <p className={storyText}>{body}</p> : null}
         {ctaHref ? (
           <LocaleLink className={storyCta} href={ctaHref}>
