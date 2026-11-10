@@ -76,7 +76,19 @@ Product lists differ (visibility, not SEO): UAE 7 only on Shopify / 12 only on o
 
 ## 4. Names after the fix
 
-_Filled in after the local import run._
+Local, after the Shopify metafield import with the new order (UAE 199 products, Qatar 141 compared with the Shopify Admin API):
+
+| | UAE | Qatar |
+|---|---|---|
+| English names differing from Shopify | 22 → **0** | 20 → **0** |
+| Arabic names differing from Shopify | 197 → **0** | 136 → **0** |
+
+Arabic rule (D5): when Shopify has no Arabic translation for a product, its `/ar` page shows the default (English)
+title and body, so the market's Arabic copy holds those too. The D365 Arabic item label ("SA CPO 30ML 328 زهرة") is
+never shown.
+
+Example, `/ar/products/valencia` (UAE): title "اطلب عطر فالنسيا أو دو برفيوم 100 مل - البرغموت والزهور – Swiss Arabian UAE",
+Arabic meta description, JSON-LD name "فالنسيا", all from Shopify's Arabic translation.
 
 ---
 
