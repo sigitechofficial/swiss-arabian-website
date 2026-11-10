@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useQuery } from "@tanstack/react-query";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
@@ -41,9 +49,16 @@ import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
-import { regionsForCountry, matchCountryRegion, normalizeCountryCode } from "@/features/account/data/regionsByCountry";
+import {
+  regionsForCountry,
+  matchCountryRegion,
+  normalizeCountryCode,
+} from "@/features/account/data/regionsByCountry";
 import { useMarket } from "@/providers/MarketProvider";
-import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
+import {
+  readEmployeeCheckout,
+  staffDiscountPaymentBlocked,
+} from "@/features/employeeBenefits/types/employeeCheckout";
 import { useCheckout } from "../hooks/useCheckout";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
@@ -140,13 +155,21 @@ export function CheckoutPageView() {
   const defaultAddress =
     savedAddresses?.find((a) => a.isDefaultShipping) ?? savedAddresses?.[0];
 
-  if (shipping.emirate && regionSet && !regionSet.regions.includes(shipping.emirate)) {
+  if (
+    shipping.emirate &&
+    regionSet &&
+    !regionSet.regions.includes(shipping.emirate)
+  ) {
     setShipping((prev) => ({
       ...prev,
       emirate: matchCountryRegion(countryCode, prev.emirate),
     }));
   }
-  if (billing.emirate && regionSet && !regionSet.regions.includes(billing.emirate)) {
+  if (
+    billing.emirate &&
+    regionSet &&
+    !regionSet.regions.includes(billing.emirate)
+  ) {
     setBilling((prev) => ({
       ...prev,
       emirate: matchCountryRegion(countryCode, prev.emirate),
@@ -163,7 +186,9 @@ export function CheckoutPageView() {
     const profileEmail = user.email.includes("@") ? user.email : "";
     const savedName =
       defaultAddress?.fullName ||
-      [defaultAddress?.firstName, defaultAddress?.lastName].filter(Boolean).join(" ");
+      [defaultAddress?.firstName, defaultAddress?.lastName]
+        .filter(Boolean)
+        .join(" ");
     setEmail((prev) => prev || profileEmail);
     setShipping((prev) => ({
       fullName: prev.fullName || savedName || user.fullName || "",
@@ -171,12 +196,17 @@ export function CheckoutPageView() {
       address1: prev.address1 || defaultAddress?.address1 || "",
       address2: prev.address2 || defaultAddress?.address2 || "",
       city: prev.city || defaultAddress?.city || "",
-      emirate: prev.emirate || matchCountryRegion(countryCode, defaultAddress?.province),
+      emirate:
+        prev.emirate ||
+        matchCountryRegion(countryCode, defaultAddress?.province),
       postalCode: prev.postalCode || defaultAddress?.postalCode || "",
     }));
   }
 
-  const visibleLines = useMemo(() => (hydrated ? lines : []), [hydrated, lines]);
+  const visibleLines = useMemo(
+    () => (hydrated ? lines : []),
+    [hydrated, lines],
+  );
   // Only API-backed lines are part of the checkout session. Local-only lines
   // (static catalogue items with no SKU) would never reach the order.
   const orderableLines = useMemo(
@@ -215,9 +245,14 @@ export function CheckoutPageView() {
       market: session?.context?.zoneCode ?? catalogContext?.zoneCode ?? null,
       surface: "checkout",
     });
-  }, [session?.checkoutSessionId, session?.context?.zoneCode, catalogContext?.zoneCode]);
+  }, [
+    session?.checkoutSessionId,
+    session?.context?.zoneCode,
+    catalogContext?.zoneCode,
+  ]);
   const estimate = session?.totalsEstimate;
-  const currency = session?.currency ?? cartCurrency ?? "AED";
+  const marketCurrency = useMarketCurrency();
+  const currency = session?.currency ?? cartCurrency ?? marketCurrency;
   const subtotal = estimate ? Number(estimate.subtotal) : cartSubtotal;
   const shippingFee = estimate ? Number(estimate.shipping) : 0;
   const discount = estimate ? Number(estimate.discount) : 0;
@@ -246,20 +281,29 @@ export function CheckoutPageView() {
   const canSubmit =
     checkout.status === "ready" &&
     !staffPaymentBlocked &&
-    Boolean(checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId));
+    Boolean(
+      checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId),
+    );
   const ctaLabel = submitting
     ? "Placing order…"
     : covered
       ? "Place order"
-    : selectedPayment && (selectedPayment.requiresRedirect || isStripePaymentMethod(selectedPayment))
-      ? "Continue to payment"
-      : "Place order";
+      : selectedPayment &&
+          (selectedPayment.requiresRedirect ||
+            isStripePaymentMethod(selectedPayment))
+        ? "Continue to payment"
+        : "Place order";
 
-  const isEmpty = hydrated && visibleLines.length === 0 && !submitting && !payingInline;
-  const nothingOrderable = hydrated && visibleLines.length > 0 && orderableLines.length === 0;
+  const isEmpty =
+    hydrated && visibleLines.length === 0 && !submitting && !payingInline;
+  const nothingOrderable =
+    hydrated && visibleLines.length > 0 && orderableLines.length === 0;
   const hasUnavailable = visibleLines.some((line) => line.isSellable === false);
   const showLayout =
-    hydrated && summaryLines.length > 0 && !hasUnavailable && (orderableLines.length > 0 || payingInline || submitting);
+    hydrated &&
+    summaryLines.length > 0 &&
+    !hasUnavailable &&
+    (orderableLines.length > 0 || payingInline || submitting);
 
   const bindShipping = (field: keyof AddressFields) => ({
     value: shipping[field] ?? "",
@@ -305,7 +349,10 @@ export function CheckoutPageView() {
 
   return (
     <div>
-      <section className={collectionHeadFlush} aria-labelledby="checkout-heading">
+      <section
+        className={collectionHeadFlush}
+        aria-labelledby="checkout-heading"
+      >
         <div className={pageContainer}>
           <nav className={crumbs} aria-label="Breadcrumb">
             <ol className={checkoutCrumbsList} role="list">
@@ -349,69 +396,83 @@ export function CheckoutPageView() {
               </button>
 
               <GooglePlacesProvider>
-              <form id="checkout-form" className={checkoutForm} noValidate onSubmit={handleSubmit}>
-                {missThis.length ? (
-                  <MissThisSwiper
-                    products={missThis}
-                    addingSlug={null}
-                    onAdd={(p) => void addFromCheckout(p)}
-                    canAdd={canAddToOrder}
+                <form
+                  id="checkout-form"
+                  className={checkoutForm}
+                  noValidate
+                  onSubmit={handleSubmit}
+                >
+                  {missThis.length ? (
+                    <MissThisSwiper
+                      products={missThis}
+                      addingSlug={null}
+                      onAdd={(p) => void addFromCheckout(p)}
+                      canAdd={canAddToOrder}
+                    />
+                  ) : null}
+
+                  <CheckoutDelivery
+                    email={email}
+                    onEmail={setEmail}
+                    shipping={shipping}
+                    bind={bindShipping}
+                    onPhone={(phone) =>
+                      setShipping((prev) => ({ ...prev, phone }))
+                    }
+                    onAddress1={(value) =>
+                      setShipping((prev) => ({ ...prev, address1: value }))
+                    }
+                    onPlace={(parsed) =>
+                      applyGooglePlace(setShipping, parsed, countryCode)
+                    }
+                    countryCode={countryCode}
+                    regionSet={regionSet}
                   />
-                ) : null}
-
-
-                <CheckoutDelivery
-                  email={email}
-                  onEmail={setEmail}
-                  shipping={shipping}
-                  bind={bindShipping}
-                  onPhone={(phone) => setShipping((prev) => ({ ...prev, phone }))}
-                  onAddress1={(value) => setShipping((prev) => ({ ...prev, address1: value }))}
-                  onPlace={(parsed) => applyGooglePlace(setShipping, parsed, countryCode)}
-                  countryCode={countryCode}
-                  regionSet={regionSet}
-                />
-                <CheckoutShippingMethod
-                  methods={checkout.deliveryMethods}
-                  selectedId={checkout.selectedDeliveryId}
-                  status={checkout.status}
-                  submitting={submitting}
-                  currency={currency}
-                  onSelect={(id) => void checkout.chooseDelivery(id)}
-                />
-                <CheckoutBilling
-                  billingSame={billingSame}
-                  onBillingSame={setBillingSame}
-                  billing={billing}
-                  bind={bindBilling}
-                  onAddress1={(value) => setBilling((prev) => ({ ...prev, address1: value }))}
-                  onPlace={(parsed) => applyGooglePlace(setBilling, parsed, countryCode)}
-                  countryCode={countryCode}
-                  regionSet={regionSet}
-                />
-                <CheckoutPayment
-                  methods={checkout.paymentMethods}
-                  countryCode={countryCode}
-                  selectedId={checkout.selectedPaymentId}
-                  status={checkout.status}
-                  submitting={submitting}
-                  errorMsg={checkout.errorMsg}
-                  onRetry={checkout.retry}
-                  onSelect={(id) => checkout.choosePayment(id)}
-                  canSubmit={canSubmit}
-                  ctaLabel={ctaLabel}
-                  amountPayable={amountPayable}
-                  currency={currency}
-                  inlinePayment={checkout.inlinePayment}
-                  shopperEmail={email}
-                  shopperName={shipping.fullName}
-                  shopperPhone={shipping.phone}
-                  onPayNow={() => {
-                    const form = document.getElementById("checkout-form");
-                    if (form instanceof HTMLFormElement) form.requestSubmit();
-                  }}
-                />
-              </form>
+                  <CheckoutShippingMethod
+                    methods={checkout.deliveryMethods}
+                    selectedId={checkout.selectedDeliveryId}
+                    status={checkout.status}
+                    submitting={submitting}
+                    currency={currency}
+                    onSelect={(id) => void checkout.chooseDelivery(id)}
+                  />
+                  <CheckoutBilling
+                    billingSame={billingSame}
+                    onBillingSame={setBillingSame}
+                    billing={billing}
+                    bind={bindBilling}
+                    onAddress1={(value) =>
+                      setBilling((prev) => ({ ...prev, address1: value }))
+                    }
+                    onPlace={(parsed) =>
+                      applyGooglePlace(setBilling, parsed, countryCode)
+                    }
+                    countryCode={countryCode}
+                    regionSet={regionSet}
+                  />
+                  <CheckoutPayment
+                    methods={checkout.paymentMethods}
+                    countryCode={countryCode}
+                    selectedId={checkout.selectedPaymentId}
+                    status={checkout.status}
+                    submitting={submitting}
+                    errorMsg={checkout.errorMsg}
+                    onRetry={checkout.retry}
+                    onSelect={(id) => checkout.choosePayment(id)}
+                    canSubmit={canSubmit}
+                    ctaLabel={ctaLabel}
+                    amountPayable={amountPayable}
+                    currency={currency}
+                    inlinePayment={checkout.inlinePayment}
+                    shopperEmail={email}
+                    shopperName={shipping.fullName}
+                    shopperPhone={shipping.phone}
+                    onPayNow={() => {
+                      const form = document.getElementById("checkout-form");
+                      if (form instanceof HTMLFormElement) form.requestSubmit();
+                    }}
+                  />
+                </form>
               </GooglePlacesProvider>
 
               <CheckoutSummary
@@ -441,7 +502,10 @@ export function CheckoutPageView() {
               <p className={stateEyebrow}>Can’t check out yet</p>
               <h2 className={doneTitle}>An item in your bag is unavailable.</h2>
               <p>Remove it from your bag, then continue.</p>
-              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+              <LocaleLink
+                className={`${checkoutCta} ${checkoutCtaInline}`}
+                href="/cart"
+              >
                 <span>Back to bag</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
@@ -451,9 +515,17 @@ export function CheckoutPageView() {
           {nothingOrderable ? (
             <section className={checkoutEmpty}>
               <p className={stateEyebrow}>Can’t check out yet</p>
-              <h2 className={doneTitle}>These items can’t be ordered online.</h2>
-              <p>Please return to your bag and add them again from the collection.</p>
-              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
+              <h2 className={doneTitle}>
+                These items can’t be ordered online.
+              </h2>
+              <p>
+                Please return to your bag and add them again from the
+                collection.
+              </p>
+              <LocaleLink
+                className={`${checkoutCta} ${checkoutCtaInline}`}
+                href="/cart"
+              >
                 <span>Back to bag</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
@@ -464,7 +536,10 @@ export function CheckoutPageView() {
             <section className={checkoutEmpty} id="checkout-empty">
               <p className={stateEyebrow}>Empty bag</p>
               <h2 className={doneTitle}>Nothing to check out yet.</h2>
-              <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
+              <LocaleLink
+                className={`${checkoutCta} ${checkoutCtaInline}`}
+                href="/products"
+              >
                 <span>Explore the collection</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>

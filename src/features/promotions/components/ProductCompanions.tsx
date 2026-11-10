@@ -6,7 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import { addCartItems } from "@/features/cart/api/cart.service";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { fetchProductCompanions, previewProductCompanions } from "../api/promotions.service";
+import {
+  fetchProductCompanions,
+  previewProductCompanions,
+} from "../api/promotions.service";
 import type { CompanionProduct } from "../types/companions";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import { bottle } from "@/styles/landingChrome";
@@ -37,7 +40,10 @@ function amountOf(value: string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function companionCard(product: CompanionProduct, currency: string): CatalogProduct | null {
+function companionCard(
+  product: CompanionProduct,
+  currency: string,
+): CatalogProduct | null {
   if (!product.slug) return null;
   return toCatalogProduct({
     id: product.productId,
@@ -59,7 +65,8 @@ function companionCard(product: CompanionProduct, currency: string): CatalogProd
 function pieceCardClass(on: boolean, inStock: boolean) {
   const base =
     "group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-2 transition-[border-color,box-shadow,background-color] duration-200";
-  if (!inStock) return `${base} cursor-not-allowed border-[#241f1b]/10 opacity-50`;
+  if (!inStock)
+    return `${base} cursor-not-allowed border-[#241f1b]/10 opacity-50`;
   if (on) {
     return `${base} border-copper bg-[#fffaf6] shadow-[0_0_0_1px_#8c4435,0_16px_36px_rgba(140,68,53,0.16)]`;
   }
@@ -72,8 +79,18 @@ function SelectMark() {
       aria-hidden="true"
       className="grid size-7 shrink-0 place-items-center rounded-full border border-[#241f1b]/18 bg-white text-transparent shadow-[0_1px_2px_rgba(36,31,27,0.06)] transition-colors peer-checked:border-copper peer-checked:bg-copper peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-copper/35 peer-disabled:opacity-40"
     >
-      <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
-        <path d="M3.2 8.2 6.4 11.2 12.8 4.6" strokeLinecap="round" strokeLinejoin="round" />
+      <svg
+        viewBox="0 0 16 16"
+        className="size-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+      >
+        <path
+          d="M3.2 8.2 6.4 11.2 12.8 4.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );
@@ -101,11 +118,19 @@ export function ProductCompanions({
   const cartId = useCartStore((state) => state.cartId);
   const setCartFromApi = useCartStore((state) => state.setCartFromApi);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
-  const currency = useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
+  const currency =
+    useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
   const [selected, setSelected] = useState<string[]>([]);
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [preview, setPreview] = useState<{ key: string; before: string | null; saving: string | null; total: string | null; message: string | null; ready: boolean } | null>(null);
+  const [preview, setPreview] = useState<{
+    key: string;
+    before: string | null;
+    saving: string | null;
+    total: string | null;
+    message: string | null;
+    ready: boolean;
+  } | null>(null);
 
   // Pre-select the current product once per product, when its data arrives.
   if (data && seededFor !== productId) {
@@ -133,7 +158,10 @@ export function ProductCompanions({
     const skus = selectionKey.split("|");
     let cancel = false;
     const timer = window.setTimeout(() => {
-      void previewProductCompanions(productId, skus.map((sku) => ({ sku }))).then((result) => {
+      void previewProductCompanions(
+        productId,
+        skus.map((sku) => ({ sku })),
+      ).then((result) => {
         if (cancel) return;
         setPreview({
           key: selectionKey,
@@ -151,7 +179,9 @@ export function ProductCompanions({
     };
   }, [productId, selectionKey]);
 
-  const groups = (data?.groups ?? []).filter((group) => !omitGroupIds.includes(group.id));
+  const groups = (data?.groups ?? []).filter(
+    (group) => !omitGroupIds.includes(group.id),
+  );
   if (query.isPending) return null;
   if (query.isError || !data || groups.length === 0) return <>{fallback}</>;
 
@@ -161,11 +191,18 @@ export function ProductCompanions({
     const product = products.get(sku);
     if (!product?.inStock) return;
     setSelected((current) => {
-      const next = current.includes(sku) ? current.filter((item) => item !== sku) : [...current, sku];
-      trackPromotion(next.includes(sku) ? "promotion_product_selected" : "promotion_product_removed", {
-        market: marketCode,
-        surface: "pdp",
-      });
+      const next = current.includes(sku)
+        ? current.filter((item) => item !== sku)
+        : [...current, sku];
+      trackPromotion(
+        next.includes(sku)
+          ? "promotion_product_selected"
+          : "promotion_product_removed",
+        {
+          market: marketCode,
+          surface: "pdp",
+        },
+      );
       return next;
     });
   }
@@ -174,12 +211,16 @@ export function ProductCompanions({
   const later = groups.slice(1);
   const pieces = [
     ...(data.current?.inStock ? [data.current] : []),
-    ...(bundle?.products ?? []).filter((product) => product.sku !== data.current?.sku),
+    ...(bundle?.products ?? []).filter(
+      (product) => product.sku !== data.current?.sku,
+    ),
   ];
   const subtotal = amountOf(fresh?.before);
   const total = amountOf(fresh?.total);
   const discount =
-    subtotal != null && total != null ? Math.max(0, Number((subtotal - total).toFixed(2))) : null;
+    subtotal != null && total != null
+      ? Math.max(0, Number((subtotal - total).toFixed(2)))
+      : null;
   const ready = Boolean(fresh?.ready) && !busy && chosen.length > 0;
 
   return (
@@ -189,7 +230,9 @@ export function ProductCompanions({
           <div className={pageContainer}>
             <div className="mb-8 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_h2]:m-0 [&_h2]:text-[clamp(1.6rem,3vw,2.2rem)] [&_h2]:font-medium">
               <div>
-                <p className="m-0 mb-1.5 text-[0.72rem] font-bold tracking-[0.08em] text-copper uppercase">Often bought together</p>
+                <p className="m-0 mb-1.5 text-[0.72rem] font-bold tracking-[0.08em] text-copper uppercase">
+                  Often bought together
+                </p>
                 <h2 id="companion-heading">{bundle.heading}</h2>
               </div>
               {fresh?.message ? <p className="m-0">{fresh.message}</p> : null}
@@ -199,15 +242,31 @@ export function ProductCompanions({
                 {pieces.map((product) => {
                   const current = product.sku === data.current?.sku;
                   const on = selected.includes(product.sku);
-                  const label = current ? data.copy.thisProduct : data.copy.addSelected;
+                  const label = current
+                    ? data.copy.thisProduct
+                    : data.copy.addSelected;
                   const media = product.image ? (
-                    <MediaImage src={product.image} alt="" width={240} height={240} className="aspect-square w-full object-contain p-3" />
+                    <MediaImage
+                      src={product.image}
+                      alt=""
+                      width={240}
+                      height={240}
+                      className="aspect-square w-full object-contain p-3"
+                    />
                   ) : (
-                    <span className={`${bottle} aspect-square w-full`} aria-hidden="true" />
+                    <span
+                      className={`${bottle} aspect-square w-full`}
+                      aria-hidden="true"
+                    />
                   );
                   return (
-                    <li key={product.sku} className={pieceCardClass(on, product.inStock)}>
-                      <label className={`flex items-center justify-between gap-2 px-1.5 py-1 ${product.inStock ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                    <li
+                      key={product.sku}
+                      className={pieceCardClass(on, product.inStock)}
+                    >
+                      <label
+                        className={`flex items-center justify-between gap-2 px-1.5 py-1 ${product.inStock ? "cursor-pointer" : "cursor-not-allowed"}`}
+                      >
                         <input
                           type="checkbox"
                           className="peer sr-only"
@@ -216,13 +275,18 @@ export function ProductCompanions({
                           aria-label={`${label} ${product.title}`}
                           onChange={() => toggle(product.sku)}
                         />
-                        <span className={`text-[0.68rem] font-bold tracking-[0.08em] uppercase transition-colors ${on ? "text-copper" : "text-[#6f6152]"}`}>
+                        <span
+                          className={`text-[0.68rem] font-bold tracking-[0.08em] uppercase transition-colors ${on ? "text-copper" : "text-[#6f6152]"}`}
+                        >
                           {label}
                         </span>
                         <SelectMark />
                       </label>
                       {product.slug ? (
-                        <LocaleLink href={`/products/${product.slug}`} className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]">
+                        <LocaleLink
+                          href={`/products/${product.slug}`}
+                          className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]"
+                        >
                           {media}
                         </LocaleLink>
                       ) : (
@@ -231,8 +295,14 @@ export function ProductCompanions({
                         </span>
                       )}
                       <div className="flex flex-1 flex-col gap-1 px-2 pt-3 pb-2">
-                        <h3 className="m-0 font-[family-name:var(--font-display)] text-[0.98rem] leading-snug text-[#2a201a]">{product.title}</h3>
-                        {product.price ? <p className="m-0 text-[0.85rem] font-semibold text-copper">{product.price}</p> : null}
+                        <h3 className="m-0 font-[family-name:var(--font-display)] text-[0.98rem] leading-snug text-[#2a201a]">
+                          {product.title}
+                        </h3>
+                        {product.price ? (
+                          <p className="m-0 text-[0.85rem] font-semibold text-copper">
+                            {product.price}
+                          </p>
+                        ) : null}
                       </div>
                     </li>
                   );
@@ -250,7 +320,9 @@ export function ProductCompanions({
                     total={total}
                   />
                 ) : null}
-                {fresh?.message ? <p className="mb-3 text-[0.85rem]">{fresh.message}</p> : null}
+                {fresh?.message ? (
+                  <p className="mb-3 text-[0.85rem]">{fresh.message}</p>
+                ) : null}
                 <button
                   className={ready ? cartCta : `${cartCta} ${cartCtaDisabled}`}
                   type="button"
@@ -258,11 +330,17 @@ export function ProductCompanions({
                   onClick={() => {
                     if (!ready) return;
                     setBusy(true);
-                    void addCartItems(chosen.map((sku) => ({ sku, quantity: 1 })), cartId)
+                    void addCartItems(
+                      chosen.map((sku) => ({ sku, quantity: 1 })),
+                      cartId,
+                    )
                       .then((cart) => {
                         setCartFromApi(cart);
                         setCartOpen(true);
-                        trackPromotion("promotion_multi_add", { market: marketCode, surface: "pdp" });
+                        trackPromotion("promotion_multi_add", {
+                          market: marketCode,
+                          surface: "pdp",
+                        });
                       })
                       .finally(() => setBusy(false));
                   }}

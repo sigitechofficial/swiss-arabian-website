@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import type { ProductSummary } from "@/features/catalog/types/product";
-import { useLandingProducts } from "../../hooks/useLandingProducts";
+import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { formatMoney } from "../../utils/formatMoney";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
 
@@ -107,11 +107,10 @@ export function LandingBundles({
   // Start closed so SSR / first paint never flash a fixed bottom sheet
   // over the hero. Desktop flips open in useLayoutEffect.
   const [open, setOpen] = useState(false);
-  const { data } = useLandingProducts(8);
+  // Real products of the market's bundles collection (none: the list is empty).
+  const fetched = useHomeCollectionProducts("bundles", 2);
   const fromCms = productsProp !== undefined;
-  const bundleItems = fromCms
-    ? productsProp.slice(0, 8)
-    : (data?.products ?? []).slice(0, 2);
+  const bundleItems = fromCms ? productsProp.slice(0, 8) : fetched.products.slice(0, 2);
 
   useLayoutEffect(() => {
     const mq = window.matchMedia(MOBILE_SHEET_BREAKPOINT);

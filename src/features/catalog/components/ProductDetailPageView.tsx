@@ -190,6 +190,28 @@ export function ProductDetailPageView({
         </div>
       );
     }
+    // A product that does not exist answers 404 on the server. Getting here
+    // after a failed request means the store could not be reached: say so.
+    if (clientProduct.isError) {
+      return (
+        <div>
+          <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`} role="alert">
+            <h1 className="font-display text-[2rem] leading-[1.05] font-medium tracking-[0.005em]">
+              {copy("productLoadFailed")}
+            </h1>
+            <p className="mt-4">
+              <button
+                type="button"
+                className="underline underline-offset-2"
+                onClick={() => void clientProduct.refetch()}
+              >
+                {copy("tryAgain")}
+              </button>
+            </p>
+          </section>
+        </div>
+      );
+    }
     return (
       <div>
         <section className={`${pageContainer} py-[clamp(3.5rem,8vw,7rem)]`}>

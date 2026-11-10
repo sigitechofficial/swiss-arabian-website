@@ -2,28 +2,44 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
 
-import { absolutizeJsonLd, productJsonLd } from "@/features/catalog/components/CatalogJsonLd";
-import { catalogMetadata } from "./catalogPage";
+import {
+  absolutizeJsonLd,
+  productJsonLd,
+} from "@/features/catalog/components/CatalogJsonLd";
+import { buildCatalogMetadata } from "./catalogPage";
 import { absoluteUrl, originFromHeaders } from "./requestOrigin";
 
-const headersOf = (values: Record<string, string>) => (name: string) => values[name] ?? null;
+const headersOf = (values: Record<string, string>) => (name: string) =>
+  values[name] ?? null;
 
 describe("SEO addresses and product data", () => {
   it("origin: forwarded host/proto win; localhost is http; others default to https", () => {
     expect(
       originFromHeaders(
-        headersOf({ "x-forwarded-host": "qa.swissarabian.com, edge", "x-forwarded-proto": "https", host: "127.0.0.1:3004" }),
+        headersOf({
+          "x-forwarded-host": "qa.swissarabian.com, edge",
+          "x-forwarded-proto": "https",
+          host: "127.0.0.1:3004",
+        }),
       ),
     ).toBe("https://qa.swissarabian.com");
-    expect(originFromHeaders(headersOf({ host: "localhost:3004" }))).toBe("http://localhost:3004");
-    expect(originFromHeaders(headersOf({ host: "uae.swissarabian.com" }))).toBe("https://uae.swissarabian.com");
+    expect(originFromHeaders(headersOf({ host: "localhost:3004" }))).toBe(
+      "http://localhost:3004",
+    );
+    expect(originFromHeaders(headersOf({ host: "uae.swissarabian.com" }))).toBe(
+      "https://uae.swissarabian.com",
+    );
     expect(originFromHeaders(headersOf({}))).toBeNull();
   });
 
   it("structured data: site paths become absolute; other text is unchanged", () => {
     const origin = "https://uae.swissarabian.com";
-    expect(absoluteUrl(origin, "/products/x")).toBe("https://uae.swissarabian.com/products/x");
-    expect(absoluteUrl(origin, "https://cdn.example/a.jpg")).toBe("https://cdn.example/a.jpg");
+    expect(absoluteUrl(origin, "/products/x")).toBe(
+      "https://uae.swissarabian.com/products/x",
+    );
+    expect(absoluteUrl(origin, "https://cdn.example/a.jpg")).toBe(
+      "https://cdn.example/a.jpg",
+    );
     expect(
       absolutizeJsonLd(
         {
@@ -36,7 +52,9 @@ describe("SEO addresses and product data", () => {
     ).toEqual({
       url: "https://uae.swissarabian.com/products/x",
       name: "/not a url field",
-      itemListElement: [{ item: "https://uae.swissarabian.com/collections/men" }],
+      itemListElement: [
+        { item: "https://uae.swissarabian.com/collections/men" },
+      ],
     });
   });
 
@@ -50,6 +68,7 @@ describe("SEO addresses and product data", () => {
       price: 120,
       currency: "QAR",
       inStock: true,
+      brand: "Swiss Arabian",
       rating: { average: 4.75, count: 8 },
     });
     expect(ld).toMatchObject({
@@ -62,19 +81,45 @@ describe("SEO addresses and product data", () => {
       },
       aggregateRating: { ratingValue: 4.75, reviewCount: 8 },
     });
-    expect(productJsonLd({ name: "x", url: "/p", price: null }).offers).toBeUndefined();
+    const bare = productJsonLd({ name: "x", url: "/p", price: null });
+    expect(bare.offers).toBeUndefined();
+    expect(bare.brand).toBeUndefined();
   });
 
   it("titles that already name the brand are not suffixed again; share image set", () => {
-    const meta = catalogMetadata({
-      locale: "en",
-      path: "/products/leather-and-oud",
-      title: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE",
-      image: "https://blob/a.webp",
+    const brand = { name: "Swiss Arabian", names: ["Swiss Arabian", "سويس أرابيان"] };
+    const meta = buildCatalogMetadata(
+      {
+        locale: "en",
+        path: "/products/leather-and-oud",
+        title: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE",
+        image: "https://blob/a.webp",
+      },
+      { brand, countryCode: "AE" },
+    );
+    expect(meta.title).toEqual({
+      absolute: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE",
     });
-    expect(meta.title).toEqual({ absolute: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE" });
     expect(meta.twitter).toMatchObject({ card: "summary_large_image" });
-    expect(meta.openGraph).toMatchObject({ siteName: "Swiss Arabian", images: [{ url: "https://blob/a.webp" }] });
-    expect(catalogMetadata({ locale: "en", path: "/collections/men", title: "Men" }).title).toBe("Men");
+    expect(meta.openGraph).toMatchObject({
+      siteName: "Swiss Arabian",
+      locale: "en_AE",
+      images: [{ url: "https://blob/a.webp" }],
+    });
+    expect(
+      buildCatalogMetadata(
+        { locale: "en", path: "/collections/men", title: "Men" },
+        { brand },
+      ).title,
+    ).toBe("Men");
+    expect(
+      buildCatalogMetadata(
+        { locale: "ar", path: "/collections/men", title: "رجال | سويس أرابيان" },
+        { brand, countryCode: "QA" },
+      ),
+    ).toMatchObject({
+      title: { absolute: "رجال | سويس أرابيان" },
+      openGraph: { locale: "ar_QA" },
+    });
   });
 });

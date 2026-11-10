@@ -42,10 +42,11 @@ export function EmptyBagRecovery({
   const [busy, setBusy] = useState<string | null>(null);
   const query = useApiQuery(
     ["promotions", "empty-bag", zoneCode],
-    () => fetchEmptyBag({
-      campaignCode: readEmptyOrigin(zoneCode),
-      viewedProductIds: readViewed(),
-    }),
+    () =>
+      fetchEmptyBag({
+        campaignCode: readEmptyOrigin(zoneCode),
+        viewedProductIds: readViewed(),
+      }),
     { staleTime: 30_000 },
   );
   const bag = query.data;
@@ -58,7 +59,13 @@ export function EmptyBagRecovery({
           <h3 className={cartRecsTitle}>{railHeading(group.heading)}</h3>
           <div className={cartRecsSwiper} role="list">
             {group.products.map((product) => (
-              <article className={fit ? `${emptyBagCard} ${emptyBagCardFit}` : emptyBagCard} key={`${group.id}-${product.sku}`} role="listitem">
+              <article
+                className={
+                  fit ? `${emptyBagCard} ${emptyBagCardFit}` : emptyBagCard
+                }
+                key={`${group.id}-${product.sku}`}
+                role="listitem"
+              >
                 {product.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.image} alt="" />
@@ -69,18 +76,22 @@ export function EmptyBagRecovery({
                   {product.slug ? (
                     <LocaleLink
                       href={`/products/${product.slug}`}
-                      onClick={() => trackPromotion("promotion_recommendation_clicked", {
-                        campaignCode: group.campaignCode,
-                        market: zoneCode,
-                        surface,
-                      })}
+                      onClick={() =>
+                        trackPromotion("promotion_recommendation_clicked", {
+                          campaignCode: group.campaignCode,
+                          market: zoneCode,
+                          surface,
+                        })
+                      }
                     >
                       <p className={emptyBagName}>{product.title}</p>
                     </LocaleLink>
                   ) : (
                     <p className={emptyBagName}>{product.title}</p>
                   )}
-                  {product.price ? <p className={cartRecPrice}>{product.price}</p> : null}
+                  {product.price ? (
+                    <p className={cartRecPrice}>{product.price}</p>
+                  ) : null}
                 </div>
                 <button
                   type="button"

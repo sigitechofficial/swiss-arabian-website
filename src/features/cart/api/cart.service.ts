@@ -1,5 +1,11 @@
 import { getAccessToken } from "@/lib/auth/token";
-import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "@/lib/api/apiClient";
+import {
+  apiGet,
+  apiPost,
+  apiPatch,
+  apiPut,
+  apiDelete,
+} from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import type { ApiCart } from "../types/cart";
 import { getOrCreateGuestToken, getStoredCartId } from "../utils/guestToken";
@@ -54,7 +60,9 @@ export async function addCartItems(
   cartId?: string | null,
 ): Promise<ApiCart> {
   const params = buildCartParams({ cartId: cartId ?? getStoredCartId() });
-  return apiPost<ApiCart>(`/storefront/cart/items/batch?${params.toString()}`, { items });
+  return apiPost<ApiCart>(`/storefront/cart/items/batch?${params.toString()}`, {
+    items,
+  });
 }
 
 export async function addCartItem(opts: AddItemOpts): Promise<ApiCart> {
@@ -106,7 +114,10 @@ export async function validateCart(cartId: string): Promise<ApiCart> {
   });
 }
 
-export async function applyCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+export async function applyCartCoupon(
+  cartId: string,
+  code: string,
+): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiPost<ApiCart>(
     `/storefront/cart/${encodeURIComponent(cartId)}/coupons?${params.toString()}`,
@@ -114,7 +125,10 @@ export async function applyCartCoupon(cartId: string, code: string): Promise<Api
   );
 }
 
-export async function removeCartCoupon(cartId: string, code: string): Promise<ApiCart> {
+export async function removeCartCoupon(
+  cartId: string,
+  code: string,
+): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiDelete<ApiCart>(
     `/storefront/cart/${encodeURIComponent(cartId)}/coupons/${encodeURIComponent(code.trim())}?${params.toString()}`,
@@ -169,7 +183,9 @@ export async function applyCartLoyaltyRedemption(
   );
 }
 
-export async function removeCartLoyaltyRedemption(cartId: string): Promise<ApiCart> {
+export async function removeCartLoyaltyRedemption(
+  cartId: string,
+): Promise<ApiCart> {
   const params = buildCartParams({ cartId });
   return apiDelete<ApiCart>(
     `/storefront/cart/${encodeURIComponent(cartId)}/loyalty-redemption?${params.toString()}`,

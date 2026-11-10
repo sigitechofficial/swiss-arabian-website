@@ -18,7 +18,10 @@ import {
 import { pageContainer } from "@/styles/siteChrome";
 import { useHydrated } from "@/hooks/useHydrated";
 
-function asCatalog(product: EmptyBagProduct, currency: string): CatalogProduct | null {
+function asCatalog(
+  product: EmptyBagProduct,
+  currency: string,
+): CatalogProduct | null {
   if (!product.productId || !product.slug) return null;
   const amount = product.amount != null ? Number(product.amount) : NaN;
   return toCatalogProduct({
@@ -37,13 +40,21 @@ function asCatalog(product: EmptyBagProduct, currency: string): CatalogProduct |
   });
 }
 
-export function RecentlyViewed({ excludeProductId }: { excludeProductId: string }) {
+export function RecentlyViewed({
+  excludeProductId,
+}: {
+  excludeProductId: string;
+}) {
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
-  const currency = useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
+  const currency =
+    useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
   // Viewing history lives in browser storage: read it after hydration.
   const hydrated = useHydrated();
   const ids = useMemo(
-    () => (hydrated ? readViewed().filter((id) => id && id !== excludeProductId) : []),
+    () =>
+      hydrated
+        ? readViewed().filter((id) => id && id !== excludeProductId)
+        : [],
     [hydrated, excludeProductId],
   );
 
@@ -57,7 +68,10 @@ export function RecentlyViewed({ excludeProductId }: { excludeProductId: string 
   const group = query.data?.groups.find((item) => item.id === "viewed");
   const products = (group?.products ?? [])
     .map((product) => asCatalog(product, currency))
-    .filter((product): product is CatalogProduct => product != null && product.id !== excludeProductId)
+    .filter(
+      (product): product is CatalogProduct =>
+        product != null && product.id !== excludeProductId,
+    )
     .slice(0, 4);
 
   if (products.length === 0) return null;
@@ -72,7 +86,11 @@ export function RecentlyViewed({ excludeProductId }: { excludeProductId: string 
         </div>
         <ul className={relatedGrid} role="list">
           {products.map((product) => (
-            <CatalogProductCard key={product.id} product={product} dense={false} />
+            <CatalogProductCard
+              key={product.id}
+              product={product}
+              dense={false}
+            />
           ))}
         </ul>
       </div>

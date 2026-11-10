@@ -1,11 +1,15 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useState, type FormEvent } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
 import type { CheckoutSessionResponse } from "@/features/checkout/types/checkout";
 import { useGiftCardMutations } from "../hooks/useGiftCardMutations";
-import { visibleGiftCards, type PromotionSnapshotV1 } from "../types/promotions";
+import {
+  visibleGiftCards,
+  type PromotionSnapshotV1,
+} from "../types/promotions";
 import { giftCardErrorMessage } from "../utils/giftCardErrors";
 import {
   couponApplied,
@@ -30,18 +34,27 @@ export function GiftCardForm({
   snapshot?: PromotionSnapshotV1 | null;
   extraGiftCards?: unknown;
   checkoutSessionId?: string | null;
-  onCheckoutSession?: (session: CheckoutSessionResponse) => void | Promise<void>;
+  onCheckoutSession?: (
+    session: CheckoutSessionResponse,
+  ) => void | Promise<void>;
 }) {
   const fromStore = useCartStore((s) => s.promotions);
   const totals = useCartStore((s) => s.totals);
   const data = snapshot ?? fromStore;
   const cards = visibleGiftCards(data, extraGiftCards);
-  const currency = data?.context?.currencyCode ?? totals?.currency ?? "AED";
-  const { apply, remove, balance, cartId, checkoutSessionId: sessionId } =
-    useGiftCardMutations({
-      checkoutSessionId,
-      onCheckoutSession,
-    });
+  const marketCurrency = useMarketCurrency();
+  const currency =
+    data?.context?.currencyCode ?? totals?.currency ?? marketCurrency;
+  const {
+    apply,
+    remove,
+    balance,
+    cartId,
+    checkoutSessionId: sessionId,
+  } = useGiftCardMutations({
+    checkoutSessionId,
+    onCheckoutSession,
+  });
 
   const [code, setCode] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -102,9 +115,14 @@ export function GiftCardForm({
       {cards.map((card, index) => {
         const amount = Number(card.amount);
         return (
-          <div className={couponApplied} key={card.usageId ?? card.maskedCode ?? index}>
+          <div
+            className={couponApplied}
+            key={card.usageId ?? card.maskedCode ?? index}
+          >
             <div>
-              <p className={couponAppliedName}>{card.maskedCode || "Gift card"}</p>
+              <p className={couponAppliedName}>
+                {card.maskedCode || "Gift card"}
+              </p>
               <p className={couponAppliedCode}>Applied as payment</p>
             </div>
             {amount > 0 ? (

@@ -6,7 +6,12 @@ import { useCartStore, type CartLine } from "@/stores/useCartStore";
 import { cartLineToInsiderItem } from "../utils/insiderCartItem";
 import type { ApiCart } from "../types/cart";
 import { getStoredCartId, storeCartId } from "../utils/guestToken";
-import { addCartItem, getActiveCart, removeCartItem, updateCartItem } from "./cart.service";
+import {
+  addCartItem,
+  getActiveCart,
+  removeCartItem,
+  updateCartItem,
+} from "./cart.service";
 
 /**
  * Optimistic cart writes.
@@ -33,14 +38,20 @@ function applyServerCart(cart: ApiCart) {
 }
 
 function currentCartId(): string | null {
-  return latestCart?.cartId ?? useCartStore.getState().cartId ?? getStoredCartId();
+  return (
+    latestCart?.cartId ?? useCartStore.getState().cartId ?? getStoredCartId()
+  );
 }
 
 /** Server id for a line — from the store, or a response still held in this batch. */
 function serverItemId(variantId: string): string | null {
-  const line = useCartStore.getState().lines.find((l) => l.variantId === variantId);
+  const line = useCartStore
+    .getState()
+    .lines.find((l) => l.variantId === variantId);
   if (line?.cartItemId) return line.cartItemId;
-  const item = latestCart?.items.find((i) => i.variantId === variantId || i.sku === variantId);
+  const item = latestCart?.items.find(
+    (i) => i.variantId === variantId || i.sku === variantId,
+  );
   return item?.cartItemId ?? null;
 }
 
@@ -119,7 +130,10 @@ function enqueue(
   });
 }
 
-type LineDisplay = Omit<CartLine, "quantity" | "variantId" | "remote" | "cartItemId">;
+type LineDisplay = Omit<
+  CartLine,
+  "quantity" | "variantId" | "remote" | "cartItemId"
+>;
 
 /** Add a live catalog item: shows in the bag immediately, syncs behind. */
 export function addItemOptimistic(input: {
@@ -196,7 +210,8 @@ export function setQuantityOptimistic(variantId: string, quantity: number) {
     () => {
       const delta = quantity - snapshot.quantity;
       if (delta > 0) insiderAddToCart(cartLineToInsiderItem(snapshot, delta));
-      else if (delta < 0) insiderRemoveFromCart(cartLineToInsiderItem(snapshot, -delta));
+      else if (delta < 0)
+        insiderRemoveFromCart(cartLineToInsiderItem(snapshot, -delta));
     },
   );
 }

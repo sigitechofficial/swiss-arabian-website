@@ -12,7 +12,12 @@ function snapshot(amount: string, percentage: string): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: "SWISS_ARABIAN", zoneCode: "URD1", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: "SWISS_ARABIAN",
+      zoneCode: "URD1",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [
       {
         kind: "AUTOMATIC",

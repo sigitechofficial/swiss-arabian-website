@@ -26,7 +26,7 @@ function firstHostToken(value: string | null | undefined): string | null {
   return token.length > 0 ? token : null;
 }
 
-function isLoopbackHost(host: string): boolean {
+export function isLoopbackHost(host: string): boolean {
   const normalized = host.toLowerCase().replace(/:\d+$/, "");
   return (
     normalized === "localhost" ||
@@ -37,7 +37,7 @@ function isLoopbackHost(host: string): boolean {
 }
 
 /** Env override for local Sapil (`NEXT_PUBLIC_STOREFRONT_HOST`). */
-function configuredStorefrontHost(): string | null {
+export function configuredStorefrontHost(): string | null {
   const raw =
     env.storefrontHost?.trim() ||
     process.env.NEXT_PUBLIC_STOREFRONT_HOST?.trim() ||

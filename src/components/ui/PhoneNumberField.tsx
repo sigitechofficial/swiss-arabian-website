@@ -9,10 +9,16 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 import { phoneCc, phoneNum } from "@/styles/checkoutChrome";
+import { useMarket } from "@/providers/MarketProvider";
 
 /** Shown first — the markets the storefront actually ships to. */
 const PREFERRED: CountryCode[] = ["AE", "SA", "QA", "KW", "BH", "OM"];
-const DEFAULT_COUNTRY: CountryCode = "AE";
+const FALLBACK_COUNTRY: CountryCode = "AE";
+
+function asCountry(code: string | null | undefined): CountryCode | null {
+  const upper = code?.trim().toUpperCase();
+  return upper && (getCountries() as string[]).includes(upper) ? (upper as CountryCode) : null;
+}
 
 function countryName(country: string): string {
   try {
@@ -95,9 +101,17 @@ export function PhoneNumberField({
   autoComplete = "tel",
 }: PhoneNumberFieldProps) {
   const parsed = value ? parsePhoneNumberFromString(value) : undefined;
+  // An empty field starts on the selected market's country (+974 in Qatar).
+  const marketCountry = asCountry(useMarket().catalogContext?.countryCode) ?? FALLBACK_COUNTRY;
   const [country, setCountry] = useState<CountryCode>(
-    (parsed?.country as CountryCode | undefined) ?? DEFAULT_COUNTRY,
+    (parsed?.country as CountryCode | undefined) ?? marketCountry,
   );
+  // Follow a market switch while nothing has been typed yet.
+  const [lastMarketCountry, setLastMarketCountry] = useState(marketCountry);
+  if (marketCountry !== lastMarketCountry) {
+    setLastMarketCountry(marketCountry);
+    if (!value) setCountry(marketCountry);
+  }
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);

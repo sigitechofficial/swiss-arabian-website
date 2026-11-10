@@ -4,11 +4,21 @@ import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 
 export function OfferLanding({ code }: { code: string }) {
   const query = usePromotionDiscovery([]);
-  const offer = query.data?.offers.find((item) => item.campaignCode.toUpperCase() === code.toUpperCase())
-    ?? query.data?.tiles.find((item) => item.campaignCode.toUpperCase() === code.toUpperCase());
+  const offer =
+    query.data?.offers.find(
+      (item) => item.campaignCode.toUpperCase() === code.toUpperCase(),
+    ) ??
+    query.data?.tiles.find(
+      (item) => item.campaignCode.toUpperCase() === code.toUpperCase(),
+    );
   const chrome = query.data?.chrome;
   if (query.isLoading) return <p>{chrome?.loading ?? "Loading the offer."}</p>;
-  if (!offer || !chrome) return <p>{chrome?.unavailable ?? "This offer is not available in your market."}</p>;
+  if (!offer || !chrome)
+    return (
+      <p>
+        {chrome?.unavailable ?? "This offer is not available in your market."}
+      </p>
+    );
   return (
     <article>
       <p>{offer.badge}</p>

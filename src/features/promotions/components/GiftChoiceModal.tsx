@@ -56,7 +56,10 @@ export function GiftChoiceModal({
   async function select(sku: string) {
     setError(null);
     try {
-      await choice.select.mutateAsync({ sku, promotionCode: award.promotionCode });
+      await choice.select.mutateAsync({
+        sku,
+        promotionCode: award.promotionCode,
+      });
       onClose();
     } catch (caught) {
       const code = caught instanceof ApiClientError ? caught.code : null;
@@ -67,7 +70,12 @@ export function GiftChoiceModal({
 
   return createPortal(
     <div className={giftChoiceRoot}>
-      <button type="button" className={giftChoiceBackdrop} aria-label="Close gift choices" onClick={onClose} />
+      <button
+        type="button"
+        className={giftChoiceBackdrop}
+        aria-label="Close gift choices"
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
@@ -76,14 +84,19 @@ export function GiftChoiceModal({
       >
         <p className={giftChoiceKicker}>Free gift</p>
         <h2 id={titleId}>A gift is yours</h2>
-        <p className={giftChoiceLede}>Choose one. You can change it before checkout.</p>
+        <p className={giftChoiceLede}>
+          Choose one. You can change it before checkout.
+        </p>
         <ul className={giftChoiceList} aria-label="Free gift choices">
           {award.choices.map((gift, index) => {
             const product = catalog.get(gift.sku);
             const title = product?.title || giftDisplayName(gift);
             const image = product?.imageUrl || gift.imageUrl;
             return (
-              <li key={gift.sku} style={{ animationDelay: `${80 + index * 70}ms` }}>
+              <li
+                key={gift.sku}
+                style={{ animationDelay: `${80 + index * 70}ms` }}
+              >
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={image} alt={title} width={128} height={128} />

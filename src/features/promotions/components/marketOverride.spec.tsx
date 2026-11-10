@@ -37,7 +37,12 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [],
     lineAllocations: [],
     totals: { discountTotal: "0" },
@@ -46,7 +51,9 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   };
 }
 
-function row(partial: Partial<PromotionApplied> & Pick<PromotionApplied, "amount">): PromotionApplied {
+function row(
+  partial: Partial<PromotionApplied> & Pick<PromotionApplied, "amount">,
+): PromotionApplied {
   return {
     kind: "AUTOMATIC",
     code: "PROMO",
@@ -61,34 +68,88 @@ function row(partial: Partial<PromotionApplied> & Pick<PromotionApplied, "amount
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
-  useGiftChoiceStore.setState({ openCode: null, celebrate: false, flashing: false });
-  useCartStore.setState({ lines: [], promotions: null, totals: null, cartId: "cart-1" });
+  useGiftChoiceStore.setState({
+    openCode: null,
+    celebrate: false,
+    flashing: false,
+  });
+  useCartStore.setState({
+    lines: [],
+    promotions: null,
+    totals: null,
+    cartId: "cart-1",
+  });
 });
 
 describe("effective market quote", () => {
   it("shows the UAE applied benefit and ignores a higher base discount value", () => {
-    const item = row({ label: "20% off", discountValue: "20", amount: "40.00" });
-    render(<AppliedCampaigns snapshot={quote({ applied: [item], context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null } })} />);
+    const item = row({
+      label: "20% off",
+      discountValue: "20",
+      amount: "40.00",
+    });
+    render(
+      <AppliedCampaigns
+        snapshot={quote({
+          applied: [item],
+          context: {
+            brandCode: null,
+            zoneCode: "UAE",
+            currencyCode: "AED",
+            salesChannelCode: null,
+          },
+        })}
+      />,
+    );
     expect(screen.getByText("20% off")).toBeInTheDocument();
     expect(appliedPromotionView(item).amount).toBe(40);
     expect(screen.queryByText("15% off")).not.toBeInTheDocument();
   });
 
   it("shows the KSA overridden benefit instead of the campaign default", () => {
-    const item = row({ label: "15% off", discountValue: "20", amount: "30.00" });
-    render(<AppliedCampaigns snapshot={quote({ applied: [item], context: { brandCode: null, zoneCode: "KSA", currencyCode: "SAR", salesChannelCode: null } })} />);
+    const item = row({
+      label: "15% off",
+      discountValue: "20",
+      amount: "30.00",
+    });
+    render(
+      <AppliedCampaigns
+        snapshot={quote({
+          applied: [item],
+          context: {
+            brandCode: null,
+            zoneCode: "KSA",
+            currencyCode: "SAR",
+            salesChannelCode: null,
+          },
+        })}
+      />,
+    );
     expect(screen.getByText("15% off")).toBeInTheDocument();
     expect(screen.getByText("−SAR 30.00")).toBeInTheDocument();
     expect(screen.queryByText(/20%/)).not.toBeInTheDocument();
   });
 
   it("does not show a UAE-only product as discounted on a KSA quote", () => {
-    const ksa = quote({ applied: [], context: { brandCode: null, zoneCode: "KSA", currencyCode: "SAR", salesChannelCode: null } });
+    const ksa = quote({
+      applied: [],
+      context: {
+        brandCode: null,
+        zoneCode: "KSA",
+        currencyCode: "SAR",
+        salesChannelCode: null,
+      },
+    });
     render(<AppliedCampaigns snapshot={ksa} />);
-    expect(screen.queryByRole("list", { name: "Applied offers" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("list", { name: "Applied offers" }),
+    ).not.toBeInTheDocument();
     expect(
       offerQualificationMessage(
-        { qualification: { status: "INELIGIBLE" }, rejected: { reason: "REQUIRED_PRODUCT_MISSING" } },
+        {
+          qualification: { status: "INELIGIBLE" },
+          rejected: { reason: "REQUIRED_PRODUCT_MISSING" },
+        },
         "SAR",
       ),
     ).toBe("Add the required item to use this offer.");
@@ -104,7 +165,10 @@ describe("effective market quote", () => {
     expect(
       offerQualificationMessage(
         {
-          qualification: { status: "PENDING", pendingReason: "SHIPPING_METHOD_REQUIRED" },
+          qualification: {
+            status: "PENDING",
+            pendingReason: "SHIPPING_METHOD_REQUIRED",
+          },
           title: "Four collections",
         },
         "SAR",
@@ -116,7 +180,14 @@ describe("effective market quote", () => {
     render(
       <AppliedCampaigns
         snapshot={quote({
-          applied: [row({ code: "ALL", label: "All products 15% off", amount: "15.00", discountValue: "20" })],
+          applied: [
+            row({
+              code: "ALL",
+              label: "All products 15% off",
+              amount: "15.00",
+              discountValue: "20",
+            }),
+          ],
         })}
       />,
     );
@@ -166,7 +237,9 @@ describe("effective market quote", () => {
               promotionCode: "GWP",
               status: "REMOVED",
               message: null,
-              giftItems: [{ sku: "A", quantity: 1, name: "Gift A", imageUrl: null }],
+              giftItems: [
+                { sku: "A", quantity: 1, name: "Gift A", imageUrl: null },
+              ],
               choices: [],
             },
           ],
@@ -191,8 +264,12 @@ describe("effective market quote", () => {
   });
 
   it("shows each market's server shipping discount", () => {
-    const uae = quote({ totals: { discountTotal: "0", shippingDiscount: "50.00" } });
-    const ksa = quote({ totals: { discountTotal: "0", shippingDiscount: "25.00" } });
+    const uae = quote({
+      totals: { discountTotal: "0", shippingDiscount: "50.00" },
+    });
+    const ksa = quote({
+      totals: { discountTotal: "0", shippingDiscount: "25.00" },
+    });
     expect(shippingDiscountAmount(uae)).toBe(50);
     expect(shippingDiscountAmount(ksa)).toBe(25);
     render(
@@ -207,7 +284,9 @@ describe("effective market quote", () => {
         amountPayable={150}
       />,
     );
-    expect(screen.getByText("Shipping discount").nextElementSibling).toHaveTextContent("−AED 50.00");
+    expect(
+      screen.getByText("Shipping discount").nextElementSibling,
+    ).toHaveTextContent("−AED 50.00");
   });
 
   it("keeps cart totals and checkout payable on the server figures", () => {
@@ -223,11 +302,23 @@ describe("effective market quote", () => {
         amountPayable={150}
       />,
     );
-    expect(screen.getByText("Subtotal").nextElementSibling).toHaveTextContent("AED 200.00");
-    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 230.00");
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 150.00");
-    const stale = quote({ totals: { discountTotal: "20", amountPayable: "99.00" } });
-    expect(amountPayableFrom(checkoutQuoteSnapshot({ promotions: stale }, stale), ["150.00"])).toBe(150);
+    expect(screen.getByText("Subtotal").nextElementSibling).toHaveTextContent(
+      "AED 200.00",
+    );
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(
+      "AED 230.00",
+    );
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 150.00",
+    );
+    const stale = quote({
+      totals: { discountTotal: "20", amountPayable: "99.00" },
+    });
+    expect(
+      amountPayableFrom(checkoutQuoteSnapshot({ promotions: stale }, stale), [
+        "150.00",
+      ]),
+    ).toBe(150);
   });
 
   it("shows a stored historical gift without a live market quote", () => {
@@ -235,7 +326,12 @@ describe("effective market quote", () => {
       <HistoricalGiftNote
         className="note"
         snapshot={{
-          gifts: [{ type: "GIFT_WITH_PURCHASE", giftItems: [{ sku: "A", quantity: 1 }] }],
+          gifts: [
+            {
+              type: "GIFT_WITH_PURCHASE",
+              giftItems: [{ sku: "A", quantity: 1 }],
+            },
+          ],
         }}
       />,
     );
@@ -244,7 +340,16 @@ describe("effective market quote", () => {
 
   it("clears the previous market promotion presentation", () => {
     useCartStore.setState({
-      lines: [{ variantId: "v1", slug: "rose", title: "Rose", unitPrice: 100, currency: "AED", quantity: 1 }],
+      lines: [
+        {
+          variantId: "v1",
+          slug: "rose",
+          title: "Rose",
+          unitPrice: 100,
+          currency: "AED",
+          quantity: 1,
+        },
+      ],
       promotions: quote({
         applied: [row({ label: "20% off", amount: "20.00" })],
         totals: { discountTotal: "20.00", shippingDiscount: "50.00" },
@@ -255,7 +360,9 @@ describe("effective market quote", () => {
             status: null,
             message: null,
             giftItems: [],
-            choices: [{ sku: "A", quantity: 1, name: "Gift A", imageUrl: null }],
+            choices: [
+              { sku: "A", quantity: 1, name: "Gift A", imageUrl: null },
+            ],
           },
         ],
       }),

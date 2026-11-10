@@ -30,8 +30,8 @@ const PAGE_REDIRECTS: Record<string, string> = {
   "our-stores": "/stores",
   "track-order": "/track",
   "track-your-order": "/track",
-  "gift-box": "/gift-box",
-  "gift-cards": "/gift-cards",
+  // Gift sets differ per market (giftsets-gifts, gifting-collection …).
+  "gift-box": "/collections",
   subscription: "/subscriptions",
   subscriptions: "/subscriptions",
 };

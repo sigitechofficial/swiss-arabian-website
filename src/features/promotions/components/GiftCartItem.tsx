@@ -66,7 +66,10 @@ export function GiftCartItem({
   const title = giftCardTitle(line, product);
   const imageUrl = product?.imageUrl || line.imageUrl;
   const money = product?.currency?.trim() || currency;
-  const list = product?.price != null && product.price > 0 ? product.price * line.quantity : null;
+  const list =
+    product?.price != null && product.price > 0
+      ? product.price * line.quantity
+      : null;
 
   if (variant === "drawer") {
     return (
@@ -80,7 +83,11 @@ export function GiftCartItem({
         <div className={giftDrawerBody}>
           <div className={drawerLineTop}>
             <p className={drawerLineName}>{title}</p>
-            <GiftPrice list={list} currency={money} className={drawerLinePrice} />
+            <GiftPrice
+              list={list}
+              currency={money}
+              className={drawerLinePrice}
+            />
           </div>
           <div className={giftDrawerMeta}>
             <span className={drawerLineTag}>Free gift</span>

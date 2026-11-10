@@ -39,7 +39,9 @@ export function GiftWithPurchase({
   const data = snapshot ?? fromStore;
   const awards = readGiftAwards(data);
   const catalog = useGiftCatalogMap(
-    awards.flatMap((award) => [...award.giftItems, ...award.choices].map((gift) => gift.sku)),
+    awards.flatMap((award) =>
+      [...award.giftItems, ...award.choices].map((gift) => gift.sku),
+    ),
   );
 
   if (!awards.length) return null;
@@ -60,7 +62,13 @@ export function GiftWithPurchase({
           return (
             <div className={promoGiftsPrompt} key={key}>
               <p className={promoGiftsTitle}>A free gift is waiting</p>
-              <button type="button" className={promoGiftsChoose} onClick={() => useGiftChoiceStore.getState().open(giftAwardCode(award))}>
+              <button
+                type="button"
+                className={promoGiftsChoose}
+                onClick={() =>
+                  useGiftChoiceStore.getState().open(giftAwardCode(award))
+                }
+              >
                 Choose your free gift
               </button>
             </div>
@@ -74,14 +82,22 @@ export function GiftWithPurchase({
                 line={gift}
                 product={catalog.get(gift.sku)}
                 currency={currency}
-                variant={surface === "drawer" ? "drawer" : selectable ? "cart" : "checkout"}
+                variant={
+                  surface === "drawer"
+                    ? "drawer"
+                    : selectable
+                      ? "cart"
+                      : "checkout"
+                }
               />
             ))}
             {selectable && canChangeGift(award) ? (
               <button
                 type="button"
                 className={promoGiftsChange}
-                onClick={() => useGiftChoiceStore.getState().open(giftAwardCode(award))}
+                onClick={() =>
+                  useGiftChoiceStore.getState().open(giftAwardCode(award))
+                }
               >
                 Change gift
               </button>

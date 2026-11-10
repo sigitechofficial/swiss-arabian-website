@@ -15,14 +15,22 @@ import type { PromotionSnapshotV1 } from "../types/promotions";
 const select = vi.hoisted(() => vi.fn());
 
 vi.mock("../hooks/useGiftCatalog", async () => {
-  const actual = await vi.importActual<typeof import("../hooks/useGiftCatalog")>("../hooks/useGiftCatalog");
+  const actual = await vi.importActual<
+    typeof import("../hooks/useGiftCatalog")
+  >("../hooks/useGiftCatalog");
   return {
     ...actual,
     useGiftCatalogMap: (skus: string[]) => {
       const map = new Map();
       for (const sku of skus) {
         if (sku.startsWith("shopify:")) {
-          map.set(sku, { title: "ROSE 01", imageUrl: "/rose.png", sku: "ROSE-01", price: 17, currency: "AED" });
+          map.set(sku, {
+            title: "ROSE 01",
+            imageUrl: "/rose.png",
+            sku: "ROSE-01",
+            price: 17,
+            currency: "AED",
+          });
         }
       }
       return map;
@@ -45,7 +53,12 @@ function snapshot(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [
       {
         kind: "AUTOMATIC",
@@ -68,7 +81,11 @@ afterEach(() => {
   cleanup();
   select.mockReset();
   sessionStorage.clear();
-  useGiftChoiceStore.setState({ openCode: null, celebrate: false, flashing: false });
+  useGiftChoiceStore.setState({
+    openCode: null,
+    celebrate: false,
+    flashing: false,
+  });
   useCartStore.setState({ promotions: null, cartId: "cart-1", totals: null });
 });
 
@@ -100,19 +117,30 @@ describe("gift with purchase", () => {
               promotionCode: "GWP1",
               status: null,
               message: null,
-              giftItems: [{ sku: "OUD-SAMPLE", quantity: 1, name: "Arabian Oud Sample", imageUrl: null }],
+              giftItems: [
+                {
+                  sku: "OUD-SAMPLE",
+                  quantity: 1,
+                  name: "Arabian Oud Sample",
+                  imageUrl: null,
+                },
+              ],
               choices: [],
             },
           ],
         })}
       />,
     );
-    expect(screen.getByRole("heading", { name: "Arabian Oud Sample" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Arabian Oud Sample" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.queryByText("Free gift")).not.toBeInTheDocument();
     expect(screen.queryByText("Gift with purchase")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the catalog product instead of a source sku", () => {
@@ -124,14 +152,23 @@ describe("gift with purchase", () => {
           promotionCode: "GWP1",
           status: null,
           message: null,
-          giftItems: [{ sku: sourceSku, quantity: 1, name: null, imageUrl: null }],
+          giftItems: [
+            { sku: sourceSku, quantity: 1, name: null, imageUrl: null },
+          ],
           choices: [],
         },
       ],
     });
-    render(<GiftWithPurchase currency="AED" snapshot={promo} selectable={false} />);
-    expect(screen.getByRole("heading", { name: "ROSE 01" })).toBeInTheDocument();
-    expect(document.querySelector("article img")).toHaveAttribute("src", "/rose.png");
+    render(
+      <GiftWithPurchase currency="AED" snapshot={promo} selectable={false} />,
+    );
+    expect(
+      screen.getByRole("heading", { name: "ROSE 01" }),
+    ).toBeInTheDocument();
+    expect(document.querySelector("article img")).toHaveAttribute(
+      "src",
+      "/rose.png",
+    );
     expect(screen.getByText("AED 17.00")).toBeInTheDocument();
     expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.queryByText(sourceSku)).not.toBeInTheDocument();
@@ -151,7 +188,12 @@ describe("gift with purchase", () => {
           message: null,
           giftItems: [],
           choices: [
-            { sku: "SAMPLE-A", quantity: 1, name: "Rose Sample", imageUrl: "/rose.jpg" },
+            {
+              sku: "SAMPLE-A",
+              quantity: 1,
+              name: "Rose Sample",
+              imageUrl: "/rose.jpg",
+            },
           ],
         },
       ],
@@ -164,10 +206,16 @@ describe("gift with purchase", () => {
       </>,
     );
     expect(screen.getByText("Choose your free gift")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Rose Sample" })).toHaveAttribute("src", "/rose.jpg");
+    expect(screen.getByRole("img", { name: "Rose Sample" })).toHaveAttribute(
+      "src",
+      "/rose.jpg",
+    );
     expect(screen.getByText("SAMPLE-A")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Select" }));
-    expect(select).toHaveBeenCalledWith({ sku: "SAMPLE-A", promotionCode: "GWP-CHOICE" });
+    expect(select).toHaveBeenCalledWith({
+      sku: "SAMPLE-A",
+      promotionCode: "GWP-CHOICE",
+    });
   });
 
   it("prices the gift at zero and leaves discount totals unchanged", () => {
@@ -178,7 +226,14 @@ describe("gift with purchase", () => {
           promotionCode: "GWP1",
           status: null,
           message: null,
-          giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Sample Perfume", imageUrl: null }],
+          giftItems: [
+            {
+              sku: "SAMPLE",
+              quantity: 1,
+              name: "Sample Perfume",
+              imageUrl: null,
+            },
+          ],
           choices: [],
         },
       ],
@@ -220,14 +275,25 @@ describe("gift with purchase", () => {
           promotionCode: "GWP1",
           status: null,
           message: null,
-          giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Arabian Oud Sample", imageUrl: null }],
+          giftItems: [
+            {
+              sku: "SAMPLE",
+              quantity: 1,
+              name: "Arabian Oud Sample",
+              imageUrl: null,
+            },
+          ],
           choices: [],
         },
       ],
     });
     render(<GiftWithPurchase snapshot={promo} selectable={false} />);
-    expect(screen.getByRole("heading", { name: "Arabian Oud Sample" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Select" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Arabian Oud Sample" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Select" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a removed gift instead of adding it", () => {
@@ -240,7 +306,14 @@ describe("gift with purchase", () => {
               promotionCode: "GWP1",
               status: "REMOVED",
               message: null,
-              giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Arabian Oud Sample", imageUrl: null }],
+              giftItems: [
+                {
+                  sku: "SAMPLE",
+                  quantity: 1,
+                  name: "Arabian Oud Sample",
+                  imageUrl: null,
+                },
+              ],
               choices: [],
             },
           ],
@@ -249,18 +322,29 @@ describe("gift with purchase", () => {
     );
     expect(screen.getByText("This free gift was removed.")).toBeInTheDocument();
     expect(screen.queryByText("Free gift added")).not.toBeInTheDocument();
-    expect(awardedGiftLines(snapshot({
-      gifts: [
-        {
-          type: "GIFT_WITH_PURCHASE",
-          promotionCode: "GWP1",
-          status: "REMOVED",
-          message: null,
-          giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Arabian Oud Sample", imageUrl: null }],
-          choices: [],
-        },
-      ],
-    }))).toHaveLength(0);
+    expect(
+      awardedGiftLines(
+        snapshot({
+          gifts: [
+            {
+              type: "GIFT_WITH_PURCHASE",
+              promotionCode: "GWP1",
+              status: "REMOVED",
+              message: null,
+              giftItems: [
+                {
+                  sku: "SAMPLE",
+                  quantity: 1,
+                  name: "Arabian Oud Sample",
+                  imageUrl: null,
+                },
+              ],
+              choices: [],
+            },
+          ],
+        }),
+      ),
+    ).toHaveLength(0);
   });
 
   it("shows a stored gift on a historical order without changing the discount", () => {
@@ -272,7 +356,9 @@ describe("gift with purchase", () => {
           gifts: [
             {
               type: "GIFT_WITH_PURCHASE",
-              giftItems: [{ sku: "SAMPLE", quantity: 1, name: "Arabian Oud Sample" }],
+              giftItems: [
+                { sku: "SAMPLE", quantity: 1, name: "Arabian Oud Sample" },
+              ],
             },
           ],
           totals: { discountTotal: "50.00" },

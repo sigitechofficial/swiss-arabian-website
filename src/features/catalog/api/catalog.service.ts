@@ -1,3 +1,4 @@
+import type { ProductSeoPackage } from "@/lib/seo/productSeo";
 import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
 import {
@@ -373,6 +374,7 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     descriptionHtml: descriptionHtml || undefined,
     seoTitle: product.seoTitle?.trim() || undefined,
     seoDescription: product.seoDescription?.trim() || undefined,
+    seo: (product as { seo?: ProductSeoPackage | null }).seo ?? null,
     price,
     currency,
     imageUrl: imageUrls[0] ?? null,
@@ -615,6 +617,26 @@ type ApiCollectionListData = {
   items: CatalogCollection[];
 };
 
+/** One public address from the backend sitemap (market-visible only). */
+export type CatalogSitemapEntry = {
+  entityType: "PRODUCT" | "COLLECTION" | "CATEGORY";
+  path: string;
+  updatedAt: string | null;
+  noindex?: boolean;
+};
+
+/** Every product, collection and category visible in the market, with its market address. */
+export async function fetchCatalogSitemap(
+  zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
+): Promise<CatalogSitemapEntry[]> {
+  const data = await apiGet<{ entries?: CatalogSitemapEntry[] }>(
+    `/storefront/catalog/seo/sitemap?${contextQs(zoneCode, market)}`,
+    { skipAuth: true },
+  );
+  return data.entries ?? [];
+}
+
 export async function fetchCollections(
   zoneCode?: string | null,
   market?: StorefrontContextInput | null,
@@ -636,6 +658,8 @@ export type CatalogCategory = {
   parentId?: string | null;
   sortOrder?: number;
   productCount?: number;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   image?: string | null;
   imageAlt?: string | null;
 };

@@ -1,12 +1,22 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { readLoyaltyActivityPage, readLoyaltyWallet, type LoyaltyWalletView } from "../types/loyalty";
+import {
+  readLoyaltyActivityPage,
+  readLoyaltyWallet,
+  type LoyaltyWalletView,
+} from "../types/loyalty";
 import { RewardsAccountView } from "./RewardsAccountView";
 
 const fetchLoyaltyWallet = vi.hoisted(() => vi.fn());
@@ -20,7 +30,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("next/image", () => ({
@@ -29,9 +41,12 @@ vi.mock("next/image", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
-  requestOmnichannelRefresh: (...args: unknown[]) => requestOmnichannelRefresh(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
+  requestOmnichannelRefresh: (...args: unknown[]) =>
+    requestOmnichannelRefresh(...args),
 }));
 
 function omnichannel(partial: Record<string, unknown> = {}) {
@@ -52,17 +67,27 @@ function omnichannel(partial: Record<string, unknown> = {}) {
       isFresh: true,
       source: "CACHE",
     },
-    websiteRedemption: { enabled: false, reason: "D365_REDEMPTION_NOT_AVAILABLE" },
+    websiteRedemption: {
+      enabled: false,
+      reason: "D365_REDEMPTION_NOT_AVAILABLE",
+    },
     ...partial,
   };
 }
 
-function platformWallet(partial: Record<string, unknown> = {}): LoyaltyWalletView {
+function platformWallet(
+  partial: Record<string, unknown> = {},
+): LoyaltyWalletView {
   return readLoyaltyWallet({
     enabled: true,
     member: true,
     market: { code: "UAE", currencyCode: "AED" },
-    wallet: { availablePoints: 5420, pendingPoints: 0, reservedPoints: 0, debtPoints: 0 },
+    wallet: {
+      availablePoints: 5420,
+      pendingPoints: 0,
+      reservedPoints: 0,
+      debtPoints: 0,
+    },
     monetaryEquivalent: { available: "54.20", currencyCode: "AED" },
     omnichannel: omnichannel(),
     ...partial,
@@ -83,7 +108,9 @@ function emptyActivity(extra: Record<string, unknown> = {}) {
 }
 
 function renderRewards() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <RewardsAccountView />
@@ -118,7 +145,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -134,12 +165,18 @@ describe("omnichannel store rewards refresh", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          sync: { ...omnichannel().sync, isFresh: false, source: "LAST_KNOWN_GOOD" },
+          sync: {
+            ...omnichannel().sync,
+            isFresh: false,
+            source: "LAST_KNOWN_GOOD",
+          },
         }),
       }),
     );
     renderRewards();
-    expect(await screen.findByRole("button", { name: "Check for updates" })).toBeEnabled();
+    expect(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    ).toBeEnabled();
     expect(screen.getByText("95.24")).toBeInTheDocument();
   });
 
@@ -154,7 +191,9 @@ describe("omnichannel store rewards refresh", () => {
       }),
     );
     renderRewards();
-    expect(await screen.findByRole("button", { name: "Check for updates" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    ).toBeInTheDocument();
   });
 
   it("does not refresh ACTION_REQUIRED", async () => {
@@ -168,19 +207,33 @@ describe("omnichannel store rewards refresh", () => {
       }),
     );
     renderRewards();
-    expect(await screen.findByText("We couldn’t link your store rewards to this account.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "We couldn’t link your store rewards to this account.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
     expect(requestOmnichannelRefresh).not.toHaveBeenCalled();
   });
 
   it("shows Refreshing… for QUEUED without claiming the balance is updated", async () => {
     fetchLoyaltyWallet.mockResolvedValue(platformWallet());
-    requestOmnichannelRefresh.mockImplementation(() => new Promise(() => undefined));
+    requestOmnichannelRefresh.mockImplementation(
+      () => new Promise(() => undefined),
+    );
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByRole("button", { name: "Refreshing…" })).toBeDisabled();
-    expect(screen.queryByText("Store rewards updated.")).not.toBeInTheDocument();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Refreshing…" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByText("Store rewards updated."),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("95.24")).toBeInTheDocument();
   });
 
@@ -193,10 +246,16 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByRole("button", { name: "Refreshing…" })).toBeDisabled();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Refreshing…" }),
+    ).toBeDisabled();
     expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("We couldn’t refresh store rewards.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("We couldn’t refresh store rewards."),
+    ).not.toBeInTheDocument();
   });
 
   it("honors THROTTLED cooldown copy without 429 wording", async () => {
@@ -208,9 +267,15 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByText("You can refresh again shortly.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Check for updates" })).toBeDisabled();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByText("You can refresh again shortly."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Check for updates" }),
+    ).toBeDisabled();
     expect(screen.queryByText("429")).not.toBeInTheDocument();
   });
 
@@ -218,7 +283,12 @@ describe("omnichannel store rewards refresh", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+          refresh: {
+            enabled: true,
+            refreshable: true,
+            reason: "READY",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
@@ -229,9 +299,15 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByText("Store rewards can’t be refreshed right now.")).toBeInTheDocument();
-    expect(screen.queryByText("You can refresh again shortly.")).not.toBeInTheDocument();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByText("Store rewards can’t be refreshed right now."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("You can refresh again shortly."),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("95.24")).toBeInTheDocument();
     expect(screen.queryByText(/mapping/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/phone/i)).not.toBeInTheDocument();
@@ -243,7 +319,12 @@ describe("omnichannel store rewards refresh", () => {
       .mockResolvedValue(
         platformWallet({
           omnichannel: omnichannel({
-            refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+            refresh: {
+              enabled: false,
+              refreshable: false,
+              reason: "DISABLED",
+              retryAfterSeconds: null,
+            },
           }),
         }),
       );
@@ -254,10 +335,16 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
     expect(await screen.findByText("95.24")).toBeInTheDocument();
-    expect(screen.queryByText("You can refresh again shortly.")).not.toBeInTheDocument();
-    expect(screen.queryByText("We couldn’t refresh store rewards.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("You can refresh again shortly."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("We couldn’t refresh store rewards."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/feature flag/i)).not.toBeInTheDocument();
   });
 
@@ -269,7 +356,9 @@ describe("omnichannel store rewards refresh", () => {
       retryAfterSeconds: null,
     });
     renderRewards();
-    const button = await screen.findByRole("button", { name: "Check for updates" });
+    const button = await screen.findByRole("button", {
+      name: "Check for updates",
+    });
     const walletCalls = fetchLoyaltyWallet.mock.calls.length;
     const activityCalls = fetchLoyaltyTransactions.mock.calls.length;
     vi.useFakeTimers();
@@ -300,7 +389,9 @@ describe("omnichannel store rewards refresh", () => {
         }),
       );
     renderRewards();
-    const button = await screen.findByRole("button", { name: "Check for updates" });
+    const button = await screen.findByRole("button", {
+      name: "Check for updates",
+    });
     vi.useFakeTimers();
     await act(async () => {
       fireEvent.click(button);
@@ -334,7 +425,9 @@ describe("omnichannel store rewards refresh", () => {
         }),
       );
     renderRewards();
-    const button = await screen.findByRole("button", { name: "Check for updates" });
+    const button = await screen.findByRole("button", {
+      name: "Check for updates",
+    });
     expect(screen.getByText("95.24")).toBeInTheDocument();
     vi.useFakeTimers();
     await act(async () => {
@@ -351,20 +444,32 @@ describe("omnichannel store rewards refresh", () => {
     requestOmnichannelRefresh.mockRejectedValue(new Error("network"));
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByText("We couldn’t refresh store rewards.")).toBeInTheDocument();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByText("We couldn’t refresh store rewards."),
+    ).toBeInTheDocument();
     expect(screen.getByText("95.24")).toBeInTheDocument();
     expect(screen.getByText("5,420")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Check for updates" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Check for updates" }),
+    ).toBeEnabled();
   });
 
   it("keeps the Store Rewards balance after an unexpected 500", async () => {
     fetchLoyaltyWallet.mockResolvedValue(platformWallet());
-    requestOmnichannelRefresh.mockRejectedValue(new ApiClientError(500, "Request failed"));
+    requestOmnichannelRefresh.mockRejectedValue(
+      new ApiClientError(500, "Request failed"),
+    );
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByText("We couldn’t refresh store rewards.")).toBeInTheDocument();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByText("We couldn’t refresh store rewards."),
+    ).toBeInTheDocument();
     expect(screen.getByText("95.24")).toBeInTheDocument();
     expect(screen.queryByText("feature flag")).not.toBeInTheDocument();
   });
@@ -373,38 +478,61 @@ describe("omnichannel store rewards refresh", () => {
     fetchLoyaltyWallet.mockResolvedValue(platformWallet());
     requestOmnichannelRefresh.mockImplementation(async () => {
       useAuthStore.getState().reset();
-      throw new ApiClientError(401, "Your session has expired. Please sign in again.");
+      throw new ApiClientError(
+        401,
+        "Your session has expired. Please sign in again.",
+      );
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
     expect(await screen.findByText("Redirecting…")).toBeInTheDocument();
-    expect(screen.queryByText("We couldn’t refresh store rewards.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("We couldn’t refresh store rewards."),
+    ).not.toBeInTheDocument();
   });
 
   it("enables Check for updates when the server sends READY", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+          refresh: {
+            enabled: true,
+            refreshable: true,
+            reason: "READY",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
     renderRewards();
-    expect(await screen.findByRole("button", { name: "Check for updates" })).toBeEnabled();
+    expect(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    ).toBeEnabled();
   });
 
   it("disables refresh on a cold COOLDOWN payload using backend retryAfterSeconds", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: false, reason: "COOLDOWN", retryAfterSeconds: 45 },
+          refresh: {
+            enabled: true,
+            refreshable: false,
+            reason: "COOLDOWN",
+            retryAfterSeconds: 45,
+          },
         }),
       }),
     );
     renderRewards();
-    expect(await screen.findByRole("button", { name: "Check for updates" })).toBeDisabled();
-    expect(screen.getByText("You can refresh again shortly.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText("You can refresh again shortly."),
+    ).toBeInTheDocument();
     expect(requestOmnichannelRefresh).not.toHaveBeenCalled();
   });
 
@@ -412,13 +540,20 @@ describe("omnichannel store rewards refresh", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: false, reason: "NOT_READY", retryAfterSeconds: null },
+          refresh: {
+            enabled: true,
+            refreshable: false,
+            reason: "NOT_READY",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
     renderRewards();
     expect(await screen.findByText("95.24")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/mapping/i)).not.toBeInTheDocument();
   });
 
@@ -426,13 +561,20 @@ describe("omnichannel store rewards refresh", () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+          refresh: {
+            enabled: false,
+            refreshable: false,
+            reason: "DISABLED",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
     renderRewards();
     expect(await screen.findByText("95.24")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/feature flag/i)).not.toBeInTheDocument();
   });
 
@@ -441,13 +583,20 @@ describe("omnichannel store rewards refresh", () => {
       platformWallet({
         omnichannel: omnichannel({
           status: "LINKED",
-          refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+          refresh: {
+            enabled: false,
+            refreshable: false,
+            reason: "DISABLED",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
     renderRewards();
     expect(await screen.findByText("95.24")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not treat NOT_ENROLLED as refreshable when the server disables it", async () => {
@@ -457,20 +606,34 @@ describe("omnichannel store rewards refresh", () => {
           status: "NOT_ENROLLED",
           identity: null,
           balance: null,
-          refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+          refresh: {
+            enabled: false,
+            refreshable: false,
+            reason: "DISABLED",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
     renderRewards();
-    expect(await screen.findByText("No store loyalty membership linked yet")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("No store loyalty membership linked yet"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
   });
 
   it("enters polling when /me is READY but POST returns ALREADY_QUEUED", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+          refresh: {
+            enabled: true,
+            refreshable: true,
+            reason: "READY",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
@@ -481,16 +644,27 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByRole("button", { name: "Refreshing…" })).toBeDisabled();
-    expect(screen.queryByText("We couldn’t refresh store rewards.")).not.toBeInTheDocument();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Refreshing…" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByText("We couldn’t refresh store rewards."),
+    ).not.toBeInTheDocument();
   });
 
   it("lets POST THROTTLED override a stale READY render and uses server seconds", async () => {
     fetchLoyaltyWallet.mockResolvedValue(
       platformWallet({
         omnichannel: omnichannel({
-          refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+          refresh: {
+            enabled: true,
+            refreshable: true,
+            reason: "READY",
+            retryAfterSeconds: null,
+          },
         }),
       }),
     );
@@ -501,9 +675,15 @@ describe("omnichannel store rewards refresh", () => {
     });
     renderRewards();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Check for updates" }));
-    expect(await screen.findByText("You can refresh again shortly.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Check for updates" })).toBeDisabled();
+    await user.click(
+      await screen.findByRole("button", { name: "Check for updates" }),
+    );
+    expect(
+      await screen.findByText("You can refresh again shortly."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Check for updates" }),
+    ).toBeDisabled();
     expect(screen.queryByText("429")).not.toBeInTheDocument();
   });
 
@@ -512,14 +692,24 @@ describe("omnichannel store rewards refresh", () => {
       .mockResolvedValueOnce(
         platformWallet({
           omnichannel: omnichannel({
-            refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+            refresh: {
+              enabled: true,
+              refreshable: true,
+              reason: "READY",
+              retryAfterSeconds: null,
+            },
           }),
         }),
       )
       .mockResolvedValue(
         platformWallet({
           omnichannel: omnichannel({
-            refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+            refresh: {
+              enabled: false,
+              refreshable: false,
+              reason: "DISABLED",
+              retryAfterSeconds: null,
+            },
             sync: {
               fetchedAt: "2026-10-15T08:00:12.000Z",
               lastSuccessfulSyncAt: "2026-10-15T08:00:12.000Z",
@@ -535,14 +725,20 @@ describe("omnichannel store rewards refresh", () => {
       retryAfterSeconds: null,
     });
     renderRewards();
-    const button = await screen.findByRole("button", { name: "Check for updates" });
+    const button = await screen.findByRole("button", {
+      name: "Check for updates",
+    });
     vi.useFakeTimers();
     await act(async () => {
       fireEvent.click(button);
       await vi.advanceTimersByTimeAsync(2_000);
     });
-    expect(screen.queryByRole("button", { name: "Check for updates" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Refreshing…" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Refreshing…" }),
+    ).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 
@@ -551,14 +747,24 @@ describe("omnichannel store rewards refresh", () => {
       .mockResolvedValueOnce(
         platformWallet({
           omnichannel: omnichannel({
-            refresh: { enabled: true, refreshable: true, reason: "READY", retryAfterSeconds: null },
+            refresh: {
+              enabled: true,
+              refreshable: true,
+              reason: "READY",
+              retryAfterSeconds: null,
+            },
           }),
         }),
       )
       .mockResolvedValue(
         platformWallet({
           omnichannel: omnichannel({
-            refresh: { enabled: false, refreshable: false, reason: "DISABLED", retryAfterSeconds: null },
+            refresh: {
+              enabled: false,
+              refreshable: false,
+              reason: "DISABLED",
+              retryAfterSeconds: null,
+            },
           }),
         }),
       );
@@ -568,7 +774,9 @@ describe("omnichannel store rewards refresh", () => {
       retryAfterSeconds: null,
     });
     renderRewards();
-    const button = await screen.findByRole("button", { name: "Check for updates" });
+    const button = await screen.findByRole("button", {
+      name: "Check for updates",
+    });
     const walletCalls = fetchLoyaltyWallet.mock.calls.length;
     vi.useFakeTimers();
     await act(async () => {
@@ -582,7 +790,9 @@ describe("omnichannel store rewards refresh", () => {
     expect(requestOmnichannelRefresh).toHaveBeenCalledTimes(1);
     expect(fetchLoyaltyWallet.mock.calls.length).toBe(walletCalls + 1);
     expect(screen.getByText("95.24")).toBeInTheDocument();
-    expect(screen.queryByText("You can refresh again shortly.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("You can refresh again shortly."),
+    ).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 });

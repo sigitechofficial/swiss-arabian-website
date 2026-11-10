@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { PackageCheck, PartyPopper, Truck } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { formatMoney } from "@/features/home/data/homeContent";
@@ -95,7 +101,10 @@ type FreeShippingProgressProps = {
 /**
  * Free shipping route progress — truck tracks fill; whoop + confetti on unlock.
  */
-export function FreeShippingProgress({ subtotal, currency = "AED" }: FreeShippingProgressProps) {
+export function FreeShippingProgress({
+  subtotal,
+  currency = "AED",
+}: FreeShippingProgressProps) {
   const reduce = useReducedMotion();
   const [burstId, setBurstId] = useState(0);
   const wasUnlocked = useRef(false);
@@ -149,7 +158,8 @@ export function FreeShippingProgress({ subtotal, currency = "AED" }: FreeShippin
           </span>
         ) : (
           <span className="text-[13px] text-sa-muted">
-            Free shipping on orders over {formatMoney(FREE_SHIPPING_THRESHOLD, currency)}
+            Free shipping on orders over{" "}
+            {formatMoney(FREE_SHIPPING_THRESHOLD, currency)}
           </span>
         )}
       </div>

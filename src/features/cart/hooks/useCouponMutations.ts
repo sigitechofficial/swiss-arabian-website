@@ -4,7 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useCartStore } from "@/stores/useCartStore";
 import { runQueuedCart } from "../api/optimisticCart";
-import { applyCartCoupon, getActiveCart, removeCartCoupon } from "../api/cart.service";
+import {
+  applyCartCoupon,
+  getActiveCart,
+  removeCartCoupon,
+} from "../api/cart.service";
 
 export function useCouponMutations() {
   const cartId = useCartStore((s) => s.cartId);

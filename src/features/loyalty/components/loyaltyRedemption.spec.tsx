@@ -24,12 +24,16 @@ const fetchLoyaltyTransactions = vi.hoisted(() => vi.fn());
 const fetchLoyaltyTierHistory = vi.hoisted(() => vi.fn());
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock("@/features/cart/api/cart.service", () => ({
-  applyCartLoyaltyRedemption: (...args: unknown[]) => applyCartLoyaltyRedemption(...args),
-  removeCartLoyaltyRedemption: (...args: unknown[]) => removeCartLoyaltyRedemption(...args),
+  applyCartLoyaltyRedemption: (...args: unknown[]) =>
+    applyCartLoyaltyRedemption(...args),
+  removeCartLoyaltyRedemption: (...args: unknown[]) =>
+    removeCartLoyaltyRedemption(...args),
   getActiveCart: vi.fn(),
 }));
 
@@ -39,12 +43,16 @@ vi.mock("@/features/cart/api/optimisticCart", () => ({
 
 vi.mock("../api/loyalty.service", () => ({
   fetchLoyaltyWallet: (...args: unknown[]) => fetchLoyaltyWallet(...args),
-  fetchLoyaltyTransactions: (...args: unknown[]) => fetchLoyaltyTransactions(...args),
-  fetchLoyaltyTierHistory: (...args: unknown[]) => fetchLoyaltyTierHistory(...args),
+  fetchLoyaltyTransactions: (...args: unknown[]) =>
+    fetchLoyaltyTransactions(...args),
+  fetchLoyaltyTierHistory: (...args: unknown[]) =>
+    fetchLoyaltyTierHistory(...args),
   requestOmnichannelRefresh: vi.fn(),
 }));
 
-function quote(partial: Partial<LoyaltyRedemptionView> = {}): LoyaltyRedemptionView {
+function quote(
+  partial: Partial<LoyaltyRedemptionView> = {},
+): LoyaltyRedemptionView {
   return {
     enabled: true,
     eligible: true,
@@ -62,7 +70,9 @@ function quote(partial: Partial<LoyaltyRedemptionView> = {}): LoyaltyRedemptionV
 }
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -94,7 +104,11 @@ beforeEach(() => {
   fetchLoyaltyTransactions.mockResolvedValue([]);
   signIn();
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
   useCartStore.setState({
     cartId: "cart-1",
@@ -123,14 +137,20 @@ afterEach(() => {
 
 describe("cart rewards editor", () => {
   it("hides Use Points for a guest", () => {
-    useAuthStore.setState({ user: null, isAuthenticated: false, bootstrapped: true });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      bootstrapped: true,
+    });
     render(
       <Wrapper>
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
     expect(screen.queryByText("Reward points")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Use maximum" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Use maximum" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows available points and the server worth, never a priced figure", async () => {
@@ -139,7 +159,9 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    expect(await screen.findByText(/Available 5,420 points · worth AED 54.20/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Available 5,420 points · worth AED 54.20/),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/0\.010000/)).not.toBeInTheDocument();
   });
 
@@ -168,7 +190,10 @@ describe("cart rewards editor", () => {
             isFresh: true,
             source: "CACHE",
           },
-          websiteRedemption: { enabled: false, reason: "D365_REDEMPTION_NOT_AVAILABLE" },
+          websiteRedemption: {
+            enabled: false,
+            reason: "D365_REDEMPTION_NOT_AVAILABLE",
+          },
         },
       }),
     );
@@ -177,7 +202,9 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    expect(await screen.findByText(/Available 5,420 points · worth AED 54.20/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Available 5,420 points · worth AED 54.20/),
+    ).toBeInTheDocument();
     expect(screen.queryByText("95.24")).not.toBeInTheDocument();
     expect(screen.queryByText(/store points/i)).not.toBeInTheDocument();
   });
@@ -189,7 +216,9 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    await user.click(await screen.findByRole("button", { name: "Use maximum" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Use maximum" }),
+    );
     expect(screen.getByLabelText("Reward points to use")).toHaveValue(400);
   });
 
@@ -199,9 +228,17 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    expect(await screen.findByLabelText("Reward points to use")).toHaveAttribute("step", "50");
-    expect(screen.getByLabelText("Reward points to use")).toHaveAttribute("min", "100");
-    expect(screen.getByLabelText("Reward points to use")).toHaveAttribute("max", "400");
+    expect(
+      await screen.findByLabelText("Reward points to use"),
+    ).toHaveAttribute("step", "50");
+    expect(screen.getByLabelText("Reward points to use")).toHaveAttribute(
+      "min",
+      "100",
+    );
+    expect(screen.getByLabelText("Reward points to use")).toHaveAttribute(
+      "max",
+      "400",
+    );
   });
 
   it("applies POINTS only", async () => {
@@ -212,7 +249,10 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    await user.type(await screen.findByLabelText("Reward points to use"), "200");
+    await user.type(
+      await screen.findByLabelText("Reward points to use"),
+      "200",
+    );
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(applyCartLoyaltyRedemption).toHaveBeenCalledWith("cart-1", 200);
     const [, points] = applyCartLoyaltyRedemption.mock.calls[0] ?? [];
@@ -269,8 +309,14 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    expect(await screen.findByText("Reward points can’t be used with the current offer.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Apply" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Reward points can’t be used with the current offer.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Apply" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/STACK/)).not.toBeInTheDocument();
     expect(screen.queryByText(/campaign/i)).not.toBeInTheDocument();
   });
@@ -286,7 +332,9 @@ describe("cart rewards editor", () => {
       </Wrapper>,
     );
     expect(
-      await screen.findByText("Your reward points were adjusted after your bag changed."),
+      await screen.findByText(
+        "Your reward points were adjusted after your bag changed.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -297,7 +345,10 @@ describe("cart rewards editor", () => {
         <LoyaltyRedemptionEditor />
       </Wrapper>,
     );
-    await user.type(await screen.findByLabelText("Reward points to use"), "200");
+    await user.type(
+      await screen.findByLabelText("Reward points to use"),
+      "200",
+    );
     useCartStore.setState({
       loyaltyRedemption: quote({ maxRedeemablePoints: 800 }),
     });
@@ -312,9 +363,15 @@ describe("bag drawer compact state", () => {
         <LoyaltyDrawerNote />
       </Wrapper>,
     );
-    expect(await screen.findByRole("link", { name: "Use points" })).toHaveAttribute("href", "/cart");
-    expect(screen.queryByLabelText("Reward points to use")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Apply" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Use points" }),
+    ).toHaveAttribute("href", "/cart");
+    expect(
+      screen.queryByLabelText("Reward points to use"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Apply" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows reserved points without an editor", async () => {
@@ -327,12 +384,21 @@ describe("bag drawer compact state", () => {
       </Wrapper>,
     );
     expect(await screen.findByText(/Using 200 points/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Change in bag" })).toHaveAttribute("href", "/cart");
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Change in bag" })).toHaveAttribute(
+      "href",
+      "/cart",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Remove" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides Use Points for a guest", () => {
-    useAuthStore.setState({ user: null, isAuthenticated: false, bootstrapped: true });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      bootstrapped: true,
+    });
     render(
       <Wrapper>
         <LoyaltyDrawerNote />
@@ -357,10 +423,22 @@ describe("money summary loyalty line", () => {
         giftCards={[{ usageId: "u1", maskedCode: "••••XM", amount: "50.00" }]}
       />,
     );
-    const labels = Array.from(container.querySelectorAll("dt")).map((node) => node.textContent);
-    expect(labels).toEqual(["Subtotal", "Total", "Reward points", "Gift card (••••XM)", "Amount due"]);
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 140.00");
-    expect(screen.getByText("Reward points").nextElementSibling).toHaveTextContent("−AED 10.00");
+    const labels = Array.from(container.querySelectorAll("dt")).map(
+      (node) => node.textContent,
+    );
+    expect(labels).toEqual([
+      "Subtotal",
+      "Total",
+      "Reward points",
+      "Gift card (••••XM)",
+      "Amount due",
+    ]);
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 140.00",
+    );
+    expect(
+      screen.getByText("Reward points").nextElementSibling,
+    ).toHaveTextContent("−AED 10.00");
   });
 
   it("does not subtract loyalty in the browser", () => {
@@ -377,9 +455,15 @@ describe("money summary loyalty line", () => {
         loyalty={{ points: 1000, amount: 10 }}
       />,
     );
-    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("AED 200.00");
-    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent("AED 190.00");
-    expect(screen.getByText("Amount due").nextElementSibling).not.toHaveTextContent("AED 180.00");
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(
+      "AED 200.00",
+    );
+    expect(screen.getByText("Amount due").nextElementSibling).toHaveTextContent(
+      "AED 190.00",
+    );
+    expect(
+      screen.getByText("Amount due").nextElementSibling,
+    ).not.toHaveTextContent("AED 180.00");
   });
 });
 
@@ -393,7 +477,11 @@ describe("checkout reservation and payable", () => {
     render(
       <Wrapper>
         <LoyaltyRedemptionEditor
-          quoteOverride={quote({ appliedPoints: 200, appliedAmount: 2, eligible: true })}
+          quoteOverride={quote({
+            appliedPoints: 200,
+            appliedAmount: 2,
+            eligible: true,
+          })}
         />
       </Wrapper>,
     );
@@ -428,10 +516,14 @@ describe("checkout reservation and payable", () => {
         amountPayable={0}
       />,
     );
-    expect(screen.getByText("No payment needed — your rewards cover this order.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No payment needed — your rewards cover this order."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
     expect(screen.queryByText(/Continue to payment/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Place order/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Place order/ }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -439,11 +531,18 @@ describe("order confirmation redemption", () => {
   it("renders redemption when the order earned nothing", () => {
     const reward = {
       earned: false as const,
-      redemption: { redeemed: true as const, points: 4999, amount: 49.99, currencyCode: "AED" },
+      redemption: {
+        redeemed: true as const,
+        points: 4999,
+        amount: 49.99,
+        currencyCode: "AED",
+      },
     };
     expect(hasOrderLoyaltySection(reward)).toBe(true);
     render(<OrderRewardNote reward={reward} />);
-    expect(screen.getByRole("heading", { name: "Rewards" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Rewards" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("You used")).toBeInTheDocument();
     expect(screen.getByText("4,999 points")).toBeInTheDocument();
     expect(screen.getByText("AED 49.99")).toBeInTheDocument();
@@ -452,10 +551,15 @@ describe("order confirmation redemption", () => {
   });
 
   it("hides the Rewards section when nothing was earned or redeemed", () => {
-    const reward = { earned: false as const, redemption: { redeemed: false as const } };
+    const reward = {
+      earned: false as const,
+      redemption: { redeemed: false as const },
+    };
     expect(hasOrderLoyaltySection(reward)).toBe(false);
     render(<OrderRewardNote reward={reward} />);
-    expect(screen.queryByRole("heading", { name: "Rewards" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Rewards" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows redeemed and earned lines together", () => {
@@ -466,7 +570,12 @@ describe("order confirmation redemption", () => {
       state: "PENDING" as const,
       currencyCode: "AED",
       vestedAt: null,
-      redemption: { redeemed: true as const, points: 2000, amount: 20, currencyCode: "AED" },
+      redemption: {
+        redeemed: true as const,
+        points: 2000,
+        amount: 20,
+        currencyCode: "AED",
+      },
     };
     expect(hasOrderLoyaltySection(reward)).toBe(true);
     render(<OrderRewardNote reward={reward} />);

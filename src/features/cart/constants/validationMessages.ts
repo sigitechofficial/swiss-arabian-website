@@ -18,8 +18,13 @@ const WARNING_MESSAGES: Record<string, string> = {
   PRICE_CHANGED: "Price updated",
 };
 
-export function cartErrorMessage(type: string, fallback?: string | null): string {
-  return ERROR_MESSAGES[type] ?? fallback ?? "This item can’t be ordered right now";
+export function cartErrorMessage(
+  type: string,
+  fallback?: string | null,
+): string {
+  return (
+    ERROR_MESSAGES[type] ?? fallback ?? "This item can’t be ordered right now"
+  );
 }
 
 export function cartWarningMessage(

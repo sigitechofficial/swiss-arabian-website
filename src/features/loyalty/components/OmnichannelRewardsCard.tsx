@@ -27,7 +27,11 @@ export type OmnichannelRefreshControl = {
   onRefresh: () => void;
 };
 
-function RefreshControl({ control }: { control: OmnichannelRefreshControl | null }) {
+function RefreshControl({
+  control,
+}: {
+  control: OmnichannelRefreshControl | null;
+}) {
   if (!control?.visible) return null;
   return (
     <div className="mt-4 flex min-w-0 flex-col items-start gap-2">
@@ -36,13 +40,18 @@ function RefreshControl({ control }: { control: OmnichannelRefreshControl | null
         onClick={control.onRefresh}
         disabled={control.disabled}
         aria-busy={control.busy}
-        aria-label={control.busy ? OMNICHANNEL_COPY.refreshing : OMNICHANNEL_COPY.refresh}
+        aria-label={
+          control.busy ? OMNICHANNEL_COPY.refreshing : OMNICHANNEL_COPY.refresh
+        }
         className="text-[12.5px] font-semibold text-terra hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
       >
         {control.busy ? OMNICHANNEL_COPY.refreshing : OMNICHANNEL_COPY.refresh}
       </button>
       {control.message ? (
-        <p className="text-[13px] leading-relaxed text-sa-secondary" role="status">
+        <p
+          className="text-[13px] leading-relaxed text-sa-secondary"
+          role="status"
+        >
           {control.message}
         </p>
       ) : null}
@@ -52,12 +61,17 @@ function RefreshControl({ control }: { control: OmnichannelRefreshControl | null
 
 function CardShell({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">{children}</div>
+    <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
+      {children}
+    </div>
   );
 }
 
 function lastKnownBalance(omnichannel: OmnichannelLoyaltyView): boolean {
-  return omnichannel.sync.source === "LAST_KNOWN_GOOD" || omnichannel.sync.isFresh === false;
+  return (
+    omnichannel.sync.source === "LAST_KNOWN_GOOD" ||
+    omnichannel.sync.isFresh === false
+  );
 }
 
 function LinkedBalance({
@@ -70,7 +84,9 @@ function LinkedBalance({
   const active = omnichannel.balance?.activePoints ?? "";
   const known = lastKnownBalance(omnichannel);
   const stale = omnichannel.sync.isFresh === false;
-  const syncedAt = activityDate(omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt);
+  const syncedAt = activityDate(
+    omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt,
+  );
 
   return (
     <section aria-labelledby="store-rewards-heading">
@@ -93,8 +109,13 @@ function LinkedBalance({
         {known ? OMNICHANNEL_COPY.lastKnownHint : OMNICHANNEL_COPY.linkedHint}
       </p>
       {stale ? (
-        <p className="mt-2 text-[13px] leading-relaxed text-sa-secondary" role="status">
-          {syncedAt ? `${OMNICHANNEL_COPY.lastSynced} ${syncedAt}` : OMNICHANNEL_COPY.stale}
+        <p
+          className="mt-2 text-[13px] leading-relaxed text-sa-secondary"
+          role="status"
+        >
+          {syncedAt
+            ? `${OMNICHANNEL_COPY.lastSynced} ${syncedAt}`
+            : OMNICHANNEL_COPY.stale}
         </p>
       ) : null}
       <RefreshControl control={refresh} />
@@ -126,7 +147,10 @@ export function OmnichannelRewardsCard({
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
           {OMNICHANNEL_COPY.eyebrow}
         </p>
-        <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary" role="status">
+        <p
+          className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary"
+          role="status"
+        >
           {OMNICHANNEL_COPY.balanceUnavailable}
         </p>
         <RefreshControl control={refresh} />
@@ -173,7 +197,10 @@ export function OmnichannelRewardsCard({
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
         {OMNICHANNEL_COPY.eyebrow}
       </p>
-      <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary" role="status">
+      <p
+        className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary"
+        role="status"
+      >
         {OMNICHANNEL_COPY.unavailable}
       </p>
       <RefreshControl control={refresh} />

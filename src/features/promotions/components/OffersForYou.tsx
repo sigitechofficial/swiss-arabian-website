@@ -7,7 +7,12 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { OfferContext, OfferIcon, PdpOffer } from "../types/offerVoucher";
-import { bundlePercent, mapDiscoveryOffers, resolveOfferValue, voucherSubline } from "../utils/offerVoucher";
+import {
+  bundlePercent,
+  mapDiscoveryOffers,
+  resolveOfferValue,
+  voucherSubline,
+} from "../utils/offerVoucher";
 import { useHydrated } from "@/hooks/useHydrated";
 
 export function OffersForYou({
@@ -67,10 +72,13 @@ function OfferVoucher({
   const titleId = useId();
   const subId = useId();
   const first = offers[0];
-  const headline = first.headline || (typeof first.title === "string" ? first.title : "");
+  const headline =
+    first.headline || (typeof first.title === "string" ? first.title : "");
   const subline = voucherSubline(offers, arabic);
   const percent = bundlePercent(offers);
-  const countLabel = arabic ? `${offers.length} عروض` : `${offers.length} ${offers.length === 1 ? "offer" : "offers"}`;
+  const countLabel = arabic
+    ? `${offers.length} عروض`
+    : `${offers.length} ${offers.length === 1 ? "offer" : "offers"}`;
 
   return (
     <button
@@ -84,23 +92,37 @@ function OfferVoucher({
     >
       <span className="grid w-[5.25rem] shrink-0 place-items-center bg-[#8A4332] px-2 py-2 text-[#FFF8EC] max-[420px]:w-[4.25rem]">
         <span className="grid justify-items-center gap-0">
-          <span className="text-[0.56rem] font-bold tracking-[0.14em] uppercase">{arabic ? "حتى" : "Up to"}</span>
+          <span className="text-[0.56rem] font-bold tracking-[0.14em] uppercase">
+            {arabic ? "حتى" : "Up to"}
+          </span>
           <span className="font-[family-name:var(--font-display)] text-[1.35rem] leading-none max-[420px]:text-[1.15rem]">
             {percent ? `${percent}%` : offers.length}
           </span>
-          <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">{percent ? (arabic ? "خصم" : "Off") : arabic ? "عروض" : "Offers"}</span>
+          <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">
+            {percent ? (arabic ? "خصم" : "Off") : arabic ? "عروض" : "Offers"}
+          </span>
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-s border-dashed border-[#E8D5B0] px-3 py-2">
         <span className="flex items-center justify-between gap-2">
-          <span className="text-[0.62rem] font-bold tracking-[0.14em] text-[#8A4332] uppercase">{arabic ? "عروض لك" : "Offers for you"}</span>
-          <span className="inline-flex min-h-6 items-center rounded-full border border-[#8A4332]/70 px-2 text-[0.68rem] font-semibold text-[#8A4332]">{countLabel}</span>
+          <span className="text-[0.62rem] font-bold tracking-[0.14em] text-[#8A4332] uppercase">
+            {arabic ? "عروض لك" : "Offers for you"}
+          </span>
+          <span className="inline-flex min-h-6 items-center rounded-full border border-[#8A4332]/70 px-2 text-[0.68rem] font-semibold text-[#8A4332]">
+            {countLabel}
+          </span>
         </span>
-        <span id={titleId} className="line-clamp-1 font-[family-name:var(--font-display)] text-[0.95rem] leading-tight text-[#211B17]">
+        <span
+          id={titleId}
+          className="line-clamp-1 font-[family-name:var(--font-display)] text-[0.95rem] leading-tight text-[#211B17]"
+        >
           {headline}
         </span>
         {subline ? (
-          <span id={subId} className="line-clamp-1 text-[0.75rem] leading-snug text-[#5F534A]">
+          <span
+            id={subId}
+            className="line-clamp-1 text-[0.75rem] leading-snug text-[#5F534A]"
+          >
             {subline}
           </span>
         ) : (
@@ -110,8 +132,19 @@ function OfferVoucher({
         )}
         <span className="mt-0.5 inline-flex items-center gap-1 text-[0.68rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase">
           {arabic ? "عرض كل العروض" : "View all offers"}
-          <svg viewBox="0 0 20 20" className="size-3.5 rtl:-scale-x-100" fill="none" aria-hidden="true">
-            <path d="M7 4.5 12.5 10 7 15.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            viewBox="0 0 20 20"
+            className="size-3.5 rtl:-scale-x-100"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M7 4.5 12.5 10 7 15.5"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
       </span>
@@ -147,7 +180,6 @@ function OffersDialog({
   };
   const percent = bundlePercent(offers);
 
-
   useEffect(() => {
     const node = dialogRef.current;
     if (!node) return;
@@ -169,7 +201,9 @@ function OffersDialog({
 
   const requestClose = () => {
     if (closing) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduce) {
       onClose();
       return;
@@ -214,19 +248,34 @@ function OffersDialog({
       }}
       onClick={(event) => {
         const link = (event.target as HTMLElement).closest("a[href]");
-        if (link instanceof HTMLAnchorElement && (link.getAttribute("href") ?? "").startsWith("#")) requestClose();
+        if (
+          link instanceof HTMLAnchorElement &&
+          (link.getAttribute("href") ?? "").startsWith("#")
+        )
+          requestClose();
       }}
     >
       <div className="flex max-h-[min(84vh,760px)] flex-col max-[640px]:max-h-[88vh]">
         <header className="relative bg-[#8A4332] px-5 pt-5 pb-4 text-[#FFF8EC]">
           <div className="flex items-start gap-3">
             <span className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-[#FFF8EC] px-3 font-[family-name:var(--font-display)] text-[1.05rem] leading-none text-[#8A4332]">
-              {percent ? `${percent}% ${arabic ? "خصم" : "off"}` : arabic ? `${offers.length} عروض` : `${offers.length} offers`}
+              {percent
+                ? `${percent}% ${arabic ? "خصم" : "off"}`
+                : arabic
+                  ? `${offers.length} عروض`
+                  : `${offers.length} offers`}
             </span>
             <div className="min-w-0 flex-1 pt-0.5">
-              <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] uppercase">{arabic ? "عروض لك" : "Offers for you"}</p>
-              <h2 id={titleId} className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.35rem] leading-none">
-                {arabic ? `${offers.length} طرق للتوفير` : `${offers.length} ${offers.length === 1 ? "way" : "ways"} to save`}
+              <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] uppercase">
+                {arabic ? "عروض لك" : "Offers for you"}
+              </p>
+              <h2
+                id={titleId}
+                className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.35rem] leading-none"
+              >
+                {arabic
+                  ? `${offers.length} طرق للتوفير`
+                  : `${offers.length} ${offers.length === 1 ? "way" : "ways"} to save`}
               </h2>
               <p className="m-0 mt-1 line-clamp-2 text-[0.82rem] text-[#FFF8EC]/85">
                 {arabic ? `على ${product.title}` : `on ${product.title}`}
@@ -239,21 +288,42 @@ function OffersDialog({
               aria-label={arabic ? "إغلاق" : "Close"}
               onClick={requestClose}
             >
-              <svg viewBox="0 0 20 20" className="size-4" fill="none" aria-hidden="true">
-                <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.6" />
+              <svg
+                viewBox="0 0 20 20"
+                className="size-4"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 5l10 10M15 5 5 15"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
               </svg>
             </button>
           </div>
-          <span aria-hidden="true" className="pointer-events-none absolute inset-x-4 bottom-0 border-b border-dashed border-[#FFF8EC]/80" />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-4 bottom-0 border-b border-dashed border-[#FFF8EC]/80"
+          />
         </header>
         <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
           {offers.map((offer, index) => (
-            <OfferRow key={offer.id} offer={offer} ctx={ctx} index={index} onCopy={(code) => void copyCode(code)} />
+            <OfferRow
+              key={offer.id}
+              offer={offer}
+              ctx={ctx}
+              index={index}
+              onCopy={(code) => void copyCode(code)}
+            />
           ))}
         </ul>
       </div>
       {toast ? (
-        <p className="pointer-events-none absolute inset-x-0 bottom-4 z-10 mx-auto w-fit rounded-full bg-[#211B17] px-3 py-2 text-[0.78rem] text-[#FFF8EC]" role="status">
+        <p
+          className="pointer-events-none absolute inset-x-0 bottom-4 z-10 mx-auto w-fit rounded-full bg-[#211B17] px-3 py-2 text-[0.78rem] text-[#FFF8EC]"
+          role="status"
+        >
           {toast}
         </p>
       ) : null}
@@ -275,8 +345,19 @@ const iconWell: Record<OfferIcon, string> = {
 
 function OfferActionArrow() {
   return (
-    <svg viewBox="0 0 20 20" className="size-3.5 transition-transform group-hover/action:translate-x-0.5 rtl:group-hover/action:-translate-x-0.5 rtl:-scale-x-100" fill="none" aria-hidden="true">
-      <path d="M7 4.5 12.5 10 7 15.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      viewBox="0 0 20 20"
+      className="size-3.5 transition-transform group-hover/action:translate-x-0.5 rtl:group-hover/action:-translate-x-0.5 rtl:-scale-x-100"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M7 4.5 12.5 10 7 15.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -295,7 +376,9 @@ function OfferRow({
   const title = resolveOfferValue(offer.title, ctx);
   const text = resolveOfferValue(offer.text, ctx);
   const progress = offer.progress?.(ctx);
-  const percent = progress ? Math.round((progress.value / progress.max) * 100) : 0;
+  const percent = progress
+    ? Math.round((progress.value / progress.max) * 100)
+    : 0;
   const actionClass =
     "mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[#8A4332]/35 bg-white/70 px-3 text-[0.72rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase no-underline transition-colors hover:border-[#8A4332] hover:bg-[#8A4332] hover:text-white";
   return (
@@ -304,13 +387,23 @@ function OfferRow({
       style={{ animationDelay: `${Math.min(index, 10) * 45}ms` }}
     >
       <div className="flex items-start gap-3">
-        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${iconWell[offer.icon]}`}>
+        <span
+          className={`grid size-10 shrink-0 place-items-center rounded-full ${iconWell[offer.icon]}`}
+        >
           <OfferGlyph icon={offer.icon} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="m-0 text-[0.66rem] font-bold tracking-[0.12em] text-[#8A4332] uppercase">{offer.tag}</p>
-          <p className="m-0 mt-0.5 text-[0.95rem] font-semibold text-[#211B17]">{title}</p>
-          {text ? <p className="m-0 mt-1 text-[0.82rem] leading-snug text-[#5F534A]">{text}</p> : null}
+          <p className="m-0 text-[0.66rem] font-bold tracking-[0.12em] text-[#8A4332] uppercase">
+            {offer.tag}
+          </p>
+          <p className="m-0 mt-0.5 text-[0.95rem] font-semibold text-[#211B17]">
+            {title}
+          </p>
+          {text ? (
+            <p className="m-0 mt-1 text-[0.82rem] leading-snug text-[#5F534A]">
+              {text}
+            </p>
+          ) : null}
           {progress ? (
             <div className="mt-2">
               <div
@@ -321,13 +414,21 @@ function OfferRow({
                 aria-valuenow={Math.round(progress.value)}
                 aria-label={progress.label}
               >
-                <div className="h-full bg-[#8A4332]" style={{ width: `${percent}%` }} />
+                <div
+                  className="h-full bg-[#8A4332]"
+                  style={{ width: `${percent}%` }}
+                />
               </div>
-              <p className="m-0 mt-1 text-[0.75rem] text-[#5F534A]">{progress.label}</p>
+              <p className="m-0 mt-1 text-[0.75rem] text-[#5F534A]">
+                {progress.label}
+              </p>
             </div>
           ) : null}
           {offer.action && "href" in offer.action ? (
-            <LocaleLink className={`group/action ${actionClass}`} href={offer.action.href}>
+            <LocaleLink
+              className={`group/action ${actionClass}`}
+              href={offer.action.href}
+            >
               {offer.action.label}
               <OfferActionArrow />
             </LocaleLink>
@@ -336,7 +437,13 @@ function OfferRow({
             <button
               type="button"
               className={`group/action cursor-pointer border-0 ${actionClass}`}
-              onClick={() => onCopy(offer.action && "copy" in offer.action ? offer.action.copy : "")}
+              onClick={() =>
+                onCopy(
+                  offer.action && "copy" in offer.action
+                    ? offer.action.copy
+                    : "",
+                )
+              }
             >
               {offer.action.label}
               <OfferActionArrow />
@@ -349,12 +456,33 @@ function OfferRow({
 }
 
 function OfferGlyph({ icon }: { icon: OfferIcon }) {
-  const common = { viewBox: "0 0 20 20", fill: "none", "aria-hidden": true as const, className: "size-5" };
+  const common = {
+    viewBox: "0 0 20 20",
+    fill: "none",
+    "aria-hidden": true as const,
+    className: "size-5",
+  };
   if (icon === "bundle") {
     return (
       <svg {...common}>
-        <rect x="3" y="8" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-        <rect x="8" y="3" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect
+          x="3"
+          y="8"
+          width="9"
+          height="9"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="8"
+          y="3"
+          width="9"
+          height="9"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     );
   }
@@ -362,16 +490,40 @@ function OfferGlyph({ icon }: { icon: OfferIcon }) {
     return (
       <svg {...common}>
         <path d="M2.5 13.2V6.2h8.2v7" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10.7 8.2h3.1l2.7 2.6v2.4h-1.6" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="6" cy="14.2" r="1.5" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="13.4" cy="14.2" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M10.7 8.2h3.1l2.7 2.6v2.4h-1.6"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle
+          cx="6"
+          cy="14.2"
+          r="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle
+          cx="13.4"
+          cy="14.2"
+          r="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     );
   }
   if (icon === "card") {
     return (
       <svg {...common}>
-        <rect x="2.5" y="4.5" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect
+          x="2.5"
+          y="4.5"
+          width="15"
+          height="11"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         <path d="M2.5 8.2h15" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     );
@@ -379,36 +531,75 @@ function OfferGlyph({ icon }: { icon: OfferIcon }) {
   if (icon === "star") {
     return (
       <svg {...common}>
-        <path d="m10 3 1.8 3.7 4.1.6-3 2.9.7 4.1L10 12.4 6.4 14.3l.7-4.1-3-2.9 4.1-.6z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+        <path
+          d="m10 3 1.8 3.7 4.1.6-3 2.9.7 4.1L10 12.4 6.4 14.3l.7-4.1-3-2.9 4.1-.6z"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
   if (icon === "gift") {
     return (
       <svg {...common}>
-        <rect x="3.5" y="8" width="13" height="8.5" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3.5 11.2h13M10 8v8.5M10 8c0-2.2-1.4-3.5-2.8-3.5S5.2 6 6.6 7.4C7.6 8.4 10 8 10 8Zm0 0c0-2.2 1.4-3.5 2.8-3.5S14.8 6 13.4 7.4C12.4 8.4 10 8 10 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <rect
+          x="3.5"
+          y="8"
+          width="13"
+          height="8.5"
+          rx="1.2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M3.5 11.2h13M10 8v8.5M10 8c0-2.2-1.4-3.5-2.8-3.5S5.2 6 6.6 7.4C7.6 8.4 10 8 10 8Zm0 0c0-2.2 1.4-3.5 2.8-3.5S14.8 6 13.4 7.4C12.4 8.4 10 8 10 8Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
   if (icon === "bank") {
     return (
       <svg {...common}>
-        <path d="M3 8.5 10 4l7 4.5M4.5 9v5.5M8 9v5.5M12 9v5.5M15.5 9v5.5M3.5 15.5h13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M3 8.5 10 4l7 4.5M4.5 9v5.5M8 9v5.5M12 9v5.5M15.5 9v5.5M3.5 15.5h13"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
   if (icon === "clock") {
     return (
       <svg {...common}>
-        <circle cx="10" cy="10" r="6.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10 6.5V10l2.4 1.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <circle
+          cx="10"
+          cy="10"
+          r="6.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M10 6.5V10l2.4 1.6"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
   return (
     <svg {...common}>
-      <path d="M4 10.2 10 4.5l6 5.7v5.3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path
+        d="M4 10.2 10 4.5l6 5.7v5.3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
       <circle cx="10" cy="10" r="1.2" fill="currentColor" />
     </svg>
   );

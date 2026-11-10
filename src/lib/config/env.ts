@@ -86,8 +86,18 @@ const apiBaseUrl =
     ? "http://127.0.0.1:3000"
     : "");
 
+/**
+ * Search engines may index the site only when this is the production site AND
+ * indexing was switched on on purpose (NEXT_PUBLIC_SEO_INDEXING_ENABLED=true).
+ * Off by default, so a production deploy before go-live stays out of Google.
+ */
+const SEO_INDEXING_ENABLED =
+  APP_ENV === "production" &&
+  readPublic(process.env.NEXT_PUBLIC_SEO_INDEXING_ENABLED) === "true";
+
 export const env = {
   appEnv: APP_ENV,
+  seoIndexingEnabled: SEO_INDEXING_ENABLED,
   apiBaseUrl,
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",

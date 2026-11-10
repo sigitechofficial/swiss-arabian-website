@@ -16,11 +16,14 @@ export function CollectionDetailPageView({
   listingQuery,
   collection,
   initialListing,
+  initialZoneCode,
 }: {
   slug: string;
   listingQuery: CatalogListingQuery;
   collection: CatalogCollection | null;
   initialListing?: ProductListResult | null;
+  /** Market the server loaded `initialListing` for. */
+  initialZoneCode?: string | null;
 }) {
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
 
@@ -32,6 +35,7 @@ export function CollectionDetailPageView({
     },
     listingQuery,
     initialListing,
+    initialZoneCode,
   );
 
   useEffect(() => {

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { TOPBAR_TICKER } from "@/features/home/constants/chromeNav";
 import {
   cmsGlobalKeys,
   fetchCmsGlobalRegion,
@@ -50,7 +49,9 @@ export function TopbarTicker() {
     const fromCms = (cmsData.messages ?? [])
       .map((m) => m.message?.trim())
       .filter((m): m is string => Boolean(m));
-    return fromCms.length ? fromCms : [...TOPBAR_TICKER];
+    // Messages come only from the market's announcement bar (admin): fixed
+    // texts here could promise delivery or returns the market does not offer.
+    return fromCms;
   }, [cmsData.enabled, cmsData.messages]);
 
   const [index, setIndex] = useState(0);

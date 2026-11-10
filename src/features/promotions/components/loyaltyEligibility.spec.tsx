@@ -53,7 +53,12 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
   return {
     v: 1,
     computedAt: null,
-    context: { brandCode: null, zoneCode: "UAE", currencyCode: "AED", salesChannelCode: null },
+    context: {
+      brandCode: null,
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      salesChannelCode: null,
+    },
     applied: [],
     lineAllocations: [],
     totals: { discountTotal: "0" },
@@ -63,7 +68,9 @@ function quote(partial: Partial<PromotionSnapshotV1>): PromotionSnapshotV1 {
 }
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -74,7 +81,11 @@ beforeEach(() => {
     bootstrapped: true,
   });
   useUiStore.setState({
-    catalogContext: { zoneCode: "UAE", currencyCode: "AED", languageCode: "en" },
+    catalogContext: {
+      zoneCode: "UAE",
+      currencyCode: "AED",
+      languageCode: "en",
+    },
   });
 });
 
@@ -143,7 +154,9 @@ describe("FE-L6 promotion surfaces", () => {
       productBadges: [],
     };
     render(<OfferLanding code="GOLD10" />);
-    expect(screen.getByRole("heading", { name: "Gold member saving" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Gold member saving" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/requiredTier/)).not.toBeInTheDocument();
   });
 
@@ -173,7 +186,9 @@ describe("FE-L6 promotion surfaces", () => {
       productBadges: [],
     };
     render(<OfferLanding code="GOLD10" />);
-    expect(screen.getByText("This is not available in your market.")).toBeInTheDocument();
+    expect(
+      screen.getByText("This is not available in your market."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Gold member saving")).not.toBeInTheDocument();
   });
 
@@ -263,7 +278,13 @@ describe("FE-L6 promotion surfaces", () => {
       </Wrapper>,
     );
     expect(screen.getByText("Gold member saving")).toBeInTheDocument();
-    expect(await screen.findByText("Reward points can’t be used with the current offer.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Apply" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Reward points can’t be used with the current offer.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Apply" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -30,6 +30,7 @@
     "react-dom": "19.2.8",
     "react-hook-form": "^7.83.0",
     "recharts": "^3.10.1",
+    "sanitize-html": "^2.13.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
@@ -42,6 +43,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.13.0",
     "@vitejs/plugin-react": "^6.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",

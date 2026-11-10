@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
-import type { DiscoveryChrome, DiscoveryOffer, PromotionDiscovery } from "../types/discovery";
+import type {
+  DiscoveryChrome,
+  DiscoveryOffer,
+  PromotionDiscovery,
+} from "../types/discovery";
 import { badgeForProduct } from "../types/discovery";
 import { trackPromotion } from "../utils/promotionAnalytics";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -30,10 +41,11 @@ function useDialog(active: boolean, onClose: () => void) {
         frame = requestAnimationFrame(bind);
         return;
       }
-      const focusable = () =>
-        [...root.querySelectorAll<HTMLElement>(
+      const focusable = () => [
+        ...root.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        )];
+        ),
+      ];
       focusable()[0]?.focus();
       const onKey = (event: KeyboardEvent) => {
         if (event.key === "Escape") {
@@ -84,7 +96,13 @@ function OfferBody({
   prominent?: boolean;
 }) {
   return (
-    <article className={prominent ? "grid gap-1.5 pt-3 [&_h3]:text-[1.2rem]" : "grid gap-1.5 border-t border-shop-ink/12 pt-3"}>
+    <article
+      className={
+        prominent
+          ? "grid gap-1.5 pt-3 [&_h3]:text-[1.2rem]"
+          : "grid gap-1.5 border-t border-shop-ink/12 pt-3"
+      }
+    >
       <h3 className="m-0 font-medium">{offer.publicTitle}</h3>
       {offer.qualificationSummary ? <p>{offer.qualificationSummary}</p> : null}
       <div className="flex flex-wrap gap-2">
@@ -142,11 +160,23 @@ function Details({
   const titleId = useId();
   const ref = useDialog(true, onClose);
   return (
-    <div ref={ref} className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)] [&_h3]:m-0 [&_h3]:font-medium" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <button className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit" type="button" onClick={onClose}>
+    <div
+      ref={ref}
+      className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)] [&_h3]:m-0 [&_h3]:font-medium"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <button
+        className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit"
+        type="button"
+        onClick={onClose}
+      >
         {chrome.close}
       </button>
-      <h2 className="m-0 font-medium" id={titleId}>{offer.publicTitle}</h2>
+      <h2 className="m-0 font-medium" id={titleId}>
+        {offer.publicTitle}
+      </h2>
       <section>
         <h3>{chrome.whatYouGet}</h3>
         <p>{offer.details.whatYouGet || offer.benefitSummary}</p>
@@ -167,7 +197,12 @@ function Details({
       ) : null}
       {offer.shopOfferAvailable && offer.shopOfferPath ? (
         <div className="flex flex-wrap gap-2">
-          <LocaleLink className="border border-current px-3 py-2 text-inherit no-underline" href={offer.shopOfferPath}>{offer.details.ctaLabel || "Choose your pieces"}</LocaleLink>
+          <LocaleLink
+            className="border border-current px-3 py-2 text-inherit no-underline"
+            href={offer.shopOfferPath}
+          >
+            {offer.details.ctaLabel || "Choose your pieces"}
+          </LocaleLink>
         </div>
       ) : null}
     </div>
@@ -191,7 +226,9 @@ export function PromotionOfferHub({
     setShowAll(false);
     setOpen(false);
   };
-  const secondary = showAll ? discovery.secondaryOffers : discovery.secondaryOffers.slice(0, 3);
+  const secondary = showAll
+    ? discovery.secondaryOffers
+    : discovery.secondaryOffers.slice(0, 3);
   const hiddenOffers = discovery.secondaryOffers.length - secondary.length;
   const hubRef = useDialog(open && !details, closeHub);
 
@@ -214,17 +251,38 @@ export function PromotionOfferHub({
 
   return (
     <>
-      <button className="mb-3 flex w-full cursor-pointer border border-current bg-transparent px-3 py-2.5 text-start font-[inherit] text-inherit" type="button" onClick={() => setOpen(true)}>
+      <button
+        className="mb-3 flex w-full cursor-pointer border border-current bg-transparent px-3 py-2.5 text-start font-[inherit] text-inherit"
+        type="button"
+        onClick={() => setOpen(true)}
+      >
         {discovery.entryLabel}
       </button>
       {open ? (
         <Overlay>
-          <button className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]" type="button" aria-label="Close" onClick={() => setOpen(false)} />
-          <div ref={hubRef} className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)]" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <button className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit" type="button" onClick={() => setOpen(false)}>
+          <button
+            className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]"
+            type="button"
+            aria-label="Close"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            ref={hubRef}
+            className="fixed z-[281] flex flex-col gap-4 overflow-auto bg-sand p-5 pb-7 text-shop-ink max-[720px]:inset-x-0 max-[720px]:bottom-0 max-[720px]:max-h-[85vh] max-[720px]:rounded-t-2xl min-[721px]:inset-y-0 min-[721px]:right-0 min-[721px]:w-[min(420px,100%)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+          >
+            <button
+              className="cursor-pointer self-end border-0 bg-transparent font-[inherit] text-inherit"
+              type="button"
+              onClick={() => setOpen(false)}
+            >
               {discovery.chrome.close}
             </button>
-            <h2 className="m-0 font-medium" id={titleId}>{discovery.entryLabel}</h2>
+            <h2 className="m-0 font-medium" id={titleId}>
+              {discovery.entryLabel}
+            </h2>
             {discovery.unlockedBenefits.map((item) => (
               <p className="m-0" key={`${item.campaignCode}-${item.message}`}>
                 {item.message}
@@ -260,7 +318,11 @@ export function PromotionOfferHub({
             ))}
             {hiddenOffers > 0 ? (
               <div className="flex flex-wrap gap-2">
-                <button className="cursor-pointer border border-current bg-transparent px-3 py-2 font-[inherit] text-inherit" type="button" onClick={() => setShowAll(true)}>
+                <button
+                  className="cursor-pointer border border-current bg-transparent px-3 py-2 font-[inherit] text-inherit"
+                  type="button"
+                  onClick={() => setShowAll(true)}
+                >
                   {discovery.locale.toLowerCase().startsWith("ar")
                     ? `${discovery.chrome.viewAll} (${discovery.offers.length})`
                     : `View all ${discovery.offers.length} benefits`}
@@ -272,15 +334,37 @@ export function PromotionOfferHub({
       ) : null}
       {details ? (
         <Overlay>
-          <button className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]" type="button" aria-label="Close details" onClick={() => setDetails(null)} />
-          <Details offer={details} chrome={discovery.chrome} onClose={() => setDetails(null)} />
+          <button
+            className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]"
+            type="button"
+            aria-label="Close details"
+            onClick={() => setDetails(null)}
+          />
+          <Details
+            offer={details}
+            chrome={discovery.chrome}
+            onClose={() => setDetails(null)}
+          />
         </Overlay>
       ) : null}
     </>
   );
 }
 
-const OFFER_FILLER = new Set(["a", "an", "and", "each", "for", "from", "of", "on", "the", "to", "with", "your"]);
+const OFFER_FILLER = new Set([
+  "a",
+  "an",
+  "and",
+  "each",
+  "for",
+  "from",
+  "of",
+  "on",
+  "the",
+  "to",
+  "with",
+  "your",
+]);
 
 function offerWords(value: string) {
   return value
@@ -326,27 +410,62 @@ function offerDetailLines(offer: DiscoveryOffer, shown: string[]) {
   for (const line of candidates) {
     const text = line.trim();
     if (!text) continue;
-    if ([...shown, ...lines].some((existing) => sameOfferLine(text, existing))) continue;
+    if ([...shown, ...lines].some((existing) => sameOfferLine(text, existing)))
+      continue;
     lines.push(text);
   }
   return lines;
 }
 
 function OfferMark({ mechanic }: { mechanic: string }) {
-  const common = { viewBox: "0 0 20 20", fill: "none", "aria-hidden": true as const, className: "size-5" };
+  const common = {
+    viewBox: "0 0 20 20",
+    fill: "none",
+    "aria-hidden": true as const,
+    className: "size-5",
+  };
   if (mechanic === "SET_BUNDLE" || mechanic === "BUNDLE") {
     return (
       <svg {...common}>
-        <rect x="3" y="8" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-        <rect x="8" y="3" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect
+          x="3"
+          y="8"
+          width="9"
+          height="9"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="8"
+          y="3"
+          width="9"
+          height="9"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     );
   }
   if (mechanic === "GWP") {
     return (
       <svg {...common}>
-        <rect x="3.5" y="8" width="13" height="8.5" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3.5 11.2h13M10 8v8.5M10 8c0-2.2-1.4-3.5-2.8-3.5S5.2 6 6.6 7.4C7.6 8.4 10 8 10 8Zm0 0c0-2.2 1.4-3.5 2.8-3.5S14.8 6 13.4 7.4C12.4 8.4 10 8 10 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <rect
+          x="3.5"
+          y="8"
+          width="13"
+          height="8.5"
+          rx="1.2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M3.5 11.2h13M10 8v8.5M10 8c0-2.2-1.4-3.5-2.8-3.5S5.2 6 6.6 7.4C7.6 8.4 10 8 10 8Zm0 0c0-2.2 1.4-3.5 2.8-3.5S14.8 6 13.4 7.4C12.4 8.4 10 8 10 8Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -354,24 +473,56 @@ function OfferMark({ mechanic }: { mechanic: string }) {
     return (
       <svg {...common}>
         <path d="M2.5 13.2V6.2h8.2v7" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10.7 8.2h3.1l2.7 2.6v2.4h-1.6" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="6" cy="14.2" r="1.5" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="13.4" cy="14.2" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M10.7 8.2h3.1l2.7 2.6v2.4h-1.6"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle
+          cx="6"
+          cy="14.2"
+          r="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle
+          cx="13.4"
+          cy="14.2"
+          r="1.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     );
   }
   if (mechanic === "TIERED_SPEND") {
     return (
       <svg {...common}>
-        <path d="M4 14.5V10M8.5 14.5V7M13 14.5V4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path
+          d="M4 14.5V10M8.5 14.5V7M13 14.5V4"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
   if (mechanic === "BUY_X_GET_Y") {
     return (
       <svg {...common}>
-        <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        <circle cx="10" cy="10" r="6.5" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M10 4v12M4 10h12"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="10"
+          cy="10"
+          r="6.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     );
   }
@@ -380,13 +531,23 @@ function OfferMark({ mechanic }: { mechanic: string }) {
       <svg {...common}>
         <circle cx="6.2" cy="6.2" r="1.3" fill="currentColor" />
         <circle cx="13.8" cy="13.8" r="1.3" fill="currentColor" />
-        <path d="M14.5 5.5 5.5 14.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path
+          d="M14.5 5.5 5.5 14.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
   return (
     <svg {...common}>
-      <path d="M4 6.5 10 3.5l6 3v7l-6 3-6-3v-7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path
+        d="M4 6.5 10 3.5l6 3v7l-6 3-6-3v-7Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
       <path d="M10 10.2V16" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
@@ -444,7 +605,12 @@ export function PdpOffersPanel({
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold [&_svg]:h-3.5 [&_svg]:w-3.5">
           {countLabel}
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path
+              d="M5 7.5 10 12.5 15 7.5"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
           </svg>
         </span>
       </button>
@@ -467,8 +633,13 @@ export function PdpOffersPanel({
             >
               <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
                 <div>
-                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-copper uppercase">{countLabel}</p>
-                  <h2 id={titleId} className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.55rem] leading-none font-medium">
+                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-copper uppercase">
+                    {countLabel}
+                  </p>
+                  <h2
+                    id={titleId}
+                    className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.55rem] leading-none font-medium"
+                  >
                     {title}
                   </h2>
                 </div>
@@ -478,17 +649,33 @@ export function PdpOffersPanel({
                   aria-label={arabic ? "إغلاق" : "Close"}
                   onClick={close}
                 >
-                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="size-5">
-                    <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.6" />
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    aria-hidden="true"
+                    className="size-5"
+                  >
+                    <path
+                      d="M5 5l10 10M15 5 5 15"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                    />
                   </svg>
                 </button>
               </div>
-              <ul className={`m-0 grid min-h-0 flex-1 auto-rows-max list-none items-start gap-2.5 overflow-y-auto px-5 pt-1 pb-5 sm:px-6 sm:pb-6 ${offers.length > 1 ? "sm:grid-cols-2" : ""}`}>
+              <ul
+                className={`m-0 grid min-h-0 flex-1 auto-rows-max list-none items-start gap-2.5 overflow-y-auto px-5 pt-1 pb-5 sm:px-6 sm:pb-6 ${offers.length > 1 ? "sm:grid-cols-2" : ""}`}
+              >
                 {offers.map((offer) => {
                   const expanded = activeCode === offer.campaignCode;
                   const copy = offerCardCopy(offer);
-                  const details = offerDetailLines(offer, [copy.headline, copy.support]);
-                  const canShop = Boolean(offer.shopOfferAvailable && offer.shopOfferPath);
+                  const details = offerDetailLines(offer, [
+                    copy.headline,
+                    copy.support,
+                  ]);
+                  const canShop = Boolean(
+                    offer.shopOfferAvailable && offer.shopOfferPath,
+                  );
                   const canExpand = details.length > 0 || canShop;
                   return (
                     <li
@@ -500,13 +687,25 @@ export function PdpOffersPanel({
                           className="group flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-3.5 py-3 text-start text-inherit"
                           type="button"
                           aria-expanded={expanded}
-                          onClick={() => setActiveCode(expanded ? null : offer.campaignCode)}
+                          onClick={() =>
+                            setActiveCode(expanded ? null : offer.campaignCode)
+                          }
                         >
-                          <OfferFace offer={offer} copy={copy} expanded={expanded} disclosure />
+                          <OfferFace
+                            offer={offer}
+                            copy={copy}
+                            expanded={expanded}
+                            disclosure
+                          />
                         </button>
                       ) : (
                         <div className="flex items-center gap-3 px-3.5 py-3">
-                          <OfferFace offer={offer} copy={copy} expanded={false} disclosure={false} />
+                          <OfferFace
+                            offer={offer}
+                            copy={copy}
+                            expanded={false}
+                            disclosure={false}
+                          />
                         </div>
                       )}
                       {expanded ? (
@@ -514,7 +713,10 @@ export function PdpOffersPanel({
                           {details.length ? (
                             <div className="grid gap-1.5">
                               {details.map((line) => (
-                                <p className="m-0 text-[0.84rem] leading-snug text-[#241f1b]/75" key={line}>
+                                <p
+                                  className="m-0 text-[0.84rem] leading-snug text-[#241f1b]/75"
+                                  key={line}
+                                >
                                   {line}
                                 </p>
                               ))}
@@ -526,7 +728,8 @@ export function PdpOffersPanel({
                               href={offer.shopOfferPath as string}
                               onClick={close}
                             >
-                              {offer.details.ctaLabel || (arabic ? "اختَر القطع" : "Choose your pieces")}
+                              {offer.details.ctaLabel ||
+                                (arabic ? "اختَر القطع" : "Choose your pieces")}
                             </LocaleLink>
                           ) : null}
                         </div>
@@ -556,17 +759,33 @@ function OfferFace({
 }) {
   return (
     <>
-      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${expanded ? "bg-copper text-white" : "bg-[rgb(140_68_53/0.1)] text-copper"}`}>
+      <span
+        className={`grid size-9 shrink-0 place-items-center rounded-full ${expanded ? "bg-copper text-white" : "bg-[rgb(140_68_53/0.1)] text-copper"}`}
+      >
         <OfferMark mechanic={offer.mechanic} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[0.92rem] leading-snug font-semibold text-[#1a1512]">{copy.headline}</span>
+        <span className="block text-[0.92rem] leading-snug font-semibold text-[#1a1512]">
+          {copy.headline}
+        </span>
         {copy.support ? (
-          <span className="mt-0.5 block text-[0.8rem] leading-snug text-[#241f1b]/62">{copy.support}</span>
+          <span className="mt-0.5 block text-[0.8rem] leading-snug text-[#241f1b]/62">
+            {copy.support}
+          </span>
         ) : null}
       </span>
-      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={`size-4 shrink-0 text-[#241f1b]/40 transition-transform ${expanded ? "rotate-180" : ""} ${disclosure ? "" : "invisible"}`}>
-        <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        aria-hidden="true"
+        className={`size-4 shrink-0 text-[#241f1b]/40 transition-transform ${expanded ? "rotate-180" : ""} ${disclosure ? "" : "invisible"}`}
+      >
+        <path
+          d="M5 7.5 10 12.5 15 7.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     </>
   );
@@ -584,11 +803,17 @@ export function PromotionOffersEntry({
   return <PromotionOfferHub discovery={query.data} surface={surface} />;
 }
 
-export function PromotionCardBadge({ productId }: { productId?: string | null }) {
+export function PromotionCardBadge({
+  productId,
+}: {
+  productId?: string | null;
+}) {
   const query = usePromotionDiscovery(productId ? [productId] : []);
   const badge = badgeForProduct(query.data, productId);
   if (!badge) return null;
-  return <p className="mb-1.5 text-xs tracking-[0.04em] uppercase">{badge.badge}</p>;
+  return (
+    <p className="mb-1.5 text-xs tracking-[0.04em] uppercase">{badge.badge}</p>
+  );
 }
 
 export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
@@ -610,10 +835,17 @@ export function PromotionCampaignTile({ offer }: { offer: DiscoveryOffer }) {
     </>
   );
   if (!offer.shopOfferPath) {
-    return <article className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase">{copy}</article>;
+    return (
+      <article className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase">
+        {copy}
+      </article>
+    );
   }
   return (
-    <LocaleLink className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit no-underline [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase" href={offer.shopOfferPath}>
+    <LocaleLink
+      className="flex min-h-full flex-col justify-end gap-2 border border-current bg-warm p-5 text-inherit no-underline [&_span]:text-[0.8rem] [&_span]:tracking-[0.06em] [&_span]:uppercase"
+      href={offer.shopOfferPath}
+    >
       {copy}
     </LocaleLink>
   );

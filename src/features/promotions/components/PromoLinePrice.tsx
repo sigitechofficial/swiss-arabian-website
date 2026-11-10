@@ -1,6 +1,9 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { PromotionSnapshotV1 } from "../types/promotions";
-import { lineMerchandiseDiscount, linePrices } from "../utils/lineMerchandiseDiscount";
+import {
+  lineMerchandiseDiscount,
+  linePrices,
+} from "../utils/lineMerchandiseDiscount";
 
 const priceSize = "text-[0.72rem] leading-none";
 
@@ -35,8 +38,12 @@ export function PromoLinePrice({
     <p className={`${className} m-0 flex flex-col items-end gap-1`} dir="ltr">
       {prices.sale != null ? (
         <>
-          <span className={struck}>{formatMoney(prices.list, line.currency)}</span>
-          <span className={priceSize}>{formatMoney(prices.sale, line.currency)}</span>
+          <span className={struck}>
+            {formatMoney(prices.list, line.currency)}
+          </span>
+          <span className={priceSize}>
+            {formatMoney(prices.sale, line.currency)}
+          </span>
         </>
       ) : (
         formatMoney(prices.list, line.currency)

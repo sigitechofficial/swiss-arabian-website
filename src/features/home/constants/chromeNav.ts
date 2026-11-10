@@ -38,12 +38,6 @@ export const TOPBAR_CURRENCIES = [
   { id: "OMR", label: "OMR" },
 ] as const;
 
-export const TOPBAR_TICKER = [
-  "Orders will be delivered within 3-7 working days",
-  "Complimentary delivery on selected orders",
-  "Easy 7-day returns, no questions asked",
-] as const;
-
 export const PRIMARY_NAV: ChromeNavItem[] = [
   { type: "link", label: "New Launches", href: "/collections/new-launches" },
   {

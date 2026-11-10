@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   hasLoyaltyTier,
@@ -16,13 +17,18 @@ function windowCopy(days: number): string {
 const MEDAL_FILLS = ["#c9a36a", "#d7d7d7", "#d4b15a", "#eceae6", "#f3f1ee"];
 
 function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
+  const marketCurrency = useMarketCurrency();
   const tier = wallet.tier;
   const steps = tier?.steps ?? [];
   if (!tier || steps.length === 0) return null;
 
-  const currency = wallet.currencyCode ?? "AED";
-  const currentIndex = steps.findIndex((step) => step.name === tier.current?.name);
-  const nextIndex = tier.next ? steps.findIndex((step) => step.name === tier.next?.name) : -1;
+  const currency = wallet.currencyCode ?? marketCurrency;
+  const currentIndex = steps.findIndex(
+    (step) => step.name === tier.current?.name,
+  );
+  const nextIndex = tier.next
+    ? steps.findIndex((step) => step.name === tier.next?.name)
+    : -1;
   const remaining =
     tier.next && tier.remainingAmount != null
       ? `${formatMoney(tier.remainingAmount, currency)} away from ${tier.next.name}`
@@ -32,10 +38,19 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
   const trackStart = center(0);
   const trackEnd = center(count - 1);
   const segmentEnd =
-    currentIndex >= 0 && nextIndex > currentIndex ? nextIndex : currentIndex >= 0 ? currentIndex : count - 1;
-  const progress = tier.next ? Math.min(100, Math.max(0, tier.progressPercent ?? 0)) / 100 : 1;
+    currentIndex >= 0 && nextIndex > currentIndex
+      ? nextIndex
+      : currentIndex >= 0
+        ? currentIndex
+        : count - 1;
+  const progress = tier.next
+    ? Math.min(100, Math.max(0, tier.progressPercent ?? 0)) / 100
+    : 1;
   const thumb =
-    currentIndex >= 0 ? center(currentIndex) + (center(segmentEnd) - center(currentIndex)) * progress : trackEnd;
+    currentIndex >= 0
+      ? center(currentIndex) +
+        (center(segmentEnd) - center(currentIndex)) * progress
+      : trackEnd;
   const thumbLeft = `${thumb}%`;
 
   return (
@@ -43,7 +58,8 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
       className="overflow-hidden rounded-lg border border-[#eadfce] bg-[#f6f0e6] px-4 py-5 sm:px-7 sm:py-6"
       aria-label="Rewards tiers"
     >
-      {tier.qualificationWindowDays != null && tier.qualificationWindowDays > 0 ? (
+      {tier.qualificationWindowDays != null &&
+      tier.qualificationWindowDays > 0 ? (
         <p className="text-right text-[12px] text-[#8a7764]">
           Qualification period: {windowCopy(tier.qualificationWindowDays)}
         </p>
@@ -56,7 +72,12 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
               className="absolute top-0 z-30 whitespace-nowrap rounded-md bg-[#8d5a32] px-2.5 py-1 text-[11px] font-semibold text-white"
               style={{
                 left: thumbLeft,
-                transform: thumb < 22 ? "translateX(0)" : thumb > 78 ? "translateX(-100%)" : "translateX(-50%)",
+                transform:
+                  thumb < 22
+                    ? "translateX(0)"
+                    : thumb > 78
+                      ? "translateX(-100%)"
+                      : "translateX(-50%)",
               }}
             >
               {remaining}
@@ -71,11 +92,17 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
           ) : null}
           <div
             className="absolute top-[75px] z-0 h-1 -translate-y-1/2 rounded-full bg-[#e7ddd2]"
-            style={{ left: `${trackStart}%`, width: `${trackEnd - trackStart}%` }}
+            style={{
+              left: `${trackStart}%`,
+              width: `${trackEnd - trackStart}%`,
+            }}
           />
           <div
             className="absolute top-[75px] z-0 h-1.5 -translate-y-1/2 rounded-full bg-[#8d5a32]"
-            style={{ left: `${trackStart}%`, width: `${Math.max(0, thumb - trackStart)}%` }}
+            style={{
+              left: `${trackStart}%`,
+              width: `${Math.max(0, thumb - trackStart)}%`,
+            }}
           />
           <span
             aria-hidden
@@ -86,12 +113,25 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
             {steps.map((step, index) => {
               const isCurrent = index === currentIndex;
               return (
-                <li key={`${step.name}-${step.threshold}`} className="flex min-w-0 flex-1 flex-col items-center px-1">
+                <li
+                  key={`${step.name}-${step.threshold}`}
+                  className="flex min-w-0 flex-1 flex-col items-center px-1"
+                >
                   <div
                     className={`relative z-10 grid size-14 place-items-center rounded-full ${isCurrent ? "ring-2 ring-[#8d5a32] ring-offset-2 ring-offset-[#f6f0e6]" : ""}`}
-                    style={{ background: MEDAL_FILLS[index] ?? MEDAL_FILLS[MEDAL_FILLS.length - 1] }}
+                    style={{
+                      background:
+                        MEDAL_FILLS[index] ??
+                        MEDAL_FILLS[MEDAL_FILLS.length - 1],
+                    }}
                   >
-                    <MediaImage src="/assets/sa-logo-clear.png" alt="" width={28} height={28} className="size-7 object-contain" />
+                    <MediaImage
+                      src="/assets/sa-logo-clear.png"
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="size-7 object-contain"
+                    />
                   </div>
                   <p
                     className={`mt-3 text-[10px] font-bold tracking-[0.14em] ${isCurrent ? "text-[#8d5a32]" : "invisible"}`}
@@ -102,7 +142,10 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
                   <p className="mt-1 text-center font-[family-name:var(--font-display)] text-[15px] text-[#3a2e24]">
                     {step.name}
                   </p>
-                  <p className="mt-0.5 text-center text-[12px] text-[#8a7764] tabular-nums" dir="ltr">
+                  <p
+                    className="mt-0.5 text-center text-[12px] text-[#8a7764] tabular-nums"
+                    dir="ltr"
+                  >
                     {formatMoney(step.threshold, currency)}
                   </p>
                 </li>
@@ -174,7 +217,9 @@ function TierProgress({
   return (
     <div className="mt-4 min-w-0">
       {remaining ? (
-        <p className="break-words text-[15px] font-semibold leading-relaxed text-sa-primary">{remaining}</p>
+        <p className="break-words text-[15px] font-semibold leading-relaxed text-sa-primary">
+          {remaining}
+        </p>
       ) : (
         <p className="text-[14px] leading-relaxed text-sa-secondary">
           Keep shopping to reach {tier.next.name}.
@@ -211,13 +256,17 @@ export function RewardsTierSection({
   wallet: LoyaltyWalletView;
   hideCurrentName?: boolean;
 }) {
+  const marketCurrency = useMarketCurrency();
   if (!hasLoyaltyTier(wallet) || !wallet.tier) return null;
   const tier = wallet.tier;
-  const currency = wallet.currencyCode ?? "AED";
+  const currency = wallet.currencyCode ?? marketCurrency;
   const showCurrent = Boolean(tier.current) && !hideCurrentName;
 
   return (
-    <section className="mt-5 min-w-0 rounded-lg border border-sa-border bg-section-soft px-4 py-4 sm:px-5" aria-labelledby="rewards-tier-heading">
+    <section
+      className="mt-5 min-w-0 rounded-lg border border-sa-border bg-section-soft px-4 py-4 sm:px-5"
+      aria-labelledby="rewards-tier-heading"
+    >
       <div className="flex items-start justify-between gap-4">
         {showCurrent ? (
           <div className="min-w-0">
@@ -227,7 +276,9 @@ export function RewardsTierSection({
             >
               Current tier
             </h3>
-            <p className="mt-1 break-words text-[22px] font-semibold leading-tight text-sa-primary">{tier.current?.name}</p>
+            <p className="mt-1 break-words text-[22px] font-semibold leading-tight text-sa-primary">
+              {tier.current?.name}
+            </p>
           </div>
         ) : (
           <h3 id="rewards-tier-heading" className="sr-only">
@@ -236,8 +287,12 @@ export function RewardsTierSection({
         )}
         {tier.next ? (
           <div className="min-w-0 text-right">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Next tier</p>
-            <p className="mt-1 break-words text-[16px] font-semibold text-sa-primary">{tier.next.name}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
+              Next tier
+            </p>
+            <p className="mt-1 break-words text-[16px] font-semibold text-sa-primary">
+              {tier.next.name}
+            </p>
           </div>
         ) : null}
       </div>
@@ -245,12 +300,16 @@ export function RewardsTierSection({
       {tier.qualifyingSpend != null ? (
         <p className="mt-4 break-words text-[13px] leading-relaxed text-sa-secondary">
           Eligible spend so far:{" "}
-          <span className="font-semibold text-sa-primary tabular-nums" dir="ltr">
+          <span
+            className="font-semibold text-sa-primary tabular-nums"
+            dir="ltr"
+          >
             {formatMoney(tier.qualifyingSpend, currency)}
           </span>
         </p>
       ) : null}
-      {tier.qualificationWindowDays != null && tier.qualificationWindowDays > 0 ? (
+      {tier.qualificationWindowDays != null &&
+      tier.qualificationWindowDays > 0 ? (
         <p className="mt-1 break-words text-[13px] leading-relaxed text-sa-secondary">
           Qualification period: {windowCopy(tier.qualificationWindowDays)}
         </p>
@@ -273,7 +332,10 @@ export function RewardsTierHistory({
   if (pending) {
     return (
       <section aria-labelledby="tier-history-heading">
-        <h2 id="tier-history-heading" className="text-[16px] font-semibold text-sa-primary sm:text-[18px]">
+        <h2
+          id="tier-history-heading"
+          className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
+        >
           Tier history
         </h2>
         <p className="mt-4 text-[13px] text-sa-secondary" role="status">
@@ -285,11 +347,16 @@ export function RewardsTierHistory({
   if (error) {
     return (
       <section aria-labelledby="tier-history-heading">
-        <h2 id="tier-history-heading" className="text-[16px] font-semibold text-sa-primary sm:text-[18px]">
+        <h2
+          id="tier-history-heading"
+          className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
+        >
           Tier history
         </h2>
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
-          <p className="text-[14px] text-sa-primary">We couldn&apos;t load your rewards right now.</p>
+          <p className="text-[14px] text-sa-primary">
+            We couldn&apos;t load your rewards right now.
+          </p>
           {onRetry ? (
             <button
               type="button"
@@ -306,18 +373,27 @@ export function RewardsTierHistory({
   if (rows.length === 0) return null;
   return (
     <section aria-labelledby="tier-history-heading">
-      <h2 id="tier-history-heading" className="text-[16px] font-semibold text-sa-primary sm:text-[18px]">
+      <h2
+        id="tier-history-heading"
+        className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
+      >
         Tier history
       </h2>
       <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
         {rows.map((row) => (
           <li key={row.id} className="min-w-0 px-4 py-4">
             {row.tierName ? (
-              <p className="break-words text-[13px] font-medium text-sa-primary">{row.tierName}</p>
+              <p className="break-words text-[13px] font-medium text-sa-primary">
+                {row.tierName}
+              </p>
             ) : null}
-            <p className="mt-0.5 break-words text-[12px] text-sa-secondary">{row.label}</p>
+            <p className="mt-0.5 break-words text-[12px] text-sa-secondary">
+              {row.label}
+            </p>
             {historyDate(row.occurredAt) ? (
-              <p className="mt-1 text-[12px] text-sa-muted">{historyDate(row.occurredAt)}</p>
+              <p className="mt-1 text-[12px] text-sa-muted">
+                {historyDate(row.occurredAt)}
+              </p>
             ) : null}
           </li>
         ))}

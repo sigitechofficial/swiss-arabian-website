@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +8,10 @@ import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useResetOnChange } from "@/hooks/useResetOnChange";
 import { promotionKeys } from "../api/promotions.keys";
 import { apiGet, apiPost } from "@/lib/api/apiClient";
-import { addCartItems, storefrontCartQuery } from "@/features/cart/api/cart.service";
+import {
+  addCartItems,
+  storefrontCartQuery,
+} from "@/features/cart/api/cart.service";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCartStore } from "@/stores/useCartStore";
@@ -103,8 +107,11 @@ function readSelections(key: string): Selection[] {
       if (!item || typeof item !== "object") return [];
       const groupId = String((item as { groupId?: unknown }).groupId || "");
       const sku = String((item as { sku?: unknown }).sku || "");
-      const quantity = Math.floor(Number((item as { quantity?: unknown }).quantity));
-      if (!groupId || !sku || !Number.isFinite(quantity) || quantity < 1) return [];
+      const quantity = Math.floor(
+        Number((item as { quantity?: unknown }).quantity),
+      );
+      if (!groupId || !sku || !Number.isFinite(quantity) || quantity < 1)
+        return [];
       return [{ groupId, sku, quantity }];
     });
   } catch {
@@ -115,7 +122,9 @@ function readSelections(key: string): Selection[] {
 function keepSellable(groups: ShopGroup[], rows: Selection[]): Selection[] {
   return rows.flatMap((row) => {
     const group = groups.find((item) => item.id === row.groupId);
-    const product = group?.products.find((item) => item.sku === row.sku && item.inStock);
+    const product = group?.products.find(
+      (item) => item.sku === row.sku && item.inStock,
+    );
     if (!group || !product) return [];
     const cap = group.requiredQuantity ?? 20;
     return [{ ...row, quantity: Math.min(row.quantity, cap) }];
@@ -133,7 +142,7 @@ export function OfferShop({ code }: { code: string }) {
   const cartId = useCartStore((state) => state.cartId);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
-  const currency = useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
+  const currency = useMarketCurrency();
 
   // Offer page data (market + locale scoped); React Query owns loading/error.
   const shopQuery = useQuery({
@@ -147,7 +156,8 @@ export function OfferShop({ code }: { code: string }) {
     },
     enabled: Boolean(zoneCode),
   });
-  const shop = shopQuery.data && "offer" in shopQuery.data ? shopQuery.data : null;
+  const shop =
+    shopQuery.data && "offer" in shopQuery.data ? shopQuery.data : null;
   const missing = shopQuery.isSuccess && !shop;
   const loadError = shopQuery.isError;
 
@@ -155,7 +165,9 @@ export function OfferShop({ code }: { code: string }) {
   // the offer loads; the query only runs in the browser.
   const selectionsKey = shop ? storageKey(shop.offer.marketCode, code) : "";
   useResetOnChange(selectionsKey, () => {
-    setSelections(shop ? keepSellable(shop.groups, readSelections(selectionsKey)) : []);
+    setSelections(
+      shop ? keepSellable(shop.groups, readSelections(selectionsKey)) : [],
+    );
     setFetchedPreview(null);
   });
 
@@ -190,15 +202,23 @@ export function OfferShop({ code }: { code: string }) {
           locale,
           selections,
         },
-      ).then((data) => {
-        if (!data || !("yourTotal" in data)) return;
-        setFetchedPreview(data);
-        if (data.unavailable.length) {
-          setSelections((current) => current.filter((row) =>
-            !data.unavailable.some((gone) => gone.groupId === row.groupId && gone.sku === row.sku),
-          ));
-        }
-      }).catch(() => setFetchedPreview(null));
+      )
+        .then((data) => {
+          if (!data || !("yourTotal" in data)) return;
+          setFetchedPreview(data);
+          if (data.unavailable.length) {
+            setSelections((current) =>
+              current.filter(
+                (row) =>
+                  !data.unavailable.some(
+                    (gone) =>
+                      gone.groupId === row.groupId && gone.sku === row.sku,
+                  ),
+              ),
+            );
+          }
+        })
+        .catch(() => setFetchedPreview(null));
     }, 350);
     return () => window.clearTimeout(handle);
   }, [shop, selections, code, locale]);
@@ -209,7 +229,8 @@ export function OfferShop({ code }: { code: string }) {
   const productsBySku = useMemo(() => {
     const map = new Map<string, ShopProduct>();
     for (const group of shop?.groups ?? []) {
-      for (const product of group.products) map.set(`${group.id}:${product.sku}`, product);
+      for (const product of group.products)
+        map.set(`${group.id}:${product.sku}`, product);
     }
     return map;
   }, [shop]);
@@ -222,9 +243,12 @@ export function OfferShop({ code }: { code: string }) {
   function choose(group: ShopGroup, product: ShopProduct) {
     if (!product.inStock) return;
     setSelections((current) => {
-      const rest = group.selectionMode === "replace"
-        ? current.filter((row) => row.groupId !== group.id)
-        : current.filter((row) => !(row.groupId === group.id && row.sku === product.sku));
+      const rest =
+        group.selectionMode === "replace"
+          ? current.filter((row) => row.groupId !== group.id)
+          : current.filter(
+              (row) => !(row.groupId === group.id && row.sku === product.sku),
+            );
       return [...rest, { groupId: group.id, sku: product.sku, quantity: 1 }];
     });
     trackPromotion("promotion_product_selected", {
@@ -268,7 +292,9 @@ export function OfferShop({ code }: { code: string }) {
     return group.requiredQuantity ? have >= group.requiredQuantity : have > 0;
   };
   const removeSelection = (groupId: string, sku: string) => {
-    setSelections((current) => current.filter((item) => !(item.groupId === groupId && item.sku === sku)));
+    setSelections((current) =>
+      current.filter((item) => !(item.groupId === groupId && item.sku === sku)),
+    );
     trackPromotion("promotion_product_removed", {
       campaignId: shop.offer.campaignId,
       campaignCode: shop.offer.campaignCode,
@@ -279,19 +305,23 @@ export function OfferShop({ code }: { code: string }) {
   };
   const unfilled = shop.groups.filter((group) => !groupFilled(group));
   const activeId = unfilled[0]?.id ?? shop.groups[0]?.id;
-  const ready = unfilled.length === 0 && Boolean(preview?.readyToAdd) && !adding;
+  const ready =
+    unfilled.length === 0 && Boolean(preview?.readyToAdd) && !adding;
   const subtotal = moneyNumber(preview?.subtotalAmount);
   const savings = moneyNumber(preview?.savingsAmount);
   const total = moneyNumber(preview?.totalAmount);
-  const arabic = typeof document !== "undefined" && document.documentElement.lang.toLowerCase().startsWith("ar");
+  const arabic =
+    typeof document !== "undefined" &&
+    document.documentElement.lang.toLowerCase().startsWith("ar");
   const addPiece = arabic ? "أضف إلى الباقة" : "Add to bundle";
   const addedPiece = arabic ? "تمت الإضافة" : "Added";
   const soldOut = shop.copy.soldOut || (arabic ? "نفد" : "Out of stock");
-  const progress = unfilled.length === 0
-    ? (preview?.message || (arabic ? "الباقة جاهزة" : "Your bundle is ready"))
-    : arabic
-      ? `أضف ${unfilled.map((group) => group.name).join("، ")} لإكمال الباقة.`
-      : `Add ${unfilled.map((group) => group.name).join(" and ")} to complete your bundle.`;
+  const progress =
+    unfilled.length === 0
+      ? preview?.message || (arabic ? "الباقة جاهزة" : "Your bundle is ready")
+      : arabic
+        ? `أضف ${unfilled.map((group) => group.name).join("، ")} لإكمال الباقة.`
+        : `Add ${unfilled.map((group) => group.name).join(" and ")} to complete your bundle.`;
 
   return (
     <article className="flex w-full min-w-0 flex-col pb-16">
@@ -303,38 +333,77 @@ export function OfferShop({ code }: { code: string }) {
                 {arabic ? "الباقة." : "Bundle."}
               </h1>
               <p className="m-0 text-[0.95rem] text-[#5e5852]">
-                {arabic ? "اختَر ٣ عطور أو أكثر لتوفير أكبر." : "Choose 3+ fragrances for better savings."}
+                {arabic
+                  ? "اختَر ٣ عطور أو أكثر لتوفير أكبر."
+                  : "Choose 3+ fragrances for better savings."}
               </p>
             </header>
             <section aria-label={shop.copy.tray}>
               <ol className="m-0 mt-3.5 flex list-none gap-3 p-0">
                 {shop.groups.map((group) => {
-                  const chosen = selections.find((row) => row.groupId === group.id);
-                  const product = chosen ? productsBySku.get(`${group.id}:${chosen.sku}`) : undefined;
+                  const chosen = selections.find(
+                    (row) => row.groupId === group.id,
+                  );
+                  const product = chosen
+                    ? productsBySku.get(`${group.id}:${chosen.sku}`)
+                    : undefined;
                   const current = activeId === group.id && !chosen;
                   return (
                     <li key={group.id} className="w-[7.25rem] shrink-0">
                       {chosen ? (
                         <div className="relative">
                           <span className="grid size-[7.25rem] place-items-center overflow-hidden rounded-xl bg-[#faf7f2]">
-                            {product?.image ? <MediaImage className="h-full w-full object-contain p-1.5" src={product.image} alt="" width={96} height={96} /> : null}
+                            {product?.image ? (
+                              <MediaImage
+                                className="h-full w-full object-contain p-1.5"
+                                src={product.image}
+                                alt=""
+                                width={96}
+                                height={96}
+                              />
+                            ) : null}
                           </span>
                           <button
                             type="button"
                             className="absolute top-1 end-1 grid size-5 cursor-pointer place-items-center rounded-full border-0 bg-white/90 p-0 text-[#1c1917]"
                             aria-label={`${shop.copy.remove} ${product?.title ?? chosen.sku}`}
-                            onClick={() => removeSelection(group.id, chosen.sku)}
+                            onClick={() =>
+                              removeSelection(group.id, chosen.sku)
+                            }
                           >
-                            <svg viewBox="0 0 20 20" className="size-2.5" fill="none" aria-hidden="true">
-                              <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" />
+                            <svg
+                              viewBox="0 0 20 20"
+                              className="size-2.5"
+                              fill="none"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M5 5l10 10M15 5 5 15"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              />
                             </svg>
                           </button>
                         </div>
                       ) : (
-                        <a href={`#offer-group-${group.id}`} className="block text-inherit no-underline">
-                          <span className={`grid size-[7.25rem] place-items-center rounded-xl border border-dashed bg-[#faf7f2] text-[#b9aea2] ${current ? "border-[#c4b5a6]" : "border-[#ddd2c6]"}`}>
-                            <svg viewBox="0 0 20 20" className="size-5" fill="none" aria-hidden="true">
-                              <path d="M10 4.5v11M4.5 10h11" stroke="currentColor" strokeWidth="1.4" />
+                        <a
+                          href={`#offer-group-${group.id}`}
+                          className="block text-inherit no-underline"
+                        >
+                          <span
+                            className={`grid size-[7.25rem] place-items-center rounded-xl border border-dashed bg-[#faf7f2] text-[#b9aea2] ${current ? "border-[#c4b5a6]" : "border-[#ddd2c6]"}`}
+                          >
+                            <svg
+                              viewBox="0 0 20 20"
+                              className="size-5"
+                              fill="none"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M10 4.5v11M4.5 10h11"
+                                stroke="currentColor"
+                                strokeWidth="1.4"
+                              />
                             </svg>
                           </span>
                         </a>
@@ -357,11 +426,15 @@ export function OfferShop({ code }: { code: string }) {
                 </div>
                 {savings != null && savings > 0 ? (
                   <div className="mt-2 flex items-baseline justify-between gap-3 text-[0.82rem] font-medium text-copper">
-                    <span>{shop.offer.badge || shop.copy.saving || "Discount"}</span>
+                    <span>
+                      {shop.offer.badge || shop.copy.saving || "Discount"}
+                    </span>
                     <span dir="ltr">−{formatMoney(savings, currency)}</span>
                   </div>
                 ) : (
-                  <p className="m-0 mt-2 text-[0.8rem] leading-snug text-[#6f675f]">{progress}</p>
+                  <p className="m-0 mt-2 text-[0.8rem] leading-snug text-[#6f675f]">
+                    {progress}
+                  </p>
                 )}
                 <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-[#e6dcd2] pt-3 text-[0.95rem] font-semibold tracking-[0.04em] text-[#1c1917] uppercase">
                   <span>{arabic ? "المجموع" : "Total"}</span>
@@ -369,9 +442,15 @@ export function OfferShop({ code }: { code: string }) {
                 </div>
               </>
             ) : (
-              <p className="m-0 text-[0.85rem] leading-snug text-[#6f675f]">{progress}</p>
+              <p className="m-0 text-[0.85rem] leading-snug text-[#6f675f]">
+                {progress}
+              </p>
             )}
-            {addError ? <p className="m-0 mt-2 text-[0.8rem] text-copper" role="alert">{addError}</p> : null}
+            {addError ? (
+              <p className="m-0 mt-2 text-[0.8rem] text-copper" role="alert">
+                {addError}
+              </p>
+            ) : null}
             <button
               className={`mt-3 flex min-h-11 w-full items-center justify-center rounded-full border-0 px-4 text-[0.8rem] font-semibold tracking-[0.08em] text-white uppercase ${ready ? "cursor-pointer bg-copper hover:bg-copper-deep" : "cursor-not-allowed bg-[#e7b2a8]"}`}
               type="button"
@@ -388,48 +467,96 @@ export function OfferShop({ code }: { code: string }) {
         {shop.groups.map((group) => {
           const full = groupFilled(group);
           return (
-            <section key={group.id} id={`offer-group-${group.id}`} aria-label={group.name} className="scroll-mt-[calc(var(--site-header-h,9.25rem)+260px)]">
-              <h2 className="m-0 font-[family-name:var(--font-display)] text-[1.35rem] font-normal text-[#2a201a]">{group.name}</h2>
-              <ul className="m-0 mt-5 grid list-none grid-cols-2 gap-x-3 gap-y-8 p-0 min-[900px]:grid-cols-4" role="list">
+            <section
+              key={group.id}
+              id={`offer-group-${group.id}`}
+              aria-label={group.name}
+              className="scroll-mt-[calc(var(--site-header-h,9.25rem)+260px)]"
+            >
+              <h2 className="m-0 font-[family-name:var(--font-display)] text-[1.35rem] font-normal text-[#2a201a]">
+                {group.name}
+              </h2>
+              <ul
+                className="m-0 mt-5 grid list-none grid-cols-2 gap-x-3 gap-y-8 p-0 min-[900px]:grid-cols-4"
+                role="list"
+              >
                 {group.products.map((product) => {
-                  const selected = selections.some((row) => row.groupId === group.id && row.sku === product.sku);
+                  const selected = selections.some(
+                    (row) =>
+                      row.groupId === group.id && row.sku === product.sku,
+                  );
                   const locked = full && !selected;
                   const disabled = !product.inStock || locked;
-                  const label = !product.inStock ? soldOut : selected ? addedPiece : addPiece;
+                  const label = !product.inStock
+                    ? soldOut
+                    : selected
+                      ? addedPiece
+                      : addPiece;
                   return (
                     <li key={product.sku} className="flex min-w-0 flex-col">
                       {product.slug ? (
-                        <LocaleLink className="text-inherit no-underline" href={`/products/${product.slug}`}>
+                        <LocaleLink
+                          className="text-inherit no-underline"
+                          href={`/products/${product.slug}`}
+                        >
                           <span className="grid aspect-square place-items-center overflow-hidden rounded-2xl bg-white">
-                            {product.image ? <MediaImage className="h-full w-full object-contain p-3" src={product.image} alt="" width={240} height={240} /> : null}
+                            {product.image ? (
+                              <MediaImage
+                                className="h-full w-full object-contain p-3"
+                                src={product.image}
+                                alt=""
+                                width={240}
+                                height={240}
+                              />
+                            ) : null}
                           </span>
-                          <span className="mt-2.5 line-clamp-2 text-[0.82rem] leading-snug text-[#2a201a]">{product.title}</span>
+                          <span className="mt-2.5 line-clamp-2 text-[0.82rem] leading-snug text-[#2a201a]">
+                            {product.title}
+                          </span>
                         </LocaleLink>
                       ) : (
                         <div>
                           <span className="grid aspect-square place-items-center overflow-hidden rounded-2xl bg-white">
-                            {product.image ? <MediaImage className="h-full w-full object-contain p-3" src={product.image} alt="" width={240} height={240} /> : null}
+                            {product.image ? (
+                              <MediaImage
+                                className="h-full w-full object-contain p-3"
+                                src={product.image}
+                                alt=""
+                                width={240}
+                                height={240}
+                              />
+                            ) : null}
                           </span>
-                          <span className="mt-2.5 line-clamp-2 block text-[0.82rem] leading-snug text-[#2a201a]">{product.title}</span>
+                          <span className="mt-2.5 line-clamp-2 block text-[0.82rem] leading-snug text-[#2a201a]">
+                            {product.title}
+                          </span>
                         </div>
                       )}
                       <div className="mt-auto">
-                      {productPrice(product, currency) ? <p className="m-0 mt-2 text-[0.82rem] font-semibold text-copper">{productPrice(product, currency)}</p> : null}
-                      <button
-                        type="button"
-                        className={`mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full px-3 text-[0.72rem] font-semibold tracking-[0.06em] uppercase ${
-                          selected
-                            ? "cursor-pointer border border-copper bg-white text-copper"
-                            : disabled
-                              ? "cursor-not-allowed border-0 bg-[#efe6dc] text-[#b3a496]"
-                              : "cursor-pointer border-0 bg-copper text-white hover:bg-copper-deep"
-                        }`}
-                        aria-pressed={selected}
-                        disabled={disabled}
-                        onClick={() => (selected ? removeSelection(group.id, product.sku) : choose(group, product))}
-                      >
-                        {label}
-                      </button>
+                        {productPrice(product, currency) ? (
+                          <p className="m-0 mt-2 text-[0.82rem] font-semibold text-copper">
+                            {productPrice(product, currency)}
+                          </p>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={`mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full px-3 text-[0.72rem] font-semibold tracking-[0.06em] uppercase ${
+                            selected
+                              ? "cursor-pointer border border-copper bg-white text-copper"
+                              : disabled
+                                ? "cursor-not-allowed border-0 bg-[#efe6dc] text-[#b3a496]"
+                                : "cursor-pointer border-0 bg-copper text-white hover:bg-copper-deep"
+                          }`}
+                          aria-pressed={selected}
+                          disabled={disabled}
+                          onClick={() =>
+                            selected
+                              ? removeSelection(group.id, product.sku)
+                              : choose(group, product)
+                          }
+                        >
+                          {label}
+                        </button>
                       </div>
                     </li>
                   );

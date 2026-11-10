@@ -43,7 +43,8 @@ export function productJsonLd(input: {
     sku: input.sku,
     url: input.url,
     image: images.length ? images : undefined,
-    brand: { "@type": "Brand", name: input.brand?.trim() || "Swiss Arabian" },
+    // The product's own brand, else the store's brand (SEO Management → Brand identity).
+    brand: input.brand?.trim() ? { "@type": "Brand", name: input.brand.trim() } : undefined,
     // Price and stock: what Google shows in results (as Shopify's page does).
     offers: hasPrice
       ? {
@@ -78,6 +79,20 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
       position: index + 1,
       name: item.name,
       item: item.url,
+    })),
+  };
+}
+
+/** Products shown on a collection page, in order (first page). */
+export function itemListJsonLd(name: string, urls: string[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    itemListElement: urls.map((url, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url,
     })),
   };
 }

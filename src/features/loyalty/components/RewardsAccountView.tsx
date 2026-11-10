@@ -1,5 +1,6 @@
 "use client";
 
+import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { AccountBreadcrumb } from "@/features/account/components/AccountBreadcrumb";
@@ -18,10 +19,15 @@ import {
 import { OMNICHANNEL_COPY } from "../types/omnichannel";
 import { OmnichannelRewardsCard } from "./OmnichannelRewardsCard";
 import { RewardsActivitySections } from "./RewardsActivitySections";
-import { MembershipTiers, RewardsTierHistory, RewardsTierSection } from "./RewardsTierSection";
+import {
+  MembershipTiers,
+  RewardsTierHistory,
+  RewardsTierSection,
+} from "./RewardsTierSection";
 
 function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
-  const currency = wallet.currencyCode ?? "AED";
+  const marketCurrency = useMarketCurrency();
+  const currency = wallet.currencyCode ?? marketCurrency;
   if (isEmptyRewardsWallet(wallet) && !wallet.tier?.current) {
     return (
       <section aria-labelledby="rewards-balance-heading">
@@ -60,19 +66,26 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
       </h2>
       {wallet.availableValue != null ? (
         <p className="mt-3 text-[14px] text-sa-primary">
-          Worth <span dir="ltr">{formatMoney(wallet.availableValue, currency)}</span>
+          Worth{" "}
+          <span dir="ltr">{formatMoney(wallet.availableValue, currency)}</span>
         </p>
       ) : null}
-      {wallet.tier?.steps.length ? null : <RewardsTierSection wallet={wallet} />}
+      {wallet.tier?.steps.length ? null : (
+        <RewardsTierSection wallet={wallet} />
+      )}
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
-          <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Pending</dt>
+          <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
+            Pending
+          </dt>
           <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
             {formatPoints(wallet.pendingPoints)} points
           </dd>
         </div>
         <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
-          <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Reserved</dt>
+          <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
+            Reserved
+          </dt>
           <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
             {formatPoints(wallet.reservedPoints)} points
           </dd>
@@ -141,13 +154,19 @@ export function RewardsAccountView() {
 
   let body;
   if (!bootstrapped || !isAuthenticated) {
-    body = <PageLoading label={!bootstrapped ? "Checking session…" : "Redirecting…"} />;
+    body = (
+      <PageLoading
+        label={!bootstrapped ? "Checking session…" : "Redirecting…"}
+      />
+    );
   } else if (!zoneCode || wallet.isPending) {
     body = <PageLoading label="Loading your rewards…" />;
   } else if (wallet.isError || !wallet.data) {
     body = (
       <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
-        <p className="text-[14px] text-sa-primary">We couldn&apos;t load your rewards right now.</p>
+        <p className="text-[14px] text-sa-primary">
+          We couldn&apos;t load your rewards right now.
+        </p>
         <button
           type="button"
           onClick={() => void wallet.refetch()}
@@ -171,12 +190,12 @@ export function RewardsAccountView() {
           <div className="flex flex-col gap-6">
             <MembershipTiers wallet={wallet.data} />
             <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">
-            <RewardsSummary wallet={wallet.data} />
-            {wallet.data.unavailableMessage ? (
-              <p className="mt-5 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
-                {wallet.data.unavailableMessage}
-              </p>
-            ) : null}
+              <RewardsSummary wallet={wallet.data} />
+              {wallet.data.unavailableMessage ? (
+                <p className="mt-5 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
+                  {wallet.data.unavailableMessage}
+                </p>
+              ) : null}
             </div>
           </div>
         ) : wallet.data.unavailableMessage ? (
@@ -184,7 +203,10 @@ export function RewardsAccountView() {
             {wallet.data.unavailableMessage}
           </p>
         ) : null}
-        <OmnichannelRewardsCard omnichannel={omnichannel} refresh={refreshControl} />
+        <OmnichannelRewardsCard
+          omnichannel={omnichannel}
+          refresh={refreshControl}
+        />
         {activityBlock}
         <RewardsTierHistory
           rows={tierHistory.data ?? []}
@@ -200,7 +222,10 @@ export function RewardsAccountView() {
             {wallet.data.unavailableMessage}
           </p>
         </div>
-        <OmnichannelRewardsCard omnichannel={omnichannel} refresh={refreshControl} />
+        <OmnichannelRewardsCard
+          omnichannel={omnichannel}
+          refresh={refreshControl}
+        />
       </div>
     );
   } else {
@@ -212,7 +237,10 @@ export function RewardsAccountView() {
             <RewardsSummary wallet={wallet.data} />
           </div>
         </div>
-        <OmnichannelRewardsCard omnichannel={omnichannel} refresh={refreshControl} />
+        <OmnichannelRewardsCard
+          omnichannel={omnichannel}
+          refresh={refreshControl}
+        />
         {activityBlock}
         <RewardsTierHistory
           rows={tierHistory.data ?? []}

@@ -3,7 +3,10 @@ import { shopifyLegacyRedirect } from "./shopifyLegacyRedirects";
 
 describe("shopifyLegacyRedirect", () => {
   it.each([
-    ["/collections/fusion-oud/products/shaghaf-oud-75ml", "/products/shaghaf-oud-75ml"],
+    [
+      "/collections/fusion-oud/products/shaghaf-oud-75ml",
+      "/products/shaghaf-oud-75ml",
+    ],
     ["/collections/all/products/rose-01/", "/products/rose-01"],
     ["/account/login", "/login"],
     ["/account/register", "/register"],
@@ -14,7 +17,10 @@ describe("shopifyLegacyRedirect", () => {
     ["/pages/FAQ", "/faq"],
     ["/blogs/news/how-to-layer-oud", "/blog/how-to-layer-oud"],
     ["/blogs/news", "/blog"],
-    ["/ar/collections/fusion-oud/products/shaghaf-oud-75ml", "/ar/products/shaghaf-oud-75ml"],
+    [
+      "/ar/collections/fusion-oud/products/shaghaf-oud-75ml",
+      "/ar/products/shaghaf-oud-75ml",
+    ],
     ["/ar/account/login", "/ar/login"],
   ])("%s → %s", (from, to) => {
     expect(shopifyLegacyRedirect(from)).toBe(to);

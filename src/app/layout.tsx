@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { env } from "@/lib/config/env";
+import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { AppProviders } from "./providers";
 import "./globals.css";
@@ -12,24 +13,17 @@ import "./globals.css";
  */
 export async function generateMetadata(): Promise<Metadata> {
   const origin = await requestOrigin();
+  // Site name in the shopper's language and market (SEO Management → Brand identity).
+  const brand = await loadRequestBrandIdentity();
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
-    ...baseMetadata,
-  };
-}
-
-const baseMetadata: Metadata = {
-  title: {
-    default: "Swiss Arabian",
-    template: "%s · Swiss Arabian",
-  },
-  description:
-    "Swiss Arabian fragrances — oud, musk, and contemporary scents for every journey.",
-  robots:
-    env.appEnv === "production"
+    title: { default: brand.name, template: `%s · ${brand.name}` },
+    ...(brand.description ? { description: brand.description } : {}),
+    robots: env.seoIndexingEnabled
       ? { index: true, follow: true }
       : { index: false, follow: false },
-};
+  };
+}
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mode');if(t!=='dark'&&t!=='light')t='light';if(t==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');}catch(e){}})();`;
 
