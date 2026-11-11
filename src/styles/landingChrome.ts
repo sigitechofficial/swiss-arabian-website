@@ -9,7 +9,8 @@ export const heroMedia =
 export const heroGlow =
   "pointer-events-none absolute inset-0 z-[2] bg-[radial-gradient(40%_50%_at_78%_62%,rgba(255,190,120,0.45),transparent_70%),linear-gradient(0deg,rgba(20,14,10,0.66),rgba(20,14,10,0.05)_55%)]";
 
-export const heroInner = "relative z-[2] w-full py-[clamp(1.75rem,5vh,3.25rem)]";
+export const heroInner =
+  "relative z-[2] w-full py-[clamp(1.75rem,5vh,3.25rem)]";
 
 export const heroEyebrow =
   "m-0 inline-flex items-center gap-3 text-[0.68rem]! font-semibold! tracking-[0.26em] text-[#f0c4ad]! uppercase before:h-px before:w-7 before:bg-current before:opacity-70 before:content-['']";
@@ -26,15 +27,14 @@ export const heroCta =
 const heroBtn =
   "inline-flex min-h-12 w-full cursor-pointer items-center justify-center border px-[1.45rem] font-[family-name:var(--font-sans)] text-[0.7rem]! font-semibold! tracking-[0.14em] uppercase no-underline transition-[background,color,border-color] duration-300 min-[701px]:w-auto";
 
-export const heroBtnSolid =
-  `${heroBtn} border-copper bg-copper text-white! hover:border-copper-deep hover:bg-copper-deep hover:text-white!`;
+export const heroBtnSolid = `${heroBtn} border-copper bg-copper text-white! hover:border-copper-deep hover:bg-copper-deep hover:text-white!`;
 
-export const heroBtnGhost =
-  `${heroBtn} border-white/55 bg-transparent text-white! hover:border-white hover:bg-white hover:text-[var(--ink,#241f1b)]!`;
+export const heroBtnGhost = `${heroBtn} border-white/55 bg-transparent text-white! hover:border-white hover:bg-white hover:text-[var(--ink,#241f1b)]!`;
 
 export const heroSwiper = "group/swiper absolute inset-0 z-0 overflow-hidden";
 
-export const heroSlide = "absolute inset-0 overflow-hidden will-change-[opacity]";
+export const heroSlide =
+  "absolute inset-0 overflow-hidden will-change-[opacity]";
 
 export const heroImg =
   "absolute inset-0 size-full object-cover object-[58%_50%] motion-reduce:transition-none!";
@@ -56,25 +56,14 @@ export const featureCard =
   "w-1/4 rounded-lg bg-[#f7f5f4] max-[1180px]:w-[calc(50%-8px)] max-[767px]:w-[calc(50%-4px)]";
 
 export const featureCardBox =
-  "relative h-full min-h-24 overflow-hidden rounded-lg px-4 pt-3.5 pb-4 max-[767px]:flex max-[767px]:min-h-[146px] max-[767px]:items-end max-[767px]:px-4 max-[767px]:pt-9 max-[767px]:pb-3.5";
+  "flex h-full min-h-24 items-center gap-3 rounded-lg px-4 py-3.5 max-[767px]:gap-2.5 max-[767px]:px-3 max-[767px]:py-3";
 
-export const featureCardBg =
-  "pointer-events-none absolute [&_img]:block [&_img]:size-full [&_img]:object-contain";
-
-export const featureBg1 =
-  "top-[-90px] right-[-100px] w-[240px] -rotate-3 max-[767px]:top-[-130px] max-[767px]:right-[-85px] rtl:right-auto rtl:left-[-100px] max-[767px]:rtl:left-[-85px]";
-
-export const featureBg2 =
-  "right-[-80px] bottom-[-70px] w-[210px] max-[767px]:top-[-75px] max-[767px]:right-[-90px] max-[767px]:bottom-auto rtl:right-auto rtl:left-[-80px] max-[767px]:rtl:left-[-90px]";
-
-export const featureBg3 =
-  "top-[-90px] right-[-30px] w-[200px] -rotate-[20deg] max-[767px]:top-[-76px] max-[767px]:right-[-50px] max-[767px]:w-[130px] max-[767px]:rotate-[199deg] rtl:right-auto rtl:left-[-30px] max-[767px]:rtl:left-[-50px]";
-
-export const featureBg4 =
-  "top-[-10px] right-[-20px] w-[120px] max-[767px]:top-[-59px] max-[767px]:right-[-40px] max-[767px]:w-[110px] rtl:right-auto rtl:left-[-20px] max-[767px]:rtl:left-[-40px]";
+/** Card image: a square thumbnail beside the text, cropped to fill (photo or cut-out). */
+export const featureCardImage =
+  "size-[84px] shrink-0 overflow-hidden rounded-md bg-[#efe9e2] max-[767px]:size-14 [&_img]:block [&_img]:size-full [&_img]:object-cover";
 
 export const featureCardCopy =
-  "relative z-[2] max-w-[70%] max-[767px]:max-w-[75%] rtl:ms-auto rtl:text-right [&_[data-feature-title]]:m-0 [&_[data-feature-title]]:mb-[3px] [&_[data-feature-title]]:font-[family-name:var(--font-display)] [&_[data-feature-title]]:text-sm [&_[data-feature-title]]:leading-5 [&_[data-feature-title]]:font-normal [&_[data-feature-title]]:tracking-[0.02em] [&_[data-feature-title]]:text-[var(--ink,#241f1b)] max-[767px]:[&_[data-feature-title]]:mb-1 max-[767px]:[&_[data-feature-title]]:text-[13px] max-[767px]:[&_[data-feature-title]]:leading-[18px] [&_strong]:font-semibold [&_p]:m-0 [&_p]:text-[9px] [&_p]:leading-[14px] [&_p]:tracking-[0.02em] [&_p]:text-[var(--ink-2,#5b5148)]";
+  "min-w-0 flex-1 rtl:text-right [&_[data-feature-title]]:m-0 [&_[data-feature-title]]:mb-[3px] [&_[data-feature-title]]:font-[family-name:var(--font-display)] [&_[data-feature-title]]:text-sm [&_[data-feature-title]]:leading-5 [&_[data-feature-title]]:font-normal [&_[data-feature-title]]:tracking-[0.02em] [&_[data-feature-title]]:text-[var(--ink,#241f1b)] max-[767px]:[&_[data-feature-title]]:mb-1 max-[767px]:[&_[data-feature-title]]:text-[13px] max-[767px]:[&_[data-feature-title]]:leading-[18px] [&_strong]:font-semibold [&_p]:m-0 [&_p]:text-[11px] [&_p]:leading-[15px] max-[767px]:[&_p]:text-[10px] [&_p]:tracking-[0.02em] [&_p]:text-[var(--ink-2,#5b5148)]";
 
 export const sectionBlock = "py-[clamp(3.5rem,8vw,7rem)]";
 
@@ -94,8 +83,7 @@ export const lead =
 export const linkUnderline =
   "relative pb-0.5 text-[0.8rem] font-semibold tracking-[0.08em] text-copper uppercase after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-copper after:transition-transform after:duration-400 after:ease-[cubic-bezier(0.22,0.61,0.36,1)] after:content-[''] hover:after:scale-x-100";
 
-export const linkUnderlineLight =
-  "text-white! after:bg-[var(--beige,#e8d8bb)]";
+export const linkUnderlineLight = "text-white! after:bg-[var(--beige,#e8d8bb)]";
 
 export const collectionsSection = "bg-[var(--cream,#faf6ee)]";
 
@@ -113,7 +101,8 @@ export const collectionArtProduct =
 
 export const collectionBody = "grid gap-2 p-8";
 
-export const collectionTitle = "text-[clamp(1.2rem,1.8vw,1.55rem)]! leading-[1.05] font-medium";
+export const collectionTitle =
+  "text-[clamp(1.2rem,1.8vw,1.55rem)]! leading-[1.05] font-medium";
 
 export const notesShop =
   "bg-[var(--cream,#faf6ee)] pt-[clamp(1.25rem,3vw,2rem)] pb-[clamp(2.5rem,5vw,4rem)]";
@@ -222,7 +211,8 @@ export const planCard =
 export const planCardFeatured =
   "shadow-[0_24px_56px_rgba(60,40,25,0.1)] max-[900px]:order-first";
 
-export const planHead = "flex min-h-[1.6rem] items-center justify-between gap-2";
+export const planHead =
+  "flex min-h-[1.6rem] items-center justify-between gap-2";
 
 export const planName = "text-[1.02rem] font-semibold tracking-[0.02em]";
 
@@ -231,13 +221,15 @@ export const planBadge =
 
 export const planPrice = "flex items-baseline gap-[0.35rem]";
 
-export const planAmount = "text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--ink,#241f1b)]";
+export const planAmount =
+  "text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--ink,#241f1b)]";
 
 export const planPer = "text-[0.78rem] text-[var(--ink-2,#5b5148)]";
 
 export const planDesc = "text-[0.82rem] text-[var(--ink-2,#5b5148)]";
 
-export const planRule = "my-2 h-0 w-full border-0 border-t border-[var(--line,#d9ccb4)]";
+export const planRule =
+  "my-2 h-0 w-full border-0 border-t border-[var(--line,#d9ccb4)]";
 
 export const planFeatures =
   "grid flex-1 list-none gap-2 p-0 [&_li]:relative [&_li]:ps-[1.45rem] [&_li]:text-[0.8rem] [&_li]:text-[var(--ink,#241f1b)] [&_li]:before:absolute [&_li]:before:start-0 [&_li]:before:top-[0.22em] [&_li]:before:h-[6px] [&_li]:before:w-[11px] [&_li]:before:-rotate-45 [&_li]:before:border-b-[1.6px] [&_li]:before:border-s-[1.6px] [&_li]:before:border-copper [&_li]:before:content-['']";
@@ -245,11 +237,9 @@ export const planFeatures =
 const planBtn =
   "mt-2 inline-flex min-h-12 w-full cursor-pointer items-center justify-center border px-8 text-[0.8rem]! font-semibold! tracking-[0.08em] uppercase no-underline transition-[background,color,border-color] duration-300";
 
-export const planCta =
-  `${planBtn} border-copper bg-copper text-white! hover:border-copper-deep hover:bg-copper-deep hover:text-white!`;
+export const planCta = `${planBtn} border-copper bg-copper text-white! hover:border-copper-deep hover:bg-copper-deep hover:text-white!`;
 
-export const planCtaGhost =
-  `${planBtn} border-copper bg-transparent text-copper! hover:bg-copper hover:text-white!`;
+export const planCtaGhost = `${planBtn} border-copper bg-transparent text-copper! hover:bg-copper hover:text-white!`;
 
 export const bottle =
   "relative grid aspect-square w-full place-items-center overflow-hidden bg-[radial-gradient(120%_80%_at_50%_18%,rgba(255,255,255,0.55),transparent_60%),linear-gradient(160deg,var(--sand,#ece0c9),var(--beige,#e8d8bb))] after:pointer-events-none after:aspect-[3/4] after:w-[34%] after:max-w-[120px] after:bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 160%27 fill=%27none%27 stroke=%27%238c4435%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Crect x=%2744%27 y=%276%27 width=%2732%27 height=%2720%27 rx=%274%27/%3E%3Cpath d=%27M51 26v11h18V26%27/%3E%3Crect x=%2720%27 y=%2737%27 width=%2780%27 height=%27115%27 rx=%2716%27/%3E%3Crect x=%2737%27 y=%2776%27 width=%2746%27 height=%2740%27 rx=%273%27 stroke-opacity=%27.6%27/%3E%3Cpath d=%27M32 54v34%27 stroke-opacity=%27.4%27/%3E%3Cpath d=%27M50 96h20%27 stroke-opacity=%27.6%27/%3E%3C/svg%3E')] after:bg-contain after:bg-center after:bg-no-repeat after:opacity-50 after:content-['']";

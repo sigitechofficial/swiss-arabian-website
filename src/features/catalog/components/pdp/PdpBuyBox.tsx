@@ -92,9 +92,10 @@ export function PdpBuyBox({
           </span>
           <span>
             <strong>{reviewSummary.averageRating.toFixed(1)}</strong>
-            {reviewSummary.verifiedPurchaseCount > 0
-              ? " · Verified reviews"
-              : ` · ${reviewSummary.reviewCount} ${reviewSummary.reviewCount === 1 ? "review" : "reviews"}`}
+            {` · `}
+            <span className="underline underline-offset-[3px]">
+              {reviewSummary.reviewCount} {reviewSummary.reviewCount === 1 ? "review" : "reviews"}
+            </span>
           </span>
         </a>
       ) : null}

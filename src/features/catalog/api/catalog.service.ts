@@ -628,6 +628,9 @@ export type CatalogCollection = {
   description?: string | null;
   sortOrder?: number;
   productCount?: number;
+  /** Page heading when the store shows one other than the name (Shopify
+   *  custom.collection_name / collection_heading); null → the name. */
+  heading?: string | null;
   /** Collection banner for the page language (imported from the store's
    *  theme banners); null → the storefront's designed hero. */
   image?: string | null;
@@ -660,6 +663,7 @@ function mapCollectionDetail(
     code: item.code,
     slug: item.slug,
     name: item.name,
+    heading: item.heading?.trim() || null,
     description: item.description,
     sortOrder: item.sortOrder,
     productCount: item.productCount,

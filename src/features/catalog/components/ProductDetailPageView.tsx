@@ -82,7 +82,12 @@ export function ProductDetailPageView({
   const shippingPromise = apiProduct?.shippingPromise ?? null;
   const pdpReviews = apiProduct?.reviews ?? null;
   const reviewSummary = pdpReviews?.summary;
-  const showReviewRating = Boolean(reviewSummary && reviewSummary.reviewCount > 0);
+  // Stars under the name once a product has enough reviews (Admin → Reviews → Settings).
+  const showReviewRating = Boolean(
+    reviewSummary &&
+      reviewSummary.reviewCount > 0 &&
+      reviewSummary.reviewCount >= (pdpReviews?.display.minReviewsToShowStars ?? 1),
+  );
   const daysLine = shippingPromise ? shippingDaysLine(shippingPromise) : null;
   const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise) : null;
   const liveShippingCopy = shippingTabCopy(shippingPromise);
@@ -305,8 +310,11 @@ export function ProductDetailPageView({
       />
 
       <PdpReviews
+        // A new product starts the reviews list again (filters, "view more").
+        key={apiProduct?.id ?? product.id}
         productId={apiProduct?.id ?? product.id}
         productTitle={product.title}
+        productImage={galleryImages[0] ?? null}
         variantId={product.variantId}
         reviews={pdpReviews}
       />

@@ -1,18 +1,12 @@
 import { pageContainer } from "@/styles/siteChrome";
 import {
-  featureBg1,
-  featureBg2,
-  featureBg3,
-  featureBg4,
   featureCard,
-  featureCardBg,
   featureCardBox,
   featureCardCopy,
+  featureCardImage,
   featureCards,
   featureCardsList,
 } from "@/styles/landingChrome";
-
-const FEATURE_BG = [featureBg1, featureBg2, featureBg3, featureBg4] as const;
 
 export type LandingTrustItem = {
   id: string;
@@ -28,12 +22,11 @@ export type LandingFeatureCardsProps = {
 
 export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
   const cards =
-    items?.map((item, index) => ({
+    items?.map((item) => ({
       id: item.id,
       image: item.image ?? "",
       title: [item.headingLine1, item.headingLine2 ?? ""] as [string, string],
       text: item.text ?? "",
-      bg: FEATURE_BG[index % FEATURE_BG.length],
     })) ??
     // Only brand claims entered in the CMS. No built-in claims or stock images.
     [];
@@ -47,11 +40,6 @@ export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
           {cards.map((card) => (
             <article key={card.id} className={featureCard}>
               <div className={featureCardBox}>
-                <div className={`${featureCardBg} ${card.bg}`}>
-                  {card.image ? (
-                    <img src={card.image} alt="" loading="lazy" />
-                  ) : null}
-                </div>
                 <div className={featureCardCopy}>
                   {/* A label, not a heading (SEO audit); styled via data-feature-title. */}
                   <div data-feature-title>
@@ -60,6 +48,11 @@ export function LandingFeatureCards({ items }: LandingFeatureCardsProps = {}) {
                   </div>
                   {card.text ? <p>{card.text}</p> : null}
                 </div>
+                {card.image ? (
+                  <div className={featureCardImage}>
+                    <img src={card.image} alt="" loading="lazy" />
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
