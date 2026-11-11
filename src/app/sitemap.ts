@@ -5,6 +5,7 @@ import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
+import { fixedPathForPage } from "@/features/site-pages/utils/pickMarketPage";
 
 /** Public pages that are not catalog entities (search is noindex, so not listed). */
 // Placeholder pages (blog, our story, stores) join when their CMS content exists.
@@ -36,10 +37,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const { zoneCode } = await resolveServerCatalogMarket();
-    for (const page of await fetchSitePages(zoneCode)) {
+    const pages = await fetchSitePages(zoneCode);
+    for (const page of pages) {
       // Addresses that redirect to a platform page (e.g. /pages/faqs → /faq) are not listed.
       if (shopifyLegacyRedirect(page.path)) continue;
-      entries.push({ path: page.path, lastModified: page.updatedAt });
+      // The market's FAQ / story / store page is listed at its fixed address instead.
+      const fixedPath = page.kind === "PAGE" ? fixedPathForPage(pages, page.handle) : null;
+      entries.push({ path: fixedPath ?? page.path, lastModified: page.updatedAt });
     }
   } catch {
     // Pages cannot be read: the rest of the sitemap still publishes.

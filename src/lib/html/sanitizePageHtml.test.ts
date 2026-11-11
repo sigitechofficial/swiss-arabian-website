@@ -34,6 +34,14 @@ describe("sanitizePageHtml", () => {
     expect(out).toContain('src="https://www.youtube.com/embed/abc"');
   });
 
+  it("turns a heading 1 into a heading 2 under the page's own title", () => {
+    const html = "<h1>Privacy Policy</h1><h2>Data</h2>";
+    expect(sanitizePageHtml(html, { demoteH1: true })).toBe(
+      "<h2>Privacy Policy</h2><h2>Data</h2>",
+    );
+    expect(sanitizePageHtml(html)).toContain("<h1>Privacy Policy</h1>");
+  });
+
   it("returns nothing for empty text", () => {
     expect(sanitizePageHtml("  ")).toBe("");
     expect(sanitizePageHtml(null)).toBe("");

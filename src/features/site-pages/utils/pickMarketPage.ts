@@ -45,3 +45,23 @@ export function pickStoresPage(pages: readonly SitePageListItem[]) {
     "store",
   );
 }
+
+/**
+ * The fixed site address that shows this page, when the page is the market's
+ * FAQ, story or store list (e.g. Qatar's `faqs-1` is shown at /faq). Its own
+ * /pages/… address then redirects there, so the text has one address.
+ */
+export function fixedPathForPage(
+  pages: readonly SitePageListItem[],
+  handle: string,
+): string | null {
+  const pickers: Array<[string, typeof pickFaqPage]> = [
+    ["/faq", pickFaqPage],
+    ["/our-story", pickStoryPage],
+    ["/stores", pickStoresPage],
+  ];
+  for (const [path, pick] of pickers) {
+    if (pick(pages)?.handle === handle) return path;
+  }
+  return null;
+}
