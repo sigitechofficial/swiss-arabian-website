@@ -4,12 +4,14 @@ import {
   isLocaleSwitchablePath,
   withLocalePrefix,
 } from "@/lib/i18n/localePath";
+import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
   matchRedirect,
   redirectHost,
   redirectLocation,
   redirectsFor,
+  redirectZone,
 } from "@/lib/seo/storedRedirects";
 
 export async function proxy(request: NextRequest) {
@@ -22,10 +24,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // URL redirects from the admin (imported from Shopify or added by hand).
+  // URL redirects from the admin (imported from Shopify or added by hand),
+  // for the market the pages use (market cookie, else the domain's market).
   const host = redirectHost(request.headers);
   if (host) {
-    const target = matchRedirect(await redirectsFor(host), pathname);
+    const zone = redirectZone(request.cookies.get(ZONE_COOKIE)?.value);
+    const target = matchRedirect(await redirectsFor(host, zone), pathname);
     if (target)
       return NextResponse.redirect(
         redirectLocation(target, request.nextUrl),

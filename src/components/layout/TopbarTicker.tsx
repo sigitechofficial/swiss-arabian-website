@@ -78,7 +78,17 @@ export function TopbarTicker() {
     return () => window.clearInterval(timer);
   }, [messages.length, interval]);
 
-  if (!messages.length) return null;
+  // No announcement for this market: keep the message cell so the market and
+  // language menus stay in their place (right edge) instead of sliding into
+  // the middle column. On phones the bar is one row, so nothing is reserved.
+  if (!messages.length) {
+    return (
+      <div
+        className={`${topbarTicker} max-[600px]:hidden`}
+        aria-hidden="true"
+      />
+    );
+  }
 
   const style = {
     ...(cmsData.backgroundColor

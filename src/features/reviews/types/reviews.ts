@@ -64,6 +64,8 @@ export type StorefrontCustomerReviewView = {
   helpfulCount: number;
   createdAt: string;
   updatedAt: string;
+  /** Public reply from Swiss Arabian, when there is one. */
+  reply?: { text: string; repliedAt: string | null } | null;
   product: {
     productId: string;
     slug: string | null;

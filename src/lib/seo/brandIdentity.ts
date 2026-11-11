@@ -12,6 +12,10 @@ export type BrandIdentity = {
   url: string | null;
   logo: string | null;
   squareLogo: string | null;
+  /** Default share image (og:image) for pages without their own image. */
+  shareImage: string | null;
+  /** Browser tab icon (brand-wide; a market may override it). */
+  favicon: string | null;
   /** Social profile addresses. */
   sameAs: string[];
 };
@@ -19,14 +23,27 @@ export type BrandIdentity = {
 /** The storefront's own brand (per domain), when the API cannot be reached. */
 export function fallbackBrandIdentity(): BrandIdentity {
   const { name } = storefrontLogo();
-  return { name, names: [name], description: null, url: null, logo: null, squareLogo: null, sameAs: [] };
+  return {
+    name,
+    names: [name],
+    description: null,
+    url: null,
+    logo: null,
+    squareLogo: null,
+    shareImage: null,
+    favicon: null,
+    sameAs: [],
+  };
 }
 
 /** Brand identity for a market and language. Cached per request. */
 export const loadBrandIdentityFor = cache(
   async (locale: string, zoneCode: string): Promise<BrandIdentity> => {
     try {
-      const qs = new URLSearchParams({ locale, ...(zoneCode ? { zoneCode } : {}) });
+      const qs = new URLSearchParams({
+        locale,
+        ...(zoneCode ? { zoneCode } : {}),
+      });
       const data = await apiGet<Partial<BrandIdentity>>(
         `/storefront/website/seo/brand-identity?${qs.toString()}`,
         { skipAuth: true },
@@ -40,6 +57,8 @@ export const loadBrandIdentityFor = cache(
         url: data.url ?? null,
         logo: data.logo ?? null,
         squareLogo: data.squareLogo ?? null,
+        shareImage: data.shareImage ?? null,
+        favicon: data.favicon ?? null,
         sameAs: data.sameAs ?? [],
       };
     } catch {
@@ -56,7 +75,9 @@ export const loadBrandIdentityFor = cache(
  */
 export function namesBrand(title: string, names: readonly string[]): boolean {
   const lower = title.toLocaleLowerCase();
-  const all = names.map((name) => name.trim().toLocaleLowerCase()).filter(Boolean);
+  const all = names
+    .map((name) => name.trim().toLocaleLowerCase())
+    .filter(Boolean);
   const siteNames = all.filter(
     (n) => !all.some((other) => other !== n && other.includes(n)),
   );

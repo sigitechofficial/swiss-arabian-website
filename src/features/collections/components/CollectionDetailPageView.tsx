@@ -53,7 +53,8 @@ export function CollectionDetailPageView({
 
   const banner = collection
     ? {
-        title: collection.name,
+        // The store's page heading (e.g. "Perfume Bundles"), else the name.
+        title: collection.heading || collection.name,
         description: collection.description,
         ...(heroImage
           ? {

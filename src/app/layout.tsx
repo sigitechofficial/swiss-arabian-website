@@ -4,6 +4,7 @@ import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { env } from "@/lib/config/env";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
+import { storefrontLogo } from "@/lib/storefront/brand";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { AppProviders } from "./providers";
 import "./globals.css";
@@ -21,6 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
     // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
     title: { default: brand.name, template: `%s – ${brand.name}` },
     ...(brand.description ? { description: brand.description } : {}),
+    // The brand's own icon (imported from the Shopify theme), else its logo.
+    icons: {
+      icon: brand.favicon || storefrontLogo().src,
+      apple: brand.favicon || storefrontLogo().src,
+    },
     robots: env.seoIndexingEnabled
       ? { index: true, follow: true }
       : { index: false, follow: false },
@@ -42,7 +48,12 @@ export default async function RootLayout({
 }>) {
   const locale = (await headers()).get("x-shop-locale") === "ar" ? "ar" : "en";
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className="h-full antialiased" suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
       <head>
         {/* Main site font weights load first (page speed). The "BentonSans Regular" option in
             globals.css also needs https://fonts.cdnfonts.com/css/bentonsans-regular here. */}

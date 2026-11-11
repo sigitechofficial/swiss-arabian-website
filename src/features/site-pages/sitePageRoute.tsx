@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 import { catalogMetadata } from "@/lib/seo/catalogPage";
@@ -9,13 +9,24 @@ import {
   CatalogJsonLd,
 } from "@/features/catalog/components/CatalogJsonLd";
 import { shopCopy } from "@/lib/i18n/shopCopy";
-import { fetchSitePage, type SitePageKind } from "./api/sitePages.service";
+import {
+  fetchSitePage,
+  fetchSitePages,
+  type SitePageKind,
+} from "./api/sitePages.service";
 import { SitePageView } from "./components/SitePageView";
+import { fixedPathForPage } from "./utils/pickMarketPage";
 
 /** Shared by /pages/[handle] and /policies/[handle]. */
 
 async function load(kind: SitePageKind, handle: string) {
   const { locale, zoneCode } = await resolveServerCatalogMarket();
+  if (kind === "PAGE" && zoneCode) {
+    // The market's FAQ / story / store page has one address: /faq, /our-story, /stores.
+    const pages = await fetchSitePages(zoneCode).catch(() => []);
+    const fixedPath = fixedPathForPage(pages, handle);
+    if (fixedPath) permanentRedirect(withLocalePrefix(fixedPath, locale));
+  }
   const page = await fetchSitePage(kind, handle, locale, zoneCode);
   return { locale, zoneCode, page };
 }
