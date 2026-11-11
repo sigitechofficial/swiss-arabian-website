@@ -92,6 +92,29 @@ export async function listPaymentMethods(
   return data?.items ?? data?.paymentMethods ?? [];
 }
 
+export type TabbyPrescoreResponse = {
+  providerCode: "tabby";
+  available: boolean;
+  rejectionReason: string | null;
+  /** Tabby's wording to show when unavailable. */
+  message: { en: string; ar: string } | null;
+};
+
+/**
+ * POST …/payment-methods/tabby/prescore — can this shopper pay with Tabby for
+ * this total? Creates nothing. The backend answers `available: true` on any
+ * error, so only an explicit rejection hides Tabby.
+ */
+export async function prescoreTabby(
+  checkoutSessionId: string,
+  contact: { email?: string; phone?: string } = {},
+): Promise<TabbyPrescoreResponse> {
+  return apiPost<TabbyPrescoreResponse>(
+    `/storefront/checkout/${checkoutSessionId}/payment-methods/tabby/prescore?${buildGuestParam().toString()}`,
+    contact,
+  );
+}
+
 export async function selectPaymentMethod(
   checkoutSessionId: string,
   paymentMethodId: string,

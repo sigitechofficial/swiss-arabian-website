@@ -1,5 +1,6 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
+import { isTabbyPaymentMethod } from "./tabby";
 
 function titleCase(value: string): string {
   return value
@@ -42,7 +43,7 @@ export function usesInlineCardForm(
   return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
 }
 
-/** Hosted redirect gateways (Telr HPP, and any method flagged `requiresRedirect`). */
+/** Hosted redirect gateways (Telr HPP, Tabby, and any method flagged `requiresRedirect`). */
 export function usesHostedRedirect(
   method: Pick<
     PaymentMethodOption,
@@ -50,7 +51,11 @@ export function usesHostedRedirect(
   >,
 ): boolean {
   if (isSmokePaymentMethod(method) || usesInlineCardForm(method)) return false;
-  return Boolean(method.requiresRedirect) || isTelrPaymentMethod(method);
+  return (
+    Boolean(method.requiresRedirect) ||
+    isTelrPaymentMethod(method) ||
+    isTabbyPaymentMethod(method)
+  );
 }
 
 /** Backend default first, skipping anything explicitly disabled. */
@@ -71,6 +76,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
   }
   if (isTelrPaymentMethod(method)) {
     return "Telr · secure hosted checkout";
+  }
+  if (isTabbyPaymentMethod(method)) {
+    return "Pay in 4, interest-free";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
@@ -94,6 +102,8 @@ export function upcomingPaymentMethods(
   const country = (countryCode || "AE").toUpperCase();
   const paymob = methods.some((method) => method.providerCode?.toLowerCase() === "paymob");
   const stripe = methods.some((method) => isStripePaymentMethod(method));
+  // A live Tabby method is listed as a real option, not as "coming soon".
+  const tabbyLive = methods.some((method) => isTabbyPaymentMethod(method));
   const rows: UpcomingPaymentMethod[] = [];
 
   if (paymob && (country === "AE" || country === "SA" || country === "OM")) {
@@ -123,7 +133,9 @@ export function upcomingPaymentMethods(
     rows.push({ id: "stc-pay", title: "STC Pay", note: "Paymob" });
   }
   if (paymob && (country === "AE" || country === "SA")) {
-    rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
+    if (!tabbyLive) {
+      rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
+    }
     rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
   }
   if (country === "KW") {

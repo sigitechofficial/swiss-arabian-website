@@ -14,7 +14,7 @@ import type {
   StorefrontExchangeSummaryView,
   StorefrontReturnSummaryView,
 } from "../types/afterSales";
-import { readExchangeSettlement } from "@/features/orders/utils/orderAftercare";
+import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
 import {
   afterSalesStatusLabel,
   RETURN_REASON_LABELS,
@@ -177,6 +177,10 @@ export function ExchangeRequestCard({
           {item.latestStatusMessage}
         </p>
       ) : null}
+      <ExchangeMoneyPanel
+        exchangeRequestId={item.exchangeRequestId}
+        money={detail.data?.money ?? item.money}
+      />
       {expandable ? (
         <button
           type="button"
@@ -204,41 +208,19 @@ export function ExchangeRequestCard({
               Note: {detail.data.customerNote}
             </li>
           ) : null}
-          <ExchangeSettlement detail={detail.data} />
+          {detail.data.money?.replacementOrderId ? (
+            <li className="py-2.5 text-[13px]">
+              <Link
+                href={`/account/orders/${detail.data.money.replacementOrderId}`}
+                className="font-semibold text-terra hover:underline"
+              >
+                {detail.data.money.replacementOrderNumber ?? "View replacement order"}
+              </Link>
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </article>
-  );
-}
-
-function ExchangeSettlement({ detail }: { detail: unknown }) {
-  const settlement = readExchangeSettlement(detail);
-  if (!settlement) return null;
-  return (
-    <li className="py-2.5 text-[13px] text-sa-primary">
-      {settlement.equal ? <p>No additional payment is required.</p> : null}
-      {settlement.additionalAmount ? (
-        <p>Additional payment due: {settlement.additionalAmount}</p>
-      ) : null}
-      {settlement.paymentHref ? (
-        <Link href={settlement.paymentHref} className="font-semibold text-terra hover:underline">
-          Pay the difference
-        </Link>
-      ) : null}
-      {settlement.refundAmount ? (
-        <p>Difference refund: {settlement.refundAmount}. This follows the refund status on the exchange.</p>
-      ) : null}
-      {settlement.replacementOrderId ? (
-        <p>
-          <Link
-            href={`/account/orders/${settlement.replacementOrderId}`}
-            className="font-semibold text-terra hover:underline"
-          >
-            {settlement.replacementOrderNumber ?? "View replacement order"}
-          </Link>
-        </p>
-      ) : null}
-    </li>
   );
 }
 
@@ -275,8 +257,12 @@ export function GuestReturnRequestCard({
 
 export function GuestExchangeRequestCard({
   item,
+  orderNumber,
+  orderAccessToken,
 }: {
   item: StorefrontExchangeSummaryView;
+  orderNumber: string;
+  orderAccessToken: string;
 }) {
   return (
     <article className="border border-sa-border bg-page p-4">
@@ -300,6 +286,11 @@ export function GuestExchangeRequestCard({
           {item.latestStatusMessage}
         </p>
       ) : null}
+      <ExchangeMoneyPanel
+        exchangeRequestId={item.exchangeRequestId}
+        money={item.money}
+        guest={{ orderNumber, orderAccessToken }}
+      />
     </article>
   );
 }

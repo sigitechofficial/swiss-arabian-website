@@ -102,7 +102,7 @@ function useDialogChrome(onClose: () => void) {
   return closeRef;
 }
 
-function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
+export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
   const closeRef = useDialogChrome(onClose);
 
   return createPortal(

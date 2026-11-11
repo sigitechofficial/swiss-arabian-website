@@ -7,6 +7,7 @@ import {
   storeStripeClientSecret,
   storeStripePublishableKey,
 } from "./checkoutSession";
+import { tabbyRejectionFrom, type TabbyMessage } from "./tabby";
 
 export type PaymentStartResult =
   | { kind: "redirect" }
@@ -37,6 +38,23 @@ export class PaymentGatewayError extends Error {
 }
 
 /**
+ * The provider declined to offer this payment (Tabby said no). Not a fault:
+ * the order is saved and the shopper picks another method. `messages` is the
+ * provider's own wording.
+ */
+export class PaymentRejectedError extends Error {
+  readonly provider: "tabby";
+  readonly messages: TabbyMessage;
+
+  constructor(provider: "tabby", messages: TabbyMessage) {
+    super(messages.en);
+    this.name = "PaymentRejectedError";
+    this.provider = provider;
+    this.messages = messages;
+  }
+}
+
+/**
  * Start (or restart) payment for a placed order and route the shopper to the
  * next step. Shared by checkout submit and the retry screen so both handle
  * every provider the same way — the reference's retry only knew about Paymob.
@@ -56,7 +74,7 @@ export async function startPayment(
   method: {
     zonePaymentMethodId?: string | null;
     paymentMethodId?: string | null;
-    /** Used to pick Telr return URLs before initiate responds. */
+    /** Used to pick Telr / Tabby return URLs before initiate responds. */
     providerCode?: string | null;
   } = {},
   options: { inline?: boolean; prepared?: PreparedInlinePayment | null } = {},
@@ -65,14 +83,21 @@ export async function startPayment(
   const prepared = options.prepared;
   const hintProvider = (method.providerCode ?? "").toLowerCase();
   const isTelrHint = hintProvider.includes("telr");
+  const isTabbyHint = hintProvider.includes("tabby");
   // BE Telr contract: `/payments/telr/return` (not order-confirmation).
+  // BE Tabby contract: `/payments/tabby/return` for success and cancel — the
+  // backend adds `result=success|cancel` and builds the failure URL itself.
   // Shared Stripe/Paymob keep the existing confirmation return.
   const returnUrl = isTelrHint
     ? `${origin}/payments/telr/return`
-    : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
+    : isTabbyHint
+      ? `${origin}/payments/tabby/return`
+      : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
   const cancelUrl = isTelrHint
     ? `${origin}/payments/telr/return?result=cancelled`
-    : `${origin}/checkout/payment/cancel`;
+    : isTabbyHint
+      ? `${origin}/payments/tabby/return`
+      : `${origin}/checkout/payment/cancel`;
 
   const payment = await initiatePayment(orderId, {
     idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
@@ -102,6 +127,12 @@ export async function startPayment(
   const provider = `${payment.providerCode ?? ""} ${payment.paymentMethod?.providerCode ?? ""}`.toLowerCase();
   const isPaymob = provider.includes("paymob");
   const isTelr = provider.includes("telr") || isTelrHint;
+  const isTabby = provider.includes("tabby") || isTabbyHint;
+  if (isTabby) {
+    // Tabby declined before any redirect — show their message, keep the order.
+    const rejection = tabbyRejectionFrom(payment.metadata as Record<string, unknown> | null | undefined);
+    if (rejection) throw new PaymentRejectedError("tabby", rejection);
+  }
   if (provider.includes("smoke")) {
     window.location.replace(`/order-confirmation/${orderId}`);
     return { kind: "confirmation" };
@@ -150,7 +181,8 @@ export async function startPayment(
     action === "REDIRECT" ||
     action === "REDIRECT_REQUIRED" ||
     (isPaymob && Boolean(payment.redirectUrl)) ||
-    (isTelr && Boolean(payment.redirectUrl));
+    (isTelr && Boolean(payment.redirectUrl)) ||
+    (isTabby && Boolean(payment.redirectUrl));
 
   if (wantsRedirect) {
     if (!payment.redirectUrl) {
@@ -164,7 +196,7 @@ export async function startPayment(
     return { kind: "redirect" };
   }
 
-  if (isPaymob || isTelr) {
+  if (isPaymob || isTelr || isTabby) {
     throw new PaymentGatewayError(payment.warnings ?? []);
   }
 

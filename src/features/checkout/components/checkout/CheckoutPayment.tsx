@@ -17,6 +17,10 @@ import type { InlinePaymentSession } from "../../utils/startPayment";
 import { isStripePaymentMethod, paymentMethodNote, upcomingPaymentMethods } from "../../utils/methodLabels";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { InlineMethodPayment, type PaymentSurface } from "./InlineMethodPayment";
+import { TabbyCheckoutCard } from "./TabbyCheckoutCard";
+import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
+import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang } from "../../utils/tabby";
+import { pdpPayMarkTabby } from "@/styles/pdpChrome";
 
 type CheckoutPaymentProps = {
   methods: PaymentMethodOption[];
@@ -36,6 +40,10 @@ type CheckoutPaymentProps = {
   shopperEmail?: string;
   shopperName?: string;
   shopperPhone?: string;
+  /** Tabby pre-scoring for this shopper and total. */
+  tabbyPrescore?: TabbyPrescore;
+  /** Language for Tabby's own wording and snippet. */
+  tabbyLang?: TabbyLang;
 };
 
 export function CheckoutPayment({
@@ -56,11 +64,13 @@ export function CheckoutPayment({
   shopperEmail,
   shopperName,
   shopperPhone,
+  tabbyPrescore = { state: "idle" },
+  tabbyLang = "en",
 }: CheckoutPaymentProps) {
   const covered = amountPayable === 0;
   const opening = useRef(false);
   const [optionKey, setOptionKey] = useState<string | null>(null);
-  const groups = paymentGroups(methods, countryCode);
+  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang);
   const rows = groups.flatMap((group) => group.rows);
   const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
   const fallbackKey = selected ? defaultRowKey(selected) : null;
@@ -151,6 +161,7 @@ export function CheckoutPayment({
                               aria-describedby={row.sub ? `pay-opt-note-${row.key}` : undefined}
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
+                            {row.tabby !== undefined ? <span className={pdpPayMarkTabby} aria-hidden="true">tabby</span> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
                               {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}
@@ -172,6 +183,16 @@ export function CheckoutPayment({
                               ) : (
                                 <p className={payMockNote}>Loading secure card form…</p>
                               )}
+                            </div>
+                          ) : null}
+                          {on && row.tabby !== undefined && !row.disabled && amountPayable != null && amountPayable > 0 ? (
+                            <div className="px-4 pb-4 ps-12">
+                              <TabbyCheckoutCard
+                                config={row.tabby || null}
+                                total={amountPayable}
+                                currency={currency}
+                                lang={tabbyLang}
+                              />
                             </div>
                           ) : null}
                         </div>
@@ -245,9 +266,16 @@ type PayRow = {
   zoneId?: string;
   surface?: PaymentSurface;
   provider?: "stripe" | "paymob";
+  /** Tabby row: snippet settings from the backend (`false` when they are missing). */
+  tabby?: ReturnType<typeof tabbySnippetConfig> | false;
 };
 
-function paymentGroups(methods: PaymentMethodOption[], countryCode?: string | null): Array<{ id: string; title: string | null; rows: PayRow[] }> {
+function paymentGroups(
+  methods: PaymentMethodOption[],
+  countryCode: string | null | undefined,
+  tabbyPrescore: TabbyPrescore,
+  tabbyLang: TabbyLang,
+): Array<{ id: string; title: string | null; rows: PayRow[] }> {
   const country = (countryCode || "AE").toUpperCase();
   const stripeFirst = !["SA", "EG", "PK"].includes(country);
   const stripe = methods.find((method) => isStripePaymentMethod(method));
@@ -307,12 +335,24 @@ function paymentGroups(methods: PaymentMethodOption[], countryCode?: string | nu
     groups.push({
       id: "other",
       title: "Other",
-      rows: others.map((method) => ({
-        key: method.zonePaymentMethodId,
-        title: method.displayName,
-        sub: paymentMethodNote(method) || undefined,
-        zoneId: method.zonePaymentMethodId,
-      })),
+      rows: others.map((method) => {
+        const row: PayRow = {
+          key: method.zonePaymentMethodId,
+          title: method.displayName,
+          sub: paymentMethodNote(method) || undefined,
+          zoneId: method.zonePaymentMethodId,
+        };
+        if (!isTabbyPaymentMethod(method)) return row;
+        // Tabby: their mark, and their own wording when they can't approve this shopper.
+        row.tabby = tabbySnippetConfig(method) ?? false;
+        if (tabbyPrescore.state === "rejected") {
+          row.disabled = true;
+          row.sub = tabbyPrescore.message[tabbyLang];
+        } else if (tabbyPrescore.state === "checking") {
+          row.sub = "Checking eligibility…";
+        }
+        return row;
+      }),
     });
   }
 
