@@ -19,6 +19,9 @@ import {
   crumbsList,
 } from "@/styles/shopChrome";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { sanitizeCatalogHtml } from "@/features/catalog/utils/catalogHtml";
+
+const HTML_TAG = /<\/?[a-z][a-z0-9]*\b[^>]*>/i;
 
 type CatalogHeroMeta = {
   eyebrow: string;
@@ -96,7 +99,15 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
               {meta.title}
               {meta.titleEm ? <em className={collectionEm}> {meta.titleEm}</em> : null}
             </h1>
-            {meta.intro ? <p className={collectionIntro}>{meta.intro}</p> : null}
+            {meta.intro && HTML_TAG.test(meta.intro) ? (
+              // Collection descriptions from Shopify are HTML ("<p>…</p>"): show them formatted, cleaned first.
+              <div
+                className={`${collectionIntro} [&_p]:m-0 [&_p+p]:mt-3 [&_ul]:list-disc [&_ul]:ps-5`}
+                dangerouslySetInnerHTML={{ __html: sanitizeCatalogHtml(meta.intro) }}
+              />
+            ) : meta.intro ? (
+              <p className={collectionIntro}>{meta.intro}</p>
+            ) : null}
           </div>
         </div>
       </div>

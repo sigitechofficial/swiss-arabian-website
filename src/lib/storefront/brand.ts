@@ -1,4 +1,5 @@
 import { env } from "@/lib/config/env";
+import { localStorefrontForHost } from "./localStorefront";
 
 export const STOREFRONT_HOST_HEADER = "X-Storefront-Host";
 export const STOREFRONT_CLIENT_ID_HEADER = "X-Storefront-Client-Id";
@@ -28,16 +29,40 @@ function isLoopbackHost(host: string): boolean {
   );
 }
 
+/** The browser's address, or the given request host (server / first render). */
+function liveHost(host?: string | null): string {
+  if (host) return normalizeStorefrontHost(host);
+  if (typeof window === "undefined") return "";
+  return normalizeStorefrontHost(window.location.hostname);
+}
+
+/**
+ * Shop host and brand for an address. Local `*.localhost` aliases
+ * (`sp.localhost` → Sapil) win over the .env storefront.
+ */
+export function storefrontBrand(host?: string | null): {
+  host: string;
+  configuredHost: string;
+  brandCode: string;
+} {
+  const live = liveHost(host);
+  const local = localStorefrontForHost(live);
+  const configuredHost = local?.host ?? normalizeStorefrontHost(env.storefrontHost);
+  const brandCode = (local?.brandCode ?? env.storefrontBrandCode).trim().toUpperCase();
+  return {
+    host: live && !isLoopbackHost(live) ? live : configuredHost,
+    configuredHost,
+    brandCode,
+  };
+}
+
 /**
  * Shop hostname for brand helpers (logo / Sapil checks).
- * Live window hostname wins (except loopback). Local Sapil uses env override.
+ * Live hostname wins (except loopback). Locally: the alias's shop, else env.
+ * Pass the request host on the server; the browser reads its own address.
  */
-export function resolveStorefrontHost(): string {
-  const configured = normalizeStorefrontHost(env.storefrontHost);
-  if (typeof window === "undefined") return configured;
-  const live = normalizeStorefrontHost(window.location.hostname);
-  if (live && !isLoopbackHost(live)) return live;
-  return configured;
+export function resolveStorefrontHost(host?: string | null): string {
+  return storefrontBrand(host).host;
 }
 
 export function isShopUnavailablePath(pathname?: string): boolean {
@@ -51,15 +76,15 @@ export function isShopUnavailablePath(pathname?: string): boolean {
 export function storefrontStorageKey(base: string): string {
   if (typeof window === "undefined") return base;
   const live = normalizeStorefrontHost(window.location.hostname);
-  const configured = normalizeStorefrontHost(env.storefrontHost);
+  const configured = storefrontBrand(live).configuredHost;
   if (isLoopbackHost(live) && configured) return `${base}:${configured}`;
   return base;
 }
 
 export function filterMarketsForTenant<
   T extends { catalogContext: { brandCode?: string | null } },
->(markets: T[]): T[] {
-  const tenant = env.storefrontBrandCode.trim().toUpperCase();
+>(markets: T[], host?: string | null): T[] {
+  const tenant = storefrontBrand(host).brandCode;
   if (!tenant) return markets;
   const tagged = markets.filter((market) =>
     Boolean(market.catalogContext.brandCode?.trim()),
@@ -71,9 +96,10 @@ export function filterMarketsForTenant<
   );
 }
 
-export function isSapilStorefront(): boolean {
-  if (env.storefrontBrandCode.trim().toUpperCase() === "SAPIL") return true;
-  return resolveStorefrontHost().includes("sapil");
+export function isSapilStorefront(host?: string | null): boolean {
+  const brand = storefrontBrand(host);
+  if (brand.brandCode === "SAPIL") return true;
+  return brand.host.includes("sapil");
 }
 
 export type StorefrontLogo = {
@@ -89,8 +115,8 @@ export type StorefrontLogo = {
  * The brand's logo. File names describe the image for search engines; the old
  * files (sa-logo-clear.png, sapil-logo.png) stay so existing links keep working.
  */
-export function storefrontLogo(): StorefrontLogo {
-  if (isSapilStorefront()) {
+export function storefrontLogo(host?: string | null): StorefrontLogo {
+  if (isSapilStorefront(host)) {
     return {
       src: "/assets/sapil-online-perfume-store.png",
       alt: "Sapil Online Perfume Store",

@@ -11,16 +11,27 @@ import {
 import { shopCopy } from "@/lib/i18n/shopCopy";
 import {
   fetchSitePage,
+  fetchSitePagePreview,
   fetchSitePages,
   type SitePageKind,
+  type SitePagePreviewParams,
 } from "./api/sitePages.service";
 import { SitePageView } from "./components/SitePageView";
 import { fixedPathForPage } from "./utils/pickMarketPage";
 
 /** Shared by /pages/[handle] and /policies/[handle]. */
 
-async function load(kind: SitePageKind, handle: string) {
+async function load(
+  kind: SitePageKind,
+  handle: string,
+  preview?: SitePagePreviewParams | null,
+) {
   const { locale, zoneCode } = await resolveServerCatalogMarket();
+  if (preview) {
+    // A saved version from an admin preview link: its own text, never indexed.
+    const page = await fetchSitePagePreview(preview, locale);
+    return { locale, zoneCode, page, preview: page?.preview ?? null };
+  }
   if (kind === "PAGE" && zoneCode) {
     // The market's FAQ / story / store page has one address: /faq, /our-story, /stores.
     const pages = await fetchSitePages(zoneCode).catch(() => []);
@@ -28,15 +39,22 @@ async function load(kind: SitePageKind, handle: string) {
     if (fixedPath) permanentRedirect(withLocalePrefix(fixedPath, locale));
   }
   const page = await fetchSitePage(kind, handle, locale, zoneCode);
-  return { locale, zoneCode, page };
+  return { locale, zoneCode, page, preview: null };
 }
 
 export async function sitePageMetadata(
   kind: SitePageKind,
   handle: string,
+  previewParams?: SitePagePreviewParams | null,
 ): Promise<Metadata> {
-  const { locale, page } = await load(kind, handle);
+  const { locale, page, preview } = await load(kind, handle, previewParams);
   if (!page) notFound();
+  if (preview) {
+    return {
+      title: `Preview · ${page.title}`,
+      robots: { index: false, follow: false },
+    };
+  }
   // SEO Management (a page for this address) wins over the page's own SEO.
   const { seo } = await loadPublishedPageSeo(page.path);
   return applySeoOverrides(
@@ -54,11 +72,17 @@ export async function sitePageMetadata(
 export async function SitePageRoute({
   kind,
   handle,
+  previewParams,
 }: {
   kind: SitePageKind;
   handle: string;
+  previewParams?: SitePagePreviewParams | null;
 }) {
-  const { locale, zoneCode, page } = await load(kind, handle);
+  const { locale, zoneCode, page, preview } = await load(
+    kind,
+    handle,
+    previewParams,
+  );
   if (!page) notFound();
   const contactDetails = page.templateSuffix?.includes("contact")
     ? await fetchSitePage(
@@ -70,6 +94,20 @@ export async function SitePageRoute({
     : null;
   return (
     <>
+      {preview ? (
+        <div
+          role="status"
+          className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-900"
+        >
+          Preview of version {preview.number} “{preview.label}”
+          {preview.status === "SCHEDULED" && preview.effectiveFrom
+            ? `, scheduled for ${new Date(preview.effectiveFrom).toUTCString()}`
+            : preview.status === "ACTIVE"
+              ? " (live now)"
+              : ` (${preview.status.toLowerCase()}, not live)`}
+          . Shoppers do not see this link.
+        </div>
+      ) : null}
       <CatalogJsonLd
         data={breadcrumbJsonLd([
           {

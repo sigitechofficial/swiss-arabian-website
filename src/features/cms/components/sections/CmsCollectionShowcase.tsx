@@ -8,6 +8,8 @@ export type CmsCollectionShowcaseData = {
   heading?: string | null;
   subtitle?: string | null;
   layoutVariant?: "grid" | "carousel";
+  /** NAVIGATION: the main menu's collections, live (same as the built-in homepage). */
+  source?: "MANUAL" | "NAVIGATION" | null;
   tiles?: Array<{
     id?: string;
     title?: string;
@@ -27,6 +29,15 @@ type Props = {
 };
 
 export function CmsCollectionShowcase({ data, linkContext }: Props) {
+  if (data.source === "NAVIGATION") {
+    return (
+      <LandingCollections
+        heading={data.heading}
+        subtitle={data.subtitle}
+        variant={data.layoutVariant === "carousel" ? "carousel" : "grid"}
+      />
+    );
+  }
   const items = (data.tiles ?? [])
     .filter((tile) => tile.title?.trim())
     .map((tile, index) => {

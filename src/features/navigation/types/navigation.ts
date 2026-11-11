@@ -11,6 +11,8 @@ export type NavItem = {
   slug: string | null;
   type: NavItemType;
   href: string | null;
+  /** Picture of the linked collection (tiles such as "Shop by categories"). */
+  image?: string | null;
   children?: NavItem[];
 };
 

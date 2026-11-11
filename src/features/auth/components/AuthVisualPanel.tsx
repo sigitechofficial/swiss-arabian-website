@@ -2,8 +2,9 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { storefrontLogo } from "@/lib/storefront/brand";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+
+import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
 
 /** Mirrors the reference auth pages (`/login`, `/register`, `/forgot-password`)
  *  on the production storefront — a slow, auto-rotating brand slideshow with
@@ -40,6 +41,7 @@ const BADGES = ["Crafted in Dubai since 1974", "Genuine & sealed", "Complimentar
 const SLIDE_INTERVAL_MS = 6000;
 
 export function AuthVisualPanel() {
+  const logo = useStorefrontLogo();
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
@@ -74,12 +76,12 @@ export function AuthVisualPanel() {
 
         <LocaleLink
           className="relative z-1 block h-14 w-44 xl:h-16 xl:w-52"
-          aria-label="Swiss Arabian home"
+          aria-label={`${logo.name} home`}
           href="/"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={storefrontLogo().src}
+            src={logo.src}
             alt=""
             className="h-full w-full object-contain object-left [filter:brightness(0)_invert(0.93)_sepia(0.12)]"
           />

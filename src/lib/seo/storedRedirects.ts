@@ -164,7 +164,7 @@ export function redirectHost(headers: Headers): string | null {
   );
   if (host && !isLoopbackHost(host))
     return host.toLowerCase().replace(/:\d+$/, "");
-  return configuredStorefrontHost();
+  return configuredStorefrontHost(host);
 }
 
 /**

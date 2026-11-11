@@ -53,6 +53,61 @@ export const fetchSitePage = cache(
   },
 );
 
+/** A saved version shown from a signed admin preview link (not live). */
+export type SitePagePreview = SitePage & {
+  preview: {
+    versionId: string;
+    number: number;
+    label: string;
+    status: "DRAFT" | "SCHEDULED" | "ACTIVE" | "RETIRED";
+    effectiveFrom: string | null;
+    scope: "BRAND" | "MARKET";
+  };
+};
+
+export type SitePagePreviewParams = {
+  previewVersion: string;
+  previewExp: string;
+  previewToken: string;
+};
+
+/** Reads the preview parameters of a page address; null when absent. */
+export function previewParamsFrom(
+  searchParams: Record<string, string | string[] | undefined>,
+): SitePagePreviewParams | null {
+  const one = (k: string) => {
+    const v = searchParams[k];
+    return typeof v === "string" ? v : undefined;
+  };
+  const previewVersion = one("previewVersion");
+  const previewExp = one("previewExp");
+  const previewToken = one("previewToken");
+  return previewVersion && previewExp && previewToken
+    ? { previewVersion, previewExp, previewToken }
+    : null;
+}
+
+/** The version's text; null when the link is wrong or expired. Never cached. */
+export async function fetchSitePagePreview(
+  params: SitePagePreviewParams,
+  locale: string,
+): Promise<SitePagePreview | null> {
+  const qs = new URLSearchParams({ ...params, locale });
+  try {
+    return await apiGet<SitePagePreview>(
+      `/storefront/website/pages/preview?${qs.toString()}`,
+      { skipAuth: true },
+    );
+  } catch (error) {
+    if (
+      error instanceof ApiClientError &&
+      (error.status === 404 || error.status === 400)
+    )
+      return null;
+    throw error;
+  }
+}
+
 /** Pages and policies shown in the market (sitemap). */
 export async function fetchSitePages(
   zoneCode: string,

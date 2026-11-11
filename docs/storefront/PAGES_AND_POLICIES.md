@@ -77,6 +77,64 @@ Footer links checked on 10 Nov:
 
 Policies have no Arabic in Shopify; the Arabic site shows the English text until Arabic is added here.
 
+## Versions, scheduling and order records (12 Nov 2026)
+
+Every page and policy (global, or a market's own) keeps **saved versions**. Only one is **live**; the website always shows it at the normal address.
+
+| Status | Meaning |
+|---|---|
+| Live | The text shoppers see now |
+| Scheduled | Goes live by itself at its start date |
+| Draft | Being written; not shown |
+| Earlier version | Was live; can be restored |
+
+**Admin:** Pages & policies → **Versions** on a row. The list shows the live version and the next scheduled one.
+- **New version:** starts as a copy of the live text and is saved as a draft.
+- **Make live now:** the website changes within a minute. The live version becomes an earlier version.
+- **Schedule:** enter a start date, and optionally an end date, in the market's time (UAE time, Qatar time). Two versions can't start at the same moment. At the end date, the version live before comes back.
+- **Restore:** makes an earlier version live again (rollback).
+- **Compare with live:** shows the changes sentence by sentence, in English and Arabic.
+- **Preview:** a signed website link, valid for 2 hours, showing the version with a "Preview" banner. It is not indexed. Shoppers never see it.
+- **History:** who created, scheduled, activated or replaced each version, when, and why. Every action asks for a reason. The history can't be edited.
+- **Arabic:** a version without Arabic needs the "Go live with English only" box ticked.
+- **Global vs market:** a market with its own version keeps it when a new global version goes live. Global versions change every market that follows the global page.
+- **Edit (live text):** saving still changes the live text straight away. The text before is kept as an earlier version.
+- Only drafts can be deleted. Every other version stays for the record.
+
+**Automatic switching:** the backend checks every minute (`WebsitePageVersionsScheduler`; turn it off with `WEBSITE_PAGE_VERSIONS_WORKER_ENABLED=false`). Each switch runs in one transaction and is safe with several backend instances. A failed switch shows a red notice on the version and on the page row.
+
+**Orders:** each new order stores the policy versions live in its market when it was placed (`orders.policy_snapshot`): refund, shipping, terms, privacy, exchange and contact. Admin order detail shows them as `policies`. The order is placed even if this lookup fails. Older orders have none.
+
+**Preview secret:** `WEBSITE_PREVIEW_SECRET` (falls back to `ADMIN_JWT_SECRET`). Links use `STOREFRONT_PUBLIC_BASE_URL`, or `http://localhost:3004` locally.
+
+**Code:**
+- Backend:
+  - `website-page-versions.service.ts`, `.core.ts` and `.scheduler.ts`
+  - `controllers/admin-website-page-versions.controller.ts` (`/admin/website/markets/:zoneCode/pages/:pageId/versions`)
+  - `GET /storefront/website/pages/preview`
+  - `policy-snapshot/`
+  - Migration `20261112090000_website_page_versions`: existing text became version 1, "Current text"
+- Admin: `SitePageVersionsModal.tsx`, `api/sitePageVersions.api.ts`, `utils/pageVersions.utils.ts`
+- Website: preview parameters in `sitePageRoute.tsx`
+
+## One version per policy (11 Nov 2026)
+
+Shopify has each policy twice: a built-in policy (`/policies/…`, English only) and a page the footer links to (`/pages/…`, English and Arabic, different text). The pages are the version we keep. The built-in addresses redirect (301) to them in every market, and `/ar` stays `/ar`:
+
+| Old address | Goes to |
+|---|---|
+| `/policies/shipping-policy`, `/shipping-policy` | `/pages/shipping-delivery-policy` |
+| `/policies/refund-policy`, `/refund-policy`, `/return-policy`, `/returns` | `/pages/refund-policy` |
+| `/policies/privacy-policy`, `/privacy-policy` | `/pages/privacy-policy` |
+| `/policies/terms-of-service`, `/terms-and-conditions` | `/pages/terms-and-conditions` |
+
+- `/policies/contact-information` stays; the contact page shows it.
+- The redirected addresses are left out of the sitemap.
+- The checkout's Privacy Policy link goes to `/pages/privacy-policy`.
+- Edit a policy's text under **Pages & policies**, on the page (global, or the market's own version).
+- **Qatar:** its exchange page in Shopify is `/pages/exchange-and-retuen-policy` (spelling from the store). A Qatar redirect sends `/pages/exchange-and-return-policy` (and `/ar/…`) there. It is a market redirect in the admin (**Redirects**), so each environment needs it.
+- Code: `src/lib/seo/shopifyLegacyRedirects.ts` (`POLICY_REDIRECTS`, `SHORT_PAGE_REDIRECTS`).
+
 ## Code
 
 - **Backend:** `src/modules/website-pages/`

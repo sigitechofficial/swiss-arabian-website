@@ -55,4 +55,8 @@ describe("isExternalHref", () => {
     expect(isExternalHref("https://a.com")).toBe(true);
     expect(isExternalHref("/products")).toBe(false);
   });
+  it("keeps a same-page anchor and rejects anchors with odd characters", () => {
+    expect(resolveCmsLink({ type: "INTERNAL_PATH", url: "#story" })).toBe("#story");
+    expect(resolveCmsLink({ type: "INTERNAL_PATH", url: "#x\"><script>" })).toBeNull();
+  });
 });

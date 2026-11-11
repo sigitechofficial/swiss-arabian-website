@@ -4,7 +4,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { brandLink, brandLinkMinimal, brandWordmark } from "@/styles/siteChrome";
 import { brandWordmarkFont } from "./brandWordmarkFont";
 import { MediaImage } from "@/components/ui/MediaImage";
-import { storefrontLogo } from "@/lib/storefront/brand";
+import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
 
 export function NavbarBrand({
   crop = false,
@@ -16,7 +16,7 @@ export function NavbarBrand({
   centered?: boolean;
 }) {
   // The brand's own logo, with a descriptive file name and alt text (SEO audit).
-  const logo = storefrontLogo();
+  const logo = useStorefrontLogo();
   if (wordmark) {
     return (
       <LocaleLink
