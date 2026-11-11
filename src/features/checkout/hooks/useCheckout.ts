@@ -41,6 +41,7 @@ import {
   storeOrderId,
   storeOrderNumber,
   storePaymentMethodId,
+  storePaymentProviderCode,
   storeZonePaymentMethodId,
 } from "../utils/checkoutSession";
 import {
@@ -54,7 +55,14 @@ import {
   checkoutSignatureChanged,
   promotionCheckoutSignature,
 } from "../utils/promotionCheckoutSignature";
-import { PaymentGatewayError, startPayment, type InlinePaymentSession, type PreparedInlinePayment } from "../utils/startPayment";
+import {
+  PaymentGatewayError,
+  PaymentRejectedError,
+  startPayment,
+  type InlinePaymentSession,
+  type PreparedInlinePayment,
+} from "../utils/startPayment";
+import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -328,6 +336,7 @@ export function useCheckout() {
           setSelectedPaymentId(paymentPick.zonePaymentMethodId);
           storeZonePaymentMethodId(paymentPick.zonePaymentMethodId);
           storePaymentMethodId(paymentPick.paymentMethodId);
+          storePaymentProviderCode(paymentPick.providerCode ?? "");
           try {
             setSession(await selectPaymentMethod(sessionId, paymentPick.paymentMethodId));
           } catch {
@@ -414,6 +423,7 @@ export function useCheckout() {
       setSelectedPaymentId(zonePaymentMethodId);
       storeZonePaymentMethodId(method.zonePaymentMethodId);
       storePaymentMethodId(method.paymentMethodId);
+      storePaymentProviderCode(method.providerCode ?? "");
       try {
         // The response is the server re-quote, including P6 promotion eligibility.
         setSession(await selectPaymentMethod(sessionId, method.paymentMethodId));
@@ -478,6 +488,19 @@ export function useCheckout() {
         providerCode: payment?.providerCode,
       };
 
+      // The order is placed; only starting the payment failed.
+      const paymentStartError = (e: unknown, gatewayFallback: string) => {
+        if (e instanceof PaymentRejectedError) {
+          return e.messages[tabbyLang(document.documentElement.lang)];
+        }
+        if (e instanceof PaymentGatewayError) {
+          return payment && isTabbyPaymentMethod(payment)
+            ? tabbyStartFailureMessage(e.warnings)
+            : gatewayFallback;
+        }
+        return checkoutErrorMessage(e);
+      };
+
       const payPlacedOrder = async (orderId: string) => {
         const started = await startPayment(
           orderId,
@@ -509,9 +532,7 @@ export function useCheckout() {
             );
           } catch (e) {
             setErrorMsg(
-              e instanceof PaymentGatewayError
-                ? "Payment couldn’t be started. Your order is saved — try Pay again."
-                : checkoutErrorMessage(e),
+              paymentStartError(e, "Payment couldn’t be started. Your order is saved — try Pay again."),
             );
             setStatus("ready");
           }
@@ -550,6 +571,7 @@ export function useCheckout() {
           await selectPaymentMethod(id, payment.paymentMethodId);
           storeZonePaymentMethodId(payment.zonePaymentMethodId);
           storePaymentMethodId(payment.paymentMethodId);
+          storePaymentProviderCode(payment.providerCode ?? "");
         }
 
         const validated = await validateCheckout(id);
@@ -632,9 +654,10 @@ export function useCheckout() {
       } catch (e) {
         if (placedOrderId) {
           setErrorMsg(
-            e instanceof PaymentGatewayError
-              ? "Card payment couldn’t be started. Your order is saved — try Pay again."
-              : checkoutErrorMessage(e),
+            paymentStartError(
+              e,
+              "Card payment couldn’t be started. Your order is saved — try Pay again.",
+            ),
           );
           setStatus("ready");
           return;

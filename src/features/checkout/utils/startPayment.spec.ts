@@ -14,7 +14,7 @@ vi.mock("./checkoutSession", () => ({
 }));
 
 import { initiatePayment } from "../api/orders.service";
-import { startPayment } from "./startPayment";
+import { PaymentGatewayError, PaymentRejectedError, startPayment } from "./startPayment";
 
 describe("startPayment", () => {
   beforeEach(() => {
@@ -85,5 +85,68 @@ describe("startPayment", () => {
       "https://secure.telr.com/gateway/process.html?o=abc",
     );
     expect(result.kind).toBe("redirect");
+  });
+
+  it("redirects Tabby with /payments/tabby/return for both return and cancel", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://checkout.tabby.ai/?sessionId=abc",
+      warnings: [],
+      metadata: { tabbyPaymentId: "pay-1" },
+    } as never);
+
+    const result = await startPayment(
+      "order-tabby",
+      vi.fn(),
+      { providerCode: "tabby", zonePaymentMethodId: "zpm-tabby" },
+    );
+
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-tabby",
+      expect.objectContaining({
+        returnUrl: "http://localhost:3004/payments/tabby/return",
+        cancelUrl: "http://localhost:3004/payments/tabby/return",
+        zonePaymentMethodId: "zpm-tabby",
+      }),
+    );
+    expect(window.location.assign).toHaveBeenCalledWith("https://checkout.tabby.ai/?sessionId=abc");
+    expect(result.kind).toBe("redirect");
+  });
+
+  it("raises Tabby's own message when Tabby rejects the purchase — never a redirect or confirmation", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: null,
+      redirectUrl: null,
+      paymentStatus: "FAILED",
+      warnings: ["Sorry, Tabby is unable to approve this purchase."],
+      metadata: {
+        tabbyRejectionReason: "not_available",
+        tabbyRejectionMessage: { en: "Sorry (en)", ar: "نأسف" },
+      },
+    } as never);
+
+    const attempt = startPayment("order-tabby", vi.fn(), { providerCode: "tabby" });
+
+    await expect(attempt).rejects.toBeInstanceOf(PaymentRejectedError);
+    await expect(attempt).rejects.toMatchObject({ messages: { en: "Sorry (en)", ar: "نأسف" } });
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("treats a Tabby response with no payment page as a gateway error", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: null,
+      redirectUrl: null,
+      warnings: [],
+      metadata: {},
+    } as never);
+
+    await expect(
+      startPayment("order-tabby", vi.fn(), { providerCode: "tabby" }),
+    ).rejects.toBeInstanceOf(PaymentGatewayError);
+    expect(window.location.replace).not.toHaveBeenCalled();
   });
 });

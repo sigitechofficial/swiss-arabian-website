@@ -108,6 +108,8 @@ export function GuestAfterSalesSection({
               <GuestExchangeRequestCard
                 key={item.exchangeRequestId}
                 item={item}
+                orderNumber={orderNumber}
+                orderAccessToken={orderAccessToken}
               />
             ))}
           </div>

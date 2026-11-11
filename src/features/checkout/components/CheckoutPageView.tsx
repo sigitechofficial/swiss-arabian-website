@@ -60,6 +60,9 @@ import {
   staffDiscountPaymentBlocked,
 } from "@/features/employeeBenefits/types/employeeCheckout";
 import { useCheckout } from "../hooks/useCheckout";
+import { useTabbyPrescore } from "../hooks/useTabbyPrescore";
+import { useTabbyLang } from "../hooks/useTabbyLang";
+import { isTabbyPaymentMethod } from "../utils/tabby";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import type { AddressFields } from "../utils/addressSnapshot";
@@ -275,12 +278,36 @@ export function CheckoutPageView() {
   );
   const submitting = checkout.status === "submitting";
   const covered = amountPayable === 0;
+
+  // Tabby pre-scoring: on entry, and again when the email, phone or total changes.
+  const payLang = useTabbyLang();
+  const tabbyMethod = checkout.paymentMethods.find((m) => isTabbyPaymentMethod(m));
+  const tabbyPrescore = useTabbyPrescore({
+    checkoutSessionId: session?.checkoutSessionId,
+    enabled: Boolean(tabbyMethod) && !covered,
+    email,
+    phone: shipping.phone ?? "",
+    total: amountPayable ?? total,
+  });
+  const tabbyRejected = tabbyPrescore.state === "rejected";
+  const tabbySelected = Boolean(selectedPayment && isTabbyPaymentMethod(selectedPayment));
+  // Tabby can't approve this shopper: move the selection to another method.
+  const { paymentMethods, choosePayment } = checkout;
+  useEffect(() => {
+    if (!tabbyRejected || !tabbySelected) return;
+    const other =
+      paymentMethods.find((m) => !isTabbyPaymentMethod(m) && m.isDefault) ??
+      paymentMethods.find((m) => !isTabbyPaymentMethod(m));
+    if (other) void choosePayment(other.zonePaymentMethodId);
+  }, [tabbyRejected, tabbySelected, paymentMethods, choosePayment]);
   const staffPaymentBlocked = staffDiscountPaymentBlocked(
     readEmployeeCheckout(session?.staffPurchase ?? session?.employeeCheckout),
   );
   const canSubmit =
     checkout.status === "ready" &&
     !staffPaymentBlocked &&
+    // Never submit with a Tabby option Tabby has already declined.
+    !(tabbyRejected && tabbySelected && !covered) &&
     Boolean(
       checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId),
     );
@@ -467,6 +494,8 @@ export function CheckoutPageView() {
                     shopperEmail={email}
                     shopperName={shipping.fullName}
                     shopperPhone={shipping.phone}
+                    tabbyPrescore={tabbyPrescore}
+                    tabbyLang={payLang}
                     onPayNow={() => {
                       const form = document.getElementById("checkout-form");
                       if (form instanceof HTMLFormElement) form.requestSubmit();
