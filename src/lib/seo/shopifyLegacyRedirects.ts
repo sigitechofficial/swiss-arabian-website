@@ -34,6 +34,30 @@ const PAGE_REDIRECTS: Record<string, string> = {
   "gift-box": "/collections",
   subscription: "/subscriptions",
   subscriptions: "/subscriptions",
+  // Shopify app and utility pages (completeness report, 11 Nov 2026): same purpose here.
+  wishlist: "/account/wishlist",
+  "swym-share-wishlist": "/account/wishlist",
+  "rapid-search-results": "/search",
+  "search-results": "/search",
+  "search-results-v-next": "/search",
+  "order-status": "/track",
+  locator: "/stores",
+  "virtual-tour": "/stores",
+  blogs: "/blog",
+  "joy-subscription": "/subscriptions",
+  "manage-subscriptions": "/subscriptions",
+  "return-form": "/account/returns",
+  "subscribe-form": "/",
+  shortcode: "/",
+  shortcoe: "/",
+  "scent-finder": "/collections",
+  "bundles-1": "/collections/bundles",
+  "collection-bundle": "/collections/bundles",
+  // Both markets have the catalogue download page.
+  "product-catalogue": "/pages/download-product-catalogue",
+  "product-catalog": "/pages/download-product-catalogue",
+  "product-feed": "/pages/download-product-catalogue",
+  "h1-class-remove-head-product-catalogue-h1": "/pages/download-product-catalogue",
 };
 
 /**
@@ -61,6 +85,9 @@ function rewriteBare(path: string): string | null {
   if (short && SHORT_PAGE_REDIRECTS[short[1].toLowerCase()]) {
     return SHORT_PAGE_REDIRECTS[short[1].toLowerCase()];
   }
+
+  // Shopify's built-in "all products" collection.
+  if (/^\/collections\/all\/?$/.test(path)) return "/products";
 
   // /collections/{collection}/products/{product} → canonical product URL.
   const nested = /^\/collections\/[^/]+\/products\/([^/]+)\/?$/.exec(path);
