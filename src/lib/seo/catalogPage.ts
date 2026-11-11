@@ -1,7 +1,13 @@
 import { cache } from "react";
+import { shareImageFor } from "@/lib/seo/shareImage";
+import { storefrontLogo } from "@/lib/storefront/brand";
 import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
-import { loadBrandIdentityFor, namesBrand, type BrandIdentity } from "@/lib/seo/brandIdentity";
+import {
+  loadBrandIdentityFor,
+  namesBrand,
+  type BrandIdentity,
+} from "@/lib/seo/brandIdentity";
 import {
   fetchCategoryBySlugOutcome,
   fetchCategoryProducts,
@@ -90,7 +96,10 @@ export async function loadServerHome(): Promise<{
   const { zoneCode, contentLanguage } = await resolveServerCatalogMarket();
   if (!zoneCode || !contentLanguage) return null;
   try {
-    const data = await fetchPublishedHome({ zoneCode, languageCode: contentLanguage });
+    const data = await fetchPublishedHome({
+      zoneCode,
+      languageCode: contentLanguage,
+    });
     return { zoneCode, languageCode: contentLanguage, data };
   } catch {
     return null;
@@ -227,7 +236,10 @@ export async function loadRequestBrandIdentity(): Promise<BrandIdentity> {
 }
 
 /** `og:locale` from the shopper's language and the market's country ("ar_QA"). */
-export function openGraphLocale(language: string, countryCode?: string | null): string {
+export function openGraphLocale(
+  language: string,
+  countryCode?: string | null,
+): string {
   const lang = language.toLowerCase().split(/[-_]/)[0] || "en";
   const country = countryCode?.trim().toUpperCase();
   return country ? `${lang}_${country}` : lang;
@@ -248,7 +260,9 @@ export type CatalogMetadataInput = {
 };
 
 /** Page metadata for the request's market, named after its brand identity. */
-export async function catalogMetadata(input: CatalogMetadataInput): Promise<Metadata> {
+export async function catalogMetadata(
+  input: CatalogMetadataInput,
+): Promise<Metadata> {
   const { zoneCode, market } = await resolveServerCatalogMarket();
   const brand = await loadBrandIdentityFor(input.locale, zoneCode);
   return buildCatalogMetadata(input, {
@@ -259,11 +273,35 @@ export async function catalogMetadata(input: CatalogMetadataInput): Promise<Meta
 
 export function buildCatalogMetadata(
   input: CatalogMetadataInput,
-  context: { brand: Pick<BrandIdentity, "name" | "names">; countryCode?: string | null },
+  context: {
+    brand: Pick<BrandIdentity, "name" | "names"> &
+      Partial<Pick<BrandIdentity, "shareImage" | "logo">>;
+    countryCode?: string | null;
+  },
 ): Metadata {
   const alternates = catalogAlternates(input.path, input.locale);
-  // Alt text on the share image (Shopify sends none).
-  const images = input.image ? [{ url: input.image, alt: input.title }] : undefined;
+  // Link previews: the page's own image, else the market's default share
+  // image (Shopify: Preferences → social sharing image), else the brand logo.
+  // Served as a JPEG at a fixed size (see shareImage.ts). Alt text: the title.
+  const shape = input.ogType === "product" ? "square" : "wide";
+  // First image that exists wins; it is converted when it is on our hosts,
+  // else used as it is (a page's own image always beats the logo).
+  const source = [
+    input.image,
+    context.brand.shareImage,
+    context.brand.logo,
+    storefrontLogo().src,
+  ]
+    .map((src) => src?.trim())
+    .find((src): src is string => Boolean(src));
+  const images = source
+    ? [
+        shareImageFor(source, shape, input.title) ?? {
+          url: source,
+          alt: input.title,
+        },
+      ]
+    : undefined;
   const otherLocale = input.locale === "ar" ? "en" : "ar";
   return {
     // Imported SEO titles often name the brand already ("… | Swiss Arabian UAE"):

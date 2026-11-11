@@ -91,7 +91,7 @@ export function AccountReviewsPageView() {
     <AccountPageShell>
       <AccountPageTitle
         title="Reviews"
-        subtitle="Reviews appear on the product page after approval. Editing sends them back for review."
+        subtitle="Most reviews appear on the product page straight away; reviews with links, contact details or offensive words are checked by our team first. Edited reviews are checked again."
       />
 
       <div className={`${accountContainer} pb-16`}>
@@ -247,9 +247,9 @@ function AccountReviewCard({
               Waiting for approval — not shown on the product page yet.
             </p>
           ) : null}
-          {review.status === "REJECTED" ? (
+          {review.status === "REJECTED" || review.status === "HIDDEN" ? (
             <p className="mt-2 text-[13px] text-sa-secondary">
-              This review was not published.
+              This review is not shown on the website. You can edit it — our team will look at it again.
             </p>
           ) : null}
         </div>
@@ -276,6 +276,14 @@ function AccountReviewCard({
             <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-sa-secondary">
               {review.body}
             </p>
+          ) : null}
+          {review.reply ? (
+            <div className="mt-3 rounded-e-md border-s-2 border-copper bg-[#fffdf8] px-3 py-2 text-[13px] leading-relaxed text-sa-secondary">
+              <span className="mb-0.5 block text-[11px] font-semibold tracking-[0.1em] text-sa-primary uppercase">
+                Swiss Arabian replied
+              </span>
+              {review.reply.text}
+            </div>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-3">
             <button type="button" className={accountBtnGhost} onClick={onEdit}>
