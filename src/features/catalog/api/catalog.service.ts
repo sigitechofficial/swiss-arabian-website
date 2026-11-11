@@ -514,8 +514,11 @@ export function realProductDescription(
 }
 
 /**
- * Meta description for a product with no SEO description (same idea as Shopify):
- * the start of its own description as plain text, cut at a word near 160 characters.
+ * Meta description for a product with no SEO description: the start of its own
+ * description as plain text, at most 160 characters (what Google shows), ending
+ * on a full sentence when one ends after ~104 characters, else at a word with "…".
+ * Shopify uses the first 320 characters cut mid-word, which Google cuts again.
+ * The admin preview uses the same rule (catalog/utils/productSeoFallback.utils.ts).
  */
 export function productMetaDescription(
   description: string | null | undefined,
@@ -534,6 +537,13 @@ export function productMetaDescription(
     .trim();
   if (!text) return undefined;
   if (text.length <= maxLength) return text;
+  const window = text.slice(0, maxLength);
+  const sentenceEnd = Math.max(
+    window.lastIndexOf(". "),
+    window.lastIndexOf("! "),
+    window.lastIndexOf("? "),
+  );
+  if (sentenceEnd >= maxLength * 0.65) return window.slice(0, sentenceEnd + 1);
   const cut = text.slice(0, maxLength - 1);
   const lastSpace = cut.lastIndexOf(" ");
   return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–-]+$/, "")}…`;

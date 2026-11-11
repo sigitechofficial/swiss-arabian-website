@@ -31,6 +31,24 @@ describe("productMetaDescription", () => {
     expect(long.startsWith(meta.slice(0, -1))).toBe(true);
   });
 
+  it("ends on a full sentence when one ends late enough (zahra)", () => {
+    const zahra =
+      "<p>Each precious droplet of Zahra encapsulates the breath-taking beauty of nature.</p>" +
+      "<p>Opening with an opulent feast of fruits: ripe, juicy and inviting, Zahra is a refreshing and uplifting scent for a cold night.</p>";
+    // The first sentence ends at 80 characters (< 104): too short, so it cuts at a word.
+    const meta = productMetaDescription(zahra)!;
+    expect(meta.length).toBeLessThanOrEqual(160);
+    expect(meta.startsWith("Each precious droplet of Zahra encapsulates the breath-taking beauty of nature. Opening")).toBe(true);
+    expect(meta.endsWith("…")).toBe(true);
+
+    const twoSentences =
+      "A warm amber with saffron and rose for evenings, layered over soft woods and a long, smooth trail. " +
+      "Its heart opens slowly. More notes follow later in the day and stay close to the skin.";
+    expect(productMetaDescription(twoSentences)).toBe(
+      "A warm amber with saffron and rose for evenings, layered over soft woods and a long, smooth trail. Its heart opens slowly.",
+    );
+  });
+
   it("gives nothing for the placeholder", () => {
     expect(productMetaDescription(PRODUCT_DESCRIPTION_PLACEHOLDER)).toBeUndefined();
   });

@@ -17,12 +17,41 @@ backend [docs/seo/D365_VS_SHOPIFY.md](../../../swiss-arabian-backend-d/docs/seo/
 | D3 | **Description = the Shopify product body** (what the live page shows), then `custom.description`. | Same as Shopify. `custom.description` was empty on every UAE product. |
 | D4 | **Name = the Shopify title**, then `custom.product_name`. The storefront shows the market's name (product page and product cards). | Same as Shopify. The market copy already held the Shopify title, but the storefront showed the D365 name. |
 | D5 | **Arabic = Shopify's Arabic store translation** (title, description, meta title, meta description), then the `custom.*_arabic` metafields. | Shopify keeps Arabic as store translations. They were never imported, so Arabic pages showed D365 Arabic labels ("SA EDP 100ML 1043 فلينسيا") or English. |
-| D6 | **Empty meta title / description are not stored.** The website builds them like Shopify: `"<name> – <market site name>"` and the start of the description (about 160 characters, cut at a word, with "…"). | Anyone who later types SEO text in the admin always wins; nothing auto-generated is locked into the database. |
+| D6 | **Empty meta title / description are not stored.** The website builds them (see §1a). The admin shows the automatic text greyed in the empty field, in the search preview and in an info tip, and never pre-fills it (saving would store it). | Anyone who later types SEO text in the admin always wins; nothing auto-generated is locked into the database, so it follows name / description changes. |
 | D7 | **Market site name** comes from SEO Management → Brand identity: brand-wide "Swiss Arabian", UAE "Swiss Arabian UAE", Qatar "Swiss Arabian Qatar". A new market only needs its name there. | Same suffix as the Shopify stores. |
 | D8 | The market name is **not added twice**: it is skipped only when the title already contains the **full** market site name ("Swiss Arabian UAE"). A title containing only "Swiss Arabian" still gets the suffix. | Shopify does the same (`unless page_title contains shop.name`). |
 | D9 | **Edits made in the admin are kept.** Imports never overwrite a market section someone edited by hand. A stored description is only replaced when it is exactly the D365 label (one-time correction). | Admin is the source after launch. |
 | D10 | **After launch the admin is the source**; Shopify re-imports only fill empty fields. | Shopify is a migration bootstrap only. |
 | D11 | Product brand in structured data is the house name **"Swiss Arabian"** (not "SWISS ARABIAN" from D365, not the market site name). The market site name is the **seller**. | One consistent brand entity for Google. |
+
+### 1a. Automatic meta title and meta description (fields left empty)
+
+| Field | What the website shows | Example |
+|---|---|---|
+| Meta title | `<product name> – <market site name>`; the site name is not added again when the title already has the **full** market site name | `VANILLA 01 – Swiss Arabian UAE` |
+| Meta description | Start of the product description as plain text, **at most 160 characters**: ends on a full sentence when one ends after ~104 characters, else at a word with "…". Nothing when the product has no description (Google then picks text from the page). | `This fragrance opens with a burst of Pink Pepper from Madagascar, sunlit Orange Flower, and creamy Coconut, setting a radiant tone. The heart is an…` |
+| Market site name | SEO Management → Brand identity: the market's "Official brand / site name", else the brand-wide one | `Swiss Arabian UAE`, `Swiss Arabian Qatar` |
+
+**What Shopify does (measured 2026-11-10 on uae.swissarabian.com, products without an SEO description):** the meta and
+`og:description` are the **first 320 characters** of the product description, cut mid-word with no "…" (vanilla-01,
+zahra, summer-by-the-lake, the-collector-s-edition: all exactly 320).
+
+**Why 160, not 320:** Google shows about 155–160 characters on desktop (less on mobile) and cuts the rest with its own "…",
+often mid-word. A description that ends cleanly inside that length reads better in results. Google may still write its own
+snippet; a hand-written 120–160 character description per product remains the best option.
+
+Code: website `productMetaDescription` (`src/features/catalog/api/catalog.service.ts`), `buildCatalogMetadata` /
+`namesBrand` (`src/lib/seo/`); admin `productSeoFallback.utils.ts` mirrors the same rules for the preview and info tips.
+
+### 1b. New markets (KSA, SAPIL, later ones)
+
+The fixes are in the import and the website, not in data, so a new market's Shopify import uses the same rules
+(Shopify title / body / Arabic translation first, D365 labels never shown, admin edits kept). Setup per new market:
+
+1. SEO Management → Brand identity: set the market's site name (else titles end with the brand-wide "Swiss Arabian").
+2. The market's Shopify app must allow reading **translations** (`read_translations`); without it, Arabic falls back to the
+   English Shopify text (the import only logs a warning). The KSA app also still needs menu access approved.
+3. Run Seed catalog (or the metafield import) once the market exists; then compare with the store like §5.
 
 **Changes an earlier rule:** backend `D365_VS_SHOPIFY.md` said D365 wins the English title. Since D4, the brand master still
 holds the D365 title, but each market shows its own (Shopify) name. Trade-off accepted: about 15 products per market lose
