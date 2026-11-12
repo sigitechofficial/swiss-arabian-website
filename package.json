@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "quality": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "openapi:generate": "node scripts/openapi-generate.mjs"
+    "openapi:generate": "node scripts/openapi-generate.mjs",
+    "check:brand": "node scripts/check-brand-config.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",
@@ -48,6 +49,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "jiti": "^2.7.0",
     "jsdom": "^29.1.1",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",

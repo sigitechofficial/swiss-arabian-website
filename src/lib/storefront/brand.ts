@@ -1,3 +1,4 @@
+import { resolveBrand } from "@/lib/brand/registry";
 import { env } from "@/lib/config/env";
 import { localStorefrontForHost } from "./localStorefront";
 
@@ -96,10 +97,14 @@ export function filterMarketsForTenant<
   );
 }
 
-export function isSapilStorefront(host?: string | null): boolean {
+/** Brand config for this address (code first, then the host's owner, then the default). */
+function brandConfigFor(host?: string | null) {
   const brand = storefrontBrand(host);
-  if (brand.brandCode === "SAPIL") return true;
-  return brand.host.includes("sapil");
+  return resolveBrand({ brandCode: brand.brandCode, host: brand.host });
+}
+
+export function isSapilStorefront(host?: string | null): boolean {
+  return brandConfigFor(host).code === "SAPIL";
 }
 
 export type StorefrontLogo = {
@@ -116,20 +121,12 @@ export type StorefrontLogo = {
  * files (sa-logo-clear.png, sapil-logo.png) stay so existing links keep working.
  */
 export function storefrontLogo(host?: string | null): StorefrontLogo {
-  if (isSapilStorefront(host)) {
-    return {
-      src: "/assets/sapil-online-perfume-store.png",
-      alt: "Sapil Online Perfume Store",
-      name: "Sapil",
-      width: 195,
-      height: 80,
-    };
-  }
+  const { logo, name } = brandConfigFor(host);
   return {
-    src: "/assets/swiss-arabian-online-perfume-store.png",
-    alt: "Swiss Arabian Online Perfume Store",
-    name: "Swiss Arabian",
-    width: 428,
-    height: 218,
+    src: logo.src,
+    alt: logo.alt.en,
+    name: name.en,
+    width: logo.width,
+    height: logo.height,
   };
 }
