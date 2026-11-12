@@ -145,6 +145,11 @@ export const env = {
   /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
   storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
   /**
+   * Local only: `*.localhost` aliases to other brands, e.g. `sp=SAPIL@sapil.test`
+   * (see lib/storefront/localStorefront.ts). Empty → built-in `sp` = Sapil.
+   */
+  localStorefronts: readPublic(process.env.NEXT_PUBLIC_LOCAL_STOREFRONTS),
+  /**
    * CMS Homepage integration (Phase 2C).
    * Default enabled. Set NEXT_PUBLIC_CMS_HOME_ENABLED=false to force legacy home.
    */

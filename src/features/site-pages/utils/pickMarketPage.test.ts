@@ -60,6 +60,8 @@ describe("fixedPathForPage", () => {
 
   it("leaves other pages at their own address", () => {
     expect(fixedPathForPage(pages, "contact")).toBeNull();
-    expect(fixedPathForPage([page("faqs"), page("faqs-1")], "faqs-1")).toBeNull();
+    expect(
+      fixedPathForPage([page("faqs"), page("faqs-1")], "faqs-1"),
+    ).toBeNull();
   });
 });

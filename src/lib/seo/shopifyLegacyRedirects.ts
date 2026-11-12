@@ -70,11 +70,27 @@ const PAGE_REDIRECTS: Record<string, string> = {
  */
 const MARKET_FOLDER = /^\/(uae|ae|ksa|sa|qatar|qa)(\/.*)?$/i;
 
-/** Short Shopify paths (no "/pages/") seen in imported content. */
+/**
+ * Shopify's built-in policies (/policies/…) are a second, English-only copy with
+ * different text. The pages the store's footer links to are the real policies
+ * (English + Arabic, per market), so the built-in addresses go there. Contact
+ * information stays: the contact page shows it.
+ */
+const POLICY_REDIRECTS: Record<string, string> = {
+  "shipping-policy": "/pages/shipping-delivery-policy",
+  "refund-policy": "/pages/refund-policy",
+  "privacy-policy": "/pages/privacy-policy",
+  "terms-of-service": "/pages/terms-and-conditions",
+};
+
+/** Short Shopify paths (no "/pages/") seen in imported content and links. */
 const SHORT_PAGE_REDIRECTS: Record<string, string> = {
-  "return-policy": "/policies/refund-policy",
-  "returns": "/policies/refund-policy",
-  "refund-policy": "/policies/refund-policy",
+  "return-policy": "/pages/refund-policy",
+  "returns": "/pages/refund-policy",
+  "refund-policy": "/pages/refund-policy",
+  "privacy-policy": "/pages/privacy-policy",
+  "shipping-policy": "/pages/shipping-delivery-policy",
+  "terms-and-conditions": "/pages/terms-and-conditions",
   "track-order": "/track",
   "track-your-order": "/track",
 };
@@ -100,6 +116,9 @@ function rewriteBare(path: string): string | null {
   for (const [pattern, target] of ACCOUNT_REDIRECTS) {
     if (pattern.test(path)) return target;
   }
+
+  const policy = /^\/policies\/([^/]+)\/?$/.exec(path);
+  if (policy) return POLICY_REDIRECTS[policy[1].toLowerCase()] ?? null;
 
   const page = /^\/pages\/([^/]+)\/?$/.exec(path);
   if (page) {

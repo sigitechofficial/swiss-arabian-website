@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { AuthVisualPanel } from "./AuthVisualPanel";
-import { storefrontLogo } from "@/lib/storefront/brand";
+import { AuthVisualPanel } from "./AuthVisualPanel";
+
+import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
 
 type AuthShellProps = {
   heading: string;
@@ -13,6 +14,7 @@ type AuthShellProps = {
  *  `/register` and `/forgot-password` pages — a rotating brand photo panel
  *  on desktop (`AuthVisualPanel`), collapsing to just the form on mobile. */
 export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
+  const logo = useStorefrontLogo();
   return (
     <div className="flex min-h-dvh bg-page font-sans text-sa-primary">
       <AuthVisualPanel />
@@ -20,9 +22,9 @@ export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
         <div className="w-full max-w-[26rem] sm:max-w-[28rem]">
           <div className="flex w-full flex-col items-stretch">
             <div className="flex flex-col items-center gap-2 text-center">
-              <LocaleLink className="relative block h-16 w-[150px] shrink-0" aria-label="Swiss Arabian home" href="/">
+              <LocaleLink className="relative block h-16 w-[150px] shrink-0" aria-label={`${logo.name} home`} href="/">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={storefrontLogo().src} alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
+                <img src={logo.src} alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
               </LocaleLink>
             </div>
             <div className="mt-9 flex flex-col items-center gap-2 text-center">

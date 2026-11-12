@@ -6,6 +6,15 @@ import { env } from "@/lib/config/env";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
+import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
+
+async function requestHost(): Promise<string | null> {
+  const incoming = await headers();
+  return storefrontHostFromHeaderValues(
+    incoming.get("x-forwarded-host"),
+    incoming.get("host"),
+  );
+}
 import { AppProviders } from "./providers";
 import "./globals.css";
 
@@ -17,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = await requestOrigin();
   // Site name in the shopper's language and market (SEO Management → Brand identity).
   const brand = await loadRequestBrandIdentity();
+  const logo = storefrontLogo(await requestHost());
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
     // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
@@ -24,8 +34,8 @@ export async function generateMetadata(): Promise<Metadata> {
     ...(brand.description ? { description: brand.description } : {}),
     // The brand's own icon (imported from the Shopify theme), else its logo.
     icons: {
-      icon: brand.favicon || storefrontLogo().src,
-      apple: brand.favicon || storefrontLogo().src,
+      icon: brand.favicon || logo.src,
+      apple: brand.favicon || logo.src,
     },
     robots: env.seoIndexingEnabled
       ? { index: true, follow: true }
@@ -47,6 +57,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = (await headers()).get("x-shop-locale") === "ar" ? "ar" : "en";
+  const storefrontHost = await requestHost();
   return (
     <html
       lang={locale}
@@ -85,7 +96,7 @@ export default async function RootLayout({
       <body className="flex min-h-dvh flex-col">
         <AnalyticsScripts />
         <InsiderScripts />
-        <AppProviders>{children}</AppProviders>
+        <AppProviders storefrontHost={storefrontHost}>{children}</AppProviders>
       </body>
     </html>
   );

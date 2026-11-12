@@ -54,6 +54,7 @@ export function LandingCollections({
         id: door.href,
         href: door.href,
         label: door.label,
+        image: door.image ?? null,
       }));
 
   const title = heading?.trim() || copy("shopByCategories");

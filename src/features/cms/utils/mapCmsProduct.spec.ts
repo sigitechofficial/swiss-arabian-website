@@ -42,4 +42,13 @@ describe("mapCmsProduct", () => {
     expect(list).toHaveLength(1);
     expect(list[0].slug).toBe("a");
   });
+  it("shows the short description as plain text (no HTML tags)", () => {
+    const mapped = mapCmsProduct({
+      productId: "p2",
+      slug: "set",
+      name: "Gift set",
+      shortDescription: "<p><strong>Three</strong> fragrances&nbsp;&amp; a pouch.</p>",
+    } as never);
+    expect(mapped?.subtitle).toBe("Three fragrances & a pouch.");
+  });
 });

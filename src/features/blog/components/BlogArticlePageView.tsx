@@ -1,13 +1,15 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
-import { getBlogArticleDetail } from "../data/blogContent";
+import type { BlogArticleDetail } from "../data/blogContent";
 import { BlogArticleHero } from "./BlogArticleHero";
 import { BlogNoteTable } from "./BlogNoteTable";
 import { BlogRelatedArticles } from "./BlogRelatedArticles";
+
+const noSubscribe = () => () => {};
 
 const SHARE = [
   { label: "Facebook", href: "https://www.facebook.com/sharer/sharer.php" },
@@ -16,9 +18,14 @@ const SHARE = [
 ] as const;
 
 /** Figma 915:7094 — Blog Article detail */
-export function BlogArticlePageView() {
-  const params = useParams<{ slug: string }>();
-  const article = getBlogArticleDetail(params.slug);
+export function BlogArticlePageView({ article }: { article: BlogArticleDetail | null }) {
+  const sharePath = article ? `/blog/${article.slug}` : "/blog";
+  // Full address in the browser; the path while rendering on the server (no mismatch).
+  const shareUrl = useSyncExternalStore(
+    noSubscribe,
+    () => window.location.href,
+    () => sharePath,
+  );
 
   if (!article) {
     return (
@@ -29,11 +36,7 @@ export function BlogArticlePageView() {
     );
   }
 
-  const sharePath = `/blog/${article.slug}`;
-  const shareUrl =
-    typeof window !== "undefined"
-      ? window.location.href
-      : sharePath;
+
 
   return (
     <div className="bg-page">

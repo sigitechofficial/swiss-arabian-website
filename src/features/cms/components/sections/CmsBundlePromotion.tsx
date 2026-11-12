@@ -31,7 +31,9 @@ export function CmsBundlePromotion({ data, linkContext }: Props) {
   const desktop = data.desktopImage?.trim();
   if (!desktop) return null;
 
-  const products = mapCmsProducts(data.products);
+  const picked = mapCmsProducts(data.products);
+  // No products picked: the card shows the market's bundles collection (same as the built-in homepage).
+  const products = picked.length ? picked : undefined;
 
   return (
     <LandingBundles

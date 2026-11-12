@@ -1,5 +1,6 @@
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
+import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { CmsProductCard } from "../types/cmsHome.types";
 
 function parseMoney(value: number | string | null | undefined): number | null {
@@ -43,7 +44,8 @@ export function mapCmsProduct(raw: CmsProductCard): ProductSummary | null {
     id: raw.productId,
     slug: raw.slug.trim(),
     title: raw.name,
-    subtitle: raw.shortDescription?.trim() || raw.sku || undefined,
+    // Plain text: short descriptions come from Shopify as HTML ("<p>…</p>").
+    subtitle: stripHtml(raw.shortDescription) || raw.sku || undefined,
     price,
     currency,
     imageUrl: imageUrls[0] ?? null,
