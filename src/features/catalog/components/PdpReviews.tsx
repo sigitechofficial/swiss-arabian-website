@@ -341,6 +341,9 @@ export function PdpReviews({
                   </div>
                   {review.title ? <h3 className={c.rvTitle}>{review.title}</h3> : null}
                   {review.body ? <p className={c.rvBody}>{review.body}</p> : null}
+                  {review.photos.length ? (
+                    <ReviewPhotoThumbs review={review} onOpen={() => setReading(review)} />
+                  ) : null}
                   {hasReply ? (
                     <div className={c.rvReply}>
                       <span className={c.rvReplyLabel}>{t.replied}</span>
@@ -395,6 +398,41 @@ export function PdpReviews({
   );
 }
 
+/** Up to 3 customer photos on a review card; the third shows "+N" when there are more. */
+function ReviewPhotoThumbs({
+  review,
+  onOpen,
+}: {
+  review: StorefrontPublicReview;
+  onOpen: () => void;
+}) {
+  const t = useReviewsCopy();
+  const photos = review.photos;
+  const shown = photos.slice(0, 3);
+  const extra = photos.length - shown.length;
+  return (
+    <div className={c.rvPhotos} role="group" aria-label={t.openPhotos(photos.length)}>
+      {shown.map((p, i) => (
+        <button
+          key={p.id}
+          type="button"
+          className={c.rvPhoto}
+          onClick={onOpen}
+          aria-label={t.photoOf(i + 1, photos.length)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- customer photos come from the review host as-is */}
+          <img src={p.url} alt="" className={c.rvPhotoImg} loading="lazy" />
+          {i === shown.length - 1 && extra > 0 ? (
+            <span className={c.rvPhotoMore} aria-hidden>
+              {t.morePhotos(extra)}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ReadReview({
   review,
   productTitle,
@@ -437,6 +475,20 @@ function ReadReview({
         </div>
         {review.title ? <h3 className="m-0 mb-2 text-[1.05rem] font-semibold">{review.title}</h3> : null}
         {review.body ? <p className={c.rvDialogBody}>{review.body}</p> : null}
+        {review.photos.length ? (
+          <div className={c.rvDialogPhotos}>
+            {review.photos.map((p, i) => (
+              // eslint-disable-next-line @next/next/no-img-element -- customer photos come from the review host as-is
+              <img
+                key={p.id}
+                src={p.url}
+                alt={p.alt ?? t.photoOf(i + 1, review.photos.length)}
+                className={c.rvDialogPhoto}
+                loading="lazy"
+              />
+            ))}
+          </div>
+        ) : null}
         {showReply && review.reply ? (
           <div className={`${c.rvReply} mt-4 text-[0.82rem]`}>
             <span className={c.rvReplyLabel}>{t.replied}</span>

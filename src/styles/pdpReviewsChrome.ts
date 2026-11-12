@@ -41,6 +41,16 @@ export const rvReply =
 export const rvReplyLabel =
   "mb-0.5 block text-[0.6rem] font-semibold tracking-[0.1em] text-[var(--ink,#241f1b)] uppercase";
 export const rvReplyText = "line-clamp-2";
+/** Customer photos on a review card: small square thumbnails, last one shows "+N". */
+export const rvPhotos = "flex flex-wrap gap-1.5";
+export const rvPhoto =
+  "relative size-14 cursor-pointer overflow-hidden rounded-sm border border-[#e4dccd] bg-[#f6f1e8] p-0";
+export const rvPhotoImg = "size-full object-cover";
+export const rvPhotoMore =
+  "absolute inset-0 flex items-center justify-center bg-black/45 text-[0.72rem] font-semibold text-white";
+/** Photos in the review dialog: full width, natural height, scroll if many. */
+export const rvDialogPhotos = "mt-4 grid gap-2";
+export const rvDialogPhoto = "max-h-[60vh] w-full rounded-sm bg-[#f6f1e8] object-contain";
 export const rvMore =
   "cursor-pointer self-start border-0 bg-transparent p-0 text-[0.7rem] text-copper underline underline-offset-[3px]";
 export const rvWho =
