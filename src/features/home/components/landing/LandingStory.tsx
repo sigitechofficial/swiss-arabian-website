@@ -58,6 +58,8 @@ export function LandingStory({
         {ctaHref ? (
           <LocaleLink className={storyCta} href={ctaHref}>
             {ctaLabel?.trim() || "Read more"}
+            {/* "Read more" alone tells search engines and screen readers nothing. */}
+            <span className="sr-only"> about our story</span>
           </LocaleLink>
         ) : null}
       </div>
