@@ -43,6 +43,7 @@ describe("shopifyLegacyRedirect", () => {
     "/products/shaghaf-oud-75ml",
     "/collections/fusion-oud",
     "/account/orders",
+    "/account/orders/de5d6160-ef0d-4382-ad56-d31e81004aea",
     "/pages/some-campaign",
     "/",
     "/ar",

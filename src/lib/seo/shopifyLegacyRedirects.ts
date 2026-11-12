@@ -12,7 +12,11 @@ const ACCOUNT_REDIRECTS: Array<[RegExp, string]> = [
   [/^\/account\/register\/?$/, "/register"],
   [/^\/account\/(recover|reset)(\/.*)?$/, "/forgot-password"],
   [/^\/account\/activate(\/.*)?$/, "/login"],
-  [/^\/account\/orders\/[^/]+\/?$/, "/account/orders"],
+  // Shopify order tokens only — platform order ids (UUIDs) are real detail pages.
+  [
+    /^\/account\/orders\/(?![0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$)[^/]+\/?$/i,
+    "/account/orders",
+  ],
   [/^\/account\/logout\/?$/, "/"],
 ];
 
