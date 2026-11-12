@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -132,6 +133,7 @@ function keepSellable(groups: ShopGroup[], rows: Selection[]): Selection[] {
 }
 
 export function OfferShop({ code }: { code: string }) {
+  const t = useShopCopy();
   const [selections, setSelections] = useState<Selection[]>([]);
   const [fetchedPreview, setFetchedPreview] = useState<Preview | null>(null);
   const [adding, setAdding] = useState(false);
@@ -310,18 +312,15 @@ export function OfferShop({ code }: { code: string }) {
   const subtotal = moneyNumber(preview?.subtotalAmount);
   const savings = moneyNumber(preview?.savingsAmount);
   const total = moneyNumber(preview?.totalAmount);
-  const arabic =
-    typeof document !== "undefined" &&
-    document.documentElement.lang.toLowerCase().startsWith("ar");
-  const addPiece = arabic ? "أضف إلى الباقة" : "Add to bundle";
-  const addedPiece = arabic ? "تمت الإضافة" : "Added";
-  const soldOut = shop.copy.soldOut || (arabic ? "نفد" : "Out of stock");
+  const addPiece = t("bundle.add");
+  const addedPiece = t("bundle.added");
+  const soldOut = shop.copy.soldOut || t("bundle.soldOut");
   const progress =
     unfilled.length === 0
-      ? preview?.message || (arabic ? "الباقة جاهزة" : "Your bundle is ready")
-      : arabic
-        ? `أضف ${unfilled.map((group) => group.name).join("، ")} لإكمال الباقة.`
-        : `Add ${unfilled.map((group) => group.name).join(" and ")} to complete your bundle.`;
+      ? preview?.message || t("bundle.ready")
+      : t("bundle.addToComplete", {
+          groups: unfilled.map((group) => group.name).join(t("bundle.listJoiner")),
+        });
 
   return (
     <article className="flex w-full min-w-0 flex-col pb-16">
@@ -330,12 +329,10 @@ export function OfferShop({ code }: { code: string }) {
           <div className="rounded-2xl bg-[#f3ece4] px-5 py-4">
             <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <h1 className="m-0 shrink-0 font-[family-name:var(--font-display)] text-[2rem] leading-none font-medium tracking-[-0.03em] text-[#1a1a1a]">
-                {arabic ? "الباقة." : "Bundle."}
+                {t("bundle.title")}
               </h1>
               <p className="m-0 text-[0.95rem] text-[#5e5852]">
-                {arabic
-                  ? "اختَر ٣ عطور أو أكثر لتوفير أكبر."
-                  : "Choose 3+ fragrances for better savings."}
+                {t("bundle.subtitle")}
               </p>
             </header>
             <section aria-label={shop.copy.tray}>
@@ -421,7 +418,7 @@ export function OfferShop({ code }: { code: string }) {
             {subtotal != null && total != null ? (
               <>
                 <div className="flex items-baseline justify-between gap-3 text-[0.82rem] text-[#6a625b]">
-                  <span>{arabic ? "السعر الأولي" : "Initial price"}</span>
+                  <span>{t("bundle.initialPrice")}</span>
                   <span dir="ltr">{formatMoney(subtotal, currency)}</span>
                 </div>
                 {savings != null && savings > 0 ? (
@@ -437,7 +434,7 @@ export function OfferShop({ code }: { code: string }) {
                   </p>
                 )}
                 <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-[#e6dcd2] pt-3 text-[0.95rem] font-semibold tracking-[0.04em] text-[#1c1917] uppercase">
-                  <span>{arabic ? "المجموع" : "Total"}</span>
+                  <span>{t("bundle.total")}</span>
                   <span dir="ltr">{formatMoney(total, currency)}</span>
                 </div>
               </>

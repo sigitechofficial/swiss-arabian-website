@@ -96,7 +96,7 @@ export async function fetchBlogArticle(input: {
 /** Live post addresses for the sitemap (one language at a time). */
 export async function fetchBlogSlugs(input: {
   zoneCode: string;
-  languageCode: "en" | "ar";
+  languageCode: string;
 }): Promise<{ slug: string; updatedAt: string }[]> {
   if (!input.zoneCode) return [];
   const params = new URLSearchParams({ zoneCode: input.zoneCode, languageCode: input.languageCode });

@@ -1,7 +1,6 @@
 import { cache } from "react";
 import { shareImageFor } from "@/lib/seo/shareImage";
 import { storefrontLogo } from "@/lib/storefront/brand";
-import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import {
   loadBrandIdentityFor,
@@ -16,71 +15,35 @@ import {
   fetchProductBySlugOutcome,
   fetchProducts,
 } from "@/features/catalog/api/catalog.service";
-import { fetchStorefrontMarkets } from "@/features/markets/api/markets.service";
-import { marketContentLanguage } from "@/features/markets/utils/marketContentLanguage";
 import { fetchPublishedHome } from "@/features/cms/api/cmsContent.service";
 import type { CmsHomeResult } from "@/features/cms/types/cmsHome.types";
-import type { StorefrontMarket } from "@/features/markets/types/market";
 import type { ProductListResult } from "@/features/catalog/api/catalog.service";
 import { ApiClientError } from "@/lib/api/apiError";
-import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontContextInput } from "@/lib/storefront/context";
 import {
   catalogAlternates,
   localeFromPathname,
-  type ShopLocale,
   withLocalePrefix,
 } from "@/lib/i18n/localePath";
+import { LOCALES, type ShopLocale } from "@/lib/i18n/locales";
+import { routeLocale } from "@/lib/i18n/routeLocale";
+import {
+  englishTranslator,
+  getTranslator,
+  type Translator,
+} from "@/lib/i18n/messages";
+import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 
-function marketContext(
-  market: StorefrontMarket,
-  locale: ShopLocale,
-): StorefrontContextInput {
-  return {
-    zoneCode: market.zoneCode,
-    languageCode: locale,
-    currencyCode:
-      market.catalogContext.currencyCode ?? market.defaultCurrencyCode,
-    countryCode: market.catalogContext.countryCode || market.countryCode,
-    salesChannelCode:
-      market.salesChannelCode ?? market.catalogContext.salesChannelCode,
-    zoneId: market.zoneId,
-    brandId: market.catalogContext.brandId,
-    brandCode: market.catalogContext.brandCode,
-  };
-}
+export { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 
-/** Host market, unless the shopper has chosen another country. Language stays the path. */
-export async function resolveServerCatalogMarket() {
-  const headerStore = await headers();
-  const locale: ShopLocale =
-    headerStore.get("x-shop-locale") === "ar" ? "ar" : "en";
-  const zoneCookie = (await cookies()).get(ZONE_COOKIE)?.value?.trim() || "";
-  let chosen: StorefrontMarket | null = null;
-  try {
-    const list = await fetchStorefrontMarkets();
-    const ready = list.markets.filter((market) => market.isCatalogReady);
-    const pool = ready.length ? ready : list.markets;
-    chosen =
-      (zoneCookie
-        ? pool.find((market) => market.zoneCode === zoneCookie)
-        : null) ??
-      list.defaultMarket ??
-      pool[0] ??
-      null;
-  } catch {
-    chosen = null;
-  }
-  const zoneCode = chosen?.zoneCode ?? "";
-  return {
-    locale,
-    zoneCode,
-    market: chosen ? marketContext(chosen, locale) : { languageCode: locale },
-    /** Code the market publishes content under for this language (e.g. "en-us"). */
-    contentLanguage: chosen
-      ? (marketContentLanguage(chosen.languages, locale) ?? locale)
-      : "",
-  };
+/**
+ * The storefront's default market (this deployment's host) in the route's
+ * language. Reads no request data, so catalog pages can be prerendered and
+ * revalidated (ISR). A shopper who picked another market gets that market's
+ * data from the browser (the client views compare `zoneCode`).
+ */
+export async function resolveServerCatalogMarket(locale?: ShopLocale) {
+  return resolveCatalogMarketFor(locale ?? (await routeLocale()));
 }
 
 /**
@@ -230,9 +193,10 @@ export async function catalogRequestMarket() {
 }
 
 /** Brand identity for the request's market and language (SEO Management). */
-export async function loadRequestBrandIdentity(): Promise<BrandIdentity> {
-  const { locale, zoneCode } = await resolveServerCatalogMarket();
-  return loadBrandIdentityFor(locale, zoneCode);
+export async function loadRequestBrandIdentity(locale?: ShopLocale): Promise<BrandIdentity> {
+  const resolvedLocale = locale ?? (await routeLocale());
+  const { zoneCode } = await resolveServerCatalogMarket(resolvedLocale);
+  return loadBrandIdentityFor(resolvedLocale, zoneCode);
 }
 
 /** `og:locale` from the shopper's language and the market's country ("ar_QA"). */
@@ -282,22 +246,21 @@ export function metaDescriptionText(raw: string | null | undefined): string | un
   return `${(space > 100 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
 }
 
-/** Default description for a listing page, in the page's language. */
-export function listingMetaDescription(locale: ShopLocale, title: string, brandName: string): string {
-  return locale === "ar"
-    ? `تسوّق ${title} من ${brandName}: تصفّح التشكيلة الكاملة من العطور عبر الإنترنت.`
-    : `Shop ${title} at ${brandName}: browse the full range of fragrances online.`;
+/** Default description for a listing page, in the page's language (`listing.metaDescription`). */
+export function listingMetaDescription(t: Translator, title: string, brandName: string): string {
+  return t("listing.metaDescription", { title, brand: brandName });
 }
 
 /** Page metadata for the request's market, named after its brand identity. */
 export async function catalogMetadata(
   input: CatalogMetadataInput,
 ): Promise<Metadata> {
-  const { zoneCode, market } = await resolveServerCatalogMarket();
+  const { zoneCode, market } = await resolveServerCatalogMarket(input.locale);
   const brand = await loadBrandIdentityFor(input.locale, zoneCode);
   return buildCatalogMetadata(input, {
     brand,
     countryCode: "countryCode" in market ? market.countryCode : null,
+    t: await getTranslator(input.locale),
   });
 }
 
@@ -307,6 +270,8 @@ export function buildCatalogMetadata(
     brand: Pick<BrandIdentity, "name" | "names"> &
       Partial<Pick<BrandIdentity, "shareImage" | "logo">>;
     countryCode?: string | null;
+    /** Wording in the page's language (default listing description). */
+    t?: Translator;
   },
 ): Metadata {
   const alternates = catalogAlternates(input.path, input.locale);
@@ -332,10 +297,12 @@ export function buildCatalogMetadata(
         },
       ]
     : undefined;
-  const otherLocale = input.locale === "ar" ? "en" : "ar";
+  const otherLocales = LOCALES.filter((code) => code !== input.locale);
   const description =
     metaDescriptionText(input.description) ??
-    (input.listing ? listingMetaDescription(input.locale, input.title, context.brand.name) : undefined);
+    (input.listing
+      ? listingMetaDescription(context.t ?? englishTranslator, input.title, context.brand.name)
+      : undefined);
   return {
     // Imported SEO titles often name the brand already ("… | Swiss Arabian UAE"):
     // the site suffix is not added a second time (any language of the name).
@@ -351,8 +318,8 @@ export function buildCatalogMetadata(
       url: alternates.canonical,
       siteName: context.brand.name,
       locale: openGraphLocale(input.locale, context.countryCode),
-      // The same page exists in the other language (hreflang twin for social apps).
-      alternateLocale: [openGraphLocale(otherLocale, context.countryCode)],
+      // The same page exists in the other languages (hreflang twins for social apps).
+      alternateLocale: otherLocales.map((code) => openGraphLocale(code, context.countryCode)),
       ...(images ? { images } : {}),
     },
     twitter: {

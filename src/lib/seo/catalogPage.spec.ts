@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/headers", () => ({ cookies: vi.fn(), headers: vi.fn() }));
 
 import { buildCatalogMetadata, listingMetaDescription, metaDescriptionText } from "./catalogPage";
+import { englishTranslator, getTranslator } from "@/lib/i18n/messages";
 
 const brand = { name: "Swiss Arabian UAE", names: ["Swiss Arabian UAE"] };
 
@@ -32,7 +33,7 @@ describe("listing descriptions", () => {
       { locale: "en", path: "/collections/flash-sale", title: "Flash Sale", listing: true },
       { brand },
     );
-    expect(meta.description).toBe(listingMetaDescription("en", "Flash Sale", "Swiss Arabian UAE"));
+    expect(meta.description).toBe(listingMetaDescription(englishTranslator, "Flash Sale", "Swiss Arabian UAE"));
     expect(meta.openGraph?.description).toBe(meta.description);
   });
 
@@ -49,7 +50,10 @@ describe("listing descriptions", () => {
     expect(meta.description).toBeUndefined();
   });
 
-  it("writes the default in Arabic on Arabic pages", () => {
-    expect(listingMetaDescription("ar", "عطور", "سويس أرابيان")).toContain("سويس أرابيان");
+  it("writes the default in Arabic on Arabic pages", async () => {
+    const ar = await getTranslator("ar");
+    expect(listingMetaDescription(ar, "عطور", "سويس أرابيان")).toBe(
+      "تسوّق عطور من سويس أرابيان: تصفّح التشكيلة الكاملة من العطور عبر الإنترنت.",
+    );
   });
 });

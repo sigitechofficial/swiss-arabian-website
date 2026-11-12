@@ -18,6 +18,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Provided by the Next compiler; tests read the default locale.
+      "next/root-params": path.resolve(__dirname, "./src/test/rootParamsStub.ts"),
     },
   },
 });

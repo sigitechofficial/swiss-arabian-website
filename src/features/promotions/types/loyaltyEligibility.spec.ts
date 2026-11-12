@@ -5,6 +5,7 @@ import { promotionKeys } from "../api/promotions.keys";
 import { couponErrorMessage } from "../utils/couponErrors";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
 import { mapDiscoveryOffers } from "../utils/offerVoucher";
+import { englishTranslator } from "@/lib/i18n/messages";
 import { badgeForProduct, readPromotionDiscovery } from "./discovery";
 import {
   amountPayableFrom,
@@ -68,7 +69,7 @@ describe("FE-L6 server-driven loyalty promotion eligibility", () => {
       ],
     });
     expect(discovery.offers.map((row) => row.campaignCode)).toEqual(["GOLD10"]);
-    expect(mapDiscoveryOffers(discovery.offers, false)[0]?.headline).toBe("Gold member saving");
+    expect(mapDiscoveryOffers(discovery.offers, englishTranslator)[0]?.headline).toBe("Gold member saving");
     expect(badgeForProduct(discovery, "oud")?.badge).toBe("Gold 10%");
   });
 
@@ -88,7 +89,7 @@ describe("FE-L6 server-driven loyalty promotion eligibility", () => {
       tiles: [],
     });
     expect(discovery.offers).toEqual([]);
-    expect(mapDiscoveryOffers(discovery.offers, false)).toEqual([]);
+    expect(mapDiscoveryOffers(discovery.offers, englishTranslator)).toEqual([]);
   });
 
   it("renders a member campaign when Backend returns it", () => {
@@ -103,7 +104,7 @@ describe("FE-L6 server-driven loyalty promotion eligibility", () => {
       ],
     });
     expect(discovery.offers[0]?.campaignCode).toBe("MEMBER5");
-    expect(mapDiscoveryOffers(discovery.offers, false)[0]?.id).toBe("MEMBER5");
+    expect(mapDiscoveryOffers(discovery.offers, englishTranslator)[0]?.id).toBe("MEMBER5");
   });
 
   it("does not compare customer tier or requiredTier on the client", () => {

@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
 import { fetchCatalogSitemap } from "@/features/catalog/api/catalog.service";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
-import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
+import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
+import { sitemapAlternates } from "@/lib/seo/sitemapEntries";
+import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
@@ -17,10 +19,15 @@ function absolute(origin: string, path: string) {
   return `${origin}${path === "/" ? "" : path}`;
 }
 
+/** Rebuilt at most once an hour (no request data is read). */
+export const revalidate = 3600;
+
+const resolveServerCatalogMarket = () => resolveCatalogMarketFor(DEFAULT_LOCALE);
+
 /**
- * This market's sitemap: fixed pages plus every product, collection and
- * category visible in the market (market product addresses), English and
- * Arabic, with last-updated dates. Served per market domain.
+ * The storefront market's sitemap: fixed pages plus every product, collection
+ * and category visible in the market (market product addresses), in every
+ * configured language, with last-updated dates.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = (await requestOrigin()) ?? "";
@@ -57,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogEntries: MetadataRoute.Sitemap = [];
   try {
     const { zoneCode } = await resolveServerCatalogMarket();
-    for (const language of ["en", "ar"] as const) {
+    for (const language of LOCALES) {
       const posts = await fetchBlogSlugs({ zoneCode, languageCode: language });
       for (const post of posts) {
         const url = withLocalePrefix(`/blog/${post.slug}`, language);
@@ -69,27 +76,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The Journal cannot be read: the rest of the sitemap still publishes.
   }
 
-  const seen = new Set<string>();
-  const out: MetadataRoute.Sitemap = [];
-  for (const { path, lastModified } of entries) {
-    if (seen.has(path)) continue;
-    seen.add(path);
-    const english = withLocalePrefix(path, "en");
-    const arabic = withLocalePrefix(path, "ar");
-    const languages = origin
-      ? {
-          en: absolute(origin, english),
-          ar: absolute(origin, arabic),
-          "x-default": absolute(origin, english),
-        }
-      : undefined;
-    for (const url of [english, arabic]) {
-      out.push({
-        url: origin ? absolute(origin, url) : url,
-        ...(lastModified ? { lastModified } : {}),
-        alternates: languages ? { languages } : undefined,
-      });
-    }
-  }
-  return [...out, ...blogEntries];
+  return [...sitemapAlternates(entries, origin), ...blogEntries];
 }

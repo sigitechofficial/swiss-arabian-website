@@ -7,6 +7,8 @@ import type { CatalogCollection, ProductListResult } from "@/features/catalog/ap
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
 import { metafieldMediaUrl } from "@/features/catalog/utils/collectionMetafields";
+import { useMarketDocument } from "@/features/catalog/hooks/useMarketDocument";
+import { catalogKeys, fetchCollectionBySlug } from "@/features/catalog/api/catalog.service";
 
 /** Slugs the collections API doesn't carry — these read the full catalog. */
 const CATALOG_FALLBACK_SLUGS = new Set(["minis", "bundles"]);
@@ -14,7 +16,7 @@ const CATALOG_FALLBACK_SLUGS = new Set(["minis", "bundles"]);
 export function CollectionDetailPageView({
   slug,
   listingQuery,
-  collection,
+  collection: serverCollection,
   initialListing,
   initialZoneCode,
 }: {
@@ -26,6 +28,14 @@ export function CollectionDetailPageView({
   initialZoneCode?: string | null;
 }) {
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
+  // Prerendered for the default market: another market shows its own banner and text.
+  const { data: collection } = useMarketDocument({
+    server: serverCollection,
+    serverZoneCode: initialZoneCode,
+    queryKey: (zone) => catalogKeys.collection(slug, zone),
+    fetch: (market) => fetchCollectionBySlug(slug, market.zoneCode, market),
+    fetchWhenMissing: false,
+  });
 
   const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     {

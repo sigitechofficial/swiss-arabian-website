@@ -1,5 +1,7 @@
 "use client";
 
+import { intlLocale } from "@/lib/i18n/locales";
+import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -27,7 +29,7 @@ import { useReviewsCopy } from "@/features/catalog/i18n/reviewsCopy";
 export function ReviewRequestPageView({ token }: { token: string }) {
   const params = useSearchParams();
   const t = useReviewsCopy();
-  const dateLocale = t.locale === "ar" ? "ar" : "en-GB";
+  const dateLocale = intlLocale(t.locale);
   const preProduct = params.get("p");
   const preRating = Number(params.get("r")) || 0;
   const wantsUnsubscribe = params.get("unsubscribe") === "1";
@@ -180,7 +182,7 @@ function ProductReviewCard({
         ) : null}
         <div className="min-w-0">
           {product.slug ? (
-            <Link href={`${t.locale === "ar" ? "/ar" : ""}/products/${product.slug}`} className="text-[0.85rem] tracking-[0.08em] uppercase">
+            <Link href={withLocalePrefix(`/products/${product.slug}`, t.locale)} className="text-[0.85rem] tracking-[0.08em] uppercase">
               {product.name}
             </Link>
           ) : (

@@ -1,4 +1,4 @@
-import { shopCopy } from "@/lib/i18n/shopCopy";
+import { getTranslator } from "@/lib/i18n/messages";
 import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
 import type { OpeningHoursSpecification } from "@/lib/seo/openingHours";
 import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
@@ -200,12 +200,13 @@ export function itemListJsonLd(name: string, urls: string[]) {
 }
 
 /** Home › page, for a page directly under the home page (site pages, FAQ, store list …). */
-export function pageBreadcrumbJsonLd(
+export async function pageBreadcrumbJsonLd(
   locale: ShopLocale,
   page: { name: string; path: string },
 ) {
+  const t = await getTranslator(locale);
   return breadcrumbJsonLd([
-    { name: shopCopy(locale, "home"), url: withLocalePrefix("/", locale) },
+    { name: t("home"), url: withLocalePrefix("/", locale) },
     { name: page.name, url: withLocalePrefix(page.path, locale) },
   ]);
 }

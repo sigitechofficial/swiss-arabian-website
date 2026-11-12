@@ -1,5 +1,6 @@
 "use client";
 
+import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -179,7 +180,7 @@ export function TabbyReturnView() {
     const message = cancelled ? TABBY_CANCELLED_MESSAGE[lang] : TABBY_REJECTED_MESSAGE[lang];
     return (
       <CheckoutStateShell current="Payment">
-        <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+        <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
           <p className={stateEyebrow}>{cancelled ? copy.cancelEyebrow : copy.failureEyebrow}</p>
           <h1 className={doneTitle} role="alert">
             {message}
@@ -208,7 +209,7 @@ export function TabbyReturnView() {
   // or a success link we can't match to an order in this browser.
   return (
     <CheckoutStateShell current="Payment">
-      <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+      <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
         <p className={stateEyebrow}>{copy.pendingEyebrow}</p>
         <h1 className={doneTitle}>
           {outcome.kind === "no-order" ? (

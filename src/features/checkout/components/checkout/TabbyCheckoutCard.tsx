@@ -1,5 +1,6 @@
 "use client";
 
+import { dir as textDirection } from "@/lib/i18n/locales";
 import { useEffect, useId, useRef, useState } from "react";
 import { payOptNote } from "@/styles/checkoutChrome";
 import {
@@ -128,5 +129,5 @@ export function TabbyCheckoutCard({
     return <p className={payOptNote}>{tabbyFallbackText(total, currency, lang)}</p>;
   }
   // Tabby's snippet needs at least 320px.
-  return <div ref={hostRef} className="min-w-[320px] max-[420px]:-ms-8" dir={lang === "ar" ? "rtl" : "ltr"} />;
+  return <div ref={hostRef} className="min-w-[320px] max-[420px]:-ms-8" dir={textDirection(lang)} />;
 }

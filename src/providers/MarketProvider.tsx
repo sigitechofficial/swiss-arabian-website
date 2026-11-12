@@ -11,6 +11,11 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import { dir as textDirection } from "@/lib/i18n/locales";
+import {
+  marketLanguageOptions,
+  type LanguageOption,
+} from "@/features/markets/utils/marketLanguageOptions";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/auth/token";
 import {
@@ -60,6 +65,8 @@ type MarketContextValue = {
    * Published content is stored under it. Null until the market's languages are known.
    */
   contentLanguage: string | null;
+  /** Language picker: the selected market's languages, else every configured one. */
+  languageOptions: LanguageOption[];
 };
 
 const MarketContext = createContext<MarketContextValue | null>(null);
@@ -218,7 +225,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
   useEffect(() => {
     const root = document.documentElement;
-    const dir = pathLanguage === "ar" ? "rtl" : "ltr";
+    const dir = textDirection(pathLanguage);
     if (root.lang !== pathLanguage) root.lang = pathLanguage;
     if (root.dir !== dir) root.dir = dir;
   }, [pathLanguage]);
@@ -337,6 +344,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     );
   }, [marketId, marketsQuery.isError, pathLanguage, shoppable]);
 
+  const languageOptions = useMemo(() => {
+    const selected = shoppable.find((market) => market.zoneCode === marketId);
+    return marketLanguageOptions(selected?.languages, pathLanguage);
+  }, [marketId, pathLanguage, shoppable]);
+
   const value = useMemo(
     () => ({
       marketId,
@@ -344,8 +356,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       catalogContext,
       regionOptions,
       contentLanguage,
+      languageOptions,
     }),
-    [catalogContext, contentLanguage, marketId, regionOptions, setMarketId],
+    [catalogContext, contentLanguage, languageOptions, marketId, regionOptions, setMarketId],
   );
 
   return (

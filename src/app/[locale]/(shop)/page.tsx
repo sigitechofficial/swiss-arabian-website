@@ -1,0 +1,107 @@
+import type { Metadata } from "next";
+import { HomePageView } from "@/features/home";
+import {
+  CatalogJsonLd,
+  ORGANIZATION_ID,
+  WEBSITE_ID,
+} from "@/features/catalog/components/CatalogJsonLd";
+import { storefrontLogo } from "@/lib/storefront/brand";
+import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
+import { withLocalePrefix } from "@/lib/i18n/localePath";
+import {
+  loadRequestBrandIdentity,
+  loadServerHome,
+  resolveServerCatalogMarket,
+} from "@/lib/seo/catalogPage";
+import { loadFooterSeoText } from "@/features/seo-footer/footerSeoText.service";
+import { routeTranslator } from "@/lib/i18n/routeLocale";
+import type { Translator } from "@/lib/i18n/messages";
+
+/** Prerendered per language and revalidated (ISR); the browser keeps sections fresh. */
+export const revalidate = 300;
+
+/**
+ * Home fallback when SEO Management has no page for "/": the brand's name and
+ * description (Brand identity) in the shopper's language and market.
+ */
+function homeTitle(t: Translator, brandName: string) {
+  return t("pages.home.title", { brand: brandName });
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await routeTranslator();
+  const brand = await loadRequestBrandIdentity();
+  return pageMetadata({
+    path: "/",
+    title: homeTitle(t, brand.name),
+    description: brand.description ?? undefined,
+  });
+}
+
+export default async function HomePage() {
+  const { t } = await routeTranslator();
+  const { locale, seo } = await loadPublishedPageSeo("/");
+  const adminJsonLd = await pageJsonLd("/");
+  const brand = await loadRequestBrandIdentity();
+  const home = withLocalePrefix("/", locale);
+  // One H1 per page: the market's SEO text heading (above the footer) when there is
+  // one, else this one. The hero title is not a heading (SEO audit).
+  const market = await resolveServerCatalogMarket();
+  const [footerText, initialHome] = await Promise.all([
+    loadFooterSeoText(market.locale, market.zoneCode),
+    loadServerHome(),
+  ]);
+  // Search engines get Organization + WebSite unless the admin publishes their own.
+  const types = new Set(adminJsonLd.map((entry) => String(entry["@type"] ?? "")));
+  const defaults = [
+    types.has("Organization")
+      ? null
+      : {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          // Product offers name this Organization as their seller (same @id).
+          "@id": ORGANIZATION_ID,
+          name: brand.name,
+          ...(brand.names.length > 1
+            ? { alternateName: brand.names.filter((n) => n !== brand.name) }
+            : {}),
+          url: brand.url || home,
+          // Brand identity logo, else the site's own logo file.
+          logo: brand.squareLogo || brand.logo || storefrontLogo().src,
+          ...(brand.description ? { description: brand.description } : {}),
+          ...(brand.sameAs.length ? { sameAs: brand.sameAs } : {}),
+        },
+    types.has("WebSite")
+      ? null
+      : {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": WEBSITE_ID,
+          name: brand.name,
+          url: home,
+          inLanguage: locale,
+          publisher: { "@id": ORGANIZATION_ID },
+          potentialAction: {
+            "@type": "SearchAction",
+            // Google needs a full address here ("url" fields are made absolute for us).
+            target: {
+              "@type": "EntryPoint",
+              url: `${withLocalePrefix("/search", locale)}?q={search_term_string}`,
+            },
+            "query-input": "required name=search_term_string",
+          },
+        },
+  ].filter(Boolean) as Array<Record<string, unknown>>;
+  return (
+    <>
+      {[...defaults, ...adminJsonLd].map((data, index) => (
+        <CatalogJsonLd key={index} data={data} />
+      ))}
+      {/* Sections are server-rendered from the published homepage (the browser keeps it fresh). */}
+      {footerText?.heading ? null : (
+        <h1 className="sr-only">{seo?.title || homeTitle(t, brand.name)}</h1>
+      )}
+      <HomePageView initial={initialHome} />
+    </>
+  );
+}

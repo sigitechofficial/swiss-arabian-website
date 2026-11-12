@@ -1,5 +1,6 @@
 "use client";
 
+import { intlLocale } from "@/lib/i18n/locales";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
@@ -337,7 +338,7 @@ export function PdpReviews({
                 <article key={review.reviewId} className={c.rvCard}>
                   <div className={c.rvCardTop}>
                     <Stars rating={review.rating} />
-                    <span className={c.rvDate}>{reviewDate(review.createdAt, t.locale === "ar" ? "ar" : "en-GB")}</span>
+                    <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
                   </div>
                   {review.title ? <h3 className={c.rvTitle}>{review.title}</h3> : null}
                   {review.body ? <p className={c.rvBody}>{review.body}</p> : null}
@@ -471,7 +472,7 @@ function ReadReview({
         </p>
         <div className="mb-2.5 flex items-center gap-3">
           <Stars rating={review.rating} size="0.85rem" />
-          <span className={c.rvDate}>{reviewDate(review.createdAt, t.locale === "ar" ? "ar" : "en-GB")}</span>
+          <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
         </div>
         {review.title ? <h3 className="m-0 mb-2 text-[1.05rem] font-semibold">{review.title}</h3> : null}
         {review.body ? <p className={c.rvDialogBody}>{review.body}</p> : null}

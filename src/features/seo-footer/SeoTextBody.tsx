@@ -1,26 +1,24 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 /** Height of the closed block (about 6 lines of body text). */
 const COLLAPSED_PX = 168;
-
-const LABELS = {
-  en: { more: "View all", less: "Show less" },
-  ar: { more: "عرض الكل", less: "عرض أقل" },
-} as const;
 
 /**
  * SEO text body above the footer: a fixed height with a fade; when the text is
  * longer, "View all" opens it and "Show less" closes it again. The full text is
  * always in the page (search engines read all of it), only its height changes.
  */
-export function SeoTextBody({ html, lang }: { html: string; lang: string }) {
+export function SeoTextBody({ html, lang: _lang }: { html: string; lang: string }) {
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   const [fullHeight, setFullHeight] = useState(0);
   const [open, setOpen] = useState(false);
-  const labels = lang === "ar" ? LABELS.ar : LABELS.en;
+  // Buttons in the page's language (the text itself may be another language).
+  const t = useShopCopy();
+  const labels = { more: t("seoText.more"), less: t("seoText.less") };
 
   useEffect(() => {
     const el = ref.current;

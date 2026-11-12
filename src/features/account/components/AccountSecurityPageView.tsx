@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -158,9 +159,9 @@ export function AccountSecurityPageView() {
 
         <p className="mt-4 max-w-[560px] text-[12px] text-sa-secondary">
           Forgotten your current password?{" "}
-          <a className="font-semibold text-terra hover:underline" href="/forgot-password">
+          <Link className="font-semibold text-terra hover:underline" href="/forgot-password">
             Reset it by email
-          </a>
+          </Link>
           .
         </p>
       </div>
