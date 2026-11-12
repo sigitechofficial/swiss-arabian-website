@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
+import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
+import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
+import { PlatformTracker } from "@/components/layout/PlatformTracker";
 import { env } from "@/lib/config/env";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
@@ -60,6 +63,9 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-dvh flex-col">
         <InsiderScripts />
+        <JourneyEventsPoller />
+        <PlatformTracker />
+        <OnsiteMessageHost />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

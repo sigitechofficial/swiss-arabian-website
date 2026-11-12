@@ -5,6 +5,7 @@ import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
 import { atStockLimit, fullLineMessage } from "@/features/cart/utils/stockLimit";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { StockAlertButton } from "./StockAlertButton";
 import { buySlot, pdpAdd, pdpBuy, pdpBuyDocked, pdpQty, pdpQtyBtn, pdpQtyValue, pdpStatus, pdpWish } from "@/styles/pdpChrome";
 import type { CartLine } from "@/stores/useCartStore";
@@ -21,7 +22,6 @@ type PdpBuyBarProps = {
 export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProps) {
   const copy = useShopCopy();
   const [quantity, setQuantity] = useState(1);
-  const [wished, setWished] = useState(false);
   const [status, setStatus] = useState("");
   const [buyDocked, setBuyDocked] = useState(false);
   const [buyBarHeight, setBuyBarHeight] = useState<number | null>(null);
@@ -35,7 +35,6 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
 
   useResetOnChange(product.slug, () => {
     setQuantity(1);
-    setWished(false);
     setStatus("");
   });
 
@@ -173,17 +172,8 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
             </button>
           )}
 
-          <button
-            className={pdpWish}
-            type="button"
-            aria-pressed={wished}
-            aria-label={`Add ${product.title} to wishlist`}
-            onClick={() => setWished((current) => !current)}
-          >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <path d="M10 17s-6-4.35-6-8.5A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6 2.5c0 4.15-6 8.5-6 8.5z" />
-            </svg>
-          </button>
+          {/* Saves to the customer's wishlist through the backend. Sends signed-out shoppers to sign in. */}
+          <WishlistHeartButton productId={product.id} size="pdp" className={pdpWish} />
         </div>
       </div>
 
