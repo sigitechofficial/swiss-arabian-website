@@ -13,6 +13,8 @@ import {
   ExchangeRequestCard,
   ReturnRequestCard,
 } from "./AfterSalesRequestCards";
+import { useHydrated } from "@/hooks/useHydrated";
+import { hasExchangePaymentReturn } from "../utils/exchangeMoney";
 
 const KIND_TABS = [
   { value: "returns" as const, label: "Returns" },
@@ -28,7 +30,13 @@ const STATUS_FILTERS: { value: string | null; label: string }[] = [
 ];
 
 export function AccountAfterSalesPageView() {
-  const [kind, setKind] = useState<"returns" | "exchanges">("returns");
+  const [chosenKind, setKind] = useState<"returns" | "exchanges" | null>(null);
+  // Back from paying an exchange difference: open Exchanges so the result shows.
+  const hydrated = useHydrated();
+  const returningFromPayment = hydrated && hasExchangePaymentReturn(window.location.search);
+  const [openedForPayment, setOpenedForPayment] = useState(false);
+  if (returningFromPayment && !openedForPayment) setOpenedForPayment(true);
+  const kind = chosenKind ?? (openedForPayment ? "exchanges" : "returns");
   const [status, setStatus] = useState<string | null>(null);
   const returns = useCustomerReturnsFeed(status);
   const exchanges = useCustomerExchangesFeed(status);

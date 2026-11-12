@@ -9,11 +9,13 @@ import {
   getStoredOrderId,
   getStoredOrderNumber,
   getStoredPaymentMethodId,
+  getStoredPaymentProviderCode,
   getStoredZonePaymentMethodId,
   incrementPayAttempt,
   storeOrderId,
 } from "../utils/checkoutSession";
-import { PaymentGatewayError, startPayment } from "../utils/startPayment";
+import { PaymentGatewayError, PaymentRejectedError, startPayment } from "../utils/startPayment";
+import { tabbyLang } from "../utils/tabby";
 import { CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
@@ -66,14 +68,17 @@ export function PaymentCancelView() {
           ? {
               zonePaymentMethodId: getStoredZonePaymentMethodId(),
               paymentMethodId: getStoredPaymentMethodId(),
+              providerCode: getStoredPaymentProviderCode(),
             }
           : {},
       );
     } catch (e) {
       setError(
-        e instanceof PaymentGatewayError
-          ? GATEWAY_ERROR
-          : checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),
+        e instanceof PaymentRejectedError
+          ? e.messages[tabbyLang(document.documentElement.lang)]
+          : e instanceof PaymentGatewayError
+            ? GATEWAY_ERROR
+            : checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),
       );
       setRetrying(false);
     }

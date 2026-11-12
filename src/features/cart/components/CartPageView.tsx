@@ -95,6 +95,7 @@ import {
 } from "@/features/promotions";
 import { quotedCartTotal } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
+import { CartTabbyPromo } from "./CartTabbyPromo";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
 function itemsLabel(n: number) {
@@ -465,6 +466,9 @@ export function CartPageView() {
                     loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
                     giftCards={giftCards}
                   />
+                )}
+                {quotePending ? null : (
+                  <CartTabbyPromo amount={amountPayable ?? total} currency={currency} />
                 )}
                 {quotePending ? null : (
                   <EarnPreviewNote

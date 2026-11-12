@@ -6,6 +6,7 @@ const ORDER_NUMBER_KEY = "sa_order_number";
 
 const ZONE_PAYMENT_METHOD_ID_KEY = "sa_zone_payment_method_id";
 const PAYMENT_METHOD_ID_KEY = "sa_payment_method_id";
+const PAYMENT_PROVIDER_CODE_KEY = "sa_payment_provider_code";
 const PAYMENT_TRANSACTION_ID_KEY = "sa_payment_transaction_id";
 const PAY_ATTEMPT_KEY = "sa_pay_attempt";
 const STRIPE_CLIENT_SECRET_KEY = "sa_stripe_client_secret";
@@ -124,6 +125,12 @@ export const storePaymentMethodId = (id: string) =>
   write("session", PAYMENT_METHOD_ID_KEY, id);
 export const getStoredPaymentMethodId = () => read("session", PAYMENT_METHOD_ID_KEY);
 
+/** Provider of the chosen method, so a retry sends the gateway back to the right return page. */
+export const storePaymentProviderCode = (code: string) =>
+  write("session", PAYMENT_PROVIDER_CODE_KEY, code);
+export const getStoredPaymentProviderCode = () =>
+  read("session", PAYMENT_PROVIDER_CODE_KEY);
+
 export const storePaymentTransactionId = (id: string) =>
   write("session", PAYMENT_TRANSACTION_ID_KEY, id);
 export const getStoredPaymentTransactionId = () =>
@@ -148,6 +155,7 @@ export function incrementPayAttempt(): number {
 export function clearPaymentState(): void {
   remove("session", ZONE_PAYMENT_METHOD_ID_KEY);
   remove("session", PAYMENT_METHOD_ID_KEY);
+  remove("session", PAYMENT_PROVIDER_CODE_KEY);
   remove("session", PAYMENT_TRANSACTION_ID_KEY);
   remove("session", PAY_ATTEMPT_KEY);
   remove("session", STRIPE_CLIENT_SECRET_KEY);

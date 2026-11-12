@@ -29,6 +29,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const catalog = await fetchCatalogSitemap(zoneCode, market);
     for (const entry of catalog) {
       if (entry.noindex || !entry.path) continue;
+      // An address that redirects (e.g. Shopify's /collections/all → /products) is not listed.
+      if (shopifyLegacyRedirect(entry.path)) continue;
       entries.push({ path: entry.path, lastModified: entry.updatedAt ?? undefined });
     }
   } catch {

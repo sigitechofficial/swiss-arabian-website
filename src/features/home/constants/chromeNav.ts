@@ -7,10 +7,12 @@ export type ChromeMega = {
   /** A heading may itself be a link (e.g. HAIR MIST above its products). */
   groups: Array<{ heading: string; href?: string; links: ChromeLink[] }>;
   promo?: { image: string; copy: string; cta: string; href: string; cover?: boolean };
+  /** Picture of the linked collection, for image tiles (not shown in the menu). */
+  image?: string;
 };
 
 export type ChromeNavItem =
-  | { type: "link"; label: string; href: string; accent?: boolean }
+  | { type: "link"; label: string; href: string; accent?: boolean; image?: string }
   | ({ type: "mega" } & ChromeMega);
 
 export const TOPBAR_CATS: ChromeLink[] = [];

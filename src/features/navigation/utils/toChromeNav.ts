@@ -31,7 +31,9 @@ function toLinks(items: readonly NavItem[]): ChromeLink[] {
  */
 export function chromeNavLinks(items: readonly ChromeNavItem[]) {
   return items.flatMap((item) =>
-    item.href ? [{ label: item.label, href: item.href }] : [],
+    item.href
+      ? [{ label: item.label, href: item.href, ...(item.image ? { image: item.image } : {}) }]
+      : [],
   );
 }
 
@@ -73,7 +75,12 @@ export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
 
     if (!groups.length || !href) {
       if (item.href) {
-        result.push({ type: "link", label: item.label, href: item.href });
+        result.push({
+          type: "link",
+          label: item.label,
+          href: item.href,
+          ...(item.image ? { image: item.image } : {}),
+        });
       }
       continue;
     }
@@ -84,6 +91,7 @@ export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
       label: item.label,
       href,
       groups,
+      ...(item.image ? { image: item.image } : {}),
     });
   }
 
