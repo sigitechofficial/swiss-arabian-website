@@ -6,9 +6,11 @@ import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
 import { fixedPathForPage } from "@/features/site-pages/utils/pickMarketPage";
+import { fetchBlogSlugs } from "@/features/blog/api/blogApi";
 
 /** Public pages that are not catalog entities (search is noindex, so not listed). */
-// Placeholder pages (blog, our story, stores) join when their CMS content exists.
+// Placeholder pages (our story, stores) join when their CMS content exists.
+// The Journal (/blog) and its posts are added below once posts are live.
 const STATIC_PATHS = ["/", "/collections", "/faq"];
 
 function absolute(origin: string, path: string) {
@@ -51,6 +53,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Pages cannot be read: the rest of the sitemap still publishes.
   }
 
+  // Journal posts exist in one language each: list them only at that language's address.
+  const blogEntries: MetadataRoute.Sitemap = [];
+  try {
+    const { zoneCode } = await resolveServerCatalogMarket();
+    for (const language of ["en", "ar"] as const) {
+      const posts = await fetchBlogSlugs({ zoneCode, languageCode: language });
+      for (const post of posts) {
+        const url = withLocalePrefix(`/blog/${post.slug}`, language);
+        blogEntries.push({ url: origin ? absolute(origin, url) : url, lastModified: post.updatedAt });
+      }
+    }
+    if (blogEntries.length) entries.push({ path: "/blog" });
+  } catch {
+    // The Journal cannot be read: the rest of the sitemap still publishes.
+  }
+
   const seen = new Set<string>();
   const out: MetadataRoute.Sitemap = [];
   for (const { path, lastModified } of entries) {
@@ -73,5 +91,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
   }
-  return out;
+  return [...out, ...blogEntries];
 }
