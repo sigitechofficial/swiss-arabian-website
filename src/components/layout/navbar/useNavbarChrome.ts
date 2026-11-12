@@ -6,7 +6,8 @@ import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { isLocale } from "@/lib/i18n/locales";
 import { useMarket } from "@/providers/MarketProvider";
 import { useHydrated } from "@/hooks/useHydrated";
 
@@ -35,18 +36,19 @@ export function useNavbarChrome() {
     setMobileGroup(null);
   }
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
-  const setLanguageId = (id: (typeof TOPBAR_LANGUAGES)[number]["id"]) => {
+  const setLanguageId = (id: string) => {
+    if (!isLocale(id)) return;
     const current = pathname || "/";
     const nextPath = withLocalePrefix(current, id);
     if (nextPath === current) return;
     // A client navigation follows the rewritten page and stays on the English
-    // address. A full load keeps /ar in the address bar.
+    // address. A full load keeps the language prefix (/ar) in the address bar.
     const search = window.location.search;
     const hash = window.location.hash;
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full load required (see above)
     window.location.assign(`${nextPath}${search}${hash}`);
   };
-  const { marketId, setMarketId, regionOptions } = useMarket();
+  const { marketId, setMarketId, regionOptions, languageOptions } = useMarket();
   const regionId =
     marketId ||
     regionOptions[0]?.id ||
@@ -186,6 +188,7 @@ export function useNavbarChrome() {
       openUtil,
       setOpenUtil,
       languageId,
+      languageOptions,
       setLanguageId,
       regionId,
       regionOptions,

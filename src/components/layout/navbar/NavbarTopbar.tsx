@@ -28,12 +28,15 @@ export function NavbarTopbar({
             countryCode,
           }))
         : TOPBAR_REGIONS;
+  const languages = chrome.languageOptions.length
+    ? chrome.languageOptions
+    : TOPBAR_LANGUAGES;
   const languageOptions = boutique
-    ? TOPBAR_LANGUAGES.map((option) => ({
+    ? languages.map((option) => ({
         ...option,
         label: option.id.toUpperCase(),
       }))
-    : TOPBAR_LANGUAGES;
+    : languages;
 
   return (
     <div className={boutique ? `${topbar} ${topbarBoutique}` : topbar} data-topbar>
@@ -57,9 +60,7 @@ export function NavbarTopbar({
               options={languageOptions}
               open={chrome.openUtil === "lang"}
               onOpenChange={(open) => chrome.setOpenUtil(open ? "lang" : null)}
-              onChange={(id) =>
-                chrome.setLanguageId(id as (typeof TOPBAR_LANGUAGES)[number]["id"])
-              }
+              onChange={chrome.setLanguageId}
             />
           </div>
         )}

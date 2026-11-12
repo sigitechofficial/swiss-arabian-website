@@ -1,3 +1,5 @@
+import { configuredLanguageOptions } from "@/features/markets/utils/marketLanguageOptions";
+
 export type ChromeLink = { label: string; href: string };
 
 export type ChromeMega = {
@@ -26,10 +28,8 @@ export const TOPBAR_REGIONS = [
   { id: "OMN", label: "Oman", flag: "🇴🇲", countryCode: "OM" },
 ] as const;
 
-export const TOPBAR_LANGUAGES = [
-  { id: "en", label: "English" },
-  { id: "ar", label: "العربية", lang: "ar" },
-] as const;
+/** Every configured shop language; the picker uses the market's languages once known. */
+export const TOPBAR_LANGUAGES = configuredLanguageOptions();
 
 export const TOPBAR_CURRENCIES = [
   { id: "AED", label: "AED" },

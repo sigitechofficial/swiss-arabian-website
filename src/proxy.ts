@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  isLocaleSwitchablePath,
-  withLocalePrefix,
-} from "@/lib/i18n/localePath";
+import { isLocaleSwitchablePath } from "@/lib/i18n/localePath";
+import { localeRouting } from "@/lib/i18n/localeRouting";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
@@ -14,13 +12,12 @@ import {
   redirectZone,
 } from "@/lib/seo/storedRedirects";
 
+/** Served outside the `[locale]` tree (API proxies in next.config rewrites). */
+const PASS_THROUGH = /^\/(?:_next|api|storefront|catalog|webhooks)(?:\/|$)/;
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
+  if (PASS_THROUGH.test(pathname) || pathname.includes(".")) {
     return NextResponse.next();
   }
 
@@ -45,30 +42,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  const isArabic = pathname === "/ar" || pathname.startsWith("/ar/");
-  const languageParam = request.nextUrl.searchParams.get("languageCode");
-
-  if (
-    !isArabic &&
-    languageParam &&
-    languageParam.toLowerCase().startsWith("ar") &&
-    isLocaleSwitchablePath(pathname)
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = withLocalePrefix(pathname, "ar");
-    url.searchParams.delete("languageCode");
-    return NextResponse.redirect(url, 301);
-  }
-
-  if (isArabic) {
-    const stripped = pathname === "/ar" ? "/" : pathname.slice(3) || "/";
-    const url = request.nextUrl.clone();
-    url.pathname = stripped.startsWith("/") ? stripped : `/${stripped}`;
-    const headers = new Headers(request.headers);
-    headers.set("x-shop-locale", "ar");
-    return NextResponse.rewrite(url, { request: { headers } });
-  }
-
+  // Languages: the default one has no prefix (rewritten to its `[locale]`
+  // segment), the others keep `/{locale}/…`.
+  const decision = localeRouting({
+    pathname,
+    searchParams: request.nextUrl.searchParams,
+    switchable: isLocaleSwitchablePath(pathname),
+  });
+  const url = request.nextUrl.clone();
+  url.pathname = decision.pathname;
+  if (decision.search !== undefined) url.search = decision.search;
+  if (decision.type === "redirect") return NextResponse.redirect(url, 301);
+  if (decision.type === "rewrite") return NextResponse.rewrite(url);
   return NextResponse.next();
 }
 

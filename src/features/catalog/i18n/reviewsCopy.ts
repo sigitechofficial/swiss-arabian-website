@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { localeFromPathname, type ShopLocale } from "@/lib/i18n/localePath";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { baseLanguage, type ShopLocale } from "@/lib/i18n/locales";
 
 /**
  * Wording of the reviews section, the write-a-review panel and the review link
@@ -180,14 +180,15 @@ const ar: ReviewsCopy = {
   bodyOptional: "كيف تفوح الرائحة عليك؟ كم تدوم؟ (اختياري)",
 };
 
-const COPY: Record<ShopLocale, ReviewsCopy> = { en, ar };
+/** By base language; a language without its own wording reads English. */
+const COPY: Record<string, ReviewsCopy> = { en, ar };
 
 export function reviewsCopy(locale: ShopLocale): ReviewsCopy {
-  return COPY[locale] ?? en;
+  return COPY[baseLanguage(locale)] ?? en;
 }
 
-/** Reviews wording for the current page language (/ar/… = Arabic). */
+/** Reviews wording for the page's language (the `[locale]` route). */
 export function useReviewsCopy(): ReviewsCopy & { locale: ShopLocale } {
-  const locale = localeFromPathname(usePathname() || "/");
+  const locale = useShopLocale();
   return { ...reviewsCopy(locale), locale };
 }

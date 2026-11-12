@@ -61,22 +61,17 @@ export function robotsFromText(
  * ask for noindex, never force indexing.
  */
 export async function pageMetadata(input: {
-  /** Path without the /ar prefix, e.g. "/" or "/collections". */
+  /** Path without a language prefix, e.g. "/" or "/collections". */
   path: string;
+  /** In the page's language (callers use the route's translator). */
   title: string;
-  titleAr?: string;
   description?: string;
-  descriptionAr?: string;
   /** A product listing: gets a default description when none is set (see `catalogMetadata`). */
   listing?: boolean;
 }): Promise<Metadata> {
   const { locale, seo } = await loadPublishedPageSeo(input.path);
-  const fallbackTitle =
-    locale === "ar" && input.titleAr ? input.titleAr : input.title;
-  const fallbackDescription =
-    locale === "ar" && input.descriptionAr
-      ? input.descriptionAr
-      : input.description;
+  const fallbackTitle = input.title;
+  const fallbackDescription = input.description;
   const base = await catalogMetadata({
     locale,
     path: withLocalePrefix(input.path, locale),

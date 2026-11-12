@@ -1,3 +1,4 @@
+import { dir } from "@/lib/i18n/locales";
 import { footerBodyHtml } from "./footerSeoText.service";
 
 /** Collection SEO text from the storefront API (plain text, blank line = paragraph). */
@@ -16,8 +17,6 @@ export type CollectionSeoTextView = {
   dir: "ltr" | "rtl";
 };
 
-const RTL = new Set(["ar", "he", "fa", "ur"]);
-
 /** Render model for the collection SEO block; null when there is no text. */
 export function collectionSeoTextView(
   content: CollectionSeoContent | null | undefined,
@@ -29,5 +28,5 @@ export function collectionSeoTextView(
   if (!heading && !bodyHtml) return null;
   const lang =
     (content.locale || fallbackLocale).toLowerCase().split(/[-_]/)[0] || "en";
-  return { heading, bodyHtml, lang, dir: RTL.has(lang) ? "rtl" : "ltr" };
+  return { heading, bodyHtml, lang, dir: dir(lang) };
 }

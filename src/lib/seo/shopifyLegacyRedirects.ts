@@ -1,10 +1,16 @@
+import {
+  localePrefixOf,
+  stripLocalePrefix,
+  withLocalePrefix,
+} from "@/lib/i18n/localePath";
+
 /**
  * Permanent (301) redirects for Shopify's standard URL shapes, so links and
  * search results from the old store land on the platform's own pages.
  *
  * Product and collection handles themselves are resolved by the catalog
  * (slug, per-market handle, alias) — this only rewrites the URL *shape*.
- * Arabic URLs keep their "/ar" prefix.
+ * Addresses in another language keep their prefix ("/ar").
  */
 
 const ACCOUNT_REDIRECTS: Array<[RegExp, string]> = [
@@ -132,10 +138,10 @@ function rewriteBare(path: string): string | null {
 
 /** Target path for an old Shopify URL, or null when no redirect applies. */
 export function shopifyLegacyRedirect(pathname: string): string | null {
-  const isArabic = pathname === "/ar" || pathname.startsWith("/ar/");
-  const bare = isArabic ? pathname.slice(3) || "/" : pathname;
+  const prefix = localePrefixOf(pathname);
+  const bare = prefix ? stripLocalePrefix(pathname) : pathname;
   const target = rewriteBare(bare);
   if (!target || target === bare) return null;
-  if (!isArabic) return target;
-  return target === "/" ? "/ar" : `/ar${target}`;
+  if (!prefix) return target;
+  return withLocalePrefix(target, prefix);
 }

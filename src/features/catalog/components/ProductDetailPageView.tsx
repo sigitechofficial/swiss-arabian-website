@@ -16,7 +16,7 @@ import { pageContainer } from "@/styles/siteChrome";
 import { crumbsList } from "@/styles/shopChrome";
 import { pdpHero, pdpSplit, relatedEm } from "@/styles/pdpChrome";
 import { catalogKeys, fetchCollectionProducts, fetchProductBySlug } from "../api/catalog.service";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import { useMarketDocument } from "../hooks/useMarketDocument";
 import type { ProductDetail } from "../types/product";
 import {
   CONCENTRATION_LABELS,
@@ -50,10 +50,13 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
 
 export function ProductDetailPageView({
   product: serverDetail,
+  serverZoneCode = null,
   slug: routeSlug,
   share = null,
 }: {
   product: ProductDetail | null;
+  /** Market the server rendered `product` for (the storefront's default market). */
+  serverZoneCode?: string | null;
   slug: string;
   /** Canonical product address (absolute) and share image, from the server. */
   share?: { url: string; image?: string | null } | null;
@@ -61,14 +64,13 @@ export function ProductDetailPageView({
   const copy = useShopCopy();
   const { marketId } = useMarket();
   const zoneCode = marketId ?? "";
-  const market = useSelectedCatalogMarket();
-  const clientProduct = useQuery({
-    queryKey: catalogKeys.detail(routeSlug, market?.zoneCode),
-    queryFn: () => fetchProductBySlug(routeSlug, market?.zoneCode, market),
-    enabled: !serverDetail && Boolean(routeSlug && market?.zoneCode),
-    retry: false,
+  // The page is prerendered for the default market: another market loads its own product.
+  const { data: detail, otherMarket, query: clientProduct } = useMarketDocument({
+    server: serverDetail,
+    serverZoneCode,
+    queryKey: (zone) => catalogKeys.detail(routeSlug, zone),
+    fetch: (market) => fetchProductBySlug(routeSlug, market.zoneCode, market),
   });
-  const detail = serverDetail ?? clientProduct.data ?? null;
   const apiProduct = detail;
   const slug = detail?.slug || routeSlug;
 
@@ -180,7 +182,7 @@ export function ProductDetailPageView({
   // only on hover-capable screens) via `useLoadedImages`.
 
   const clientStillLoading =
-    !serverDetail && !clientProduct.isFetched && !clientProduct.isError;
+    (!serverDetail || otherMarket) && !clientProduct.isFetched && !clientProduct.isError;
 
   if (!product) {
     if (clientStillLoading) {

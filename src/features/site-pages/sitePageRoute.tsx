@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
+import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 import { catalogMetadata } from "@/lib/seo/catalogPage";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
@@ -8,7 +8,7 @@ import {
   breadcrumbJsonLd,
   CatalogJsonLd,
 } from "@/features/catalog/components/CatalogJsonLd";
-import { shopCopy } from "@/lib/i18n/shopCopy";
+import { getTranslator } from "@/lib/i18n/messages";
 import {
   fetchSitePage,
   fetchSitePagePreview,
@@ -26,7 +26,7 @@ async function load(
   handle: string,
   preview?: SitePagePreviewParams | null,
 ) {
-  const { locale, zoneCode } = await resolveServerCatalogMarket();
+  const { locale, zoneCode } = await resolveRequestCatalogMarket();
   if (preview) {
     // A saved version from an admin preview link: its own text, never indexed.
     const page = await fetchSitePagePreview(preview, locale);
@@ -111,7 +111,7 @@ export async function SitePageRoute({
       <CatalogJsonLd
         data={breadcrumbJsonLd([
           {
-            name: shopCopy(locale, "home"),
+            name: (await getTranslator(locale))("home"),
             url: withLocalePrefix("/", locale),
           },
           { name: page.title, url: withLocalePrefix(page.path, locale) },
@@ -121,6 +121,7 @@ export async function SitePageRoute({
         page={page}
         contactDetails={contactDetails}
         locale={locale}
+        contactDetailsLabel={(await getTranslator(locale))("sitePage.contactDetails")}
       />
     </>
   );
