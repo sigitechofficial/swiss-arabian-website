@@ -333,3 +333,33 @@ The plan and QA report links open only for people they have been shared with. As
 - Backend: `npm run typecheck`, `npm test`, `npm run prisma:drift`
 - Storefront: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
 - Admin panel: `npx tsc --noEmit`, `npm test`
+
+## Additions 11–12 Nov 2026 (policies, payments, checkout)
+
+What was built, why, and where to look before changing it. Detailed docs are linked per repo.
+
+| Area | What changed | Why | Docs |
+|---|---|---|---|
+| **One version per policy** | Shopify's built-in `/policies/*` and short addresses redirect (301) to the footer policy pages, per market and in Arabic. The checkout Privacy link now works. Qatar's misspelt exchange address has a redirect. | Shopify kept two copies of each policy with different text, and the built-in ones were English only. | Website `docs/storefront/PAGES_AND_POLICIES.md` |
+| **Policy versions and scheduling** | Pages and policies keep saved versions: draft, scheduled with start and end dates, live, and earlier versions to restore. Compare, signed preview, history. A minute scheduler switches them. | Legal and ops prepare changes ahead (Ramadan shipping, new refund terms) and need a record and rollback. | Backend `docs/website-management/PAGE_VERSIONS_AND_POLICIES.md` |
+| **Policies in the admin** | Left bar → POLICIES: Overview (every policy × market), Manage policies, Schedule. Pages get a policy type. | One cross-market view for the people who own policies. | Admin `docs/POLICIES_PAGE_VERSIONS_AND_PAYMENT_CAPTURE.md` |
+| **Order policy record** | Each new order stores which policy versions applied (`orders.policy_snapshot`). | Refund and shipping disputes: the terms the customer agreed to. | Backend `PAGE_VERSIONS_AND_POLICIES.md` |
+| **Homepage editor per brand** | Auto-start and Seed only for brands with a storefront layout (Swiss Arabian today). | SAPIL KSA failed with "Seed manifest … belongs to brand SWISS_ARABIAN". | Admin doc §3 |
+| **Card forms at checkout** | The card form passes the market's payment settings. Brand-wide credential pack names were added locally. | Stripe and Paymob card forms failed (`BRAND_CREDENTIAL_MISSING`) on Azure and locally. **Azure still needs the brand-wide pack names in its secret.** | Backend `docs/payments/CARD_FORM_AND_CREDENTIAL_PACKS.md` |
+| **Captured amount** | Paid payments now record the captured amount. A migration corrected existing platform payments. | It was always 0 for platform payments (shared code bug), which under-counted finance and reconciliation. | Backend `docs/payments/CAPTURE_LATER.md` |
+| **Capture later / partial / several / release** | Market method setting `captureMode: MANUAL`. Admin order page Capture (amount) and Release. A capture history table. The provider's captured totals are followed. **Tabby only** so far. | Charge at shipping, split shipments, release what won't be charged. The admin buttons existed but were blocked. | Backend `CAPTURE_LATER.md`, admin doc §4 |
+| **Tabby** | Set up and tested locally (Swiss Arabian UAE): catalog seeded, method enabled, sandbox orders paid and captured. | It showed "Coming soon": the setup runbook had never been run. **Not set up on Azure.** | Backend `docs/payments/TABBY_PROVIDER_CONTRACT.md` → Status |
+| **Checkout "Fill test data"** | Guests in UAE and KSA on non-production sites get a one-click test order form. | Faster testing; test orders are easy to spot. | Website `docs/storefront/CHECKOUT_TESTING_AND_PAYMENTS.md` |
+
+**New migrations (backend), in order:**
+1. `20261112090000_website_page_versions`
+2. `20261112100000_website_page_policy_type`
+3. `20261112150000_payment_captured_amount_backfill`
+4. `20261112160000_payment_captures`
+
+**Open items:**
+- **Azure credential secret:** add `stripe-swiss-arabian-test`, `paymob-swiss-arabian-test` (and the SAPIL ones) and the Tabby setup.
+- **Tabby webhooks:** not registered yet.
+- **Capture later for more providers:** Stripe is the next one; Paymob and Telr need auth-only enabled in their merchant accounts first.
+- **D365 export setting:** `D365_OUTBOUND_DELIVERY_CHARGE_ITEM_NUMBER` is missing locally, so orders with shipping stop before export.
+- **Tabby test customer:** its sandbox test phone links to D365 account UA-CU364514. Check that account before allowing test orders to export.

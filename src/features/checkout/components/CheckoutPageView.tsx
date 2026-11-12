@@ -71,6 +71,8 @@ import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import { isStripePaymentMethod } from "../utils/methodLabels";
 import { CheckoutBilling } from "./checkout/CheckoutBilling";
 import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
+import { checkoutTestDataFor } from "../utils/checkoutTestData";
+import { env } from "@/lib/config/env";
 import { CheckoutPayment } from "./checkout/CheckoutPayment";
 import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
@@ -121,6 +123,12 @@ export function CheckoutPageView() {
     "AE";
   const regionSet = regionsForCountry(countryCode);
   const countryKeyRef = useRef(countryCode);
+  // Test sites only: one click fills the guest form for a UAE / KSA test order.
+  const testData = checkoutTestDataFor({
+    appEnv: env.appEnv,
+    isAuthenticated,
+    countryCode,
+  });
 
   const [email, setEmail] = useState("");
   const [shipping, setShipping] = useState<AddressFields>(EMPTY_ADDRESS);
@@ -454,6 +462,24 @@ export function CheckoutPageView() {
                     }
                     countryCode={countryCode}
                     regionSet={regionSet}
+                    beforeFields={
+                      testData ? (
+                        <div className="col-span-full flex items-center justify-between gap-3 rounded-md border border-dashed border-[var(--line,#d9ccb4)] px-3 py-2 text-[0.8rem] text-[var(--ink-2,#5b5148)]">
+                          <span>Test site: fill this form with test details.</span>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-full border border-copper px-3 py-1 font-medium text-copper hover:bg-[rgba(140,68,53,0.06)]"
+                            onClick={() => {
+                              setEmail(testData.email);
+                              setShipping({ ...testData.shipping });
+                              setBillingSame(true);
+                            }}
+                          >
+                            Fill test data
+                          </button>
+                        </div>
+                      ) : null
+                    }
                   />
                   <CheckoutShippingMethod
                     methods={checkout.deliveryMethods}
