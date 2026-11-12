@@ -16,6 +16,9 @@ function lanDevOrigins(): string[] {
 }
 
 const nextConfig: NextConfig = {
+  // Git worktrees share the main checkout's node_modules through a junction, which
+  // Turbopack rejects unless its root covers it. Opt-in only (unset in CI and deploys).
+  ...(process.env.TURBOPACK_ROOT ? { turbopack: { root: process.env.TURBOPACK_ROOT } } : {}),
   // Next.js 16.3 fails to emit `.next/next-server.js.nft.json` when
   // `output: "standalone"` is combined with Vercel's build adapter, which
   // breaks Vercel's `onBuildComplete` step with an ENOENT on that file
