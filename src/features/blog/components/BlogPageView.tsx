@@ -1,28 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { Reveal, InViewItem } from "@/components/motion";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
-import {
-  BLOG_PAGE_SIZE,
-  blogPosts,
-} from "../data/blogContent";
+import type { BlogPost } from "../data/blogContent";
 import { BlogHero } from "./BlogHero";
 import { BlogPagination } from "./BlogPagination";
 import { BlogPostCard } from "./BlogPostCard";
 
 /** Figma 796:6987 — Blog listing desktop / tablet / mobile */
-export function BlogPageView() {
-  const searchParams = useSearchParams();
-  const page = Math.max(1, Number(searchParams.get("page") || "1") || 1);
-  const totalPages = 3;
-  const safePage = Math.min(page, totalPages);
-
-  const posts = useMemo(() => {
-    const start = (safePage - 1) * BLOG_PAGE_SIZE;
-    return blogPosts.slice(start, start + BLOG_PAGE_SIZE);
-  }, [safePage]);
+export function BlogPageView({
+  posts,
+  page,
+  totalPages,
+  total,
+}: {
+  posts: BlogPost[];
+  page: number;
+  totalPages: number;
+  total: number;
+}) {
+  const safePage = Math.max(1, Math.min(page, Math.max(totalPages, 1)));
 
   const hrefForPage = (p: number) => (p <= 1 ? "/blog" : `/blog?page=${p}`);
 
@@ -41,7 +38,7 @@ export function BlogPageView() {
             All Articles
           </h2>
           <p className="pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sa-muted sm:text-[11px]">
-            {blogPosts.length} Posts
+            {total} {total === 1 ? "Post" : "Posts"}
           </p>
         </header>
 
@@ -60,11 +57,13 @@ export function BlogPageView() {
         )}
 
         <div className="mt-10 border-t border-sa-border pt-8 sm:mt-12 sm:pt-10">
-          <BlogPagination
-            page={safePage}
-            totalPages={3}
-            hrefForPage={hrefForPage}
-          />
+          {totalPages > 1 ? (
+            <BlogPagination
+              page={safePage}
+              totalPages={totalPages}
+              hrefForPage={hrefForPage}
+            />
+          ) : null}
         </div>
       </section>
 
