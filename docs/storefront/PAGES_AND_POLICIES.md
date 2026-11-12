@@ -77,6 +77,24 @@ Footer links checked on 10 Nov:
 
 Policies have no Arabic in Shopify; the Arabic site shows the English text until Arabic is added here.
 
+## Policies in the admin (left bar → POLICIES)
+
+| Page | What it is for |
+|---|---|
+| **Overview** (`/policies`) | Every policy against every market of the brand, plus a Global column. Each cell shows whether the market follows global, has its own version, has it only there, hides it, or doesn't have it. It also shows the live version, the next scheduled change, and "No Arabic" or "Switch problem" warnings. Click a cell for its versions. |
+| **Manage policies** (`/policies/manage`) | Per market: Versions, Own version, Hide here, Follow global and change type. **Add policy** creates a draft page (global or this market only) and opens its versions. **Mark a page as policy** turns an existing page into a policy. |
+| **Schedule** (`/policies/schedule`) | Versions scheduled to go live, in each market's time, and recent switches over the last 7, 30 or 90 days or the past year: who, when and why. |
+
+- **Policy type:** `website_pages.policy_type` holds SHIPPING, REFUND, EXCHANGE, PRIVACY, TERMS, CONTACT or OTHER. It applies to the address in every market. Migration `20261112100000` set it on the footer policies and contact information.
+- **Orders:** they record the live version of every page that has a type.
+- **Global dates:** shown in the time of the brand's default market (the storefront's default zone).
+- **API:**
+  - `GET /admin/policies/overview?brandCode=` and `GET /admin/policies/schedule?brandCode=&pastDays=`
+  - `PATCH /admin/website/markets/:zoneCode/pages/:pageId/policy-type`
+- **Code:**
+  - Backend: `website-policies.service.ts` and `controllers/admin-policies.controller.ts`
+  - Admin: `src/features/policies/` and `app/(dashboard)/policies/`
+
 ## Versions, scheduling and order records (12 Nov 2026)
 
 Every page and policy (global, or a market's own) keeps **saved versions**. Only one is **live**; the website always shows it at the normal address.
