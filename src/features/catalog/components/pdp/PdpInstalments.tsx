@@ -256,7 +256,6 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                 type="button"
                 className={pdpPayBtn}
                 aria-haspopup="dialog"
-                aria-label={`Learn more about paying with ${name}`}
                 key={provider}
                 onClick={(event) => {
                   openerRef.current = event.currentTarget;
@@ -266,6 +265,8 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                 <span className={mark}>{name}</span>
                 <span className={pdpPayBtnMore}>
                   Learn more
+                  {/* Visible text stays in the accessible name ("Tabby Learn more about paying with Tabby"). */}
+                  <span className="sr-only"> about paying with {name}</span>
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>

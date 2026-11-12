@@ -63,7 +63,7 @@ export function PdpScentFamily({
                 aria-current={active ? "true" : undefined}
               >
                 {product.imageUrl ? (
-                  <MediaImage className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt={product.title} width={240} height={240} />
+                  <MediaImage className="aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white object-contain" src={product.imageUrl} alt="" width={240} height={240} />
                 ) : (
                   <span className={`${bottle} aspect-square w-full rounded-lg border border-[#241f1b]/12 bg-white`} aria-hidden="true" />
                 )}

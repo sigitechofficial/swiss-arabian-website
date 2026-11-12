@@ -88,7 +88,12 @@ export function ProductCatalogView({
   hasNextPage = false,
   isFetchingNextPage = false,
   onLoadMore,
+  loadFailed = false,
+  onRetry,
 }: {
+  /** The live products could not be loaded (store unreachable): show an error with a retry. */
+  loadFailed?: boolean;
+  onRetry?: () => void;
   slug?: string;
   /**
    * Live catalog products. Omitted → the static catalog (unchanged). An empty
@@ -412,6 +417,19 @@ export function ProductCatalogView({
         {loading ? (
           <div className={pageContainer}>
             <PageLoading label={copy("loading")} />
+          </div>
+        ) : loadFailed ? (
+          <div className={`${pageContainer} py-[clamp(3rem,7vw,6rem)] text-center`} role="alert">
+            <p className="font-display text-[1.75rem] leading-[1.1] font-medium">
+              {copy("productsLoadFailed")}
+            </p>
+            {onRetry ? (
+              <p className="mt-4">
+                <button type="button" className="underline underline-offset-2" onClick={onRetry}>
+                  {copy("tryAgain")}
+                </button>
+              </p>
+            ) : null}
           </div>
         ) : emptyCollection ? (
           <CatalogCollectionEmpty />

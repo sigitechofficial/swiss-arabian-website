@@ -39,6 +39,7 @@ export async function generateMetadata({
   const metadata = applySeoOverrides(
     await catalogMetadata({
       locale,
+      listing: true,
       path,
       title:
         page > 1 ? `${title} – ${shopCopy(locale, "page")} ${page}` : title,

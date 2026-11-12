@@ -98,7 +98,7 @@ export function TopbarMenu({
       <button
         className={topbarMenuTrigger}
         type="button"
-        aria-label={label}
+        aria-label={`${label}: ${selected.label}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}

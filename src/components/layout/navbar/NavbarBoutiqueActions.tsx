@@ -24,7 +24,7 @@ export function NavbarBoutiqueActions({ chrome }: { chrome: NavbarChrome }) {
       <button
         className={navTool}
         type="button"
-        aria-controls="cart-drawer"
+        aria-haspopup="dialog"
         aria-label={chrome.itemCount > 0 ? `Cart, ${chrome.itemCount} items` : "Cart"}
         onClick={() => chrome.setCartOpen(true)}
       >

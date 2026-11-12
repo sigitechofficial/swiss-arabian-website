@@ -1,6 +1,4 @@
 @import "tailwindcss";
-/* Country flag sprites (phone country picker) — real SVGs: Windows renders no flag emoji. */
-@import "flag-icons/css/flag-icons.min.css";
 
 /* Theme toggle uses html.dark — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));

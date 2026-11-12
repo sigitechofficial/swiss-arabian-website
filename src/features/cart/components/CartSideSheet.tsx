@@ -217,7 +217,8 @@ export function CartSideSheet() {
     onClear: () => setIsPanelFlash(false),
   });
 
-  const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer).slice(0, 6);
+  // The drawer is mounted on every page: fetch its rail only once it is opened.
+  const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer, [], { enabled: open }).slice(0, 6);
   const applicable = useApplicablePromotions().data;
   const promotionRecs = applicable?.recommendations?.products ?? [];
   const offers = applicable?.offers ?? [];

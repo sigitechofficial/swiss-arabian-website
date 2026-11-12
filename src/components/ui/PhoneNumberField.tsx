@@ -1,5 +1,9 @@
 "use client";
 
+// Country flag sprites (real SVGs: Windows renders no flag emoji). Imported here, not in
+// globals.css, so only pages with a phone field load the ~270-flag stylesheet.
+import "flag-icons/css/flag-icons.min.css";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AsYouType,

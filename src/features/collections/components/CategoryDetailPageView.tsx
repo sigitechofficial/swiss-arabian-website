@@ -22,7 +22,7 @@ export function CategoryDetailPageView({
   initialListing?: ProductListResult | null;
   initialZoneCode?: string | null;
 }) {
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     { kind: "category", slug },
     listingQuery,
     initialListing,
@@ -51,6 +51,8 @@ export function CategoryDetailPageView({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={fetchNextPage}
+      loadFailed={loadFailed}
+      onRetry={retry}
     />
   );
 }

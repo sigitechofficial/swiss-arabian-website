@@ -24,6 +24,8 @@ export function useFragranceNotes() {
     merchKeys.fragranceNotes(zoneCode, currencyCode, languageCode, salesChannelCode),
     fetchFragranceNotes,
     {
+      // The API answers 422 without a market: wait until it is known.
+      enabled: Boolean(zoneCode && salesChannelCode),
       staleTime: 45_000,
       gcTime: 60_000,
       retry: retryUnlessClientError,

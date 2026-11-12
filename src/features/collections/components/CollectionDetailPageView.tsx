@@ -27,7 +27,7 @@ export function CollectionDetailPageView({
 }) {
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
 
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage   } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     {
       kind: "collection",
       slug,
@@ -89,6 +89,8 @@ export function CollectionDetailPageView({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={fetchNextPage}
+      loadFailed={loadFailed}
+      onRetry={retry}
     />
   );
 }
