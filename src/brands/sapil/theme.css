@@ -1,0 +1,254 @@
+/*
+ * Sapil design system: tokens, breakpoints, keyframes and scoped base styles.
+ * Source of truth: the approved v9 design (assets/sapil-v9.css, :root block).
+ *
+ * SCOPING. This file is its own Tailwind entry, imported only by Sapil routes
+ * (never by src/app/globals.css). It does three things and nothing else:
+ *   1. Declares the raw design tokens as custom properties on [data-brand="sapil"],
+ *      so they exist only inside a Sapil subtree (Swiss Arabian's :root is untouched).
+ *   2. Maps them into Tailwind with `@theme inline`, every name prefixed `sapil-`
+ *      (bg-sapil-paper, font-sapil-serif, shadow-sapil-lg ...). `inline` makes each
+ *      utility reference the scoped var directly, so @theme emits nothing on :root.
+ *   3. Generates utilities only for files in this folder (`source(none)` + `@source`),
+ *      so it never re-emits Swiss Arabian's utilities, and the breakpoint variants
+ *      (max-1280: ... max-480:) and sapil-* keyframes exist only in this stylesheet.
+ * Preflight is NOT imported here: the host app's Tailwind (globals.css) provides it.
+ * A standalone Sapil app (monorepo package) should `@import "tailwindcss/preflight.css" layer(base)`.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./";
+
+/* Breakpoints: the design is desktop-down (max-width). Registered largest first so the
+   smaller query wins when both match, exactly like the source CSS cascade. */
+@custom-variant max-1280 (@media (max-width: 1280px));
+@custom-variant max-1100 (@media (max-width: 1100px));
+@custom-variant max-900 (@media (max-width: 900px));
+@custom-variant max-760 (@media (max-width: 760px));
+@custom-variant max-749 (@media (max-width: 749px));
+@custom-variant max-600 (@media (max-width: 600px));
+@custom-variant max-480 (@media (max-width: 480px));
+
+/* 1 · raw tokens, scoped */
+[data-brand="sapil"] {
+  /* neutrals */
+  --sapil-paper: #f7f3ee;
+  --sapil-sand: #efe8de;
+  --sapil-card: #fffdfa;
+  --sapil-ink: #1e1b18;
+  --sapil-ink-2: #4a443d;
+  --sapil-muted: #7a7166;
+  --sapil-line: #e4ddd2;
+  --sapil-line-2: #d6cdc0;
+  /* one accent: Sapil navy */
+  --sapil-accent: #16305c;
+  --sapil-accent-2: #22447d;
+  --sapil-accent-soft: #e7ebf3;
+  /* nine pastels */
+  --sapil-p-pink: #fbe5ee;
+  --sapil-p-peach: #fdebe1;
+  --sapil-p-butter: #fff3d4;
+  --sapil-p-mint: #dff3ea;
+  --sapil-p-sky: #e2edfb;
+  --sapil-p-lilac: #eee6fb;
+  --sapil-p-sand: #f4ece1;
+  --sapil-p-sage: #e9efe1;
+  --sapil-p-lime: #f0f7d4;
+  /* status and small accents */
+  --sapil-ok: #1f7a4d;
+  --sapil-ok-2: #2bb58a;
+  --sapil-ok-soft: #d9f2e6;
+  --sapil-star: #b8790f;
+  --sapil-rose: #a8476f;
+  --sapil-rose-2: #f2a7c4;
+  --sapil-sale: #9a3b2a;
+  --sapil-on-dark: #cfc8bd;
+  --sapil-white: #fff;
+  /* contextual tints (components override these per element) */
+  --sapil-tile: var(--sapil-p-peach);
+  --sapil-mood: var(--sapil-p-pink);
+  /* type: next/font sets --font-sapil-* on the same element (see fonts.ts) */
+  --sapil-serif: var(--font-sapil-fraunces, "Fraunces"), Georgia, serif;
+  --sapil-sans: var(--font-sapil-poppins, "Poppins"), system-ui, sans-serif;
+  --sapil-display: var(--font-sapil-gloock, "Gloock"), Georgia, serif;
+  /* shape, depth, motion, layout */
+  --sapil-r: 16px;
+  --sapil-r-sm: 10px;
+  --sapil-sh: 0 1px 2px rgba(60, 45, 30, 0.06), 0 14px 34px -18px rgba(60, 45, 30, 0.22);
+  --sapil-sh-lg: 0 2px 4px rgba(60, 45, 30, 0.06), 0 30px 60px -24px rgba(60, 45, 30, 0.3);
+  --sapil-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sapil-wrap: 1440px;
+  --sapil-gut: 24px;
+}
+@media (max-width: 900px) {
+  [data-brand="sapil"] {
+    --sapil-gut: 16px;
+  }
+}
+
+/* 2 · Tailwind theme (inline: utilities read the scoped vars) */
+@theme inline {
+  --spacing: 0.25rem;
+
+  --color-sapil-paper: var(--sapil-paper);
+  --color-sapil-sand: var(--sapil-sand);
+  --color-sapil-card: var(--sapil-card);
+  --color-sapil-ink: var(--sapil-ink);
+  --color-sapil-ink-2: var(--sapil-ink-2);
+  --color-sapil-muted: var(--sapil-muted);
+  --color-sapil-line: var(--sapil-line);
+  --color-sapil-line-2: var(--sapil-line-2);
+  --color-sapil-accent: var(--sapil-accent);
+  --color-sapil-accent-2: var(--sapil-accent-2);
+  --color-sapil-accent-soft: var(--sapil-accent-soft);
+  --color-sapil-p-pink: var(--sapil-p-pink);
+  --color-sapil-p-peach: var(--sapil-p-peach);
+  --color-sapil-p-butter: var(--sapil-p-butter);
+  --color-sapil-p-mint: var(--sapil-p-mint);
+  --color-sapil-p-sky: var(--sapil-p-sky);
+  --color-sapil-p-lilac: var(--sapil-p-lilac);
+  --color-sapil-p-sand: var(--sapil-p-sand);
+  --color-sapil-p-sage: var(--sapil-p-sage);
+  --color-sapil-p-lime: var(--sapil-p-lime);
+  --color-sapil-ok: var(--sapil-ok);
+  --color-sapil-ok-2: var(--sapil-ok-2);
+  --color-sapil-ok-soft: var(--sapil-ok-soft);
+  --color-sapil-star: var(--sapil-star);
+  --color-sapil-rose: var(--sapil-rose);
+  --color-sapil-rose-2: var(--sapil-rose-2);
+  --color-sapil-sale: var(--sapil-sale);
+  --color-sapil-on-dark: var(--sapil-on-dark);
+  --color-sapil-white: var(--sapil-white);
+  --color-sapil-tile: var(--sapil-tile);
+  --color-sapil-mood: var(--sapil-mood);
+
+  --font-sapil-serif: var(--sapil-serif);
+  --font-sapil-sans: var(--sapil-sans);
+  --font-sapil-display: var(--sapil-display);
+
+  --radius-sapil: var(--sapil-r);
+  --radius-sapil-sm: var(--sapil-r-sm);
+
+  --shadow-sapil: var(--sapil-sh);
+  --shadow-sapil-lg: var(--sapil-sh-lg);
+
+  --ease-sapil: var(--sapil-ease);
+
+  --container-sapil-wrap: var(--sapil-wrap);
+  --spacing-sapil-gut: var(--sapil-gut);
+
+  /* the eight keyframes, with the timing each one uses in the design */
+  --animate-sapil-bump: sapil-bump 0.4s var(--sapil-ease);
+  --animate-sapil-dprog: sapil-dprog 5.5s linear forwards;
+  --animate-sapil-rise: sapil-rise 0.8s var(--sapil-ease) both;
+  --animate-sapil-swing: sapil-swing 0.9s var(--sapil-ease);
+  --animate-sapil-tick: sapil-tick 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.6);
+  --animate-sapil-prog: sapil-prog linear forwards;
+  --animate-sapil-pop: sapil-pop 0.3s var(--sapil-ease);
+  --animate-sapil-ship-shine: sapil-ship-shine 1.6s var(--sapil-ease) 0.5s 2;
+
+  @keyframes sapil-bump {
+    40% {
+      transform: scale(1.35);
+    }
+  }
+  @keyframes sapil-dprog {
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes sapil-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+  @keyframes sapil-swing {
+    25% {
+      transform: rotate(4deg);
+    }
+    55% {
+      transform: rotate(-16deg);
+    }
+    80% {
+      transform: rotate(-6deg);
+    }
+  }
+  @keyframes sapil-tick {
+    30% {
+      transform: translateX(-50%) rotate(-16deg);
+    }
+    60% {
+      transform: translateX(-50%) rotate(7deg);
+    }
+  }
+  @keyframes sapil-prog {
+    to {
+      width: 100%;
+    }
+  }
+  @keyframes sapil-pop {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+  }
+  @keyframes sapil-ship-shine {
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* 3 · base, scoped to the Sapil subtree (layer base, so utilities always win) */
+@layer base {
+  html:has([data-brand="sapil"]) {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+  }
+  body:has([data-brand="sapil"]) {
+    background: var(--sapil-paper, #f7f3ee);
+    overflow-x: hidden;
+  }
+  [data-brand="sapil"] {
+    background: var(--sapil-paper);
+    color: var(--sapil-ink);
+    font: 400 16px/1.6 var(--sapil-sans);
+    letter-spacing: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+  [data-brand="sapil"] :is(h1, h2, h3) {
+    font-family: var(--sapil-serif);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+  [data-brand="sapil"] button {
+    cursor: pointer;
+  }
+  [data-brand="sapil"] :focus-visible {
+    outline: 2px solid var(--sapil-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  [data-brand="sapil"] [hidden] {
+    display: none !important;
+  }
+  /* <dialog> (Dialog component): the native backdrop cannot take a utility */
+  [data-brand="sapil"] dialog::backdrop {
+    background: rgba(30, 27, 24, 0.4);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html:has([data-brand="sapil"]) {
+      scroll-behavior: auto;
+    }
+    [data-brand="sapil"],
+    [data-brand="sapil"] *,
+    [data-brand="sapil"] *::before,
+    [data-brand="sapil"] *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
