@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
 import {
+  useCustomerAfterSalesOptions,
   useCustomerExchangesFeed,
   useCustomerReturnsFeed,
 } from "../hooks/useAfterSales";
 import type { AfterSalesOrderLine } from "../types/afterSales";
+import { resolveAfterSalesActions } from "../utils/afterSalesOptions";
 import { isOrderEligibleForAfterSales } from "../utils/eligibility";
 import {
   ExchangeRequestCard,
@@ -43,7 +45,10 @@ export function OrderAfterSalesSection({
     [exchanges.data],
   );
 
-  const canCreate = eligible && lines.length > 0;
+  const options = useCustomerAfterSalesOptions(orderId);
+  const actions = resolveAfterSalesActions(options.data, eligible);
+  const canReturn = actions.canReturn && lines.length > 0;
+  const canExchange = actions.canExchange && lines.length > 0;
 
   return (
     <section className="overflow-hidden border border-sa-border">
@@ -53,8 +58,8 @@ export function OrderAfterSalesSection({
         </h2>
       </div>
       <div className="flex flex-col gap-4 bg-page px-5 py-4">
-        {canCreate ? (
-          <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3">
+          {canReturn ? (
             <button
               type="button"
               className={accountBtnGhost}
@@ -62,6 +67,8 @@ export function OrderAfterSalesSection({
             >
               Request return
             </button>
+          ) : null}
+          {canExchange ? (
             <button
               type="button"
               className={accountBtnGhost}
@@ -69,23 +76,19 @@ export function OrderAfterSalesSection({
             >
               Request exchange
             </button>
-            <Link
-              href="/account/returns"
-              className="inline-flex h-11 items-center text-[13px] font-semibold text-terra hover:underline"
-            >
-              View all requests
-            </Link>
-          </div>
-        ) : (
-          <p className="text-[13px] leading-relaxed text-sa-muted">
-            Return and exchange requests are available after this order ships.
-            You can still view existing requests in{" "}
-            <Link href="/account/returns" className="font-semibold text-terra hover:underline">
-              Returns
-            </Link>
-            .
+          ) : null}
+          <Link
+            href="/account/returns"
+            className="inline-flex h-11 items-center text-[13px] font-semibold text-terra hover:underline"
+          >
+            View all requests
+          </Link>
+        </div>
+        {actions.notes.map((note) => (
+          <p key={note} className="text-[13px] leading-relaxed text-sa-muted">
+            {note}
           </p>
-        )}
+        ))}
 
         {form === "return" ? (
           <ReturnRequestForm

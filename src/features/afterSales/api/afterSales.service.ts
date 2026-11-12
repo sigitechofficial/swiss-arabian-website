@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import type {
+  AfterSalesOptions,
   CreateExchangeDto,
   CreateReturnDto,
   ExchangeDifferencePaymentResult,
@@ -80,6 +81,15 @@ export async function createCustomerExchange(
   );
 }
 
+/** Which of return / exchange the signed-in customer may request for this order. */
+export async function getCustomerAfterSalesOptions(
+  orderId: string,
+): Promise<AfterSalesOptions> {
+  return apiGet<AfterSalesOptions>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/after-sales-options`,
+  );
+}
+
 function guestQuery(orderAccessToken: string): string {
   return new URLSearchParams({ orderAccessToken }).toString();
 }
@@ -91,6 +101,19 @@ export async function listGuestReturns(
   return apiGet<StorefrontReturnListView>(
     `/storefront/returns/order/${encodeURIComponent(orderNumber)}?${guestQuery(orderAccessToken)}`,
     { skipAuth: true },
+  );
+}
+
+/**
+ * Same for the order-tracking page. Sent with the customer's session when there is one,
+ * so a signed-in owner counts as signed in (matters when a market allows signed-in only).
+ */
+export async function getGuestAfterSalesOptions(
+  orderNumber: string,
+  orderAccessToken: string,
+): Promise<AfterSalesOptions> {
+  return apiGet<AfterSalesOptions>(
+    `/storefront/returns/order/${encodeURIComponent(orderNumber)}/options?${guestQuery(orderAccessToken)}`,
   );
 }
 

@@ -20,4 +20,8 @@ export const afterSalesKeys = {
     [...afterSalesKeys.guest(orderNumber), "returns"] as const,
   guestExchanges: (orderNumber: string) =>
     [...afterSalesKeys.guest(orderNumber), "exchanges"] as const,
+  guestOptions: (orderNumber: string) =>
+    [...afterSalesKeys.guest(orderNumber), "options"] as const,
+  customerOptions: (orderId: string) =>
+    [...afterSalesKeys.all, "options", orderId] as const,
 };
