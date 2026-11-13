@@ -19,9 +19,8 @@ both storefronts renders in its **own** design system, and neither is missing pa
   viewport screenshot).
 - `src/brands/sapil/brandCoverage.test.ts` (unit): Sapil's `brand-ui.ts` re-exports no visible
   Swiss Arabian view except those of sections Sapil has switched off.
-- Signed-in account pages were not swept (no test customer was created); signed out they redirect to
-  the brand's sign-in page, which was checked. Sapil's signed-in account views are Sapil's own
-  (`brandCoverage.test.ts` + the earlier review).
+- Signed-in account pages were swept later with a test customer per brand (see "Signed-in account
+  pages" below); signed out they redirect to the brand's sign-in page.
 
 Screenshots of the new Sapil views: `docs/ui-check/brand-coverage/`.
 
@@ -133,25 +132,78 @@ whether the visible text is identical.
 | `/shop-unavailable` | ShopUnavailableView | ar ✅ 200<br>en ✅ 200 | ar 0/0% text =<br>en 0/0% text = | SapilShopUnavailableView | v9 system | ar ✅ 200<br>en ✅ 200 |
 | `/no-such-page-sweep` | NotFoundView (global-not-found) | ar ✅ 404<br>en ✅ 404 | ar 0/0% text =<br>en 0/0% text = | SapilNotFoundView | v9 system | ar ✅ 404<br>en ✅ 404 |
 
+## Signed-in account pages (branch `fix/remaining-gaps`, 2026-11-13)
+
+Test customers registered through each site (localhost, verification code from Mailpit), one per
+brand: Swiss Arabian `ui.account.test+66f65d1c@example.test`, Sapil
+`ui.account.test+e50b0bfa@example.test` (passwords not kept in the repo). Dev servers (`:3071`
+Swiss Arabian, `:3070` Sapil, local API `:3012`). Each route en + `/ar`, at 1280 and 390 px:
+status, final address, `lang`, horizontal scroll, console errors, and the brand checks above
+(Sapil: drawn inside the Sapil root, no Swiss Arabian text / asset / font / `sa-` or copper
+classes; Swiss Arabian: no Sapil markup, text or font). 128 page loads, all pass.
+
+| Route | Swiss Arabian (en / ar, 1280 + 390) | Sapil (en / ar, 1280 + 390) |
+|---|---|---|
+| `/account` | ✅ 200, AccountPageView ("Welcome back") | ✅ 200, SapilAccountPage (v9) |
+| `/account/addresses` | ✅ 200 | ✅ 200 |
+| `/account/orders` | ✅ 200 ("Purchase History") | ✅ 200 ("Your orders", v9) |
+| `/account/orders/<unknown id>` | ✅ back to `/account/orders` | ✅ back to `/account/orders` |
+| `/account/payments` | ✅ 200 | ✅ 200 |
+| `/account/profile` | ✅ 200 | ✅ 200 |
+| `/account/returns` | ✅ 200 | ✅ 200 |
+| `/account/reviews` | ✅ 200 | ✅ 200 |
+| `/account/saved` | ✅ 200 | ✅ 200 (wishlist view) |
+| `/account/security` | ✅ 200 | ✅ 200 |
+| `/account/wishlist` | ✅ 200 | ✅ 200 |
+| `/account/rewards` | ✅ 200 | ✅ 404 (loyalty off), Sapil 404 view |
+| `/account/membership` | ✅ 200 | ✅ 404 (loyalty off) |
+| `/account/subscription` | ✅ 200 | ✅ 404 (subscriptions off) |
+| `/account/subscription/x` | ✅ 200 (API 400 for the unknown plan; empty heading) | ✅ 404 (subscriptions off) |
+| `/account/employee-benefits` | ✅ 200 | ✅ 404 (employeeBenefits off) |
+
+Found while sweeping and fixed: every Swiss Arabian `/ar` page logged "two children with the same
+key" — the mega-menu ids were ASCII-only, so every Arabic menu was `""` (and hovering one opened
+them all); ids now keep Arabic letters. Swiss Arabian account pages on `/ar` still show English
+headings (as on `5a55282`; not changed).
+
+## Closed by `fix/remaining-gaps`
+
+- **Swiss Arabian product "Details" panel:** no regression. Production builds of `5a55282` and this
+  branch compared: identical rows (family, perfumer, format, collection, origin) on 24 products
+  (server HTML) and on 3 products after hydration (en / ar, 1280 / 390, tab and phone
+  accordion). The earlier text difference came from the auto-rotating composition tabs captured at
+  different moments. `PdpComposition.test.tsx` pins the rows. Sapil's product page reads the same
+  metafields (fragrance family, size) and collection.
+- **Swiss Arabian `/ar/cart` sideways scroll at 390 px:** the empty-bag rails used a physical
+  `-ml-[22px]`; now `-ms-[22px]` (English unchanged). `/cart` and `/ar/cart` checked for both
+  brands at 390 and 768 (also after a resize from 1280, as the sweep does): no horizontal scroll.
+- **React "Encountered a script tag" warning** (any in-page `notFound()`, e.g. unknown product /
+  blog post / order): the root layout's inline scripts (theme init, Insider queue boot) were created
+  again by React when Next 16 re-renders the `[locale]` root layout in the browser. They now render
+  through `ServerInlineScript` (server HTML only). `next/script` `beforeInteractive` was tried and
+  still renders a `<script>`. JSON-LD (`type="application/ld+json"`) never warned.
+- **Sapil checkout inline forms:** `SapilInlinePayment` (Stripe card + Pay button, Apple / Google
+  Pay, Paymob card), `SapilTabbyCard` (Tabby's snippet, Tabby's wording as fallback),
+  `SapilThreeDsModal` + Sapil 3-D Secure error sentences; copy in `checkout.json` (en + ar). Shared
+  hooks: `useInlinePaymobCard`, `useStripeWalletPayment`, `useTabbyCheckoutCard`,
+  `usePaymobThreeDsModal(orderId, { Modal })` with error codes. Swiss Arabian unchanged.
+- **Sapil loading labels:** routes pass `labelKey` with their English `label`; Sapil shows its own
+  line in the page's language ("Loading your order…", "Checking you’re signed in…").
+
 ## Still open (not fixed here, with the reason)
 
 - **Sapil announcement links to `/shop?maxPrice=99`** (CMS data from the Sapil demo seed): there
   is no `/shop` route, so every Sapil page prefetches two 404s and the link 404s. Fix the
   announcement in the admin (→ `/products?under=99`); not changed here because it is content.
-- **Swiss Arabian product page "Details" panel** (family, perfumer, format, collection, origin) shows
-  no rows in this build where `5a55282` showed them. This branch does not touch the product page;
-  it comes from earlier program work or the data. Needs a look by whoever owns the PDP.
-- **Swiss Arabian `/ar/cart` scrolls sideways at 390 px** — the same on `5a55282` (pre-existing).
-- **Signed-in account pages** were not swept (no test customer created); Sapil's account views are
-  its own (unit-checked), and the switched-off ones 404 before sign-in.
+- **Inline card forms not seen with a live provider session locally:** the local API answers
+  `inline-form` with `ready: false`, so both brands show "Loading secure card form…" for Stripe /
+  Paymob in the payment step and (Stripe) the page's own Pay button is hidden. Sapil's forms are
+  covered by unit tests; seeing them live needs a backend that prepares the inline session.
 - **No Sapil data** for blog posts, CMS pages, offers, a filled Draft preview or a review token: those
   Sapil views are covered by unit tests (`SapilReviewOfferPages.test.tsx`,
   `SapilCmsPreviewHome.test.tsx`, `sitePageRouteBase.test.tsx`) but were not seen with real data.
   The offer and review pages have no v9 design: design review needed.
-- **Still Swiss Arabian inside Sapil checkout** (known, unchanged): the inline card / wallet forms
-  (`InlineMethodPayment`), `TabbyCheckoutCard` and the Paymob 3-D Secure overlay sentence.
-- **`PageLoading` labels:** routes pass English labels ("Loading wishlist…"); Sapil shows the
-  generic "Loading…" in the page's language instead. Swiss Arabian still shows the English label
-  on `/ar` (unchanged).
+- **Swiss Arabian loading labels** stay English on `/ar` (unchanged on purpose; Sapil's are
+  translated).
 - **Arabic web font for Sapil** (decision 7) is still open: Arabic glyphs use the system font.
 
