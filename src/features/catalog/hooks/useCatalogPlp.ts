@@ -83,7 +83,10 @@ export function useCatalogPlp(
     return toCatalogProducts(merged, { guessFacets: !serverFiltered });
   }, [query.data?.pages, query.isError, serverFiltered]);
 
-  const { fetchNextPage: fetchNextQueryPage } = query;
+  const { fetchNextPage: fetchNextQueryPage, refetch } = query;
+  const retry = useCallback(() => {
+    void refetch();
+  }, [refetch]);
   const fetchNextPage = useCallback(() => {
     void fetchNextQueryPage();
   }, [fetchNextQueryPage]);
@@ -97,6 +100,10 @@ export function useCatalogPlp(
     // browser), so the HTML search engines read has the product grid.
     loading: !query.data && (!market || (query.isPending && !query.isError)),
     isFetching: query.isFetching,
+    // The store couldn't be reached (e.g. the API is restarting) and there is
+    // nothing to show: an error with a retry, never "this collection is empty".
+    loadFailed: query.isError && !query.data,
+    retry,
     hasNextPage: Boolean(query.hasNextPage),
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage,

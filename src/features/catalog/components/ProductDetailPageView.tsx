@@ -176,16 +176,8 @@ export function ProductDetailPageView({
 
   const moreFromHeading = moreFromCollection?.name.replace(/\.$/, "") ?? "";
 
-  useEffect(() => {
-    [...youMayAlsoLike, ...related].forEach((item) => {
-      const hoverImg = item.imageUrls?.[1];
-      if (hoverImg && hoverImg !== item.imageUrl) {
-        const img = new Image();
-        img.src = hoverImg;
-        img.decode?.().catch(() => {});
-      }
-    });
-  }, [youMayAlsoLike, related]);
+  // Related cards preload their own hover art (card-sized, when idle, and
+  // only on hover-capable screens) via `useLoadedImages`.
 
   const clientStillLoading =
     !serverDetail && !clientProduct.isFetched && !clientProduct.isError;

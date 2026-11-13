@@ -16,7 +16,7 @@ export function CatalogPageView({
   initialListing?: ProductListResult | null;
   initialZoneCode?: string | null;
 }) {
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     { kind: "products" },
     listingQuery,
     initialListing,
@@ -34,6 +34,8 @@ export function CatalogPageView({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={fetchNextPage}
+      loadFailed={loadFailed}
+      onRetry={retry}
     />
   );
 }

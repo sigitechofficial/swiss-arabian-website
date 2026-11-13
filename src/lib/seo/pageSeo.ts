@@ -67,6 +67,8 @@ export async function pageMetadata(input: {
   titleAr?: string;
   description?: string;
   descriptionAr?: string;
+  /** A product listing: gets a default description when none is set (see `catalogMetadata`). */
+  listing?: boolean;
 }): Promise<Metadata> {
   const { locale, seo } = await loadPublishedPageSeo(input.path);
   const fallbackTitle =
@@ -81,6 +83,7 @@ export async function pageMetadata(input: {
     title: seo?.title || fallbackTitle,
     description: seo?.description || fallbackDescription,
     image: seo?.ogImage || null,
+    listing: input.listing,
   });
   return applySeoOverrides(base, seo);
 }

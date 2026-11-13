@@ -9,6 +9,8 @@ import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts
 import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
+import { MediaImage } from "@/components/ui/MediaImage";
+import { hoverImageUrl, STRIP_IMAGE_SIZES } from "../../utils/stripImages";
 import {
   cardAddSlot,
   cardBottle,
@@ -69,14 +71,11 @@ export function LandingProductsBand({
       </>
     );
 
-  // Preload AND fully decode every ingredients hover image up front (so the
-  // first fade-in doesn't blink), and only swap to the ones that actually
-  // loaded — a broken hover URL would fade the bottle out onto a blank card.
-  const loadedHovers = useLoadedImages(
-    products.map((product) =>
-      product.imageUrls?.[1] !== product.imageUrl ? product.imageUrls?.[1] : null,
-    ),
-  );
+  // Preload AND fully decode every ingredients hover image once the page is
+  // idle (so the first fade-in doesn't blink), card-sized and only on
+  // hover-capable screens, and only swap to the ones that actually loaded —
+  // a broken hover URL would fade the bottle out onto a blank card.
+  const loadedHovers = useLoadedImages(products.map(hoverImageUrl), { hoverOnly: true });
 
   // Nothing real to show (empty collection or the request failed): no strip.
   if (!pending && products.length === 0) return null;
@@ -114,9 +113,7 @@ export function LandingProductsBand({
         >
           {pending ? <HomeStripSkeleton /> : null}
           {products.map((product) => {
-            const hoverCandidate = product.imageUrls?.[1];
-            const hover =
-              hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
+            const hover = hoverImageUrl(product);
             const hasIngredientsHover = Boolean(hover && loadedHovers.has(hover));
             return (
               <li
@@ -167,12 +164,13 @@ export function LandingProductsBand({
                     aria-hidden="true"
                   >
                     {product.imageUrl ? (
-                      <img
+                      <MediaImage
                         className={hasIngredientsHover ? cardImgSwap : cardImg}
                         src={product.imageUrl}
                         alt={product.title}
                         width={600}
                         height={600}
+                        sizes={STRIP_IMAGE_SIZES}
                         loading="lazy"
                       />
                     ) : (

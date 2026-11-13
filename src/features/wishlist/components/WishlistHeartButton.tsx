@@ -25,11 +25,16 @@ export function WishlistHeartButton({
   const fallback = useWishlistStatusMap(scope ? [] : [productId]);
   const { toggle, add, remove } = useWishlistMutations();
 
+  // Depend on the (stable) register/unregister functions, not the whole scope
+  // value: that changes whenever wishlist statuses load, and re-registering on
+  // each change fed a render loop.
+  const register = scope?.register;
+  const unregister = scope?.unregister;
   useEffect(() => {
-    if (!isProductUuid(productId)) return;
-    scope?.register(productId);
-    return () => scope?.unregister(productId);
-  }, [productId, scope]);
+    if (!isProductUuid(productId) || !register || !unregister) return;
+    register(productId);
+    return () => unregister(productId);
+  }, [productId, register, unregister]);
 
   if (!isProductUuid(productId)) return null;
 

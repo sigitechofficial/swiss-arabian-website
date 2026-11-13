@@ -32,7 +32,13 @@ export function WishlistStatusScope({ children }: { children: ReactNode }) {
     if (flushTimer.current != null) return;
     flushTimer.current = setTimeout(() => {
       flushTimer.current = null;
-      setIds([...idsRef.current]);
+      const next = [...idsRef.current];
+      // Same ids (e.g. a card re-registered itself): keep the state as is.
+      setIds((current) =>
+        current.length === next.length && current.every((id, i) => id === next[i])
+          ? current
+          : next,
+      );
     }, 0);
   }, []);
 

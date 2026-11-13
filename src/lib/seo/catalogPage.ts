@@ -257,7 +257,37 @@ export type CatalogMetadataInput = {
    * (Next has no product type). Every other page is og:type=website (as Shopify).
    */
   ogType?: "website" | "product";
+  /**
+   * A product listing (all products, a collection, a category). Without its
+   * own description it gets a short one naming the listing and the brand, so
+   * search results never show a blank or random snippet.
+   */
+  listing?: boolean;
 };
+
+const META_DESCRIPTION_MAX = 160;
+
+/** Plain text for a meta description: HTML tags removed, spaces collapsed, cut at a word near 160 characters. */
+export function metaDescriptionText(raw: string | null | undefined): string | undefined {
+  const text = (raw ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  if (text.length <= META_DESCRIPTION_MAX) return text;
+  const cut = text.slice(0, META_DESCRIPTION_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 100 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
+}
+
+/** Default description for a listing page, in the page's language. */
+export function listingMetaDescription(locale: ShopLocale, title: string, brandName: string): string {
+  return locale === "ar"
+    ? `تسوّق ${title} من ${brandName}: تصفّح التشكيلة الكاملة من العطور عبر الإنترنت.`
+    : `Shop ${title} at ${brandName}: browse the full range of fragrances online.`;
+}
 
 /** Page metadata for the request's market, named after its brand identity. */
 export async function catalogMetadata(
@@ -303,18 +333,21 @@ export function buildCatalogMetadata(
       ]
     : undefined;
   const otherLocale = input.locale === "ar" ? "en" : "ar";
+  const description =
+    metaDescriptionText(input.description) ??
+    (input.listing ? listingMetaDescription(input.locale, input.title, context.brand.name) : undefined);
   return {
     // Imported SEO titles often name the brand already ("… | Swiss Arabian UAE"):
     // the site suffix is not added a second time (any language of the name).
     title: namesBrand(input.title, context.brand.names)
       ? { absolute: input.title }
       : input.title,
-    description: input.description,
+    description,
     alternates,
     openGraph: {
       ...(input.ogType === "product" ? {} : { type: "website" as const }),
       title: input.title,
-      description: input.description,
+      description,
       url: alternates.canonical,
       siteName: context.brand.name,
       locale: openGraphLocale(input.locale, context.countryCode),
@@ -325,7 +358,7 @@ export function buildCatalogMetadata(
     twitter: {
       card: images ? "summary_large_image" : "summary",
       title: input.title,
-      description: input.description,
+      description,
       ...(images ? { images: images.map((i) => i.url) } : {}),
     },
   };

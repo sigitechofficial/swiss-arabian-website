@@ -22,7 +22,7 @@ export function AddToBagButton({
       className={cardAddButton}
       type="button"
       aria-pressed={pressed}
-      aria-label={`Add ${product.title} to bag`}
+      aria-label={`${copy("addToBag")}: ${product.title}`}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();

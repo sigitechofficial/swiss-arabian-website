@@ -22,6 +22,7 @@ export async function generateMetadata({
     path: "/products",
     title: `${shopCopy("en", "allProducts")}${suffix("en")}`,
     titleAr: `${shopCopy("ar", "allProducts")}${suffix("ar")}`,
+    listing: true,
   });
   if (page > 1) {
     const canonical = metadata.alternates?.canonical;

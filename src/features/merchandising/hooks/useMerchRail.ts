@@ -21,6 +21,8 @@ function retryUnless404(failureCount: number, error: unknown): boolean {
 export function useMerchRail(
   slug: string,
   excludeProductIds: string[] = [],
+  /** `enabled: false` holds the request (e.g. a rail inside a closed drawer). */
+  { enabled = true }: { enabled?: boolean } = {},
 ): CatalogProduct[] {
   const zoneCode = useUiStore((s) => s.catalogContext?.zoneCode);
   const currencyCode = useUiStore((s) => s.catalogContext?.currencyCode);
@@ -30,7 +32,7 @@ export function useMerchRail(
     merchKeys.collection(slug, zoneCode, currencyCode),
     () => fetchMerchCollectionRail(slug),
     {
-      enabled: Boolean(slug && zoneCode),
+      enabled: enabled && Boolean(slug && zoneCode),
       staleTime: 60_000,
       placeholderData: keepPreviousData,
       retry: retryUnless404,
