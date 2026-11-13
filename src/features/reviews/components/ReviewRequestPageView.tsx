@@ -2,19 +2,11 @@
 
 import { intlLocale } from "@/lib/i18n/locales";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
-import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/components/ui/Toaster";
-import { ApiClientError } from "@/lib/api/apiError";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
-import {
-  fetchReviewRequest,
-  type ReviewRequestProduct,
-  submitReviewRequestReview,
-  unsubscribeReviewEmails,
-} from "../api/reviewRequests.service";
+import type { ReviewRequestProduct } from "../api/reviewRequests.service";
+import { useReviewRequest, useReviewRequestCard } from "../hooks/useReviewRequest";
 import { compositionEyebrow } from "@/styles/pdpChrome";
 import * as c from "@/styles/pdpReviewsChrome";
 import { pageContainer } from "@/styles/siteChrome";
@@ -25,39 +17,15 @@ import { useReviewsCopy } from "@/features/catalog/i18n/reviewsCopy";
  * From the review request email: every product of the order on one page.
  * A star tapped in the email arrives pre-selected (?p=productId&r=5).
  * No sign-in — the link is the proof of purchase. ?unsubscribe=1 stops the emails.
+ * Logic: `useReviewRequest` / `useReviewRequestCard` (shared with other brands).
  */
 export function ReviewRequestPageView({ token }: { token: string }) {
-  const params = useSearchParams();
   const t = useReviewsCopy();
   const dateLocale = intlLocale(t.locale);
-  const preProduct = params.get("p");
-  const preRating = Number(params.get("r")) || 0;
-  const wantsUnsubscribe = params.get("unsubscribe") === "1";
-  const query = useQuery({
-    queryKey: ["review-request", token],
-    queryFn: () => fetchReviewRequest(token),
-    retry: false,
+  const request = useReviewRequest(token, {
+    onUnsubscribeFailed: () => toast(t.unsubscribeFailed, "error"),
   });
-  const [unsubscribed, setUnsubscribed] = useState(false);
-
-  // Once per page load — React dev mode runs effects twice.
-  const unsubscribeSent = useRef(false);
-  useEffect(() => {
-    if (!wantsUnsubscribe || unsubscribeSent.current) return;
-    unsubscribeSent.current = true;
-    unsubscribeReviewEmails(token).then(
-      () => setUnsubscribed(true),
-      () => toast(t.unsubscribeFailed, "error"),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per page load
-  }, [token, wantsUnsubscribe]);
-
-  const data = query.data;
-  const products = useMemo(() => {
-    const list = data?.products ?? [];
-    // The product tapped in the email first.
-    return [...list].sort((a, b) => (a.productId === preProduct ? -1 : b.productId === preProduct ? 1 : 0));
-  }, [data, preProduct]);
+  const { data, products, wantsUnsubscribe, unsubscribed } = request;
 
   return (
     <main className="bg-[var(--cream,#faf6ee)] py-14">
@@ -67,10 +35,10 @@ export function ReviewRequestPageView({ token }: { token: string }) {
             {unsubscribed ? t.unsubscribed : t.unsubscribing}
           </div>
         ) : null}
-        {query.isLoading ? <p className="text-[0.9rem]">{t.loading}</p> : null}
-        {query.isError ? (
+        {request.isLoading ? <p className="text-[0.9rem]">{t.loading}</p> : null}
+        {request.errorKind ? (
           <div className={c.rvEmpty}>
-            {query.error instanceof ApiClientError && query.error.status === 404
+            {request.errorKind === "notFound"
               ? t.notFound
               : t.failed}
           </div>
@@ -94,8 +62,8 @@ export function ReviewRequestPageView({ token }: { token: string }) {
                   product={p}
                   displayName={data.displayName}
                   disabled={data.expired}
-                  initialRating={p.productId === preProduct ? preRating : 0}
-                  onDone={() => void query.refetch()}
+                  initialRating={request.initialRatingFor(p.productId)}
+                  onDone={request.refetch}
                 />
               ))}
             </div>
@@ -105,7 +73,7 @@ export function ReviewRequestPageView({ token }: { token: string }) {
                 <button
                   type="button"
                   className="cursor-pointer border-0 bg-transparent p-0 text-[0.72rem] underline underline-offset-2"
-                  onClick={() => unsubscribeReviewEmails(token).then(() => setUnsubscribed(true))}
+                  onClick={() => void request.unsubscribe()}
                 >
                   {t.stopEmails}
                 </button>
@@ -136,43 +104,19 @@ function ProductReviewCard({
   onDone: () => void;
 }) {
   const t = useReviewsCopy();
-  const [rating, setRating] = useState(initialRating);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [name, setName] = useState(displayName);
-  const [saving, setSaving] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const form = useReviewRequestCard({ token, product, displayName, initialRating, onDone });
+  const { rating, setRating, title, setTitle, body, setBody, name, setName, saving } = form;
   const image = resolveCatalogImageUrl(product.image ?? undefined);
 
   async function post() {
-    if (rating < 1) {
-      toast(t.chooseRating, "info");
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await submitReviewRequestReview(token, {
-        productId: product.productId,
-        rating,
-        title: title.trim() || undefined,
-        body: body.trim() || undefined,
-        displayName: name.trim() || undefined,
-      });
-      setResult(res.status === "APPROVED" ? t.thanksLive : t.thanksPending);
-      onDone();
-    } catch (error) {
-      toast(
-        error instanceof ApiClientError && error.status === 409
-          ? t.alreadyShort
-          : t.postFailed,
-        "error",
-      );
-    } finally {
-      setSaving(false);
-    }
+    const outcome = await form.submit();
+    if (outcome === "needsRating") toast(t.chooseRating, "info");
+    else if (outcome === "already") toast(t.alreadyShort, "error");
+    else if (outcome === "failed") toast(t.postFailed, "error");
   }
 
-  const done = product.review || result;
+  const result = form.posted ? (form.posted === "live" ? t.thanksLive : t.thanksPending) : null;
+  const done = form.done;
   return (
     <article className="rounded-lg border border-[#e6dccb] bg-[#fffdf8] p-5">
       <div className="flex items-center gap-4">

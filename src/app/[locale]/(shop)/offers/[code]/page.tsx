@@ -3,8 +3,7 @@ import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { storefrontContextQuery } from "@/lib/storefront/context";
-import { pageContainer } from "@/styles/siteChrome";
-import { OfferShop } from "@brand-ui";
+import { OfferPageView } from "@brand-ui";
 
 /**
  * True when the offer exists and runs in the request's market; false when it
@@ -39,9 +38,5 @@ export default async function OfferPage({
   const { code } = await params;
   const decoded = decodeURIComponent(code);
   if ((await offerAvailable(decoded)) === false) notFound();
-  return (
-    <main className={`${pageContainer} pt-8 pb-16`}>
-      <OfferShop code={decoded} />
-    </main>
-  );
+  return <OfferPageView code={decoded} />;
 }

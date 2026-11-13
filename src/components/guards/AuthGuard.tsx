@@ -9,9 +9,15 @@ import { useAuthStore } from "@/stores/useAuthStore";
 export function AuthGuard({
   children,
   requireAuth = false,
+  checking,
+  redirecting,
 }: {
   children: ReactNode;
   requireAuth?: boolean;
+  /** Shown while the session is checked: pass the brand's `PageLoading` (from `@brand-ui`). */
+  checking?: ReactNode;
+  /** Shown while a signed-out shopper is sent to sign in. */
+  redirecting?: ReactNode;
 }) {
   const router = useLocaleRouter();
   const pathname = usePathname();
@@ -27,11 +33,11 @@ export function AuthGuard({
   }, [bootstrapped, isAuthenticated, requireAuth, router, pathname]);
 
   if (!bootstrapped) {
-    return <PageLoading label="Checking session…" fill />;
+    return checking ?? <PageLoading label="Checking session…" fill />;
   }
 
   if (requireAuth && !isAuthenticated) {
-    return <PageLoading label="Redirecting…" fill />;
+    return redirecting ?? <PageLoading label="Redirecting…" fill />;
   }
 
   return children;

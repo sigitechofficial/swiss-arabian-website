@@ -43,5 +43,10 @@
   "previewScheduled": "مجدول في {date}",
   "previewLive": "منشور الآن",
   "previewNotLive": "غير منشور",
-  "previewHidden": "لا يرى المتسوقون هذا الرابط."
+  "previewHidden": "لا يرى المتسوقون هذا الرابط.",
+  "storyEyebrow": "عن سابيل",
+  "storyTitle": "قصتنا",
+  "storyAccent": "في الطريق.",
+  "storyLead": "نكتبها الآن. وحتى ذلك الحين، جميع العطور بانتظارك في المتجر.",
+  "storyCta": "تسوّق جميع العطور"
 }

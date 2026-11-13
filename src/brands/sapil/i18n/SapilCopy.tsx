@@ -20,7 +20,12 @@ export const englishFallback: SapilDictionary = Object.fromEntries(
   ),
 ) as SapilDictionary;
 
-export type SapilTranslator = (key: SapilCopyKey, values?: MessageValues) => string;
+/** True inside a `SapilCopyProvider` (the Sapil shell / auth frame loaded the page's wording). */
+export function useHasSapilCopy(): boolean {
+  return useContext(SapilCopyContext) !== null;
+}
+
+export type SapilTranslator =(key: SapilCopyKey, values?: MessageValues) => string;
 
 /** `t("area.key", values?)` for Sapil components (client). Shared wording stays on `useShopCopy()`. */
 export function useSapilCopy(): SapilTranslator {
