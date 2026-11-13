@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   accountBtnGhost,
   accountBtnPrimary,
@@ -18,14 +19,8 @@ import type {
   AfterSalesOrderLine,
   CreateExchangeDto,
 } from "../types/afterSales";
-import {
-  afterSalesErrorMessage,
-  EXCHANGE_SUBMITTED_TOAST,
-} from "../utils/afterSalesErrors";
-import {
-  EXCHANGE_REASON_LABELS,
-  EXCHANGE_TYPE_LABELS,
-} from "../utils/eligibility";
+import { afterSalesErrorMessage } from "../utils/afterSalesErrors";
+import { afterSalesOptionCodes, afterSalesOptionLabel } from "../utils/eligibility";
 import { AfterSalesLinePicker } from "./AfterSalesLinePicker";
 
 type ExchangeRequestFormProps = {
@@ -63,6 +58,7 @@ function toExchangeDto(values: ExchangeRequestFormValues): CreateExchangeDto {
 
 export function ExchangeRequestForm(props: ExchangeRequestFormProps) {
   const { lines, onCancel, onSubmitted } = props;
+  const t = useShopCopy();
   const { createExchange, createGuestExchange } = useAfterSalesMutations();
   const {
     register,
@@ -104,19 +100,18 @@ export function ExchangeRequestForm(props: ExchangeRequestFormProps) {
               dto,
             });
           }
-          toast(EXCHANGE_SUBMITTED_TOAST, "success");
+          toast(t("afterSales.exchangeSubmitted"), "success");
           onSubmitted?.();
         } catch (error) {
-          toast(afterSalesErrorMessage(error), "error");
+          toast(afterSalesErrorMessage(error, t), "error");
         }
       })}
     >
       <p className="text-[14px] font-semibold text-sa-primary">
-        Request an exchange
+        {t("afterSales.requestAnExchange")}
       </p>
       <p className="text-[13px] leading-relaxed text-sa-muted">
-        This records what you would like instead. It does not place a new order
-        or ship a replacement.
+        {t("afterSales.exchangeNote")}
       </p>
 
       <AfterSalesLinePicker
@@ -130,24 +125,24 @@ export function ExchangeRequestForm(props: ExchangeRequestFormProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-            Reason
+            {t("afterSales.reason")}
           </span>
           <select className={accountSelectClass} {...register("reasonCode")}>
-            {Object.entries(EXCHANGE_REASON_LABELS).map(([value, label]) => (
+            {afterSalesOptionCodes("exchangeReason").map((value) => (
               <option key={value} value={value}>
-                {label}
+                {afterSalesOptionLabel("exchangeReason", value, t)}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-            Exchange type
+            {t("afterSales.exchangeType")}
           </span>
           <select className={accountSelectClass} {...register("exchangeType")}>
-            {Object.entries(EXCHANGE_TYPE_LABELS).map(([value, label]) => (
+            {afterSalesOptionCodes("exchangeType").map((value) => (
               <option key={value} value={value}>
-                {label}
+                {afterSalesOptionLabel("exchangeType", value, t)}
               </option>
             ))}
           </select>
@@ -156,7 +151,7 @@ export function ExchangeRequestForm(props: ExchangeRequestFormProps) {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-          Note for our team (optional)
+          {t("afterSales.teamNote")}
         </span>
         <textarea
           rows={2}
@@ -167,11 +162,11 @@ export function ExchangeRequestForm(props: ExchangeRequestFormProps) {
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={pending} className={accountBtnPrimary}>
-          {pending ? "Submitting…" : "Submit exchange request"}
+          {pending ? t("reviewForm.submitting") : t("afterSales.submitExchange")}
         </button>
         {onCancel ? (
           <button type="button" className={accountBtnGhost} onClick={onCancel}>
-            Cancel
+            {t("account.cancel")}
           </button>
         ) : null}
       </div>
