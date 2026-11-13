@@ -7,6 +7,8 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import {
   accountBtnGhost,
@@ -19,6 +21,7 @@ import {
 } from "../schemas/phoneBook.schema";
 
 export function AccountPhonesSection() {
+  const t = useShopCopy();
   const user = useCurrentUser();
   const { list, create, remove, setPrimary } = useCustomerPhones();
   const [adding, setAdding] = useState(false);
@@ -39,20 +42,19 @@ export function AccountPhonesSection() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-[15px] font-semibold text-sa-primary">Phones</h2>
+      <h2 className="text-[15px] font-semibold text-sa-primary">{t("account.phones")}</h2>
       <p className="mt-1 text-[12px] text-sa-secondary">
-        Primary phone is used on your profile
-        {user?.phoneE164 ? ` (${user.phoneE164})` : ""}.
+        {user?.phoneE164 ? t("account.phonesNoteNumber", { phone: user.phoneE164 }) : t("account.phonesNote")}
       </p>
 
       {list.isPending ? (
-        <p className="mt-3 text-[12px] text-sa-secondary">Loading phones…</p>
+        <p className="mt-3 text-[12px] text-sa-secondary">{t("account.phonesLoading")}</p>
       ) : list.isError ? (
         <p className="mt-3 text-[12px] text-red-600">
           {getUserFacingErrorMessage(list.error)}
         </p>
       ) : phones.length === 0 && !adding ? (
-        <p className="mt-3 text-[13px] text-sa-secondary">No phones saved yet.</p>
+        <p className="mt-3 text-[13px] text-sa-secondary">{t("account.phonesEmpty")}</p>
       ) : (
         <ul className="mt-3 divide-y divide-sa-border border-y border-sa-border">
           {phones.map((phone) => (
@@ -63,7 +65,7 @@ export function AccountPhonesSection() {
               <div>
                 <p className="text-[13.5px] text-sa-primary">{phone.phoneE164}</p>
                 {phone.isPrimary ? (
-                  <p className="text-[12px] font-semibold text-terra">Primary</p>
+                  <p className="text-[12px] font-semibold text-terra">{t("account.primary")}</p>
                 ) : null}
               </div>
               <div className="flex gap-3 text-[12px] font-semibold">
@@ -74,7 +76,7 @@ export function AccountPhonesSection() {
                     disabled={busy}
                     onClick={() => void setPrimary.unwrap(phone.id)}
                   >
-                    Set primary
+                    {t("account.setPrimary")}
                   </button>
                 ) : null}
                 <button
@@ -82,12 +84,12 @@ export function AccountPhonesSection() {
                   className="text-sa-secondary hover:text-terra hover:underline disabled:opacity-50"
                   disabled={busy}
                   onClick={() => {
-                    if (window.confirm("Remove this phone?")) {
+                    if (window.confirm(t("account.removePhoneConfirm"))) {
                       void remove.unwrap(phone.id);
                     }
                   }}
                 >
-                  Remove
+                  {t("account.remove")}
                 </button>
               </div>
             </li>
@@ -115,17 +117,17 @@ export function AccountPhonesSection() {
               <PhoneNumberField
                 variant="account"
                 id="new-phone"
-                label="Phone number"
+                label={t("account.phoneNumber")}
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                error={errors.phone?.message}
+                error={formErrorText(t, errors.phone?.message)}
               />
             )}
           />
           <label className="mt-3 flex items-center gap-2 text-[12px] text-sa-primary">
             <input type="checkbox" {...register("isPrimary")} />
-            Set as primary
+            {t("account.setAsPrimary")}
           </label>
           <div className="mt-4 flex gap-3">
             <button
@@ -133,7 +135,7 @@ export function AccountPhonesSection() {
               className={accountBtnPrimary}
               disabled={create.isPending}
             >
-              {create.isPending ? "Saving…" : "Save phone"}
+              {create.isPending ? t("account.saving") : t("account.savePhone")}
             </button>
             <button
               type="button"
@@ -143,7 +145,7 @@ export function AccountPhonesSection() {
                 setAdding(false);
               }}
             >
-              Cancel
+              {t("account.cancel")}
             </button>
           </div>
         </form>
@@ -153,7 +155,7 @@ export function AccountPhonesSection() {
           className="mt-4 text-[13px] font-semibold text-terra hover:underline"
           onClick={() => setAdding(true)}
         >
-          + Add a phone
+          {t("account.addPhone")}
         </button>
       )}
     </div>

@@ -3,7 +3,7 @@ import { LoginPageView, PageLoading } from "@brand-ui";
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading…" />}>
+    <Suspense fallback={<PageLoading label="Loading…" labelKey="page" />}>
       <LoginPageView />
     </Suspense>
   );

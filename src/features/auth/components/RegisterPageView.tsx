@@ -1,6 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { Controller } from "react-hook-form";
 import { useRegisterForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
@@ -9,9 +11,10 @@ import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmi
 
 export function RegisterPageView() {
   const { form, oauthEnabled, submit } = useRegisterForm();
+  const t = useShopCopy();
 
   return (
-    <AuthShell heading="Create an account" subtitle="Join Swiss Arabian to check out faster and save your favourites.">
+    <AuthShell heading={t("auth.createAccount")} subtitle={t("auth.register.subtitle")}>
       <form className="flex w-full flex-col" onSubmit={submit}>
         {oauthEnabled ? (
           <>
@@ -22,20 +25,20 @@ export function RegisterPageView() {
         <div className="flex w-full flex-col gap-4">
           <AuthField
             id="fullName"
-            label="Full name"
-            placeholder="Aisha Al Nuaimi"
+            label={t("auth.fullName")}
+            placeholder={t("auth.fullNamePlaceholder")}
             autoComplete="name"
             {...form.register("fullName")}
-            error={form.formState.errors.fullName?.message}
+            error={formErrorText(t, form.formState.errors.fullName?.message)}
           />
           <AuthField
             id="email"
-            label="Email address"
+            label={t("email")}
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
             {...form.register("email")}
-            error={form.formState.errors.email?.message}
+            error={formErrorText(t, form.formState.errors.email?.message)}
           />
           <Controller
             name="phone"
@@ -46,33 +49,33 @@ export function RegisterPageView() {
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                hint="Choose your country, then enter the number without the code."
-                error={form.formState.errors.phone?.message}
+                hint={t("auth.register.phoneHint")}
+                error={formErrorText(t, form.formState.errors.phone?.message)}
               />
             )}
           />
           <AuthPasswordField
             id="password"
-            label="Password"
+            label={t("account.password")}
             autoComplete="new-password"
-            placeholder="Your password"
+            placeholder={t("auth.passwordPlaceholder")}
             {...form.register("password")}
-            error={form.formState.errors.password?.message}
+            error={formErrorText(t, form.formState.errors.password?.message)}
           />
         </div>
         <div className="pt-5">
           <AuthSubmitButton disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating…" : "Create account"}
+            {form.formState.isSubmitting ? t("auth.register.creating") : t("auth.register.create")}
           </AuthSubmitButton>
         </div>
         <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
-          Already registered?{" "}
+          {t("auth.register.already")}{" "}
           <LocaleLink className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/login">
-            Sign in
+            {t("auth.signIn")}
           </LocaleLink>
         </p>
         <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
-          By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.
+          {t("auth.terms")}
         </p>
       </form>
     </AuthShell>

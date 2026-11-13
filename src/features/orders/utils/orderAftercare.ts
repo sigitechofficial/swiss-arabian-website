@@ -1,4 +1,5 @@
 import type { CancelOrderResponse } from "@/features/account/api/customerOrders.service";
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 
 export type OrderRefundView = {
   refundId: string | null;
@@ -30,16 +31,16 @@ function upper(value: unknown): string {
   return text(value)?.toUpperCase() ?? "";
 }
 
-export function refundCustomerStatus(refund: OrderRefundView): string {
-  if (refund.requiresManualReview) return "This refund needs a review before it can be processed.";
-  if (refund.blocked) return "This refund could not be completed.";
+export function refundCustomerStatus(refund: OrderRefundView, t: Translator = englishTranslator): string {
+  if (refund.requiresManualReview) return t("orders.refund.review");
+  if (refund.blocked) return t("orders.refund.failed");
   const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
   if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
-    return "The refund has been completed. It can take more time to appear with your bank.";
+    return t("orders.refund.completed");
   }
-  if (/(FAILED|BLOCKED|REJECTED)/.test(state)) return "This refund could not be completed.";
-  if (refund.status || refund.resultState) return "This refund is being processed. The money has not been confirmed in your account.";
-  return "A refund has been recorded for this order.";
+  if (/(FAILED|BLOCKED|REJECTED)/.test(state)) return t("orders.refund.failed");
+  if (refund.status || refund.resultState) return t("orders.refund.processing");
+  return t("orders.refund.recorded");
 }
 
 export function readOrderRefund(raw: unknown): OrderRefundView | null {
@@ -73,47 +74,33 @@ function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
 }
 
 /** Customer copy. A cancelled payment status alone is not a completed refund. */
-export function cancelOutcome(result: CancelOrderResponse): CancelFeedback {
+export function cancelOutcome(result: CancelOrderResponse, t: Translator = englishTranslator): CancelFeedback {
   if (!result.orderCancelled && result.cancellationAccepted) {
-    return { tone: "info", text: "We’ve received your cancellation request and will confirm it by email." };
+    return { tone: "info", text: t("orders.cancel.requested") };
   }
   if (!result.orderCancelled) {
-    return { tone: "error", text: "We couldn’t cancel this order. Please contact our customer care team." };
+    return { tone: "error", text: t("orders.cancel.notCancelled") };
   }
   if (!result.requiresRefund) {
-    return { tone: "success", text: "Your order has been cancelled." };
+    return { tone: "success", text: t("orders.cancel.cancelled") };
   }
   const refund = refundFromCancel(result);
   if (result.requiresManualReview || refund?.requiresManualReview) {
-    return {
-      tone: "info",
-      text: "Your order has been cancelled. The refund needs a review before it can be processed.",
-    };
+    return { tone: "info", text: t("orders.cancel.refundReview") };
   }
   if (!refund) {
-    return {
-      tone: "info",
-      text: "Your order has been cancelled. A refund is being processed. This does not mean the money has reached your bank.",
-    };
+    return { tone: "info", text: t("orders.cancel.refundProcessing") };
   }
   const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
   if (refund.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
-    return {
-      tone: "error",
-      text: "Your order has been cancelled. The refund could not be completed automatically.",
-    };
+    return { tone: "error", text: t("orders.cancel.refundFailed") };
   }
   if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
-    const amount = refund.amount ? ` of ${refund.amount}${refund.currency ? ` ${refund.currency}` : ""}` : "";
-    return {
-      tone: "success",
-      text: `Your order has been cancelled. The refund${amount} has been completed. It can take more time to appear with your bank.`,
-    };
+    if (!refund.amount) return { tone: "success", text: t("orders.cancel.refundDone") };
+    const amount = `${refund.amount}${refund.currency ? ` ${refund.currency}` : ""}`;
+    return { tone: "success", text: t("orders.cancel.refundDoneAmount", { amount }) };
   }
-  return {
-    tone: "info",
-    text: "Your order has been cancelled. A refund is being processed. This does not mean the money has reached your bank.",
-  };
+  return { tone: "info", text: t("orders.cancel.refundProcessing") };
 }
 
 export type ExchangeSettlementView = {

@@ -1,6 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import {
   CheckoutSpinnerState,
@@ -47,33 +49,35 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
     formError: formErrorKind,
     lookup,
   } = useGuestTracking(orderNumber);
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const formError =
     formErrorKind === "empty"
-      ? "Enter the tracking token from your confirmation email."
+      ? t("track.errToken")
       : formErrorKind === "isOrderNumber"
-        ? "That’s your order number — paste the tracking token from your confirmation email instead."
+        ? t("track.errIsOrderNumber")
         : null;
 
   if (loading) {
     return (
-      <CheckoutStateShell current="Track order">
-        <CheckoutSpinnerState title="Looking up your order…" />
+      <CheckoutStateShell current={t("track.trackOrder")}>
+        <CheckoutSpinnerState title={t("track.lookingUp")} />
       </CheckoutStateShell>
     );
   }
 
   if (summary) {
-    const { label, tone } = orderStatusDisplay(summary.status);
+    const { label, tone } = orderStatusDisplay(summary.status, t);
     const units = trackingUnitCount(summary);
     return (
-      <CheckoutStateShell current="Track order">
+      <CheckoutStateShell current={t("track.trackOrder")}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 pb-16">
           <header className="text-center">
-            <p className={checkoutEyebrow}>Order tracking</p>
+            <p className={checkoutEyebrow}>{t("track.eyebrow")}</p>
             <h1 className={pageTitle}>{summary.orderNumber}</h1>
             <p className={checkoutNote}>
-              Placed on {formatOrderDate(summary.createdAt, { long: true })} ·{" "}
-              {units} {units === 1 ? "item" : "items"} ·{" "}
+              {t("orders.placedOn", { date: formatOrderDate(summary.createdAt, { long: true, locale }) })} ·{" "}
+              {t("account.itemCount", { count: units })} ·{" "}
               {formatMoney(Number(summary.total), summary.currency)}
             </p>
             <div className="mt-3 flex justify-center">
@@ -99,17 +103,17 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href={`/account/orders/${encodeURIComponent(summary.orderId)}`}
               >
-                <span>View full order</span>
+                <span>{t("track.viewFullOrder")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             ) : (
               <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/products">
-                <span>Continue shopping</span>
+                <span>{t("track.continueShopping")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             )}
             <LocaleLink className={checkoutLink} href="/">
-              Return home
+              {t("track.returnHome")}
             </LocaleLink>
           </div>
         </div>
@@ -118,20 +122,21 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
   }
 
   return (
-    <CheckoutStateShell current="Track order">
+    <CheckoutStateShell current={t("track.trackOrder")}>
       <div className="mx-auto w-full max-w-md pb-16">
         <header className="text-center">
-          <p className={checkoutEyebrow}>Order tracking</p>
-          <h1 className={pageTitle}>Track your order</h1>
+          <p className={checkoutEyebrow}>{t("track.eyebrow")}</p>
+          <h1 className={pageTitle}>{t("track.title")}</h1>
           <p className={checkoutNote}>
-            Enter the tracking token from your confirmation email for order{" "}
-            <span className="font-mono text-sa-primary">{orderNumber}</span>.
+            {t("track.enterTokenFor")}{" "}
+            <span className="font-mono text-sa-primary">{orderNumber}</span>
+            {t("orders.guestEnd")}
           </p>
         </header>
 
         {notInAccount && !token ? (
           <p className={`${checkoutNote} mb-4 text-center`}>
-            This order isn’t in your account. If it was placed as a guest, use its tracking token below.
+            {t("track.notInAccount")}
           </p>
         ) : null}
 
@@ -139,24 +144,23 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
           <div className={cboxBody}>
             {tokenRejected || formError ? (
               <p className={checkoutError} role="alert">
-                {formError ??
-                  "We couldn’t find an order with that number and token. Use the tracking token from your confirmation email — not the order number."}
+                {formError ?? t("track.tokenRejected")}
               </p>
             ) : null}
             <label className={fldFull}>
-              <span>Tracking token</span>
+              <span>{t("track.token")}</span>
               <input
                 type="text"
                 name="token"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="Paste your token here"
+                placeholder={t("track.tokenPlaceholder")}
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
               />
             </label>
             <button type="submit" className={checkoutCta}>
-              <span>Track order</span>
+              <span>{t("track.trackOrder")}</span>
               <b aria-hidden="true">↗</b>
             </button>
           </div>
@@ -165,12 +169,13 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
         <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
-              Signed in? All your orders are in <LocaleLink href="/account/orders">Purchase History</LocaleLink>.
+              {t("track.signedInAll")} <LocaleLink href="/account/orders">{t("account.tab.orders")}</LocaleLink>
+              {t("orders.guestEnd")}
             </>
           ) : (
             <>
-              Have an account? <LocaleLink href={`/login?returnTo=${encodeURIComponent(pathname)}`}>Sign in</LocaleLink> to see
-              your orders.
+              {t("track.haveAccount")} <LocaleLink href={`/login?returnTo=${encodeURIComponent(pathname)}`}>{t("track.signIn")}</LocaleLink>{" "}
+              {t("track.toSeeOrders")}
             </>
           )}
         </p>

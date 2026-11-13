@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/Toaster";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { refreshCustomerScopedCaches } from "@/lib/auth/sessionCache";
 import { env } from "@/lib/config/env";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
@@ -65,14 +66,15 @@ export type AuthFeedback = {
   onError?: (error: unknown) => void;
 };
 
-const DEFAULT_NOTICES: Record<Exclude<AuthNotice, "chooseCountry">, string> = {
-  codeSent: "If an account exists for this email, a code is on its way.",
-  codeResent: "Code sent — check your email.",
-  signedIn: "Signed in.",
-  emailVerifiedSignedIn: "Email verified. You’re signed in.",
-  emailVerifiedSignIn: "Email verified. Please sign in.",
-  resetCodeSent: "If an account exists, a reset code has been sent.",
-  passwordUpdated: "Password updated. Please sign in.",
+/** Swiss Arabian's toast for each notice (`auth.notice.<name>` in `src/messages`). */
+const DEFAULT_NOTICES: Record<Exclude<AuthNotice, "chooseCountry">, MessageKey> = {
+  codeSent: "auth.notice.codeSent",
+  codeResent: "auth.notice.codeResent",
+  signedIn: "auth.notice.signedIn",
+  emailVerifiedSignedIn: "auth.notice.emailVerifiedSignedIn",
+  emailVerifiedSignIn: "auth.notice.emailVerifiedSignIn",
+  resetCodeSent: "auth.notice.resetCodeSent",
+  passwordUpdated: "auth.notice.passwordUpdated",
 };
 
 function useFeedback(feedback: AuthFeedback = {}) {
@@ -81,7 +83,7 @@ function useFeedback(feedback: AuthFeedback = {}) {
     notice: (notice: AuthNotice) => {
       if (feedback.onNotice) return feedback.onNotice(notice);
       if (notice === "chooseCountry") return toast(copy("chooseCountry"), "error");
-      toast(DEFAULT_NOTICES[notice], "success");
+      toast(copy(DEFAULT_NOTICES[notice]), "success");
     },
     error: (error: unknown) => (feedback.onError ? feedback.onError(error) : toastApiError(error)),
   };

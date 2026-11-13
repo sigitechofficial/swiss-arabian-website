@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
@@ -41,7 +43,23 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   "/account/subscription": Repeat,
 };
 
+/** Tab wording by link (English in `accountTabNav` matches `en.json`). */
+const TAB_LABELS: Record<string, MessageKey> = {
+  "/account": "account.tab.dashboard",
+  "/account/orders": "account.tab.orders",
+  "/account/profile": "account.tab.profile",
+  "/account/addresses": "account.tab.addresses",
+  "/account/payments": "account.tab.payments",
+  "/account/rewards": "account.tab.rewards",
+  "/account/subscription": "account.tab.subscriptions",
+  "/account/employee-benefits": "account.tab.employeeBenefits",
+  "/account/membership": "account.tab.membership",
+  "/account/wishlist": "account.tab.wishlist",
+  "/account/saved": "account.tab.saved",
+};
+
 export function AccountTabNav() {
+  const t = useShopCopy();
   const pathname = stripLocalePrefix(usePathname() || "/");
   const listRef = useRef<HTMLDivElement>(null);
   const { isEmployee } = useEmployeeBenefitsAccount();
@@ -69,7 +87,7 @@ export function AccountTabNav() {
   }, [pathname]);
 
   return (
-    <nav className={accountTabs} aria-label="Account sections">
+    <nav className={accountTabs} aria-label={t("account.sections")}>
       <div className={`${accountContainer} ${accountTabsList}`} ref={listRef}>
         {tabs.map((item) => {
           const active =
@@ -86,7 +104,7 @@ export function AccountTabNav() {
               aria-current={active ? "page" : undefined}
             >
               {Icon ? <Icon size={14} strokeWidth={1.8} aria-hidden="true" /> : null}
-              {item.label}
+              {TAB_LABELS[item.href] ? t(TAB_LABELS[item.href]) : item.label}
             </LocaleLink>
           );
         })}

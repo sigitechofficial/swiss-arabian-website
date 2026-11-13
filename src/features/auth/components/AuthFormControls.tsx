@@ -3,6 +3,7 @@
 import { forwardRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
 import { toast } from "@/components/ui/Toaster";
 import { env } from "@/lib/config/env";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -46,6 +47,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
   ref,
 ) {
   const [visible, setVisible] = useState(false);
+  const t = useShopCopy();
 
   return (
     <div className="flex w-full flex-col gap-1">
@@ -61,13 +63,13 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
           ref={ref}
           id={id}
           type={visible ? "text" : "password"}
-          className={`min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
+          className={`min-w-0 flex-1 appearance-none border-0 bg-transparent py-2.5 ps-4 pe-2 text-sm font-normal text-sa-primary shadow-none outline-none ring-0 placeholder:text-sa-muted focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-[12.5px] ${className ?? ""}`}
           {...props}
         />
         <button
           type="button"
-          className="mr-3 flex size-[18px] shrink-0 cursor-pointer items-center justify-center text-sa-muted"
-          aria-label={visible ? "Hide password" : "Show password"}
+          className="me-3 flex size-[18px] shrink-0 cursor-pointer items-center justify-center text-sa-muted"
+          aria-label={visible ? t("auth.hidePassword") : t("auth.showPassword")}
           onClick={() => setVisible((v) => !v)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,36 +84,38 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
 /** Google/Apple buttons. Gated behind NEXT_PUBLIC_ENABLE_OAUTH — while OAuth is
  *  off (default) social sign-in stays unwired, so the buttons are not rendered. */
 export function AuthSocialButtons() {
+  const t = useShopCopy();
   if (!env.flags.oauth) return null;
   return (
     <div className="flex w-full flex-col gap-2">
       <button
         type="button"
         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-sa-border bg-surface py-2.5 text-[13px] font-normal text-sa-primary transition-colors hover:bg-section-soft"
-        onClick={() => toast("Google sign-in isn't connected yet.", "info")}
+        onClick={() => toast(t("auth.googleSoon"), "info")}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/auth/google.svg" alt="" width={16} height={16} className="size-[16px] shrink-0" />
-        Continue with Google
+        {t("auth.google")}
       </button>
       <button
         type="button"
         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-sa-border bg-surface py-2.5 text-[13px] font-normal text-sa-primary transition-colors hover:bg-section-soft"
-        onClick={() => toast("Apple sign-in isn't connected yet.", "info")}
+        onClick={() => toast(t("auth.appleSoon"), "info")}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/auth/apple.svg" alt="" width={16} height={16} className="size-[16px] shrink-0" />
-        Continue with Apple
+        {t("auth.apple")}
       </button>
     </div>
   );
 }
 
-export function AuthDivider({ label = "Or" }: { label?: string }) {
+export function AuthDivider({ label }: { label?: string }) {
+  const t = useShopCopy();
   return (
     <div className="flex w-full items-center gap-3 py-4">
       <span className="h-px flex-1 bg-sa-border" aria-hidden="true" />
-      <span className="text-[11px] font-normal uppercase tracking-[0.08em] text-sa-muted">{label}</span>
+      <span className="text-[11px] font-normal uppercase tracking-[0.08em] text-sa-muted">{label ?? t("auth.or")}</span>
       <span className="h-px flex-1 bg-sa-border" aria-hidden="true" />
     </div>
   );

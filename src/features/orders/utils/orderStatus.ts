@@ -1,26 +1,32 @@
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
+import { intlLocale } from "@/lib/i18n/locales";
 import { currentMarketTimeZone } from "@/lib/storefront/marketTimeZone";
 
-/** Shared order vocabulary for Purchase History, order detail and tracking. */
+/**
+ * Shared order vocabulary for Purchase History, order detail and tracking.
+ * Wording lives in `src/messages/*.json`; each function takes the page's
+ * translator (English by default).
+ */
 
 type StatusDisplay = { label: string; tone: AccountStatusTone };
 
-const ORDER_STATUS: Record<string, StatusDisplay> = {
-  DRAFT: { label: "Draft", tone: "muted" },
-  PAYMENT_PENDING: { label: "Awaiting Payment", tone: "warning" },
-  PAYMENT_AUTHORIZED: { label: "Authorized", tone: "accent" },
-  PAID: { label: "Paid", tone: "success" },
-  CANCELLATION_WINDOW: { label: "Processing", tone: "accent" },
-  READY_FOR_FULFILLMENT: { label: "Confirmed", tone: "accent" },
-  FULFILLMENT_QUEUED: { label: "Preparing", tone: "accent" },
-  SHIPMENT_CREATED: { label: "Shipped", tone: "accent" },
-  IN_TRANSIT: { label: "On the Way", tone: "accent" },
-  DELIVERED: { label: "Delivered", tone: "success" },
-  CANCELLED: { label: "Cancelled", tone: "danger" },
-  REFUND_PENDING: { label: "Refund Pending", tone: "warning" },
-  REFUNDED: { label: "Refunded", tone: "muted" },
-  MANUAL_REVIEW: { label: "Under Review", tone: "warning" },
-  FAILED: { label: "Failed", tone: "danger" },
+const ORDER_STATUS: Record<string, { key: MessageKey; tone: AccountStatusTone }> = {
+  DRAFT: { key: "orders.status.DRAFT", tone: "muted" },
+  PAYMENT_PENDING: { key: "orders.status.PAYMENT_PENDING", tone: "warning" },
+  PAYMENT_AUTHORIZED: { key: "orders.status.PAYMENT_AUTHORIZED", tone: "accent" },
+  PAID: { key: "orders.status.PAID", tone: "success" },
+  CANCELLATION_WINDOW: { key: "orders.status.CANCELLATION_WINDOW", tone: "accent" },
+  READY_FOR_FULFILLMENT: { key: "orders.status.READY_FOR_FULFILLMENT", tone: "accent" },
+  FULFILLMENT_QUEUED: { key: "orders.status.FULFILLMENT_QUEUED", tone: "accent" },
+  SHIPMENT_CREATED: { key: "orders.status.SHIPMENT_CREATED", tone: "accent" },
+  IN_TRANSIT: { key: "orders.status.IN_TRANSIT", tone: "accent" },
+  DELIVERED: { key: "orders.status.DELIVERED", tone: "success" },
+  CANCELLED: { key: "orders.status.CANCELLED", tone: "danger" },
+  REFUND_PENDING: { key: "orders.status.REFUND_PENDING", tone: "warning" },
+  REFUNDED: { key: "orders.status.REFUNDED", tone: "muted" },
+  MANUAL_REVIEW: { key: "orders.status.MANUAL_REVIEW", tone: "warning" },
+  FAILED: { key: "orders.status.FAILED", tone: "danger" },
 };
 
 function titleCase(value: string): string {
@@ -36,8 +42,9 @@ function sentenceCase(value: string): string {
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
-export function orderStatusDisplay(status: string): StatusDisplay {
-  return ORDER_STATUS[status] ?? { label: titleCase(status), tone: "muted" };
+export function orderStatusDisplay(status: string, t: Translator = englishTranslator): StatusDisplay {
+  const known = ORDER_STATUS[status];
+  return known ? { label: t(known.key), tone: known.tone } : { label: titleCase(status), tone: "muted" };
 }
 
 const ACTIVE_STATUSES = new Set([
@@ -84,6 +91,15 @@ export const ORDER_PROGRESS_STEPS = [
   "Delivered",
 ] as const;
 
+/** `ORDER_PROGRESS_STEPS` in `src/messages/*.json`. */
+export const ORDER_PROGRESS_STEP_KEYS: readonly MessageKey[] = [
+  "orders.step.placed",
+  "orders.step.confirmed",
+  "orders.step.preparing",
+  "orders.step.shipped",
+  "orders.step.delivered",
+];
+
 const PROGRESS_STEP: Record<string, number> = {
   DRAFT: 0,
   PAYMENT_PENDING: 0,
@@ -122,18 +138,18 @@ export function stoppedOrderKind(status: string): StoppedOrderKind {
   }
 }
 
-const STOPPED_MESSAGE: Record<StoppedOrderKind, string> = {
-  cancelled: "This order was cancelled.",
-  refundPending: "This order is being refunded to your original payment method.",
-  refunded: "This order was refunded to your original payment method.",
-  // Calm: a review is usually a routine check, not a problem with the order.
-  review: "We’re checking a detail on your order. We’ll update you soon.",
-  failed: "This order couldn’t be completed. Please contact our customer care team.",
-  other: "There’s no delivery progress to show for this order.",
+// Calm wording: a review is usually a routine check, not a problem with the order.
+const STOPPED_MESSAGE: Record<StoppedOrderKind, MessageKey> = {
+  cancelled: "orders.stopped.cancelled",
+  refundPending: "orders.stopped.refundPending",
+  refunded: "orders.stopped.refunded",
+  review: "orders.stopped.review",
+  failed: "orders.stopped.failed",
+  other: "orders.stopped.other",
 };
 
-export function stoppedOrderMessage(status: string): string {
-  return STOPPED_MESSAGE[stoppedOrderKind(status)];
+export function stoppedOrderMessage(status: string, t: Translator = englishTranslator): string {
+  return t(STOPPED_MESSAGE[stoppedOrderKind(status)]);
 }
 
 /**
@@ -174,7 +190,8 @@ export function formatOrderDate(
     time = false,
     long = false,
     timeZone = currentMarketTimeZone(),
-  }: { time?: boolean; long?: boolean; timeZone?: string } = {},
+    locale = "en",
+  }: { time?: boolean; long?: boolean; timeZone?: string; locale?: string } = {},
 ): string {
   if (!iso) return "";
   const date = new Date(iso);
@@ -186,9 +203,11 @@ export function formatOrderDate(
     day: "numeric",
     timeZone,
   };
+  // English keeps the "en-AE" format; other languages use their own.
+  const tag = locale === "en" ? "en-AE" : intlLocale(locale);
   return time
-    ? date.toLocaleString("en-AE", { ...options, hour: "2-digit", minute: "2-digit" })
-    : date.toLocaleDateString("en-AE", options);
+    ? date.toLocaleString(tag, { ...options, hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString(tag, options);
 }
 
 // ─── Order timeline ──────────────────────────────────────────────────────────
@@ -198,44 +217,50 @@ export function formatOrderDate(
  * SESSION_CREATED -> PAID", "Shipment created locally", a repeated "Payment
  * confirmed"). Map each to shopper wording, or drop it when it isn't news.
  */
-function orderEventLabel(eventType: string, title: string | null): string | null {
+function orderEventKey(eventType: string, title: string | null): MessageKey | null {
   const t = (title ?? "").toLowerCase();
   switch (eventType) {
     case "ORDER_CREATED":
-      return "Order placed";
+      return "orders.event.placed";
     case "PAYMENT_STATUS_CHANGED":
       if (t.includes("provider execution")) return null;
-      if (t.includes("refund")) return "Refund update";
-      if (t.includes("fail") || t.includes("declin")) return "Payment failed";
-      if (t.includes("confirm") || t.includes("paid") || t.includes("captur")) return "Payment confirmed";
-      if (t.includes("authoriz")) return "Payment authorized";
-      if (t.includes("initiat")) return "Payment started";
+      if (t.includes("refund")) return "orders.event.refundUpdate";
+      if (t.includes("fail") || t.includes("declin")) return "orders.event.paymentFailed";
+      if (t.includes("confirm") || t.includes("paid") || t.includes("captur")) return "orders.event.paymentConfirmed";
+      if (t.includes("authoriz")) return "orders.event.paymentAuthorized";
+      if (t.includes("initiat")) return "orders.event.paymentStarted";
       if (t.includes("pending")) return null;
-      return "Payment updated";
+      return "orders.event.paymentUpdated";
     case "CANCELLATION_WINDOW_STARTED":
-      return "Order being processed";
+      return "orders.event.processing";
     case "CANCELLATION_WINDOW_ENDED":
-      return "Order confirmed";
+      return "orders.event.confirmed";
     case "FULFILLMENT_STATUS_CHANGED":
-      if (t.includes("deliver")) return "Delivered";
-      if (t.includes("ship")) return "Shipped";
-      return "Preparing your order";
+      if (t.includes("deliver")) return "orders.event.delivered";
+      if (t.includes("ship")) return "orders.event.shipped";
+      return "orders.event.preparing";
     case "SHIPMENT_UPDATED":
-      if (t.includes("deliver")) return "Delivered";
-      if (t.includes("out for delivery")) return "Out for delivery";
-      if (t.includes("transit")) return "On the way";
-      return "Shipment created";
-    case "STATUS_CHANGED":
-      return title ? sentenceCase(title) : null;
+      if (t.includes("deliver")) return "orders.event.delivered";
+      if (t.includes("out for delivery")) return "orders.event.outForDelivery";
+      if (t.includes("transit")) return "orders.event.onTheWay";
+      return "orders.event.shipmentCreated";
     case "CANCELLED":
-      return "Order cancelled";
+      return "orders.event.cancelled";
     case "REFUND_REQUESTED":
-      return "Refund requested";
+      return "orders.event.refundRequested";
     case "REFUND_UPDATED":
-      return "Refund updated";
+      return "orders.event.refundUpdated";
     default:
-      return title ? sentenceCase(title) : null;
+      return null;
   }
+}
+
+function orderEventLabel(eventType: string, title: string | null, translate: Translator): string | null {
+  const key = orderEventKey(eventType, title);
+  if (key) return translate(key);
+  // STATUS_CHANGED and unknown events carry the backend's own title.
+  if (eventType === "PAYMENT_STATUS_CHANGED") return null;
+  return title ? sentenceCase(title) : null;
 }
 
 export type OrderTimelineEntry = { key: string; label: string; occurredAt: string };
@@ -243,6 +268,7 @@ export type OrderTimelineEntry = { key: string; label: string; occurredAt: strin
 /** Oldest first, one entry per milestone. */
 export function customerOrderTimeline(
   events: Array<{ eventType: string; title: string | null; occurredAt: string }>,
+  t: Translator = englishTranslator,
 ): OrderTimelineEntry[] {
   const sorted = [...events].sort(
     (a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt),
@@ -250,7 +276,7 @@ export function customerOrderTimeline(
   const seen = new Set<string>();
   const entries: OrderTimelineEntry[] = [];
   for (const event of sorted) {
-    const label = orderEventLabel(event.eventType, event.title);
+    const label = orderEventLabel(event.eventType, event.title, t);
     if (!label || seen.has(label)) continue;
     seen.add(label);
     entries.push({ key: `${event.eventType}-${event.occurredAt}`, label, occurredAt: event.occurredAt });
@@ -321,25 +347,14 @@ export function trackingStatusKey(status?: string | null): TrackingStatusKey {
   return TRACKING_STATUS[status?.trim().toUpperCase() ?? ""] ?? "update";
 }
 
-const TRACKING_STATUS_LABEL: Record<TrackingStatusKey, string> = {
-  preparing: "Preparing your shipment",
-  created: "Shipment created",
-  awaitingPickup: "Awaiting pickup",
-  pickedUp: "Picked up",
-  inTransit: "In transit",
-  outForDelivery: "Out for delivery",
-  delivered: "Delivered",
-  failedAttempt: "Delivery attempt failed",
-  delayed: "Delayed, we’re looking into it",
-  returning: "Returning to sender",
-  returned: "Returned to sender",
-  cancelled: "Shipment cancelled",
-  update: "Shipment update",
-};
+/** Each tracking status's wording: `orders.tracking.<key>` in `src/messages/*.json`. */
+function trackingStatusLabel(key: TrackingStatusKey, t: Translator = englishTranslator): string {
+  return t(`orders.tracking.${key}` as MessageKey);
+}
 
-export function shipmentStatusLabel(status?: string | null): string {
+export function shipmentStatusLabel(status?: string | null, t: Translator = englishTranslator): string {
   if (!status) return "";
-  return TRACKING_STATUS_LABEL[trackingStatusKey(status)];
+  return trackingStatusLabel(trackingStatusKey(status), t);
 }
 
 /** Operator notes and system codes that shouldn't reach shoppers. */
@@ -385,7 +400,7 @@ export type TrackingHistoryEntry = {
   key: string;
   /** What happened, for the brand to word in the shopper's language. */
   status: TrackingStatusKey;
-  /** English wording of `status`. */
+  /** Wording of `status` (English unless a translator is given). */
   label: string;
   /** The carrier's own note, when it is meant for shoppers. */
   detail: string | null;
@@ -407,6 +422,7 @@ export function trackingHistory(
     description: string | null;
     location: string | null;
   }>,
+  t: Translator = englishTranslator,
 ): TrackingHistoryEntry[] {
   // Oldest first (stable), so a repeated status keeps its first occurrence.
   const sorted = events
@@ -434,7 +450,7 @@ export function trackingHistory(
     entries.push({
       key: `${event.eventStatus}-${event.eventTime}-${entries.length}`,
       status,
-      label: TRACKING_STATUS_LABEL[status],
+      label: trackingStatusLabel(status, t),
       detail,
       location: isCustomerFacing(event.location) ? event.location.trim() : null,
       occurredAt: event.eventTime,

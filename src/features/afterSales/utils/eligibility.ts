@@ -1,3 +1,5 @@
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
+
 const BLOCKED = new Set([
   "DRAFT",
   "CHECKOUT_STARTED",
@@ -67,41 +69,50 @@ export const EXCHANGE_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-export function afterSalesStatusLabel(status: string): string {
-  switch (status?.toUpperCase()) {
-    case "REQUESTED":
-      return "Requested";
-    case "PENDING_REVIEW":
-      return "Pending review";
-    case "APPROVED":
-      return "Approved";
-    case "REJECTED":
-      return "Rejected";
-    case "CANCELLED":
-      return "Cancelled";
-    case "CLOSED":
-      return "Closed";
-    case "COMPLETED":
-      return "Completed";
-    case "RECEIVED":
-      return "Received";
-    case "INSPECTED":
-      return "Inspected";
-    case "REFUND_PROCESSING":
-      return "Refund processing";
-    case "REFUND_COMPLETED":
-      return "Refund completed";
-    case "WAITING_FOR_RETURN":
-    case "WAITING_FOR_ORIGINAL_RETURN":
-      return "Waiting for the original return";
-    case "ORIGINAL_RECEIVED":
-      return "Original received";
-    case "REPLACEMENT_CREATED":
-    case "REPLACEMENT_ORDER_CREATED":
-      return "Replacement order created";
-    case "ADDITIONAL_PAYMENT_DUE":
-      return "Additional payment due";
-    default:
-      return status?.trim() ? "In progress" : "In progress";
-  }
+export type AfterSalesOptionGroup = "returnReason" | "returnResolution" | "exchangeReason" | "exchangeType";
+
+const OPTION_GROUPS: Record<AfterSalesOptionGroup, Record<string, string>> = {
+  returnReason: RETURN_REASON_LABELS,
+  returnResolution: RETURN_RESOLUTION_LABELS,
+  exchangeReason: EXCHANGE_REASON_LABELS,
+  exchangeType: EXCHANGE_TYPE_LABELS,
+};
+
+/** A reason / resolution / exchange type in the translator's language (`afterSales.<group>.<CODE>`). */
+export function afterSalesOptionLabel(
+  group: AfterSalesOptionGroup,
+  code: string,
+  t: Translator = englishTranslator,
+): string {
+  if (!(code in OPTION_GROUPS[group])) return code;
+  return t(`afterSales.${group}.${code}` as MessageKey);
+}
+
+/** The codes of a group, in display order. */
+export function afterSalesOptionCodes(group: AfterSalesOptionGroup): string[] {
+  return Object.keys(OPTION_GROUPS[group]);
+}
+
+const STATUS_KEY: Record<string, MessageKey> = {
+  REQUESTED: "afterSales.status.requested",
+  PENDING_REVIEW: "afterSales.status.pendingReview",
+  APPROVED: "afterSales.status.approved",
+  REJECTED: "afterSales.status.rejected",
+  CANCELLED: "afterSales.status.cancelled",
+  CLOSED: "afterSales.status.closed",
+  COMPLETED: "afterSales.status.completed",
+  RECEIVED: "afterSales.status.received",
+  INSPECTED: "afterSales.status.inspected",
+  REFUND_PROCESSING: "afterSales.status.refundProcessing",
+  REFUND_COMPLETED: "afterSales.status.refundCompleted",
+  WAITING_FOR_RETURN: "afterSales.status.waitingReturn",
+  WAITING_FOR_ORIGINAL_RETURN: "afterSales.status.waitingReturn",
+  ORIGINAL_RECEIVED: "afterSales.status.originalReceived",
+  REPLACEMENT_CREATED: "afterSales.status.replacementCreated",
+  REPLACEMENT_ORDER_CREATED: "afterSales.status.replacementCreated",
+  ADDITIONAL_PAYMENT_DUE: "afterSales.status.paymentDue",
+};
+
+export function afterSalesStatusLabel(status: string, t: Translator = englishTranslator): string {
+  return t(STATUS_KEY[status?.toUpperCase() ?? ""] ?? "afterSales.status.inProgress");
 }

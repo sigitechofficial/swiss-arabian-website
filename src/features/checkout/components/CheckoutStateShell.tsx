@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { createContext, useContext, type ComponentType, type ReactNode } from "react";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import {
@@ -33,15 +34,16 @@ export function CheckoutStateUiProvider({ ui, children }: { ui: CheckoutStateUi;
 /** Page chrome for the post-checkout screens — same head band as `/checkout`. */
 export function CheckoutStateShell({ current, children }: ShellProps) {
   const Brand = useContext(CheckoutStateUiContext)?.Shell;
+  const t = useShopCopy();
   if (Brand) return <Brand current={current}>{children}</Brand>;
   return (
     <div>
       <section className={collectionHeadFlush}>
         <div className={pageContainer}>
-          <nav className={crumbs} aria-label="Breadcrumb">
+          <nav className={crumbs} aria-label={t("account.breadcrumbNav")}>
             <ol className={checkoutCrumbsList} role="list">
               <li>
-                <LocaleLink href="/">Home</LocaleLink>
+                <LocaleLink href="/">{t("home")}</LocaleLink>
               </li>
               <li aria-current="page">{current}</li>
             </ol>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+
 import { useEffect, useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { usePathname, useRouter } from "next/navigation";
@@ -80,6 +82,7 @@ export function NavbarSearchDropdown({
 }: {
   placeholder?: string;
 } = {}) {
+  const t = useShopCopy();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -135,7 +138,7 @@ export function NavbarSearchDropdown({
     <div className={`${navSearch} ${navSearchMinimal}`} data-nav-search ref={rootRef}>
       <label className={navSearchField} data-search-field htmlFor="nav-search-input">
         <SearchGlyph />
-        <span className={visuallyHidden}>Search fragrances</span>
+        <span className={visuallyHidden}>{t("nav.searchFragrances")}</span>
         <input
           id="nav-search-input"
           ref={inputRef}

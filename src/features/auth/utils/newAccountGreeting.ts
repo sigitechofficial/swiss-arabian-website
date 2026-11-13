@@ -3,6 +3,8 @@
  * dashboard can say "Welcome" instead of "Welcome back" on that first visit.
  * Keyed by email so signing in as someone else in the same tab is not affected.
  */
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
+
 const KEY = "sa-new-account";
 
 export function markNewAccount(email: string) {
@@ -35,7 +37,7 @@ export function clearNewAccount() {
   }
 }
 
-export function welcomeHeading(firstName: string, isNew: boolean): string {
-  const greeting = isNew ? "Welcome" : "Welcome back";
-  return firstName ? `${greeting}, ${firstName}` : greeting;
+export function welcomeHeading(firstName: string, isNew: boolean, t: Translator = englishTranslator): string {
+  if (firstName) return t(isNew ? "account.welcomeName" : "account.welcomeBackName", { name: firstName });
+  return t(isNew ? "account.welcome" : "account.welcomeBack");
 }

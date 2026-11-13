@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type CatalogPaginationProps = {
   page: number;
@@ -37,6 +38,7 @@ export function CatalogPagination({
   total,
   hrefForPage,
 }: CatalogPaginationProps) {
+  const t = useShopCopy();
   if (totalPages <= 1) return null;
 
   const prevDisabled = page <= 1;
@@ -49,21 +51,21 @@ export function CatalogPagination({
   return (
     <nav
       className="mt-10 flex flex-col items-center gap-4 border-t border-sa-border pt-8"
-      aria-label="Product pages"
+      aria-label={t("pagination.aria")}
     >
       <p className="text-[13px] text-sa-muted">
-        Page {page} of {totalPages}
+        {t("orders.pageOf", { page, total: totalPages })}
         <span className="mx-2 text-sa-border">·</span>
-        {total} products
+        {t("catalog.productCount", { count: total })}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
         {prevDisabled ? (
           <span className={`${navClass} opacity-40`} aria-disabled>
-            Prev
+            {t("pagination.prev")}
           </span>
         ) : (
           <LocaleLink href={hrefForPage(page - 1)} className={`${navClass} cursor-pointer`} scroll>
-            Prev
+            {t("pagination.prev")}
           </LocaleLink>
         )}
 
@@ -98,11 +100,11 @@ export function CatalogPagination({
 
         {nextDisabled ? (
           <span className={`${navClass} opacity-40`} aria-disabled>
-            Next
+            {t("pagination.next")}
           </span>
         ) : (
           <LocaleLink href={hrefForPage(page + 1)} className={`${navClass} cursor-pointer`} scroll>
-            Next
+            {t("pagination.next")}
           </LocaleLink>
         )}
       </div>

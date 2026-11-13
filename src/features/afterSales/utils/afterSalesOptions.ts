@@ -1,14 +1,13 @@
 import type { AfterSalesOption, AfterSalesOptions } from "../types/afterSales";
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 
 export const NOT_SHIPPED_MESSAGE =
   "Return and exchange requests are available after this order ships.";
 
-function friendly(option: AfterSalesOption, shippedLooksOk: boolean): string | null {
+function friendly(option: AfterSalesOption, shippedLooksOk: boolean, t: Translator): string | null {
   if (option.allowed) return null;
   if (option.code === "ORDER_NOT_ELIGIBLE") {
-    return shippedLooksOk
-      ? "Return and exchange requests aren't available for this order."
-      : NOT_SHIPPED_MESSAGE;
+    return shippedLooksOk ? t("afterSales.notAvailable") : t("afterSales.notShipped");
   }
   return option.message;
 }
@@ -22,16 +21,17 @@ function friendly(option: AfterSalesOption, shippedLooksOk: boolean): string | n
 export function resolveAfterSalesActions(
   options: AfterSalesOptions | undefined,
   shippedLooksOk: boolean,
+  t: Translator = englishTranslator,
 ): { canReturn: boolean; canExchange: boolean; notes: string[] } {
   if (!options) {
     return {
       canReturn: shippedLooksOk,
       canExchange: shippedLooksOk,
-      notes: shippedLooksOk ? [] : [NOT_SHIPPED_MESSAGE],
+      notes: shippedLooksOk ? [] : [t("afterSales.notShipped")],
     };
   }
-  const returnNote = friendly(options.returns, shippedLooksOk);
-  const exchangeNote = friendly(options.exchanges, shippedLooksOk);
+  const returnNote = friendly(options.returns, shippedLooksOk, t);
+  const exchangeNote = friendly(options.exchanges, shippedLooksOk, t);
   const notes = [returnNote, exchangeNote].filter(
     (n, i, all): n is string => Boolean(n) && all.indexOf(n) === i,
   );

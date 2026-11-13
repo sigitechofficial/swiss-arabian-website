@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { getStoredGuestOrderLines } from "@/features/checkout/utils/checkoutSession";
 import {
   useGuestAfterSalesOptions,
@@ -33,6 +34,7 @@ export function GuestAfterSalesSection({
   fulfillmentStatus,
   lines,
 }: GuestAfterSalesSectionProps) {
+  const t = useShopCopy();
   const [form, setForm] = useState<"return" | "exchange" | null>(null);
   const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
   const returns = useGuestReturns(orderNumber, orderAccessToken);
@@ -40,7 +42,7 @@ export function GuestAfterSalesSection({
   const creatableLines =
     lines.length > 0 ? lines : getStoredGuestOrderLines(orderNumber);
   const options = useGuestAfterSalesOptions(orderNumber, orderAccessToken);
-  const actions = resolveAfterSalesActions(options.data, eligible);
+  const actions = resolveAfterSalesActions(options.data, eligible, t);
   const hasLines = creatableLines.length > 0;
   const canReturn = actions.canReturn && hasLines;
   const canExchange = actions.canExchange && hasLines;
@@ -51,7 +53,7 @@ export function GuestAfterSalesSection({
     <section className="overflow-hidden border border-sa-border bg-page">
       <div className="border-b border-sa-border bg-section-soft px-5 py-3">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-sa-muted">
-          Returns & exchanges
+          {t("afterSales.title")}
         </h2>
       </div>
       <div className="flex flex-col gap-4 px-5 py-5">
@@ -63,7 +65,7 @@ export function GuestAfterSalesSection({
                 className={accountBtnGhost}
                 onClick={() => setForm("return")}
               >
-                Request return
+                {t("afterSales.requestReturn")}
               </button>
             ) : null}
             {canExchange ? (
@@ -72,15 +74,14 @@ export function GuestAfterSalesSection({
                 className={accountBtnGhost}
                 onClick={() => setForm("exchange")}
               >
-                Request exchange
+                {t("afterSales.requestExchange")}
               </button>
             ) : null}
           </div>
         ) : null}
         {(actions.canReturn || actions.canExchange) && !hasLines ? (
           <p className="text-[13px] leading-relaxed text-sa-muted">
-            Existing requests for this order are listed below. New requests need
-            the original order line details.
+            {t("afterSales.guestNoLines")}
           </p>
         ) : null}
         {actions.notes.map((note) => (

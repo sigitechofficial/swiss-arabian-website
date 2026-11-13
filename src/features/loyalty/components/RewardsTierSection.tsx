@@ -2,6 +2,11 @@
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { knownText } from "@/lib/i18n/formErrors";
+import type { Translator } from "@/lib/i18n/messages";
+import { intlLocale, isRtl } from "@/lib/i18n/locales";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   hasLoyaltyTier,
   type LoyaltyTierHistoryView,
@@ -12,8 +17,8 @@ import { MediaImage } from "@/components/ui/MediaImage";
 
 import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
 
-function windowCopy(days: number): string {
-  return days === 1 ? "Last 1 day" : `Last ${days} days`;
+function windowCopy(days: number, t: Translator): string {
+  return t("loyalty.window", { count: days });
 }
 
 const MEDAL_FILLS = ["#c9a36a", "#d7d7d7", "#d4b15a", "#eceae6", "#f3f1ee"];
@@ -21,6 +26,8 @@ const MEDAL_FILLS = ["#c9a36a", "#d7d7d7", "#d4b15a", "#eceae6", "#f3f1ee"];
 function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
   const logo = useStorefrontLogo();
   const marketCurrency = useMarketCurrency();
+  const t = useShopCopy();
+  const rtl = isRtl(useShopLocale());
   const tier = wallet.tier;
   const steps = tier?.steps ?? [];
   if (!tier || steps.length === 0) return null;
@@ -34,7 +41,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
     : -1;
   const remaining =
     tier.next && tier.remainingAmount != null
-      ? `${formatMoney(tier.remainingAmount, currency)} away from ${tier.next.name}`
+      ? t("loyalty.awayFrom", { amount: formatMoney(tier.remainingAmount, currency), tier: tier.next.name })
       : null;
   const count = steps.length;
   const center = (index: number) => ((index + 0.5) / count) * 100;
@@ -59,12 +66,12 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
   return (
     <section
       className="overflow-hidden rounded-lg border border-[#eadfce] bg-[#f6f0e6] px-4 py-5 sm:px-7 sm:py-6"
-      aria-label="Rewards tiers"
+      aria-label={t("loyalty.tiers")}
     >
       {tier.qualificationWindowDays != null &&
       tier.qualificationWindowDays > 0 ? (
-        <p className="text-right text-[12px] text-[#8a7764]">
-          Qualification period: {windowCopy(tier.qualificationWindowDays)}
+        <p className="text-end text-[12px] text-[#8a7764]">
+          {t("loyalty.qualification", { window: windowCopy(tier.qualificationWindowDays, t) })}
         </p>
       ) : null}
 
@@ -74,13 +81,14 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
             <p
               className="absolute top-0 z-30 whitespace-nowrap rounded-md bg-[#8d5a32] px-2.5 py-1 text-[11px] font-semibold text-white"
               style={{
-                left: thumbLeft,
+                insetInlineStart: thumbLeft,
+                // Logical: the label leans away from the track's start in either direction.
                 transform:
                   thumb < 22
                     ? "translateX(0)"
                     : thumb > 78
-                      ? "translateX(-100%)"
-                      : "translateX(-50%)",
+                      ? `translateX(${rtl ? "100%" : "-100%"})`
+                      : `translateX(${rtl ? "50%" : "-50%"})`,
               }}
             >
               {remaining}
@@ -89,28 +97,28 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
           {remaining ? (
             <span
               aria-hidden
-              className="absolute z-20 w-px -translate-x-1/2 border-l border-dotted border-[#8d5a32]"
-              style={{ left: thumbLeft, top: 28, height: 40 }}
+              className="absolute z-20 w-px -translate-x-1/2 border-s border-dotted border-[#8d5a32] rtl:translate-x-1/2"
+              style={{ insetInlineStart: thumbLeft, top: 28, height: 40 }}
             />
           ) : null}
           <div
             className="absolute top-[75px] z-0 h-1 -translate-y-1/2 rounded-full bg-[#e7ddd2]"
             style={{
-              left: `${trackStart}%`,
+              insetInlineStart: `${trackStart}%`,
               width: `${trackEnd - trackStart}%`,
             }}
           />
           <div
             className="absolute top-[75px] z-0 h-1.5 -translate-y-1/2 rounded-full bg-[#8d5a32]"
             style={{
-              left: `${trackStart}%`,
+              insetInlineStart: `${trackStart}%`,
               width: `${Math.max(0, thumb - trackStart)}%`,
             }}
           />
           <span
             aria-hidden
-            className="absolute top-[75px] z-20 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8d5a32] ring-4 ring-[#f3e6d4]"
-            style={{ left: thumbLeft }}
+            className="absolute top-[75px] z-20 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8d5a32] ring-4 ring-[#f3e6d4] rtl:translate-x-1/2"
+            style={{ insetInlineStart: thumbLeft }}
           />
           <ol className="relative flex">
             {steps.map((step, index) => {
@@ -140,7 +148,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
                     className={`mt-3 text-[10px] font-bold tracking-[0.14em] ${isCurrent ? "text-[#8d5a32]" : "invisible"}`}
                     aria-hidden={!isCurrent}
                   >
-                    CURRENT TIER
+                    {t("loyalty.currentTierBadge")}
                   </p>
                   <p className="mt-1 text-center font-[family-name:var(--font-display)] text-[15px] text-[#3a2e24]">
                     {step.name}
@@ -160,7 +168,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
 
       {!tier.next ? (
         <p className="mt-4 text-[13px] leading-relaxed text-[#8a7764]">
-          You&apos;ve reached the highest current Rewards tier.
+          {t("loyalty.highestTier")}
         </p>
       ) : null}
       {tier.next ? (
@@ -170,12 +178,12 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(tier.progressPercent ?? 0)}
-          aria-label={`Progress toward ${tier.next.name}`}
+          aria-label={t("loyalty.progressToward", { tier: tier.next.name })}
         />
       ) : null}
       {tier.qualifyingSpend != null ? (
         <p className="mt-4 text-[13px] leading-relaxed text-[#8a7764]">
-          Eligible spend so far:{" "}
+          {t("loyalty.spendSoFar")}{" "}
           <span className="font-semibold text-[#3a2e24] tabular-nums" dir="ltr">
             {formatMoney(tier.qualifyingSpend, currency)}
           </span>
@@ -185,11 +193,11 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
   );
 }
 
-function historyDate(value: string | null): string | null {
+function historyDate(value: string | null, locale = "en"): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -203,17 +211,18 @@ function TierProgress({
   tier: LoyaltyTierView;
   currency: string;
 }) {
+  const t = useShopCopy();
   if (!tier.next) {
     return (
       <p className="mt-4 max-w-[420px] text-[13px] leading-relaxed text-sa-secondary">
-        You&apos;ve reached the highest current Rewards tier.
+        {t("loyalty.highestTier")}
       </p>
     );
   }
 
   const remaining =
     tier.remainingAmount != null
-      ? `${formatMoney(tier.remainingAmount, currency)} away from ${tier.next.name}`
+      ? t("loyalty.awayFrom", { amount: formatMoney(tier.remainingAmount, currency), tier: tier.next.name })
       : null;
   const percent = tier.progressPercent ?? 0;
 
@@ -225,23 +234,23 @@ function TierProgress({
         </p>
       ) : (
         <p className="text-[14px] leading-relaxed text-sa-secondary">
-          Keep shopping to reach {tier.next.name}.
+          {t("loyalty.keepShopping", { tier: tier.next.name })}
         </p>
       )}
       <div className="mt-3">
-        <p className="sr-only">{`${Math.round(percent)} percent of the way to ${tier.next.name}`}</p>
+        <p className="sr-only">{t("loyalty.percentOfWay", { percent: Math.round(percent), tier: tier.next.name })}</p>
         <div
           className="h-2 overflow-hidden rounded-full bg-sa-border"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(percent)}
-          aria-label={`Progress toward ${tier.next.name}`}
+          aria-label={t("loyalty.progressToward", { tier: tier.next.name })}
         >
           <div className="h-full bg-terra" style={{ width: `${percent}%` }} />
         </div>
         <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-sa-secondary">
-          <span>Eligible spend</span>
+          <span>{t("loyalty.eligibleSpend")}</span>
           <span>{tier.next.name}</span>
         </div>
       </div>
@@ -260,6 +269,7 @@ export function RewardsTierSection({
   hideCurrentName?: boolean;
 }) {
   const marketCurrency = useMarketCurrency();
+  const t = useShopCopy();
   if (!hasLoyaltyTier(wallet) || !wallet.tier) return null;
   const tier = wallet.tier;
   const currency = wallet.currencyCode ?? marketCurrency;
@@ -277,7 +287,7 @@ export function RewardsTierSection({
               id="rewards-tier-heading"
               className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted"
             >
-              Current tier
+              {t("loyalty.currentTier")}
             </h3>
             <p className="mt-1 break-words text-[22px] font-semibold leading-tight text-sa-primary">
               {tier.current?.name}
@@ -285,13 +295,13 @@ export function RewardsTierSection({
           </div>
         ) : (
           <h3 id="rewards-tier-heading" className="sr-only">
-            Rewards tier
+            {t("loyalty.rewardsTier")}
           </h3>
         )}
         {tier.next ? (
-          <div className="min-w-0 text-right">
+          <div className="min-w-0 text-end">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-              Next tier
+              {t("loyalty.nextTier")}
             </p>
             <p className="mt-1 break-words text-[16px] font-semibold text-sa-primary">
               {tier.next.name}
@@ -302,7 +312,7 @@ export function RewardsTierSection({
       <TierProgress tier={tier} currency={currency} />
       {tier.qualifyingSpend != null ? (
         <p className="mt-4 break-words text-[13px] leading-relaxed text-sa-secondary">
-          Eligible spend so far:{" "}
+          {t("loyalty.spendSoFar")}{" "}
           <span
             className="font-semibold text-sa-primary tabular-nums"
             dir="ltr"
@@ -314,7 +324,7 @@ export function RewardsTierSection({
       {tier.qualificationWindowDays != null &&
       tier.qualificationWindowDays > 0 ? (
         <p className="mt-1 break-words text-[13px] leading-relaxed text-sa-secondary">
-          Qualification period: {windowCopy(tier.qualificationWindowDays)}
+          {t("loyalty.qualification", { window: windowCopy(tier.qualificationWindowDays, t) })}
         </p>
       ) : null}
     </section>
@@ -332,6 +342,8 @@ export function RewardsTierHistory({
   error?: boolean;
   onRetry?: () => void;
 }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   if (pending) {
     return (
       <section aria-labelledby="tier-history-heading">
@@ -339,10 +351,10 @@ export function RewardsTierHistory({
           id="tier-history-heading"
           className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
         >
-          Tier history
+          {t("loyalty.tierHistory")}
         </h2>
         <p className="mt-4 text-[13px] text-sa-secondary" role="status">
-          Loading tier history…
+          {t("loyalty.tierHistoryLoading")}
         </p>
       </section>
     );
@@ -354,11 +366,11 @@ export function RewardsTierHistory({
           id="tier-history-heading"
           className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
         >
-          Tier history
+          {t("loyalty.tierHistory")}
         </h2>
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
           <p className="text-[14px] text-sa-primary">
-            We couldn&apos;t load your rewards right now.
+            {t("loyalty.loadFailed")}
           </p>
           {onRetry ? (
             <button
@@ -366,7 +378,7 @@ export function RewardsTierHistory({
               onClick={onRetry}
               className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
             >
-              Try again
+              {t("tryAgain")}
             </button>
           ) : null}
         </div>
@@ -380,7 +392,7 @@ export function RewardsTierHistory({
         id="tier-history-heading"
         className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
       >
-        Tier history
+        {t("loyalty.tierHistory")}
       </h2>
       <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
         {rows.map((row) => (
@@ -391,11 +403,11 @@ export function RewardsTierHistory({
               </p>
             ) : null}
             <p className="mt-0.5 break-words text-[12px] text-sa-secondary">
-              {row.label}
+              {knownText(t, "loyalty.text.", row.label)}
             </p>
-            {historyDate(row.occurredAt) ? (
+            {historyDate(row.occurredAt, locale) ? (
               <p className="mt-1 text-[12px] text-sa-muted">
-                {historyDate(row.occurredAt)}
+                {historyDate(row.occurredAt, locale)}
               </p>
             ) : null}
           </li>

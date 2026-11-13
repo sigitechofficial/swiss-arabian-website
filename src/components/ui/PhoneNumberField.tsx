@@ -15,6 +15,9 @@ import {
 } from "libphonenumber-js";
 import { phoneCc, phoneNum } from "@/styles/checkoutChrome";
 import { useMarket } from "@/providers/MarketProvider";
+import { intlLocale } from "@/lib/i18n/locales";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 /** Shown first — the markets the storefront actually ships to. */
 const PREFERRED: CountryCode[] = ["AE", "SA", "QA", "KW", "BH", "OM"];
@@ -25,9 +28,9 @@ function asCountry(code: string | null | undefined): CountryCode | null {
   return upper && (getCountries() as string[]).includes(upper) ? (upper as CountryCode) : null;
 }
 
-function countryName(country: string): string {
+function countryName(country: string, locale = "en"): string {
   try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(country) ?? country;
+    return new Intl.DisplayNames([locale === "en" ? "en" : intlLocale(locale)], { type: "region" }).of(country) ?? country;
   } catch {
     return country;
   }
@@ -93,7 +96,7 @@ type PhoneNumberFieldProps = {
  */
 export function PhoneNumberField({
   id = "phone",
-  label = "Mobile number",
+  label,
   renderLabel = true,
   hint,
   error,
@@ -105,6 +108,9 @@ export function PhoneNumberField({
   onBlur,
   autoComplete = "tel",
 }: PhoneNumberFieldProps) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
+  const fieldLabel = label ?? t("phone.label");
   const parsed = value ? parsePhoneNumberFromString(value) : undefined;
   // An empty field starts on the selected market's country (+974 in Qatar).
   const marketCountry = asCountry(useMarket().catalogContext?.countryCode) ?? FALLBACK_COUNTRY;
@@ -133,17 +139,17 @@ export function PhoneNumberField({
     const all = getCountries();
     const rest = all
       .filter((code) => !PREFERRED.includes(code))
-      .map((code) => ({ code, name: countryName(code), dial: getCountryCallingCode(code) }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .map((code) => ({ code, name: countryName(code, locale), dial: getCountryCallingCode(code) }))
+      .sort((a, b) => a.name.localeCompare(b.name, locale));
     return [
       ...PREFERRED.filter((code) => all.includes(code)).map((code) => ({
         code,
-        name: countryName(code),
+        name: countryName(code, locale),
         dial: getCountryCallingCode(code),
       })),
       ...rest,
     ];
-  }, []);
+  }, [locale]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -168,9 +174,9 @@ export function PhoneNumberField({
   // the payment providers will reject — Tabby fails the whole session on it.
   useEffect(() => {
     inputRef.current?.setCustomValidity(
-      value && !isValidPhoneNumber(value) ? "Enter a valid phone number." : "",
+      value && !isValidPhoneNumber(value) ? t("phone.invalid") : "",
     );
-  }, [value]);
+  }, [value, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -227,7 +233,7 @@ export function PhoneNumberField({
     <div className="flex w-full flex-col gap-1.5">
       {renderLabel ? (
         <label htmlFor={id} className="text-[12px] font-normal leading-normal text-sa-secondary">
-          {label}
+          {fieldLabel}
         </label>
       ) : null}
 
@@ -238,11 +244,11 @@ export function PhoneNumberField({
             className={styles.trigger}
             aria-haspopup="listbox"
             aria-expanded={open}
-            aria-label={`Country: ${countryName(activeCountry)} (+${getCountryCallingCode(activeCountry)})`}
+            aria-label={t("phone.countryAria", { country: countryName(activeCountry, locale), dial: getCountryCallingCode(activeCountry) })}
             onClick={() => setOpen((v) => !v)}
           >
             <Flag country={activeCountry} />
-            <span>+{getCountryCallingCode(activeCountry)}</span>
+            <span dir="ltr">+{getCountryCallingCode(activeCountry)}</span>
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M2.5 4.5 6 8l3.5-3.5" />
             </svg>
@@ -258,12 +264,12 @@ export function PhoneNumberField({
                   name="country-search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search country or code"
-                  aria-label="Search country"
+                  placeholder={t("phone.search")}
+                  aria-label={t("phone.searchAria")}
                   className="h-9 w-full rounded-[8px] border border-sa-input bg-surface px-2.5 text-[12.5px] text-sa-primary outline-none placeholder:text-sa-muted focus:outline-none focus-visible:outline-none"
                 />
               </div>
-              <ul className="max-h-64 overflow-auto py-1" role="listbox" aria-label="Country calling code">
+              <ul className="max-h-64 overflow-auto py-1" role="listbox" aria-label={t("phone.codeAria")}>
                 {filtered.map(({ code, name: label, dial }) => (
                   <li key={code}>
                     <button
@@ -277,12 +283,12 @@ export function PhoneNumberField({
                     >
                       <Flag country={code} />
                       <span className="min-w-0 flex-1 truncate">{label}</span>
-                      <span className="shrink-0 text-sa-secondary">+{dial}</span>
+                      <span className="shrink-0 text-sa-secondary" dir="ltr">+{dial}</span>
                     </button>
                   </li>
                 ))}
                 {filtered.length === 0 ? (
-                  <li className="px-3 py-3 text-[13px] text-sa-secondary">No country matches that.</li>
+                  <li className="px-3 py-3 text-[13px] text-sa-secondary">{t("phone.noMatch")}</li>
                 ) : null}
               </ul>
             </div>

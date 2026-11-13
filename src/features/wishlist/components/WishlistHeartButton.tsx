@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import { Heart } from "lucide-react";
 import { useWishlistToggle } from "../hooks/useWishlistToggle";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type WishlistHeartButtonProps = {
   productId: string;
@@ -15,6 +16,7 @@ export function WishlistHeartButton({
 }: WishlistHeartButtonProps) {
   const { available, inWishlist, isAuthenticated, disabled, toggle } =
     useWishlistToggle(productId);
+  const t = useShopCopy();
 
   if (!available) return null;
 
@@ -34,10 +36,10 @@ export function WishlistHeartButton({
       aria-pressed={inWishlist}
       aria-label={
         !isAuthenticated
-          ? "Sign in to save this product"
+          ? t("wishlist.signInToSave")
           : inWishlist
-            ? "Remove from wishlist"
-            : "Add to wishlist"
+            ? t("wishlist.remove")
+            : t("wishlist.add")
       }
       className={`flex cursor-pointer items-center justify-center rounded-full border bg-page/90 text-sa-primary transition-colors hover:border-terra hover:text-terra disabled:cursor-wait ${
         compact

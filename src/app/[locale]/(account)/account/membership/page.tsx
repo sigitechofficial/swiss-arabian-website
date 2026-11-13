@@ -10,12 +10,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function AccountMembershipPage() {
+export default async function AccountMembershipPage() {
   requireBrandFeature("loyalty");
+  const { t } = await routeTranslator();
   return (
     <AccountPlaceholderPageView
-      title="Membership Benefits"
-      description="Your tier, points and member perks will appear here. Your active plan is already visible under My Subscription."
+      title={t("pages.title.membership")}
+      description={t("account.membershipText")}
     />
   );
 }

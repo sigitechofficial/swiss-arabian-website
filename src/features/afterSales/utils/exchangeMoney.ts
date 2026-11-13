@@ -1,4 +1,5 @@
 import type { ExchangeMoneyView } from "../types/afterSales";
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 
 /** Query parameter that marks a return from the exchange payment page. */
 export const EXCHANGE_PAYMENT_PARAM = "exchangePayment";
@@ -21,45 +22,46 @@ function positive(value: string | null | undefined): string | null {
  * What to show for an exchange's money state. Driven only by the backend's
  * `money.action`; `null` means there is nothing to show (even swap).
  */
-export function exchangeMoneyCopy(money: ExchangeMoneyView): ExchangeMoneyCopy | null {
+export function exchangeMoneyCopy(
+  money: ExchangeMoneyView,
+  t: Translator = englishTranslator,
+): ExchangeMoneyCopy | null {
   const payable = positive(money.customerPayableAmount);
   const refundable = positive(money.refundableDifferenceAmount);
   switch (money.action) {
     case "PAY_DIFFERENCE":
     case "AWAITING_PAYMENT":
       return {
-        title: "Additional payment due:",
-        body: "Your replacement costs more than the item you’re returning. Pay the difference to continue your exchange.",
+        title: t("exchangeMoney.dueTitle"),
+        body: t("exchangeMoney.dueBody"),
         amount: payable,
         canPay: true,
       };
     case "PAYMENT_COMPLETE":
       return {
-        title: "Additional payment received",
-        body: "Thank you — we’ve received the difference for your exchange.",
+        title: t("exchangeMoney.receivedTitle"),
+        body: t("exchangeMoney.receivedBody"),
         amount: payable,
         canPay: false,
       };
     case "REFUND_PENDING":
       return {
-        title: "Refund in progress:",
-        body:
-          money.note ||
-          "A refund for the price difference is being processed. You do not need to pay anything.",
+        title: t("exchangeMoney.refundTitle"),
+        body: money.note || t("exchangeMoney.refundBody"),
         amount: refundable,
         canPay: false,
       };
     case "REFUND_COMPLETE":
       return {
-        title: "Difference refunded:",
-        body: "The refund has been completed. It can take more time to appear with your bank.",
+        title: t("exchangeMoney.refundedTitle"),
+        body: t("orders.refund.completed"),
         amount: refundable,
         canPay: false,
       };
     case "CONTACT_SUPPORT":
       return {
-        title: "Exchange payment",
-        body: money.note || "Please contact our customer care team about the payment for this exchange.",
+        title: t("exchangeMoney.contactTitle"),
+        body: money.note || t("exchangeMoney.contactBody"),
         amount: null,
         canPay: false,
       };

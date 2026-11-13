@@ -1,4 +1,8 @@
+"use client";
+
 import Image from "next/image";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 const LOADER_GIF = "/assets/catalog/loading-perfume.gif";
 
@@ -37,8 +41,8 @@ export function LoaderMark({ size = 112, className = "" }: LoaderMarkProps) {
 }
 
 /**
- * What a route is loading, for brands that word the loading line in the
- * page's language (Sapil). Swiss Arabian shows `label` as before.
+ * What a route is loading, so the loading line reads in the page's language
+ * (`loadingLabel.<key>` in `src/messages`). Without a key, `label` is shown.
  */
 export type PageLoadingLabelKey =
   | "page"
@@ -56,7 +60,9 @@ type PageLoadingProps = {
   fill?: boolean;
 };
 
-export function PageLoading({ label = "Loading…", fill = false }: PageLoadingProps) {
+export function PageLoading({ label = "Loading…", labelKey, fill = false }: PageLoadingProps) {
+  const t = useShopCopy();
+  const text = labelKey ? t(`loadingLabel.${labelKey}` as MessageKey) : label;
   return (
     <div
       className={`flex w-full flex-col items-center justify-center gap-6 px-4 py-16 ${
@@ -68,7 +74,7 @@ export function PageLoading({ label = "Loading…", fill = false }: PageLoadingP
     >
       <LoaderMark />
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sa-muted">
-        {label}
+        {text}
       </p>
     </div>
   );

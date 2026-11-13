@@ -10,10 +10,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function AccountSavedPage() {
+export default async function AccountSavedPage() {
+  const { t } = await routeTranslator();
   return (
     <Suspense fallback={<PageLoading label="Loading saved items…" labelKey="savedItems" fill />}>
-      <AccountWishlistPageView title="Saved Items" />
+      <AccountWishlistPageView title={t("pages.title.saved")} />
     </Suspense>
   );
 }

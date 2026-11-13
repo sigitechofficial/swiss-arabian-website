@@ -1,7 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { intlLocale } from "@/lib/i18n/locales";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useMemo, useState } from "react";
 import { PageLoading } from "@/components/ui";
 import { toast } from "@/components/ui/Toaster";
@@ -21,11 +25,11 @@ import type { StorefrontCustomerReviewView } from "../types/reviews";
 import { ReviewWriteForm } from "./ReviewWriteForm";
 import { StarRating } from "./StarRating";
 
-const FILTERS: { value: string | null; label: string }[] = [
-  { value: null, label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
+const FILTERS: { value: string | null; label: MessageKey }[] = [
+  { value: null, label: "payments.filter.all" },
+  { value: "PENDING", label: "myReviews.status.PENDING" },
+  { value: "APPROVED", label: "myReviews.status.APPROVED" },
+  { value: "REJECTED", label: "myReviews.status.REJECTED" },
 ];
 
 function statusTone(status: string): AccountStatusTone {
@@ -42,27 +46,18 @@ function statusTone(status: string): AccountStatusTone {
   }
 }
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "Pending";
-    case "APPROVED":
-      return "Approved";
-    case "REJECTED":
-      return "Rejected";
-    case "HIDDEN":
-      return "Hidden";
-    case "DELETED":
-      return "Deleted";
-    default:
-      return status;
-  }
-}
+const STATUS_LABEL: Record<string, MessageKey> = {
+  PENDING: "myReviews.status.PENDING",
+  APPROVED: "myReviews.status.APPROVED",
+  REJECTED: "myReviews.status.REJECTED",
+  HIDDEN: "myReviews.status.HIDDEN",
+  DELETED: "myReviews.status.DELETED",
+};
 
-function formatReviewDate(iso: string): string {
+function formatReviewDate(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(locale === "en" ? undefined : intlLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -70,6 +65,7 @@ function formatReviewDate(iso: string): string {
 }
 
 export function AccountReviewsPageView() {
+  const t = useShopCopy();
   const [status, setStatus] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const feed = useMyReviewsFeed(status);
@@ -81,17 +77,17 @@ export function AccountReviewsPageView() {
   );
 
   const emptyCopy = useMemo(() => {
-    if (status === "PENDING") return "No reviews waiting for approval.";
-    if (status === "APPROVED") return "No published reviews yet.";
-    if (status === "REJECTED") return "No rejected reviews.";
-    return "You have not reviewed a product yet.";
-  }, [status]);
+    if (status === "PENDING") return t("myReviews.emptyPending");
+    if (status === "APPROVED") return t("myReviews.emptyApproved");
+    if (status === "REJECTED") return t("myReviews.emptyRejected");
+    return t("myReviews.empty");
+  }, [status, t]);
 
   return (
     <AccountPageShell>
       <AccountPageTitle
-        title="Reviews"
-        subtitle="Most reviews appear on the product page straight away; reviews with links, contact details or offensive words are checked by our team first. Edited reviews are checked again."
+        title={t("pages.title.reviews")}
+        subtitle={t("myReviews.subtitle")}
       />
 
       <div className={`${accountContainer} pb-16`}>
@@ -112,17 +108,17 @@ export function AccountReviewsPageView() {
                     : "border border-sa-border text-sa-secondary hover:border-terra hover:text-terra"
                 }`}
               >
-                {filter.label}
+                {t(filter.label)}
               </button>
             );
           })}
         </div>
 
         {feed.isLoading && items.length === 0 ? (
-          <PageLoading label="Loading reviews…" />
+          <PageLoading label={t("myReviews.loading")} />
         ) : feed.isError && items.length === 0 ? (
           <p className="text-[14px] text-sa-secondary">
-            Your reviews could not be loaded right now.
+            {t("myReviews.loadFailed")}
           </p>
         ) : items.length === 0 ? (
           <p className="text-[14px] text-sa-secondary">{emptyCopy}</p>
@@ -143,14 +139,14 @@ export function AccountReviewsPageView() {
                   onDelete={async () => {
                     if (
                       !window.confirm(
-                        "Remove this review? This cannot be undone.",
+                        t("myReviews.removeConfirm"),
                       )
                     ) {
                       return;
                     }
                     try {
                       await remove.unwrap(review.reviewId);
-                      toast("Review removed", "success");
+                      toast(t("myReviews.removed"), "success");
                       setEditingId(null);
                     } catch (error) {
                       toast(getUserFacingErrorMessage(error), "error");
@@ -169,7 +165,7 @@ export function AccountReviewsPageView() {
             disabled={feed.isFetchingNextPage}
             onClick={() => void feed.fetchNextPage()}
           >
-            {feed.isFetchingNextPage ? "Loading…" : "Load more"}
+            {feed.isFetchingNextPage ? t("loadingLabel.page") : t("myReviews.loadMore")}
           </button>
         ) : null}
       </div>
@@ -194,10 +190,12 @@ function AccountReviewCard({
   onSaved: () => void;
   onDelete: () => void;
 }) {
-  const name = review.product?.name || "Product";
+  const t = useShopCopy();
+  const locale = useShopLocale();
+  const name = review.product?.name || t("myReviews.product");
   const slug = review.product?.slug;
   const image = resolveCatalogImageUrl(review.product?.image);
-  const date = formatReviewDate(review.updatedAt || review.createdAt);
+  const date = formatReviewDate(review.updatedAt || review.createdAt, locale);
 
   return (
     <article>
@@ -217,17 +215,17 @@ function AccountReviewCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             {slug ? (
-              <Link
+              <LocaleLink
                 href={`/products/${slug}`}
                 className="text-[15px] font-semibold text-sa-primary hover:text-terra"
               >
                 {name}
-              </Link>
+              </LocaleLink>
             ) : (
               <p className="text-[15px] font-semibold text-sa-primary">{name}</p>
             )}
             <AccountStatusPill
-              label={statusLabel(review.status)}
+              label={STATUS_LABEL[review.status] ? t(STATUS_LABEL[review.status]) : review.status}
               tone={statusTone(review.status)}
             />
           </div>
@@ -238,18 +236,18 @@ function AccountReviewCard({
             ) : null}
             {review.verifiedPurchase ? (
               <span className="text-[12px] font-semibold text-terra">
-                Verified purchase
+                {t("myReviews.verified")}
               </span>
             ) : null}
           </div>
           {review.status === "PENDING" ? (
             <p className="mt-2 text-[13px] text-sa-secondary">
-              Waiting for approval — not shown on the product page yet.
+              {t("myReviews.waiting")}
             </p>
           ) : null}
           {review.status === "REJECTED" || review.status === "HIDDEN" ? (
             <p className="mt-2 text-[13px] text-sa-secondary">
-              This review is not shown on the website. You can edit it — our team will look at it again.
+              {t("myReviews.notShown")}
             </p>
           ) : null}
         </div>
@@ -280,14 +278,14 @@ function AccountReviewCard({
           {review.reply ? (
             <div className="mt-3 rounded-e-md border-s-2 border-copper bg-[#fffdf8] px-3 py-2 text-[13px] leading-relaxed text-sa-secondary">
               <span className="mb-0.5 block text-[11px] font-semibold tracking-[0.1em] text-sa-primary uppercase">
-                Swiss Arabian replied
+                {t("myReviews.replied")}
               </span>
               {review.reply.text}
             </div>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-3">
             <button type="button" className={accountBtnGhost} onClick={onEdit}>
-              Edit
+              {t("account.edit")}
             </button>
             <button
               type="button"
@@ -295,7 +293,7 @@ function AccountReviewCard({
               onClick={onDelete}
               disabled={deleting}
             >
-              Delete
+              {t("myReviews.delete")}
             </button>
           </div>
         </>

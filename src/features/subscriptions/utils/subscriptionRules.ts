@@ -1,3 +1,4 @@
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 import type {
   PlanProduct,
   PublicSubscriptionConsent,
@@ -24,10 +25,10 @@ export function isSubscriptionAudience(value: unknown): value is SubscriptionAud
   return value === "MEN" || value === "WOMEN";
 }
 
-export function audienceLabel(audience: SubscriptionAudience | null | undefined): string {
-  if (audience === "MEN") return "Men";
-  if (audience === "WOMEN") return "Women";
-  return "No audience is saved on this agreement.";
+export function audienceLabel(audience: SubscriptionAudience | null | undefined, t: Translator = englishTranslator): string {
+  if (audience === "MEN") return t("subs.audience.men");
+  if (audience === "WOMEN") return t("subs.audience.women");
+  return t("subs.audience.none");
 }
 
 /** Drop picks the audience-filtered product list no longer returns. */
@@ -249,18 +250,18 @@ export function queueRows(
   return [...items].sort((a, b) => a.position - b.position);
 }
 
-export function statusLabel(status: string): string {
-  if (status === "PENDING_ACTIVATION") return "Pending activation";
-  if (status === "ACTIVE") return "Active";
-  if (status === "PAUSED") return "Paused";
-  if (status === "CANCELLED") return "Cancelled";
+export function statusLabel(status: string, t: Translator = englishTranslator): string {
+  if (status === "PENDING_ACTIVATION") return t("subs.status.pending");
+  if (status === "ACTIVE") return t("subs.status.active");
+  if (status === "PAUSED") return t("subs.status.paused");
+  if (status === "CANCELLED") return t("subs.status.cancelled");
   return status;
 }
 
-export function modeLabel(mode: SubscriptionSelectionMode): string {
-  if (mode === "REPLENISHMENT") return "Replenishment";
-  if (mode === "QUEUE") return "Queue";
-  return "Surprise Me";
+export function modeLabel(mode: SubscriptionSelectionMode, t: Translator = englishTranslator): string {
+  if (mode === "REPLENISHMENT") return t("subs.mode.replenishment");
+  if (mode === "QUEUE") return t("subs.mode.queue");
+  return t("subs.mode.surprise");
 }
 
 const FORBIDDEN_COPY = [
