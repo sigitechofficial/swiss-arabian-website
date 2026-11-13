@@ -25,3 +25,10 @@ export { SapilOrderDetailPage as AccountOrderDetailPageView } from "./pages/orde
 export { SapilGuestTrackingPage as GuestTrackingPageView, SapilTrackLookupPage as TrackLookupView } from "./pages/orders/SapilTrackPages";
 
 // --- auth + account ---
+export {
+  SapilForgotPasswordPage as ForgotPasswordPageView,
+  SapilLoginPage as LoginPageView,
+  SapilRegisterPage as RegisterPageView,
+  SapilResetPasswordPage as ResetPasswordPageView,
+  SapilVerifyPage as VerifyPageView,
+} from "./pages/auth/SapilAuthPages";

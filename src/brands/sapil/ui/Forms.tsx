@@ -7,6 +7,7 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
 } from "react";
 import { cx } from "./shared";
@@ -97,6 +98,8 @@ export type FieldProps = FieldShell &
     /** fixed prefix box, e.g. "+971" (v9 `.phone b`) */
     prefix?: ReactNode;
     inputClassName?: string;
+    /** the input element (React 19 ref prop; react-hook-form `register` passes one) */
+    ref?: Ref<HTMLInputElement>;
   };
 
 /** v9 `.fld`: label above a 50px input; optional prefix (`.phone`) and error line. */
