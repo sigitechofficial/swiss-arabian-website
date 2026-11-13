@@ -16,7 +16,7 @@ import { SapilLink, richText, useSapilDate, useSapilMoney } from "../../componen
 import { StatusPill, statusText } from "../../components/account/AccountChrome";
 import { OrderSideCard, OrderStateCard, SapilOrderView } from "../../components/orders/SapilOrderView";
 import { AddressLines, itemCountOf, orderLines, orderSteps, orderTotals } from "../../components/orders/orderParts";
-import { TrackingDetails, trackingStep } from "../../components/orders/TrackingDetails";
+import { TrackingDetails, stoppedText, trackingStep, useDeliveryHighlight } from "../../components/orders/TrackingDetails";
 
 function cancelErrorText(t: SapilTranslator, error: OrderCancelError): string {
   if (error === "closed") return t("account.odCancelClosed");
@@ -82,6 +82,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
   const date = useSapilDate();
   const locale = useShopLocale();
   const detail = useCustomerOrderDetail(orderId);
+  const deliveryHighlight = useDeliveryHighlight();
   const { order } = detail;
 
   if (detail.loading) return <OrderStateCard busy title={t("account.odLoading")} />;
@@ -102,7 +103,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
   const totals = orderTotals(t, money, order.totals, currency);
   const tracking = detail.trackingSummary;
   const step = tracking ? trackingStep(tracking) : orderProgressStep(order.status);
-  const eta = tracking?.estimatedDeliveryAt ?? null;
+  const delivery = deliveryHighlight(tracking ?? { status: order.status, deliveredAt: null, estimatedDeliveryAt: null });
   const statusLabel = statusText(t, order.status);
   const total = money(Number(order.totals.total), currency);
   const feedback = detail.cancelResult
@@ -127,12 +128,12 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
       }
       intro={<StatusPill status={order.status} label={statusLabel} />}
       highlight={
-        eta
-          ? { label: t("account.odEtaLabel"), value: date(eta, { weekday: "short", day: "numeric", month: "short" }), detail: orderDeliveryLabel(order.selectedDeliveryMethod) }
+        delivery
+          ? { ...delivery, detail: orderDeliveryLabel(order.selectedDeliveryMethod) }
           : { label: t("account.odTotalLabel"), value: total, detail: orderPaymentLabel(order.selectedPaymentMethod) }
       }
       steps={step >= 0 ? orderSteps(t, step) : undefined}
-      stopped={step < 0 ? t("account.odStopped", { status: statusLabel }) : undefined}
+      stopped={step < 0 ? stoppedText(t, order.status) : undefined}
       notices={
         <>
           {feedback ? (

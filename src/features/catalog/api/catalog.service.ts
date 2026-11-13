@@ -591,10 +591,20 @@ export async function fetchProducts(
 }
 
 /**
+ * The API could not be reached or failed (network error, 5xx): not an answer
+ * about the document. Callers throw it, so the error view and "Try again"
+ * show and no "not found" page is cached.
+ */
+export function isCatalogUnavailable(error: unknown): boolean {
+  return !(error instanceof ApiClientError) || error.status >= 500;
+}
+
+/**
  * Product by public address, telling "does not exist" apart from "could not load".
  * - `missing`: the API answered 404 and no product has this exact slug/SKU/id,
  *   so the page must respond 404 (never a 200 page or another product).
- * - Any other failure: product null, missing false (page renders; the client retries).
+ * - API unreachable or 5xx: throws (error view with retry; never a 404).
+ * - Any other failure (4xx): product null, missing false (page renders; the client retries).
  */
 export async function fetchProductBySlugOutcome(
   slug: string,
@@ -613,6 +623,7 @@ export async function fetchProductBySlugOutcome(
     if (mapped) return { product: mapped, missing: false };
     detailMissing = true;
   } catch (error) {
+    if (isCatalogUnavailable(error)) throw error;
     detailMissing = error instanceof ApiClientError && error.status === 404;
   }
 
@@ -632,8 +643,10 @@ export async function fetchProductBySlugOutcome(
     );
     if (hit) return { product: mapProduct(hit), missing: false };
     return { product: null, missing: detailMissing };
-  } catch {
-    return { product: null, missing: false };
+  } catch (error) {
+    if (isCatalogUnavailable(error)) throw error;
+    // Search refused the lookup (4xx): the detail's own 404 still stands.
+    return { product: null, missing: detailMissing };
   }
 }
 
@@ -771,6 +784,8 @@ export async function fetchCategoryBySlugOutcome(
     );
     return { category, missing: false };
   } catch (error) {
+    // Unreachable / 5xx: thrown (error view), never read as "not found".
+    if (isCatalogUnavailable(error)) throw error;
     return {
       category: null,
       missing: error instanceof ApiClientError && error.status === 404,
@@ -783,7 +798,12 @@ export async function fetchCategoryBySlug(
   zoneCode?: string | null,
   market?: StorefrontContextInput | null,
 ): Promise<CatalogCategory | null> {
-  return (await fetchCategoryBySlugOutcome(slug, zoneCode, market)).category;
+  try {
+    return (await fetchCategoryBySlugOutcome(slug, zoneCode, market)).category;
+  } catch {
+    // Banner text only: the listing shows its own error and retry.
+    return null;
+  }
 }
 
 /** GET /storefront/catalog/categories/:slug/products */
@@ -810,13 +830,35 @@ export async function fetchCollectionBySlug(
   market?: StorefrontContextInput | null,
 ): Promise<CatalogCollection | null> {
   try {
+    return (await fetchCollectionBySlugOutcome(slug, zoneCode, market)).collection;
+  } catch {
+    // Banner text only: the listing shows its own error and retry.
+    return null;
+  }
+}
+
+/**
+ * Collection by handle for the server page. `missing` only on the API's 404;
+ * unreachable / 5xx is thrown, so the page shows the error view instead of
+ * caching an empty or "not found" collection.
+ */
+export async function fetchCollectionBySlugOutcome(
+  slug: string,
+  zoneCode?: string | null,
+  market?: StorefrontContextInput | null,
+): Promise<{ collection: CatalogCollection | null; missing: boolean }> {
+  try {
     const data = await apiGet<ApiCollectionDetailData>(
       `/storefront/catalog/collections/${encodeURIComponent(slug)}?${contextQs(zoneCode, market)}`,
       { skipAuth: true },
     );
-    return mapCollectionDetail(data);
-  } catch {
-    return null;
+    return { collection: mapCollectionDetail(data), missing: false };
+  } catch (error) {
+    if (isCatalogUnavailable(error)) throw error;
+    return {
+      collection: null,
+      missing: error instanceof ApiClientError && error.status === 404,
+    };
   }
 }
 

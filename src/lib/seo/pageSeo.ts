@@ -1,6 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import { apiGet } from "@/lib/api/apiClient";
+import { unstable_cache } from "next/cache";
+import { env } from "@/lib/config/env";
+import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import {
   catalogMetadata,
@@ -23,21 +25,65 @@ export type PublishedPageSeo = {
   jsonLd?: Array<Record<string, unknown>>;
 };
 
-/** Published SEO for a page, or null when the admin has not published any. Cached per request. */
+/** Same as the ISR pages that read it: a record (or "no record") is reused for 5 minutes. */
+export const PAGE_SEO_REVALIDATE_SECONDS = 300;
+
+/**
+ * Whether a path can have a pages-SEO record. Products, collections and
+ * categories carry their SEO in the catalog API (the backend answers 404
+ * "Product SEO is served by the catalog product API" for `/products…`), so
+ * they are never asked for.
+ */
+export function canHavePageSeoRecord(path: string): boolean {
+  const clean = path.trim().split(/[?#]/)[0] ?? "";
+  if (!clean.startsWith("/")) return false;
+  if (/^\/products(\/|$)/i.test(clean)) return false;
+  if (/^\/(collections|categories)\/[^/]+/i.test(clean)) return false;
+  return true;
+}
+
+type PageSeoEnvelope = { data?: { seo?: PublishedPageSeo } | null; seo?: PublishedPageSeo };
+
+/**
+ * One page-seo lookup, cached across requests. A 404 is cached as "no record"
+ * for as long as a found record, so a page without admin SEO does not ask
+ * again on every render. Network errors and 5xx are thrown, so they are never
+ * cached (the caller falls back to the page's own defaults for that render).
+ */
+const fetchPageSeoRecord = unstable_cache(
+  async (path: string, locale: string, zoneCode: string, host: string | null): Promise<PublishedPageSeo | null> => {
+    // The endpoint accepts path, locale and zoneCode only (extra fields are rejected).
+    const qs = new URLSearchParams({ path, locale, zoneCode });
+    const headers: Record<string, string> = {};
+    if (host) headers["x-storefront-host"] = host;
+    const res = await fetch(`${env.apiBaseUrl}/storefront/catalog/page-seo?${qs.toString()}`, { headers });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`page-seo ${res.status}`);
+    // The endpoint answers { data: { path, seo } } inside the usual envelope.
+    const json = (await res.json()) as { data?: PageSeoEnvelope } & PageSeoEnvelope;
+    return json.data?.data?.seo ?? json.data?.seo ?? json.seo ?? null;
+  },
+  ["storefront-page-seo"],
+  { revalidate: PAGE_SEO_REVALIDATE_SECONDS },
+);
+
+/**
+ * Published SEO for a page, or null when the admin has not published any.
+ * Server metadata only (generateMetadata / server pages); cached per request
+ * and across requests.
+ */
 export const loadPublishedPageSeo = cache(async (path: string) => {
   const resolved = await resolveServerCatalogMarket();
-  if (!resolved.zoneCode) return { locale: resolved.locale, seo: null };
+  if (!resolved.zoneCode || !canHavePageSeoRecord(path)) {
+    return { locale: resolved.locale, seo: null };
+  }
   try {
-    // The endpoint accepts path, locale and zoneCode only (extra fields are rejected).
-    const qs = new URLSearchParams({ path, locale: resolved.locale, zoneCode: resolved.zoneCode });
-    // The endpoint answers { data: { path, seo } } inside the usual envelope.
-    const data = await apiGet<{ seo?: PublishedPageSeo; data?: { seo?: PublishedPageSeo } }>(
-      `/storefront/catalog/page-seo?${qs.toString()}`,
-      { skipAuth: true },
-    );
-    return { locale: resolved.locale, seo: data.data?.seo ?? data.seo ?? null };
+    // Read outside the cache scope: the storefront host may come from the request.
+    const host = await resolveStorefrontHost();
+    const seo = await fetchPageSeoRecord(path, resolved.locale, resolved.zoneCode, host);
+    return { locale: resolved.locale, seo };
   } catch {
-    // 404 = nothing published: the page keeps its own defaults.
+    // API unreachable: the page keeps its own defaults for this render.
     return { locale: resolved.locale, seo: null };
   }
 });

@@ -7,7 +7,7 @@ import {
   CheckoutStateShell,
 } from "@/features/checkout/components/CheckoutStateShell";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { formatOrderDate, orderStatusDisplay } from "@/features/orders/utils/orderStatus";
+import { formatOrderDate, orderStatusDisplay, trackingUnitCount } from "@/features/orders/utils/orderStatus";
 import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
 import {
   cbox,
@@ -64,6 +64,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
 
   if (summary) {
     const { label, tone } = orderStatusDisplay(summary.status);
+    const units = trackingUnitCount(summary);
     return (
       <CheckoutStateShell current="Track order">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 pb-16">
@@ -72,7 +73,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
             <h1 className={pageTitle}>{summary.orderNumber}</h1>
             <p className={checkoutNote}>
               Placed on {formatOrderDate(summary.createdAt, { long: true })} ·{" "}
-              {summary.itemCount} {summary.itemCount === 1 ? "item" : "items"} ·{" "}
+              {units} {units === 1 ? "item" : "items"} ·{" "}
               {formatMoney(Number(summary.total), summary.currency)}
             </p>
             <div className="mt-3 flex justify-center">

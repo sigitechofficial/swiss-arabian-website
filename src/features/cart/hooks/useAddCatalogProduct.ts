@@ -27,7 +27,13 @@ export function useAddCatalogProduct() {
       toast("This product isn’t available to purchase yet.", "error");
       return;
     }
-    const product = await fetchProductBySlug(opts.slug, zoneCode);
+    let product: Awaited<ReturnType<typeof fetchProductBySlug>>;
+    try {
+      product = await fetchProductBySlug(opts.slug, zoneCode);
+    } catch {
+      toast("We couldn’t reach the shop. Please try again.", "error");
+      return;
+    }
     if (!product || (!product.variantId && !product.sku)) {
       toast("This product isn’t available to purchase yet.", "error");
       return;
