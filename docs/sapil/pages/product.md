@@ -47,7 +47,7 @@ Loading (product fetched in the browser for another market), load failed (Try ag
 
 ## Visual diff
 
-Kit: `/sapil-kit/catalog` (`src/brands/sapil/kit/CatalogKit.tsx`, real components with the v9 mock Berry Crush and the v9 shop's first eight cards). Run with the Sapil build on :3032 (`SAPIL_KIT=1 next start -p 3032`):
+Kit: `/sapil-kit/catalog` (`src/brands/sapil/kit/CatalogKit.tsx`, real components with the v9 mock Berry Crush and the v9 shop's first eight cards). Run against a Sapil build on :3032 (the kit routes (`page.dev.tsx`) exist only in `next dev`, in a Sapil build, or in a build made with `SAPIL_KIT=1` (a build-time rule in `next.config.ts`: a Swiss Arabian production build has no kit route and ships none of its code); a production server also needs `SAPIL_KIT=1` at runtime, else the page 404s. In practice: build **and** start the Sapil build with `SAPIL_KIT=1`):
 
 ```
 KIT_URL=http://localhost:3032/sapil-kit REF_PORT=3033 node scripts/sapil-visual-diff.mjs --only=shop-toolbar,shop-grid,shop-hero,pdp-gallery,pdp-pyramid,pdp-buyrow
@@ -81,3 +81,10 @@ The toolbar fixture uses v9's facet titles (Collection, Highlights, Price, For, 
 ## Open questions
 
 - Gender field on products; product FAQ source; bundle data; review write flow on the page.
+
+## Review 2 (2026-11-13)
+
+- Live: add to bag opens the drawer with focus inside, Escape closes it and returns focus to "Add to
+  bag"; en + ar, no horizontal scroll. Lighthouse 68 (was 42), a11y 100, TBT 369 ms.
+- The only console error is the `you-may-also-like` merch rail 404 (Swiss Arabian slug; Sapil has
+  no such rail yet — data, or make the slug per brand).

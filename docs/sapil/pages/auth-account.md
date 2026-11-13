@@ -78,15 +78,25 @@ Loyalty / rewards, subscriptions, employee benefits and gift box are off in
 
 - No v9 design: needs design review.
 - The shared account mutation hooks (`useCustomerAddresses`, `useCustomerPhones`,
-  `useMarketingConsents`, `useUpdateCustomerMe`, wishlist) still raise the **global toast**
-  (Swiss Arabian styling, English). A brand-themed `Toaster` belongs to the shell.
+  `useMarketingConsents`, `useUpdateCustomerMe`, wishlist) raise shared `toast()` calls.
+  They are drawn by `SapilToastHost` (Sapil's v9 toast), but the sentences are the shared
+  English ones until the hooks take their messages from the caller.
 - API error text (`getUserFacingErrorMessage`) and cancel / refund outcome sentences
   (`cancelOutcome`, `refundCustomerStatus`) are English from shared utils.
-- Wishlist uses the design-system `ProductCard` with a local adapter
-  (`TODO(integration)`: switch to the catalog agent's card container), neutral `sand`
-  tile until the API's `tileColor`.
+- Wishlist uses the shared `SapilProductCard` (tile, was-price, out-of-stock pill, quick
+  view, + to bag); the heart is off there because each card has its own "Remove" link.
 - Returns page lists requests only; starting a return / exchange stays on the order
   (`OrderAfterSalesSection` is Swiss-styled and not rendered on Sapil's order detail yet:
   the order detail links to the returns page).
 - Social sign-in buttons (`env.flags.oauth`) are not rendered on Sapil.
 - Region and country names in address forms come from `regionsByCountry` (English).
+
+## Review 2 (2026-11-13)
+
+- Live: sign-in labels, empty submit (inline errors + focus on the first), wrong password (inline
+  `role="alert"`), register validation, forgot password → reset page, verify page, signed-out
+  `/account/*` → `/login?returnTo=…`. All pass.
+- Forgot password puts the email in the reset URL (`?identifier=…`, shared hook) — privacy note for
+  the platform.
+- From `/ar/login`, "Create account" opens the **English** `/register` (transactional paths are not
+  locale-prefixed; see `docs/multibrand/PROGRAM.md`).

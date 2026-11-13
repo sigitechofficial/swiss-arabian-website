@@ -19,22 +19,22 @@ import { profileNameSchema, type ProfileNameFormValues } from "@/features/accoun
 import type { ConsentChannel, StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
 import { useCustomerExchangesFeed, useCustomerReturnsFeed } from "@/features/afterSales/hooks/useAfterSales";
 import { useMarketDialCode } from "@/features/auth/hooks/useAuthForms";
-import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
 import { orderNeedsPaying, paymentFilterOf, usePaymentHistory, type PaymentFilter } from "@/features/payments/hooks/usePaymentHistory";
 import { useMyReviewsFeed } from "@/features/reviews/hooks/useProductReviews";
 import { useReviewMutations } from "@/features/reviews/hooks/useReviewMutations";
 import { useAccountWishlist } from "@/features/wishlist/hooks/useAccountWishlist";
 import { useWishlistMutations } from "@/features/wishlist/hooks/useWishlistMutations";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { Button, Checkbox, Chip, Field, FieldGrid, ProductCard, SelectField, Stars } from "../../ui";
+import { Button, Checkbox, Chip, Field, FieldGrid, SelectField, Stars } from "../../ui";
 import { buttonClass } from "../../ui/Button";
 import { cx } from "../../ui/shared";
 import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
 import type { SapilCopyKey } from "../../i18n/catalog";
-import { DEFAULT_TILE, SapilLink, SapilSkeleton, richText, useSapilDate, useSapilMoney } from "../../components/commerce/shared";
+import { SapilLink, SapilSkeleton, richText, useSapilDate, useSapilMoney } from "../../components/commerce/shared";
 import { SapilPhoneField, isValidMobile } from "../../components/commerce/SapilPhoneField";
 import { AccountPage, Card, LoadError, SAPIL_ACCOUNT_NAV, StatusPill, statusText } from "../../components/account/AccountChrome";
 import { PasswordField } from "../../components/account/AuthFields";
+import { SapilProductCard } from "../../components/product";
 import { FormMessage } from "../../components/account/FormCard";
 
 const linkBtn = cx(buttonClass("link"), "!text-[14px]");
@@ -565,10 +565,8 @@ export function SapilAccountSecurityPage() {
 
 export function SapilAccountWishlistPage() {
   const t = useSapilCopy();
-  const money = useSapilMoney();
   const wishlist = useAccountWishlist();
   const { remove } = useWishlistMutations();
-  const { addToCart } = useAddToCart();
   return (
     <AccountPage
       crumb={t("account.wishlistTitle")}
@@ -607,35 +605,17 @@ export function SapilAccountWishlistPage() {
         </Card>
       ) : (
         <>
-          {/* TODO(integration): use the catalog agent's Sapil product-card container once it is in this branch. */}
           <ul className="list-none grid grid-cols-4 gap-x-[24px] gap-y-[40px] max-1100:grid-cols-3 max-760:grid-cols-2" aria-busy={wishlist.isFetching}>
-            {wishlist.cards.map(({ item, card }) => {
+            {wishlist.cards.map(({ item, card }, index) => {
               const name = card?.title ?? item.product?.name ?? "";
-              const unavailable = !card || item.product?.isSellable === false || card.price == null;
               return (
                 <li key={item.productId} className="relative">
                   {card ? (
-                    <ProductCard
-                      name={card.title}
-                      href={`/products/${card.slug}`}
-                      image={card.imageUrl ?? ""}
-                      tile={DEFAULT_TILE}
-                      price={unavailable ? t("account.wishlistUnavailable") : money(card.price, card.currency)}
-                      onAdd={
-                        unavailable || !(card.sku || card.variantId)
-                          ? undefined
-                          : () =>
-                              void addToCart({
-                                sku: card.sku,
-                                variantId: card.variantId,
-                                slug: card.slug,
-                                title: card.title,
-                                imageUrl: card.imageUrl,
-                                price: card.price,
-                                currency: card.currency,
-                              })
-                      }
-                      LinkComponent={SapilLink}
+                    <SapilProductCard
+                      product={item.product?.isSellable === false ? { ...card, isSellable: false } : card}
+                      imagePriority={index < 4 ? "eager" : "lazy"}
+                      imageSizes="(max-width: 760px) 50vw, (max-width: 1100px) 33vw, 300px"
+                      wishlist={false}
                     />
                   ) : (
                     <p className="text-sapil-ink-2">{t("account.wishlistUnavailable")}</p>

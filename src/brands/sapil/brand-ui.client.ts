@@ -1,5 +1,4 @@
-/** Sapil's client-safe UI (see ../swiss-arabian/brand-ui.client.ts). Overrides go below. */
-export * from "../swiss-arabian/brand-ui.client";
+/** Sapil's client-safe UI: every name of the client contract, by name (checked by ../contract.check.ts). */
 
 // --- shell (StorefrontShell, error and 404 chrome) ---
 export { SapilStorefrontShellClient as StorefrontShell } from "./components/shell/SapilStorefrontShellClient";

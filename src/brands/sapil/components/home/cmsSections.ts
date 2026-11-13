@@ -62,10 +62,13 @@ export function homeProduct(raw: unknown): HomeProduct | null {
   const product = mapCmsProduct(r as unknown as CmsProductCard);
   if (!product) return null;
   const was = parseAmount(rec(r.priceSummary)?.compareAtPrice);
+  const tileColor = pastel(r.tileColor);
+  const wasPrice = was != null && product.price != null && was > product.price ? was : null;
   return {
-    product,
-    tileColor: pastel(r.tileColor),
-    wasPrice: was != null && product.price != null && was > product.price ? was : null,
+    // The shared SapilProductCard reads the tile and was-price from the product itself.
+    product: { ...product, tileColor: tileColor ?? product.tileColor ?? null, compareAtPrice: wasPrice ?? product.compareAtPrice ?? null },
+    tileColor,
+    wasPrice,
   };
 }
 

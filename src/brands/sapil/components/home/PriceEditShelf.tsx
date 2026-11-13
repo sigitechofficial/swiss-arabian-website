@@ -118,7 +118,7 @@ export function PriceEditShelf() {
             ) : null}
             <div className="flex items-center gap-[18px] flex-wrap">
               <Button
-                href={`/products?maxPrice=${tier}`}
+                href={`/products?under=${tier}`}
                 LinkComponent={SapilLink}
                 className="group/cta [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:[transition:transform_.25s_var(--sapil-ease)] hover:[&_svg]:[transform:translateX(4px)] rtl:[&_svg]:[transform:scaleX(-1)]"
               >
@@ -137,7 +137,7 @@ export function PriceEditShelf() {
                 {others.map((x, i) => (
                   <span key={x}>
                     {i > 0 ? " · " : null}
-                    <SapilLink href={`/products?maxPrice=${x}`} className="font-[600] text-sapil-ink underline underline-offset-[3px]">
+                    <SapilLink href={`/products?under=${x}`} className="font-[600] text-sapil-ink underline underline-offset-[3px]">
                       {t("home.underPrice", { amount: price(x, currency) })}
                     </SapilLink>
                   </span>
@@ -171,6 +171,7 @@ export function PriceEditShelf() {
                   className="absolute end-[2%] bottom-[24%] z-[2] grid place-items-center min-w-[64px] py-[8px] pe-[10px] ps-[20px] bg-sapil-white text-sapil-ink [clip-path:polygon(12px_0,100%_0,100%_100%,12px_100%,0_50%)] [transform:rotate(-10deg)] origin-[0_50%] shadow-[0_8px_18px_-10px_rgba(0,0,0,.3)] text-center leading-[1] before:content-[''] before:absolute before:left-[8px] before:top-1/2 before:w-[6px] before:h-[6px] before:-mt-[3px] before:rounded-full before:bg-sapil-p-pink group-hover/sb:animate-sapil-swing max-900:min-w-[52px] max-900:py-[6px] max-900:pe-[8px] max-900:ps-[16px]"
                 >
                   <small className="text-[9px] font-[700] tracking-[.14em]">{p.currency}</small>
+                  {" "}
                   <b className="font-sapil-display font-[400] text-[24px] mt-[2px] max-900:text-[19px]">{Math.round(p.price as number)}</b>
                 </span>
               </SapilLink>

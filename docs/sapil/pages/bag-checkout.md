@@ -81,7 +81,7 @@ details), `brands/sapil/components/bag/bag.test.tsx` (free-delivery mapping, dra
 ## Visual diff (v9 vs `/sapil-kit/commerce`, % pixels differing)
 
 `node scripts/sapil-visual-diff.mjs --only=drawer,drawer-empty,co-head,co-method,co-summary,co-review,co-empty`
-with the kit served by `next start` (`SAPIL_KIT=1`). Fixtures copy the v9 mock values
+with the kit served by a Sapil build (the kit routes (`page.dev.tsx`) exist only in `next dev`, in a Sapil build, or in a build made with `SAPIL_KIT=1` (a build-time rule in `next.config.ts`: a Swiss Arabian production build has no kit route and ships none of its code); a production server also needs `SAPIL_KIT=1` at runtime, else the page 404s. In practice: build **and** start the Sapil build with `SAPIL_KIT=1`). Fixtures copy the v9 mock values
 (Berry Crush AED 63 / was AED 90, free over AED 100, standard AED 16).
 
 | element (v9 source) | 390 | 768 | 1280 | 1440 |
@@ -118,9 +118,17 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
   total; we never add numbers in the browser.
 - Drawer has no "Layer your scents" rail, quick-add or confetti (Swiss Arabian extras).
 - Tiles use the neutral `sand` pastel until the API sends `tileColor` (`feat/sapil-cms`).
-- Payment screens: Sapil shell and spinner around Swiss Arabian's provider screens; the
-  inner copy and buttons of those screens are still Swiss-styled English (provider logic
-  untouched by design).
+- Payment screens: the **return screens** (`/checkout/payment/success`, `/cancel`,
+  `/payments/tabby/return`, `/payments/telr/return`) are Sapil's own views with Sapil wording
+  (`checkout.pay*`, English + Arabic) on the shared hooks `useSettlePayment` /
+  `usePaymentRetry` (`features/checkout/hooks/usePaymentReturn.ts`, extracted in the review
+  pass; Swiss Arabian's views use them with no visible change). Tabby refusals keep Tabby's
+  required wording. Telr's transaction ids (Swiss Arabian's `MetaNote`) are not shown.
+  The **card forms** (`/checkout/payment/paymob`, `/stripe`) still render the shared
+  provider screens inside Sapil's shell and spinner: their inner copy and styling are Swiss
+  Arabian's English (Paymob Pixel / Stripe Elements logic is inline there; extract before
+  restyling). Sapil UAE's local methods: Stripe card / Apple Pay / Google Pay, Paymob card,
+  Telr (hosted), cash on delivery.
 - Phone field shows the market's dial code (+971) and stores E.164.
 
 ## Open questions
@@ -130,3 +138,18 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
 - Should the drawer show the standard delivery fee from `GET /storefront/markets` as an
   estimate (it would not be part of the API total)?
 - Courier notes and newsletter consent at checkout (backend fields).
+
+## Review 2 (2026-11-13)
+
+- End to end on the build (en at 1440, ar at 390): product → add (drawer) → bag page → guest
+  checkout (contact, address, standard delivery) → payment list (Stripe card / Apple Pay / Google
+  Pay, Paymob card, Telr, test method, cash on delivery) → **cash on delivery order placed** →
+  confirmation → tracking. All pass.
+- Return screens are Sapil views (see above); `SapilPaymentScreens.test.tsx` covers cancel (gateway
+  error, Arabic, no order), declined success, Tabby refusal.
+- Big totals use the language's currency sign on `/ar` (`د.إ.`, was "AED 63" in Arabic text).
+- Bag / checkout reserve 70vh while the bag rehydrates (CLS at 390: 0.14 → 0.05).
+- **Language through checkout (platform, open):** `/checkout`, `/order-confirmation`, `/track`,
+  `/login`, `/register` are never locale-prefixed by `localizeHref`, so an Arabic shopper who
+  starts checkout from the drawer lands on the English checkout, and the confirmation after an
+  `/ar/checkout` order is English. `/ar/…` versions of these routes render correctly. Product decision.

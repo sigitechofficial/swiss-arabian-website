@@ -65,6 +65,14 @@ describe("homeProduct", () => {
     expect(homeProduct(FIXTURE_PRODUCTS[0])?.wasPrice).toBeNull();
     expect(homeProduct({ name: "no slug" })).toBeNull();
   });
+
+  it("puts the tile and was-price on the product, for the shared SapilProductCard", () => {
+    const card = { ...FIXTURE_PRODUCTS[0], tileColor: "mint", priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "90" } };
+    const product = homeProduct(card)?.product;
+    expect(product?.tileColor).toBe("mint");
+    expect(product?.compareAtPrice).toBe(90);
+    expect(homeProduct(FIXTURE_PRODUCTS[0])?.product.compareAtPrice ?? null).toBeNull();
+  });
 });
 
 describe("section parsers", () => {

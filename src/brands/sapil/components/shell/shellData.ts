@@ -104,7 +104,7 @@ export function footerColumnsFromNav(items: readonly NavItem[]): FooterColumn[] 
 
 /** Is `href` the page at `pathname` (locale prefix already stripped)? Query strings are ignored. */
 export function isCurrentHref(href: string, pathname: string): boolean {
-  if (/^https?:/i.test(href)) return false;
+  if (/^https?:/i.test(href) || href.startsWith("#")) return false;
   const path = href.split(/[?#]/)[0] || "/";
   return path === pathname;
 }

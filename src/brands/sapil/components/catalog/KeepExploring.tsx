@@ -34,7 +34,6 @@ function CollectionCard({ item, LinkComponent }: { item: CollectionCardItem; Lin
   return (
     <LinkComponent
       href={item.href}
-      aria-label={item.name}
       style={tintStyle("--c", item.color)}
       className="group flex-[0_0_clamp(270px,28vw,400px)] h-[clamp(380px,60vh,540px)] rounded-[32px] bg-[var(--c)] relative overflow-hidden p-[26px] flex flex-col justify-between text-start snap-start [transition:transform_.5s_var(--sapil-ease)] hover:[transform:translateY(-8px)] max-900:basis-[80vw] max-900:h-[440px] max-900:rounded-[24px] max-900:p-[22px]"
     >

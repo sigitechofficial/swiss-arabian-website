@@ -1,11 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
-import { pollUntilPaymentSettles } from "../api/orders.service";
-import { clearPaymentState, getStoredOrderId } from "../utils/checkoutSession";
+import { storedOrderIdIf, useSettlePayment } from "../hooks/usePaymentReturn";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
@@ -17,36 +14,16 @@ import {
   checkoutLink,
 } from "@/styles/checkoutChrome";
 
-type Outcome = { kind: "failed"; status: string } | { kind: "timeout" } | null;
-
 /**
  * Gateway return URL (Paymob, and Stripe after a 3DS redirect). The redirect
  * itself proves nothing — the provider webhook decides — so poll the backend.
  */
 export function PaymentSuccessView() {
-  const router = useRouter();
   const hydrated = useHydrated();
-  const orderId = hydrated ? getStoredOrderId() : null;
-  const [outcome, setOutcome] = useState<Outcome>(null);
-  const started = useRef(false);
+  const orderId = storedOrderIdIf(hydrated);
+  const outcome = useSettlePayment(orderId);
 
-  useEffect(() => {
-    if (!orderId || started.current) return;
-    started.current = true;
-    void (async () => {
-      const result = await pollUntilPaymentSettles(orderId);
-      if (result.success) {
-        clearPaymentState();
-        router.replace(`/order-confirmation/${orderId}`);
-        return;
-      }
-      setOutcome(
-        result.status === "TIMEOUT" ? { kind: "timeout" } : { kind: "failed", status: result.status },
-      );
-    })();
-  }, [orderId, router]);
-
-  if (!hydrated || (orderId && !outcome)) {
+  if (!hydrated || (orderId && (!outcome || outcome.kind === "paid"))) {
     return (
       <CheckoutStateShell current="Payment">
         <CheckoutSpinnerState

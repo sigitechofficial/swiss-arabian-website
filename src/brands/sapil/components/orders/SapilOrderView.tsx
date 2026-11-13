@@ -100,8 +100,8 @@ export function SapilOrderView({
 }) {
   const t = useSapilCopy();
   return (
-    <Wrap as="main" className="pb-[72px]">
-      <Breadcrumbs items={crumbs} LinkComponent={SapilLink} className="pt-[20px]" />
+    <Wrap className="pb-[72px]">
+      <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} className="pt-[20px]" />
       <header
         className={cx(
           "grid grid-cols-[auto_minmax(0,1fr)_auto] gap-[28px] items-center rounded-[32px] py-[40px] px-[44px] mt-[24px] mb-[20px]",
@@ -267,7 +267,7 @@ export function OrderSideCard({ title, children, help }: { title: ReactNode; chi
 /** Loading / polling / error card on the order pages. */
 export function OrderStateCard({ title, body, actions, busy }: { title: ReactNode; body?: ReactNode; actions?: ReactNode; busy?: boolean }) {
   return (
-    <Wrap as="main" className="pt-[32px] pb-[88px]">
+    <Wrap className="pt-[32px] pb-[88px]">
       <div className="bg-sapil-white rounded-[28px] py-[56px] px-[40px] text-center max-900:py-[40px] max-900:px-[20px]" aria-busy={busy || undefined}>
         {busy ? (
           <span aria-hidden="true" className="block mx-auto mb-[18px] w-[36px] h-[36px] rounded-full border-[3px] border-sapil-line border-t-sapil-accent motion-safe:animate-spin" />

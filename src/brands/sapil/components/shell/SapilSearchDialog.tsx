@@ -6,7 +6,7 @@ import { useHeaderSearch } from "@/features/search/hooks/useHeaderSearch";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Dialog } from "../../ui";
 import { SearchIcon } from "../shared/icons";
-import { HomeProductTile } from "../home/HomeProductTile";
+import { SapilProductCard } from "../product";
 
 const LIMIT = 8;
 
@@ -53,7 +53,7 @@ export function SapilSearchDialog() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("shell.searchPlaceholder")}
             aria-label={t("shell.search")}
-            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] font-[400] text-sapil-ink outline-none"
+            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] font-[400] text-sapil-ink outline-none [&::-webkit-search-cancel-button]:appearance-none"
           />
         </form>
         <p className="text-sapil-muted mb-[28px] text-[15px]" aria-live="polite">
@@ -62,7 +62,7 @@ export function SapilSearchDialog() {
         {searching && hits.length ? (
           <div className="grid grid-cols-4 gap-x-[24px] gap-y-[40px] max-900:grid-cols-2 max-900:gap-x-[16px] max-900:gap-y-[32px]">
             {hits.slice(0, LIMIT).map((p) => (
-              <HomeProductTile key={p.id} product={p} showWishlist={false} sizes="(max-width: 900px) 50vw, 25vw" />
+              <SapilProductCard key={p.id} product={p} wishlist={false} quickView={false} imageSizes="(max-width: 900px) 50vw, 25vw" />
             ))}
           </div>
         ) : null}

@@ -6,7 +6,7 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, Chip, EYEBROW, Wrap, cx, tintValue } from "../../ui";
 import { useSapilPrice } from "../shared/useSapilPrice";
 import type { Mood } from "./cmsSections";
-import { HomeProductTile } from "./HomeProductTile";
+import { SapilProductCard } from "../product";
 import { useAddBundle } from "./HomeBundles";
 
 const C = 200;
@@ -160,9 +160,10 @@ export function MoodWheel({ eyebrow, heading, spinLabel, moods }: { eyebrow: str
               {mood.notes.length ? ` ${t("home.moodNotes", { notes: mood.notes.join(", ").toLowerCase() })}` : null}
             </p>
             <div className="grid grid-cols-3 gap-[16px] mb-[28px] text-start max-900:grid-cols-none max-900:grid-flow-col max-900:auto-cols-[58%] max-900:overflow-x-auto max-900:snap-x max-900:snap-mandatory max-900:scroll-px-sapil-gut max-900:[scrollbar-width:none] max-900:-mx-sapil-gut max-900:mb-[24px] max-900:px-sapil-gut">
-              {mood.products.slice(0, 3).map(({ product, tileColor, wasPrice }) => (
+              {mood.products.slice(0, 3).map(({ product }) => (
                 <div key={product.id} className="max-900:snap-start [&_h3]:!text-[15px] [&_.tabular-nums]:!text-[15px]">
-                  <HomeProductTile product={product} tileColor={tileColor} wasPrice={wasPrice} tileOverride="var(--sapil-card)" sizes="(max-width: 900px) 58vw, 16vw" />
+                  {/* white tiles: the cards sit on the mood's coloured band */}
+                  <SapilProductCard product={product} tile="var(--sapil-card)" quickView={false} imageSizes="(max-width: 900px) 58vw, 16vw" />
                 </div>
               ))}
             </div>

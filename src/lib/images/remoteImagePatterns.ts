@@ -61,6 +61,8 @@ export const REMOTE_IMAGE_PATTERNS: RemoteImagePattern[] = [
     pathname: "/catalog-images/**",
   },
   { protocol: "https", hostname: "swissarabian.com", pathname: "/cdn/shop/files/**" },
+  // Sapil's Shopify files (its catalog and the demo seed point here until media moves to the platform).
+  { protocol: "https", hostname: "sapil.com", pathname: "/cdn/shop/files/**" },
   ...catalogMediaPatterns,
 ];
 

@@ -64,8 +64,8 @@ describe("SapilHomeSections", () => {
     fireEvent.click(doors[0]);
     expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
     expect(screen.getByText(/small price/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Shop the edit/ })).toHaveAttribute("href", "/products?maxPrice=99");
-    expect(screen.getByRole("link", { name: "Under AED 50" })).toHaveAttribute("href", "/products?maxPrice=50");
+    expect(screen.getByRole("link", { name: /Shop the edit/ })).toHaveAttribute("href", "/products?under=99");
+    expect(screen.getByRole("link", { name: "Under AED 50" })).toHaveAttribute("href", "/products?under=50");
     expect(screen.getByText("ships free")).toBeInTheDocument();
   });
 });

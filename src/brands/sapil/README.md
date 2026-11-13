@@ -52,7 +52,7 @@ Swiss Arabian's navbar uses a bare `data-brand` attribute (logo wrapper) and has
 | v9 token | Tailwind | value |
 |---|---|---|
 | `--paper` `--sand` `--card` | `sapil-paper` `sapil-sand` `sapil-card` | #f7f3ee #efe8de #fffdfa |
-| `--ink` `--ink-2` `--muted` | `sapil-ink` `sapil-ink-2` `sapil-muted` | #1e1b18 #4a443d #7a7166 |
+| `--ink` `--ink-2` `--muted` | `sapil-ink` `sapil-ink-2` `sapil-muted` | #1e1b18 #4a443d #6f665b (v9 #7a7166, darkened to 4.5:1 on paper/sand/pastels; needs design sign-off) |
 | `--line` `--line-2` | `sapil-line` `sapil-line-2` | #e4ddd2 #d6cdc0 |
 | `--accent` `--accent-2` `--accent-soft` | `sapil-accent` `sapil-accent-2` `sapil-accent-soft` | #16305c #22447d #e7ebf3 |
 | `--p-pink … --p-lime` (9) | `sapil-p-pink` `-peach` `-butter` `-mint` `-sky` `-lilac` `-sand` `-sage` `-lime` | #fbe5ee #fdebe1 #fff3d4 #dff3ea #e2edfb #eee6fb #f4ece1 #e9efe1 #f0f7d4 |
@@ -101,7 +101,7 @@ Accessibility beyond the v9 markup: field labels use `for`/`id` and errors are l
 
 ## Visual reference and diff
 
-- `/sapil-kit` renders every component with v9 mock values (`?only=<id>` renders one alone). It 404s when `NODE_ENV=production` unless `SAPIL_KIT=1`.
+- `/sapil-kit` renders every component with v9 mock values (`?only=<id>` renders one alone). Availability: the kit routes (`page.dev.tsx`) exist only in `next dev`, in a Sapil build, or in a build made with `SAPIL_KIT=1` (a build-time rule in `next.config.ts`: a Swiss Arabian production build has no kit route and ships none of its code); a production server also needs `SAPIL_KIT=1` at runtime, else the page 404s. In practice: build **and** start the Sapil build with `SAPIL_KIT=1`.
 - `node scripts/sapil-visual-diff.mjs [--only=card,steps] [--widths=390,1440]` with the kit on :3021 (`next dev --port 3021`). It serves the design folder on :3022, screenshots each reference element and the matching kit element at 390/768/1280/1440 (same width and sub-pixel offset), and prints the % of differing pixels; images go to `%TEMP%/sapil-visual-diff`. Driver: Playwright if installed, else `puppeteer-core` from the npx cache; Chromium from the Playwright cache or `CHROME_PATH`. No dependencies added.
 
 Last run (Chromium 1217, % of pixels differing):

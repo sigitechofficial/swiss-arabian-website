@@ -1,0 +1,5 @@
+{
+  "name": "@brands/sapil",
+  "private": true,
+  "sideEffects": ["*.css", "./fonts.ts"]
+}

@@ -138,7 +138,7 @@ export function HeroPromo({ bundle }: { bundle: Bundle }) {
   const names = bundle.products.map((p) => p.product.title).join(" · ");
   const tiles = [
     tier != null && settings.currencyCode
-      ? { key: "price", eyebrow: t("home.promoPriceEyebrow"), title: t("home.underPrice", { amount: price(tier, settings.currencyCode) }), href: `/products?maxPrice=${tier}`, image: bundle.products.at(-1)?.product.imageUrl ?? null }
+      ? { key: "price", eyebrow: t("home.promoPriceEyebrow"), title: t("home.underPrice", { amount: price(tier, settings.currencyCode) }), href: `/products?under=${tier}`, image: bundle.products.at(-1)?.product.imageUrl ?? null }
       : null,
     bundle.secondary
       ? { key: "second", eyebrow: bundle.eyebrow, title: bundle.secondary.label, href: bundle.secondary.href, image: bundle.products[0]?.product.imageUrl ?? null }

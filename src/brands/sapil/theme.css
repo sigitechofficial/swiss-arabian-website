@@ -85,7 +85,9 @@
   --sapil-card: #fffdfa;
   --sapil-ink: #1e1b18;
   --sapil-ink-2: #4a443d;
-  --sapil-muted: #7a7166;
+  /* v9 #7a7166 is 3.9–4.3:1 on paper / sand / pastels (WCAG AA needs 4.5). #6f665b passes on all of
+     them and stays inside the visual-diff threshold (11/255 per channel). Design sign-off pending. */
+  --sapil-muted: #6f665b;
   --sapil-line: #e4ddd2;
   --sapil-line-2: #d6cdc0;
   /* one accent: Sapil navy */

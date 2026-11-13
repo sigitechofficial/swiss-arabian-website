@@ -115,3 +115,16 @@ Sapil build against the backend branch API (:3012, demo seed: 85 products, 14 co
 - A collection colour field (heroes, cards).
 - Band counts for the price chips.
 - Final price-edit URL (`/under-99` rewrite or `/collections/under-99`).
+
+## Review 2 (2026-11-13)
+
+- Grid cards are `h2` (they sat directly under the page `h1`; Lighthouse heading-order). Visually identical.
+- "Keep exploring" collection cards: no `aria-label` (the visible count / price / name / line is the name).
+- Rail arrows and the price-chip scroll honour reduced motion.
+- Live checks: filters / sort through the URL (`sort=price_asc`, `price_desc`), price edit
+  `?under=99`, infinite scroll, API failure on the client (`We couldn’t load these bottles` + Try
+  again), empty search, en + ar at 390 / 768 / 1280 with no horizontal scroll.
+- Visual diff re-run: toolbar 0.00; grid 0.33 / 0.26 / 0.24 / 0.28 and gallery 0.31 / 0.18 / 0.21 / 0.24
+  (was 0.14 / 0.04 / …): the kit's `sapil.com` images now go through next/image (resampled), which
+  is the production path.
+- Lighthouse (median of 3): shop 64, collection 66, a11y 100 (was 46 / 55 and 95); see PERFORMANCE.md.

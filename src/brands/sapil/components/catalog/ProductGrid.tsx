@@ -119,6 +119,8 @@ export function ProductGrid({
             product={product}
             imagePriority={aboveFold ? cardPriority(i) : "lazy"}
             highlightTags={highlightTags?.[product.id]}
+            // the grid sits right under the page h1 (no section heading)
+            headingLevel="h2"
           />
         ))}
       </div>

@@ -3,8 +3,9 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SapilBagDrawer } from "@/brands/sapil/components/bag/SapilBagDrawer";
-import { useAnnouncementBar, useFooterContent } from "@/features/cms/hooks/useCmsGlobalRegion";
+import { useAnnouncementBar, useCmsGlobalRegion, useFooterContent } from "@/features/cms/hooks/useCmsGlobalRegion";
 import { useMarketSettings } from "@/features/markets/hooks/useMarketSettings";
+import { useStorefrontMarkets } from "@/features/markets/hooks/useStorefrontMarkets";
 import { useNavigation } from "@/features/navigation";
 import { GiftChoiceHost } from "@/features/promotions/components/GiftChoiceHost";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -53,6 +54,13 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
   const { headerNav, footerItems, isLoading } = useNavigation(marketId || undefined);
   const settings = useMarketSettings();
   const announcement = useAnnouncementBar();
+  // Both rows load in the browser once the market is known. Until their data
+  // arrives, hold their height (server HTML included) so the page doesn't jump
+  // (CLS); a market without them collapses the space once the answer is in.
+  const announcementRegion = useCmsGlobalRegion("announcement-bar");
+  const announcementPending = !announcementRegion.data && !announcementRegion.isError;
+  const markets = useStorefrontMarkets();
+  const shopByPending = (!markets.data && !markets.isError) || isLoading;
   const footer = useFooterContent();
   const isAuthenticated = useIsAuthenticated();
   const hydrated = useHydrated();
@@ -84,7 +92,11 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
       >
         {t("common.skipToContent")}
       </a>
-      <SapilAnnouncement items={announcement.items} intervalMs={announcement.rotationIntervalMs} />
+      {announcementPending ? (
+        <div aria-hidden="true" data-sapil-reserve="announce" className="bg-sapil-p-mint h-[41px]" />
+      ) : (
+        <SapilAnnouncement items={announcement.items} intervalMs={announcement.rotationIntervalMs} />
+      )}
       <SapilHeader
         logo={logo}
         menu={menu}
@@ -96,14 +108,18 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
         onOpenSearch={openSearch}
         onOpenBag={() => setCartOpen(true)}
       />
-      <SapilShopBy
-        chips={chips}
-        pathname={pathname}
-        currency={settings.currencyCode}
-        priceEditTiers={settings.priceEditTiers}
-        freeDeliveryThreshold={settings.freeDeliveryThreshold}
-        cashOnDelivery={settings.cashOnDelivery}
-      />
+      {shopByPending ? (
+        <div aria-hidden="true" data-sapil-reserve="shop-by" className="bg-sapil-white border-b border-sapil-line h-[55px] max-760:h-[53px]" />
+      ) : (
+        <SapilShopBy
+          chips={chips}
+          pathname={pathname}
+          currency={settings.currencyCode}
+          priceEditTiers={settings.priceEditTiers}
+          freeDeliveryThreshold={settings.freeDeliveryThreshold}
+          cashOnDelivery={settings.cashOnDelivery}
+        />
+      )}
       <SapilPhoneMenu
         open={menuOpen}
         onClose={closeMenu}

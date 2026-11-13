@@ -79,5 +79,7 @@ describe("isCurrentHref", () => {
     expect(isCurrentHref("/blog?tag=x", "/blog")).toBe(true);
     expect(isCurrentHref("/blog", "/faq")).toBe(false);
     expect(isCurrentHref("https://x.test/blog", "/blog")).toBe(false);
+    // in-page anchors are never the current page (they marked every chip current on /)
+    expect(isCurrentHref("#her", "/")).toBe(false);
   });
 });

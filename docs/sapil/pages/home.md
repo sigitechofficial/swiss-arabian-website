@@ -25,7 +25,7 @@ Area: `home`. Page: `src/brands/sapil/pages/home/SapilHomePage.tsx` (`HomePageVi
 | 7 | About + facts | `AboutBlock` | `BRAND_STORY` (`paragraphs`, `statistics`, image, CTA) |
 | – | Newsletter | `HomeNewsletter` | `NEWSLETTER_SIGNUP` → `useNewsletterSignup` (provider not connected, same as Swiss Arabian) |
 
-Product cards: `HomeProductTile` = design-system `ProductCard` from a `ProductSummary` + `tileColor` (API pastel key, else neutral `sand`) + was-price (`priceSummary.compareAtPrice` → struck price and −% badge). Add to bag: `useAddToCart`; wishlist heart: `useWishlistToggle` (extracted). Sold-out cards hide the + button and show a "Sold out" tag. `TODO(integration)`: unify with the catalog area's card.
+Product cards: the shared `SapilProductCard` (`components/product`, see `catalog.md`) on every rail. `homeProduct()` puts the section card's `tileColor` and was-price (`priceSummary.compareAtPrice`, only when above the price) on the product, so the card shows the pastel tile, struck price and −% badge, the "Out of stock" pill, wishlist heart and quick view exactly like the shop grid. The mood band passes `tile="var(--sapil-card)"` (white tiles on the coloured band) and no quick view. (`HomeProductTile` was removed in the review pass.)
 
 ## Hooks extracted (Swiss Arabian unchanged, with tests)
 
@@ -57,8 +57,17 @@ See `docs/sapil/pages/shell.md` for the table (hero intro and section heads).
 - CMS section headings show as the eyebrow; the v9 headline (e.g. "Just landed, *still fizzing.*") stays as translated Sapil wording, because the CMS headings are short labels ("New arrivals").
 - Price-edit shelf chips (price bands with counts) show only when every product under the ceiling is loaded (first listing page); otherwise the count line and the shelf show without chips. `facets.priceTiers` could drive tier chips once the shared listing type parses it (catalog area).
 - Gift sets use the bottle zoom (1.62) on cards: the card summary has no product kind yet (`.card.gift` needs it).
-- Price-edit links go to `/products?maxPrice=…` until the price-edit pages exist (catalog area).
+- Price-edit links (shelf CTA, other tiers, bundles promo tile, "Shop by" chip) open the price edit `/products?under=N`. The shelf's price-band chips stay plain `minPrice` / `maxPrice` filters.
 
 ## Local data
 
 Backend branch instance `http://127.0.0.1:3012` (demo seed: Sapil UAE `SAPIL_URD1`, 85 products, 14 collections, published 10-section home). Fragrance notes and shoppable video are not curated for Sapil yet: those two sections render nothing. The header menu has no children yet (menus not bound by the seed), so the "Shop by" chips are empty.
+
+## Review 2 (2026-11-13)
+
+- Cards: `HomeProductTile` removed; rails, mood band (white tiles via `tile`), search use `SapilProductCard`.
+- Accessibility: collection-story cards and price-edit shelf tags have names that include their
+  visible text (Lighthouse `label-content-name-mismatch`); home a11y 97 → 100.
+- Checked live (390 / 768 / 1280, en + ar): no horizontal scroll, RTL mirrored (doors, rails, arrows,
+  price tags), no console errors; React commits: 5 in 10 s idle (announcement rotation + doors), no loop.
+- Performance: see `docs/sapil/PERFORMANCE.md` (home JS 770 → 409 KB, TBT 2.9 s → 0.44 s, CLS 0.106 → 0.001).

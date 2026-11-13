@@ -16,7 +16,7 @@ export function SapilTrackLookupPage() {
   const t = useSapilCopy();
   const { isAuthenticated, orderNumber, setOrderNumber, token, setToken, error, submit } = useTrackLookup();
   return (
-    <Wrap as="main">
+    <Wrap>
       <FormCard
         eyebrow={t("account.trackEyebrow")}
         title={t("account.trackTitle")}
@@ -144,7 +144,7 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
           : null;
 
   return (
-    <Wrap as="main">
+    <Wrap>
       <FormCard
         eyebrow={t("account.trackEyebrow")}
         title={t("account.trackTitle")}

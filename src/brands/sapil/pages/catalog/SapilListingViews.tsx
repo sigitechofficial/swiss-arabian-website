@@ -226,7 +226,7 @@ export function SapilShopView({
   return (
     <CatalogRoot>
       <Wrap>
-        <Breadcrumbs items={crumbs} LinkComponent={SapilLocaleLink} />
+        <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLocaleLink} />
         <ShopHero
           kind={oneCollection ? t("catalog.filterCollection") : t("catalog.shopKind")}
           title={oneCollection ?? t("catalog.shopTitle")}
@@ -284,7 +284,7 @@ function PriceEditView({
   return (
     <CatalogRoot>
       <Wrap>
-        <Breadcrumbs
+        <Breadcrumbs label={t("content.breadcrumb")}
           items={[{ label: t("catalog.home"), href: "/" }, { label: t("catalog.tierTab", { price: ceilingLabel }) }]}
           LinkComponent={SapilLocaleLink}
         />
@@ -319,7 +319,7 @@ function PriceEditView({
           chipsLabel={t("catalog.tiersLabel")}
           onChip={(value) => {
             listing.toolbar.onToggle("price", value);
-            document.querySelector("[data-sapil-toolbar]")?.scrollIntoView({ behavior: "smooth" });
+            document.querySelector("[data-sapil-toolbar]")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
           }}
           ctaLabel={t("catalog.tierShopAll", { count: listing.total })}
           ctaHref="#products"
@@ -421,7 +421,7 @@ function CollectionLikeView({
   return (
     <CatalogRoot>
       <Wrap>
-        <Breadcrumbs items={crumbs} LinkComponent={SapilLocaleLink} />
+        <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLocaleLink} />
         <CollectionHero
           eyebrow={t("catalog.collectionEyebrow", { name: hero.name })}
           title={hero.name}
