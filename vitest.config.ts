@@ -18,6 +18,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Tests run against Swiss Arabian's UI unless BRAND_UI_THEME is set (see src/brands/README.md).
+      "@brand-ui/client": path.resolve(__dirname, `./src/brands/${process.env.BRAND_UI_THEME || "swiss-arabian"}/brand-ui.client.ts`),
+      "@brand-ui": path.resolve(__dirname, `./src/brands/${process.env.BRAND_UI_THEME || "swiss-arabian"}/brand-ui.ts`),
       // Provided by the Next compiler; tests read the default locale.
       "next/root-params": path.resolve(__dirname, "./src/test/rootParamsStub.ts"),
     },

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { StorefrontShell } from "@/components/layout/StorefrontShell";
-import { CrashFallback } from "@/components/ui/CrashFallback";
 import { reportClientError } from "@/lib/observability/reportClientError";
+import { CrashFallback, StorefrontShell } from "@brand-ui/client";
 
 export default function Error({
   error,

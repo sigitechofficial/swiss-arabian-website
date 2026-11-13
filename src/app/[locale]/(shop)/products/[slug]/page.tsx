@@ -1,14 +1,9 @@
 import { notFound, permanentRedirect } from "next/navigation";
-import { ProductDetailPageView } from "@/features/catalog";
 import {
   productMetaDescription,
   realProductDescription,
 } from "@/features/catalog/api/catalog.service";
-import {
-  breadcrumbJsonLd,
-  CatalogJsonLd,
-  productJsonLd,
-} from "@/features/catalog/components/CatalogJsonLd";
+import { breadcrumbJsonLd, productJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { getTranslator } from "@/lib/i18n/messages";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import {
@@ -21,6 +16,7 @@ import { applySeoOverrides } from "@/lib/seo/pageSeo";
 import { effectiveProductSeo, parseSchemaOverride } from "@/lib/seo/productSeo";
 import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
 import { storefrontLogo } from "@/lib/storefront/brand";
+import { CatalogJsonLd, ProductDetailPageView } from "@brand-ui";
 
 /** Prerendered per language on first visit and revalidated (ISR). */
 export const revalidate = 300;

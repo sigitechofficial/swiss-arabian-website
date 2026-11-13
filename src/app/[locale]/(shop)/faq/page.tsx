@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import {
-  CatalogJsonLd,
-  faqPageJsonLd,
-  pageBreadcrumbJsonLd,
-} from "@/features/catalog/components/CatalogJsonLd";
-import { FaqPageView } from "@/features/faq";
+import { faqPageJsonLd, pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import {
   loadMarketFixedPage,
   marketFixedPageMetadata,
 } from "@/features/site-pages/marketFixedPage";
-import { SitePageView } from "@/features/site-pages/components/SitePageView";
 import { pickFaqPage } from "@/features/site-pages/utils/pickMarketPage";
 import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import { getTranslator } from "@/lib/i18n/messages";
 import { faqEntriesFromHtml } from "@/lib/seo/faqContent";
 import { pageMetadata } from "@/lib/seo/pageSeo";
+import { CatalogJsonLd, FaqPageView, SitePageView } from "@brand-ui";
 
 /**
  * The market's own FAQ from Pages & policies (imported from its store or

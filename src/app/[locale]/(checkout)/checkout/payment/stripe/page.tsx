@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StripePaymentFormView } from "@/features/checkout";
+import { StripePaymentFormView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Card payment",

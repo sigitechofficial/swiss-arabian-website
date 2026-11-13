@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { HomePageView } from "@/features/home";
 import { landingPageById } from "@/features/landing-pages";
+import { HomePageView } from "@brand-ui";
 
 export async function generateMetadata({
   params,

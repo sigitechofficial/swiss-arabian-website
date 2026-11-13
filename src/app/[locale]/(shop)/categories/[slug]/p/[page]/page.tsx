@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import {
-  CategoryListing,
-  categoryMetadata,
-  routePage,
-} from "@/features/catalog/routes/listingRoutes";
+import { categoryMetadata, routePage } from "@/features/catalog/routes/listingRoutes";
+import { CategoryListing } from "@brand-ui";
 
 /** /categories/[slug]?page=N (the proxy serves page 2+ here; the address keeps ?page=N). */
 export const revalidate = 300;

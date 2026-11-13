@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ProductsListing, productsMetadata } from "@/features/catalog/routes/listingRoutes";
+import { productsMetadata } from "@/features/catalog/routes/listingRoutes";
+import { ProductsListing } from "@brand-ui";
 
 /**
  * All products: title, canonical and hreflang like the other listings

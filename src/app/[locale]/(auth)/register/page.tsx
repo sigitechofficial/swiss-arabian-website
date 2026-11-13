@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { RegisterPageView } from "@/features/auth";
-import { PageLoading } from "@/components/ui";
+import { PageLoading, RegisterPageView } from "@brand-ui";
 
 export default function RegisterPage() {
   return (

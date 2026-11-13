@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CmsPreviewHomeView } from "@/features/cms/components/CmsPreviewHomeView";
+import { CmsPreviewHomeView } from "@brand-ui";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

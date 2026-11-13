@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TabbyReturnView } from "@/features/checkout";
-import { CheckoutSpinnerState, CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
+import { CheckoutSpinnerState, CheckoutStateShell, TabbyReturnView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Confirming Tabby payment",

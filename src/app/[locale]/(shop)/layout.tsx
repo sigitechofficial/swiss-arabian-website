@@ -1,6 +1,4 @@
-import { StorefrontShell } from "@/components/layout/StorefrontShell";
-import { FooterSeoText } from "@/features/seo-footer/FooterSeoText";
-import { MarketSeoTextSlot } from "@/features/seo-footer/MarketSeoTextSlot";
+import { FooterSeoText, MarketSeoTextSlot, StorefrontShell } from "@brand-ui";
 
 export default function ShopLayout({
   children,

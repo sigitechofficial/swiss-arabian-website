@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
-import { TrackLookupView } from "@/features/tracking/components/TrackLookupView";
+import { TrackLookupView } from "@brand-ui";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await routeTranslator();

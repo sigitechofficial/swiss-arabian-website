@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
-import {
-  CatalogJsonLd,
-  pageBreadcrumbJsonLd,
-} from "@/features/catalog/components/CatalogJsonLd";
-import { SitePageView } from "@/features/site-pages/components/SitePageView";
+import { pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import {
   loadMarketFixedPage,
   marketFixedPageMetadata,
@@ -12,6 +7,7 @@ import {
 import { pickStoresPage } from "@/features/site-pages/utils/pickMarketPage";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { getTranslator } from "@/lib/i18n/messages";
+import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
 
 const loadStores = () => loadMarketFixedPage("stores", pickStoresPage);
 

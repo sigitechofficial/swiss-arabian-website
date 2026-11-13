@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import { HomePageView } from "@/features/home";
-import {
-  CatalogJsonLd,
-  ORGANIZATION_ID,
-  WEBSITE_ID,
-} from "@/features/catalog/components/CatalogJsonLd";
+import { ORGANIZATION_ID, WEBSITE_ID } from "@/features/catalog/components/CatalogJsonLd";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
@@ -16,6 +11,7 @@ import {
 import { loadFooterSeoText } from "@/features/seo-footer/footerSeoText.service";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import type { Translator } from "@/lib/i18n/messages";
+import { CatalogJsonLd, HomePageView } from "@brand-ui";
 
 /** Prerendered per language and revalidated (ISR); the browser keeps sections fresh. */
 export const revalidate = 300;

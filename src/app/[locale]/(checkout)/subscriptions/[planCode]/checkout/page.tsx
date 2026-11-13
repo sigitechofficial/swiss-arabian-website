@@ -1,4 +1,4 @@
-import { SubscriptionCheckoutPageView } from "@/features/subscriptions/components/SubscriptionCheckoutPageView";
+import { SubscriptionCheckoutPageView } from "@brand-ui";
 
 type Props = { params: Promise<{ planCode: string }> };
 

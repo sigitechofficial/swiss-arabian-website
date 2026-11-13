@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AccountSecurityPageView } from "@/features/account/components/AccountSecurityPageView";
+import { AccountSecurityPageView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Security",

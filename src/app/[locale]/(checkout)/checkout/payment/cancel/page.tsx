@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PageLoading } from "@/components/ui";
-import { PaymentCancelView } from "@/features/checkout";
+import { PageLoading, PaymentCancelView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Complete your payment",

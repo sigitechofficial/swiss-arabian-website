@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
-import {
-  CatalogJsonLd,
-  pageBreadcrumbJsonLd,
-} from "@/features/catalog/components/CatalogJsonLd";
+import { pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { faqDrawers } from "@/features/faq/data/faqContent";
-import { SitePageView } from "@/features/site-pages/components/SitePageView";
 import {
   loadMarketFixedPage,
   marketFixedPageMetadata,
 } from "@/features/site-pages/marketFixedPage";
 import { pickStoryPage } from "@/features/site-pages/utils/pickMarketPage";
+import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
 
 const loadStory = () => loadMarketFixedPage("our-story", pickStoryPage);
 

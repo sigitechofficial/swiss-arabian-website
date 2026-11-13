@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { PageLoading } from "@/components/ui";
-import { AccountWishlistPageView } from "@/features/wishlist";
+import { AccountWishlistPageView, PageLoading } from "@brand-ui";
 
 export const metadata = {
   title: "Wishlist",

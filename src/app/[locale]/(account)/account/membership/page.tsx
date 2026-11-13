@@ -1,4 +1,4 @@
-import { AccountPlaceholderPageView } from "@/features/account";
+import { AccountPlaceholderPageView } from "@brand-ui";
 
 export const metadata = {
   title: "Membership Benefits",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { SearchPageView } from "@/features/search";
 import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
 import { SEARCH_SORT_OPTIONS } from "@/features/search/constants";
+import { SearchPageView } from "@brand-ui";
 
 const SORT_VALUES = new Set(SEARCH_SORT_OPTIONS.map((option) => option.value));
 

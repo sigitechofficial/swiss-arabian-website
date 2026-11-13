@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { StorefrontShell } from "@/components/layout/StorefrontShell";
 import { landingPageById } from "@/features/landing-pages";
+import { StorefrontShell } from "@brand-ui";
 
 export default async function LandingVariantLayout({
   children,

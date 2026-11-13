@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
-import { BlogPageView } from "@/features/blog/components/BlogPageView";
 import { fetchBlogPosts } from "@/features/blog/api/blogApi";
+import { BlogPageView } from "@brand-ui";
 
 const PAGE_SIZE = 12;
 

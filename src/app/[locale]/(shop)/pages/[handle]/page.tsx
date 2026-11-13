@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { previewParamsFrom } from "@/features/site-pages/api/sitePages.service";
-import {
-  SitePageRoute,
-  sitePageMetadata,
-} from "@/features/site-pages/sitePageRoute";
+import { sitePageMetadata } from "@/features/site-pages/sitePageRoute";
+import { SitePageRoute } from "@brand-ui";
 
 type Props = {
   params: Promise<{ handle: string }>;

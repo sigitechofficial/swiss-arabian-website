@@ -1,4 +1,4 @@
-import { AccountPageView } from "@/features/account";
+import { AccountPageView } from "@brand-ui";
 
 export default function AccountPage() {
   return <AccountPageView />;

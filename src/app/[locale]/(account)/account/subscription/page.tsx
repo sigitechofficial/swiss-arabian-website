@@ -1,4 +1,4 @@
-import { AccountSubscriptionsPageView } from "@/features/subscriptions/components/AccountSubscriptionsPageView";
+import { AccountSubscriptionsPageView } from "@brand-ui";
 
 export default function AccountSubscriptionPage() {
   return <AccountSubscriptionsPageView />;

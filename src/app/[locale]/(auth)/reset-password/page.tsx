@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { ResetPasswordPageView } from "@/features/auth";
-import { PageLoading } from "@/components/ui";
+import { PageLoading, ResetPasswordPageView } from "@brand-ui";
 
 export default function ResetPasswordPage() {
   return (

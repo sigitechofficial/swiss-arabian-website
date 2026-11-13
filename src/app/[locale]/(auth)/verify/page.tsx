@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { VerifyPageView } from "@/features/auth";
-import { PageLoading } from "@/components/ui";
+import { PageLoading, VerifyPageView } from "@brand-ui";
 
 export default function VerifyPage() {
   return (

@@ -1,4 +1,4 @@
-import { SubscriptionsPageView } from "@/features/subscriptions/components/SubscriptionsPageView";
+import { SubscriptionsPageView } from "@brand-ui";
 
 type Props = { params: Promise<{ planCode: string }> };
 

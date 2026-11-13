@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
-import { BlogArticlePageView } from "@/features/blog/components/BlogArticlePageView";
 import { fetchBlogArticle } from "@/features/blog/api/blogApi";
+import { BlogArticlePageView } from "@brand-ui";
 
 async function load(slug: string) {
   const { zoneCode, contentLanguage, locale } = await resolveRequestCatalogMarket();

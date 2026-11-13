@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PageLoading } from "@/components/ui";
-import { OrderConfirmationView } from "@/features/checkout";
+import { OrderConfirmationView, PageLoading } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Order confirmation",

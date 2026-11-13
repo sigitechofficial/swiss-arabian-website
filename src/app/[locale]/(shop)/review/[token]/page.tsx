@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
-import { ReviewRequestPageView } from "@/features/reviews/components/ReviewRequestPageView";
+import { ReviewRequestPageView } from "@brand-ui";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await routeTranslator();

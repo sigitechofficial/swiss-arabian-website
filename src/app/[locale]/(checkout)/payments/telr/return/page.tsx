@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TelrReturnView } from "@/features/checkout";
-import { CheckoutSpinnerState, CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
+import { CheckoutSpinnerState, CheckoutStateShell, TelrReturnView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Confirming Telr payment",

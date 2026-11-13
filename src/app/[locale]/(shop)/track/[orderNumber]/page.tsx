@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PageLoading } from "@/components/ui";
-import { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
+import { GuestTrackingPageView, PageLoading } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Track your order",

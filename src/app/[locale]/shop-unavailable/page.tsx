@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ShopUnavailableView } from "@/components/ui";
+import { ShopUnavailableView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Shop unavailable",

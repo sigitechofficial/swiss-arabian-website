@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AccountOrderDetailPageView } from "@/features/orders";
+import { AccountOrderDetailPageView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Order details",

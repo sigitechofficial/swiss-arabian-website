@@ -1,4 +1,4 @@
-import { AccountReviewsPageView } from "@/features/reviews";
+import { AccountReviewsPageView } from "@brand-ui";
 
 export const metadata = {
   title: "Reviews",

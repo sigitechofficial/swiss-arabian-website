@@ -1,4 +1,4 @@
-import { CheckoutPageView } from "@/features/checkout";
+import { CheckoutPageView } from "@brand-ui";
 
 export default function CheckoutPage() {
   return <CheckoutPageView />;

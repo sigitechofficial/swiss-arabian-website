@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PaymobPaymentFormView } from "@/features/checkout";
+import { PaymobPaymentFormView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Card payment",

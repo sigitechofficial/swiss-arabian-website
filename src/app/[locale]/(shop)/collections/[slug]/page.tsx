@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import {
-  CollectionListing,
-  collectionMetadata,
-} from "@/features/catalog/routes/listingRoutes";
+import { collectionMetadata } from "@/features/catalog/routes/listingRoutes";
+import { CollectionListing } from "@brand-ui";
 
 /** A collection, prerendered per language on first visit and revalidated (ISR). */
 export const revalidate = 300;

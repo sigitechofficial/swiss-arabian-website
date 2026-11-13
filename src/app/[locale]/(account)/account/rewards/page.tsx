@@ -1,4 +1,4 @@
-import { AccountRewardsPageView } from "@/features/account";
+import { AccountRewardsPageView } from "@brand-ui";
 
 export const metadata = {
   title: "My rewards",

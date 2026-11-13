@@ -2,9 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { StorefrontShell } from "@/components/layout/StorefrontShell";
 import { useMarket } from "@/providers/MarketProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { StorefrontShell } from "@brand-ui/client";
 
 const buttonPrimary =
   "inline-flex h-11 items-center justify-center rounded-md bg-terra px-5 text-sm font-semibold text-white hover:bg-[var(--sa-action-primary-hover)]";

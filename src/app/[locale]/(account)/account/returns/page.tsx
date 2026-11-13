@@ -1,4 +1,4 @@
-import { AccountAfterSalesPageView } from "@/features/afterSales";
+import { AccountAfterSalesPageView } from "@brand-ui";
 
 export const metadata = {
   title: "Returns & exchanges",

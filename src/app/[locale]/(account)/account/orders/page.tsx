@@ -1,4 +1,4 @@
-import { PurchaseHistoryPageView } from "@/features/orders";
+import { PurchaseHistoryPageView } from "@brand-ui";
 
 export const metadata = {
   title: "Purchase History",

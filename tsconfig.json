@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@brand-ui": ["./src/brands/swiss-arabian/brand-ui.ts"],
+      "@brand-ui/client": ["./src/brands/swiss-arabian/brand-ui.client.ts"]
     }
   },
   "include": [

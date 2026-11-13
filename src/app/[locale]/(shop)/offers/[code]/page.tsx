@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { OfferShop } from "@/features/promotions/components/OfferShop";
 import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import { pageContainer } from "@/styles/siteChrome";
+import { OfferShop } from "@brand-ui";
 
 /**
  * True when the offer exists and runs in the request's market; false when it

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PaymentSuccessView } from "@/features/checkout";
+import { PaymentSuccessView } from "@brand-ui";
 
 export const metadata: Metadata = {
   title: "Confirming payment",

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import {
-  CategoryListing,
-  categoryMetadata,
-} from "@/features/catalog/routes/listingRoutes";
+import { categoryMetadata } from "@/features/catalog/routes/listingRoutes";
+import { CategoryListing } from "@brand-ui";
 
 /** A category, prerendered per language on first visit and revalidated (ISR). */
 export const revalidate = 300;

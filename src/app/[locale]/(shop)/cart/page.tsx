@@ -1,4 +1,4 @@
-import { CartPageView } from "@/features/cart";
+import { CartPageView } from "@brand-ui";
 
 export default function CartPage() {
   return <CartPageView />;

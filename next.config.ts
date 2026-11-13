@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 import os from "node:os";
 import { REMOTE_IMAGE_PATTERNS } from "./src/lib/images/remoteImagePatterns";
+import { brandForCode, DEFAULT_BRAND_CODE } from "./src/lib/brand/registry";
+
+/**
+ * The brand's UI (`@brand-ui`) is chosen at build time: one deployment per brand,
+ * so each bundle holds only its own design system. See src/brands/README.md.
+ */
+const BRAND_UI_THEME =
+  brandForCode(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE ?? DEFAULT_BRAND_CODE)?.themeKey ??
+  "swiss-arabian";
 
 /** LAN / Tailscale IPv4s so `http://192.168.x.x:3004` works in `next dev`. */
 function lanDevOrigins(): string[] {
@@ -18,7 +27,13 @@ function lanDevOrigins(): string[] {
 const nextConfig: NextConfig = {
   // Git worktrees share the main checkout's node_modules through a junction, which
   // Turbopack rejects unless its root covers it. Opt-in only (unset in CI and deploys).
-  ...(process.env.TURBOPACK_ROOT ? { turbopack: { root: process.env.TURBOPACK_ROOT } } : {}),
+  turbopack: {
+    ...(process.env.TURBOPACK_ROOT ? { root: process.env.TURBOPACK_ROOT } : {}),
+    resolveAlias: {
+      "@brand-ui/client": `./src/brands/${BRAND_UI_THEME}/brand-ui.client.ts`,
+      "@brand-ui": `./src/brands/${BRAND_UI_THEME}/brand-ui.ts`,
+    },
+  },
   // Next.js 16.3 fails to emit `.next/next-server.js.nft.json` when
   // `output: "standalone"` is combined with Vercel's build adapter, which
   // breaks Vercel's `onBuildComplete` step with an ENOENT on that file

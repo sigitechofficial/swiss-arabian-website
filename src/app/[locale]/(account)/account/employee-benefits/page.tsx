@@ -1,4 +1,4 @@
-import { AccountEmployeeBenefitsPageView } from "@/features/account";
+import { AccountEmployeeBenefitsPageView } from "@brand-ui";
 
 export const metadata = {
   title: "Employee Benefits",

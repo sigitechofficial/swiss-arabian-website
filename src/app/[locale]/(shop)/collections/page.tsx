@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import {
-  CatalogJsonLd,
-  pageBreadcrumbJsonLd,
-} from "@/features/catalog/components/CatalogJsonLd";
-import { CollectionsPageView } from "@/features/collections";
+import { pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import { fetchCollections } from "@/features/catalog/api/catalog.service";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { getTranslator } from "@/lib/i18n/messages";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
+import { CatalogJsonLd, CollectionsPageView } from "@brand-ui";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await routeTranslator();
