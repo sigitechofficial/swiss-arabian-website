@@ -62,6 +62,8 @@ type UseNavigationReturn = {
    *  fall back to the static menu so the header never renders bare. */
   chromeItems: ChromeNavItem[];
   footerItems: NavItem[];
+  /** The header menu as the API sends it (with direct links), for brand chromes. */
+  headerNav: NavItem[];
   isLoading: boolean;
   isCatalogFallback: boolean;
 };
@@ -105,6 +107,7 @@ export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
     headerItems: apiNavToMobileNav(header),
     chromeItems: apiNavToChromeNav(header),
     footerItems: footer,
+    headerNav: header,
     isLoading,
     isCatalogFallback: data?.metadata.source === "catalog_categories",
   };

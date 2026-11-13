@@ -22,7 +22,7 @@ export function Accordion({ items, name, className }: { items: AccordionItem[]; 
             {it.title}
             <ChevronIcon />
           </summary>
-          <div className="flex flex-col pt-0 pr-[4px] pb-[12px] pl-[12px] text-[15px] text-sapil-ink-2">{it.content}</div>
+          <div className="flex flex-col pt-0 pe-[4px] pb-[12px] ps-[12px] text-[15px] text-sapil-ink-2">{it.content}</div>
         </details>
       ))}
     </div>

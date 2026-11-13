@@ -11,6 +11,8 @@ import { useWishlistStatusMap } from "./useWishlistStatus";
 export type WishlistToggleState = {
   /** Only real catalog products (UUIDs) can be saved; render nothing otherwise. */
   available: boolean;
+  /** Same as `available` (kept for callers that read it under this name). */
+  supported: boolean;
   inWishlist: boolean;
   isAuthenticated: boolean;
   /** Auth still loading, or a save/remove is running. */
@@ -24,6 +26,9 @@ export type WishlistToggleState = {
  * from the nearest `WishlistStatusScope` (one batched request per grid), or
  * its own request outside a scope.
  */
+/** Alias of `WishlistToggleState`. */
+export type WishlistToggle = WishlistToggleState;
+
 export function useWishlistToggle(productId: string): WishlistToggleState {
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
@@ -63,6 +68,7 @@ export function useWishlistToggle(productId: string): WishlistToggleState {
 
   return {
     available,
+    supported: available,
     inWishlist,
     isAuthenticated,
     disabled: !bootstrapped || pending,

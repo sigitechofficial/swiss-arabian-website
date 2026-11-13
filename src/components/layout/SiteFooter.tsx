@@ -5,14 +5,8 @@ import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useNavigation } from "@/features/navigation";
 import type { NavItem } from "@/features/navigation/types/navigation";
 import { useMarket } from "@/providers/MarketProvider";
-import { useQuery } from "@tanstack/react-query";
 import type { FormEvent, ReactNode } from "react";
-import {
-  cmsGlobalKeys,
-  fetchCmsGlobalRegion,
-  firstSectionOfType,
-} from "@/features/cms/api/cmsGlobalRegion.service";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import { useFooterContent } from "@/features/cms/hooks/useCmsGlobalRegion";
 import {
   footerColLinks,
   footerColTitle,
@@ -150,35 +144,11 @@ function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
 
 export function SiteFooter() {
   const copy = useShopCopy();
-  const { marketId, contentLanguage } = useMarket();
-  const catalogMarket = useSelectedCatalogMarket();
-  const zoneCode = catalogMarket?.zoneCode ?? "";
-  // Content is published under the market's own language code, not the one in the address.
-  const languageCode = contentLanguage ?? "";
+  const { marketId } = useMarket();
   const { footerItems, isLoading } = useNavigation(marketId || undefined);
   const columns = footerColumns(footerItems);
-
-  const cmsQuery = useQuery({
-    queryKey: cmsGlobalKeys.region("footer", zoneCode, languageCode),
-    queryFn: () =>
-      fetchCmsGlobalRegion({
-        slug: "footer",
-        zoneCode,
-        languageCode,
-      }),
-    enabled: Boolean(zoneCode && languageCode),
-    staleTime: 60_000,
-  });
-  const cmsSection = firstSectionOfType(cmsQuery.data?.sections ?? [], "FOOTER");
-  const cms = (cmsSection?.data ?? {}) as {
-    newsletterHeading?: string | null;
-    newsletterPlaceholder?: string | null;
-    newsletterButtonLabel?: string | null;
-    copyrightText?: string | null;
-    showPaymentBadges?: boolean;
-    socialLinks?: Array<{ id: string; label: string; href: string }> | null;
-  };
-  const socialLinks = (cms.socialLinks ?? []).flatMap((link) => {
+  const cms = useFooterContent();
+  const socialLinks = cms.socialLinks.flatMap((link) => {
     const network = socialNetwork(link);
     return network ? [{ ...link, network }] : [];
   });

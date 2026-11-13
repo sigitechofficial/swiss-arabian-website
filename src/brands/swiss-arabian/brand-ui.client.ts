@@ -4,4 +4,5 @@
  * imports server-only APIs (`next/headers`), unlike `brand-ui.ts`.
  */
 export { StorefrontShell } from "@/components/layout/StorefrontShell";
+export { NotFoundView } from "@/components/layout/NotFoundView";
 export { CrashFallback } from "@/components/ui/CrashFallback";

@@ -7,6 +7,12 @@
  *   1. Run the kit:   SAPIL_KIT=1 npx next dev -p 3021      (or next start with SAPIL_KIT=1)
  *   2. Run the diff:  node scripts/sapil-visual-diff.mjs [--only=card,buttons] [--widths=390,1440] [--out=dir]
  *
+ * Specs with `side: "preview"` compare against /sapil-preview (the Sapil chrome and static
+ * home parts with v9 mock values, see src/brands/sapil/kit/SapilShellPreview.tsx): run a
+ * Sapil build with SAPIL_KIT=1 (NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SAPIL) and point
+ * PREVIEW_URL at it (default http://localhost:3031/sapil-preview). `inner` picks our element
+ * inside the preview piece. Run only those with --only=shell-header,… or --group=preview.
+ *
  * Env:
  *   SAPIL_DESIGN_DIR  folder holding sapil-v9-*.html (default: the approved design folder)
  *   KIT_URL           default http://localhost:3021/sapil-kit
@@ -38,6 +44,7 @@ const DESIGN_DIR =
   process.env.SAPIL_DESIGN_DIR ||
   "C:/Users/DELL/Downloads/sapil/repo/sapil-Ahsan";
 const KIT_URL = process.env.KIT_URL || "http://localhost:3021/sapil-kit";
+const PREVIEW_URL = process.env.PREVIEW_URL || "http://localhost:3031/sapil-preview";
 const REF_PORT = Number(process.env.REF_PORT || 3022);
 const WIDTHS = (args.widths || "390,768,1280,1440").split(",").map(Number);
 const THRESHOLD = Number(args.threshold || 24);
@@ -139,12 +146,23 @@ const SPECS = [
     find: `document.querySelector('.buy-row')`,
     kitSel: `[data-sapil="buy-row"]`,
   },
+  /* ——— shell + static home parts, against /sapil-preview ——— */
+  { name: "shell-announce", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('.announce')`, inner: "a" },
+  { name: "shell-header", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('.hdr')`, inner: "[data-sapil-header]" },
+  { name: "shell-subnav", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('.subnav')`, inner: "nav" },
+  { name: "shell-footer", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('footer')`, inner: "footer" },
+  { name: "hero-intro", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('.d-intro')`, inner: "[data-hero-intro]",
+    query: "lead=" + encodeURIComponent("Seven rooms, 57 fragrances. Open a door to meet the piece on show, or walk through the whole gallery.") },
+  { name: "sechead-new", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#new .sec-head')`, inner: "section > div > div:first-child" },
+  { name: "sechead-collections", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#collections .sec-head')`, inner: "section > div > div:first-child" },
+  { name: "sechead-best", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#bestsellers .sec-head')`, inner: "section > div > div:first-child" },
+  { name: "sechead-bundles", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#bundles .sec-head')`, inner: "section > div > div:first-child" },
 ];
 
 /* Same freeze on both sides: no motion, reveal states shown, sticky/fixed chrome out of the way. */
 const FREEZE = `*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}
 .rv{opacity:1!important;transform:none!important}
-.hdr,.toolbar,.gallery,.co-sum{position:static!important}
+.hdr,.toolbar,.gallery,.co-sum,[data-sapil-header]{position:static!important}
 .hero-switch,.toast,.scrim,[data-kit-chrome],[data-sapil=sticky-buy]{display:none!important}
 html{scroll-behavior:auto!important}`;
 
@@ -310,18 +328,22 @@ async function refShot(browser, spec, width) {
 
 async function kitShot(browser, spec, width, refBox) {
   const pg = await browser.page(width);
+  const base = spec.side === "preview" ? PREVIEW_URL : KIT_URL;
+  // preview pieces: mark our element inside the piece so the shot below finds it
+  const target = spec.inner ? `[data-kit="${spec.name}"] ${spec.inner}` : `[data-kit="${spec.name}"]`;
   try {
-    await pg.goto(`${KIT_URL}${spec.kit ? `/${spec.kit}` : ""}?only=${spec.name}`);
+    const url = spec.side === "preview" ? base : `${KIT_URL}${spec.kit ? `/${spec.kit}` : ""}`;
+    await pg.goto(`${url}?only=${spec.name}${spec.query ? "&" + spec.query : ""}`);
     await pg.eval(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(FREEZE)}; document.head.append(s); })()`);
     // the kit element takes the reference element's width (the grid column / container it sits in);
-    // page specs point inside a real page with `kitSel`
-    const sel = spec.kitSel || `[data-kit="${spec.name}"]`;
-    await pg.eval(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return; el.style.width = '${refBox.w}px'; el.style.boxSizing = 'border-box';
+    // page specs point inside a real page with `kitSel`, preview pieces with `inner`
+    const sel = spec.kitSel || target;
+    await pg.eval(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return; el.setAttribute('data-diff-kit', ''); el.style.width = '${refBox.w}px'; el.style.boxSizing = 'border-box';
       const f = v => ((v % 1) + 1) % 1; const r = el.getBoundingClientRect();
       el.style.position = 'relative'; el.style.left = (f(${refBox.fx} - f(r.left + scrollX))) + 'px'; el.style.top = (f(${refBox.fy} - f(r.top + scrollY))) + 'px';
       el.scrollIntoView({block:'center'}); })()`);
     await pg.eval(settle);
-    return await pg.shot(sel);
+    return await pg.shot("[data-diff-kit]");
   } finally {
     await pg.close();
   }
@@ -359,7 +381,11 @@ async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const srv = await serve(DESIGN_DIR, REF_PORT);
   const browser = await openBrowser(driver);
-  const only = args.only ? args.only.split(",") : null;
+  const only = args.only
+    ? args.only.split(",")
+    : args.group === "preview"
+      ? SPECS.filter((s) => s.side === "preview").map((s) => s.name)
+      : null;
   if (args.probe) {
     // print each reference element's markup (to copy mock values into the kit)
     for (const spec of SPECS.filter((s) => !only || only.includes(s.name))) {

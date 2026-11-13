@@ -13,22 +13,26 @@ import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCa
  * is a server-rendered list; it is used only while it belongs to the
  * shopper's market.
  */
-export function useCatalogCollections(
-  initial?: { zoneCode: string; collections: CatalogCollection[] } | null,
-) {
+export type CollectionsInitial = { zoneCode: string; collections: CatalogCollection[] } | null;
+
+export function useCatalogCollections(initial?: CollectionsInitial) {
   const market = useSelectedCatalogMarket();
   const zoneCode = market?.zoneCode ?? initial?.zoneCode ?? "";
   const serverList = initial && initial.zoneCode === zoneCode ? initial.collections : undefined;
-  const { data, isLoading, isError } = useQuery({
+  const query = useQuery({
     queryKey: [...catalogKeys.collections(zoneCode), market?.salesChannelCode ?? ""],
     queryFn: () => fetchCollections(zoneCode, market),
     enabled: Boolean(market),
     initialData: serverList,
   });
+  const { data, isLoading, isError, refetch } = query;
   return {
     collections: data,
     /** Nothing to show yet: no market in the browser, or the first load is running. */
     loading: !data && (!market || isLoading),
     isError,
+    /** The store couldn't be reached and there is nothing to show. */
+    loadFailed: isError && !data,
+    retry: () => void refetch(),
   };
 }

@@ -11,10 +11,16 @@
  */
 import common from "./messages/en/common.json";
 import catalog from "./messages/en/catalog.json";
+import content from "./messages/en/content.json";
+import home from "./messages/en/home.json";
 import product from "./messages/en/product.json";
+import shell from "./messages/en/shell.json";
 
 export const ENGLISH = {
   common,
+  shell,
+  home,
+  content,
   catalog,
   product,
 } as const;

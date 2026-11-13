@@ -2,12 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
+import { useLanguageSwitch } from "@/hooks/useLanguageSwitch";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
-import { isLocale } from "@/lib/i18n/locales";
 import { useMarket } from "@/providers/MarketProvider";
 import { useHydrated } from "@/hooks/useHydrated";
 
@@ -24,7 +23,7 @@ export function useNavbarChrome() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const pathname = usePathname();
-  const languageId = localeFromPathname(pathname || "/");
+  const { languageId, setLanguageId } = useLanguageSwitch();
 
   // Close menus on navigation. Adjusting state while rendering (React's
   // "reset state when a value changes" pattern) avoids an extra effect pass.
@@ -36,18 +35,6 @@ export function useNavbarChrome() {
     setMobileGroup(null);
   }
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
-  const setLanguageId = (id: string) => {
-    if (!isLocale(id)) return;
-    const current = pathname || "/";
-    const nextPath = withLocalePrefix(current, id);
-    if (nextPath === current) return;
-    // A client navigation follows the rewritten page and stays on the English
-    // address. A full load keeps the language prefix (/ar) in the address bar.
-    const search = window.location.search;
-    const hash = window.location.hash;
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full load required (see above)
-    window.location.assign(`${nextPath}${search}${hash}`);
-  };
   const { marketId, setMarketId, regionOptions, languageOptions } = useMarket();
   const regionId =
     marketId ||

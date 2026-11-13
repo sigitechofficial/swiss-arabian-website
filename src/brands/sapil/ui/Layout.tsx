@@ -58,7 +58,7 @@ export function Subnav({ label, items, info, LinkComponent, className }: SubnavP
   return (
     <nav aria-label={label} className={cx("bg-sapil-white border-b border-sapil-line", className)}>
       <Wrap className="flex items-center gap-[8px] h-[54px] max-760:overflow-x-auto max-760:[scrollbar-width:none] max-760:[&::-webkit-scrollbar]:hidden max-760:h-[52px]">
-        <span className="text-[12px] font-[700] tracking-[.08em] uppercase text-sapil-ink-2 mr-[8px] flex-none">
+        <span className="text-[12px] font-[700] tracking-[.08em] uppercase text-sapil-ink-2 me-[8px] flex-none">
           {label}
         </span>
         {items.map((it) => (
@@ -74,7 +74,7 @@ export function Subnav({ label, items, info, LinkComponent, className }: SubnavP
           </SubnavChip>
         ))}
         {info && (
-          <span className="ml-auto text-[13px] text-sapil-ink-2 whitespace-nowrap max-760:hidden">{info}</span>
+          <span className="ms-auto text-[13px] text-sapil-ink-2 whitespace-nowrap max-760:hidden">{info}</span>
         )}
       </Wrap>
     </nav>
