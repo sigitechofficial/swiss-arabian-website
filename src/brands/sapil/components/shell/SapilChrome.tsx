@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { CartSideSheet } from "@/features/cart/components/CartSideSheet";
+import { SapilBagDrawer } from "@/brands/sapil/components/bag/SapilBagDrawer";
 import { useAnnouncementBar, useFooterContent } from "@/features/cms/hooks/useCmsGlobalRegion";
 import { useMarketSettings } from "@/features/markets/hooks/useMarketSettings";
 import { useNavigation } from "@/features/navigation";
@@ -129,8 +129,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
       />
       <SapilSearchDialog />
       <SapilToastHost />
-      {/* TODO(integration): swap for SapilBagDrawer (commerce area). */}
-      <CartSideSheet />
+      <SapilBagDrawer />
       <GiftChoiceHost />
     </div>
   );

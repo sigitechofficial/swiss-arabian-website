@@ -12,6 +12,9 @@
  * Sapil build with SAPIL_KIT=1 (NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SAPIL) and point
  * PREVIEW_URL at it (default http://localhost:3031/sapil-preview). `inner` picks our element
  * inside the preview piece. Run only those with --only=shell-header,… or --group=preview.
+ * Page-level specs (bag drawer, checkout) compare against /sapil-kit/commerce, which renders the
+ * real Sapil page components with fixture data copied from the v9 mock (`kitPath`). `prepare`
+ * runs on the reference page, `kitPrepare` on the kit page, before either is measured.
  *
  * Env:
  *   SAPIL_DESIGN_DIR  folder holding sapil-v9-*.html (default: the approved design folder)
@@ -45,6 +48,7 @@ const DESIGN_DIR =
   "C:/Users/DELL/Downloads/sapil/repo/sapil-Ahsan";
 const KIT_URL = process.env.KIT_URL || "http://localhost:3021/sapil-kit";
 const PREVIEW_URL = process.env.PREVIEW_URL || "http://localhost:3031/sapil-preview";
+const KIT_ORIGIN = new URL(KIT_URL).origin;
 const REF_PORT = Number(process.env.REF_PORT || 3022);
 const WIDTHS = (args.widths || "390,768,1280,1440").split(",").map(Number);
 const THRESHOLD = Number(args.threshold || 24);
@@ -157,6 +161,70 @@ const SPECS = [
   { name: "sechead-collections", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#collections .sec-head')`, inner: "section > div > div:first-child" },
   { name: "sechead-best", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#bestsellers .sec-head')`, inner: "section > div > div:first-child" },
   { name: "sechead-bundles", side: "preview", page: "sapil-v9-note-by-note.html", find: `document.querySelector('#bundles .sec-head')`, inner: "section > div > div:first-child" },
+  /* ——— bag drawer + checkout (pages, against /sapil-kit/commerce) ——— */
+  {
+    // the open drawer with Berry Crush ×1, laid out in the page flow at a fixed height
+    name: "drawer",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { document.querySelector('#bagBtn').click(); const d = document.querySelector('#drawer');
+      d.style.cssText = 'position:relative;inset:auto;transform:none;height:760px;box-shadow:none;margin-left:auto'; })()`,
+    find: `document.querySelector('#drawer')`,
+    kitPrepare: `(() => { const a = document.querySelector('[data-kit-wrap="drawer"] aside'); a.setAttribute('data-kit', 'drawer');
+      a.style.cssText = 'position:relative;inset:auto;transform:none;height:760px;box-shadow:none;margin-left:auto'; })()`,
+  },
+  {
+    name: "drawer-empty",
+    page: "sapil-v9-checkout.html",
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { document.querySelector('#bagBtn').click(); const d = document.querySelector('#drawer');
+      d.style.cssText = 'position:relative;inset:auto;transform:none;height:640px;box-shadow:none;margin-left:auto'; })()`,
+    find: `document.querySelector('#drawer')`,
+    kitPrepare: `(() => { const a = document.querySelector('[data-kit-wrap="drawer-empty"] aside'); a.setAttribute('data-kit', 'drawer-empty');
+      a.style.cssText = 'position:relative;inset:auto;transform:none;height:640px;box-shadow:none;margin-left:auto'; })()`,
+  },
+  {
+    // checkout heading: serif title, secure note, progress tracker (step 2 current)
+    name: "co-head",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelector('#coHead')`,
+  },
+  {
+    name: "co-method",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelectorAll('#stepDelivery fieldset')[2]`,
+  },
+  {
+    // order summary; on phones it is opened with the summary toggle first
+    name: "co-summary",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { if (getComputedStyle(document.querySelector('#summary')).display === 'none') document.querySelector('#sumToggle').click(); })()`,
+    find: `document.querySelector('#summary')`,
+  },
+  {
+    // payment step: review of the delivery details (form filled and submitted)
+    name: "co-review",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { const f = document.querySelector('#stepDelivery'), set = (n, v) => { f.elements[n].value = v; };
+      set('email', 'mariam@example.com'); set('phone', '50 123 4567'); set('name', 'Mariam Al Falasi'); set('emirate', 'Dubai');
+      set('area', 'Business Bay'); set('street', 'Bay Square Building 7'); set('apt', 'Apt 1204'); f.requestSubmit(); })()`,
+    find: `document.querySelector('#review')`,
+  },
+  {
+    name: "co-empty",
+    page: "sapil-v9-checkout.html",
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelector('#coEmpty')`,
+  },
 ];
 
 /* Same freeze on both sides: no motion, reveal states shown, sticky/fixed chrome out of the way. */
@@ -332,9 +400,14 @@ async function kitShot(browser, spec, width, refBox) {
   // preview pieces: mark our element inside the piece so the shot below finds it
   const target = spec.inner ? `[data-kit="${spec.name}"] ${spec.inner}` : `[data-kit="${spec.name}"]`;
   try {
-    const url = spec.side === "preview" ? base : `${KIT_URL}${spec.kit ? `/${spec.kit}` : ""}`;
+    const url = spec.kitPath
+      ? KIT_ORIGIN + spec.kitPath
+      : spec.side === "preview"
+        ? base
+        : `${KIT_URL}${spec.kit ? `/${spec.kit}` : ""}`;
     await pg.goto(`${url}?only=${spec.name}${spec.query ? "&" + spec.query : ""}`);
     await pg.eval(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(FREEZE)}; document.head.append(s); })()`);
+    if (spec.kitPrepare) await pg.eval(spec.kitPrepare);
     // the kit element takes the reference element's width (the grid column / container it sits in);
     // page specs point inside a real page with `kitSel`, preview pieces with `inner`
     const sel = spec.kitSel || target;

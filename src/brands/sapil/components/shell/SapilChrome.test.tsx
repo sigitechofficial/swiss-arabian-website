@@ -39,7 +39,7 @@ vi.mock("@/hooks/useCurrentUser", () => ({ useIsAuthenticated: () => false }));
 vi.mock("@/features/search/hooks/useHeaderSearch", () => ({
   useHeaderSearch: () => ({ open: false, setOpen: vi.fn(), query: "", setQuery: vi.fn(), hits: [], search: { total: 0, isLoading: false, isError: false }, goToResults: vi.fn() }),
 }));
-vi.mock("@/features/cart/components/CartSideSheet", () => ({ CartSideSheet: () => <div data-testid="bag" /> }));
+vi.mock("@/brands/sapil/components/bag/SapilBagDrawer", () => ({ SapilBagDrawer: () => <div data-testid="bag" /> }));
 vi.mock("@/features/promotions/components/GiftChoiceHost", () => ({ GiftChoiceHost: () => null }));
 
 beforeEach(() => {

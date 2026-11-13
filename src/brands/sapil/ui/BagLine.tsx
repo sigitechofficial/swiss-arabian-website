@@ -5,7 +5,8 @@ import { QuantityStepper } from "./QuantityStepper";
 export type BagLineProps = {
   name: string;
   href: string;
-  imageSrc: string;
+  /** omitted: the tile shows without a bottle */
+  imageSrc?: string;
   /** e.g. "Juicy Pleasures · AED 63 each" */
   detail: ReactNode;
   tile?: SapilTint;
@@ -16,6 +17,19 @@ export type BagLineProps = {
   /** struck-out full line price */
   was?: ReactNode;
   onRemove: () => void;
+  /** most the line can hold (stock); the + button stops there */
+  max?: number;
+  /** quantity can't change (e.g. the item is unavailable) */
+  disabled?: boolean;
+  /** extra lines under the stepper: bundle tags, stock notes */
+  extra?: ReactNode;
+  /** translated wording; default English */
+  labels?: {
+    remove?: string;
+    removeItem?: string;
+    was?: string;
+    stepper?: { group?: string; decrease?: string; increase?: string; remove?: string };
+  };
   LinkComponent?: SapilLinkComponent;
 };
 
@@ -31,6 +45,10 @@ export function BagLine({
   total,
   was,
   onRemove,
+  max,
+  disabled,
+  extra,
+  labels,
   LinkComponent = DefaultLink,
 }: BagLineProps) {
   return (
@@ -44,8 +62,10 @@ export function BagLine({
         aria-hidden="true"
         className="aspect-square rounded-sapil-sm bg-sapil-tile grid place-items-center"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- presentational kit */}
-        <img src={imageSrc} alt="" className="h-[84%] object-contain" />
+        {imageSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element -- presentational kit
+          <img src={imageSrc} alt="" className="h-[84%] object-contain" />
+        ) : null}
       </LinkComponent>
       <div>
         <LinkComponent href={href} className="block [transition:color_.18s] hover:text-sapil-accent">
@@ -59,21 +79,30 @@ export function BagLine({
           onChange={onQuantityChange}
           itemLabel={name}
           min={1}
+          max={max}
           removeAtMin
+          disabled={disabled}
+          labels={labels?.stepper}
         />
+        {extra}
       </div>
-      <div className="text-right">
+      <div className="text-end">
         <span className="font-[600] tabular-nums">
           {total}
           {was && (
             <s className="block text-[13px] font-[400] text-sapil-muted">
-              <span className="sr-only">was </span>
+              <span className="sr-only">{labels?.was ?? "was"} </span>
               {was}
             </s>
           )}
         </span>
-        <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="block ml-auto mt-[6px] text-[13px] text-sapil-muted underline">
-          Remove
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={labels?.removeItem ?? `Remove ${name}`}
+          className="block ms-auto mt-[6px] text-[13px] text-sapil-muted underline"
+        >
+          {labels?.remove ?? "Remove"}
         </button>
       </div>
     </div>

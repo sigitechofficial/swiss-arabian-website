@@ -1,26 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { toast } from "@/components/ui/Toaster";
-import { env } from "@/lib/config/env";
-import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
-import { useMarket } from "@/providers/MarketProvider";
-import {
-  confirmEmailLoginCode,
-  loginCustomer,
-  requestEmailLoginCode,
-  resendOtp,
-  toLoginIdentifier,
-} from "../api/auth.service";
-import { applyAuthResult } from "../lib/applyAuthSession";
-import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
-import { loginSchema, type LoginFormValues } from "../schemas/auth.schema";
+import { maskEmail, useLoginFlow } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import {
   AuthDivider,
@@ -31,168 +12,28 @@ import {
 } from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
 
-/** Seconds before "Resend code" becomes available again. */
-const RESEND_SECONDS = 30;
-
-const emailOnlySchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "Enter your email")
-    .email("Enter a valid email address"),
-});
-type EmailOnlyValues = z.infer<typeof emailOnlySchema>;
-
-const codeSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "Enter the 6-digit code we emailed you"),
-});
-type CodeValues = z.infer<typeof codeSchema>;
-
-/** `aisha@example.com` → `ai•••@example.com` — shown back, never the full address. */
-function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!local || !domain) return email;
-  const visible = local.slice(0, Math.min(2, local.length));
-  return `${visible}${"•".repeat(Math.max(local.length - 2, 1))}@${domain}`;
-}
-
-type LoginStep =
-  | { kind: "password" }
-  | { kind: "email-code-request" }
-  | { kind: "email-code-confirm"; email: string };
-
 const linkButtonClass =
   "mt-4 cursor-pointer text-center text-[12.5px] font-normal text-sa-primary underline underline-offset-2 hover:text-terra";
 
 export function LoginPageView() {
-  const router = useRouter();
-  // The phone hint shows the selected market's dial code (+974 in Qatar).
-  const marketCountry =
-    useMarket().catalogContext?.countryCode?.toUpperCase() || "AE";
-  const marketDialCode = (() => {
-    try {
-      return getCountryCallingCode(marketCountry as CountryCode);
-    } catch {
-      return "971";
-    }
-  })();
-  const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") || "/account";
-  // The one-time-code flow stays on this page: request → enter code → signed in.
-  const [step, setStep] = useState<LoginStep>({ kind: "password" });
-  const [resendSeconds, setResendSeconds] = useState(0);
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: "", password: "", remember: false },
-  });
-
-  const emailForm = useForm<EmailOnlyValues>({
-    resolver: zodResolver(emailOnlySchema),
-    defaultValues: { email: "" },
-  });
-
-  const codeForm = useForm<CodeValues>({
-    resolver: zodResolver(codeSchema),
-    defaultValues: { code: "" },
-  });
-  const codeValue = useWatch({ control: codeForm.control, name: "code" });
-
-  useEffect(() => {
-    if (resendSeconds <= 0) return;
-    const id = window.setTimeout(
-      () => setResendSeconds((seconds) => seconds - 1),
-      1000,
-    );
-    return () => window.clearTimeout(id);
-  }, [resendSeconds]);
-
-  function finishLogin() {
-    router.push(returnTo.startsWith("/") ? returnTo : "/account");
-  }
-
-  async function onSubmit(values: LoginFormValues) {
-    try {
-      const result = await loginCustomer({
-        identifier: toLoginIdentifier(values.identifier),
-        password: values.password,
-      });
-      if (isEmailVerificationRequired(result)) {
-        const query = new URLSearchParams({
-          email: result.email,
-          returnTo: returnTo.startsWith("/") ? returnTo : "/account",
-        });
-        router.push(`/verify?${query.toString()}`);
-        return;
-      }
-      if (isAuthResult(result)) {
-        applyAuthResult(result);
-        finishLogin();
-      }
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
-
-  /** Carry whatever email was already typed into the code flow, and back again. */
-  function switchToEmailCode() {
-    const typed = form.getValues("identifier").trim();
-    if (typed.includes("@")) emailForm.setValue("email", typed);
-    codeForm.reset({ code: "" });
-    setStep({ kind: "email-code-request" });
-  }
-
-  function switchToPassword(email?: string) {
-    if (email) form.setValue("identifier", email);
-    codeForm.reset({ code: "" });
-    setStep({ kind: "password" });
-  }
-
-  async function onRequestCode(values: EmailOnlyValues) {
-    const email = values.email.trim();
-    try {
-      await requestEmailLoginCode(email);
-      codeForm.reset({ code: "" });
-      setResendSeconds(RESEND_SECONDS);
-      setStep({ kind: "email-code-confirm", email });
-      // Deliberately vague — never reveal whether an account exists.
-      toast(
-        "If an account exists for this email, a code is on its way.",
-        "success",
-      );
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
-
-  async function onConfirmCode(values: CodeValues) {
-    if (step.kind !== "email-code-confirm") return;
-    try {
-      const result = await confirmEmailLoginCode({
-        email: step.email,
-        code: values.code.trim(),
-      });
-      applyAuthResult(result);
-      toast("Signed in.", "success");
-      finishLogin();
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
-
-  async function onResend() {
-    if (step.kind !== "email-code-confirm" || resendSeconds > 0) return;
-    try {
-      await resendOtp(step.email, "LOGIN");
-      setResendSeconds(RESEND_SECONDS);
-      toast("Code sent — check your email.", "success");
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const {
+    step,
+    marketDialCode,
+    oauthEnabled,
+    codeSignInEnabled,
+    form,
+    emailForm,
+    codeForm,
+    codeValue,
+    setCode,
+    resendSeconds,
+    submitPassword,
+    submitCodeRequest,
+    submitCode,
+    onResend,
+    switchToEmailCode,
+    switchToPassword,
+  } = useLoginFlow();
 
   const heading =
     step.kind === "email-code-confirm"
@@ -213,9 +54,9 @@ export function LoginPageView() {
       {step.kind === "password" ? (
         <form
           className="flex w-full flex-col"
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={submitPassword}
         >
-          {env.flags.oauth ? (
+          {oauthEnabled ? (
             <>
               <AuthSocialButtons />
               <AuthDivider />
@@ -264,7 +105,7 @@ export function LoginPageView() {
               {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
             </AuthSubmitButton>
           </div>
-          {env.flags.verification ? (
+          {codeSignInEnabled ? (
             <button
               type="button"
               className={linkButtonClass}
@@ -280,7 +121,7 @@ export function LoginPageView() {
       {step.kind === "email-code-request" ? (
         <form
           className="flex w-full flex-col"
-          onSubmit={emailForm.handleSubmit(onRequestCode)}
+          onSubmit={submitCodeRequest}
         >
           <AuthField
             id="code-email"
@@ -312,19 +153,14 @@ export function LoginPageView() {
       {step.kind === "email-code-confirm" ? (
         <form
           className="flex w-full flex-col gap-5"
-          onSubmit={codeForm.handleSubmit(onConfirmCode)}
+          onSubmit={submitCode}
         >
           <AuthOtpField
             id="login-code"
             label="Sign-in code"
             autoFocus
             value={codeValue}
-            onChange={(code) =>
-              codeForm.setValue("code", code, {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }
+            onChange={setCode}
             error={codeForm.formState.errors.code?.message}
           />
           <AuthSubmitButton disabled={codeForm.formState.isSubmitting}>

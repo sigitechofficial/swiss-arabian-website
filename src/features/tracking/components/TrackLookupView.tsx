@@ -1,8 +1,6 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
 import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
 import {
@@ -15,29 +13,17 @@ import {
   fldFull,
   fldHint,
 } from "@/styles/checkoutChrome";
-import { storeGuestOrderAccessToken } from "@/features/checkout/utils/checkoutSession";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useTrackLookup } from "../hooks/useOrderTrackingLookup";
 
 /** `/track` — find an order by number, with the token from the confirmation email. */
 export function TrackLookupView() {
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [orderNumber, setOrderNumber] = useState("");
-  const [token, setToken] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const number = orderNumber.trim().toUpperCase();
-    if (!number) return setError("Enter your order number.");
-    if (!isAuthenticated && !token.trim()) {
-      return setError("Enter the tracking token from your confirmation email.");
-    }
-    setError(null);
-    // Hand the token over through storage, not the URL.
-    if (token.trim()) storeGuestOrderAccessToken(number, token.trim());
-    router.push(`/track/${encodeURIComponent(number)}`);
-  }
+  const { isAuthenticated, orderNumber, setOrderNumber, token, setToken, error: errorKind, submit } = useTrackLookup();
+  const error =
+    errorKind === "orderNumber"
+      ? "Enter your order number."
+      : errorKind === "token"
+        ? "Enter the tracking token from your confirmation email."
+        : null;
 
   return (
     <CheckoutStateShell current="Track order">

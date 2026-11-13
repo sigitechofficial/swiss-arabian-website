@@ -10,7 +10,10 @@
  * its files are loaded by path.
  */
 import common from "./messages/en/common.json";
+import account from "./messages/en/account.json";
+import bag from "./messages/en/bag.json";
 import catalog from "./messages/en/catalog.json";
+import checkout from "./messages/en/checkout.json";
 import content from "./messages/en/content.json";
 import home from "./messages/en/home.json";
 import product from "./messages/en/product.json";
@@ -23,6 +26,9 @@ export const ENGLISH = {
   content,
   catalog,
   product,
+  bag,
+  checkout,
+  account,
 } as const;
 
 export type SapilArea = keyof typeof ENGLISH;

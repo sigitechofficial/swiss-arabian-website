@@ -1,50 +1,17 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/Toaster";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { resetPassword, toLoginIdentifier } from "../api/auth.service";
-import {
-  resetPasswordSchema,
-  type ResetPasswordFormValues,
-} from "../schemas/auth.schema";
+import { useResetPasswordForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import { AuthField, AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
 
 export function ResetPasswordPageView() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const form = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      identifier: searchParams.get("identifier") ?? "",
-      code: "",
-      newPassword: "",
-    },
-  });
-  const codeValue = useWatch({ control: form.control, name: "code" });
-
-  async function onSubmit(values: ResetPasswordFormValues) {
-    try {
-      await resetPassword({
-        identifier: toLoginIdentifier(values.identifier),
-        code: values.code,
-        newPassword: values.newPassword,
-      });
-      toast("Password updated. Please sign in.", "success");
-      router.push("/login");
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const { form, codeValue, setCode, submit } = useResetPasswordForm();
 
   return (
     <AuthShell heading="Reset password" subtitle="Enter the code we sent you and choose a new password.">
-      <form className="flex w-full flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="flex w-full flex-col gap-4" onSubmit={submit}>
         <AuthField
           id="identifier"
           label="Email or phone"
@@ -57,7 +24,7 @@ export function ResetPasswordPageView() {
           id="code"
           label="Reset code"
           value={codeValue}
-          onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
+          onChange={setCode}
           error={form.formState.errors.code?.message}
         />
         <AuthPasswordField

@@ -7,6 +7,7 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
 } from "react";
 import { cx } from "./shared";
@@ -92,11 +93,13 @@ function Shell({
 }
 
 export type FieldProps = FieldShell &
-  Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className"> & {
+  Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className" | "prefix"> & {
     type?: "text" | "email" | "tel" | "number" | "password" | "search";
     /** fixed prefix box, e.g. "+971" (v9 `.phone b`) */
     prefix?: ReactNode;
     inputClassName?: string;
+    /** the input element (React 19 ref prop; react-hook-form `register` passes one) */
+    ref?: Ref<HTMLInputElement>;
   };
 
 /** v9 `.fld`: label above a 50px input; optional prefix (`.phone`) and error line. */
@@ -114,7 +117,7 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
       className={cx(
         CONTROL,
         error ? "border-sapil-sale" : "border-sapil-line-2",
-        prefix ? "rounded-[0_14px_14px_0]" : "rounded-[14px]",
+        prefix ? "rounded-e-[14px] rounded-s-none" : "rounded-[14px]",
         inputClassName,
       )}
     />
@@ -123,7 +126,7 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
     <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
       {prefix ? (
         <span className="flex items-stretch">
-          <b className="grid place-items-center px-[12px] border border-sapil-line-2 border-r-0 rounded-[14px_0_0_14px] bg-sapil-paper text-[15px] font-[600]">
+          <b className="grid place-items-center px-[12px] border border-sapil-line-2 border-e-0 rounded-s-[14px] bg-sapil-paper text-[15px] font-[600]">
             {prefix}
           </b>
           {control}

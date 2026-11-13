@@ -1,7 +1,5 @@
 "use client";
 
-import { cartCurrency } from "@/features/cart/utils/cartCurrency";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
@@ -14,9 +12,6 @@ import {
   PromoLinePrice,
   PromotionProgressRail,
   PromotionQuickAdd,
-  amountPayableFrom,
-  bundleLinesFirst,
-  setBundleLineLabel,
   useFreeShippingBar,
 } from "@/features/promotions";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
@@ -24,15 +19,12 @@ import { LoyaltyDrawerNote } from "@/features/loyalty/components/LoyaltyDrawerNo
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
 import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
-import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import {
-  removeItemOptimistic,
-  setQuantityOptimistic,
-} from "../api/optimisticCart";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
 import { useAddToCart } from "../hooks/useAddToCart";
+import { useBag } from "../hooks/useBag";
+import { bundleTags } from "../utils/bundleTags";
 import {
   CONFETTI_COLORS,
   CONFETTI_SHAPES,
@@ -90,15 +82,23 @@ import {
 export function CartSideSheet() {
   const open = useUiStore((s) => s.cartOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
-  const lines = useCartStore((s) => s.lines);
-  const totals = useCartStore((s) => s.totals);
-  const syncing = useCartStore((s) => s.syncing);
-  const validation = useCartStore((s) => s.validation);
-  const subtotal = useCartStore((s) => s.subtotal());
-  const itemCount = useCartStore((s) => s.itemCount());
+  const {
+    lines,
+    orderedLines,
+    bundleLabel,
+    itemCount,
+    syncing,
+    quotePending,
+    currency,
+    checkoutBlocked,
+    allUnavailable,
+    amountDue,
+    cartId,
+    promotions,
+    setLineQuantity,
+    removeLine,
+  } = useBag();
   const { addToCart } = useAddToCart();
-  const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
-  const removeLocalLine = useCartStore((s) => s.removeLine);
 
   const [addedRecs, setAddedRecs] = useState<Set<string>>(new Set());
   const giftFlash = useGiftChoiceStore((s) => s.flashing);
@@ -108,28 +108,8 @@ export function CartSideSheet() {
   const panelRef = useRef<HTMLDivElement>(null);
   const confettiLayerRef = useRef<HTMLDivElement>(null);
 
-  const promotions = useCartStore((s) => s.promotions);
-  const cartId = useCartStore((s) => s.cartId);
   const { unlocked } = useFreeShippingBar();
   const earnPreview = useEarnPreview({ cartId });
-  const quotePending = syncing && totals == null;
-  const marketCurrency = useSelectedCatalogMarket()?.currencyCode;
-  const currency = cartCurrency({
-    totalsCurrency: totals?.currency,
-    lines,
-    marketCurrency,
-  });
-  const checkoutBlocked =
-    syncing ||
-    validation?.isValid === false ||
-    lines.some((line) => line.isSellable === false);
-  const allUnavailable =
-    lines.length > 0 && lines.every((line) => line.isSellable === false);
-  const amountDue = quotePending
-    ? null
-    : (amountPayableFrom(promotions, [
-        totals?.amountPayable != null ? String(totals.amountPayable) : null,
-      ]) ?? subtotal);
   const celebrateFree = unlocked;
 
   // Fires the "you qualify for free shipping" celebration — progress-bar
@@ -221,7 +201,6 @@ export function CartSideSheet() {
   const recs = useMerchRail(MERCH_RAIL_SLUGS.cartLayer, [], { enabled: open }).slice(0, 6);
   const applicable = useApplicablePromotions().data;
   const promotionRecs = applicable?.recommendations?.products ?? [];
-  const offers = applicable?.offers ?? [];
 
   return (
     <SideSheet
@@ -286,8 +265,8 @@ export function CartSideSheet() {
           <div className={drawerItems}>
             {lines.length === 0
               ? null
-              : bundleLinesFirst(lines, promotions).map((line) => {
-                  const bundle = setBundleLineLabel(promotions, line, offers);
+              : orderedLines.map((line) => {
+                  const bundle = bundleLabel(line);
                   return (
                     <article
                       className={drawerLine}
@@ -317,36 +296,25 @@ export function CartSideSheet() {
                         ) : null}
                         {bundle ? (
                           <p className={drawerLineNote}>
-                            {bundle
-                              .split("·")
-                              .map((part) => part.trim())
-                              .filter(Boolean)
-                              .map((part) => (
-                                <span
-                                  className={
-                                    /%|off/i.test(part)
-                                      ? drawerLineTagStrong
-                                      : drawerLineTag
-                                  }
-                                  key={part}
-                                >
-                                  {part}
-                                </span>
-                              ))}
+                            {bundleTags(bundle).map((tag) => (
+                              <span
+                                className={
+                                  tag.strong ? drawerLineTagStrong : drawerLineTag
+                                }
+                                key={tag.text}
+                              >
+                                {tag.text}
+                              </span>
+                            ))}
                           </p>
                         ) : null}
                         <div className={drawerLineActions}>
                           <div className={drawerLineQty}>
                             <button
                               type="button"
-                              onClick={() => {
-                                const next = Math.max(1, line.quantity - 1);
-                                if (line.remote || line.cartItemId) {
-                                  setQuantityOptimistic(line.variantId, next);
-                                } else {
-                                  updateLocalQuantity(line.variantId, next);
-                                }
-                              }}
+                              onClick={() =>
+                                setLineQuantity(line, Math.max(1, line.quantity - 1))
+                              }
                               aria-label="Decrease quantity"
                               disabled={line.isSellable === false}
                             >
@@ -355,19 +323,9 @@ export function CartSideSheet() {
                             <span>{line.quantity}</span>
                             <button
                               type="button"
-                              onClick={() => {
-                                if (line.remote || line.cartItemId) {
-                                  setQuantityOptimistic(
-                                    line.variantId,
-                                    line.quantity + 1,
-                                  );
-                                } else {
-                                  updateLocalQuantity(
-                                    line.variantId,
-                                    line.quantity + 1,
-                                  );
-                                }
-                              }}
+                              onClick={() =>
+                                setLineQuantity(line, line.quantity + 1)
+                              }
                               aria-label="Increase quantity"
                               disabled={
                                 line.isSellable === false || atStockLimit(line)
@@ -379,13 +337,7 @@ export function CartSideSheet() {
                           <button
                             type="button"
                             className={drawerLineRemove}
-                            onClick={() => {
-                              if (line.remote || line.cartItemId) {
-                                removeItemOptimistic(line.variantId);
-                              } else {
-                                removeLocalLine(line.variantId);
-                              }
-                            }}
+                            onClick={() => removeLine(line)}
                           >
                             Remove
                           </button>

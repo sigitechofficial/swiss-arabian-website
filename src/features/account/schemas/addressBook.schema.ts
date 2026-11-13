@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { UAE_EMIRATES } from "../data/regionsByCountry";
+import type { CreateCustomerAddressDto } from "../types/customerAccount";
 
 export { UAE_EMIRATES };
 
@@ -38,4 +39,23 @@ export type AddressBookFormValues = z.infer<typeof addressBookSchema>;
 
 export function countryNameForCode(code: string): string {
   return ADDRESS_COUNTRIES.find((c) => c.code === code)?.name ?? code;
+}
+
+/** Address form values → the address book API body (a shipping address). */
+export function addressFormToDto(values: AddressBookFormValues): CreateCustomerAddressDto {
+  const phone = values.phone?.trim();
+  return {
+    type: "SHIPPING",
+    firstName: values.firstName?.trim() || undefined,
+    lastName: values.lastName?.trim() || undefined,
+    address1: values.address1.trim(),
+    address2: values.address2?.trim() || undefined,
+    city: values.city.trim(),
+    province: values.province?.trim() || undefined,
+    country: countryNameForCode(values.countryCode),
+    countryCode: values.countryCode,
+    phone: phone || undefined,
+    isDefaultShipping: values.isDefaultShipping,
+    isDefaultBilling: values.isDefaultBilling,
+  };
 }

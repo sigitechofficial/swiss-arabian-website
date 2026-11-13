@@ -41,35 +41,38 @@ export type StorefrontMarket = {
   currencies: StorefrontMarketCurrency[];
   languages: StorefrontMarketLanguage[];
   catalogContext: StorefrontMarketCatalogContext;
-  /** Max prices for the "Under <currency> X" price edits, ascending (absent on older APIs). */
-  priceEditTiers?: number[];
-  /** Delivery and payment facts (absent on older APIs). */
-  delivery?: StorefrontMarketDelivery;
+  /** Price-edit tiers, e.g. [50, 99, 199]. Older backends omit it. */
+  priceEditTiers?: number[] | null;
+  /** Delivery promises (free-delivery threshold, standard / express, COD). Older backends omit it. */
+  delivery?: StorefrontMarketDelivery | null;
 };
 
-/** A delivery method's promise (fee, free-delivery threshold, days). */
-export type StorefrontMarketDeliveryPromise = {
+/** One delivery method's promise (admin Market → Shipping). Money is a decimal string. */
+export type StorefrontMarketDeliveryMethod = {
   methodCode: string;
-  methodType: string;
-  displayName: string;
+  methodType: string | null;
+  displayName: string | null;
   fee: string | null;
   freeDeliveryThreshold: string | null;
   estimatedMinDays: number | null;
   estimatedMaxDays: number | null;
 };
 
+/** Same as `StorefrontMarketDeliveryMethod` (name used by the shell / home code). */
+export type StorefrontMarketDeliveryPromise = StorefrontMarketDeliveryMethod;
+
 export type StorefrontMarketDelivery = {
   currencyCode: string | null;
-  /** Lowest free-delivery threshold of the market's delivery methods (null = none). */
   freeDeliveryThreshold: string | null;
-  standard: StorefrontMarketDeliveryPromise | null;
-  express: StorefrontMarketDeliveryPromise | null;
+  standard: StorefrontMarketDeliveryMethod | null;
+  express: StorefrontMarketDeliveryMethod | null;
   cashOnDelivery: {
     available: boolean;
     minOrderAmount: string | null;
     maxOrderAmount: string | null;
+    /** Always null today: the platform has no COD fee. */
     fee: string | null;
-  };
+  } | null;
 };
 
 export type StorefrontMarketListResponse = {

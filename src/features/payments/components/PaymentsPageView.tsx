@@ -1,10 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
-import { listOrders, type OrderSummaryApi } from "@/features/account/api/customerOrders.service";
+import { orderNeedsPaying, usePaymentHistory, type PaymentFilter } from "../hooks/usePaymentHistory";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { AccountStatusLabel, type AccountStatusTone } from "@/features/account/components/AccountStatus";
@@ -12,7 +10,6 @@ import { accountContainer } from "@/features/account/constants/accountLayout";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 
-type PaymentFilter = "all" | "paid" | "pending" | "refunded";
 
 const FILTERS: { value: PaymentFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -41,24 +38,10 @@ function paymentDisplay(status: string): { label: string; tone: AccountStatusTon
   }
 }
 
-function needsPaying(order: OrderSummaryApi): boolean {
-  const pay = order.paymentStatus.toUpperCase();
-  return order.status === "PAYMENT_PENDING" && (pay === "PENDING" || pay === "FAILED");
-}
+const needsPaying = orderNeedsPaying;
 
 function PaymentHistory() {
-  const [filter, setFilter] = useState<PaymentFilter>("all");
-  const query = useQuery({
-    queryKey: ["customer-orders", "payments"],
-    queryFn: () => listOrders({ limit: 50, offset: 0 }),
-    staleTime: 60_000,
-  });
-
-  const rows = useMemo(() => {
-    const orders = query.data?.items ?? [];
-    if (filter === "all") return orders;
-    return orders.filter((o) => paymentDisplay(o.paymentStatus).kind === filter);
-  }, [query.data, filter]);
+  const { query, filter, setFilter, rows } = usePaymentHistory();
 
   if (query.isPending) return <PageLoading label="Loading payment history…" />;
 

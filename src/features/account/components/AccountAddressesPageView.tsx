@@ -18,6 +18,7 @@ import { useCustomerAddresses } from "../hooks/useCustomerAddresses";
 import {
   ADDRESS_COUNTRIES,
   addressBookSchema,
+  addressFormToDto,
   countryNameForCode,
   type AddressBookFormValues,
 } from "../schemas/addressBook.schema";
@@ -52,23 +53,7 @@ function Field({
   );
 }
 
-function toDto(values: AddressBookFormValues): CreateCustomerAddressDto {
-  const phone = values.phone?.trim();
-  return {
-    type: "SHIPPING",
-    firstName: values.firstName?.trim() || undefined,
-    lastName: values.lastName?.trim() || undefined,
-    address1: values.address1.trim(),
-    address2: values.address2?.trim() || undefined,
-    city: values.city.trim(),
-    province: values.province?.trim() || undefined,
-    country: countryNameForCode(values.countryCode),
-    countryCode: values.countryCode,
-    phone: phone || undefined,
-    isDefaultShipping: values.isDefaultShipping,
-    isDefaultBilling: values.isDefaultBilling,
-  };
-}
+const toDto = addressFormToDto;
 
 function AddressForm({
   initial,

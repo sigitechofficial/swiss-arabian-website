@@ -34,5 +34,40 @@ export {
 } from "./pages/catalog/SapilListings";
 
 // --- bag, checkout, orders, tracking ---
+export { SapilCartPage as CartPageView } from "./pages/checkout/SapilCartPage";
+export { SapilCheckoutPage as CheckoutPageView } from "./pages/checkout/SapilCheckoutPage";
+export {
+  SapilCheckoutSpinner as CheckoutSpinnerState,
+  SapilCheckoutStateShell as CheckoutStateShell,
+  SapilPaymentCancel as PaymentCancelView,
+  SapilPaymentSuccess as PaymentSuccessView,
+  SapilPaymobPaymentForm as PaymobPaymentFormView,
+  SapilStripePaymentForm as StripePaymentFormView,
+  SapilTabbyReturn as TabbyReturnView,
+  SapilTelrReturn as TelrReturnView,
+} from "./pages/checkout/SapilPaymentScreens";
+export { SapilOrderConfirmationPage as OrderConfirmationView } from "./pages/orders/SapilOrderConfirmationPage";
+export { SapilOrdersPage as PurchaseHistoryPageView } from "./pages/orders/SapilOrdersPage";
+export { SapilOrderDetailPage as AccountOrderDetailPageView } from "./pages/orders/SapilOrderDetailPage";
+export { SapilGuestTrackingPage as GuestTrackingPageView, SapilTrackLookupPage as TrackLookupView } from "./pages/orders/SapilTrackPages";
 
 // --- auth + account ---
+export {
+  SapilForgotPasswordPage as ForgotPasswordPageView,
+  SapilLoginPage as LoginPageView,
+  SapilRegisterPage as RegisterPageView,
+  SapilResetPasswordPage as ResetPasswordPageView,
+  SapilVerifyPage as VerifyPageView,
+} from "./pages/auth/SapilAuthPages";
+// Loyalty / rewards, subscriptions, employee benefits and gift box are off for Sapil
+// (brand features): their routes keep Swiss Arabian's views and Sapil never links to them.
+export {
+  SapilAccountAddressesPage as AccountAddressesPageView,
+  SapilAccountAfterSalesPage as AccountAfterSalesPageView,
+  SapilAccountPage as AccountPageView,
+  SapilAccountProfilePage as AccountProfilePageView,
+  SapilAccountReviewsPage as AccountReviewsPageView,
+  SapilAccountSecurityPage as AccountSecurityPageView,
+  SapilAccountWishlistPage as AccountWishlistPageView,
+  SapilPaymentsPage as PaymentsPageView,
+} from "./pages/account/SapilAccountPages";
