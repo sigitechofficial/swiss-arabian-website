@@ -4,8 +4,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
-import { InlineMethodPayment } from "@/features/checkout/components/checkout/InlineMethodPayment";
-import { TabbyCheckoutCard } from "@/features/checkout/components/checkout/TabbyCheckoutCard";
+import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
 import { useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
 import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
@@ -367,7 +366,7 @@ export function SapilCheckoutPage() {
     if (active && row.surface) {
       panel =
         payment.formReady(row) && checkout.inlinePayment ? (
-          <InlineMethodPayment
+          <SapilInlinePayment
             session={checkout.inlinePayment}
             surface={row.surface}
             email={f.email}
@@ -381,7 +380,7 @@ export function SapilCheckoutPage() {
           </p>
         );
     } else if (active && row.tabby !== undefined && !row.disabled && payable > 0) {
-      panel = <TabbyCheckoutCard config={row.tabby || null} total={payable} currency={currency} lang={f.payLang} />;
+      panel = <SapilTabbyCard config={row.tabby || null} total={payable} currency={currency} lang={f.payLang} />;
     }
     const isTabby = Boolean(row.method && isTabbyPaymentMethod(row.method));
     return {

@@ -1,14 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  ExpressCheckoutElement,
-  PaymentElement,
-  useCheckoutElements,
-} from "@stripe/react-stripe-js/checkout";
-import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
+import { ExpressCheckoutElement, PaymentElement } from "@stripe/react-stripe-js/checkout";
 import { LoaderMark } from "@/components/ui/PageLoading";
-import { clearPaymentState } from "../utils/checkoutSession";
 import {
   checkoutCta,
   checkoutError,
@@ -22,14 +15,8 @@ import {
 } from "@/styles/checkoutChrome";
 import { usePathname } from "next/navigation";
 import { localizeHref } from "@/lib/i18n/localePath";
-import { checkoutHref } from "../utils/checkoutLocale";
-import {
-  ignoreIfAlreadyOnSession,
-  resolveStripeContact,
-  stripeConfirmError,
-  stripePayErrorText,
-  useStripeCardPayment,
-} from "../hooks/useStripeCardPayment";
+import { stripePayErrorText, useStripeCardPayment } from "../hooks/useStripeCardPayment";
+import { useStripeWalletPayment } from "../hooks/useStripeWalletPayment";
 
 function LockIcon() {
   return (
@@ -168,47 +155,9 @@ export function StripeWalletPaymentForm({
   country?: string | null;
   onNeedOrder?: () => void;
 }) {
-  const checkoutState = useCheckoutElements();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { error, pay } = useStripeWalletPayment({ orderId, email, name, phone, country, onNeedOrder });
+  const errorMsg = error ? stripePayErrorText(error) : null;
   const apple = wallet === "apple_pay";
-
-  async function pay(event: StripeExpressCheckoutElementConfirmEvent) {
-    if (checkoutState.type !== "success" || busy) return;
-    if (!orderId) {
-      onNeedOrder?.();
-      return;
-    }
-    const { checkout } = checkoutState;
-    const contact = resolveStripeContact({ email, name, phone, country });
-    setBusy(true);
-    setErrorMsg(null);
-    try {
-      if (contact.phone) {
-        await ignoreIfAlreadyOnSession(() => checkout.updatePhoneNumber(contact.phone));
-      }
-      if (contact.billingAddress.name) {
-        await ignoreIfAlreadyOnSession(() => checkout.updateBillingAddress(contact.billingAddress));
-      }
-      const confirmResult = await checkout.confirm({
-        redirect: "if_required",
-        expressCheckoutConfirmEvent: event,
-        ...(contact.phone ? { phoneNumber: contact.phone } : {}),
-        billingAddress: contact.billingAddress,
-      });
-      if (confirmResult.type === "error") {
-        setErrorMsg(stripePayErrorText(stripeConfirmError(confirmResult.error)));
-        setBusy(false);
-        return;
-      }
-    } catch (error) {
-      setErrorMsg(error instanceof Error ? error.message : "Payment failed. Please try another card or contact your bank.");
-      setBusy(false);
-      return;
-    }
-    clearPaymentState();
-    window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
-  }
 
   return (
     <div className="flex flex-col gap-3">

@@ -8,7 +8,6 @@ import { useCardPaymentSession } from "@/features/checkout/hooks/useCardPaymentS
 import { usePaymobCardForm, type PaymobPayError } from "@/features/checkout/hooks/usePaymobCardForm";
 import { useStripeCardPayment, type StripePayError } from "@/features/checkout/hooks/useStripeCardPayment";
 import { useStripePromise, useStripeSessionOptions } from "@/features/checkout/hooks/useStripeSessionOptions";
-import type { StripeElementsLook } from "@/features/checkout/utils/stripeCheckoutAppearance";
 import { usePaymobThreeDsModal } from "@/features/checkout/components/PaymobThreeDsModal";
 import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
 import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
@@ -16,6 +15,14 @@ import { Button, Eyebrow, Serif } from "../../ui";
 import type { SapilLinkProps } from "../../ui/shared";
 import { OrderSummary, type SummaryLine, type SummaryTotalRow } from "../../components/checkout/CheckoutParts";
 import { SapilLink, useSapilMoney, useSapilMoneyParts } from "../../components/commerce/shared";
+import { SAPIL_PAYMOB_STYLE, SAPIL_STRIPE_LOOK } from "../../components/checkout/paymentLook";
+import {
+  ErrorNote,
+  LockIcon,
+  SapilThreeDsModal,
+  sapilStripeErrorText,
+  sapilThreeDsErrorText,
+} from "../../components/checkout/paymentParts";
 import { SapilCheckoutSpinner, SapilCheckoutStateShell } from "./SapilPaymentScreens";
 
 /*
@@ -26,68 +33,6 @@ import { SapilCheckoutSpinner, SapilCheckoutStateShell } from "./SapilPaymentScr
 
 const CANCEL_HREF = "/checkout/payment/cancel";
 
-/** v9 tokens for the providers' card fields (their iframes can't read our CSS variables). */
-const SAPIL_FIELD = {
-  ink: "#1e1b18",
-  ink2: "#4a443d",
-  muted: "#6f665b",
-  line: "#d6cdc0",
-  accent: "#16305c",
-  sale: "#9a3b2a",
-  card: "#fffdfa",
-};
-
-const STRIPE_LOOK: StripeElementsLook = {
-  fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" }],
-  appearance: {
-    theme: "stripe",
-    variables: {
-      fontFamily: "Poppins, system-ui, sans-serif",
-      fontSizeBase: "15px",
-      colorPrimary: SAPIL_FIELD.accent,
-      colorBackground: SAPIL_FIELD.card,
-      colorText: SAPIL_FIELD.ink,
-      colorTextSecondary: SAPIL_FIELD.ink2,
-      colorTextPlaceholder: SAPIL_FIELD.muted,
-      colorDanger: SAPIL_FIELD.sale,
-      borderRadius: "10px",
-      spacingUnit: "4px",
-    },
-    rules: {
-      ".Input": { border: `1px solid ${SAPIL_FIELD.line}`, boxShadow: "none" },
-      ".Input:focus": { border: `1px solid ${SAPIL_FIELD.ink}`, boxShadow: "none" },
-      ".AccordionItem": { border: `1px solid ${SAPIL_FIELD.line}`, boxShadow: "none" },
-    },
-  },
-};
-
-const PAYMOB_STYLE = {
-  Font_Family: "Poppins, system-ui, sans-serif",
-  Font_Size_Label: "14",
-  Font_Size_Input_Fields: "15",
-  Font_Size_Payment_Button: "15",
-  Font_Weight_Label: 600,
-  Font_Weight_Input_Fields: 400,
-  Font_Weight_Payment_Button: 600,
-  Color_Container: SAPIL_FIELD.card,
-  Color_Border_Input_Fields: SAPIL_FIELD.line,
-  Color_Border_Payment_Button: SAPIL_FIELD.ink,
-  Radius_Border: "10",
-  Color_Disabled: SAPIL_FIELD.muted,
-  Color_Error: SAPIL_FIELD.sale,
-  Color_Primary: SAPIL_FIELD.accent,
-  Color_Input_Fields: "#ffffff",
-  Text_Color_For_Label: SAPIL_FIELD.ink,
-  Text_Color_For_Payment_Button: "#ffffff",
-  Text_Color_For_Input_Fields: SAPIL_FIELD.ink,
-  Color_For_Text_Placeholder: SAPIL_FIELD.muted,
-  Width_of_Container: "100%",
-  // Pixel treats this as the input height in pixels (v9 fields are 48px).
-  Vertical_Padding: "48",
-  Vertical_Spacing_between_components: "14",
-  Container_Padding: "0",
-};
-
 const PAYMOB_ELEMENT_ID = "paymob-elements";
 
 function paymobErrorText(t: SapilTranslator, error: PaymobPayError): string {
@@ -97,48 +42,7 @@ function paymobErrorText(t: SapilTranslator, error: PaymobPayError): string {
 }
 
 function stripeErrorText(t: SapilTranslator, error: StripePayError): string {
-  switch (error.code) {
-    case "insufficient_funds":
-      return t("checkout.cardErrInsufficient");
-    case "card_declined":
-      return t("checkout.cardErrDeclined");
-    case "expired_card":
-      return t("checkout.cardErrExpired");
-    case "incorrect_cvc":
-      return t("checkout.cardErrCvc");
-    case "invalid_number":
-      return t("checkout.cardErrNumber");
-    case "processing_error":
-      return t("checkout.cardErrProcessing");
-    case "session_has_email":
-      return t("checkout.cardErrSessionEmail");
-    case "needs_email":
-      return t("checkout.cardErrNeedsEmail");
-    case "needs_phone":
-      return t("checkout.cardErrNeedsPhone");
-    case "needs_name":
-      return t("checkout.cardErrNeedsName");
-    default:
-      // Provider sentences are English: keep the page in its language.
-      return t("checkout.cardErrFailed");
-  }
-}
-
-function LockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ErrorNote({ children }: { children: ReactNode }) {
-  return (
-    <p role="alert" className="rounded-sapil-sm bg-sapil-p-pink text-sapil-sale text-[14px] py-[12px] px-[16px]">
-      {children}
-    </p>
-  );
+  return sapilStripeErrorText(t, error);
 }
 
 /** Order lines carry no product address: the name is plain text. */
@@ -351,7 +255,7 @@ export function SapilStripePaymentForm() {
   const t = useSapilCopy();
   const session = useCardPaymentSession("stripe");
   const stripePromise = useStripePromise(session.providerKey);
-  const options = useStripeSessionOptions(session.clientSecret, session.order, STRIPE_LOOK);
+  const options = useStripeSessionOptions(session.clientSecret, session.order, SAPIL_STRIPE_LOOK);
 
   let body: ReactNode;
   if (!session.hydrated || session.alreadyPaid) {
@@ -374,14 +278,14 @@ export function SapilPaymobPaymentForm() {
   const t = useSapilCopy();
   const money = useSapilMoney();
   const session = useCardPaymentSession("paymob");
-  const threeDs = usePaymobThreeDsModal(session.orderId);
+  const threeDs = usePaymobThreeDsModal(session.orderId, { Modal: SapilThreeDsModal });
   const card = usePaymobCardForm({
     orderId: session.orderId,
     clientSecret: session.clientSecret,
     publicKey: session.providerKey,
     enabled: !session.alreadyPaid,
     elementId: PAYMOB_ELEMENT_ID,
-    customStyle: PAYMOB_STYLE,
+    customStyle: SAPIL_PAYMOB_STYLE,
   });
 
   let body: ReactNode;
@@ -405,7 +309,7 @@ export function SapilPaymobPaymentForm() {
             <Confirming />
           ) : (
             <>
-              {threeDs.challengeError ? <ErrorNote>{threeDs.challengeError}</ErrorNote> : null}
+              {threeDs.challengeErrorCode ? <ErrorNote>{sapilThreeDsErrorText(t, threeDs.challengeErrorCode)}</ErrorNote> : null}
               {card.sdkFailed ? (
                 <ErrorNote>
                   {t("checkout.cardFormFailed")}{" "}
