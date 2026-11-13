@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { payInFour, tabbyPopupUrl } from "./PdpInstalments";
+import { payInFour, tabbyPopupUrl, usesTamaraWidget } from "./PdpInstalments";
 
 describe("pay in four", () => {
   it("splits an even price into four equal payments", () => {
@@ -43,5 +43,15 @@ describe("tabby pop-up address", () => {
 
   it("has no Tabby page for a currency Tabby does not cover", () => {
     expect(tabbyPopupUrl(110, "QAR", "en", noKeys)).toBeNull();
+  });
+});
+
+describe("tamara widget on the product page", () => {
+  it("is used only when Tamara is live, has a key and covers the currency", () => {
+    expect(usesTamaraWidget("AED", true, "pk")).toBe(true);
+    expect(usesTamaraWidget("sar", true, "pk")).toBe(true);
+    expect(usesTamaraWidget("AED", false, "pk")).toBe(false);
+    expect(usesTamaraWidget("AED", true, "")).toBe(false);
+    expect(usesTamaraWidget("KWD", true, "pk")).toBe(false);
   });
 });

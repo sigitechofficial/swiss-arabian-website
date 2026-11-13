@@ -1,6 +1,7 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
 import { isTabbyPaymentMethod } from "./tabby";
+import { isTamaraPaymentMethod } from "./tamara";
 
 function titleCase(value: string): string {
   return value
@@ -43,7 +44,7 @@ export function usesInlineCardForm(
   return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
 }
 
-/** Hosted redirect gateways (Telr HPP, Tabby, and any method flagged `requiresRedirect`). */
+/** Hosted redirect gateways (Telr HPP, Tabby, Tamara, and any method flagged `requiresRedirect`). */
 export function usesHostedRedirect(
   method: Pick<
     PaymentMethodOption,
@@ -54,7 +55,8 @@ export function usesHostedRedirect(
   return (
     Boolean(method.requiresRedirect) ||
     isTelrPaymentMethod(method) ||
-    isTabbyPaymentMethod(method)
+    isTabbyPaymentMethod(method) ||
+    isTamaraPaymentMethod(method)
   );
 }
 
@@ -79,6 +81,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
   }
   if (isTabbyPaymentMethod(method)) {
     return "Pay in 4, interest-free";
+  }
+  if (isTamaraPaymentMethod(method)) {
+    return "Split in 4, interest-free";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
@@ -136,7 +141,6 @@ export function upcomingPaymentMethods(
     if (!tabbyLive) {
       rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
     }
-    rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
   }
   if (country === "KW") {
     rows.push({ id: "knet", title: "KNET", note: "Kuwait debit cards" });

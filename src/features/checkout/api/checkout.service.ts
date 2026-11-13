@@ -115,6 +115,32 @@ export async function prescoreTabby(
   );
 }
 
+export type TamaraPrecheckResponse = {
+  providerCode?: "tamara";
+  available: boolean;
+  rejectionReason?: string | null;
+  /** Tamara's wording to show when unavailable. */
+  messageEn?: string | null;
+  messageAr?: string | null;
+  /** Same wording, Tabby-style; read when the flat fields are missing. */
+  message?: { en: string; ar: string } | null;
+};
+
+/**
+ * POST …/payment-methods/tamara/precheck — can this shopper pay with Tamara
+ * for this total? Creates nothing. Only an explicit `available: false` hides
+ * Tamara; a failed request keeps it shown.
+ */
+export async function precheckTamara(
+  checkoutSessionId: string,
+  contact: { email?: string; phone?: string } = {},
+): Promise<TamaraPrecheckResponse> {
+  return apiPost<TamaraPrecheckResponse>(
+    `/storefront/checkout/${checkoutSessionId}/payment-methods/tamara/precheck?${buildGuestParam().toString()}`,
+    contact,
+  );
+}
+
 export async function selectPaymentMethod(
   checkoutSessionId: string,
   paymentMethodId: string,

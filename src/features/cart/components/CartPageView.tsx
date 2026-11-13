@@ -96,6 +96,7 @@ import {
 import { quotedCartTotal } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
+import { CartTamaraPromo } from "./CartTamaraPromo";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
 function itemsLabel(n: number) {
@@ -469,6 +470,9 @@ export function CartPageView() {
                 )}
                 {quotePending ? null : (
                   <CartTabbyPromo amount={amountPayable ?? total} currency={currency} />
+                )}
+                {quotePending ? null : (
+                  <CartTamaraPromo amount={amountPayable ?? total} currency={currency} />
                 )}
                 {quotePending ? null : (
                   <EarnPreviewNote

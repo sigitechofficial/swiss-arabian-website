@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { env } from "@/lib/config/env";
+import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
+import { tamaraCountry, tamaraLang } from "@/features/checkout/utils/tamara";
 import { localeFromPathname, type ShopLocale } from "@/lib/i18n/localePath";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
 import {
@@ -79,6 +81,18 @@ export function tabbyPopupUrl(
   if (keys.merchantCode) params.set("merchant_code", keys.merchantCode);
   if (keys.publicKey) params.set("public_key", keys.publicKey);
   return `${host}/promos/product-page/installments/${locale}/?${params.toString()}`;
+}
+
+/**
+ * Tamara's official widget v2 replaces our Tamara button once Tamara is live,
+ * a public key is set and the currency is one Tamara covers (AED / SAR).
+ */
+export function usesTamaraWidget(
+  currency: string,
+  live: boolean = env.flags.tamara,
+  publicKey: string = env.tamara.publicKey,
+): boolean {
+  return live && Boolean(publicKey) && tamaraCountry(currency) !== null;
 }
 
 /** Escape closes, the page behind stops scrolling, and focus starts on the close button. */
@@ -208,7 +222,8 @@ function PayDialog({
 
 /**
  * Pay-in-4 card under the price: the offer and its schedule once, then a button per provider.
- * Tabby opens Tabby's own pop-up; Tamara opens our schedule dialog.
+ * Tabby opens Tabby's own pop-up. Tamara shows its own widget v2 when live
+ * (see `usesTamaraWidget`), otherwise our schedule dialog.
  */
 export function PdpInstalments({ price, currency }: { price: number; currency: string }) {
   const [open, setOpen] = useState<Provider | null>(null);
@@ -216,6 +231,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
   const locale = localeFromPathname(usePathname() || "/");
   const tabbyUrl = tabbyPopupUrl(price, currency, locale);
   const each = formatMoney(payInFour(price)[0], currency);
+  const tamaraWidget = usesTamaraWidget(currency);
 
   const close = useCallback(() => {
     setOpen(null);
@@ -251,7 +267,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
         <div className={pdpPayFoot}>
           {(Object.keys(PROVIDERS) as Provider[]).map((provider) => {
             const { name, mark } = PROVIDERS[provider];
-            return (
+            const button = (
               <button
                 type="button"
                 className={pdpPayBtn}
@@ -269,6 +285,18 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>
+            );
+            if (provider !== "tamara" || !tamaraWidget) return button;
+            return (
+              <TamaraWidget
+                key={provider}
+                amount={price}
+                currency={currency}
+                lang={tamaraLang(locale)}
+                publicKey={env.tamara.publicKey}
+                className="min-w-0 flex-1"
+                fallback={button}
+              />
             );
           })}
         </div>

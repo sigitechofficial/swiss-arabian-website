@@ -135,6 +135,83 @@ describe("startPayment", () => {
     expect(window.location.replace).not.toHaveBeenCalled();
   });
 
+  it("redirects Tamara with /payments/tamara/return for both return and cancel", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tamara",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://checkout-sandbox.tamara.co/checkout/abc",
+      warnings: [],
+      metadata: { tamara: { checkoutId: "chk-1" } },
+    } as never);
+
+    const result = await startPayment(
+      "order-tamara",
+      vi.fn(),
+      { providerCode: "tamara", zonePaymentMethodId: "zpm-tamara" },
+    );
+
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-tamara",
+      expect.objectContaining({
+        returnUrl: "http://localhost:3004/payments/tamara/return",
+        cancelUrl: "http://localhost:3004/payments/tamara/return",
+        zonePaymentMethodId: "zpm-tamara",
+      }),
+    );
+    expect(window.location.assign).toHaveBeenCalledWith("https://checkout-sandbox.tamara.co/checkout/abc");
+    expect(result.kind).toBe("redirect");
+  });
+
+  it("raises Tamara's own message when Tamara declines — never a redirect or confirmation", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tamara",
+      paymentAction: null,
+      redirectUrl: null,
+      paymentStatus: "FAILED",
+      warnings: [],
+      metadata: {
+        tamara: { rejectionReason: "declined", rejectionMessage: { en: "No (en)", ar: "لا" } },
+      },
+    } as never);
+
+    const attempt = startPayment("order-tamara", vi.fn(), { providerCode: "tamara" });
+
+    await expect(attempt).rejects.toBeInstanceOf(PaymentRejectedError);
+    await expect(attempt).rejects.toMatchObject({ provider: "tamara", messages: { en: "No (en)", ar: "لا" } });
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("refuses a Tamara redirect that is not on tamara.co", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tamara",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://evil.example/tamara.co",
+      warnings: [],
+      metadata: {},
+    } as never);
+
+    await expect(
+      startPayment("order-tamara", vi.fn(), { providerCode: "tamara" }),
+    ).rejects.toBeInstanceOf(PaymentGatewayError);
+    expect(window.location.assign).not.toHaveBeenCalled();
+  });
+
+  it("treats a Tamara response with no payment page as a gateway error", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tamara",
+      paymentAction: null,
+      redirectUrl: null,
+      warnings: [],
+      metadata: {},
+    } as never);
+
+    await expect(
+      startPayment("order-tamara", vi.fn(), { providerCode: "tamara" }),
+    ).rejects.toBeInstanceOf(PaymentGatewayError);
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
   it("treats a Tabby response with no payment page as a gateway error", async () => {
     vi.mocked(initiatePayment).mockResolvedValue({
       providerCode: "tabby",

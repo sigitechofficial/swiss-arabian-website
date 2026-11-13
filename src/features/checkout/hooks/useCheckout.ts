@@ -63,6 +63,7 @@ import {
   type PreparedInlinePayment,
 } from "../utils/startPayment";
 import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
+import { isTamaraPaymentMethod, tamaraStartFailureMessage } from "../utils/tamara";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -494,6 +495,7 @@ export function useCheckout() {
           return e.messages[tabbyLang(document.documentElement.lang)];
         }
         if (e instanceof PaymentGatewayError) {
+          if (payment && isTamaraPaymentMethod(payment)) return tamaraStartFailureMessage(e.warnings);
           return payment && isTabbyPaymentMethod(payment)
             ? tabbyStartFailureMessage(e.warnings)
             : gatewayFallback;

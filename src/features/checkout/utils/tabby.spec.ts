@@ -94,7 +94,8 @@ describe("tabby helpers", () => {
     expect(soon).toContain("tabby");
     const live = upcomingPaymentMethods("AE", [paymob, tabbyMethod]).map((row) => row.id);
     expect(live).not.toContain("tabby");
-    expect(live).toContain("tamara");
+    // Tamara is a real method of its own, never a Paymob "coming soon" row.
+    expect(live).not.toContain("tamara");
   });
 });
 

@@ -132,6 +132,13 @@ export const env = {
     publicKey: readPublic(process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY),
     merchantCode: readPublic(process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE),
   },
+  /**
+   * Tamara widget v2 public key (safe in the browser). Empty: the product page
+   * keeps our own pay-in-4 dialog and checkout / cart show plain wording.
+   */
+  tamara: {
+    publicKey: readPublic(process.env.NEXT_PUBLIC_TAMARA_PUBLIC_KEY),
+  },
   googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
   googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
   catalogMediaBaseUrl: readPublic(

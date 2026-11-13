@@ -20,7 +20,11 @@ import { InlineMethodPayment, type PaymentSurface } from "./InlineMethodPayment"
 import { TabbyCheckoutCard } from "./TabbyCheckoutCard";
 import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
 import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang } from "../../utils/tabby";
-import { pdpPayMarkTabby } from "@/styles/pdpChrome";
+import { TamaraCheckoutCard } from "./TamaraCheckoutCard";
+import type { TamaraPrecheck } from "../../hooks/useTamaraPrecheck";
+import { isTamaraPaymentMethod, tamaraPublicKeyFrom } from "../../utils/tamara";
+import { env } from "@/lib/config/env";
+import { pdpPayMarkTabby, pdpPayMarkTamara } from "@/styles/pdpChrome";
 
 type CheckoutPaymentProps = {
   methods: PaymentMethodOption[];
@@ -44,6 +48,8 @@ type CheckoutPaymentProps = {
   tabbyPrescore?: TabbyPrescore;
   /** Language for Tabby's own wording and snippet. */
   tabbyLang?: TabbyLang;
+  /** Tamara pre-check for this shopper and total. */
+  tamaraPrecheck?: TamaraPrecheck;
 };
 
 export function CheckoutPayment({
@@ -66,11 +72,12 @@ export function CheckoutPayment({
   shopperPhone,
   tabbyPrescore = { state: "idle" },
   tabbyLang = "en",
+  tamaraPrecheck = { state: "idle" },
 }: CheckoutPaymentProps) {
   const covered = amountPayable === 0;
   const opening = useRef(false);
   const [optionKey, setOptionKey] = useState<string | null>(null);
-  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang);
+  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang, tamaraPrecheck);
   const rows = groups.flatMap((group) => group.rows);
   const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
   const fallbackKey = selected ? defaultRowKey(selected) : null;
@@ -162,6 +169,7 @@ export function CheckoutPayment({
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
                             {row.tabby !== undefined ? <span className={pdpPayMarkTabby} aria-hidden="true">tabby</span> : null}
+                            {row.tamara !== undefined ? <span className={pdpPayMarkTamara} aria-hidden="true">tamara</span> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
                               {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}
@@ -189,6 +197,16 @@ export function CheckoutPayment({
                             <div className="px-4 pb-4 ps-12">
                               <TabbyCheckoutCard
                                 config={row.tabby || null}
+                                total={amountPayable}
+                                currency={currency}
+                                lang={tabbyLang}
+                              />
+                            </div>
+                          ) : null}
+                          {on && row.tamara !== undefined && !row.disabled && amountPayable != null && amountPayable > 0 ? (
+                            <div className="px-4 pb-4 ps-12">
+                              <TamaraCheckoutCard
+                                publicKey={row.tamara}
                                 total={amountPayable}
                                 currency={currency}
                                 lang={tabbyLang}
@@ -268,6 +286,8 @@ type PayRow = {
   provider?: "stripe" | "paymob";
   /** Tabby row: snippet settings from the backend (`false` when they are missing). */
   tabby?: ReturnType<typeof tabbySnippetConfig> | false;
+  /** Tamara row: public key for Tamara's widget (empty when none is set). */
+  tamara?: string;
 };
 
 function paymentGroups(
@@ -275,6 +295,7 @@ function paymentGroups(
   countryCode: string | null | undefined,
   tabbyPrescore: TabbyPrescore,
   tabbyLang: TabbyLang,
+  tamaraPrecheck: TamaraPrecheck,
 ): Array<{ id: string; title: string | null; rows: PayRow[] }> {
   const country = (countryCode || "AE").toUpperCase();
   const stripeFirst = !["SA", "EG", "PK"].includes(country);
@@ -342,6 +363,17 @@ function paymentGroups(
           sub: paymentMethodNote(method) || undefined,
           zoneId: method.zonePaymentMethodId,
         };
+        if (isTamaraPaymentMethod(method)) {
+          // Tamara: its mark, and its own wording when it can't offer this order.
+          row.tamara = tamaraPublicKeyFrom(method) || env.tamara.publicKey;
+          if (tamaraPrecheck.state === "rejected") {
+            row.disabled = true;
+            row.sub = tamaraPrecheck.message[tabbyLang];
+          } else if (tamaraPrecheck.state === "checking") {
+            row.sub = "Checking eligibility…";
+          }
+          return row;
+        }
         if (!isTabbyPaymentMethod(method)) return row;
         // Tabby: their mark, and their own wording when they can't approve this shopper.
         row.tabby = tabbySnippetConfig(method) ?? false;

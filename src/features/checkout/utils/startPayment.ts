@@ -8,6 +8,7 @@ import {
   storeStripePublishableKey,
 } from "./checkoutSession";
 import { tabbyRejectionFrom, type TabbyMessage } from "./tabby";
+import { isTamaraCheckoutUrl, tamaraRejectionFrom } from "./tamara";
 
 export type PaymentStartResult =
   | { kind: "redirect" }
@@ -38,15 +39,17 @@ export class PaymentGatewayError extends Error {
 }
 
 /**
- * The provider declined to offer this payment (Tabby said no). Not a fault:
- * the order is saved and the shopper picks another method. `messages` is the
- * provider's own wording.
+ * The provider declined to offer this payment (Tabby or Tamara said no). Not a
+ * fault: the order is saved and the shopper picks another method. `messages`
+ * is the provider's own wording.
  */
+export type RejectingProvider = "tabby" | "tamara";
+
 export class PaymentRejectedError extends Error {
-  readonly provider: "tabby";
+  readonly provider: RejectingProvider;
   readonly messages: TabbyMessage;
 
-  constructor(provider: "tabby", messages: TabbyMessage) {
+  constructor(provider: RejectingProvider, messages: TabbyMessage) {
     super(messages.en);
     this.name = "PaymentRejectedError";
     this.provider = provider;
@@ -74,7 +77,7 @@ export async function startPayment(
   method: {
     zonePaymentMethodId?: string | null;
     paymentMethodId?: string | null;
-    /** Used to pick Telr / Tabby return URLs before initiate responds. */
+    /** Used to pick Telr / Tabby / Tamara return URLs before initiate responds. */
     providerCode?: string | null;
   } = {},
   options: { inline?: boolean; prepared?: PreparedInlinePayment | null } = {},
@@ -84,20 +87,27 @@ export async function startPayment(
   const hintProvider = (method.providerCode ?? "").toLowerCase();
   const isTelrHint = hintProvider.includes("telr");
   const isTabbyHint = hintProvider.includes("tabby");
+  const isTamaraHint = hintProvider.includes("tamara");
   // BE Telr contract: `/payments/telr/return` (not order-confirmation).
   // BE Tabby contract: `/payments/tabby/return` for success and cancel — the
   // backend adds `result=success|cancel` and builds the failure URL itself.
+  // BE Tamara contract: `/payments/tamara/return` the same way — the backend
+  // adds `orderId`, the attempt ids, `zone` and `result=success|cancel|failure`.
   // Shared Stripe/Paymob keep the existing confirmation return.
   const returnUrl = isTelrHint
     ? `${origin}/payments/telr/return`
     : isTabbyHint
       ? `${origin}/payments/tabby/return`
-      : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
+      : isTamaraHint
+        ? `${origin}/payments/tamara/return`
+        : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
   const cancelUrl = isTelrHint
     ? `${origin}/payments/telr/return?result=cancelled`
     : isTabbyHint
       ? `${origin}/payments/tabby/return`
-      : `${origin}/checkout/payment/cancel`;
+      : isTamaraHint
+        ? `${origin}/payments/tamara/return`
+        : `${origin}/checkout/payment/cancel`;
 
   const payment = await initiatePayment(orderId, {
     idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
@@ -132,6 +142,12 @@ export async function startPayment(
     // Tabby declined before any redirect — show their message, keep the order.
     const rejection = tabbyRejectionFrom(payment.metadata as Record<string, unknown> | null | undefined);
     if (rejection) throw new PaymentRejectedError("tabby", rejection);
+  }
+  const isTamara = provider.includes("tamara") || isTamaraHint;
+  if (isTamara) {
+    // Tamara declined before any redirect — show its message, keep the order.
+    const rejection = tamaraRejectionFrom(payment.metadata as Record<string, unknown> | null | undefined);
+    if (rejection) throw new PaymentRejectedError("tamara", rejection);
   }
   if (provider.includes("smoke")) {
     window.location.replace(`/order-confirmation/${orderId}`);
@@ -182,12 +198,17 @@ export async function startPayment(
     action === "REDIRECT_REQUIRED" ||
     (isPaymob && Boolean(payment.redirectUrl)) ||
     (isTelr && Boolean(payment.redirectUrl)) ||
-    (isTabby && Boolean(payment.redirectUrl));
+    (isTabby && Boolean(payment.redirectUrl)) ||
+    (isTamara && Boolean(payment.redirectUrl));
 
   if (wantsRedirect) {
     if (!payment.redirectUrl) {
       // No payment page to send them to — surface an error; never fall through
       // to the confirmation page as if the order were paid.
+      throw new PaymentGatewayError(payment.warnings ?? []);
+    }
+    if (isTamara && !isTamaraCheckoutUrl(payment.redirectUrl)) {
+      // Tamara's hosted checkout only ever lives on *.tamara.co.
       throw new PaymentGatewayError(payment.warnings ?? []);
     }
     // Hosted gateway on another origin — a hard navigation, not a client route.
@@ -196,7 +217,7 @@ export async function startPayment(
     return { kind: "redirect" };
   }
 
-  if (isPaymob || isTelr || isTabby) {
+  if (isPaymob || isTelr || isTabby || isTamara) {
     throw new PaymentGatewayError(payment.warnings ?? []);
   }
 
