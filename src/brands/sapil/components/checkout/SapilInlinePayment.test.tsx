@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadSapilMessages } from "../../i18n/load";
 import { SapilCopyProvider } from "../../i18n/SapilCopy";
@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   paymobFailed: false,
   threeDsCode: null as null | "cancelled" | "declined" | "unconfirmed",
   modalOpts: [] as unknown[],
+  confirm: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,6 +18,26 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/features/checkout/hooks/useInlinePaymobCard", () => ({
   useInlinePaymobCard: () => ({ failed: state.paymobFailed }),
   submitCheckoutForm: vi.fn(),
+}));
+vi.mock("@stripe/react-stripe-js/checkout", () => ({
+  CheckoutElementsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  PaymentElement: () => <div data-testid="stripe-element" />,
+  ExpressCheckoutElement: () => <div data-testid="stripe-express" />,
+}));
+vi.mock("@/lib/stripe/getStripe", () => ({ getStripe: () => null }));
+vi.mock("@/features/checkout/hooks/useStripeCardPayment", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/checkout/hooks/useStripeCardPayment")>()),
+  useStripeCardPayment: () => ({
+    sessionError: null,
+    ready: true,
+    loadFailed: false,
+    onReady: () => undefined,
+    onLoadError: () => undefined,
+    phase: "idle",
+    error: { code: "needs_phone" },
+    canPay: true,
+    confirm: state.confirm,
+  }),
 }));
 vi.mock("@/features/checkout/components/PaymobThreeDsModal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/checkout/components/PaymobThreeDsModal")>()),
@@ -63,6 +84,20 @@ describe("Sapil inline payment", () => {
       "أُلغي التحقق من البطاقة. يمكنك المحاولة مرة أخرى بالبطاقة نفسها.",
     );
     expect(screen.getByText(/تذهب بيانات بطاقتك مباشرة إلى Paymob/)).toBeTruthy();
+  });
+
+  it("Stripe card: v9 Pay button with the amount, inline wording for a missing phone", async () => {
+    await renderIn("en", (
+      <SapilInlinePayment
+        session={{ provider: "stripe", orderId: "", clientSecret: "cs_test", publishableKey: "pk_test" }}
+        payLabel="Pay AED 30"
+      />
+    ));
+    expect(screen.getByTestId("stripe-element")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toBe("Add your phone number in the delivery details, then tap Pay again.");
+    fireEvent.click(screen.getByRole("button", { name: "Pay AED 30" }));
+    expect(state.confirm).toHaveBeenCalledWith("");
+    expect(document.body.textContent).not.toMatch(/Pay now|Secured by Stripe —/);
   });
 
   it("a session without keys shows Sapil's loading line", async () => {

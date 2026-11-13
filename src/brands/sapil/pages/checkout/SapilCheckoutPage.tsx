@@ -373,6 +373,7 @@ export function SapilCheckoutPage() {
             name={f.shipping.fullName}
             phone={f.shipping.phone}
             country={f.countryCode}
+            payLabel={t("checkout.payAmount", { amount: money(payable, currency) })}
           />
         ) : (
           <p className="text-[14px] text-sapil-ink-2" role="status">

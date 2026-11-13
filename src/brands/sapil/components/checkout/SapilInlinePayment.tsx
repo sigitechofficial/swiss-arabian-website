@@ -18,6 +18,7 @@ import type { TabbyLang, TabbySnippetConfig } from "@/features/checkout/utils/ta
 import { dir as textDirection } from "@/lib/i18n/locales";
 import { getStripe } from "@/lib/stripe/getStripe";
 import { useSapilCopy } from "../../i18n/SapilCopy";
+import { Button } from "../../ui";
 import { SapilLink } from "../commerce/shared";
 import { SAPIL_PAYMOB_STYLE, SAPIL_STRIPE_LOOK } from "./paymentLook";
 import {
@@ -31,9 +32,10 @@ import {
 /*
  * The card / wallet forms and the Tabby snippet inside the checkout's payment
  * step (v9 `.pay-panel`), on the same shared hooks as Swiss Arabian's
- * `InlineMethodPayment` / `TabbyCheckoutCard`. The page's own Pay button
- * places the order and pays (`sa-inline-pay`), so the card forms have no
- * button of their own.
+ * `InlineMethodPayment` / `TabbyCheckoutCard`. As there, the page hides its
+ * submit while Stripe's card form is selected, so that form has its own Pay
+ * button (it places the order first when there is none yet); Paymob is paid
+ * from the page's button (`sa-inline-pay`), wallets from their own button.
  */
 
 const CANCEL_HREF = "/checkout/payment/cancel";
@@ -65,7 +67,7 @@ function Status({ children }: { children: string }) {
 
 /* ------------------------------------------------------------------ Stripe */
 
-function SapilStripeInlineCard({ orderId, contact }: { orderId: string; contact: Contact }) {
+function SapilStripeInlineCard({ orderId, contact, payLabel }: { orderId: string; contact: Contact; payLabel: string }) {
   const t = useSapilCopy();
   const pay = useStripeCardPayment({ orderId, ...contact, onNeedOrder: submitCheckoutForm });
 
@@ -104,7 +106,15 @@ function SapilStripeInlineCard({ orderId, contact }: { orderId: string; contact:
         />
       </div>
       {pay.error ? <ErrorNote>{sapilStripeErrorText(t, pay.error, { inline: true })}</ErrorNote> : null}
-      {pay.phase === "confirming" ? <Status>{t("checkout.cardProcessing")}</Status> : null}
+      {/* The page hides its own submit while Stripe's form is selected: this places the order (if needed) and pays. */}
+      <Button
+        className="w-full"
+        disabled={!pay.canPay}
+        aria-busy={pay.phase === "confirming" || undefined}
+        onClick={() => void pay.confirm(orderId)}
+      >
+        {pay.phase === "confirming" ? t("checkout.cardProcessing") : payLabel}
+      </Button>
       <SecuredNote>{t("checkout.inlineSecuredStripe")}</SecuredNote>
     </div>
   );
@@ -180,9 +190,12 @@ export function SapilInlinePayment({
   name,
   phone,
   country,
+  payLabel,
 }: {
   session: InlinePaymentSession;
   surface?: PaymentSurface;
+  /** The Stripe card form's own Pay button (the page hides its submit for Stripe). */
+  payLabel?: string;
 } & Contact) {
   const t = useSapilCopy();
   const stripeOptions = useMemo(
@@ -202,7 +215,7 @@ export function SapilInlinePayment({
         {surface === "apple_pay" || surface === "google_pay" ? (
           <SapilStripeInlineWallet orderId={session.orderId} wallet={surface} contact={contact} />
         ) : (
-          <SapilStripeInlineCard orderId={session.orderId} contact={contact} />
+          <SapilStripeInlineCard orderId={session.orderId} contact={contact} payLabel={payLabel ?? t("checkout.cardPayNow")} />
         )}
       </CheckoutElementsProvider>
     );
