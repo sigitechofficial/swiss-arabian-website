@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliveryFeeLabel, orderPaymentLabel } from "./methodLabels";
+import { deliveryFeeLabel, orderDeliveryLabel, orderPaymentLabel } from "./methodLabels";
 import type { DeliveryMethodOption } from "../types/checkout";
 
 describe("orderPaymentLabel", () => {
@@ -41,5 +41,22 @@ describe("deliveryFeeLabel", () => {
   it("shows no price when the fee is missing (not priced yet), never Free", () => {
     expect(deliveryFeeLabel(method(null), "AED")).toBe("");
     expect(deliveryFeeLabel(method(""), "AED")).toBe("");
+  });
+});
+
+describe("orderDeliveryLabel", () => {
+  it("drops every leading word shared with the partner code", () => {
+    expect(orderDeliveryLabel({ partnerCode: "iq_fulfillment", methodCode: "iq_standard" })).toBe("Standard delivery");
+    expect(orderDeliveryLabel({ partnerCode: "smoke_standard", methodCode: "smoke_standard_standard" })).toBe("Standard delivery");
+    expect(orderDeliveryLabel({ partnerCode: "sapil_demo_courier", methodCode: "sapil_demo_express" })).toBe("Express delivery");
+  });
+
+  it("keeps a code that shares nothing with the partner", () => {
+    expect(orderDeliveryLabel({ partnerCode: "iq_fulfillment", methodCode: "standard" })).toBe("Standard delivery");
+    expect(orderDeliveryLabel({ partnerCode: "aramex", methodCode: "click_and_collect" })).toBe("Click And Collect");
+  });
+
+  it("falls back when there is no method code", () => {
+    expect(orderDeliveryLabel(null)).toBe("Standard delivery");
   });
 });

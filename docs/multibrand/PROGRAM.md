@@ -168,6 +168,46 @@ Sapil has no blog posts / CMS pages yet; Swiss Arabian merchandising slugs 404 o
 **Decisions for the product owner:** Arabic web font for Sapil; whether `/verify` should drop the
 email from the URL too; Sapil content in Arabic (menus, moods, collection copy) in the admin.
 
+## End-to-end order test from the screens (2026-11-13)
+
+Sapil site (`:3045`), Sapil backend `feat/sapil-cms` (`:3012`, schedulers off), admin `feat/sapil-cms` (`:3001`), Mailpit (`:8025`). Guest, cash on delivery, test data.
+
+| Order | Courier | Result |
+|---|---|---|
+| `SAPIL_URD1-MWENZWNS-DDFBAA` (AED 30) | Sapil Demo standard | Placed; email lost (Mailpit was off) |
+| `SAPIL_URD1-MWEOEBVY-506E7C` (AED 106) | Sapil Demo standard | Placed, marked ready; **send to courier fails** (no adapter for `sapil_demo_courier`) → order stuck in Manual review |
+| `SAPIL_URD1-MWEOP7Z4-83752F` (AED 114) | Smoke Standard (test adapter) | Placed → risk cleared → ready → dispatched → **Delivered** (admin test simulation); emails confirmed / on its way / delivered all sent |
+
+**Fixed on the website** (`0565aa6` + delivery-label commit):
+- An unpriced delivery method no longer says "Free" (the backend keeps the previous shipping amount when the fee is missing).
+- Sapil names the card provider when Stripe and Paymob are both offered.
+- 20 account / checkout / payment / tracking pages have translated browser titles.
+- Order delivery label no longer doubles words ("Standard Standard delivery", "Demo Standard delivery").
+
+**Changed in local data (admin UI):** IQ Fulfillment and Tokyo Freight turned off for Sapil UAE (they need credentials Sapil doesn't have).
+
+**Open — backend / admin:**
+1. **Emails are not brand-aware:** Sapil emails have the Swiss Arabian logo/design, sender "Swiss Arabian (local)", and the track link goes to the Swiss Arabian site home, not the Sapil order page. (Subject `{{ brand_name }}` is correct.)
+2. **Silent failures:** failed email sends, courier "no adapter" and refused captures are not written to the backend log (only stored in the database / shown as a toast).
+3. **Demo courier can't dispatch:** `sapil_demo_courier` has no adapter. Admin marks it "Not ready at checkout", yet checkout offers it as the default. Checkout and admin should agree on what is offerable.
+4. **"On its way" email sent when the shipment was blocked** for manual review.
+5. **Cash on delivery can't be marked collected:** admin shows Capture, backend answers `PaymentProvider.supportsCapture is false` (raw developer text).
+6. **Cancellation window never closes locally** (scheduler off) — expected on `:3012`, but the order list then shows every order as "Cancellation window".
+7. **Admin status contradictions:** after a blocked shipment the summary says Fulfillment "Fulfilled" while the panel says "On hold".
+8. **Missing-fee methods keep the previous shipping amount** — a priced/unpriced switch at checkout charges a stale fee.
+9. Admin shows "Smoke Standard Standard" (same doubled-label rule as the website had); the shipping page's five switches have near-identical names and the page jumps after a toggle (caused a mis-click).
+10. Market page says "Products on this market: 1" while the site sells 85.
+
+**Open — website (shared tracking view):**
+- Admin tracking note is shown to the shopper verbatim (no warning in admin that it is public).
+- Raw codes in tracking history ("Create queued", "LOCAL_SIMULATION", "Created"); history order/time-zone wrong for simulated events (shown at 8:00, below newer events); "Estimated delivery" still shown after Delivered; "This order has stopped: Under review" wording.
+- Header counts lines, not units ("1 item" for 2 bottles).
+- Checkout tab title is just "Sapil".
+- Repeated `page-seo?path=/` 404 on every navigation (no Sapil home SEO record; result not cached) and `page-seo?path=/products` asked of the wrong API.
+- `you-may-also-like` / `dont-miss-this` rails missing for Sapil (admin content).
+
+**Not a bug (checked):** "Test Payment (dev only)" is preselected because the local DB marks it default; the cut-off Arabic step label was the TanStack devtools button; fraud hold on order 3 was the correct "3 orders / 60 min" rule.
+
 ## Local Sapil test backend
 
 The `:3002` API runs the other chat's code. Sapil development uses the `feat/sapil-cms` build on **`:3012`**:
@@ -216,3 +256,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Flows checked on the build (en + ar): browse, filter / sort, product, drawer, bag, guest cash-on-delivery order, confirmation, tracking, sign-in / register / forgot / reset / verify, account guard, search, language and market switchers, 404, API failure, empty states; no horizontal scroll at 390 / 768 / 1280.
   - Open for product: Arabic shoppers lose Arabic on checkout / sign-in / tracking (transactional paths unprefixed); the muted colour change; rotating announcement without a pause control.
 - **2026-11-13 (close):** `review/ui` merged into `feat/multibrand-sapil`. Final checks on the merged code: tsc and eslint clean, vitest 184 files / 1116 tests with both brand UIs, Swiss Arabian and Sapil builds pass. Backend fixes from review 1 committed on backend `review/sapil-cms` (`9dff01a5`, on top of `feat/sapil-cms`). Nothing pushed or deployed. Open items: see "Final UI check → still open" and the decision tables above.
+- **2026-11-13 (order test):** Three Sapil cash-on-delivery orders run from the screens (site → admin → site); one reached Delivered. Website fixes committed; backend/admin gaps listed under "End-to-end order test".

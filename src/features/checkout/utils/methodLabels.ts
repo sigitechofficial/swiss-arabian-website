@@ -204,12 +204,15 @@ export function orderDeliveryLabel(
 ): string {
   const code = method?.methodCode ?? "";
   if (!code) return "Standard delivery";
-  const partnerPrefix = method?.partnerCode?.split(/[_-]/)[0]?.toLowerCase();
-  const parts = code.split(/[_-]/);
-  const trimmed =
-    partnerPrefix && parts.length > 1 && parts[0].toLowerCase() === partnerPrefix
-      ? parts.slice(1).join(" ")
-      : code;
+  // Drop every leading word the method code shares with the partner code:
+  // `sapil_demo_courier` + `sapil_demo_standard` → "standard", `smoke_standard` + `smoke_standard_standard` → "standard".
+  const partnerParts = (method?.partnerCode ?? "").toLowerCase().split(/[_-]/).filter(Boolean);
+  const parts = code.split(/[_-]/).filter(Boolean);
+  let shared = 0;
+  while (shared < parts.length - 1 && shared < partnerParts.length && parts[shared].toLowerCase() === partnerParts[shared]) {
+    shared += 1;
+  }
+  const trimmed = shared > 0 ? parts.slice(shared).join(" ") : code;
   const label = titleCase(trimmed);
   return /delivery|shipping|collect/i.test(label) ? label : `${label} delivery`;
 }
