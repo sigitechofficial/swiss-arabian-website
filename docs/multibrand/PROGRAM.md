@@ -37,7 +37,7 @@ Other rules:
 | A | Brand config + per-brand build check | `feat/brand-config` (`e6707ff`) | ✅ merged into `feat/multibrand-sapil` |
 | B | Multi-language `[locale]` routing + static rendering | `feat/i18n-locale-routing` (`e6a0750`) | ✅ merged — catalog pages ISR, N languages via `NEXT_PUBLIC_SHOP_LOCALES` + `src/messages/<lang>.json` |
 | C | Sapil v9 design system (Tailwind tokens, fonts, components, visual diff) | `feat/sapil-design-system` (`15900fe`) | ✅ merged — scoped to `[data-brand="sapil"]`, ~20 components, diff 0–0.1% (inputs 1.6% at 390px) |
-| D | Backend + admin: hero gallery, mood picker, tile colour, best sellers, collection summaries, price tiers | backend + admin `feat/sapil-cms` | 🔄 in progress |
+| D | Backend + admin: hero gallery, mood picker, tile colour, best sellers, collection summaries, price tiers, delivery summary, demo seed | backend `feat/sapil-cms` (`417fd109`, `1294ed75`, `80634f35`, `27a08212`), admin `feat/sapil-cms` (`b3fc689`) | ✅ done — contract: backend `docs/frontend/SAPIL_STOREFRONT_DATA_HANDOFF.md` |
 | E | Shop logic moved out of components into shared hooks | done per page inside G | 🔄 |
 | F | Per-brand UI selection (`@brand-ui` contract, `BrandHead`, Sapil per-area messages, conventions) + Sapil app shell | `feat/multibrand-sapil` + `feat/sapil-shell-home` | ✅ contract merged; 🔄 shell in progress |
 | G | Sapil pages (plan: [`SAPIL_PAGES_PLAN.md`](../sapil/SAPIL_PAGES_PLAN.md), rules: [`BUILD_CONVENTIONS.md`](../sapil/BUILD_CONVENTIONS.md)) | `feat/sapil-shell-home`, `feat/sapil-catalog`, `feat/sapil-commerce` | 🔄 3 agents in progress |
@@ -60,6 +60,23 @@ Each default is reversible. It is used only so the work isn't blocked.
 | 7 | Arabic / other-script fonts for Sapil | Arabic: the platform's existing Arabic font until the designer picks one |
 | 8 | Data owners (bottle colours, moods, hero rooms, bundles) | Admin editors + seed data from the v9 mock catalog for local demo only |
 
+## Local Sapil test backend
+
+The `:3002` API runs the other chat's code. Sapil development uses the `feat/sapil-cms` build on **`:3012`**:
+- Launch config `backend-sapil-cms` in `swiss-complete/.claude/launch.json`.
+- Runs with `SCHEDULERS_ENABLED=false`, workers off and Redis off, so cron jobs (D365 and others) never run twice against the shared local database.
+- Website env for it: `NEXT_PUBLIC_USE_LOCAL_API=true NEXT_PUBLIC_LOCAL_API_BASE_URL=http://127.0.0.1:3012 NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SAPIL NEXT_PUBLIC_STOREFRONT_HOST=sapil.test`.
+- Demo data: `npm run seed:sapil-demo` in the backend (local only). It creates 85 products, 14 collections, a 10-section home, menus, delivery methods (free over AED 100, cash on delivery, express) and price tiers.
+
+## Decisions raised by the backend work (open)
+
+1. **Was-price editing:** it is stored per market (`ZoneProductVisibility.metadata.compareAtPrice`), but there is no admin screen yet.
+2. **Cash-on-delivery fee:** the design shows AED 10, but the platform has no fee field. The Sapil site shows no fee.
+3. **Browsing by gender, mood or season:** collections or product attributes?
+4. **Tile colour:** stored in the shared product data; there is no colour per market.
+5. **Curation:** Sapil's fragrance-notes and shoppable-video tiles still need curating in admin.
+6. **Backend `role-walk` permissions snapshot:** needs an intentional refresh (upstream routes + the new presentation route).
+
 ## Log
 
 - **2026-11-13:**
@@ -73,3 +90,4 @@ Each default is reversible. It is used only so the work isn't blocked.
   - Added Sapil per-area messages, `BrandHead` and the page conventions.
   - Started 3 page agents (shell + home + content; catalog + product; bag + checkout + orders + auth + account).
   - The local Sapil market has no products, so the backend agent was asked for a local-only demo seed.
+- **2026-11-13 (later):** Backend/admin Sapil pieces and the demo seed are done. The shared `:3012` Sapil backend is running, and the page agents were pointed at it.
