@@ -202,7 +202,12 @@ Sapil site (`:3045`), Sapil backend `feat/sapil-cms` (`:3012`, schedulers off), 
 - Admin: no doubled courier names; unique switch names; tracking note labelled customer-visible; fraud check closes after a decision; "Products on this market" counts visible products.
 
 **Verified from the screens:** site checkout (only shippable couriers, correct fees), product rails, tracking wording/order/times/units, review message, hidden staff note.
-**Not yet verified from the screens** (admin sign-in needed after the backend restart): dispatch through the Sapil demo courier, COD cash collected, COD cancel, the admin label/count changes. Covered by unit tests.
+**Verified in the admin** (temporary local test admin, removed afterwards): order `SAPIL_URD1-MWEQJRU8-72923A` sent through the Sapil demo courier → Delivered → COD captured (Paid); order `SAPIL_URD1-MWERXWE6-7BD1B6` cancelled from the admin (payment Voided, Sapil cancellation email); fraud check closes after Clear; labels read "Standard"; switches name their courier; "Products on this market" = 86.
+
+**Found while verifying (open):**
+- A cancelled order still shows "Cancellation window open — the customer can still cancel" until the window time passes (admin).
+- The admin's market selector defaulted to SAPIL_KSA; after an action the order refetch is market-scoped, so the page said "Order not found" until SAPIL_UAE was picked (admin).
+- Locally, the `:3002` backend's schedulers also process Sapil orders in the shared DB (it auto-fulfilled two Sapil orders and, lacking the courier alias, sent them to manual review). Expected in the shared local setup; not an issue for separate environments.
 
 **Still open:**
 1. Per-brand email colours/design (shared template) — design task.
