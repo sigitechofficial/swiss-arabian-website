@@ -50,6 +50,7 @@ export function StickyBuyBar({
 
   return (
     <div
+      data-sapil="sticky-buy"
       inert={!on}
       aria-hidden={!on}
       className={cx(

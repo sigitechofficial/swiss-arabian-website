@@ -145,7 +145,7 @@ const SPECS = [
 const FREEZE = `*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}
 .rv{opacity:1!important;transform:none!important}
 .hdr,.toolbar,.gallery,.co-sum{position:static!important}
-.hero-switch,.toast,.scrim,[data-kit-chrome]{display:none!important}
+.hero-switch,.toast,.scrim,[data-kit-chrome],[data-sapil=sticky-buy]{display:none!important}
 html{scroll-behavior:auto!important}`;
 
 /* ——— driver ——— */

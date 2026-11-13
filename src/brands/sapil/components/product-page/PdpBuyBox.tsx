@@ -146,7 +146,7 @@ export function PdpBuyBox({
 
       <div ref={addRowRef} data-sapil="buy-row" className={cx("flex gap-[12px] items-center", description && "mt-[24px]")}>
         {purchase.needsAlert ? (
-          <button type="button" disabled className={cx(buttonClass("dark"), "flex-1 h-[58px] text-[17px] rounded-[18px] max-900:text-[15px]")}>
+          <button type="button" disabled className={cx(buttonClass("dark"), "flex-1 !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}>
             {purchase.unavailable ? t("product.unavailable") : t("product.outOfStock")}
           </button>
         ) : (
@@ -163,7 +163,7 @@ export function PdpBuyBox({
               onClick={add}
               className={cx(
                 buttonClass("dark"),
-                "flex-1 h-[58px] text-[17px] rounded-[18px] gap-[10px] !bg-sapil-accent [&_svg]:w-[20px] [&_svg]:h-[20px] max-900:text-[15px]",
+                "flex-1 !h-[58px] !text-[17px] !rounded-[18px] gap-[10px] !bg-sapil-accent [&_svg]:w-[20px] [&_svg]:h-[20px] max-900:!text-[15px]",
               )}
             >
               <BagIcon />
