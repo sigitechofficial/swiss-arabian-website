@@ -2,8 +2,6 @@
 
 import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { PaymobPaymentFormView, StripePaymentFormView } from "@/features/checkout";
-import { CheckoutStateUiProvider, type CheckoutStateUi } from "@/features/checkout/components/CheckoutStateShell";
 import { ORDER_UUID, parseResultHint as tabbyResultHint } from "@/features/checkout/components/TabbyReturnView";
 import { parseResultHint as telrResultHint } from "@/features/checkout/components/TelrReturnView";
 import { storedOrderIdIf, usePaymentRetry, useSettlePayment } from "@/features/checkout/hooks/usePaymentReturn";
@@ -44,7 +42,6 @@ export function SapilCheckoutSpinner({ eyebrow, title, body }: { eyebrow?: strin
   );
 }
 
-const SAPIL_STATE_UI: CheckoutStateUi = { Shell: SapilCheckoutStateShell, Spinner: SapilCheckoutSpinner };
 
 type Action = { label: string; href?: string; onClick?: () => void; disabled?: boolean };
 
@@ -110,24 +107,7 @@ function PaymentPanel({
 const retryHref = (orderId: string | null) =>
   orderId ? `/checkout/payment/cancel?orderId=${encodeURIComponent(orderId)}` : "/checkout/payment/cancel";
 
-/*
- * Card forms (Paymob Pixel, Stripe Elements) keep the shared provider screens
- * inside Sapil's shell and spinner (provider logic untouched).
- */
-export function SapilPaymobPaymentForm() {
-  return (
-    <CheckoutStateUiProvider ui={SAPIL_STATE_UI}>
-      <PaymobPaymentFormView />
-    </CheckoutStateUiProvider>
-  );
-}
-export function SapilStripePaymentForm() {
-  return (
-    <CheckoutStateUiProvider ui={SAPIL_STATE_UI}>
-      <StripePaymentFormView />
-    </CheckoutStateUiProvider>
-  );
-}
+/* Card forms (Paymob Pixel, Stripe Elements): `SapilCardPayment.tsx`. */
 
 /**
  * Gateway return (Paymob, Stripe after 3-D Secure): polls the platform, which

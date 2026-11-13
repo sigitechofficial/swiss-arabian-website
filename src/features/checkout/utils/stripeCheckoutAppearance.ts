@@ -10,6 +10,12 @@ export const STRIPE_BRAND = {
 
 export const STRIPE_FONT_FAMILY = '"Benton Sans Wide", system-ui, sans-serif';
 
+/** Fonts and appearance of the Stripe Elements iframe for one brand. */
+export type StripeElementsLook = Pick<
+  NonNullable<StripeCheckoutElementsSdkOptions["elementsOptions"]>,
+  "fonts" | "appearance"
+>;
+
 export function stripeCheckoutElementsOptions(
   clientSecret: string,
   extras: {
@@ -18,13 +24,15 @@ export function stripeCheckoutElementsOptions(
     email?: string | null;
     phoneNumber?: string | null;
   } = {},
+  /** A brand's own look (fonts + appearance); default: Swiss Arabian's. */
+  look?: StripeElementsLook,
 ): StripeCheckoutElementsSdkOptions {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const billingCountry = extras.billingCountry?.trim();
   const customerName = extras.customerName?.trim();
   return {
     clientSecret,
-    elementsOptions: {
+    elementsOptions: look ?? {
       fonts: [400, 500].map((weight) => ({
         family: "Benton Sans Wide",
         src: `url(${origin}/fonts/benton-sans-wide-${weight}.ttf)`,
