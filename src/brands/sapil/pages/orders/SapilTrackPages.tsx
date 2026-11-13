@@ -9,7 +9,8 @@ import { StatusPill, statusText } from "../../components/account/AccountChrome";
 import { FormCard, FormMessage } from "../../components/account/FormCard";
 import { OrderStateCard, SapilOrderView } from "../../components/orders/SapilOrderView";
 import { orderSteps } from "../../components/orders/orderParts";
-import { TrackingDetails, trackingStep } from "../../components/orders/TrackingDetails";
+import { trackingUnitCount } from "@/features/orders/utils/orderStatus";
+import { TrackingDetails, stoppedText, trackingStep, useDeliveryHighlight } from "../../components/orders/TrackingDetails";
 
 /** `/track`: find an order by number + tracking token (design-system form card). */
 export function SapilTrackLookupPage() {
@@ -81,6 +82,7 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
   const money = useSapilMoney();
   const date = useSapilDate();
   const tracking = useGuestTracking(orderNumber);
+  const deliveryHighlight = useDeliveryHighlight();
   const { summary } = tracking;
 
   if (tracking.loading) return <OrderStateCard busy title={t("account.trackLookup")} />;
@@ -98,7 +100,7 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
           <>
             {t("account.trackPlaced", {
               date: date(summary.createdAt),
-              items: t("account.ordersItems", { count: summary.itemCount }),
+              items: t("account.ordersItems", { count: trackingUnitCount(summary) }),
               total: money(Number(summary.total), summary.currency),
             })}
             <span className="block mt-[10px]">
@@ -106,13 +108,9 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
             </span>
           </>
         }
-        highlight={
-          summary.estimatedDeliveryAt
-            ? { label: t("account.odEtaLabel"), value: date(summary.estimatedDeliveryAt, { weekday: "short", day: "numeric", month: "short" }) }
-            : undefined
-        }
+        highlight={deliveryHighlight(summary) ?? undefined}
         steps={step >= 0 ? orderSteps(t, step) : undefined}
-        stopped={step < 0 ? t("account.odStopped", { status }) : undefined}
+        stopped={step < 0 ? stoppedText(t, summary.status) : undefined}
         notices={<TrackingDetails summary={summary} timeline={tracking.timeline} />}
         actions={
           <>

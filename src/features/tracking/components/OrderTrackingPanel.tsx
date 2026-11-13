@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import {
   ORDER_PROGRESS_STEPS,
   customerOrderTimeline,
+  deliveryDateFact,
   formatOrderDate,
   orderProgressStep,
   shipmentStatusLabel,
@@ -94,11 +95,15 @@ function ProgressStepper({ step }: { step: number }) {
 }
 
 function DeliveryEstimate({ summary }: { summary: OrderTrackingSummary }) {
-  if (summary.deliveredAt) {
-    return <p className={orderFactValue}>{formatOrderDate(summary.deliveredAt, { long: true })}</p>;
+  const fact = deliveryDateFact(summary);
+  if (fact?.kind === "delivered") {
+    return <p className={orderFactValue}>{formatOrderDate(fact.at, { long: true })}</p>;
   }
-  if (summary.estimatedDeliveryAt) {
-    return <p className={orderFactValue}>By {formatOrderDate(summary.estimatedDeliveryAt, { long: true })}</p>;
+  if (fact?.kind === "estimate") {
+    return <p className={orderFactValue}>By {formatOrderDate(fact.at, { long: true })}</p>;
+  }
+  if (summary.status === "DELIVERED") {
+    return <p className={orderFactValue}>Delivered</p>;
   }
   return <p className={orderFactNote}>We’ll share a date once your order ships.</p>;
 }
@@ -129,7 +134,13 @@ export function OrderTrackingPanel({
             {/* Delivery date and the carrier's latest word share the card, so neither sits in a near-empty box. */}
             <div className={orderFacts}>
               <div className={orderFact}>
-                <p className={orderFactLabel}>{summary.deliveredAt ? "Delivered on" : "Estimated delivery"}</p>
+                <p className={orderFactLabel}>
+                  {summary.deliveredAt
+                    ? "Delivered on"
+                    : summary.status === "DELIVERED"
+                      ? "Delivery"
+                      : "Estimated delivery"}
+                </p>
                 <DeliveryEstimate summary={summary} />
               </div>
               <div className={orderFact}>
@@ -162,7 +173,7 @@ export function OrderTrackingPanel({
             const events =
               eventsByShipment.get(shipment.shipmentId) ??
               (shipment.latestTrackingEvent ? [shipment.latestTrackingEvent] : []);
-            const history = trackingHistory(events).reverse();
+            const history = trackingHistory(events);
             const carrierLine = [
               shipment.shippingPartner?.displayName,
               shipment.deliveryMethod?.displayName,
@@ -186,7 +197,10 @@ export function OrderTrackingPanel({
                         Shipment <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.shipmentNumber}</b>
                       </p>
                     ) : null}
-                    {shipment.estimatedDeliveryAt && !shipment.deliveredAt ? (
+                    {shipment.estimatedDeliveryAt &&
+                    !shipment.deliveredAt &&
+                    shipment.status !== "DELIVERED" &&
+                    summary.status !== "DELIVERED" ? (
                       <p className={orderLineMeta}>
                         Arriving by {formatOrderDate(shipment.estimatedDeliveryAt, { long: true })}
                       </p>

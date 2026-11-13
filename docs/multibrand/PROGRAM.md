@@ -205,14 +205,22 @@ Sapil site (`:3045`), Sapil backend `feat/sapil-cms` (`:3012`, schedulers off), 
 10. Market page says "Products on this market: 1" while the site sells 85.
 11. Guest orders linked to a customer record get "your account" email links they can't open without signing up.
 
-**Open — website (shared tracking view):**
-- A product page shows "This bottle isn't here" (not found) when the API is down, instead of an error.
-- Admin tracking note is shown to the shopper verbatim (no warning in admin that it is public).
-- Raw codes in tracking history ("Create queued", "LOCAL_SIMULATION", "Created"); history order/time-zone wrong for simulated events (shown at 8:00, below newer events); "Estimated delivery" still shown after Delivered; "This order has stopped: Under review" wording.
-- Header counts lines, not units ("1 item" for 2 bottles).
-- Checkout tab title is just "Sapil".
-- Repeated `page-seo?path=/` 404 on every navigation (no Sapil home SEO record; result not cached) and `page-seo?path=/products` asked of the wrong API.
+**Fixed — website** (branch `fix/order-flow-gaps`, both brands):
+1. ~~Raw codes in tracking history~~ → shipment and carrier statuses map to shopper wording (`trackingStatusKey` in `features/orders/utils/orderStatus.ts`; Sapil `account.ship*` keys in en + ar). Internal notes are hidden: `LOCAL_SIMULATION` and other bare codes, simulation / synthetic / smoke / dev-only text, numeric carrier codes. An unknown status reads "Shipment update", never the code.
+2. ~~History order / time zone~~ → history is newest first by timestamp (stable for ties). Order dates and times use the market's time zone (`lib/storefront/marketTimeZone.ts`: country → zone, Asia/Dubai by default) in both brands, so server, browser and emails agree.
+3. ~~"Estimated delivery" after Delivered~~ → "Delivered on …" (`deliveryDateFact`); no estimate (order or shipment) once the order is Delivered.
+4. ~~"This order has stopped: Under review"~~ → calm per-status sentences ("We're checking a detail on your order. We'll update you soon."), en + ar.
+5. ~~"1 item" for 2 bottles~~ → tracking header counts units (`trackingUnitCount`, from the shipments' items; the account fallback sums line quantities). Confirmation pages already counted units.
+6. ~~Checkout title "Sapil"~~ → `pages.title.checkout` ("Checkout" / "إتمام الشراء") via `routeTranslator`, noindex like the other checkout routes.
+7. ~~Repeated `page-seo` 404s~~ → `loadPublishedPageSeo` never asks for `/products…`, `/collections/<handle>` or `/categories/<handle>` (their SEO is in the catalog API). Lookups go through `unstable_cache` (300 s, same as the ISR pages): a 404 is cached as "no record"; network errors / 5xx are not cached. Server metadata only.
+8. ~~Product page "not found" when the API is down~~ → only an API 404 is `missing` (→ `notFound()`). Network errors / 5xx throw (`isCatalogUnavailable`) for products, collections and categories, so the error view with retry shows and ISR caches no 404 / empty page. The client product view shows "We couldn't load" + Try again.
+9. Admin tracking note → events staff record in the admin ("Ops-entered tracking", "Ops-marked delivered") never show their description (the staff member's reason). The API has **no customer-visible flag**: the website keys off that title. Backend/admin follow-up: expose only shopper-safe text (or a visibility flag) in `/storefront/order-tracking/*/tracking`, and label the admin field as internal.
+
+**Open — website:**
+- Account order list (both brands) still shows the API's `itemCount`, which counts lines (backend `storefront-customer-order.service`, `guest-order-tracking.service`: `order.lines.length`). Backend should send units; the tracking header falls back to lines when an order has no shipment yet.
 - `you-may-also-like` / `dont-miss-this` rails missing for Sapil (admin content).
+
+**Open — backend (found while fixing the history order):** the admin IQ status simulation sends its time as UTC wall time without a zone (`2026-11-13 08:00:00`); the backend parses it in the server's zone (+05:00), so simulated events are stored 5 h early. Real IQ webhooks that send zone-less times have the same risk.
 
 **Not a bug (checked):** "Test Payment (dev only)" is preselected because the local DB marks it default; the cut-off Arabic step label was the TanStack devtools button; fraud hold on order 3 was the correct "3 orders / 60 min" rule.
 
@@ -266,3 +274,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
 - **2026-11-13 (close):** `review/ui` merged into `feat/multibrand-sapil`. Final checks on the merged code: tsc and eslint clean, vitest 184 files / 1116 tests with both brand UIs, Swiss Arabian and Sapil builds pass. Backend fixes from review 1 committed on backend `review/sapil-cms` (`9dff01a5`, on top of `feat/sapil-cms`). Nothing pushed or deployed. Open items: see "Final UI check → still open" and the decision tables above.
 - **2026-11-13 (order test):** Three Sapil cash-on-delivery orders run from the screens (site → admin → site); one reached Delivered. Website fixes committed; backend/admin gaps listed under "End-to-end order test".
 - **2026-11-13 (backend fixes):** per-brand email identity and failure logging on backend `feat/sapil-cms`; verified with two more Sapil orders. Remaining gaps above.
+- **2026-11-13 (order-flow gaps):** branch `fix/order-flow-gaps`: tracking wording / order / time zone / delivered date / review wording, unit counts, checkout title, page-SEO lookups cached and skipped for catalog paths, catalog pages error (not 404) when the API is down, staff tracking notes hidden. Both brands.

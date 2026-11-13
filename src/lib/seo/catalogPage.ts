@@ -10,10 +10,11 @@ import {
 import {
   fetchCategoryBySlugOutcome,
   fetchCategoryProducts,
-  fetchCollectionBySlug,
+  fetchCollectionBySlugOutcome,
   fetchCollectionProducts,
   fetchProductBySlugOutcome,
   fetchProducts,
+  isCatalogUnavailable,
 } from "@/features/catalog/api/catalog.service";
 import { fetchPublishedHome } from "@/features/cms/api/cmsContent.service";
 import type { CmsHomeResult } from "@/features/cms/types/cmsHome.types";
@@ -73,8 +74,10 @@ export async function loadServerHome(): Promise<{
  * First page of a collection for server rendering.
  * - `missing`: the API answered 404 — the collection does not exist in this
  *   market, so the page must respond 404 (not 500, not an empty 200).
- * - Any other failure leaves `listing` null: the page still renders and the
- *   client view loads the grid itself (and shows its own error state).
+ * - API unreachable / 5xx: thrown, so the error view (with retry) shows and
+ *   ISR never caches a broken or "not found" page.
+ * - Any other failure (4xx) leaves `listing` null: the page still renders and
+ *   the client view loads the grid itself (and shows its own error state).
  */
 async function loadInitialCollectionListing(
   slug: string,
@@ -94,6 +97,9 @@ async function loadInitialCollectionListing(
     if (error instanceof ApiClientError && error.status === 404) {
       return { listing: null, missing: true };
     }
+    // API down / 5xx: the page errors (retry) rather than caching an empty
+    // collection for the revalidate period.
+    if (isCatalogUnavailable(error)) throw error;
     console.error("[catalog] collection listing prefetch failed", {
       slug,
       zoneCode,
@@ -131,8 +137,8 @@ export const loadCatalogDocument = cache(
       return { ...resolved, ...empty, product, missing };
     }
     if (kind === "collection") {
-      const [collection, initial] = await Promise.all([
-        fetchCollectionBySlug(slug, resolved.zoneCode, resolved.market),
+      const [{ collection }, initial] = await Promise.all([
+        fetchCollectionBySlugOutcome(slug, resolved.zoneCode, resolved.market),
         loadInitialCollectionListing(
           slug,
           resolved.zoneCode,

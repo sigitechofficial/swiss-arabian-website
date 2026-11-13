@@ -4,6 +4,7 @@ import { Fragment, useCallback, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useMarketTimeZone } from "@/lib/storefront/marketTimeZone";
 import { formatAED, type SapilLinkProps } from "../../ui/shared";
 
 /** The kit's link slot, rendered as a locale-aware Next link. */
@@ -73,21 +74,25 @@ export function useSapilMoneyParts() {
   );
 }
 
-/** Dates in the page's language (e.g. "13 November 2026"). */
+/**
+ * Dates in the page's language (e.g. "13 November 2026"), in the market's
+ * time zone (Dubai time for the UAE), so every page and device agrees.
+ */
 export function useSapilDate() {
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   return useCallback(
     (iso: string | null | undefined, options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" }) => {
       if (!iso) return "";
       const date = new Date(iso);
       if (Number.isNaN(date.getTime())) return "";
       try {
-        return date.toLocaleDateString(intlLocale(locale), options);
+        return date.toLocaleDateString(intlLocale(locale), { timeZone, ...options });
       } catch {
         return date.toDateString();
       }
     },
-    [locale],
+    [locale, timeZone],
   );
 }
 

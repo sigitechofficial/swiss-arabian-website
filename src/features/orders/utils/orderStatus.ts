@@ -1,4 +1,5 @@
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
+import { currentMarketTimeZone } from "@/lib/storefront/marketTimeZone";
 
 /** Shared order vocabulary for Purchase History, order detail and tracking. */
 
@@ -101,36 +102,89 @@ export function orderProgressStep(status: string): number {
   return PROGRESS_STEP[status] ?? -1;
 }
 
-export function stoppedOrderMessage(status: string): string {
+/** Why an order left the delivery path, as a kind each brand words in its own language. */
+export type StoppedOrderKind = "cancelled" | "refundPending" | "refunded" | "review" | "failed" | "other";
+
+export function stoppedOrderKind(status: string): StoppedOrderKind {
   switch (status) {
     case "CANCELLED":
-      return "This order was cancelled.";
+      return "cancelled";
     case "REFUND_PENDING":
-      return "This order is being refunded to your original payment method.";
+      return "refundPending";
     case "REFUNDED":
-      return "This order was refunded to your original payment method.";
+      return "refunded";
     case "MANUAL_REVIEW":
-      return "This order is being reviewed by our team. We’ll contact you if we need anything.";
+      return "review";
     case "FAILED":
-      return "This order couldn’t be completed. Please contact our customer care team.";
+      return "failed";
     default:
-      return "There’s no delivery progress to show for this order.";
+      return "other";
   }
+}
+
+const STOPPED_MESSAGE: Record<StoppedOrderKind, string> = {
+  cancelled: "This order was cancelled.",
+  refundPending: "This order is being refunded to your original payment method.",
+  refunded: "This order was refunded to your original payment method.",
+  // Calm: a review is usually a routine check, not a problem with the order.
+  review: "We’re checking a detail on your order. We’ll update you soon.",
+  failed: "This order couldn’t be completed. Please contact our customer care team.",
+  other: "There’s no delivery progress to show for this order.",
+};
+
+export function stoppedOrderMessage(status: string): string {
+  return STOPPED_MESSAGE[stoppedOrderKind(status)];
+}
+
+/**
+ * The delivery date to show: "Delivered on" once delivered, else the estimate.
+ * Never an estimate for an order that has already arrived.
+ */
+export function deliveryDateFact(summary: {
+  status: string;
+  deliveredAt: string | null;
+  estimatedDeliveryAt: string | null;
+}): { kind: "delivered"; at: string } | { kind: "estimate"; at: string } | null {
+  if (summary.deliveredAt) return { kind: "delivered", at: summary.deliveredAt };
+  if (summary.status === "DELIVERED") return null;
+  if (summary.estimatedDeliveryAt) return { kind: "estimate", at: summary.estimatedDeliveryAt };
+  return null;
+}
+
+/**
+ * Bottles in an order (sum of quantities), as the emails count them. The
+ * tracking API's `itemCount` counts order lines, so units come from the
+ * shipments' items when there are any.
+ */
+export function trackingUnitCount(summary: {
+  itemCount: number;
+  shipments: Array<{ items?: Array<{ quantity: string }> | null }>;
+}): number {
+  const units = summary.shipments
+    .flatMap((shipment) => shipment.items ?? [])
+    .reduce((sum, item) => sum + (Number.parseInt(item.quantity, 10) || 1), 0);
+  return Math.max(units, summary.itemCount);
 }
 
 // ─── Dates ───────────────────────────────────────────────────────────────────
 
 export function formatOrderDate(
   iso: string | null | undefined,
-  { time = false, long = false }: { time?: boolean; long?: boolean } = {},
+  {
+    time = false,
+    long = false,
+    timeZone = currentMarketTimeZone(),
+  }: { time?: boolean; long?: boolean; timeZone?: string } = {},
 ): string {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
+  // The market's time zone, so server, browser and the emails agree.
   const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
     month: long ? "long" : "short",
     day: "numeric",
+    timeZone,
   };
   return time
     ? date.toLocaleString("en-AE", { ...options, hour: "2-digit", minute: "2-digit" })
@@ -206,26 +260,89 @@ export function customerOrderTimeline(
 
 // ─── Shipment tracking ───────────────────────────────────────────────────────
 
-const TRACKING_STATUS_LABEL: Record<string, string> = {
-  CREATED: "Shipment created",
-  INFO_RECEIVED: "Shipment details received",
-  PENDING: "Awaiting pickup",
-  PICKED_UP: "Picked up",
-  IN_TRANSIT: "In transit",
-  OUT_FOR_DELIVERY: "Out for delivery",
-  DELIVERED: "Delivered",
-  FAILED_ATTEMPT: "Delivery attempt failed",
-  EXCEPTION: "Delivery exception",
-  RETURNED: "Returned to sender",
-  CANCELLED: "Shipment cancelled",
+/**
+ * What a shipment or carrier status means to a shopper. Shipment statuses
+ * (CREATE_QUEUED, LABEL_CREATED …) and carrier event statuses (INFO_RECEIVED,
+ * ARRIVED_AT_HUB …) both map here; each brand words the keys in its languages.
+ */
+export const TRACKING_STATUS_KEYS = [
+  "preparing",
+  "created",
+  "awaitingPickup",
+  "pickedUp",
+  "inTransit",
+  "outForDelivery",
+  "delivered",
+  "failedAttempt",
+  "delayed",
+  "returning",
+  "returned",
+  "cancelled",
+  "update",
+] as const;
+
+export type TrackingStatusKey = (typeof TRACKING_STATUS_KEYS)[number];
+
+const TRACKING_STATUS: Record<string, TrackingStatusKey> = {
+  // The shipment before the courier has it.
+  DRAFT: "preparing",
+  PENDING_CANCELLATION_WINDOW: "preparing",
+  READY_TO_CREATE: "preparing",
+  CREATE_QUEUED: "preparing",
+  CREATING: "preparing",
+  CREATED: "created",
+  LABEL_CREATED: "created",
+  INFO_RECEIVED: "created",
+  PENDING: "awaitingPickup",
+  PICKUP_SCHEDULED: "awaitingPickup",
+  PICKED_UP: "pickedUp",
+  IN_TRANSIT: "inTransit",
+  ARRIVED_AT_HUB: "inTransit",
+  OUT_FOR_DELIVERY: "outForDelivery",
+  DELIVERED: "delivered",
+  FAILED_DELIVERY: "failedAttempt",
+  FAILED_ATTEMPT: "failedAttempt",
+  EXCEPTION: "delayed",
+  MANUAL_REVIEW: "delayed",
+  LOST: "delayed",
+  DAMAGED: "delayed",
+  FAILED: "delayed",
+  RTO_INITIATED: "returning",
+  RTO_IN_TRANSIT: "returning",
+  RETURN_TO_SENDER: "returning",
+  RTO_COMPLETED: "returned",
+  RETURNED: "returned",
+  CANCEL_REQUESTED: "cancelled",
+  CANCELLED: "cancelled",
+};
+
+/** Never a raw code: an unknown status is a plain "shipment update". */
+export function trackingStatusKey(status?: string | null): TrackingStatusKey {
+  return TRACKING_STATUS[status?.trim().toUpperCase() ?? ""] ?? "update";
+}
+
+const TRACKING_STATUS_LABEL: Record<TrackingStatusKey, string> = {
+  preparing: "Preparing your shipment",
+  created: "Shipment created",
+  awaitingPickup: "Awaiting pickup",
+  pickedUp: "Picked up",
+  inTransit: "In transit",
+  outForDelivery: "Out for delivery",
+  delivered: "Delivered",
+  failedAttempt: "Delivery attempt failed",
+  delayed: "Delayed, we’re looking into it",
+  returning: "Returning to sender",
+  returned: "Returned to sender",
+  cancelled: "Shipment cancelled",
+  update: "Shipment update",
 };
 
 export function shipmentStatusLabel(status?: string | null): string {
   if (!status) return "";
-  return TRACKING_STATUS_LABEL[status.toUpperCase()] ?? titleCase(status);
+  return TRACKING_STATUS_LABEL[trackingStatusKey(status)];
 }
 
-/** Operator notes that shouldn't reach shoppers. */
+/** Operator notes and system codes that shouldn't reach shoppers. */
 const INTERNAL_TEXT = [
   /webhook/i,
   /->/,
@@ -236,21 +353,52 @@ const INTERNAL_TEXT = [
   /worker/i,
   /queued/i,
   /platform/i,
+  /simulat/i,
+  /synthetic/i,
+  /smoke/i,
+  /dev[- ]?only/i,
+  /dummy/i,
+  // A bare system code (LOCAL_SIMULATION, SMOKE_CREATED, DELIVERED).
+  /^[A-Z0-9]+(?:_[A-Z0-9]+)*$/,
 ];
 
 function isCustomerFacing(text?: string | null): text is string {
-  return Boolean(text && text.trim() && !INTERNAL_TEXT.some((pattern) => pattern.test(text)));
+  const value = text?.trim();
+  return Boolean(
+    value &&
+      // A carrier's numeric status ("100") is not a note.
+      /\p{L}/u.test(value) &&
+      !INTERNAL_TEXT.some((pattern) => pattern.test(value)),
+  );
+}
+
+/**
+ * Events staff record in the admin ("Ops-entered tracking", "Ops-marked
+ * delivered") carry the staff member's reason as their description. The API
+ * has no customer-visible flag, so that text never reaches the shopper.
+ */
+function isStaffEvent(title?: string | null): boolean {
+  return /^ops[- ]/i.test(title?.trim() ?? "");
 }
 
 export type TrackingHistoryEntry = {
   key: string;
+  /** What happened, for the brand to word in the shopper's language. */
+  status: TrackingStatusKey;
+  /** English wording of `status`. */
   label: string;
+  /** The carrier's own note, when it is meant for shoppers. */
   detail: string | null;
   location: string | null;
   occurredAt: string;
 };
 
-/** Carrier events for one shipment — oldest first, noise and repeats removed. */
+function eventTime(value: string): number {
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
+}
+
+/** Carrier events for one shipment: newest first, noise and repeats removed. */
 export function trackingHistory(
   events: Array<{
     eventStatus: string;
@@ -260,30 +408,37 @@ export function trackingHistory(
     location: string | null;
   }>,
 ): TrackingHistoryEntry[] {
-  const sorted = [...events].sort((a, b) => Date.parse(a.eventTime) - Date.parse(b.eventTime));
+  // Oldest first (stable), so a repeated status keeps its first occurrence.
+  const sorted = events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => eventTime(a.event.eventTime) - eventTime(b.event.eventTime) || a.index - b.index)
+    .map(({ event }) => event);
   const seen = new Set<string>();
   const entries: TrackingHistoryEntry[] = [];
   for (const event of sorted) {
-    const label = shipmentStatusLabel(event.eventStatus);
-    // Carriers often send "STATUS: note" as the title — keep just the note.
-    const carrierNote = event.title?.includes(":")
-      ? event.title.split(":").slice(1).join(":").trim()
-      : null;
-    const detail = isCustomerFacing(carrierNote)
-      ? carrierNote
-      : isCustomerFacing(event.description)
-        ? event.description
-        : null;
-    const dedupeKey = `${label}|${detail ?? ""}`;
+    const status = trackingStatusKey(event.eventStatus);
+    const staff = isStaffEvent(event.title);
+    // Carriers often send "STATUS: note" as the title; keep just the note.
+    const carrierNote =
+      !staff && event.title?.includes(":") ? event.title.split(":").slice(1).join(":").trim() : null;
+    const detail = staff
+      ? null
+      : isCustomerFacing(carrierNote)
+        ? carrierNote
+        : isCustomerFacing(event.description)
+          ? event.description.trim()
+          : null;
+    const dedupeKey = `${status}|${detail ?? ""}`;
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
     entries.push({
-      key: `${event.eventStatus}-${event.eventTime}`,
-      label,
+      key: `${event.eventStatus}-${event.eventTime}-${entries.length}`,
+      status,
+      label: TRACKING_STATUS_LABEL[status],
       detail,
-      location: event.location || null,
+      location: isCustomerFacing(event.location) ? event.location.trim() : null,
       occurredAt: event.eventTime,
     });
   }
-  return entries;
+  return entries.reverse();
 }
