@@ -1,6 +1,7 @@
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { useCartStore } from "@/stores/useCartStore";
 import { clearPaymentState } from "./checkoutSession";
+import { checkoutHref } from "./checkoutLocale";
 
 const challengeCallbacks = new Set<(url: string) => void>();
 let captureInstalled = false;
@@ -79,7 +80,7 @@ export function finishPaidCheckout(orderId: string) {
   useCartStore.getState().clear();
   useCartStore.getState().setCartId(null);
   clearCartId();
-  window.location.replace(`/order-confirmation/${encodeURIComponent(orderId)}`);
+  window.location.replace(checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`));
 }
 
 export function checkoutUrlFromIframe(frame: HTMLIFrameElement | null): string | null {

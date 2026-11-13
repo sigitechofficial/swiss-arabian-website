@@ -100,5 +100,9 @@ Data-driven parts (rails, doors, collection cards, mood, bundles, shelf, footer 
   inside the diff threshold. **Needs design sign-off.**
 - Keyboard: skip link → logo → menu → search → account → bag → chips in order with a visible ring;
   phone menu and search dialog trap focus, Escape closes and returns focus (checked in the build).
-- Open: the rotating announcement has no pause control (WCAG 2.2.2) and announces each message
-  (`aria-live`); v9 has no control either. Decide whether to keep rotation.
+- ~~Open: the rotating announcement has no pause control~~ ✅ final UI check: with two or more
+  messages the bar shows a small pause / play button at its end (28px, ink on mint, the scoped focus
+  ring; `shell.announcePause` / `announcePlay`, en + ar). Rotation also holds while the pointer or
+  focus is on the bar and doesn't start with reduced motion until the shopper presses play. The bar
+  is no longer `aria-live`. With one message nothing changes (v9 markup). The text gets 48px side
+  padding when the button is there, so it never runs under it.

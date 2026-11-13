@@ -36,6 +36,7 @@ import {
 } from "@/features/markets/utils/flagForMarket";
 import {
   readZoneCookie,
+  storedZoneFor,
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
@@ -160,12 +161,16 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const saved = useUiStore.getState().selectedMarketId || readZoneCookie();
 
     if (!marketsQuery.data) {
-      if (saved && !useUiStore.getState().catalogContext) {
-        selectMarket(saved, {
-          ...fallbackCatalogContext(saved),
+      // Before the brand's markets are known, only this site's own store (per
+      // origin) is trusted: a cookie can come from another brand served on the
+      // same host (another port locally, a sibling deployment on staging).
+      const own = useUiStore.getState().selectedMarketId;
+      if (own && !useUiStore.getState().catalogContext) {
+        selectMarket(own, {
+          ...fallbackCatalogContext(own),
           languageCode: pathLanguage,
         });
-        writeZoneCookie(saved);
+        writeZoneCookie(own);
       }
       return;
     }
@@ -174,8 +179,10 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // A stored zone counts only if it is one of this brand's markets.
+    const stored = storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
     const pick =
-      shoppable.find((market) => market.zoneCode === saved) ??
+      shoppable.find((market) => market.zoneCode === stored) ??
       marketsQuery.data.defaultMarket ??
       shoppable[0];
 

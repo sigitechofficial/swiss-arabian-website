@@ -3,7 +3,8 @@
 import { intlLocale } from "@/lib/i18n/locales";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SideSheet } from "@/components/ui/SideSheet";
@@ -72,7 +73,7 @@ function Who({ review, showBadge }: { review: StorefrontPublicReview; showBadge:
  * guests are sent to sign in and come back to the reviews.
  */
 function ReviewActions({ review }: { review: StorefrontPublicReview }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const t = useReviewsCopy();
@@ -480,7 +481,7 @@ function WriteReviewPanel({
   variantId?: string;
   zoneCode: string | null;
 }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);

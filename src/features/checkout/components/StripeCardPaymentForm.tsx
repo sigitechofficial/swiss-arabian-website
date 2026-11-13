@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ExpressCheckoutElement,
   PaymentElement,
@@ -8,7 +8,6 @@ import {
 } from "@stripe/react-stripe-js/checkout";
 import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { LoaderMark } from "@/components/ui/PageLoading";
-import { toE164Phone } from "@/features/auth/api/auth.service";
 import { clearPaymentState } from "../utils/checkoutSession";
 import {
   checkoutCta,
@@ -21,83 +20,16 @@ import {
   stripePayStateTitle,
   stripePayTrust,
 } from "@/styles/checkoutChrome";
-
-function stripeErrorMessage(code?: string, declineCode?: string): string {
-  if (declineCode === "insufficient_funds") return "Insufficient funds. Please try another card.";
-  if (code === "card_declined" || declineCode === "generic_decline") {
-    return "Your card was declined. Please try another card.";
-  }
-  if (code === "expired_card") return "Your card has expired.";
-  if (code === "incorrect_cvc") return "The security code is incorrect.";
-  if (code === "incorrect_number" || code === "invalid_number") return "The card number is invalid.";
-  if (code === "processing_error") return "A processing error occurred. Please try again.";
-  return "Payment failed. Please try another card or contact your bank.";
-}
-
-function checkoutConfirmMessage(error: {
-  message: string;
-  code?: string | null;
-  paymentFailed?: { declineCode: string | null };
-}): string {
-  if (error.code === "paymentFailed") {
-    return stripeErrorMessage("card_declined", error.paymentFailed?.declineCode ?? undefined);
-  }
-  const message = error.message || "";
-  if (/customer_email|already set on the Checkout Session/i.test(message)) {
-    return "Payment session already has your email. Tap Pay now again, or refresh and try once more.";
-  }
-  if (/email/i.test(message)) {
-    return "Enter your email in delivery details, then tap Pay now.";
-  }
-  if (/phone_number_collection|phone number/i.test(message)) {
-    return "Enter your phone in delivery details, then tap Pay now.";
-  }
-  return message || "Payment failed. Please try another card or contact your bank.";
-}
-
-function readCheckoutControl(name: string): string {
-  const form = document.getElementById("checkout-form");
-  if (!(form instanceof HTMLFormElement)) return "";
-  const field = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
-  return field?.value?.trim() || "";
-}
-
-async function ignoreIfAlreadyOnSession(run: () => Promise<unknown>) {
-  try {
-    await run();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/already set|cannot update the (email|phone)/i.test(message)) throw error;
-  }
-}
-
-function toStripePhone(value?: string | null): string {
-  const trimmed = value?.trim() || "";
-  if (!trimmed.startsWith("+")) return "";
-  const e164 = toE164Phone(trimmed);
-  return e164.startsWith("+") && e164.replace(/\D/g, "").length >= 8 ? e164 : "";
-}
-
-function resolveContact(explicit: { email?: string | null; name?: string | null; phone?: string | null; country?: string | null }) {
-  const email = explicit.email?.trim() || readCheckoutControl("email");
-  const name = explicit.name?.trim() || readCheckoutControl("delName");
-  const phone = toStripePhone(explicit.phone);
-  const country = (explicit.country?.trim() || "AE").toUpperCase();
-  const line1 = readCheckoutControl("delAddr1");
-  const city = readCheckoutControl("delCity");
-  const billingAddress = {
-    name: name || undefined,
-    address: {
-      country,
-      ...(line1 ? { line1 } : {}),
-      ...(readCheckoutControl("delAddr2") ? { line2: readCheckoutControl("delAddr2") } : {}),
-      ...(city ? { city } : {}),
-      ...(readCheckoutControl("delEmirate") ? { state: readCheckoutControl("delEmirate") } : {}),
-      postal_code: readCheckoutControl("delPostal") || "00000",
-    },
-  };
-  return { email, name, phone, billingAddress };
-}
+import { usePathname } from "next/navigation";
+import { localizeHref } from "@/lib/i18n/localePath";
+import { checkoutHref } from "../utils/checkoutLocale";
+import {
+  ignoreIfAlreadyOnSession,
+  resolveStripeContact,
+  stripeConfirmError,
+  stripePayErrorText,
+  useStripeCardPayment,
+} from "../hooks/useStripeCardPayment";
 
 function LockIcon() {
   return (
@@ -129,74 +61,17 @@ export function StripeCardPaymentForm({
   onNeedOrder?: () => void;
   cancelHref?: string;
 }) {
-  const checkoutState = useCheckoutElements();
-  const [ready, setReady] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "confirming" | "polling">("idle");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  async function confirmStripePayment(payingOrderId = orderId) {
-    if (checkoutState.type !== "success" || phase !== "idle") return;
-    if (!payingOrderId) {
-      onNeedOrder?.();
-      return;
-    }
-    const { checkout } = checkoutState;
-    const contact = resolveContact({ email, name, phone, country });
-    if (!contact.email.includes("@")) {
-      setErrorMsg("Enter your email in delivery details, then tap Pay now.");
-      return;
-    }
-    if (!contact.phone) {
-      setErrorMsg("Enter your phone in delivery details, then tap Pay now.");
-      return;
-    }
-    if (!contact.name) {
-      setErrorMsg("Enter your name in delivery details, then tap Pay now.");
-      return;
-    }
-    setPhase("confirming");
-    setErrorMsg(null);
-
-    try {
-      await ignoreIfAlreadyOnSession(() => checkout.updatePhoneNumber(contact.phone));
-      await ignoreIfAlreadyOnSession(() => checkout.updateBillingAddress(contact.billingAddress));
-      const confirmResult = await checkout.confirm({
-        redirect: "if_required",
-        phoneNumber: contact.phone,
-        billingAddress: contact.billingAddress,
-      });
-      if (confirmResult.type === "error") {
-        setErrorMsg(checkoutConfirmMessage(confirmResult.error));
-        setPhase("idle");
-        return;
-      }
-    } catch (error) {
-      setErrorMsg(error instanceof Error ? error.message : "Payment failed. Please try another card or contact your bank.");
-      setPhase("idle");
-      return;
-    }
-
-    setPhase("polling");
-    clearPaymentState();
-    window.location.replace(`/order-confirmation/${payingOrderId}`);
-  }
-
-  useEffect(() => {
-    function onPay(event: Event) {
-      const id = (event as CustomEvent<{ orderId?: string }>).detail?.orderId;
-      void confirmStripePayment(id || orderId);
-    }
-    window.addEventListener("sa-inline-pay", onPay);
-    return () => window.removeEventListener("sa-inline-pay", onPay);
-  });
+  const pay = useStripeCardPayment({ orderId, email, name, phone, country, onNeedOrder });
+  const { checkoutState, ready, loadFailed, phase } = pay;
+  const errorMsg = pay.error ? stripePayErrorText(pay.error) : null;
+  const cancelLink = localizeHref(cancelHref, usePathname() || "/");
 
   return (
     <div className="flex flex-col gap-3">
       {checkoutState.type === "error" ? (
         <p className={checkoutError} role="alert">
-          {checkoutConfirmMessage(checkoutState.error)}{" "}
-          <a className={checkoutLink} href={cancelHref}>
+          {pay.sessionError ? stripePayErrorText(pay.sessionError) : null}{" "}
+          <a className={checkoutLink} href={cancelLink}>
             choose another way to pay
           </a>
         </p>
@@ -220,7 +95,7 @@ export function StripeCardPaymentForm({
           {loadFailed ? (
             <p className={checkoutError} role="alert">
               We couldn’t load the secure card form. Please refresh the page or{" "}
-              <a className={checkoutLink} href={cancelHref}>
+              <a className={checkoutLink} href={cancelLink}>
                 choose another way to pay
               </a>
               .
@@ -247,8 +122,8 @@ export function StripeCardPaymentForm({
                   },
                 },
               }}
-              onReady={() => setReady(true)}
-              onLoadError={() => setLoadFailed(true)}
+              onReady={pay.onReady}
+              onLoadError={pay.onLoadError}
             />
           </div>
 
@@ -260,8 +135,8 @@ export function StripeCardPaymentForm({
           <button
             type="button"
             className={`${checkoutCta} ${stripePayCta}`}
-            disabled={checkoutState.type !== "success" || phase !== "idle"}
-            onClick={() => void confirmStripePayment(orderId)}
+            disabled={!pay.canPay}
+            onClick={() => void pay.confirm(orderId)}
           >
             <span>{phase === "confirming" ? "Processing…" : "Pay now"}</span>
             <b aria-hidden="true">↗</b>
@@ -305,7 +180,7 @@ export function StripeWalletPaymentForm({
       return;
     }
     const { checkout } = checkoutState;
-    const contact = resolveContact({ email, name, phone, country });
+    const contact = resolveStripeContact({ email, name, phone, country });
     setBusy(true);
     setErrorMsg(null);
     try {
@@ -322,7 +197,7 @@ export function StripeWalletPaymentForm({
         billingAddress: contact.billingAddress,
       });
       if (confirmResult.type === "error") {
-        setErrorMsg(checkoutConfirmMessage(confirmResult.error));
+        setErrorMsg(stripePayErrorText(stripeConfirmError(confirmResult.error)));
         setBusy(false);
         return;
       }
@@ -332,7 +207,7 @@ export function StripeWalletPaymentForm({
       return;
     }
     clearPaymentState();
-    window.location.replace(`/order-confirmation/${orderId}`);
+    window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
   }
 
   return (

@@ -53,8 +53,10 @@ describe("locale routing (proxy)", () => {
       pathname: "/ar/products/oud",
       search: "?utm=x",
     });
-    // Checkout and sign-in stay unprefixed.
-    expect(route("/checkout?languageCode=ar").type).toBe("rewrite");
+    // Checkout and sign-in keep the language too.
+    expect(route("/checkout?languageCode=ar")).toEqual({ type: "redirect", pathname: "/ar/checkout", search: "" });
+    // Payment providers' fixed return addresses stay as they are.
+    expect(route("/payments/tabby/return?languageCode=ar").type).toBe("rewrite");
     // English or unknown languages: no redirect.
     expect(route("/products?languageCode=en").type).toBe("rewrite");
     expect(route("/products?languageCode=de").type).toBe("rewrite");

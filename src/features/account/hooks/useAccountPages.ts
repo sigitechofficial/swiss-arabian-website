@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,7 @@ const noopSubscribe = () => () => {};
  */
 export function useAccountDashboard(options: { onLogoutError?: (error: unknown) => void } = {}) {
   const user = useCurrentUser();
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname() || "/";
   const firstName = user?.firstName?.trim() || user?.fullName?.trim().split(/\s+/)[0] || "";
   // Read after hydration so the server and first client render agree.
@@ -92,7 +93,7 @@ export type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 export function useChangePassword(
   options: { onDone?: () => void; onError?: (message: string) => void } = {},
 ) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const [done, setDone] = useState(false);
   const form = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),

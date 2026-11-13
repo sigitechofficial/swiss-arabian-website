@@ -152,6 +152,7 @@ export function SapilProductCard({
         tile={tile ?? model.tile}
         price={model.price}
         was={model.was}
+        wasLabel={t("product.was")}
         discountPercent={model.discountPercent || undefined}
         badge={model.outOfStock ? t("product.outOfStock") : undefined}
         tags={highlightTags?.length ? highlightTags.slice(0, 2) : model.tags}

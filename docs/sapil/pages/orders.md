@@ -76,4 +76,8 @@ cards, actions), `orderParts.tsx` (steps, frozen totals, lines, address), `Track
 - The "Confirmed" step hint reads "We’ve accepted your order" (was "Payment confirmed", wrong for
   cash on delivery); Arabic updated.
 - Guest confirmation → `/track/{number}` works (checked live after a cash-on-delivery order).
-- Confirmation / tracking open in English after an Arabic checkout (see `bag-checkout.md`).
+- ~~Confirmation / tracking open in English after an Arabic checkout~~ ✅ final UI check: the
+  confirmation, tracking and payment return / cancel addresses keep `/ar` (Stripe / Paymob return
+  URLs too). Tabby and Telr return to fixed unprefixed addresses (backend contract), so their
+  return screen is English, but the confirmation they open uses the language checkout started in
+  (`checkoutLocale.ts`).

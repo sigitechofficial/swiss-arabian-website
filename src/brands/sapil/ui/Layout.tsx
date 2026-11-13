@@ -2,13 +2,18 @@ import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import { cx, DefaultLink, type SapilLinkComponent, type SapilTint } from "./shared";
 import { SubnavChip } from "./Chip";
 
-/** v9 `.wrap`: 1440px max, centred, 24px gutters (16px at ≤900px). */
+/**
+ * v9 `.wrap`: 1440px max, centred, 24px gutters (16px at ≤900px). `w-full`: v9's
+ * `.wrap` is a block; inside the chrome's flex-column `<main>` auto margins would
+ * otherwise shrink it to its content, and a page whose content changes after
+ * hydration (empty bag, an order that failed to load) would shift sideways.
+ */
 export function Wrap({
   as: Tag = "div",
   className,
   ...rest
 }: HTMLAttributes<HTMLElement> & { as?: ElementType }) {
-  return <Tag {...rest} className={cx("max-w-sapil-wrap mx-auto px-sapil-gut", className)} />;
+  return <Tag {...rest} className={cx("w-full max-w-sapil-wrap mx-auto px-sapil-gut", className)} />;
 }
 
 export type AnnouncementBarProps = {

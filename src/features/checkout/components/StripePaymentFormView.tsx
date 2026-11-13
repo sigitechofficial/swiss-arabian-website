@@ -1,24 +1,14 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { CheckoutElementsProvider, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
-import type { StripeCheckoutElementsSdkOptions, StripeCheckoutSession } from "@stripe/stripe-js";
-import { getStripe } from "@/lib/stripe/getStripe";
+import type { StripeCheckoutSession } from "@stripe/stripe-js";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { useHydrated } from "@/hooks/useHydrated";
-import { getOrder } from "../api/orders.service";
 import type { OrderResponse } from "../types/checkout";
-import {
-  clearPaymentState,
-  getStoredOrderId,
-  getStoredStripeClientSecret,
-  getStoredStripePublishableKey,
-} from "../utils/checkoutSession";
+import { useCardPaymentSession } from "../hooks/useCardPaymentSession";
+import { useStripePromise, useStripeSessionOptions } from "../hooks/useStripeSessionOptions";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, pageTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
@@ -56,7 +46,6 @@ import {
   stripePaySummaryState,
 } from "@/styles/checkoutChrome";
 import { StripeCardPaymentForm, StripePayLockIcon } from "./StripeCardPaymentForm";
-import { stripeCheckoutElementsOptions } from "../utils/stripeCheckoutAppearance";
 
 function sessionPayable(session: StripeCheckoutSession): { amount: number; currency: string } {
   const divisor = session.minorUnitsAmountDivisor || 100;
@@ -210,68 +199,11 @@ function StripeCheckoutLayout({
 }
 
 export function StripePaymentFormView() {
-  const hydrated = useHydrated();
-  const router = useRouter();
-
-  // Read once after hydration. The client secret stays in sessionStorage only.
-  const ctx = useMemo(
-    () =>
-      hydrated
-        ? {
-            clientSecret: getStoredStripeClientSecret(),
-            publishableKey: getStoredStripePublishableKey(),
-            orderId: getStoredOrderId(),
-          }
-        : null,
-    [hydrated],
-  );
-  const publishableKey = ctx?.publishableKey ?? null;
-  const orderId = ctx?.orderId ?? null;
-  // The key arrives on the initiate response — never hardcoded.
-  const stripePromise = useMemo(
-    () => (publishableKey ? getStripe(publishableKey) : null),
-    [publishableKey],
-  );
-
-  const orderQuery = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: () => getOrder(orderId as string),
-    enabled: Boolean(orderId && ctx?.clientSecret),
-    retry: 1,
-    staleTime: 60_000,
-  });
-
-  // Already paid (e.g. back button after success) — don't offer to charge again.
-  const paymentStatus = orderQuery.data?.paymentStatus?.toUpperCase();
-  const alreadyPaid =
-    paymentStatus === "PAID" ||
-    paymentStatus === "AUTHORIZED" ||
-    paymentStatus === "PARTIALLY_REFUNDED" ||
-    paymentStatus === "REFUNDED";
-  useEffect(() => {
-    if (!alreadyPaid || !orderId) return;
-    clearPaymentState();
-    router.replace(`/order-confirmation/${orderId}`);
-  }, [alreadyPaid, orderId, router]);
-
-  const shipping = orderQuery.data?.addresses?.find((address) => address.addressType === "SHIPPING");
-  const billingCountry = shipping?.countryCode ?? null;
-  const customerName = orderQuery.data?.customer?.fullName ?? shipping?.fullName ?? null;
-  const customerEmail = orderQuery.data?.customer?.email ?? null;
-  const customerPhone =
-    typeof orderQuery.data?.metadata?.customerPhone === "string"
-      ? orderQuery.data.metadata.customerPhone
-      : null;
-  const clientSecret = ctx?.clientSecret ?? null;
-  const options = useMemo<StripeCheckoutElementsSdkOptions | null>(() => {
-    if (!clientSecret || typeof window === "undefined") return null;
-    return stripeCheckoutElementsOptions(clientSecret, {
-      billingCountry,
-      customerName,
-      email: customerEmail,
-      phoneNumber: customerPhone,
-    });
-  }, [billingCountry, clientSecret, customerEmail, customerName, customerPhone]);
+  const session = useCardPaymentSession("stripe");
+  const { hydrated, orderId, clientSecret, alreadyPaid } = session;
+  const publishableKey = session.providerKey;
+  const stripePromise = useStripePromise(publishableKey);
+  const options = useStripeSessionOptions(clientSecret, session.order);
 
   if (!hydrated || alreadyPaid) {
     return (
@@ -313,7 +245,7 @@ export function StripePaymentFormView() {
       </header>
 
       <CheckoutElementsProvider stripe={stripePromise} options={options}>
-        <StripeCheckoutLayout orderId={orderId} order={orderQuery.data} loading={orderQuery.isPending} />
+        <StripeCheckoutLayout orderId={orderId} order={session.order} loading={session.orderLoading} />
       </CheckoutElementsProvider>
     </CheckoutStateShell>
   );

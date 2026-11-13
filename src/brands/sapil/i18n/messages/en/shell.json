@@ -1,5 +1,7 @@
 {
   "home": "Sapil home",
+  "announcePause": "Pause announcements",
+  "announcePlay": "Play announcements",
   "mainMenu": "Main",
   "menu": "Menu",
   "openMenu": "Open menu",

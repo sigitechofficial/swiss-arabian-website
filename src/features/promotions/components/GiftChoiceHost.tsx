@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { useGiftChoiceStore } from "../giftChoiceStore";
@@ -20,7 +21,7 @@ function cartSurface(pathname: string, cartOpen: boolean): boolean {
 }
 
 export function GiftChoiceHost() {
-  const pathname = usePathname() ?? "";
+  const pathname = stripLocalePrefix(usePathname() ?? "/");
   const cartOpen = useUiStore((s) => s.cartOpen);
   const promotions = useCartStore((s) => s.promotions);
   const openCode = useGiftChoiceStore((s) => s.openCode);

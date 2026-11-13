@@ -43,7 +43,7 @@ Other rules:
 | G | Sapil pages: shell + home + content (`feat/sapil-shell-home`), catalog + product + search (`feat/sapil-catalog`), bag + checkout + payments + orders + tracking + auth + account (`feat/sapil-commerce`) | merged into `feat/multibrand-sapil` | ✅ built; reviewer pass next. Docs: `docs/sapil/pages/*.md` |
 | H | Right-to-left layout, performance budgets, visual-diff + isolation checks | — | ⏳ |
 | I | Two reviewer agents | — | ⏳ |
-| J | Final UI check of both sites + fixes | — | ⏳ |
+| J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` |
 
 ## Decisions still open, and the defaults used until answered
 
@@ -64,7 +64,7 @@ Each default is reversible. It is used only so the work isn't blocked.
 
 - ~~**Product cards:** home rails / wishlist on `HomeProductTile` / inline `ProductCard`~~ — closed by reviewer 2: every Sapil card (home rails, mood band with white tiles, search dialog, wishlist, grids) is `SapilProductCard`.
 - **Wording not yet Sapil's or translated:**
-  - ~~Payment screens' inner copy~~ — return screens (success, cancel / retry, Tabby, Telr) closed by reviewer 2 (Sapil views, en + ar). **Still open:** the Paymob and Stripe card-form screens render the shared provider views (Swiss Arabian copy and styling) inside Sapil's frame.
+  - ~~Payment screens' inner copy~~ — return screens (success, cancel / retry, Tabby, Telr) closed by reviewer 2 (Sapil views, en + ar). ~~Paymob and Stripe card-form screens~~ ✅ final UI check: Sapil's own views (`SapilCardPayment.tsx`, en + ar) on shared hooks. **Still open:** the inline card / wallet forms inside the checkout payment step (`InlineMethodPayment`, shared) and the Paymob 3-D Secure overlay's error sentence are Swiss Arabian's.
   - Toasts on Sapil pages are drawn by `SapilToastHost` (Sapil style), but sentences raised by shared hooks (account mutations, wishlist) are the shared English ones.
   - API error sentences.
   - ~~`features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.~~ ✅ closed (reviewer 1): `reviews.*` in `src/messages/en.json` + `ar.json` (plurals), the reply line names the brand.
@@ -79,11 +79,11 @@ Each default is reversible. It is used only so the work isn't blocked.
   - Sapil fragrance-notes and video tiles not curated.
   - No collection colour field.
   - No product FAQ source.
-  - Sapil Arabic font.
+  - Sapil Arabic font. Not implemented as decision 7 says: Sapil sets Poppins / Fraunces / Gloock for every language and Swiss Arabian's `"GE SS"` isn't served by the site either, so Arabic uses the system font and short Arabic pages shift when the Latin web fonts arrive (404 at 768px: CLS 0.42). Needs an Arabic web font.
 - **Platform (found by reviewer 2, not changed: shared routing):**
-  - Transactional paths (`/checkout`, `/login`, `/register`, `/track`, `/order-confirmation`, …) are never locale-prefixed by `localizeHref`, so an Arabic shopper who clicks "Checkout", "Create account" or "Track" lands on the **English** page. The `/ar/…` versions of those routes render correctly in Arabic. Their RSC prefetch from an `/ar` page also 404s (console noise; navigation falls back to a full load). Needs a product decision: keep the language through checkout and sign-in (recommended), or keep them English.
+  - ~~Transactional paths are never locale-prefixed~~ ✅ final UI check (recommended option taken): checkout, sign-in, tracking and the confirmation keep the language for both brands; the 404 RSC prefetches are gone. Only `/payments/tabby|telr/return` stay unprefixed (backend contract).
   - Swiss Arabian merchandising slugs (`you-may-also-like`, `dont-miss-this`, `new-launches`) are requested on Sapil and 404 until Sapil's admin creates those rails (data; or make the slugs per brand).
-  - Forgot password puts the shopper's email in the reset URL (`/reset-password?identifier=…`); better kept in session storage.
+  - ~~Forgot password puts the email in the reset URL~~ ✅ final UI check: sessionStorage via the shared hook. **Still open (same kind):** sign-up / email sign-in go to `/verify?email=…` (shared `useAuthForms`).
 - **Platform:**
   - ~~Unmatched URLs get Next's error shell.~~ ✅ closed (reviewer 1): `src/app/global-not-found.tsx` (`experimental.globalNotFound`) server-renders the brand's chrome + 404 view in the address's language, status 404 (the `[locale]/[...missing]` catch-all is gone). **Remaining:** `notFound()` inside a page (unknown product / collection) still gets Next's error document with status 404; the view is drawn after hydration. Next 16 does not server-render a `not-found.tsx` boundary under a root layout in a dynamic segment (`[locale]`), and `global-not-found` only covers unmatched routes. SEO is unaffected (status 404, noindex).
   - ~~`check:brand` not yet wired into CI / Docker.~~ ✅ closed (reviewer 1): CI build job + Dockerfile builder stage; image defaults the brand code to `SWISS_ARABIAN`.
@@ -94,6 +94,79 @@ Each default is reversible. It is used only so the work isn't blocked.
   - hero intro (real data and font wrap)
   - ~~shell "Shop by" row~~ (was a current-chip bug, now 0.00 — reviewer 2); footer copy (intended)
   - checkout empty bag (no demo "sample bag")
+
+## Final UI check (2026-11-13, branch `review/ui`)
+
+**Checked:** both brands' production builds, English + Arabic, 390 / 768 / 1280 / 1440: home,
+listing, collection, product, search, bag, checkout, card payment, order confirmation, track,
+login, register, forgot password, account (signed out), FAQ, blog, CMS page, stores (Swiss
+Arabian), 404. Per page: status, horizontal scroll, broken images, console errors / 4xx,
+hydration warnings, layout shift, `lang` / `dir`, Latin-only text on `/ar`, the other brand's
+name. Swiss Arabian: screenshots and visible text against the pre-program baseline `5a55282`.
+Per-page results: `docs/ui-check/REPORT.md`.
+
+**Note:** the shared API on :3012 stopped for part of the session. It was not restarted by
+this agent. Every check that hit the outage was re-run with data once it was back:
+- the Sapil sweep after the fixes
+- Sapil Lighthouse after the fixes
+- the Swiss Arabian catalog / blog / CMS compare against `5a55282`
+
+**Lighthouse (Sapil, mobile)**, perf before → after:
+
+| Page | Perf |
+|---|---|
+| Home | 63 → 64 |
+| Shop | 65 → 72 |
+| Collection | 66 → 75 |
+| Product | 68 → 74 |
+
+LCP is still 5.6–6.4 s. The image now loads in about 0.2 s; LCP is set by render delay (fonts and
+hydration). Details are in `docs/sapil/PERFORMANCE.md`.
+
+**Swiss Arabian vs the pre-program baseline:**
+- Product, search, blog, CMS page, stores, FAQ, auth, bag, checkout, card payment and 404:
+  identical, en + ar.
+- Listing, collection and home: under 0.7 % of pixels differ (2.6 % at 390 on home, from a
+  0–1px hero offset that changes from run to run). Text is the same.
+- Intended changes: `/ar/account` → Arabic sign-in, and a single chrome on the Arabic 404 of an
+  English-only post.
+
+**Fixed (by severity):**
+- *High:* Arabic shoppers lost Arabic on checkout, sign-in, register, tracking and the
+  confirmation (both brands); `/ar/account` signed out went to the English sign-in; `/track` etc.
+  RSC prefetches 404'd from every `/ar` page. `localizeHref` + `useLocaleRouter` + `checkoutHref`
+  (payment return URLs included). Tests added.
+- *High:* forgot password put the email in the reset URL → sessionStorage (shared hook, tests).
+- *High:* Sapil Stripe / Paymob card screens showed Swiss Arabian's copy and styling → Sapil views
+  (en + ar) on new shared hooks (`useCardPaymentSession`, `useStripeCardPayment`,
+  `usePaymobCardForm`, `useStripeSessionOptions`); Swiss Arabian unchanged.
+- *Medium:* Sapil announcement rotated with no pause and announced every change (WCAG 2.2.2) →
+  pause / play button, hold on hover / focus, no live region.
+- *Medium:* Sapil LCP image on home / shop / collection was a 300 KB unoptimised PNG
+  (`uae.sapil.com` not allowlisted) → allowlisted. The earlier "cards render after hydration"
+  diagnosis was wrong (they are server-rendered; see `docs/sapil/PERFORMANCE.md`).
+- *Medium:* Sapil pages shifted sideways when content changed after hydration (`Wrap` shrank to its
+  content in the flex `<main>`; bag / checkout skeleton CLS 0.077, confirmation 0.25) → `w-full`.
+- *Low:* Sapil `/ar`: English "was" read before was-prices; "AED" in the home hero stat → fixed.
+- *Medium (coordinator):* Sapil home hydration mismatch in the mood wheel (`Math.sin/cos` last
+  digits differ server vs browser) → coordinates rounded to 3 decimals (`MoodWheel.test.ts`).
+- *Low (coordinator):* the market cookie leaked between brands on one host (Sapil :3045 + Swiss
+  Arabian :3046 locally: Swiss Arabian's first load asked the API for `SAPIL_URD1`). Each brand has
+  its own cookie (`zoneCookieName()`: Swiss Arabian keeps `sa-zone-code`, Sapil `sapil-zone-code`),
+  `MarketProvider` trusts only its own per-origin store before the markets load, and a stored zone
+  must be one of the brand's markets (`storedZoneFor`). The server already ignored foreign zones.
+  A Sapil shopper's earlier choice under `sa-zone-code` is not carried over (Sapil isn't live).
+- *Low:* Insider page types ignored the `/ar` prefix (Arabic PDP sent a second page event,
+  Arabic checkout counted as "other") → bare path.
+
+**Still open:** Sapil Arabic web font (shift on short Arabic pages); inline card / wallet forms
+and the 3-D Secure overlay sentence in Sapil checkout are Swiss Arabian's; `/verify?email=`;
+Tabby / Telr return screens are English (fixed backend paths; the confirmation after them is in
+the shopper's language); CMS data in English on `/ar` (Sapil menus, collection taglines, moods);
+Sapil has no blog posts / CMS pages yet; Swiss Arabian merchandising slugs 404 on Sapil (data).
+
+**Decisions for the product owner:** Arabic web font for Sapil; whether `/verify` should drop the
+email from the URL too; Sapil content in Arabic (menus, moods, collection copy) in the admin.
 
 ## Local Sapil test backend
 
@@ -132,6 +205,11 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Swiss Arabian check: home, /products, a collection (+ page 2), a product (en + ar), cart, checkout, login, register, /ar, /faq, /blog, /stores, /track, robots, 404 — HTML (head tags, visible text, links, labels) identical to `feat/homepage-start-from-storefront` apart from the intended changes (canonical origin = storefront host, `/en/…` → 301, 404 title "Page not found – Swiss Arabian UAE").
   - Backend / admin `feat/sapil-cms` review: see the reviewer report (patches for the collection-summary cache, best-seller payment status and the demo seed's collection guard).
 - **2026-11-13 (later):** All three Sapil page branches are merged. Conflicts resolved: one wishlist hook, one collections hook, combined i18n areas and diff specs, the market delivery types. The shell now renders `SapilBagDrawer`. Next: the two reviewer agents, then the final UI check of both sites.
+- **2026-11-13 (final UI check, branch `review/ui`):** language kept through checkout / sign-in /
+  tracking (both brands), reset email out of the URL, Sapil card screens, announcement pause, Sapil
+  LCP image fix, layout-shift and Arabic fixes; plus the coordinator's mood-wheel hydration fix and
+  the per-brand market cookie. Re-checked with data after the API outage. Details are above and in
+  `docs/ui-check/REPORT.md`.
 - **2026-11-13 (reviewer 2, Sapil, branch `review/sapil`):**
   - Closed: all Sapil cards on `SapilProductCard` (home rails, mood band with white tiles, search, wishlist); payment return screens in Sapil wording (en + ar) on extracted hooks (`usePaymentReturn`); Sapil bundle isolation (named `@brand-ui` exports + `src/brands/sapil/package.json` `sideEffects`: home JS 770 → 409 KB); no layout shift from the chrome (CLS 0.105 → 0.001); AA contrast (`--sapil-muted` #6f665b, design sign-off pending); price-edit links → `/products?under=N`; "Shop by" current-chip bug; nested `<main>`; localised breadcrumbs and Arabic currency sign.
   - Lighthouse (mobile, median of 3): home 41 → 65, shop 46 → 64, collection 55 → 66, product 42 → 68; a11y 100 on all four. Details: `docs/sapil/PERFORMANCE.md`.

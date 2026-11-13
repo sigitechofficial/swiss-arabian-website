@@ -63,6 +63,7 @@ import {
   type PreparedInlinePayment,
 } from "../utils/startPayment";
 import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
+import { checkoutHref } from "../utils/checkoutLocale";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -466,7 +467,7 @@ export function useCheckout() {
       };
 
       const goToConfirmation = (orderId: string) => {
-        window.location.replace(`/order-confirmation/${orderId}`);
+        window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
         clearCart();
         setCartId(null);
         clearCartId();
@@ -504,7 +505,7 @@ export function useCheckout() {
       const payPlacedOrder = async (orderId: string) => {
         const started = await startPayment(
           orderId,
-          (href) => window.location.assign(href),
+          (href) => window.location.assign(checkoutHref(href)),
           paymentMethodArg,
           { inline: true, prepared: preparedForMethod },
         );
@@ -527,7 +528,7 @@ export function useCheckout() {
           try {
             await startPayment(
               placedOrderIdRef.current,
-              (href) => window.location.assign(href),
+              (href) => window.location.assign(checkoutHref(href)),
               paymentMethodArg,
             );
           } catch (e) {
@@ -624,7 +625,7 @@ export function useCheckout() {
           // Do not land on confirmation first — that looked like a paid order.
           const started = await startPayment(
             order.orderId,
-            (href) => window.location.assign(href),
+            (href) => window.location.assign(checkoutHref(href)),
             paymentMethodArg,
           );
           if (started.kind !== "redirect") {
@@ -639,7 +640,7 @@ export function useCheckout() {
           goToConfirmation(order.orderId);
           void startPayment(
             order.orderId,
-            (href) => window.location.assign(href),
+            (href) => window.location.assign(checkoutHref(href)),
             paymentMethodArg,
           ).catch(() => {
             // Order is already placed (e.g. Test Payment).

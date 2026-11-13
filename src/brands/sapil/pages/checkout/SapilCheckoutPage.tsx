@@ -229,7 +229,7 @@ export function SapilCheckoutPage() {
   /* ——— states before the form ——— */
   if (!f.hydrated) {
     return (
-      <Wrap className="pt-[40px] pb-[88px] min-h-[70vh]" aria-busy="true">
+      <Wrap className="w-full pt-[40px] pb-[88px] min-h-[70vh]" aria-busy="true">
         <p className="sr-only" role="status">
           {t("checkout.loading")}
         </p>
@@ -250,7 +250,7 @@ export function SapilCheckoutPage() {
         ? [t("checkout.unavailableTitle"), t("checkout.unavailableBody"), t("checkout.backToBag"), "/cart"]
         : [t("checkout.notOrderableTitle"), t("checkout.notOrderableBody"), t("checkout.backToBag"), "/cart"];
     return (
-      <Wrap className="pt-[24px] pb-[88px] max-900:pt-[16px] max-900:pb-[56px] min-h-[70vh]">
+      <Wrap className="w-full pt-[24px] pb-[88px] max-900:pt-[16px] max-900:pb-[56px] min-h-[70vh]">
         <CheckoutEmptyCard title={title} body={body} actions={<Button href={href} LinkComponent={SapilLink}>{cta}</Button>} />
       </Wrap>
     );

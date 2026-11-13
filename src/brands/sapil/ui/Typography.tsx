@@ -56,13 +56,15 @@ export type PriceProps = {
   value: ReactNode;
   /** struck-out full price */
   was?: ReactNode;
+  /** screen-reader word before the was-price (default "was"; pass the page's language) */
+  wasLabel?: string;
   /** "card": 16px/500 block as in product cards; "plain": v9 `.price` (600) */
   variant?: "plain" | "card";
   className?: string;
 };
 
 /** v9 `.price` with optional `<s>` was-price. */
-export function Price({ value, was, variant = "plain", className }: PriceProps) {
+export function Price({ value, was, wasLabel = "was", variant = "plain", className }: PriceProps) {
   return (
     <span
       className={cx(
@@ -78,7 +80,7 @@ export function Price({ value, was, variant = "plain", className }: PriceProps) 
         <>
           {" "}
           <s className="text-sapil-muted font-[400] text-[.875em] ms-[6px]">
-            <span className="sr-only">was </span>
+            <span className="sr-only">{wasLabel} </span>
             {was}
           </s>
         </>

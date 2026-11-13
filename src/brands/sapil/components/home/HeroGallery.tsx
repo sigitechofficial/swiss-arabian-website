@@ -10,6 +10,7 @@ import { Button, EYEBROW, cx, tintValue } from "../../ui";
 import { PlusIcon } from "../shared/icons";
 import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
+import { useSapilMoneyParts } from "../commerce/shared";
 import type { HeroGallery as HeroGalleryData } from "./cmsSections";
 import { PartsText } from "./HomeParts";
 
@@ -48,6 +49,8 @@ const RISE = "animate-sapil-rise";
 export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
   const t = useSapilCopy();
   const price = useSapilPrice();
+  // "AED" in English (v9), the language's own sign elsewhere ("د.إ." in Arabic).
+  const moneyParts = useSapilMoneyParts();
   const reduce = useReducedMotion();
   const { addToCart } = useAddToCart();
   const baseId = useId();
@@ -123,7 +126,7 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
             {stats.from != null && stats.currency ? (
               <div className="text-[12px] text-sapil-muted">
                 <b className="block font-sapil-serif font-[400] text-[24px] text-sapil-ink tabular-nums">{Math.round(stats.from)}</b>
-                {t("home.heroFrom", { currency: stats.currency })}
+                {t("home.heroFrom", { currency: moneyParts(stats.from, stats.currency).currency })}
               </div>
             ) : null}
           </div>

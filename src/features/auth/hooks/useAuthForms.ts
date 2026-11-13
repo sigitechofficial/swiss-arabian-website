@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +42,7 @@ import {
 } from "../schemas/auth.schema";
 import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
 import { markNewAccount } from "../utils/newAccountGreeting";
+import { clearResetIdentifier, readResetIdentifier, storeResetIdentifier } from "../utils/resetIdentifier";
 import { safeReturnPath } from "../utils/safeReturnPath";
 
 /**
@@ -135,7 +137,7 @@ export function useMarketDialCode(): string {
  * signed in) when verification is on. Unverified accounts go to /verify.
  */
 export function useLoginFlow(feedback?: AuthFeedback) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const marketDialCode = useMarketDialCode();
   const searchParams = useSearchParams();
@@ -263,7 +265,7 @@ export function useLoginFlow(feedback?: AuthFeedback) {
 
 /** Create an account in the selected market; with verification on, the emailed code finishes it. */
 export function useRegisterForm(feedback?: AuthFeedback) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const returnTo = useReturnTo();
   const form = useForm<RegisterFormValues>({
@@ -320,7 +322,7 @@ type VerifyFormValues = z.infer<typeof verifySchema>;
 
 /** Confirm an email (a valid code also signs in) or finish a code sign-in (`?mode=login-code`). */
 export function useVerifyForm(feedback?: AuthFeedback) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
@@ -392,7 +394,7 @@ export function useVerifyForm(feedback?: AuthFeedback) {
 
 /** Ask for a reset code; the reset page opens with the identifier filled in. */
 export function useForgotPasswordForm(feedback?: AuthFeedback) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -403,7 +405,9 @@ export function useForgotPasswordForm(feedback?: AuthFeedback) {
     try {
       await forgotPassword(toLoginIdentifier(values.identifier));
       say.notice("resetCodeSent");
-      router.push(`/reset-password?identifier=${encodeURIComponent(values.identifier)}`);
+      // Kept out of the address (history, analytics, referrers): the reset page reads it from this tab.
+      storeResetIdentifier(values.identifier);
+      router.push("/reset-password");
     } catch (error) {
       say.error(error);
     }
@@ -414,14 +418,19 @@ export function useForgotPasswordForm(feedback?: AuthFeedback) {
 
 /** Set a new password with the emailed reset code, then sign in again. */
 export function useResetPasswordForm(feedback?: AuthFeedback) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const say = useFeedback(feedback);
-  const searchParams = useSearchParams();
   const form = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { identifier: searchParams.get("identifier") ?? "", code: "", newPassword: "" },
+    defaultValues: { identifier: "", code: "", newPassword: "" },
   });
   const codeValue = useWatch({ control: form.control, name: "code" });
+  // The identifier from "forgot password" (this tab's session storage), filled
+  // in after hydration unless the shopper already typed one.
+  useEffect(() => {
+    const stored = readResetIdentifier();
+    if (stored && !form.getValues("identifier")) form.setValue("identifier", stored);
+  }, [form]);
 
   async function onSubmit(values: ResetPasswordFormValues) {
     try {
@@ -430,6 +439,7 @@ export function useResetPasswordForm(feedback?: AuthFeedback) {
         code: values.code,
         newPassword: values.newPassword,
       });
+      clearResetIdentifier();
       say.notice("passwordUpdated");
       router.push("/login");
     } catch (error) {
