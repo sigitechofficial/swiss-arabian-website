@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
@@ -11,16 +8,7 @@ import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptySta
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import { useMarket } from "@/providers/MarketProvider";
-import { wishlistKeys } from "../api/wishlist.keys";
-import { fetchWishlist } from "../api/wishlist.service";
-import { useWishlistMutations } from "../hooks/useWishlistMutations";
-import {
-  uniqueProductUuids,
-  WISHLIST_LIST_PAGE_SIZE,
-} from "../utils/productId";
-import type { StorefrontWishlistStatusView } from "../types/wishlist";
-import { toWishlistCatalogProduct } from "../utils/toWishlistProductCard";
+import { useAccountWishlist } from "../hooks/useAccountWishlist";
 import { WishlistHeartButton } from "./WishlistHeartButton";
 import { wishlistBand, wishlistGrid } from "@/styles/shopChrome";
 
@@ -29,52 +17,10 @@ type AccountWishlistPageViewProps = {
 };
 
 export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps) {
-  const searchParams = useSearchParams();
-  const { marketId } = useMarket();
-  const zoneCode = marketId || "";
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
-  const offset = (page - 1) * WISHLIST_LIST_PAGE_SIZE;
-  const [confirmClear, setConfirmClear] = useState(false);
-  const queryClient = useQueryClient();
-  const { clear } = useWishlistMutations();
-
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: wishlistKeys.list(zoneCode, WISHLIST_LIST_PAGE_SIZE, offset),
-    queryFn: () =>
-      fetchWishlist({
-        zoneCode,
-        limit: WISHLIST_LIST_PAGE_SIZE,
-        offset,
-      }),
-    enabled: Boolean(zoneCode),
-  });
-
-  const items = data?.items;
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / WISHLIST_LIST_PAGE_SIZE));
+  const { data, items, isLoading, isError, error, refetch, isFetching, page, total, totalPages, cards, confirmClear, setConfirmClear, clear } =
+    useAccountWishlist();
   const listPath =
     title.toLowerCase().includes("saved") ? "/account/saved" : "/account/wishlist";
-
-  const cards = useMemo(
-    () =>
-      (items ?? []).map((item) => ({
-        item,
-        card: item.product ? toWishlistCatalogProduct(item.product) : null,
-      })),
-    [items],
-  );
-
-  useEffect(() => {
-    if (!items?.length) return;
-    const ids = uniqueProductUuids(items.map((item) => item.productId));
-    if (ids.length === 0) return;
-    queryClient.setQueryData<StorefrontWishlistStatusView>(
-      wishlistKeys.status(ids),
-      {
-        items: ids.map((productId) => ({ productId, inWishlist: true })),
-      },
-    );
-  }, [items, queryClient]);
 
   return (
     <AccountPageShell>

@@ -32,3 +32,15 @@ export {
   SapilResetPasswordPage as ResetPasswordPageView,
   SapilVerifyPage as VerifyPageView,
 } from "./pages/auth/SapilAuthPages";
+// Loyalty / rewards, subscriptions, employee benefits and gift box are off for Sapil
+// (brand features): their routes keep Swiss Arabian's views and Sapil never links to them.
+export {
+  SapilAccountAddressesPage as AccountAddressesPageView,
+  SapilAccountAfterSalesPage as AccountAfterSalesPageView,
+  SapilAccountPage as AccountPageView,
+  SapilAccountProfilePage as AccountProfilePageView,
+  SapilAccountReviewsPage as AccountReviewsPageView,
+  SapilAccountSecurityPage as AccountSecurityPageView,
+  SapilAccountWishlistPage as AccountWishlistPageView,
+  SapilPaymentsPage as PaymentsPageView,
+} from "./pages/account/SapilAccountPages";
