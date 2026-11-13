@@ -192,29 +192,22 @@ Sapil site (`:3045`), Sapil backend `feat/sapil-cms` (`:3012`, schedulers off), 
 3. Guest order emails link to `/track/{orderNumber}` instead of the home page.
 4. The COD capture refusal now reads as a sentence staff can act on.
 
-**Open — backend / admin:**
-1. **Email colours/design are still the shared cream/copper template** — a per-brand email theme (colours, fonts) is a design task.
-2. **Demo courier can't dispatch:** `sapil_demo_courier` has no adapter. Admin marks it "Not ready at checkout", yet checkout offers it as the default. Checkout and admin should agree on what is offerable.
-3. **"On its way" email sent when the shipment was blocked** for manual review.
-4. **No way to record cash collected on delivery** (both brands): capture is refused for COD, and nothing else marks the cash as received.
-5. **A COD order can't be cancelled from the admin**, even inside its cancellation window ("Authorized payments require a void flow").
-6. **Cancellation window never closes locally** (scheduler off) — expected on `:3012`, but the order list then shows every order as "Cancellation window".
-7. **Admin status contradictions:** after a blocked shipment the summary says Fulfillment "Fulfilled" while the panel says "On hold".
-8. **Missing-fee methods keep the previous shipping amount** — a priced/unpriced switch at checkout charges a stale fee.
-9. Admin shows "Smoke Standard Standard"; the shipping page's switches have near-identical names and the page jumps after a toggle (caused a mis-click).
-10. Market page says "Products on this market: 1" while the site sells 85.
-11. Guest orders linked to a customer record get "your account" email links they can't open without signing up.
+**Fixed — backend / admin (round 2)** — backend `a0c92a09`, `d59d7632`; admin `c175dc8` (all `feat/sapil-cms`, local):
+- Checkout offers/accepts only couriers with a registered adapter (same rule as admin "Ready at checkout"); `SMOKE_SHIPPING_ALIASES` lets the local Sapil demo courier ship through the smoke simulator.
+- A method with no fee is free, never the previous method's stale fee.
+- Cash on delivery: uncollected COD orders can be cancelled (shopper and admin; authorization voided); admin Capture records cash collected. Data migration `20261113140000_cod_capture_and_release` (applied locally with `prisma db execute`, not recorded, to keep the shared DB's migration history clean).
+- Ops-entered tracking resolves a manual-review shipment; no "on its way" email for failed/cancelled/lost/damaged shipments; admin shows "On hold" instead of "Fulfilled" for blocked shipments.
+- Guest emails always link to tracking; courier event times use the exact `in_seconds` instant; order item counts are units.
+- Sapil demo seed adds the `you-may-also-like` / `dont-miss-this` rails.
+- Admin: no doubled courier names; unique switch names; tracking note labelled customer-visible; fraud check closes after a decision; "Products on this market" counts visible products.
 
-**Fixed — website** (branch `fix/order-flow-gaps`, both brands):
-1. ~~Raw codes in tracking history~~ → shipment and carrier statuses map to shopper wording (`trackingStatusKey` in `features/orders/utils/orderStatus.ts`; Sapil `account.ship*` keys in en + ar). Internal notes are hidden: `LOCAL_SIMULATION` and other bare codes, simulation / synthetic / smoke / dev-only text, numeric carrier codes. An unknown status reads "Shipment update", never the code.
-2. ~~History order / time zone~~ → history is newest first by timestamp (stable for ties). Order dates and times use the market's time zone (`lib/storefront/marketTimeZone.ts`: country → zone, Asia/Dubai by default) in both brands, so server, browser and emails agree.
-3. ~~"Estimated delivery" after Delivered~~ → "Delivered on …" (`deliveryDateFact`); no estimate (order or shipment) once the order is Delivered.
-4. ~~"This order has stopped: Under review"~~ → calm per-status sentences ("We're checking a detail on your order. We'll update you soon."), en + ar.
-5. ~~"1 item" for 2 bottles~~ → tracking header counts units (`trackingUnitCount`, from the shipments' items; the account fallback sums line quantities). Confirmation pages already counted units.
-6. ~~Checkout title "Sapil"~~ → `pages.title.checkout` ("Checkout" / "إتمام الشراء") via `routeTranslator`, noindex like the other checkout routes.
-7. ~~Repeated `page-seo` 404s~~ → `loadPublishedPageSeo` never asks for `/products…`, `/collections/<handle>` or `/categories/<handle>` (their SEO is in the catalog API). Lookups go through `unstable_cache` (300 s, same as the ISR pages): a 404 is cached as "no record"; network errors / 5xx are not cached. Server metadata only.
-8. ~~Product page "not found" when the API is down~~ → only an API 404 is `missing` (→ `notFound()`). Network errors / 5xx throw (`isCatalogUnavailable`) for products, collections and categories, so the error view with retry shows and ISR caches no 404 / empty page. The client product view shows "We couldn't load" + Try again.
-9. Admin tracking note → events staff record in the admin ("Ops-entered tracking", "Ops-marked delivered") never show their description (the staff member's reason). The API has **no customer-visible flag**: the website keys off that title. Backend/admin follow-up: expose only shopper-safe text (or a visibility flag) in `/storefront/order-tracking/*/tracking`, and label the admin field as internal.
+**Verified from the screens:** site checkout (only shippable couriers, correct fees), product rails, tracking wording/order/times/units, review message, hidden staff note.
+**Not yet verified from the screens** (admin sign-in needed after the backend restart): dispatch through the Sapil demo courier, COD cash collected, COD cancel, the admin label/count changes. Covered by unit tests.
+
+**Still open:**
+1. Per-brand email colours/design (shared template) — design task.
+2. Admin shipping page jumped after a toggle — not reproduced.
+3. Cancellation window never closes on the local `:3012` backend (schedulers off by design).
 
 **Open — website:**
 - Account order list (both brands) still shows the API's `itemCount`, which counts lines (backend `storefront-customer-order.service`, `guest-order-tracking.service`: `order.lines.length`). Backend should send units; the tracking header falls back to lines when an order has no shipment yet.
@@ -275,3 +268,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
 - **2026-11-13 (order test):** Three Sapil cash-on-delivery orders run from the screens (site → admin → site); one reached Delivered. Website fixes committed; backend/admin gaps listed under "End-to-end order test".
 - **2026-11-13 (backend fixes):** per-brand email identity and failure logging on backend `feat/sapil-cms`; verified with two more Sapil orders. Remaining gaps above.
 - **2026-11-13 (order-flow gaps):** branch `fix/order-flow-gaps`: tracking wording / order / time zone / delivered date / review wording, unit counts, checkout title, page-SEO lookups cached and skipped for catalog paths, catalog pages error (not 404) when the API is down, staff tracking notes hidden. Both brands.
+- **2026-11-13 (gaps round 2):** website `fix/order-flow-gaps` merged (2e4a90e); backend/admin fixes committed on `feat/sapil-cms`. Website: tsc + eslint clean, 1156 tests × 2 UIs.
