@@ -35,12 +35,12 @@ Other rules:
 | # | Workstream | Branch | Status |
 |---|---|---|---|
 | A | Brand config + per-brand build check | `feat/brand-config` (`e6707ff`) | ✅ merged into `feat/multibrand-sapil` |
-| B | Multi-language `[locale]` routing + static rendering | `feat/i18n-locale-routing` | 🔄 in progress |
-| C | Sapil v9 design system (Tailwind tokens, fonts, components, visual diff) | `feat/sapil-design-system` | 🔄 in progress |
+| B | Multi-language `[locale]` routing + static rendering | `feat/i18n-locale-routing` (`e6a0750`) | ✅ merged — catalog pages ISR, N languages via `NEXT_PUBLIC_SHOP_LOCALES` + `src/messages/<lang>.json` |
+| C | Sapil v9 design system (Tailwind tokens, fonts, components, visual diff) | `feat/sapil-design-system` (`15900fe`) | ✅ merged — scoped to `[data-brand="sapil"]`, ~20 components, diff 0–0.1% (inputs 1.6% at 390px) |
 | D | Backend + admin: hero gallery, mood picker, tile colour, best sellers, collection summaries, price tiers | backend + admin `feat/sapil-cms` | 🔄 in progress |
-| E | Shop logic moved out of components into shared hooks | — | ⏳ after B |
-| F | Per-brand UI selection + Sapil app shell (header, footer, drawer, search) | — | ⏳ after B, C |
-| G | Sapil pages (see [`docs/sapil/SAPIL_PAGES_PLAN.md`](../sapil/SAPIL_PAGES_PLAN.md)) | — | ⏳ |
+| E | Shop logic moved out of components into shared hooks | done per page inside G | 🔄 |
+| F | Per-brand UI selection (`@brand-ui` contract, `BrandHead`, Sapil per-area messages, conventions) + Sapil app shell | `feat/multibrand-sapil` + `feat/sapil-shell-home` | ✅ contract merged; 🔄 shell in progress |
+| G | Sapil pages (plan: [`SAPIL_PAGES_PLAN.md`](../sapil/SAPIL_PAGES_PLAN.md), rules: [`BUILD_CONVENTIONS.md`](../sapil/BUILD_CONVENTIONS.md)) | `feat/sapil-shell-home`, `feat/sapil-catalog`, `feat/sapil-commerce` | 🔄 3 agents in progress |
 | H | Right-to-left layout, performance budgets, visual-diff + isolation checks | — | ⏳ |
 | I | Two reviewer agents | — | ⏳ |
 | J | Final UI check of both sites + fixes | — | ⏳ |
@@ -67,3 +67,9 @@ Each default is reversible. It is used only so the work isn't blocked.
   - Brand config merged.
   - Sapil page plan written.
   - Agents B, C and D started.
+- **2026-11-13 (later):**
+  - Merged multi-language/static rendering and the Sapil design system.
+  - Added the `@brand-ui` contract: both brands build; 954 tests pass.
+  - Added Sapil per-area messages, `BrandHead` and the page conventions.
+  - Started 3 page agents (shell + home + content; catalog + product; bag + checkout + orders + auth + account).
+  - The local Sapil market has no products, so the backend agent was asked for a local-only demo seed.
