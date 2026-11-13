@@ -113,6 +113,26 @@ async function discover(browser, base) {
   return found;
 }
 
+function withTimeout(promise, ms, what) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms}ms`)), ms);
+    }),
+  ]);
+}
+
+/** Wait until the address stops changing and the network is quiet (bounded). */
+async function settle(page) {
+  let last = "";
+  for (let i = 0; i < 6 && page.url() !== last; i++) {
+    last = page.url();
+    await new Promise((r) => setTimeout(r, 900));
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 8000 }).catch(() => {});
+  }
+}
+
 /* Runs in the page. */
 function inspect(brand) {
   const vis = (el) => {
@@ -169,7 +189,18 @@ async function sweep() {
   if (!base || !brand) throw new Error("--base and --brand are required");
   fs.mkdirSync(outDir, { recursive: true });
   const puppeteer = await loadPuppeteer();
-  const browser = await puppeteer.launch({ executablePath: chromePath(), headless: true, args: ["--hide-scrollbars", "--force-color-profile=srgb"] });
+  // Pages run side by side in one browser: keep background tabs painting, or their screenshots wait forever.
+  const browser = await puppeteer.launch({
+    executablePath: chromePath(),
+    headless: true,
+    args: [
+      "--hide-scrollbars",
+      "--force-color-profile=srgb",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
+    ],
+  });
   const params = await discover(browser, base);
   console.log("params", params);
   const only = args.only ? args.only.split(",") : null;
@@ -198,9 +229,10 @@ async function sweep() {
       const row = { route: job.route, locale: job.locale, url, widths: {} };
       try {
         await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
-        const res = await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
+        const res = await page.goto(url, { waitUntil: "load", timeout: 60000 });
         row.status = res?.status() ?? null;
-        await new Promise((r) => setTimeout(r, 900));
+        // Client redirects (sign-in guard, payment returns) navigate again after load: let them settle.
+        await settle(page);
         row.finalPath = new URL(page.url()).pathname + new URL(page.url()).search;
         const slug = `${job.route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "home"}-${job.locale}`;
         for (const width of [1280, 390]) {
@@ -208,22 +240,26 @@ async function sweep() {
             await page.setViewport({ width, height: 844, deviceScaleFactor: 1 });
             await new Promise((r) => setTimeout(r, 700));
           }
-          const data = await page.evaluate(inspect, brand);
+          const data = await withTimeout(page.evaluate(inspect, brand), 20000, "inspect");
           const shot = path.join(outDir, `${slug}-${width}.jpg`);
-          await page.screenshot({ path: shot, type: "jpeg", quality: 55 });
+          await withTimeout(page.screenshot({ path: shot, type: "jpeg", quality: 55 }), 30000, "screenshot");
           row.widths[width] = { ...data, shot: path.basename(shot) };
         }
-        row.text = await page.evaluate(() => (document.body.innerText || "").replace(/\s+/g, " ").trim().slice(0, 4000));
+        row.text = await withTimeout(
+          page.evaluate(() => (document.body.innerText || "").replace(/\s+/g, " ").trim().slice(0, 4000)),
+          20000,
+          "text",
+        );
       } catch (e) {
         row.error = String(e).slice(0, 200);
       }
       row.consoleErrors = [...new Set(consoleErrors)].slice(0, 6);
       row.badResponses = [...new Set(badResponses)].slice(0, 6);
       results.push(row);
+      await withTimeout(page.close(), 10000, "close").catch(() => {});
       const w = row.widths[1280] || {};
       const issues = [...new Set([...(w.issues || []), ...((row.widths[390] || {}).issues || [])])];
-      console.log(`${row.status ?? "ERR"} ${job.locale} ${job.route} -> ${row.finalPath ?? ""} ${w.notFound ? "[404 view]" : ""} ${issues.length ? "ISSUES: " + issues.join("; ") : "ok"}${(w.hScroll || row.widths[390]?.hScroll) ? " HSCROLL" : ""}`);
-      await page.close();
+      console.log(`${row.status ?? "ERR"} ${job.locale} ${job.route} -> ${row.finalPath ?? ""} ${w.notFound ? "[404 view]" : ""} ${issues.length ? "ISSUES: " + issues.join("; ") : "ok"}${(w.hScroll || row.widths[390]?.hScroll) ? " HSCROLL" : ""}${row.error ? " ERROR " + row.error : ""}`);
     }
   }
   await Promise.all(Array.from({ length: concurrency }, worker));

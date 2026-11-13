@@ -60,11 +60,11 @@ A brand switches whole sections of the site off in its config (`features` in `sr
 | `employeeBenefits` | `/account/employee-benefits` |
 
 When a switch is off:
-- **The route answers "not found":** the page (and its `generateMetadata` when that fetches) starts with `requireBrandFeature("<switch>")`. This runs on the server before any view renders, so a brand does not need its own view for a section it has switched off (the contract still needs the name; re-export the reference view and list it in the brand's coverage test).
+- **The route answers "not found":** the proxy (`src/proxy.ts`) rewrites every address of the section to an unmatched path, so `app/global-not-found.tsx` answers with the brand's chrome and status 404 (in the address's language; this also covers sign-in-only account pages, whose own `notFound()` would only show after sign-in). As a second line, each page (and its `generateMetadata` when that fetches) starts with `requireBrandFeature("<switch>")` from `src/lib/brand/featureGate.ts`. Both run on the server before any view renders, so a brand does not need its own view for a section it has switched off (the contract still needs the name; re-export the reference view and list it in the brand's coverage test).
 - **Nothing links to it:** `brandLinkEnabled(href)` filters the CMS header / footer menus (`useNavigation`), account tabs and dashboard tiles, the mobile menu, the `/pages/… → /stores` redirect and the sitemap. Use it for any new link into a switchable section; a brand's own static navigation should simply leave those links out.
 - Switches follow the deployment's brand code (`NEXT_PUBLIC_STOREFRONT_BRAND_CODE`, the same brand as the UI), so server and browser agree.
 
-**Adding a switch:** add it to the `features` schema in `src/lib/brand/types.ts` and to every brand config, list its routes in `FEATURE_ROUTES`, call `requireBrandFeature` in each of its pages, and extend `src/lib/brand/features.spec.ts` (the "gated routes" list). `/gift-cards` has no switch: it answers "not found" for every brand until the feature is built.
+**Adding a switch:** add it to the `features` schema in `src/lib/brand/types.ts` and to every brand config, list its routes in `FEATURE_ROUTES` (the proxy and link filters pick them up), call `requireBrandFeature` in each of its pages, and extend `src/lib/brand/features.spec.ts` (the "gated routes" list). `/gift-cards` has no switch: it answers "not found" for every brand until the feature is built.
 
 **Every other brand:**
 - Starts with `export * from "../swiss-arabian/brand-ui"`, so a new brand works immediately.
