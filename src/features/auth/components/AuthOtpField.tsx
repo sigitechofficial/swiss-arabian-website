@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 const LENGTH = 6;
 
@@ -18,7 +19,7 @@ function slotsFrom(value: string): string[] {
 
 export function AuthOtpField({
   id = "otp",
-  label = "Sign-in code",
+  label,
   value,
   onChange,
   error,
@@ -33,6 +34,8 @@ export function AuthOtpField({
   disabled?: boolean;
   autoFocus?: boolean;
 }) {
+  const t = useShopCopy();
+  const fieldLabel = label ?? t("auth.login.code");
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const slots = slotsFrom(value);
 
@@ -58,9 +61,9 @@ export function AuthOtpField({
   return (
     <div className="flex w-full flex-col gap-2">
       <label htmlFor={`${id}-0`} className="text-[12px] font-normal leading-normal text-sa-secondary">
-        {label}
+        {fieldLabel}
       </label>
-      <div className="flex justify-between gap-2" role="group" aria-label={label}>
+      <div className="flex justify-between gap-2" role="group" aria-label={fieldLabel} dir="ltr">
         {slots.map((digit, index) => (
           <div
             key={index}
@@ -80,7 +83,7 @@ export function AuthOtpField({
             maxLength={index === 0 ? LENGTH : 1}
             disabled={disabled}
             aria-invalid={Boolean(error)}
-            aria-label={`Digit ${index + 1} of ${LENGTH}`}
+            aria-label={t("auth.digitOf", { index: index + 1, total: LENGTH })}
             value={digit}
             className="h-full w-full appearance-none border-0 bg-transparent text-center text-[1.125rem] font-medium tracking-wide text-sa-primary shadow-none outline-none ring-0 focus:outline-none focus-visible:outline-none"
             onChange={(event) => {
