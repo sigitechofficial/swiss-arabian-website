@@ -38,5 +38,10 @@
   "collectionsErrorTitle": "We couldn’t load the collections",
   "collectionsEmptyTitle": "No collections yet.",
   "collectionsEmptyText": "Every fragrance is still in the shop.",
-  "collectionCount": { "one": "{count} fragrance", "other": "{count} fragrances" }
+  "collectionCount": { "one": "{count} fragrance", "other": "{count} fragrances" },
+  "previewVersion": "Preview of version {number}: “{label}”",
+  "previewScheduled": "scheduled for {date}",
+  "previewLive": "live now",
+  "previewNotLive": "not live",
+  "previewHidden": "Shoppers don’t see this link."
 }

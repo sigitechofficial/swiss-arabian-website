@@ -13,10 +13,8 @@ export { BrandHead } from "./BrandHead";
 export { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
 export { PageLoading } from "@/components/ui/PageLoading";
 export { CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
-export { CmsPreviewHomeView } from "@/features/cms/components/CmsPreviewHomeView";
 export { FooterSeoText } from "@/features/seo-footer/FooterSeoText";
 export { MarketSeoTextSlot } from "@/features/seo-footer/MarketSeoTextSlot";
-export { SitePageRoute } from "@/features/site-pages/sitePageRoute";
 export { ReviewRequestPageView } from "@/features/reviews/components/ReviewRequestPageView";
 // Swiss Arabian's: promotions page not rebuilt yet (see docs/sapil/pages/content.md).
 export { OfferShop } from "@/features/promotions/components/OfferShop";
@@ -36,10 +34,12 @@ export { SapilShopUnavailableView as ShopUnavailableView } from "./components/st
 
 // --- home + content (HomePageView, Blog*, FaqPageView, SitePageView, …) ---
 export { SapilHomePage as HomePageView } from "./pages/home/SapilHomePage";
+export { SapilCmsPreviewHome as CmsPreviewHomeView } from "./pages/home/SapilCmsPreviewHome";
 export { SapilBlogPage as BlogPageView } from "./pages/content/SapilBlogPage";
 export { SapilBlogArticlePage as BlogArticlePageView } from "./pages/content/SapilBlogArticlePage";
 export { SapilFaqPage as FaqPageView } from "./pages/content/SapilFaqPage";
 export { SapilSitePage as SitePageView } from "./pages/content/SapilSitePage";
+export { SapilSitePageRoute as SitePageRoute } from "./pages/content/SapilSitePageRoute";
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
 
 // --- catalog (listings, product page, search, collections) ---

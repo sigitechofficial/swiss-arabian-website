@@ -38,5 +38,10 @@
   "collectionsErrorTitle": "تعذّر تحميل المجموعات",
   "collectionsEmptyTitle": "لا مجموعات بعد.",
   "collectionsEmptyText": "كل العطور ما زالت في المتجر.",
-  "collectionCount": { "zero": "لا عطور", "one": "عطر واحد", "two": "عطران", "few": "{count} عطور", "many": "{count} عطرًا", "other": "{count} عطر" }
+  "collectionCount": { "zero": "لا عطور", "one": "عطر واحد", "two": "عطران", "few": "{count} عطور", "many": "{count} عطرًا", "other": "{count} عطر" },
+  "previewVersion": "معاينة الإصدار {number}: «{label}»",
+  "previewScheduled": "مجدول في {date}",
+  "previewLive": "منشور الآن",
+  "previewNotLive": "غير منشور",
+  "previewHidden": "لا يرى المتسوقون هذا الرابط."
 }
