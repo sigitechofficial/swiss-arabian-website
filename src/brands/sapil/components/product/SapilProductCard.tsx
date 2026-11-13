@@ -7,7 +7,7 @@ import type { ProductSummary } from "@/features/catalog/types/product";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { PRODUCT_CARD_ZOOM, ProductCard } from "../../ui";
-import { cx } from "../../ui/shared";
+import { cx, type SapilTint } from "../../ui/shared";
 import { toSapilCardModel } from "./productCardModel";
 import { SapilLocaleLink } from "./SapilLocaleLink";
 import { SapilQuickView } from "./SapilQuickView";
@@ -34,6 +34,11 @@ export type SapilProductCardProps = {
   wishlist?: boolean;
   /** Show the quick-view button (default true). */
   quickView?: boolean;
+  /**
+   * Tile colour override (pastel key or CSS colour). The mood band uses white
+   * tiles (`var(--sapil-card)`) because its cards sit on a coloured band.
+   */
+  tile?: SapilTint;
   /** Heading element for the name (default h3). */
   headingLevel?: ElementType;
   className?: string;
@@ -68,6 +73,7 @@ export function SapilProductCard({
   highlightTags,
   wishlist = true,
   quickView = true,
+  tile,
   headingLevel,
   className,
 }: SapilProductCardProps) {
@@ -143,7 +149,7 @@ export function SapilProductCard({
         name={model.name}
         href={model.href}
         image={image}
-        tile={model.tile}
+        tile={tile ?? model.tile}
         price={model.price}
         was={model.was}
         discountPercent={model.discountPercent || undefined}

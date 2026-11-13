@@ -3,9 +3,9 @@
 import { useId, type ReactNode } from "react";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, SectionHead, Wrap } from "../../ui";
+import { SapilProductCard } from "../product";
 import { SapilLink } from "../shared/SapilLink";
 import type { HomeProduct } from "./cmsSections";
-import { HomeProductTile } from "./HomeProductTile";
 import { HomeSection } from "./HomeParts";
 import { RailControls, useRail } from "./useRail";
 
@@ -20,6 +20,9 @@ export type ProductRailProps = {
   /** "Shop all …" link beside the arrows (top sellers) */
   viewAll?: { label: string; href: string } | null;
 };
+
+/** Four cards per view (3 ≤1100, 2 ≤900) inside the 1440px wrap. */
+export const HOME_RAIL_SIZES = "(max-width: 900px) 50vw, (max-width: 1100px) 33vw, 340px";
 
 /** v9 product rail (#new, #bestsellers): section head, arrows, four cards per view (3 ≤1100, 2 ≤900). */
 export function ProductRail({ sectionId, band, eyebrow, title, accent, description, products, viewAll }: ProductRailProps) {
@@ -55,9 +58,9 @@ export function ProductRail({ sectionId, band, eyebrow, title, accent, descripti
           aria-label={t("home.railLabel")}
           className="grid grid-flow-col auto-cols-[calc((100%-72px)/4)] gap-[24px] overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-[4px] max-1100:auto-cols-[calc((100%-48px)/3)] max-900:auto-cols-[calc(50%-8px)] max-900:gap-[16px]"
         >
-          {products.map(({ product, tileColor, wasPrice }) => (
+          {products.map(({ product }) => (
             <div role="listitem" key={product.id} className="snap-start">
-              <HomeProductTile product={product} tileColor={tileColor} wasPrice={wasPrice} />
+              <SapilProductCard product={product} imageSizes={HOME_RAIL_SIZES} />
             </div>
           ))}
         </div>

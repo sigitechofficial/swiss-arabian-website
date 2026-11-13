@@ -1,4 +1,6 @@
 import { cleanGa4Id, cleanGtmId } from "@/lib/analytics/analyticsIds";
+import { parseBrandIntegrations, readProcessPublicEnv } from "@/lib/brand/publicEnv";
+import { resolveBrand } from "@/lib/brand/registry";
 
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
@@ -17,6 +19,15 @@ function stripSlash(value: string): string {
  */
 function readPublic(value: string | undefined, fallback = ""): string {
   return stripSlash(value ?? fallback);
+}
+
+/** Insider settings for the brand this build is deployed as (env overrides, then brand defaults). */
+export function deploymentInsider(raw = readProcessPublicEnv()) {
+  const brand = resolveBrand({
+    brandCode: raw.NEXT_PUBLIC_STOREFRONT_BRAND_CODE,
+    host: raw.NEXT_PUBLIC_STOREFRONT_HOST,
+  });
+  return parseBrandIntegrations(raw, brand).insider;
 }
 
 function resolveAppEnv(): AppEnv {
@@ -162,25 +173,16 @@ export const env = {
   cmsHomeLegacyFallback:
     readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
     "false",
-  /**
-   * Insider Web SDK. Script loads only when enabled AND accountId is set.
-   * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
-   */
   /** Google Tag Manager or GA4. Nothing loads until an ID is set. */
   analytics: {
     gtmId: cleanGtmId(readPublic(process.env.NEXT_PUBLIC_GTM_ID, "")),
     ga4Id: cleanGa4Id(readPublic(process.env.NEXT_PUBLIC_GA4_ID, "")),
   },
-  insider: {
-    enabled:
-      readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",
-    accountId: readPublic(
-      process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
-      "10015366",
-    ),
-    scriptHost: readPublic(
-      process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
-      "swissarabianuatnew.api.useinsider.com",
-    ),
-  },
+  /**
+   * Insider Web SDK. Script loads only when enabled AND accountId is set
+   * (enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false). The ids default to
+   * this deployment's brand (Swiss Arabian: its UAT
+   * account; Sapil: none, so no script), never another brand's.
+   */
+  insider: deploymentInsider(),
 } as const;
