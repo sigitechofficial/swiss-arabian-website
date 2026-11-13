@@ -10,9 +10,15 @@
  * its files are loaded by path.
  */
 import common from "./messages/en/common.json";
+import content from "./messages/en/content.json";
+import home from "./messages/en/home.json";
+import shell from "./messages/en/shell.json";
 
 export const ENGLISH = {
   common,
+  shell,
+  home,
+  content,
 } as const;
 
 export type SapilArea = keyof typeof ENGLISH;

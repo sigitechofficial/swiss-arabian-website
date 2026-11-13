@@ -132,13 +132,16 @@ export function Breadcrumbs({
   items,
   LinkComponent = DefaultLink,
   className,
+  label = "Breadcrumb",
 }: {
   items: Crumb[];
   LinkComponent?: SapilLinkComponent;
   className?: string;
+  /** accessible name of the trail (translate it) */
+  label?: string;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className={cx("text-[14px] text-sapil-muted pt-[24px]", className)}>
+    <nav aria-label={label} className={cx("text-[14px] text-sapil-muted pt-[24px]", className)}>
       {items.map((c, i) => {
         const last = i === items.length - 1;
         return (

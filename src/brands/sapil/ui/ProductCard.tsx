@@ -40,6 +40,10 @@ export type ProductCardProps = {
   added?: boolean;
   /** "Shop Now" pill that rises on hover */
   quickLabel?: string;
+  /** accessible name of the image link (default "View {name}") */
+  viewLabel?: string;
+  /** accessible name of the + button (default "Add {name} to bag") */
+  addLabel?: string;
   headingLevel?: ElementType;
   LinkComponent?: SapilLinkComponent;
   className?: string;
@@ -69,6 +73,8 @@ export function ProductCard({
   onAdd,
   added,
   quickLabel = "Shop Now",
+  viewLabel,
+  addLabel,
   headingLevel: H = "h3",
   LinkComponent = DefaultLink,
   className,
@@ -86,7 +92,7 @@ export function ProductCard({
         ) : null}
         <LinkComponent
           href={href}
-          aria-label={`View ${name}`}
+          aria-label={viewLabel ?? `View ${name}`}
           className="absolute inset-0 w-full h-full block [&>img]:w-full [&>img]:h-full [&>img]:object-contain [&>img]:[transition:transform_.45s]"
         >
           {typeof image === "string" ? (
@@ -108,7 +114,7 @@ export function ProductCard({
           <button
             type="button"
             onClick={onAdd}
-            aria-label={`Add ${name} to bag`}
+            aria-label={addLabel ?? `Add ${name} to bag`}
             className={cx(
               "absolute right-[14px] bottom-[14px] z-[4] w-[48px] h-[48px] rounded-full border border-sapil-white hidden max-749:grid place-items-center [transition:background_.2s,color_.2s] [&_svg]:w-[20px] [&_svg]:h-[20px]",
               added ? "bg-sapil-ok text-sapil-white" : "bg-sapil-white text-sapil-accent hover:bg-sapil-ink hover:text-sapil-white",

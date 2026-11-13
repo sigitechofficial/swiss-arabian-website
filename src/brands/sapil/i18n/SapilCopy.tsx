@@ -13,7 +13,8 @@ export function SapilCopyProvider({ messages, children }: { messages: SapilDicti
   return <SapilCopyContext.Provider value={messages}>{children}</SapilCopyContext.Provider>;
 }
 
-const englishFallback: SapilDictionary = Object.fromEntries(
+/** English wording (used until a language loads, and for missing keys). */
+export const englishFallback: SapilDictionary = Object.fromEntries(
   Object.entries(ENGLISH).flatMap(([area, entries]) =>
     Object.entries(entries).map(([key, value]) => [`${area}.${key}`, value]),
   ),

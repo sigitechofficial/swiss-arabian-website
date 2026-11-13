@@ -13,7 +13,7 @@ export function isNewsletterEmail(value: string): boolean {
  * CRM account) is not connected yet: a valid address is accepted on the page
  * only, exactly as before. Connect the provider here, once, for every brand.
  */
-export function useNewsletterSignup() {
+export function useNewsletterSignup({ onSuccess }: { onSuccess?: (email: string) => void } = {}) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [invalid, setInvalid] = useState(false);
@@ -27,6 +27,7 @@ export function useNewsletterSignup() {
     }
     setInvalid(false);
     setSubmitted(true);
+    onSuccess?.(email.trim());
   }
 
   return {
