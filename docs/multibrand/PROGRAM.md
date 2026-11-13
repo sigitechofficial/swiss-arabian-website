@@ -43,7 +43,7 @@ Other rules:
 | G | Sapil pages: shell + home + content (`feat/sapil-shell-home`), catalog + product + search (`feat/sapil-catalog`), bag + checkout + payments + orders + tracking + auth + account (`feat/sapil-commerce`) | merged into `feat/multibrand-sapil` | ✅ built; reviewer pass next. Docs: `docs/sapil/pages/*.md` |
 | H | Right-to-left layout, performance budgets, visual-diff + isolation checks | — | ⏳ |
 | I | Two reviewer agents | — | ⏳ |
-| J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` (catalog pages + Sapil LCP-after to re-run once :3012 is back) |
+| J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` |
 
 ## Decisions still open, and the defaults used until answered
 
@@ -105,10 +105,31 @@ hydration warnings, layout shift, `lang` / `dir`, Latin-only text on `/ar`, the 
 name. Swiss Arabian: screenshots and visible text against the pre-program baseline `5a55282`.
 Per-page results: `docs/ui-check/REPORT.md`.
 
-**Caveat:** the shared API on :3012 (and :3002) stopped during the session and was not restarted
-(brief). Sapil was swept with data before that; the Swiss Arabian baseline compare and the
-after-fix Sapil checks ran without data (chrome, forms, empty / error states). To re-run with
-data: collection / product / blog post / CMS page for both brands and Sapil's Lighthouse.
+**Note:** the shared API on :3012 stopped for part of the session. It was not restarted by
+this agent. Every check that hit the outage was re-run with data once it was back:
+- the Sapil sweep after the fixes
+- Sapil Lighthouse after the fixes
+- the Swiss Arabian catalog / blog / CMS compare against `5a55282`
+
+**Lighthouse (Sapil, mobile)**, perf before → after:
+
+| Page | Perf |
+|---|---|
+| Home | 63 → 64 |
+| Shop | 65 → 72 |
+| Collection | 66 → 75 |
+| Product | 68 → 74 |
+
+LCP is still 5.6–6.4 s. The image now loads in about 0.2 s; LCP is set by render delay (fonts and
+hydration). Details are in `docs/sapil/PERFORMANCE.md`.
+
+**Swiss Arabian vs the pre-program baseline:**
+- Product, search, blog, CMS page, stores, FAQ, auth, bag, checkout, card payment and 404:
+  identical, en + ar.
+- Listing, collection and home: under 0.7 % of pixels differ (2.6 % at 390 on home, from a
+  0–1px hero offset that changes from run to run). Text is the same.
+- Intended changes: `/ar/account` → Arabic sign-in, and a single chrome on the Arabic 404 of an
+  English-only post.
 
 **Fixed (by severity):**
 - *High:* Arabic shoppers lost Arabic on checkout, sign-in, register, tracking and the
@@ -127,6 +148,14 @@ data: collection / product / blog post / CMS page for both brands and Sapil's Li
 - *Medium:* Sapil pages shifted sideways when content changed after hydration (`Wrap` shrank to its
   content in the flex `<main>`; bag / checkout skeleton CLS 0.077, confirmation 0.25) → `w-full`.
 - *Low:* Sapil `/ar`: English "was" read before was-prices; "AED" in the home hero stat → fixed.
+- *Medium (coordinator):* Sapil home hydration mismatch in the mood wheel (`Math.sin/cos` last
+  digits differ server vs browser) → coordinates rounded to 3 decimals (`MoodWheel.test.ts`).
+- *Low (coordinator):* the market cookie leaked between brands on one host (Sapil :3045 + Swiss
+  Arabian :3046 locally: Swiss Arabian's first load asked the API for `SAPIL_URD1`). Each brand has
+  its own cookie (`zoneCookieName()`: Swiss Arabian keeps `sa-zone-code`, Sapil `sapil-zone-code`),
+  `MarketProvider` trusts only its own per-origin store before the markets load, and a stored zone
+  must be one of the brand's markets (`storedZoneFor`). The server already ignored foreign zones.
+  A Sapil shopper's earlier choice under `sa-zone-code` is not carried over (Sapil isn't live).
 - *Low:* Insider page types ignored the `/ar` prefix (Arabic PDP sent a second page event,
   Arabic checkout counted as "other") → bare path.
 
@@ -178,8 +207,9 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
 - **2026-11-13 (later):** All three Sapil page branches are merged. Conflicts resolved: one wishlist hook, one collections hook, combined i18n areas and diff specs, the market delivery types. The shell now renders `SapilBagDrawer`. Next: the two reviewer agents, then the final UI check of both sites.
 - **2026-11-13 (final UI check, branch `review/ui`):** language kept through checkout / sign-in /
   tracking (both brands), reset email out of the URL, Sapil card screens, announcement pause, Sapil
-  LCP image fix, layout-shift and Arabic fixes. API went down mid-check (not restarted); catalog
-  re-checks and Lighthouse-after pending. Details above and in `docs/ui-check/REPORT.md`.
+  LCP image fix, layout-shift and Arabic fixes; plus the coordinator's mood-wheel hydration fix and
+  the per-brand market cookie. Re-checked with data after the API outage. Details are above and in
+  `docs/ui-check/REPORT.md`.
 - **2026-11-13 (reviewer 2, Sapil, branch `review/sapil`):**
   - Closed: all Sapil cards on `SapilProductCard` (home rails, mood band with white tiles, search, wishlist); payment return screens in Sapil wording (en + ar) on extracted hooks (`usePaymentReturn`); Sapil bundle isolation (named `@brand-ui` exports + `src/brands/sapil/package.json` `sideEffects`: home JS 770 → 409 KB); no layout shift from the chrome (CLS 0.105 → 0.001); AA contrast (`--sapil-muted` #6f665b, design sign-off pending); price-edit links → `/products?under=N`; "Shop by" current-chip bug; nested `<main>`; localised breadcrumbs and Arabic currency sign.
   - Lighthouse (mobile, median of 3): home 41 → 65, shop 46 → 64, collection 55 → 66, product 42 → 68; a11y 100 on all four. Details: `docs/sapil/PERFORMANCE.md`.

@@ -71,3 +71,14 @@ Backend branch instance `http://127.0.0.1:3012` (demo seed: Sapil UAE `SAPIL_URD
 - Checked live (390 / 768 / 1280, en + ar): no horizontal scroll, RTL mirrored (doors, rails, arrows,
   price tags), no console errors; React commits: 5 in 10 s idle (announcement rotation + doors), no loop.
 - Performance: see `docs/sapil/PERFORMANCE.md` (home JS 770 → 409 KB, TBT 2.9 s → 0.44 s, CLS 0.106 → 0.001).
+
+## Final UI check (2026-11-13)
+
+- **Mood wheel hydration mismatch** (found by the coordinator in `next dev`): the server and the
+  browser computed `Math.sin` / `Math.cos` with different last digits, so the SVG `d` / `x` / `y`
+  attributes didn't hydrate. `pt()` and the product image offset are now rounded to 3 decimals
+  (`MoodWheel.test.ts`).
+- The hero "from" stat uses the language's currency sign (`د.إ.` on `/ar`, was "AED").
+- The announcement bar has a pause / play control (see `shell.md`).
+- LCP: the home hero images from `uae.sapil.com` are now optimised; LCP is 6.2 s (was 7.5 s), set by
+  render delay (fonts and hydration). See `docs/sapil/PERFORMANCE.md`.

@@ -90,39 +90,59 @@ checkout reserve 70vh while the bag rehydrates (empty-bag CLS at 390 px: 0.14 �
 
 ## LCP — final UI check (2026-11-13)
 
-Re-measured on the same machine and method (Sapil build of `6c2ef47`, :3012 demo data, median of 3):
+Same machine and method: Lighthouse 12.8.2, mobile preset, median of 3, :3012 demo data.
+- **Before:** Sapil build of `6c2ef47`. Collection and product: reviewer 2's numbers. My own
+  before-runs of those two pages hit the API outage and were discarded.
+- **After:** `review/ui`.
 
-| Page | Perf | A11y | FCP | LCP | TBT | CLS | LCP element |
-|---|---:|---:|---:|---:|---:|---:|---|
-| Home `/` | 63 | 100 | 1.7 s | 7.5 s | 490 ms | 0.001 | hero "door" bottle `<img>` from `uae.sapil.com` |
-| Shop `/products` | 65 | 100 | 1.5 s | 5.6 s | 485 ms | 0.000 | shop-hero bottle `<img>` from `uae.sapil.com` |
-| Collection, product | — | — | — | — | — | — | not measured: the API (:3012) went down mid-run; reviewer 2's 5.7 s / 6.5 s stand |
+| Page | Perf before → after | LCP before → after | TBT before → after | CLS | LCP element (after) |
+|---|---:|---:|---:|---:|---|
+| Home `/` | 63 → 64 | 7.5 s → 6.2 s | 490 → 534 ms | 0.002 | hero heading text (Fraunces) |
+| Shop `/products` | 65 → 72 | 5.6 s → 6.4 s | 485 → 292 ms | 0.000 | shop-hero bottle (now `/_next/image`) |
+| Collection `/collections/juicy-pleasures` | 66 → 75 | 5.7 s → 5.6 s | 481 → 235 ms | 0.000 | hero bottle |
+| Product `/products/berry-crush` | 68 → 74 | 6.5 s → 5.9 s | 369 → 232 ms | 0.000 | gallery image (`fetchpriority=high`, preloaded) |
 
-**What the HTML actually showed** (the earlier diagnosis was wrong):
-- Catalog cards **are** server-rendered: the listing route renders the view with the server's
-  first page as the Suspense fallback, and the first card is `loading="eager" fetchPriority="high"`.
-- The product page's main image **is** server-rendered and preloaded
+Accessibility stays 100 on all four.
+
+### What the HTML actually showed
+
+The earlier diagnosis was wrong:
+- **Catalog cards are server-rendered.** The listing route renders the view with the server's
+  first page as the Suspense fallback, and the first card is `loading="eager"` with
+  `fetchPriority="high"`.
+- **The product page's main image is server-rendered and preloaded**
   (`<link rel="preload" as="image" imageSrcSet … fetchPriority="high">`).
-- The real cause on home / shop / collection: most demo product images are on
-  **`uae.sapil.com`/cdn/shop/files**, which was not on the image allowlist (only `sapil.com` was).
-  `MediaImage` therefore rendered them `unoptimized`: the LCP bottle was a **300 KB PNG**, no
-  `srcset`. Lighthouse's breakdown for `/products`: load delay 0.8 s, **load time 4.4 s (63 %)**,
-  render delay 1.3 s.
 
-**Fix:** `uae.sapil.com` added to `REMOTE_IMAGE_PATTERNS` (`src/lib/images/remoteImagePatterns.ts`),
-so these images go through `/_next/image` (WebP/AVIF at the card / hero size, ~15–30 KB). No
-route change was needed, nothing changes for Swiss Arabian (its hosts are untouched).
+### Fixed: images from `uae.sapil.com` were not optimised
 
-**After:** not measured. The API was down for the rest of the session and was not restarted (brief).
-Expected: the image load phase drops from ~4.4 s to well under 1 s on the simulated 4G link, i.e.
-shop / collection LCP ≈ 2.5–3.5 s and home ≈ 4 s (home also waits for the hero data, which loads
-in the browser). Re-run `lighthouse` on `/`, `/products`, `/collections/juicy-pleasures`,
-`/products/berry-crush` once :3012 is up.
+Most demo product images live on `uae.sapil.com/cdn/shop/files`, which was not on the image
+allowlist (only `sapil.com` was). `MediaImage` therefore served them `unoptimized`:
+- full size, with no `srcset`
+- about 36 KB WebP transferred per bottle (300 KB decoded)
+
+`uae.sapil.com` is now in `REMOTE_IMAGE_PATTERNS`. The hero and card bottles are about **7–9 KB**
+each, at their displayed size. Nothing changes for Swiss Arabian: its image hosts are untouched.
+
+### Why LCP is still about 6 s
+
+The LCP **image now loads in about 0.2–0.4 s** (simulated). The time goes to **render delay**:
+- 4.4–5.1 s on the shop, product and home pages
+- the main thread is busy hydrating the shell and the page (4× CPU slowdown)
+- 8 font files (204 KB) are all preloaded and compete with the first image
+- on home, the LCP is the heading text, which waits for Fraunces
+
+Shop `/products` measured slower after the fix (5.6 s → 6.4 s). This is a lantern run-to-run
+variance on the render-delay phase, not the image: its load time went from 4.4 s to 0.2 s.
+
+Not done here, because each touches shared code or the design:
+- **Fewer preloaded fonts:** preload only Poppins 400/600 and Gloock. Fraunces italic and
+  Poppins 300 / 500 / 700 are not needed for the first paint.
+- **Less JavaScript before the first paint:** `framer-motion` and `zod` in the shared providers.
+  Also server-render the home hero and the "Shop by" row, which need the market on the server.
 
 ## Still open
 
-- **LCP**: measure after the image fix (above). The home hero gallery and the "Shop by" row are
-  client-rendered (market data in the browser); server-rendering them needs the market on the server.
-- **TBT ~450 ms**: hydration of the shell + page; `framer-motion` and `zod` still come with shared
-  providers.
-- Checkout JS 752 KB.
+- **LCP about 6 s against a 4 s budget.** It is now dominated by render delay (fonts and
+  hydration), not by the image. See above.
+- **TBT is 230–530 ms.** The cause is hydration of the shell and the page.
+- **Checkout JS is 752 KB.**

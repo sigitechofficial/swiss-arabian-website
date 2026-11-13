@@ -161,5 +161,4 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
   `/ar/checkout` and the order confirmation stays Arabic (both brands). Only the providers' fixed
   returns `/payments/tabby|telr/return` stay unprefixed.
 - Bag / checkout loading skeletons are full width (`Wrap` is `w-full`): at 768px the skeleton was
-  252px wide and jumped to the full card (CLS 0.077 at 768px before the fix; not re-measured
-  with data, the API was down).
+  252px wide and jumped to the full card. CLS at 768px went from 0.077 to under 0.02 (final sweep).
