@@ -186,19 +186,27 @@ Sapil site (`:3045`), Sapil backend `feat/sapil-cms` (`:3012`, schedulers off), 
 
 **Changed in local data (admin UI):** IQ Fulfillment and Tokyo Freight turned off for Sapil UAE (they need credentials Sapil doesn't have).
 
+**Fixed — backend** (`feat/sapil-cms`, see that branch's log; verified with new Sapil orders and Mailpit):
+1. ~~Emails not brand-aware~~ → a second brand never gets the shared (Swiss Arabian) logo, sender name, links, social links or legal name. Sapil ships `assets/email/brands/sapil/logo.png`; links come from `EMAIL_BRAND_SETTINGS` or `STOREFRONT_PUBLIC_BASE_URL__{BRAND}`; production skips a brand's email rather than linking to another brand's site. Verified: sender "Sapil", Sapil logo, every link on the Sapil site, 0 "Swiss Arabian" mentions.
+2. ~~Silent failures~~ → failed email sends, failed courier calls and blocked admin payment actions are written to the backend log (verified for courier and capture).
+3. Guest order emails link to `/track/{orderNumber}` instead of the home page.
+4. The COD capture refusal now reads as a sentence staff can act on.
+
 **Open — backend / admin:**
-1. **Emails are not brand-aware:** Sapil emails have the Swiss Arabian logo/design, sender "Swiss Arabian (local)", and the track link goes to the Swiss Arabian site home, not the Sapil order page. (Subject `{{ brand_name }}` is correct.)
-2. **Silent failures:** failed email sends, courier "no adapter" and refused captures are not written to the backend log (only stored in the database / shown as a toast).
-3. **Demo courier can't dispatch:** `sapil_demo_courier` has no adapter. Admin marks it "Not ready at checkout", yet checkout offers it as the default. Checkout and admin should agree on what is offerable.
-4. **"On its way" email sent when the shipment was blocked** for manual review.
-5. **Cash on delivery can't be marked collected:** admin shows Capture, backend answers `PaymentProvider.supportsCapture is false` (raw developer text).
+1. **Email colours/design are still the shared cream/copper template** — a per-brand email theme (colours, fonts) is a design task.
+2. **Demo courier can't dispatch:** `sapil_demo_courier` has no adapter. Admin marks it "Not ready at checkout", yet checkout offers it as the default. Checkout and admin should agree on what is offerable.
+3. **"On its way" email sent when the shipment was blocked** for manual review.
+4. **No way to record cash collected on delivery** (both brands): capture is refused for COD, and nothing else marks the cash as received.
+5. **A COD order can't be cancelled from the admin**, even inside its cancellation window ("Authorized payments require a void flow").
 6. **Cancellation window never closes locally** (scheduler off) — expected on `:3012`, but the order list then shows every order as "Cancellation window".
 7. **Admin status contradictions:** after a blocked shipment the summary says Fulfillment "Fulfilled" while the panel says "On hold".
 8. **Missing-fee methods keep the previous shipping amount** — a priced/unpriced switch at checkout charges a stale fee.
-9. Admin shows "Smoke Standard Standard" (same doubled-label rule as the website had); the shipping page's five switches have near-identical names and the page jumps after a toggle (caused a mis-click).
+9. Admin shows "Smoke Standard Standard"; the shipping page's switches have near-identical names and the page jumps after a toggle (caused a mis-click).
 10. Market page says "Products on this market: 1" while the site sells 85.
+11. Guest orders linked to a customer record get "your account" email links they can't open without signing up.
 
 **Open — website (shared tracking view):**
+- A product page shows "This bottle isn't here" (not found) when the API is down, instead of an error.
 - Admin tracking note is shown to the shopper verbatim (no warning in admin that it is public).
 - Raw codes in tracking history ("Create queued", "LOCAL_SIMULATION", "Created"); history order/time-zone wrong for simulated events (shown at 8:00, below newer events); "Estimated delivery" still shown after Delivered; "This order has stopped: Under review" wording.
 - Header counts lines, not units ("1 item" for 2 bottles).
@@ -257,3 +265,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Open for product: Arabic shoppers lose Arabic on checkout / sign-in / tracking (transactional paths unprefixed); the muted colour change; rotating announcement without a pause control.
 - **2026-11-13 (close):** `review/ui` merged into `feat/multibrand-sapil`. Final checks on the merged code: tsc and eslint clean, vitest 184 files / 1116 tests with both brand UIs, Swiss Arabian and Sapil builds pass. Backend fixes from review 1 committed on backend `review/sapil-cms` (`9dff01a5`, on top of `feat/sapil-cms`). Nothing pushed or deployed. Open items: see "Final UI check → still open" and the decision tables above.
 - **2026-11-13 (order test):** Three Sapil cash-on-delivery orders run from the screens (site → admin → site); one reached Delivered. Website fixes committed; backend/admin gaps listed under "End-to-end order test".
+- **2026-11-13 (backend fixes):** per-brand email identity and failure logging on backend `feat/sapil-cms`; verified with two more Sapil orders. Remaining gaps above.
