@@ -153,7 +153,7 @@ export function CheckoutShell({ step, children }: CheckoutShellProps) {
           </div>
           <PaymentIcons />
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-sa-muted">
-            <Link href="/privacy-policy" className="hover:text-sa-primary hover:underline">Privacy Policy</Link>
+            <Link href="/pages/privacy-policy" className="hover:text-sa-primary hover:underline">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-sa-primary hover:underline">Terms & Conditions</Link>
             <Link href="/returns" className="hover:text-sa-primary hover:underline">Returns & Refunds</Link>
             <Link href="/contact" className="hover:text-sa-primary hover:underline">Contact Us</Link>

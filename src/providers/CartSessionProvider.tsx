@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
+import { useUiStore } from "@/stores/useUiStore";
 import { createOrResolveCart, getActiveCart } from "@/features/cart/api/cart.service";
 import { ApiClientError } from "@/lib/api/apiError";
 import {
@@ -19,6 +20,7 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
   const setCartFromApi = useCartStore((s) => s.setCartFromApi);
   const setCartId = useCartStore((s) => s.setCartId);
   const clear = useCartStore((s) => s.clear);
+  const marketZone = useUiStore((s) => s.catalogContext?.zoneCode?.trim() || "");
 
   const stateRef = useRef<{
     restored: boolean;
@@ -30,6 +32,10 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
 
     const { restored, prevUserId } = stateRef.current;
     const currUserId = user?.id ?? null;
+
+    // Carts are per market: the API answers 400 without one. Wait until the
+    // shopper's market is known (it is restored a moment after load).
+    if (!restored && !marketZone) return;
 
     if (!restored) {
       stateRef.current.restored = true;
@@ -86,7 +92,7 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
       setCartId(null);
       clearCartId();
     }
-  }, [bootstrapped, user, setCartFromApi, setCartId, clear]);
+  }, [bootstrapped, user, marketZone, setCartFromApi, setCartId, clear]);
 
   return children;
 }

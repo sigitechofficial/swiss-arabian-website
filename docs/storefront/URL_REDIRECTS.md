@@ -41,6 +41,8 @@ Matching ignores case, a trailing slash and the query string. Paths are stored d
   - Only the first request after a start waits for it, at most 1.5 s.
   - If the backend cannot be reached, the site works without redirects.
 - Stored redirects are checked before the fixed old-Shopify rules (`shopifyLegacyRedirects.ts`).
+  - Fixed rules also cover old links with a market folder (`/uae`, `/ae`, `/ksa`, `/sa`, `/qatar`, `/qa`): the folder is dropped, e.g. `/uae/products/x` → `/products/x` (11 Nov 2026).
+  - Short Shopify paths found in imported text: `/return-policy`, `/returns`, `/refund-policy` → `/policies/refund-policy`; `/track-order`, `/track-your-order` → `/track`.
 - An Arabic address (`/ar/…`) uses its own redirect first. Otherwise it uses the English one and keeps `/ar` on a site target.
 - A site target keeps the shopper's query (utm tags) unless the target has its own query.
 

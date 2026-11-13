@@ -40,6 +40,7 @@ import { promotionKeys } from "@/features/promotions/api/promotions.keys";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore, type PersistedCatalogContext } from "@/stores/useUiStore";
 import { filterMarketsForTenant } from "@/lib/storefront/brand";
+import { useStorefrontHost } from "@/lib/storefront/StorefrontHostProvider";
 import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 type RegionOption = {
@@ -110,6 +111,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const clearCartLines = useCartStore((s) => s.clear);
   const hydrated = usePersistHydrated(useUiStore);
   const marketsQuery = useStorefrontMarkets();
+  const storefrontHost = useStorefrontHost();
 
   useEffect(() => {
     // The UI store skips automatic hydration; load it once on the client.
@@ -120,9 +122,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const list = marketsQuery.data?.markets ?? [];
     const ready = list.filter((market) => market.isCatalogReady);
     const pool = ready.length ? ready : list;
-    const filtered = filterMarketsForTenant(pool);
+    const filtered = filterMarketsForTenant(pool, storefrontHost);
     return filtered.length ? filtered : pool;
-  }, [marketsQuery.data]);
+  }, [marketsQuery.data, storefrontHost]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {
     if (marketsQuery.isError || !marketsQuery.data) {

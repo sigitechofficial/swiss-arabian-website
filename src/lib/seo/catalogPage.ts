@@ -1,14 +1,25 @@
 import { cache } from "react";
+import { shareImageFor } from "@/lib/seo/shareImage";
+import { storefrontLogo } from "@/lib/storefront/brand";
 import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
-import { loadBrandIdentityFor, namesBrand, type BrandIdentity } from "@/lib/seo/brandIdentity";
+import {
+  loadBrandIdentityFor,
+  namesBrand,
+  type BrandIdentity,
+} from "@/lib/seo/brandIdentity";
 import {
   fetchCategoryBySlugOutcome,
+  fetchCategoryProducts,
   fetchCollectionBySlug,
   fetchCollectionProducts,
   fetchProductBySlugOutcome,
+  fetchProducts,
 } from "@/features/catalog/api/catalog.service";
 import { fetchStorefrontMarkets } from "@/features/markets/api/markets.service";
+import { marketContentLanguage } from "@/features/markets/utils/marketContentLanguage";
+import { fetchPublishedHome } from "@/features/cms/api/cmsContent.service";
+import type { CmsHomeResult } from "@/features/cms/types/cmsHome.types";
 import type { StorefrontMarket } from "@/features/markets/types/market";
 import type { ProductListResult } from "@/features/catalog/api/catalog.service";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -65,7 +76,34 @@ export async function resolveServerCatalogMarket() {
     locale,
     zoneCode,
     market: chosen ? marketContext(chosen, locale) : { languageCode: locale },
+    /** Code the market publishes content under for this language (e.g. "en-us"). */
+    contentLanguage: chosen
+      ? (marketContentLanguage(chosen.languages, locale) ?? locale)
+      : "",
   };
+}
+
+/**
+ * Published homepage sections, loaded on the server so the first HTML already has
+ * the homepage (search engines, no layout jump). Null when it can't load: the
+ * browser then loads it as before.
+ */
+export async function loadServerHome(): Promise<{
+  zoneCode: string;
+  languageCode: string;
+  data: CmsHomeResult;
+} | null> {
+  const { zoneCode, contentLanguage } = await resolveServerCatalogMarket();
+  if (!zoneCode || !contentLanguage) return null;
+  try {
+    const data = await fetchPublishedHome({
+      zoneCode,
+      languageCode: contentLanguage,
+    });
+    return { zoneCode, languageCode: contentLanguage, data };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -79,12 +117,13 @@ async function loadInitialCollectionListing(
   slug: string,
   zoneCode: string,
   market: StorefrontContextInput,
+  page = 1,
 ): Promise<{ listing: ProductListResult | null; missing: boolean }> {
   try {
     const listing = await fetchCollectionProducts(
       slug,
       zoneCode,
-      { page: 1, limit: 24 },
+      { page, limit: 24 },
       market,
     );
     return { listing, missing: false };
@@ -103,7 +142,12 @@ async function loadInitialCollectionListing(
 }
 
 export const loadCatalogDocument = cache(
-  async (kind: "product" | "collection" | "category", slug: string) => {
+  async (
+    kind: "product" | "collection" | "category",
+    slug: string,
+    /** Collections: which page of products the server renders (?page=N). */
+    listingPage = 1,
+  ) => {
     const resolved = await resolveServerCatalogMarket();
     const empty = {
       product: null,
@@ -126,7 +170,12 @@ export const loadCatalogDocument = cache(
     if (kind === "collection") {
       const [collection, initial] = await Promise.all([
         fetchCollectionBySlug(slug, resolved.zoneCode, resolved.market),
-        loadInitialCollectionListing(slug, resolved.zoneCode, resolved.market),
+        loadInitialCollectionListing(
+          slug,
+          resolved.zoneCode,
+          resolved.market,
+          listingPage,
+        ),
       ]);
       return {
         ...resolved,
@@ -145,6 +194,37 @@ export const loadCatalogDocument = cache(
   },
 );
 
+/**
+ * One page of "all products" or a category, rendered on the server so the HTML
+ * search engines read already has the product links. Null when it can't load
+ * (the browser then loads the products as before).
+ */
+export const loadServerListing = cache(
+  async (
+    kind: "products" | "category",
+    slug: string,
+    page: number,
+  ): Promise<{ listing: ProductListResult | null; zoneCode: string }> => {
+    const resolved = await resolveServerCatalogMarket();
+    if (!resolved.zoneCode) return { listing: null, zoneCode: "" };
+    const options = { page: Math.max(1, page || 1), limit: 24 };
+    try {
+      const listing =
+        kind === "products"
+          ? await fetchProducts(resolved.zoneCode, options, resolved.market)
+          : await fetchCategoryProducts(
+              slug,
+              resolved.zoneCode,
+              options,
+              resolved.market,
+            );
+      return { listing, zoneCode: resolved.zoneCode };
+    } catch {
+      return { listing: null, zoneCode: resolved.zoneCode };
+    }
+  },
+);
+
 export async function catalogRequestMarket() {
   return resolveServerCatalogMarket();
 }
@@ -156,7 +236,10 @@ export async function loadRequestBrandIdentity(): Promise<BrandIdentity> {
 }
 
 /** `og:locale` from the shopper's language and the market's country ("ar_QA"). */
-export function openGraphLocale(language: string, countryCode?: string | null): string {
+export function openGraphLocale(
+  language: string,
+  countryCode?: string | null,
+): string {
   const lang = language.toLowerCase().split(/[-_]/)[0] || "en";
   const country = countryCode?.trim().toUpperCase();
   return country ? `${lang}_${country}` : lang;
@@ -169,10 +252,47 @@ export type CatalogMetadataInput = {
   description?: string;
   /** Share image (product main image / collection banner). */
   image?: string | null;
+  /**
+   * "product": the product page writes og:type=product and its price itself
+   * (Next has no product type). Every other page is og:type=website (as Shopify).
+   */
+  ogType?: "website" | "product";
+  /**
+   * A product listing (all products, a collection, a category). Without its
+   * own description it gets a short one naming the listing and the brand, so
+   * search results never show a blank or random snippet.
+   */
+  listing?: boolean;
 };
 
+const META_DESCRIPTION_MAX = 160;
+
+/** Plain text for a meta description: HTML tags removed, spaces collapsed, cut at a word near 160 characters. */
+export function metaDescriptionText(raw: string | null | undefined): string | undefined {
+  const text = (raw ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  if (text.length <= META_DESCRIPTION_MAX) return text;
+  const cut = text.slice(0, META_DESCRIPTION_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 100 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
+}
+
+/** Default description for a listing page, in the page's language. */
+export function listingMetaDescription(locale: ShopLocale, title: string, brandName: string): string {
+  return locale === "ar"
+    ? `تسوّق ${title} من ${brandName}: تصفّح التشكيلة الكاملة من العطور عبر الإنترنت.`
+    : `Shop ${title} at ${brandName}: browse the full range of fragrances online.`;
+}
+
 /** Page metadata for the request's market, named after its brand identity. */
-export async function catalogMetadata(input: CatalogMetadataInput): Promise<Metadata> {
+export async function catalogMetadata(
+  input: CatalogMetadataInput,
+): Promise<Metadata> {
   const { zoneCode, market } = await resolveServerCatalogMarket();
   const brand = await loadBrandIdentityFor(input.locale, zoneCode);
   return buildCatalogMetadata(input, {
@@ -183,30 +303,62 @@ export async function catalogMetadata(input: CatalogMetadataInput): Promise<Meta
 
 export function buildCatalogMetadata(
   input: CatalogMetadataInput,
-  context: { brand: Pick<BrandIdentity, "name" | "names">; countryCode?: string | null },
+  context: {
+    brand: Pick<BrandIdentity, "name" | "names"> &
+      Partial<Pick<BrandIdentity, "shareImage" | "logo">>;
+    countryCode?: string | null;
+  },
 ): Metadata {
   const alternates = catalogAlternates(input.path, input.locale);
-  const images = input.image ? [{ url: input.image }] : undefined;
+  // Link previews: the page's own image, else the market's default share
+  // image (Shopify: Preferences → social sharing image), else the brand logo.
+  // Served as a JPEG at a fixed size (see shareImage.ts). Alt text: the title.
+  const shape = input.ogType === "product" ? "square" : "wide";
+  // First image that exists wins; it is converted when it is on our hosts,
+  // else used as it is (a page's own image always beats the logo).
+  const source = [
+    input.image,
+    context.brand.shareImage,
+    context.brand.logo,
+    storefrontLogo().src,
+  ]
+    .map((src) => src?.trim())
+    .find((src): src is string => Boolean(src));
+  const images = source
+    ? [
+        shareImageFor(source, shape, input.title) ?? {
+          url: source,
+          alt: input.title,
+        },
+      ]
+    : undefined;
+  const otherLocale = input.locale === "ar" ? "en" : "ar";
+  const description =
+    metaDescriptionText(input.description) ??
+    (input.listing ? listingMetaDescription(input.locale, input.title, context.brand.name) : undefined);
   return {
     // Imported SEO titles often name the brand already ("… | Swiss Arabian UAE"):
     // the site suffix is not added a second time (any language of the name).
     title: namesBrand(input.title, context.brand.names)
       ? { absolute: input.title }
       : input.title,
-    description: input.description,
+    description,
     alternates,
     openGraph: {
+      ...(input.ogType === "product" ? {} : { type: "website" as const }),
       title: input.title,
-      description: input.description,
+      description,
       url: alternates.canonical,
       siteName: context.brand.name,
       locale: openGraphLocale(input.locale, context.countryCode),
+      // The same page exists in the other language (hreflang twin for social apps).
+      alternateLocale: [openGraphLocale(otherLocale, context.countryCode)],
       ...(images ? { images } : {}),
     },
     twitter: {
       card: images ? "summary_large_image" : "summary",
       title: input.title,
-      description: input.description,
+      description,
       ...(images ? { images: images.map((i) => i.url) } : {}),
     },
   };

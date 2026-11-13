@@ -10,8 +10,10 @@ import {
   createCustomerReturn,
   createGuestExchange,
   createGuestReturn,
+  getCustomerAfterSalesOptions,
   getCustomerExchange,
   getCustomerReturn,
+  getGuestAfterSalesOptions,
   listCustomerExchanges,
   listCustomerReturns,
   listGuestExchanges,
@@ -113,6 +115,30 @@ export function useGuestExchanges(
     () => listGuestExchanges(orderNumber, orderAccessToken!),
     {
       enabled: Boolean(orderNumber && orderAccessToken),
+      retry: retryUnlessNotFound,
+    },
+  );
+}
+
+/** Which of return / exchange the signed-in customer may request (drives the buttons). */
+export function useCustomerAfterSalesOptions(orderId: string, enabled = true) {
+  return useApiQuery(
+    afterSalesKeys.customerOptions(orderId),
+    () => getCustomerAfterSalesOptions(orderId),
+    { enabled: Boolean(orderId) && enabled, retry: retryUnlessNotFound },
+  );
+}
+
+export function useGuestAfterSalesOptions(
+  orderNumber: string,
+  orderAccessToken: string | null,
+  enabled = true,
+) {
+  return useApiQuery(
+    afterSalesKeys.guestOptions(orderNumber),
+    () => getGuestAfterSalesOptions(orderNumber, orderAccessToken!),
+    {
+      enabled: Boolean(orderNumber && orderAccessToken) && enabled,
       retry: retryUnlessNotFound,
     },
   );

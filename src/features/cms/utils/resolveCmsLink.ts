@@ -13,6 +13,8 @@ export type CmsLinkContext = {
 
 function sanitizeInternalPath(path: string): string | null {
   const trimmed = path.trim();
+  // A section on the same page ("#story", the built-in hero's second button).
+  if (/^#[A-Za-z][\w-]*$/.test(trimmed)) return trimmed;
   if (!trimmed.startsWith("/")) return null;
   if (trimmed.startsWith("//")) return null;
   if (UNSAFE_SCHEME.test(trimmed)) return null;

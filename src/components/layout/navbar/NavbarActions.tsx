@@ -42,7 +42,7 @@ export function NavbarActions({
           data-icon-btn
           type="button"
           aria-label="Bag"
-          aria-controls="cart-drawer"
+          aria-haspopup="dialog"
           onClick={() => chrome.setCartOpen(true)}
         >
           <BagIcon />

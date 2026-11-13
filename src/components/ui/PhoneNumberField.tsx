@@ -1,10 +1,15 @@
 "use client";
 
+// Country flag sprites (real SVGs: Windows renders no flag emoji). Imported here, not in
+// globals.css, so only pages with a phone field load the ~270-flag stylesheet.
+import "flag-icons/css/flag-icons.min.css";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AsYouType,
   getCountries,
   getCountryCallingCode,
+  isValidPhoneNumber,
   parsePhoneNumberFromString,
   type CountryCode,
 } from "libphonenumber-js";
@@ -115,6 +120,7 @@ export function PhoneNumberField({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const styles = VARIANTS[variant];
 
   // A parsed number wins: pasting "+9665…" switches the picker to Saudi Arabia.
@@ -151,6 +157,21 @@ export function PhoneNumberField({
     );
   }, [countries, query]);
 
+  // A prefilled number with the dial code doubled (`+971971…`) is repaired once.
+  useEffect(() => {
+    if (!value || isValidPhoneNumber(value)) return;
+    const repaired = toE164(activeCountry, national);
+    if (repaired !== value && isValidPhoneNumber(repaired)) onChange(repaired);
+  }, [value, activeCountry, national, onChange]);
+
+  // Forms that call `reportValidity()` (checkout) must not submit a number
+  // the payment providers will reject — Tabby fails the whole session on it.
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(
+      value && !isValidPhoneNumber(value) ? "Enter a valid phone number." : "",
+    );
+  }, [value]);
+
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: MouseEvent) => {
@@ -168,8 +189,7 @@ export function PhoneNumberField({
   }, [open]);
 
   function emit(nextCountry: CountryCode, nextNational: string) {
-    const digits = nextNational.replace(/\D/g, "");
-    onChange(digits ? `+${getCountryCallingCode(nextCountry)}${digits}` : "");
+    onChange(toE164(nextCountry, nextNational));
   }
 
   function pick(nextCountry: CountryCode) {
@@ -181,6 +201,7 @@ export function PhoneNumberField({
 
   const numberInput = (
     <input
+      ref={inputRef}
       id={id}
       name={name}
       type="tel"
@@ -288,6 +309,27 @@ export function PhoneNumberField({
       ) : null}
     </div>
   );
+}
+
+/**
+ * E.164 from the picker country + whatever was typed in the number box.
+ * Shoppers often type the dial code again (`971 50…` next to `+971`) or a
+ * trunk zero (`050…`); once that reads as a valid number, keep only the
+ * national part so we never send `+971971…`.
+ */
+export function toE164(country: CountryCode, typed: string): string {
+  const digits = typed.replace(/\D/g, "");
+  if (!digits) return "";
+  const dial = getCountryCallingCode(country);
+  const plain = `+${dial}${digits}`;
+  // `.number` is the canonical form: `+9710501…` comes back as `+971501…`.
+  const asTyped = parsePhoneNumberFromString(plain);
+  if (asTyped?.isValid()) return asTyped.number;
+  const asNational = parsePhoneNumberFromString(digits, country);
+  if (asNational?.isValid() && asNational.countryCallingCode === dial) {
+    return asNational.number;
+  }
+  return plain;
 }
 
 /** Digits typed before the number parses — drop a leading dial code if present. */

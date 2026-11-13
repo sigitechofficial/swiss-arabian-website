@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { chromeNavLinks, useNavigation } from "@/features/navigation";
 import { useMarket } from "@/providers/MarketProvider";
@@ -54,6 +55,7 @@ export function LandingCollections({
         id: door.href,
         href: door.href,
         label: door.label,
+        image: door.image ?? null,
       }));
 
   const title = heading?.trim() || copy("shopByCategories");
@@ -76,9 +78,9 @@ export function LandingCollections({
     >
       <div className={pageContainer}>
         <header className={sectionHead}>
-          <h2 className={sectionTitle} id="collTitle">
+          <p className={sectionTitle} id="collTitle">
             {title}
-          </h2>
+          </p>
           {leadText ? <p className={lead}>{leadText}</p> : null}
         </header>
 
@@ -93,10 +95,13 @@ export function LandingCollections({
             : items.map((item) => (
                 <LocaleLink key={item.id} className={cardClass} href={item.href}>
                   {item.image ? (
-                    <img
+                    <MediaImage
                       src={item.image}
                       alt=""
                       className={collectionArt}
+                      fill
+                      // 4 tiles across (art is scaled up ~1.4x), 2 on tablets, 1 on phones.
+                      sizes="(max-width: 480px) 100vw, (max-width: 1100px) 50vw, 35vw"
                       loading="lazy"
                     />
                   ) : null}

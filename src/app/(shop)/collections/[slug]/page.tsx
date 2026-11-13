@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CollectionDetailPageView } from "@/features/collections";
+import { CollectionSeoText } from "@/features/seo-footer/CollectionSeoText";
 import {
   breadcrumbJsonLd,
   CatalogJsonLd,
@@ -48,6 +49,7 @@ export async function generateMetadata({
   const metadata = applySeoOverrides(
     await catalogMetadata({
       locale,
+      listing: true,
       path,
       title:
         page > 1 ? `${title} – ${shopCopy(locale, "page")} ${page}` : title,
@@ -75,7 +77,15 @@ export default async function CollectionDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
-  const loaded = await loadCatalogDocument("collection", slug);
+  const listingQuery = parseCatalogListingParams(await searchParams);
+  // Plain pages (no sort / price filter) are server-rendered, page 2+ included, so
+  // search engines get the product links without running JavaScript.
+  const serverRendered = !listingQuery.minPrice && !listingQuery.sort;
+  const loaded = await loadCatalogDocument(
+    "collection",
+    slug,
+    serverRendered ? listingQuery.page : 1,
+  );
   const { locale, collection, listing, zoneCode } = loaded;
   // The collection does not exist in this market: a real 404, not a crash.
   if (loaded.missing) notFound();
@@ -84,7 +94,6 @@ export default async function CollectionDetailPage({
       withLocalePrefix(`/collections/${collection.slug}`, locale),
     );
   }
-  const listingQuery = parseCatalogListingParams(await searchParams);
   const handle = collection?.slug || slug;
   const path = canonicalCatalogPath(`/collections/${handle}`, locale);
   const name = collection?.name || slug;
@@ -116,14 +125,13 @@ export default async function CollectionDetailPage({
         slug={handle}
         listingQuery={listingQuery}
         collection={collection}
-        initialListing={
-          listingQuery.page === 1 &&
-          !listingQuery.minPrice &&
-          !listingQuery.sort
-            ? listing
-            : null
-        }
+        initialListing={serverRendered ? listing : null}
         initialZoneCode={zoneCode}
+      />
+      {/* Above the footer: this collection's SEO text, else the market's (one block only). */}
+      <CollectionSeoText
+        content={collection?.seoContent}
+        fallbackLocale={locale}
       />
     </>
   );

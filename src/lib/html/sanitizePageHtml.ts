@@ -5,8 +5,14 @@ import sanitizeHtml from "sanitize-html";
  * normal text formatting, links, images, tables and embedded YouTube/Vimeo
  * videos are kept; scripts, styles, forms, event handlers and other sites'
  * frames are removed. Links to other sites open in a new tab.
+ *
+ * `demoteH1`: for a body shown under the page's own H1 (pages and policies),
+ * a heading 1 in the text becomes a heading 2, so the page keeps one H1.
  */
-export function sanitizePageHtml(html: string | null | undefined): string {
+export function sanitizePageHtml(
+  html: string | null | undefined,
+  options: { demoteH1?: boolean } = {},
+): string {
   if (!html?.trim()) return "";
   return sanitizeHtml(html, {
     allowedTags: [
@@ -68,6 +74,7 @@ export function sanitizePageHtml(html: string | null | undefined): string {
       "player.vimeo.com",
     ],
     transformTags: {
+      ...(options.demoteH1 ? { h1: "h2" } : {}),
       a: (tagName, attribs) => {
         const external = /^https?:\/\//i.test(attribs.href ?? "");
         return {

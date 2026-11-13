@@ -9,6 +9,8 @@ import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts
 import { HomeStripSkeleton } from "./HomeStripSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
 import { AddToBagButton } from "./AddToBagButton";
+import { MediaImage } from "@/components/ui/MediaImage";
+import { hoverImageUrl, STRIP_IMAGE_SIZES } from "../../utils/stripImages";
 import {
   cardAddSlot,
   cardImgSwap,
@@ -62,14 +64,11 @@ export function LandingTrending({
   const live = fromCms ? true : fetched.live;
   const allHref = viewAllHref ?? `/collections/${collectionSlug}`;
 
-  // Preload AND fully decode every ingredients hover image up front (so the
-  // first fade-in doesn't blink), and only swap to the ones that actually
-  // loaded — a broken hover URL would fade the bottle out onto a blank card.
-  const loadedHovers = useLoadedImages(
-    products.map((product) =>
-      product.imageUrls?.[1] !== product.imageUrl ? product.imageUrls?.[1] : null,
-    ),
-  );
+  // Preload AND fully decode every ingredients hover image once the page is
+  // idle (so the first fade-in doesn't blink), card-sized and only on
+  // hover-capable screens, and only swap to the ones that actually loaded —
+  // a broken hover URL would fade the bottle out onto a blank card.
+  const loadedHovers = useLoadedImages(products.map(hoverImageUrl), { hoverOnly: true });
 
   // Nothing real to show (empty collection or the request failed): no strip.
   if (!pending && products.length === 0) return null;
@@ -83,9 +82,9 @@ export function LandingTrending({
       <div className={pageContainer}>
         <header className={`${sectionHead} flex max-w-none flex-col items-stretch`}>
           <div className={trendTitleRow}>
-            <h2 className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
+            <p className={`${sectionTitle} ${sectionTitleFlush}`} id="trendTitle">
               {title}
-            </h2>
+            </p>
             {allHref ? (
               <LocaleLink
                 className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`}
@@ -106,9 +105,7 @@ export function LandingTrending({
         >
           {pending ? <HomeStripSkeleton /> : null}
           {products.map((product) => {
-            const hoverCandidate = product.imageUrls?.[1];
-            const hover =
-              hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
+            const hover = hoverImageUrl(product);
             const hasIngredientsHover = Boolean(hover && loadedHovers.has(hover));
             return (
               <li
@@ -154,9 +151,15 @@ export function LandingTrending({
                     aria-hidden="true"
                   >
                     {product.imageUrl ? (
-                      <img
+                      <MediaImage
                         className={hasIngredientsHover ? cardImgSwap : trendImg}
-                        src={product.imageUrl} alt={product.title} loading="lazy" />
+                        src={product.imageUrl}
+                        alt={product.title}
+                        width={600}
+                        height={600}
+                        sizes={STRIP_IMAGE_SIZES}
+                        loading="lazy"
+                      />
                     ) : (
                       <span className={bottle} aria-hidden="true" />
                     )}
@@ -177,7 +180,7 @@ export function LandingTrending({
                   </div>
                 ) : null}
                 <div className={trendBody}>
-                  <h3 className={cardName}>{product.title}</h3>
+                  <p className={cardName}>{product.title}</p>
                   <p className={cardPrice}>
                     {formatMoney(product.price, product.currency)}
                   </p>

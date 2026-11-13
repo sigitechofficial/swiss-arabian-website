@@ -1,58 +1,67 @@
 @import "tailwindcss";
-/* Country flag sprites (phone country picker) — real SVGs: Windows renders no flag emoji. */
-@import "flag-icons/css/flag-icons.min.css";
 
 /* Theme toggle uses html.dark — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-200.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-200.woff2") format("woff2");
   font-weight: 200;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-300.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-300.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-400.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-500.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-500.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-700.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-700.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Benton Sans Wide";
-  src: url("/fonts/benton-sans-wide-900.ttf") format("truetype");
+  src: url("/fonts/benton-sans-wide-900.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;
   font-display: swap;
+}
+
+/* Stand-in while Benton loads: Arial stretched to Benton's width and line height,
+   so text does not re-wrap (layout shift) when the real font arrives. */
+@font-face {
+  font-family: "Benton Sans Wide Fallback";
+  src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Roboto");
+  size-adjust: 134%;
+  ascent-override: 70.3%;
+  descent-override: 19.1%;
+  line-gap-override: 0%;
 }
 
 :root {
   /* Site typeface. Change only this line.
      Wide:    "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif
      Regular: "BentonSans Regular", "Benton Sans Wide", ui-sans-serif, system-ui, sans-serif */
-  --font-site: "Benton Sans Wide", "BentonSansWide", ui-sans-serif, system-ui, sans-serif;
+  --font-site: "Benton Sans Wide", "BentonSansWide", "Benton Sans Wide Fallback", ui-sans-serif, system-ui, sans-serif;
   --chrome-content-max: 1200px;
   --chrome-edge: 1rem;
   --site-header-h: 9.25rem;

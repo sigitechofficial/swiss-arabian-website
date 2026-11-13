@@ -21,7 +21,7 @@ import {
 } from "../schemas/reviewForm.schema";
 import type { StorefrontCustomerReviewView } from "../types/reviews";
 import {
-  REVIEW_PENDING_TOAST,
+  reviewSavedToast,
   reviewWriteErrorMessage,
 } from "../utils/reviewErrors";
 import { StarRating } from "./StarRating";
@@ -79,14 +79,14 @@ export function ReviewWriteForm({
               reviewId: existing.reviewId,
               dto: toUpdateReviewDto(values),
             });
-            toast(REVIEW_PENDING_TOAST, "success");
+            toast(reviewSavedToast(saved?.status), "success");
             onSubmitted?.(saved);
             return;
           }
           const saved = await create.unwrap(
             toCreateReviewDto(values, { productId, variantId }),
           );
-          toast(REVIEW_PENDING_TOAST, "success");
+          toast(reviewSavedToast(saved?.status), "success");
           onSubmitted?.(saved);
         } catch (error) {
           if (!isEdit && error instanceof ApiClientError && error.status === 409) {

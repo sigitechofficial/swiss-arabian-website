@@ -10,6 +10,8 @@ import {
 } from "../types/loyalty";
 import { MediaImage } from "@/components/ui/MediaImage";
 
+import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
+
 function windowCopy(days: number): string {
   return days === 1 ? "Last 1 day" : `Last ${days} days`;
 }
@@ -17,6 +19,7 @@ function windowCopy(days: number): string {
 const MEDAL_FILLS = ["#c9a36a", "#d7d7d7", "#d4b15a", "#eceae6", "#f3f1ee"];
 
 function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
+  const logo = useStorefrontLogo();
   const marketCurrency = useMarketCurrency();
   const tier = wallet.tier;
   const steps = tier?.steps ?? [];
@@ -126,7 +129,7 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
                     }}
                   >
                     <MediaImage
-                      src="/assets/sa-logo-clear.png"
+                      src={logo.src}
                       alt=""
                       width={28}
                       height={28}

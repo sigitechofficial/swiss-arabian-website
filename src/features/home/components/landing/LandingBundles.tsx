@@ -1,10 +1,14 @@
 "use client";
 
+import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import { useLayoutEffect, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import type { ProductSummary } from "@/features/catalog/types/product";
+import { chromeNavLinks, useNavigation } from "@/features/navigation";
+import { useMarket } from "@/providers/MarketProvider";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { formatMoney } from "../../utils/formatMoney";
+import { giftSetsHref } from "../../utils/giftSetsHref";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
 
 /** Shop-this-bundle switches from a corner card to a fixed bottom sheet. */
@@ -57,11 +61,12 @@ const shopItem =
 const shopThumb =
   "h-[60px] w-[50px] shrink-0 rounded-lg border border-white/16 bg-white/14 object-contain p-1 max-[1023px]:border-[rgba(36,31,27,0.1)] max-[1023px]:bg-white/90";
 
+// Name: up to 2 lines, description: 1 line; longer text ends with "…" (full text in the tooltip).
 const shopName =
-  "block text-[0.92rem] leading-[1.3] font-semibold text-white/96 transition-colors duration-300 group-hover/item:text-[var(--beige,#e8d8bb)] max-[1023px]:text-[var(--ink,#241f1b)] max-[1023px]:group-hover/item:text-copper";
+  "line-clamp-2 break-words text-[0.92rem] leading-[1.3] font-semibold text-white/96 transition-colors duration-300 group-hover/item:text-[var(--beige,#e8d8bb)] max-[1023px]:text-[var(--ink,#241f1b)] max-[1023px]:group-hover/item:text-copper";
 
 const shopConc =
-  "mt-[0.2rem] block text-[0.66rem] tracking-[0.09em] text-white/60 uppercase max-[1023px]:text-[rgba(36,31,27,0.55)]";
+  "mt-[0.2rem] block truncate text-[0.66rem] tracking-[0.09em] text-white/60 uppercase max-[1023px]:text-[rgba(36,31,27,0.55)]";
 
 const shopPrice =
   "shrink-0 text-[0.92rem] font-semibold text-[var(--beige,#e8d8bb)] max-[1023px]:text-copper";
@@ -97,7 +102,7 @@ export function LandingBundles({
   primaryCtaLabel = "Shop Bundles",
   primaryCtaHref = "/collections/bundles",
   secondaryCtaLabel = "Shop Gift Sets",
-  secondaryCtaHref = "/collections/gift-sets",
+  secondaryCtaHref,
   panelEnabled = true,
   panelTitle = "Shop this bundle",
   panelCtaLabel = "Shop This Bundle",
@@ -107,6 +112,17 @@ export function LandingBundles({
   // Start closed so SSR / first paint never flash a fixed bottom sheet
   // over the hero. Desktop flips open in useLayoutEffect.
   const [open, setOpen] = useState(false);
+  const { marketId } = useMarket();
+  const { chromeItems } = useNavigation(marketId || undefined);
+  // Not set by the CMS (undefined): the market's own gift sets collection.
+  const menuLinks = [
+    ...chromeNavLinks(chromeItems),
+    ...chromeItems.flatMap((item) =>
+      item.type === "mega" ? item.groups.flatMap((group) => group.links) : [],
+    ),
+  ];
+  const secondaryHref =
+    secondaryCtaHref === undefined ? giftSetsHref(menuLinks) : secondaryCtaHref;
   // Real products of the market's bundles collection (none: the list is empty).
   const fetched = useHomeCollectionProducts("bundles", 2);
   const fromCms = productsProp !== undefined;
@@ -152,9 +168,9 @@ export function LandingBundles({
       <div className={bundleScrim} aria-hidden="true" />
       <div className={bundleContent}>
         <p className={visuallyHidden}>{eyebrow}</p>
-        <h2 className={visuallyHidden} id="campaign-heading">
+        <p className={visuallyHidden} id="campaign-heading">
           {heading}
-        </h2>
+        </p>
         <p className={visuallyHidden}>{description}</p>
         <div className={bundleActions} data-campaign-actions>
           {primaryCtaHref ? (
@@ -162,8 +178,8 @@ export function LandingBundles({
               {primaryCtaLabel || "Shop Bundles"}
             </LocaleLink>
           ) : null}
-          {secondaryCtaHref ? (
-            <LocaleLink className={bundlePillGhost} href={secondaryCtaHref}>
+          {secondaryHref ? (
+            <LocaleLink className={bundlePillGhost} href={secondaryHref}>
               {secondaryCtaLabel || "Shop Gift Sets"}
             </LocaleLink>
           ) : null}
@@ -211,9 +227,9 @@ export function LandingBundles({
                   loading="lazy"
                 />
                 <span className="min-w-0 flex-1">
-                  <span className={shopName}>{product.title}</span>
-                  <span className={shopConc}>
-                    {product.subtitle ?? "Eau de Parfum"}
+                  <span className={shopName} title={product.title}>{product.title}</span>
+                  <span className={shopConc} title={stripHtml(product.subtitle) || undefined}>
+                    {stripHtml(product.subtitle) || "Eau de Parfum"}
                   </span>
                 </span>
                 <span className={shopPrice}>

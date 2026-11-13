@@ -23,7 +23,13 @@ SEO Management → open a page → the language switch shows every market langua
 - If there are unsaved edits, switching language shows the usual Save draft / Discard / Cancel dialog. Before this change it was a dead-end error.
 - **Collection pages:** the auto-fill uses the collection's translation in that language only. A language with no translation stays empty, and the website then uses its own per-language fallback. English text is no longer copied into the Arabic draft.
 - **Canonical:** the auto-fill sets a canonical only when it can build a full address (the brand website URL). Before, it set a bare path that failed the admin's own check. The website sets each market's own canonical.
-- The website reads the page's SEO with `locale=en|ar` (`lib/seo/pageSeo.ts`).
+- The website reads the page's SEO with `locale=en|ar` (`lib/seo/pageSeo.ts`):
+  - Call: `GET /storefront/catalog/page-seo?path=/&locale=en&zoneCode=URD1` (market from the `sa-zone-code` cookie, else the default market).
+  - Source: table `website_seo_page`, one row per brand + path + locale. Only `publishedConfig` is read (after **Publish**); the draft never reaches the website.
+  - Per key, the market's own value (`marketOverrides[zoneId]`) wins over the brand value (`brand`); empty values are skipped; SEO variables are filled in.
+  - Keys: `title`, `description`, `canonicalUrl`, `robots`, `ogTitle`, `ogDescription`, `ogImage`, `ogImageAlt`, `ogType`, `ogUrl`, `twitterCard`, `twitterTitle`, `twitterDescription`, `twitterImage`, `twitterImageAlt`, `jsonLd`.
+  - Nothing published (404): the page uses its own fallback title and the Brand identity description.
+  - The "Homepage" sections builder (Website → Content) has no effect on these meta tags.
 
 ## 2. Brand identity per language and market
 
@@ -88,3 +94,22 @@ All test data (identity, Qatar text, test variable) was removed afterwards. Bran
 - Brand identity is still empty for Swiss Arabian. Fill in the name, Arabic name, description, logos and social profiles before indexing.
 - Cities per market are not filled in (Website → Countries & cities).
 - A brand-wide canonical (when the brand website is set) points every market at one domain. That waits on the domain ↔ market link (open gap).
+
+## SEO audit follow-ups (11 Nov 2026, R56)
+
+- **Homepage SEO import:** SEO Management → "Import homepage from Shopify" reads every store's homepage title and description (English and Arabic), read-only, into the homepage **draft**. Values already set are kept unless "Replace" is ticked. KSA has none in Shopify: set its own in SEO Management.
+- **Headings:** one H1 per home page: the footer SEO text heading when the market has one, else the page title. Hero, section titles, trust items, product names and footer column titles are plain text.
+- **Logo:** `/assets/swiss-arabian-online-perfume-store.png`, alt "Swiss Arabian Online Perfume Store" (SAPIL: its own file and alt).
+- **Collections:** an empty `en-us` row no longer hides the imported SEO of the `en` row.
+- **Imports and admin edits:** see `swiss-arabian-backend-d/docs/migration/IMPORTS_AND_ADMIN_EDITS.md`.
+
+## SEO checklist rows 11, 16–19, 21, 22 (11 Nov 2026, R58)
+
+- **Alt text:** product gallery "<product> – image N of M"; scent image = product name; collection banner = its alt text, else the collection name.
+- **Content in the first HTML:** the homepage (published CMS homepage of the market) and the collection, category and all-products listings (page N via `?page=N`, when no sort or price filter) render on the server. A plain "More products" link points to the next page; infinite scroll is unchanged.
+- **Old links:** `/uae/…`, `/ksa/…`, `/qatar/…` and short Shopify paths (`/return-policy`, `/track-order`) redirect 301 (see `URL_REDIRECTS.md`).
+- **No layout jump:** collection banners carry their pixel sizes from the API; fonts are WOFF2 with 400/500/700 preloaded and a width-matched Arial stand-in (`globals.css`, `app/layout.tsx`). The Stripe card form still loads the `.ttf` files (`stripeCheckoutAppearance.ts`), so they stay in `public/fonts/`.
+- **Analytics:** `NEXT_PUBLIC_GTM_ID` (GTM-…) or `NEXT_PUBLIC_GA4_ID` (G-…); GTM wins when both are set; nothing loads when empty (`components/layout/AnalyticsScripts.tsx`).
+- **Checked (local production build, Lighthouse mobile):** layout shift 0 (was 0.4–0.6), performance ~60 (was ~20). All 890 UAE sitemap URLs answer 200, no broken internal links. 13 key pages fit 375 px.
+- **Homepage SEO:** English and Arabic published (11 Nov). KSA has none of its own and shows the brand (UAE) text; set KSA's own in SEO Management (market view).
+- **Open:** no published Arabic CMS homepage (the older homepage shows); desktop banners are 3840 px and served at full size.

@@ -109,6 +109,18 @@ jobs:
           echo "api_key=${MAPS_KEY}" >> "$GITHUB_OUTPUT"
           echo "Google Maps API key resolved from Key Vault"
 
+      - name: Resolve analytics IDs from Key Vault (optional)
+        id: analytics
+        run: |
+          set -euo pipefail
+          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
+          # Optional: empty = no analytics script on the site.
+          GTM_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-gtm-id --query value -o tsv 2>/dev/null || true)
+          GA4_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-ga4-id --query value -o tsv 2>/dev/null || true)
+          echo "gtm_id=${GTM_ID}" >> "$GITHUB_OUTPUT"
+          echo "ga4_id=${GA4_ID}" >> "$GITHUB_OUTPUT"
+          echo "Analytics: GTM=${GTM_ID:-none} GA4=${GA4_ID:-none}"
+
       - name: Build Docker image
         run: |
           docker build \
@@ -124,6 +136,9 @@ jobs:
             --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
             --build-arg "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
             --build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ steps.maps.outputs.api_key }}" \
+            --build-arg "NEXT_PUBLIC_GTM_ID=${{ steps.analytics.outputs.gtm_id }}" \
+            --build-arg "NEXT_PUBLIC_GA4_ID=${{ steps.analytics.outputs.ga4_id }}" \
+            --build-arg NEXT_PUBLIC_SEO_INDEXING_ENABLED=false \
             -t "${{ steps.vars.outputs.image }}" \
             .
 

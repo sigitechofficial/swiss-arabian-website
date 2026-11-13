@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { env } from "@/lib/config/env";
+import { configuredStorefrontHost } from "@/lib/api/storefrontHost";
 import { fetchPreviewHome } from "../api/cmsContent.service";
 import {
   CMS_PREVIEW_COOKIE,
@@ -16,7 +16,7 @@ export async function CmsPreviewHomeView() {
   const hostHeader =
     headerStore.get("x-forwarded-host") || headerStore.get("host") || "";
   const storefrontHost =
-    env.storefrontHost || hostHeader.split(":")[0] || null;
+    configuredStorefrontHost(hostHeader) || hostHeader.split(":")[0] || null;
 
   if (!session) {
     return (

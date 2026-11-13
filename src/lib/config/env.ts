@@ -1,3 +1,5 @@
+import { cleanGa4Id, cleanGtmId } from "@/lib/analytics/analyticsIds";
+
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
 const AZURE_DEV_API =
@@ -143,6 +145,11 @@ export const env = {
   /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
   storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
   /**
+   * Local only: `*.localhost` aliases to other brands, e.g. `sp=SAPIL@sapil.test`
+   * (see lib/storefront/localStorefront.ts). Empty → built-in `sp` = Sapil.
+   */
+  localStorefronts: readPublic(process.env.NEXT_PUBLIC_LOCAL_STOREFRONTS),
+  /**
    * CMS Homepage integration (Phase 2C).
    * Default enabled. Set NEXT_PUBLIC_CMS_HOME_ENABLED=false to force legacy home.
    */
@@ -159,6 +166,11 @@ export const env = {
    * Insider Web SDK. Script loads only when enabled AND accountId is set.
    * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
    */
+  /** Google Tag Manager or GA4. Nothing loads until an ID is set. */
+  analytics: {
+    gtmId: cleanGtmId(readPublic(process.env.NEXT_PUBLIC_GTM_ID, "")),
+    ga4Id: cleanGa4Id(readPublic(process.env.NEXT_PUBLIC_GA4_ID, "")),
+  },
   insider: {
     enabled:
       readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",

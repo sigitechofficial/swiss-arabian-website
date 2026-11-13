@@ -38,7 +38,8 @@ describe("cart loyalty redemption requests", () => {
     expect(String(path)).toContain(
       "/storefront/cart/cart-1/loyalty-redemption",
     );
-    expect(body).toEqual({ points: 400 });
+    // Backend StorefrontCart DTO: points is an integer string (IsString).
+    expect(body).toEqual({ points: "400" });
     expect(body).not.toHaveProperty("amount");
     expect(body).not.toHaveProperty("appliedAmount");
     expect(body).not.toHaveProperty("discount");

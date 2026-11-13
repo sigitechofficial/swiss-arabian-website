@@ -15,6 +15,8 @@ import {
 } from "@/styles/landingChrome";
 import type { HeroSlide } from "../../constants/heroSlides";
 import { HeroSwiper } from "./HeroSwiper";
+import { getImageProps } from "next/image";
+import { isOptimizableImageSrc } from "@/lib/images/remoteImagePatterns";
 
 export type LandingHeroCta = {
   href: string;
@@ -42,6 +44,39 @@ function HeroCtaLink({ href, className, children }: { href: string; className: s
     <LocaleLink className={className} href={href}>
       {children}
     </LocaleLink>
+  );
+}
+
+/** The hero spans the full viewport width. */
+const HERO_SIZES = "100vw";
+
+/** Full-width responsive candidates for `src` via the optimiser, or the original file. */
+function heroSource(src: string): { src: string; srcSet?: string } {
+  if (!isOptimizableImageSrc(src)) return { src };
+  const { props } = getImageProps({ src, alt: "", fill: true, sizes: HERO_SIZES });
+  return { src: props.src, srcSet: props.srcSet };
+}
+
+/**
+ * CMS hero media, the page's LCP image. Art-directed: the mobile image is a
+ * different file, not a resize. Both are resized to the screen by the optimiser.
+ */
+function HeroPicture({ desktop, mobile, alt }: { desktop: string; mobile: string; alt: string }) {
+  const large = heroSource(desktop);
+  const small = heroSource(mobile);
+  return (
+    <picture>
+      <source media="(max-width: 700px)" srcSet={small.srcSet ?? small.src} sizes={HERO_SIZES} />
+      <img
+        className={heroImg}
+        src={large.src}
+        srcSet={large.srcSet}
+        sizes={HERO_SIZES}
+        alt={alt}
+        loading="eager"
+        fetchPriority="high"
+      />
+    </picture>
   );
 }
 
@@ -93,10 +128,7 @@ export function LandingHero({
     <section className={hero} aria-labelledby="heroTitle">
       <div className={heroMedia}>
         {useCmsMedia && cmsDesktop ? (
-          <picture>
-            <source media="(max-width: 700px)" srcSet={cmsMobile!} />
-            <img className={heroImg} src={cmsDesktop} alt={title || ""} />
-          </picture>
+          <HeroPicture desktop={cmsDesktop} mobile={cmsMobile ?? cmsDesktop} alt={title || ""} />
         ) : (
           <HeroSwiper
             slides={useCmsSlides ? slides : undefined}
@@ -109,9 +141,9 @@ export function LandingHero({
       </div>
       <div className={`${pageContainer} ${heroInner}`}>
         {eyebrow ? <p className={heroEyebrow}>{eyebrow}</p> : null}
-        <h1 className={heroTitle} id="heroTitle">
+        <p className={heroTitle} id="heroTitle">
           {title}
-        </h1>
+        </p>
         {lead ? <p className={heroLead}>{lead}</p> : null}
         {primaryCta || secondaryCta ? (
           <div className={heroCta}>

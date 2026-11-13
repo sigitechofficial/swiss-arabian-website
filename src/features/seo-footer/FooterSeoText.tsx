@@ -1,5 +1,8 @@
 import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
+import { sectionTitle } from "@/styles/landingChrome";
+import { SeoTextBody } from "./SeoTextBody";
 import { loadFooterSeoText } from "./footerSeoText.service";
+import { FooterSeoHeading } from "./FooterSeoHeading";
 
 /**
  * Market SEO text above the footer, in the shopper's language (else the
@@ -20,13 +23,12 @@ export async function FooterSeoText() {
     >
       <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
         {text.heading ? (
-          <h2 className="mb-4 font-serif text-xl text-[var(--ink)]">{text.heading}</h2>
+          <FooterSeoHeading className={`${sectionTitle} mt-0 mb-7! text-center text-[var(--ink)]`}>
+            {text.heading}
+          </FooterSeoHeading>
         ) : null}
         {text.bodyHtml ? (
-          <div
-            className="site-page-body text-sm"
-            dangerouslySetInnerHTML={{ __html: text.bodyHtml }}
-          />
+          <SeoTextBody html={text.bodyHtml} lang={lang} />
         ) : null}
       </div>
     </section>

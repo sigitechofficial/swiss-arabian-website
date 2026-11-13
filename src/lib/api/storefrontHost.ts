@@ -4,6 +4,7 @@
  */
 
 import { env } from "@/lib/config/env";
+import { localStorefrontForHost } from "@/lib/storefront/localStorefront";
 
 /** First value when a proxy sends a comma-separated forwarded-host list. */
 export function storefrontHostFromHeaderValues(
@@ -36,8 +37,13 @@ export function isLoopbackHost(host: string): boolean {
   );
 }
 
-/** Env override for local Sapil (`NEXT_PUBLIC_STOREFRONT_HOST`). */
-export function configuredStorefrontHost(): string | null {
+/**
+ * Shop host to send from a local address: the `*.localhost` alias's shop
+ * (`sp.localhost` → sapil.test), else `NEXT_PUBLIC_STOREFRONT_HOST`.
+ */
+export function configuredStorefrontHost(liveHost?: string | null): string | null {
+  const local = localStorefrontForHost(liveHost);
+  if (local) return local.host;
   const raw =
     env.storefrontHost?.trim() ||
     process.env.NEXT_PUBLIC_STOREFRONT_HOST?.trim() ||
@@ -81,9 +87,9 @@ export async function resolveStorefrontHost(): Promise<string | null> {
     if (live && !isLoopbackHost(live)) return live;
     // localhost is not a registered storefront. Sending it makes markets 400
     // and the product page renders as unavailable.
-    return configuredStorefrontHost();
+    return configuredStorefrontHost(live);
   }
   const server = await readRegisteredServerHost();
   if (server && !isLoopbackHost(server)) return server;
-  return configuredStorefrontHost();
+  return configuredStorefrontHost(server);
 }

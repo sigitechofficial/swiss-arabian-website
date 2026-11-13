@@ -21,6 +21,7 @@ import {
 } from "@/styles/productCard";
 import type { CatalogProduct } from "../../constants/catalogProducts";
 import { useLoadedImages } from "../../hooks/useLoadedImages";
+import { hoverImageUrl } from "@/features/home/utils/stripImages";
 import { ProductCardTags } from "../ProductCardTags";
 import { MediaImage } from "@/components/ui/MediaImage";
 
@@ -34,9 +35,9 @@ export function PdpRelatedCard({
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(product.imageUrl) && !imageFailed;
 
-  const hoverCandidate = product.imageUrls?.[1];
-  const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
-  const loadedImages = useLoadedImages([hover]);
+  // Card-sized via the optimiser, fetched when idle and only on hover-capable screens.
+  const hover = hoverImageUrl(product);
+  const loadedImages = useLoadedImages([hover], { hoverOnly: true });
   const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
 
   return (
@@ -74,7 +75,7 @@ export function PdpRelatedCard({
         <AddToBagButton product={product} variant="product" />
       </div>
       <div>
-        <h3 className={relatedName}>{product.title}</h3>
+        <p className={relatedName}>{product.title}</p>
         <p className={relatedPrice}>{formatMoney(product.price, product.currency)}</p>
       </div>
     </li>

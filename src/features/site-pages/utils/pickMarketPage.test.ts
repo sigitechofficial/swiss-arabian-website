@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { SitePageListItem } from "../api/sitePages.service";
-import { pickFaqPage, pickStoresPage, pickStoryPage } from "./pickMarketPage";
+import {
+  fixedPathForPage,
+  pickFaqPage,
+  pickStoresPage,
+  pickStoryPage,
+} from "./pickMarketPage";
 
 const page = (
   handle: string,
@@ -42,5 +47,21 @@ describe("pickStoryPage / pickStoresPage", () => {
       pickStoresPage([page("store-locator"), page("stores")])?.handle,
     ).toBe("store-locator");
     expect(pickStoryPage([page("faqs")])).toBeNull();
+  });
+});
+
+describe("fixedPathForPage", () => {
+  const pages = [page("faqs-1"), page("our-story-1"), page("contact")];
+
+  it("gives the fixed address of the market's FAQ and story pages", () => {
+    expect(fixedPathForPage(pages, "faqs-1")).toBe("/faq");
+    expect(fixedPathForPage(pages, "our-story-1")).toBe("/our-story");
+  });
+
+  it("leaves other pages at their own address", () => {
+    expect(fixedPathForPage(pages, "contact")).toBeNull();
+    expect(
+      fixedPathForPage([page("faqs"), page("faqs-1")], "faqs-1"),
+    ).toBeNull();
   });
 });

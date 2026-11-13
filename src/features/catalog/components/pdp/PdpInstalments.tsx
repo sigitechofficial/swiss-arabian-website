@@ -102,7 +102,7 @@ function useDialogChrome(onClose: () => void) {
   return closeRef;
 }
 
-function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
+export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
   const closeRef = useDialogChrome(onClose);
 
   return createPortal(
@@ -165,9 +165,9 @@ function PayDialog({
         </button>
 
         <span className={mark}>{name}</span>
-        <h2 className={pdpPayTitle} id={titleId}>
+        <p className={pdpPayTitle} id={titleId}>
           Pay in 4, interest-free
-        </h2>
+        </p>
         <p className={pdpPayLede}>
           Split <strong>{formatMoney(price, currency)}</strong> into 4 payments with {name}. No interest.
         </p>
@@ -182,7 +182,7 @@ function PayDialog({
           ))}
         </ol>
 
-        <h3 className={pdpPayHeading}>How it works</h3>
+        <p className={pdpPayHeading}>How it works</p>
         <ol className={pdpPaySteps}>
           <li>Add your fragrances to the bag and go to checkout.</li>
           <li>Choose {name} as your payment method.</li>
@@ -256,7 +256,6 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                 type="button"
                 className={pdpPayBtn}
                 aria-haspopup="dialog"
-                aria-label={`Learn more about paying with ${name}`}
                 key={provider}
                 onClick={(event) => {
                   openerRef.current = event.currentTarget;
@@ -266,6 +265,8 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                 <span className={mark}>{name}</span>
                 <span className={pdpPayBtnMore}>
                   Learn more
+                  {/* Visible text stays in the accessible name ("Tabby Learn more about paying with Tabby"). */}
+                  <span className="sr-only"> about paying with {name}</span>
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>

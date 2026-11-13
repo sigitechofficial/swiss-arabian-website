@@ -56,10 +56,19 @@ function uiSortToListing(sort: SortOption): CatalogListingSort | undefined {
   return undefined;
 }
 
+export type CatalogBannerSize = {
+  width: number | null;
+  height: number | null;
+  mobileWidth: number | null;
+  mobileHeight: number | null;
+};
+
 /** Banner supplied by the collections API; falls back to the static hero. */
 export type CatalogBanner = {
   image?: string | null;
   mobileImage?: string | null;
+  /** Pixel sizes of the banner images (reserve the space while they load). */
+  size?: CatalogBannerSize | null;
   imageAlt?: string | null;
   description?: string | null;
   title?: string | null;
@@ -79,7 +88,12 @@ export function ProductCatalogView({
   hasNextPage = false,
   isFetchingNextPage = false,
   onLoadMore,
+  loadFailed = false,
+  onRetry,
 }: {
+  /** The live products could not be loaded (store unreachable): show an error with a retry. */
+  loadFailed?: boolean;
+  onRetry?: () => void;
   slug?: string;
   /**
    * Live catalog products. Omitted → the static catalog (unchanged). An empty
@@ -106,6 +120,7 @@ export function ProductCatalogView({
   const bannerImage = banner?.image;
   const bannerMobileImage = banner?.mobileImage ?? "";
   const bannerWide = banner?.wide === true;
+  const bannerSize = banner?.size ?? null;
   const bannerDescription = banner?.description;
   const bannerTitle = banner?.title;
   const meta = useMemo(() => {
@@ -119,6 +134,7 @@ export function ProductCatalogView({
         intro: description,
         heroImage: bannerImage ?? "",
         heroImageMobile: bannerMobileImage,
+        heroSize: bannerSize,
         wide: bannerWide,
         filterCollection: undefined,
       };
@@ -133,8 +149,9 @@ export function ProductCatalogView({
       wide: false,
       filterCollection: undefined,
     };
-  }, [bannerImage, bannerMobileImage, bannerWide, bannerDescription, bannerTitle, copy, slug]);
-  const heroAlt = bannerImage ? (banner?.imageAlt ?? "") : "";
+  }, [bannerImage, bannerMobileImage, bannerSize, bannerWide, bannerDescription, bannerTitle, copy, slug]);
+  // Banners without their own alt text are described by the collection name.
+  const heroAlt = bannerImage ? banner?.imageAlt?.trim() || meta.title : "";
 
   const facetPrice = facets?.price;
   const { floor: PRICE_FLOOR, ceil: PRICE_CEIL } = useMemo(() => {
@@ -393,13 +410,26 @@ export function ProductCatalogView({
       <CatalogHero meta={meta} heroAlt={heroAlt} />
 
       <section className={gridBand} aria-labelledby="grid-heading">
-        <h2 className={visuallyHidden} id="grid-heading">
+        <p className={visuallyHidden} id="grid-heading">
           Products
-        </h2>
+        </p>
 
         {loading ? (
           <div className={pageContainer}>
             <PageLoading label={copy("loading")} />
+          </div>
+        ) : loadFailed ? (
+          <div className={`${pageContainer} py-[clamp(3rem,7vw,6rem)] text-center`} role="alert">
+            <p className="font-display text-[1.75rem] leading-[1.1] font-medium">
+              {copy("productsLoadFailed")}
+            </p>
+            {onRetry ? (
+              <p className="mt-4">
+                <button type="button" className="underline underline-offset-2" onClick={onRetry}>
+                  {copy("tryAgain")}
+                </button>
+              </p>
+            ) : null}
           </div>
         ) : emptyCollection ? (
           <CatalogCollectionEmpty />
@@ -456,6 +486,11 @@ export function ProductCatalogView({
               />
               {serverFiltered && onLoadMore ? (
                 <CatalogInfiniteSentinel
+                  nextHref={
+                    pagination && pagination.page < pagination.totalPages
+                      ? `${pathname}?page=${pagination.page + 1}`
+                      : null
+                  }
                   disabled={!hasNextPage}
                   loading={isFetchingNextPage}
                   onVisible={onLoadMore}

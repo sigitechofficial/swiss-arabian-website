@@ -179,7 +179,10 @@ export async function applyCartLoyaltyRedemption(
   const params = buildCartParams({ cartId });
   return apiPut<ApiCart>(
     `/storefront/cart/${encodeURIComponent(cartId)}/loyalty-redemption?${params.toString()}`,
-    { points },
+    // Backend DTO validates points as an integer string (IsString); a JSON
+    // number was rejected with "points must be a string" and the shopper only
+    // saw "Validation failed".
+    { points: String(points) },
   );
 }
 

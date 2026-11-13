@@ -102,6 +102,40 @@ export type CreateReturnDto = {
   requestedResolution?: ReturnResolutionType;
 };
 
+export type ExchangeMoneyAction =
+  | "NONE"
+  | "PAY_DIFFERENCE"
+  | "AWAITING_PAYMENT"
+  | "PAYMENT_COMPLETE"
+  | "REFUND_PENDING"
+  | "REFUND_COMPLETE"
+  | "CONTACT_SUPPORT";
+
+/** Money side of an exchange. `action` drives the UI — never show Pay on REFUND_*. */
+export type ExchangeMoneyView = {
+  currencyCode: string;
+  additionalPaymentRequired: boolean;
+  refundDifferenceRequired: boolean;
+  customerPayableAmount: string;
+  refundableDifferenceAmount: string;
+  action: ExchangeMoneyAction;
+  /** Hosted payment page, when a live session exists (detail responses only). */
+  customerPayUrl?: string | null;
+  payment?: { id: string; status: string; amount: string; settled: boolean } | null;
+  refund?: { id: string; status: string; refundNumber: string | null; settled: boolean } | null;
+  replacementOrderId?: string | null;
+  replacementOrderNumber?: string | null;
+  note?: string | null;
+};
+
+/** Response of the difference-payment and sync-difference-payment calls. */
+export type ExchangeDifferencePaymentResult = {
+  settled: boolean;
+  customerPayUrl: string | null;
+  money: ExchangeMoneyView;
+  note?: string | null;
+};
+
 export type StorefrontExchangeSummaryView = {
   exchangeRequestId: string;
   exchangeNumber: string;
@@ -114,6 +148,7 @@ export type StorefrontExchangeSummaryView = {
   createdAt: string;
   updatedAt: string;
   latestStatusMessage: string;
+  money?: ExchangeMoneyView | null;
 };
 
 export type StorefrontExchangeItemView = {
@@ -172,4 +207,23 @@ export type AfterSalesOrderLine = {
   productName: string | null;
   variantName: string | null;
   quantity: number;
+};
+
+/** Whether one of return / exchange can be requested for an order, and if not, why. */
+export type AfterSalesOption = {
+  allowed: boolean;
+  /** ORDER_NOT_ELIGIBLE, RETURNS_DISABLED, AFTER_SALES_SIGN_IN_REQUIRED, … */
+  code: string | null;
+  /** Customer-facing explanation when not allowed. */
+  message: string | null;
+  eligibleUntil: string | null;
+};
+
+/** Follows the market's returns & exchanges settings and the order's state. */
+export type AfterSalesOptions = {
+  orderId: string;
+  orderNumber: string | null;
+  signedIn: boolean;
+  returns: AfterSalesOption;
+  exchanges: AfterSalesOption;
 };

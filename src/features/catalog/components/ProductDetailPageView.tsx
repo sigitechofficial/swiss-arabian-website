@@ -51,9 +51,12 @@ function cartLineForProduct(lines: CartLine[], product: CatalogProduct): CartLin
 export function ProductDetailPageView({
   product: serverDetail,
   slug: routeSlug,
+  share = null,
 }: {
   product: ProductDetail | null;
   slug: string;
+  /** Canonical product address (absolute) and share image, from the server. */
+  share?: { url: string; image?: string | null } | null;
 }) {
   const copy = useShopCopy();
   const { marketId } = useMarket();
@@ -79,7 +82,12 @@ export function ProductDetailPageView({
   const shippingPromise = apiProduct?.shippingPromise ?? null;
   const pdpReviews = apiProduct?.reviews ?? null;
   const reviewSummary = pdpReviews?.summary;
-  const showReviewRating = Boolean(reviewSummary && reviewSummary.reviewCount > 0);
+  // Stars under the name once a product has enough reviews (Admin → Reviews → Settings).
+  const showReviewRating = Boolean(
+    reviewSummary &&
+      reviewSummary.reviewCount > 0 &&
+      reviewSummary.reviewCount >= (pdpReviews?.display.minReviewsToShowStars ?? 1),
+  );
   const daysLine = shippingPromise ? shippingDaysLine(shippingPromise) : null;
   const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise) : null;
   const liveShippingCopy = shippingTabCopy(shippingPromise);
@@ -168,16 +176,8 @@ export function ProductDetailPageView({
 
   const moreFromHeading = moreFromCollection?.name.replace(/\.$/, "") ?? "";
 
-  useEffect(() => {
-    [...youMayAlsoLike, ...related].forEach((item) => {
-      const hoverImg = item.imageUrls?.[1];
-      if (hoverImg && hoverImg !== item.imageUrl) {
-        const img = new Image();
-        img.src = hoverImg;
-        img.decode?.().catch(() => {});
-      }
-    });
-  }, [youMayAlsoLike, related]);
+  // Related cards preload their own hover art (card-sized, when idle, and
+  // only on hover-capable screens) via `useLoadedImages`.
 
   const clientStillLoading =
     !serverDetail && !clientProduct.isFetched && !clientProduct.isError;
@@ -281,6 +281,7 @@ export function ProductDetailPageView({
               zoneCode={zoneCode}
               cartLine={cartLine}
               scentFallback={related}
+              share={share}
             />
           </div>
         </div>
@@ -301,8 +302,11 @@ export function ProductDetailPageView({
       />
 
       <PdpReviews
+        // A new product starts the reviews list again (filters, "view more").
+        key={apiProduct?.id ?? product.id}
         productId={apiProduct?.id ?? product.id}
         productTitle={product.title}
+        productImage={galleryImages[0] ?? null}
         variantId={product.variantId}
         reviews={pdpReviews}
       />

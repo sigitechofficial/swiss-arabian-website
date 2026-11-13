@@ -27,7 +27,7 @@ export function CollectionDetailPageView({
 }) {
   const usingFallback = CATALOG_FALLBACK_SLUGS.has(slug);
 
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage   } = useCatalogPlp(
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     {
       kind: "collection",
       slug,
@@ -53,13 +53,22 @@ export function CollectionDetailPageView({
 
   const banner = collection
     ? {
-        title: collection.name,
+        // The store's page heading (e.g. "Perfume Bundles"), else the name.
+        title: collection.heading || collection.name,
         description: collection.description,
         ...(heroImage
           ? {
               image: heroImage,
               imageAlt: collection.imageAlt,
               mobileImage: apiImage ? (collection.imageMobile ?? null) : null,
+              size: apiImage
+                ? {
+                    width: collection.imageWidth ?? null,
+                    height: collection.imageHeight ?? null,
+                    mobileWidth: collection.imageMobileWidth ?? null,
+                    mobileHeight: collection.imageMobileHeight ?? null,
+                  }
+                : null,
               // Store banners are wide artwork: shown full width, never cropped.
               wide: Boolean(apiImage),
             }
@@ -80,6 +89,8 @@ export function CollectionDetailPageView({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={fetchNextPage}
+      loadFailed={loadFailed}
+      onRetry={retry}
     />
   );
 }

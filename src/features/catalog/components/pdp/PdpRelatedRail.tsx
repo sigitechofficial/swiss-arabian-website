@@ -26,9 +26,9 @@ export function PdpRelatedRail({
     <section className={relatedSection} aria-labelledby={id}>
       <div className={pageContainer}>
         <div className={relatedHead}>
-          <h2 className={relatedTitle} id={id}>
+          <p className={relatedTitle} id={id}>
             {heading}
-          </h2>
+          </p>
           <LocaleLink className={relatedAll} href={seeAllHref}>
             See all
           </LocaleLink>

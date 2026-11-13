@@ -2,12 +2,23 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ConsentBanner } from "@/components/layout/ConsentBanner";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
+import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
 import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
-import { PlatformTracker } from "@/components/layout/PlatformTracker";
+import { PlatformTracker } from "@/components/layout/PlatformTracker";
 import { env } from "@/lib/config/env";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
+import { storefrontLogo } from "@/lib/storefront/brand";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
+import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
+
+async function requestHost(): Promise<string | null> {
+  const incoming = await headers();
+  return storefrontHostFromHeaderValues(
+    incoming.get("x-forwarded-host"),
+    incoming.get("host"),
+  );
+}
 import { AppProviders } from "./providers";
 import "./globals.css";
 
@@ -19,10 +30,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = await requestOrigin();
   // Site name in the shopper's language and market (SEO Management → Brand identity).
   const brand = await loadRequestBrandIdentity();
+  const logo = storefrontLogo(await requestHost());
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
-    title: { default: brand.name, template: `%s · ${brand.name}` },
+    // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
+    title: { default: brand.name, template: `%s – ${brand.name}` },
     ...(brand.description ? { description: brand.description } : {}),
+    // The brand's own icon (imported from the Shopify theme), else its logo.
+    icons: {
+      icon: brand.favicon || logo.src,
+      apple: brand.favicon || logo.src,
+    },
     robots: env.seoIndexingEnabled
       ? { index: true, follow: true }
       : { index: false, follow: false },
@@ -43,10 +61,27 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = (await headers()).get("x-shop-locale") === "ar" ? "ar" : "en";
+  const storefrontHost = await requestHost();
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className="h-full antialiased" suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
       <head>
-        <link href="https://fonts.cdnfonts.com/css/bentonsans-regular" rel="stylesheet" />
+        {/* Main site font weights load first (page speed). The "BentonSans Regular" option in
+            globals.css also needs https://fonts.cdnfonts.com/css/bentonsans-regular here. */}
+        {[400, 500, 700].map((weight) => (
+          <link
+            key={weight}
+            rel="preload"
+            href={`/fonts/benton-sans-wide-${weight}.woff2`}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {env.insider.enabled && env.insider.accountId ? (
           <>
@@ -63,12 +98,13 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="flex min-h-dvh flex-col">
+        <AnalyticsScripts />
         <InsiderScripts />
         <JourneyEventsPoller />
         <PlatformTracker />
         <OnsiteMessageHost />
         <ConsentBanner />
-        <AppProviders>{children}</AppProviders>
+        <AppProviders storefrontHost={storefrontHost}>{children}</AppProviders>
       </body>
     </html>
   );

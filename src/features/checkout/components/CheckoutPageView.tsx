@@ -60,6 +60,9 @@ import {
   staffDiscountPaymentBlocked,
 } from "@/features/employeeBenefits/types/employeeCheckout";
 import { useCheckout } from "../hooks/useCheckout";
+import { useTabbyPrescore } from "../hooks/useTabbyPrescore";
+import { useTabbyLang } from "../hooks/useTabbyLang";
+import { isTabbyPaymentMethod } from "../utils/tabby";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import type { AddressFields } from "../utils/addressSnapshot";
@@ -68,6 +71,8 @@ import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import { isStripePaymentMethod } from "../utils/methodLabels";
 import { CheckoutBilling } from "./checkout/CheckoutBilling";
 import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
+import { checkoutTestDataFor } from "../utils/checkoutTestData";
+import { env } from "@/lib/config/env";
 import { CheckoutPayment } from "./checkout/CheckoutPayment";
 import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
@@ -118,6 +123,12 @@ export function CheckoutPageView() {
     "AE";
   const regionSet = regionsForCountry(countryCode);
   const countryKeyRef = useRef(countryCode);
+  // Test sites only: one click fills the guest form for a UAE / KSA test order.
+  const testData = checkoutTestDataFor({
+    appEnv: env.appEnv,
+    isAuthenticated,
+    countryCode,
+  });
 
   const [email, setEmail] = useState("");
   const [shipping, setShipping] = useState<AddressFields>(EMPTY_ADDRESS);
@@ -275,12 +286,36 @@ export function CheckoutPageView() {
   );
   const submitting = checkout.status === "submitting";
   const covered = amountPayable === 0;
+
+  // Tabby pre-scoring: on entry, and again when the email, phone or total changes.
+  const payLang = useTabbyLang();
+  const tabbyMethod = checkout.paymentMethods.find((m) => isTabbyPaymentMethod(m));
+  const tabbyPrescore = useTabbyPrescore({
+    checkoutSessionId: session?.checkoutSessionId,
+    enabled: Boolean(tabbyMethod) && !covered,
+    email,
+    phone: shipping.phone ?? "",
+    total: amountPayable ?? total,
+  });
+  const tabbyRejected = tabbyPrescore.state === "rejected";
+  const tabbySelected = Boolean(selectedPayment && isTabbyPaymentMethod(selectedPayment));
+  // Tabby can't approve this shopper: move the selection to another method.
+  const { paymentMethods, choosePayment } = checkout;
+  useEffect(() => {
+    if (!tabbyRejected || !tabbySelected) return;
+    const other =
+      paymentMethods.find((m) => !isTabbyPaymentMethod(m) && m.isDefault) ??
+      paymentMethods.find((m) => !isTabbyPaymentMethod(m));
+    if (other) void choosePayment(other.zonePaymentMethodId);
+  }, [tabbyRejected, tabbySelected, paymentMethods, choosePayment]);
   const staffPaymentBlocked = staffDiscountPaymentBlocked(
     readEmployeeCheckout(session?.staffPurchase ?? session?.employeeCheckout),
   );
   const canSubmit =
     checkout.status === "ready" &&
     !staffPaymentBlocked &&
+    // Never submit with a Tabby option Tabby has already declined.
+    !(tabbyRejected && tabbySelected && !covered) &&
     Boolean(
       checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId),
     );
@@ -427,6 +462,24 @@ export function CheckoutPageView() {
                     }
                     countryCode={countryCode}
                     regionSet={regionSet}
+                    beforeFields={
+                      testData ? (
+                        <div className="col-span-full flex items-center justify-between gap-3 rounded-md border border-dashed border-[var(--line,#d9ccb4)] px-3 py-2 text-[0.8rem] text-[var(--ink-2,#5b5148)]">
+                          <span>Test site: fill this form with test details.</span>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-full border border-copper px-3 py-1 font-medium text-copper hover:bg-[rgba(140,68,53,0.06)]"
+                            onClick={() => {
+                              setEmail(testData.email);
+                              setShipping({ ...testData.shipping });
+                              setBillingSame(true);
+                            }}
+                          >
+                            Fill test data
+                          </button>
+                        </div>
+                      ) : null
+                    }
                   />
                   <CheckoutShippingMethod
                     methods={checkout.deliveryMethods}
@@ -467,6 +520,8 @@ export function CheckoutPageView() {
                     shopperEmail={email}
                     shopperName={shipping.fullName}
                     shopperPhone={shipping.phone}
+                    tabbyPrescore={tabbyPrescore}
+                    tabbyLang={payLang}
                     onPayNow={() => {
                       const form = document.getElementById("checkout-form");
                       if (form instanceof HTMLFormElement) form.requestSubmit();

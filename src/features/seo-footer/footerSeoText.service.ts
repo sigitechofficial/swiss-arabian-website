@@ -33,6 +33,8 @@ export function footerBodyHtml(body: string): string {
 }
 
 /** The text for a market and language; null when switched off, empty or unreachable. */
+export { isHomePath } from "./homePath";
+
 export const loadFooterSeoText = cache(
   async (locale: string, zoneCode: string): Promise<FooterSeoText | null> => {
     if (!zoneCode) return null;

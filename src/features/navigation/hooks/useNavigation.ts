@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { localeFromPathname } from "@/lib/i18n/localePath";
@@ -7,6 +8,7 @@ import type { MobileNavItem, MobileNavLink } from "@/features/home/constants/hom
 import type { ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { fetchNavigation } from "../api/navigation.service";
 import { apiNavToChromeNav } from "../utils/toChromeNav";
+import { withDirectNavHrefs } from "../utils/directNavHrefs";
 import type { NavItem } from "../types/navigation";
 
 type MobileNavHeading = { label: string; kind: "heading" };
@@ -96,11 +98,13 @@ export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
 
   const data = zoneQuery.data;
   const isLoading = !zone || zoneQuery.isLoading;
+  const header = useMemo(() => (data ? withDirectNavHrefs(data.header) : []), [data]);
+  const footer = useMemo(() => (data ? withDirectNavHrefs(data.footer) : []), [data]);
 
   return {
-    headerItems: data ? apiNavToMobileNav(data.header) : [],
-    chromeItems: data ? apiNavToChromeNav(data.header) : [],
-    footerItems: data?.footer ?? [],
+    headerItems: apiNavToMobileNav(header),
+    chromeItems: apiNavToChromeNav(header),
+    footerItems: footer,
     isLoading,
     isCatalogFallback: data?.metadata.source === "catalog_categories",
   };

@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
     ...lanDevOrigins(),
     "127.0.0.1",
     "localhost",
+    // Local brand aliases: sp.localhost (Sapil), sa.localhost (Swiss Arabian).
+    "*.localhost",
     "uae.swissarabian.com",
     "barbra-beneficent-jannette.ngrok-free.dev",
     "unprolifically-unsuggestible-zackary.ngrok-free.dev",

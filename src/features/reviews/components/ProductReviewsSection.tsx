@@ -154,9 +154,9 @@ export function ProductReviewsSection({
       aria-label="Customer reviews"
     >
       <div className="mx-auto max-w-[560px] px-4 text-center sm:px-6">
-        <h2 className="font-sans text-[22px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[26px]">
+        <p className="font-sans text-[22px] font-medium tracking-[-0.02em] text-sa-primary sm:text-[26px]">
           Reviews
-        </h2>
+        </p>
 
         {summaryPending ? (
           <p className="mt-2 text-[13px] text-sa-secondary">Loading…</p>

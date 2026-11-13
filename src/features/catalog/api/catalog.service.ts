@@ -1,4 +1,5 @@
 import type { ProductSeoPackage } from "@/lib/seo/productSeo";
+import type { CollectionSeoContent } from "@/features/seo-footer/collectionSeoTextView";
 import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
 import {
@@ -261,7 +262,7 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
   const descriptionPlain =
     stripHtml(raw.description) ||
     stripHtml(raw.shortDescription) ||
-    "Product details will appear once the catalog is fully refreshed.";
+    PRODUCT_DESCRIPTION_PLACEHOLDER;
 
   return {
     id: raw.productId,
@@ -351,7 +352,7 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
   const descriptionPlain =
     stripHtml(product.description) ||
     stripHtml(product.shortDescription) ||
-    "Product details will appear once the catalog is fully refreshed.";
+    PRODUCT_DESCRIPTION_PLACEHOLDER;
 
   const collections: ProductCollectionRef[] = (raw.collections ?? [])
     .filter((c) => c.slug && c.name)
@@ -497,6 +498,57 @@ export async function fetchCatalogSearch(
   };
 }
 
+/**
+ * Shown on the product page when a product has no description. Never use it as
+ * the meta description or in structured data (search engines would index it).
+ */
+export const PRODUCT_DESCRIPTION_PLACEHOLDER =
+  "Product details will appear once the catalog is fully refreshed.";
+
+/** The product's own description, or undefined when it only has the placeholder. */
+export function realProductDescription(
+  description: string | null | undefined,
+): string | undefined {
+  const text = description?.trim();
+  return text && text !== PRODUCT_DESCRIPTION_PLACEHOLDER ? text : undefined;
+}
+
+/**
+ * Meta description for a product with no SEO description: the start of its own
+ * description as plain text, at most 160 characters (what Google shows), ending
+ * on a full sentence when one ends after ~104 characters, else at a word with "…".
+ * Shopify uses the first 320 characters cut mid-word, which Google cuts again.
+ * The admin preview uses the same rule (catalog/utils/productSeoFallback.utils.ts).
+ */
+export function productMetaDescription(
+  description: string | null | undefined,
+  maxLength = 160,
+): string | undefined {
+  const real = realProductDescription(description);
+  if (!real) return undefined;
+  const text = real
+    // Some imported texts carry "\n" as two characters.
+    .replace(/\\[nrt]/g, " ")
+    .replace(/Â(?=[\s ])/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  if (text.length <= maxLength) return text;
+  const window = text.slice(0, maxLength);
+  const sentenceEnd = Math.max(
+    window.lastIndexOf(". "),
+    window.lastIndexOf("! "),
+    window.lastIndexOf("? "),
+  );
+  if (sentenceEnd >= maxLength * 0.65) return window.slice(0, sentenceEnd + 1);
+  const cut = text.slice(0, maxLength - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
+}
+
 export async function fetchProducts(
   zoneCode?: string | null,
   options?: CatalogListingFilters,
@@ -576,14 +628,24 @@ export type CatalogCollection = {
   description?: string | null;
   sortOrder?: number;
   productCount?: number;
+  /** Page heading when the store shows one other than the name (Shopify
+   *  custom.collection_name / collection_heading); null → the name. */
+  heading?: string | null;
   /** Collection banner for the page language (imported from the store's
    *  theme banners); null → the storefront's designed hero. */
   image?: string | null;
   imageAlt?: string | null;
   /** Banner version for small screens, when the store has one. */
   imageMobile?: string | null;
+  /** Banner pixel sizes (when known): the page reserves the space, no layout shift. */
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  imageMobileWidth?: number | null;
+  imageMobileHeight?: number | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  /** SEO text block above the footer (market + language); null when none. */
+  seoContent?: CollectionSeoContent | null;
   customMetafields?: Record<string, unknown> | null;
 };
 
@@ -601,14 +663,20 @@ function mapCollectionDetail(
     code: item.code,
     slug: item.slug,
     name: item.name,
+    heading: item.heading?.trim() || null,
     description: item.description,
     sortOrder: item.sortOrder,
     productCount: item.productCount,
     image: item.image,
     imageAlt: item.imageAlt,
     imageMobile: item.imageMobile ?? null,
+    imageWidth: item.imageWidth ?? null,
+    imageHeight: item.imageHeight ?? null,
+    imageMobileWidth: item.imageMobileWidth ?? null,
+    imageMobileHeight: item.imageMobileHeight ?? null,
     seoTitle: item.seoTitle ?? raw?.seoTitle,
     seoDescription: item.seoDescription ?? raw?.seoDescription,
+    seoContent: item.seoContent ?? raw?.seoContent ?? null,
     customMetafields: item.customMetafields ?? raw?.customMetafields ?? null,
   };
 }
