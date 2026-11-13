@@ -25,9 +25,14 @@ At build time `@brand-ui` points at the active brand's `brand-ui.ts`:
 - **TypeScript:** `tsconfig.json` `paths` points at Swiss Arabian's file. It is the reference contract.
 - **Vitest:** `vitest.config.ts`. Set `BRAND_UI_THEME=sapil` to test another brand.
 
-Each deployment's bundle contains only that brand's UI.
+Each deployment's bundle contains only that brand's UI. What still crosses over (checked in `.next` on 2026-11-13):
+- The brand **configs** (`src/lib/brand/brands/*.ts`: names, hosts, logo paths, public ids) of every brand ship to the browser, because the host → brand lookup needs them. No UI code.
+- **CSS:** `src/app/globals.css` does not scan `src/brands/sapil` (`@source not`), so Swiss Arabian pages don't carry Sapil utilities. A Sapil build's global stylesheet still contains the utilities of the Swiss Arabian views that live in `src/features/*/components` (shared folders are scanned).
+- **Dev routes:** `src/app/[locale]/(dev)/**/page.dev.tsx` (Sapil kit / preview) are routes only in `next dev`, in a Sapil build, or with `SAPIL_KIT=1` at build time (`pageExtensions` in `next.config.ts`). A Swiss Arabian production build has no such route.
 
 **Client route files** (`error.tsx`, `not-found.tsx`) import from `@brand-ui/client`. That entry may only export client-safe components, never anything that imports `next/headers`.
+
+**404s:** an address no route matches is answered by `src/app/global-not-found.tsx` (server-rendered: the brand's `StorefrontShell` + `NotFoundView` from `@brand-ui/client`, in the address's language, status 404). `notFound()` inside a page renders `[locale]/not-found.tsx`; Next.js 16 cannot server-render that boundary under a root layout that lives in `[locale]`, so the status is 404 but the view is drawn after hydration.
 
 **Swiss Arabian's `brand-ui.ts`** re-exports the existing components (58 names). It defines the contract.
 
@@ -62,3 +67,4 @@ NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SAPIL NEXT_PUBLIC_STOREFRONT_HOST=sapil.test n
 - **Dev server:** the UI alias is fixed when the server starts. To switch a dev server between Swiss Arabian and Sapil, restart it with the other brand code.
 - **Local `*.localhost` aliases** still pick the brand's *data* (`X-Storefront-Host`), but not its UI.
 - **In a git worktree:** set `TURBOPACK_ROOT=<main checkout>`, because `node_modules` there is a junction.
+- **Sapil kit against `next start`:** build with `SAPIL_KIT=1` (or as Sapil) so the `page.dev.tsx` routes exist, then start with `SAPIL_KIT=1`.

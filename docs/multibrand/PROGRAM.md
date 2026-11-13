@@ -68,12 +68,9 @@ Each default is reversible. It is used only so the work isn't blocked.
   - Payment screens' inner copy is English / Swiss Arabian-styled.
   - The global Toaster is raised by shared account mutations.
   - API error sentences.
-  - `features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.
-- **Per-brand metadata:** some route metadata still uses Swiss Arabian wording from `src/messages` (e.g. the blog meta description). It needs brand-aware defaults from `getBrand()`.
-- **`getBrand()` adoption** (callers listed in `src/lib/brand/README.md`):
-  - analytics, Insider, Tabby, Maps, catalog media base and storefront host still read env directly
-  - layout icons and site name
-  - the Insider default in `env.ts`
+  - ~~`features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.~~ ✅ closed (reviewer 1): `reviews.*` in `src/messages/en.json` + `ar.json` (plurals), the reply line names the brand.
+- ~~**Per-brand metadata:** some route metadata still uses Swiss Arabian wording.~~ ✅ closed (reviewer 1): page meta descriptions use `{brand}` (filled by `routeTranslator()` from `getBrand()`); the brand-identity fallback and layout icons come from the brand config.
+- ~~**`getBrand()` adoption**~~ ✅ closed (reviewer 1): analytics, Insider, Tabby, Maps, payment switches, catalog media base, storefront host, SEO indexing, layout icons / site name read the brand (`brandIntegrations()`); `env.ts` holds no per-brand setting and no Insider default (Sapil no longer inherits Swiss Arabian's account). Caller table in `src/lib/brand/README.md`.
 - **Not yet Sapil-styled:**
   - `OfferShop`
   - rewards / subscriptions / employee benefits / gift box (off for Sapil; never linked)
@@ -85,9 +82,11 @@ Each default is reversible. It is used only so the work isn't blocked.
   - No product FAQ source.
   - Sapil Arabic font.
 - **Platform:**
-  - Unmatched URLs get Next's error shell (the client then draws our 404), not a server-rendered 404.
-  - `check:brand` not yet wired into CI / Docker.
-  - One storefront host per deployment: Swiss Arabian's Qatar domains need their own deployments (or a per-request host for those).
+  - ~~Unmatched URLs get Next's error shell.~~ ✅ closed (reviewer 1): `src/app/global-not-found.tsx` (`experimental.globalNotFound`) server-renders the brand's chrome + 404 view in the address's language, status 404 (the `[locale]/[...missing]` catch-all is gone). **Remaining:** `notFound()` inside a page (unknown product / collection) still gets Next's error document with status 404; the view is drawn after hydration. Next 16 does not server-render a `not-found.tsx` boundary under a root layout in a dynamic segment (`[locale]`), and `global-not-found` only covers unmatched routes. SEO is unaffected (status 404, noindex).
+  - ~~`check:brand` not yet wired into CI / Docker.~~ ✅ closed (reviewer 1): CI build job + Dockerfile builder stage; image defaults the brand code to `SWISS_ARABIAN`.
+  - One storefront host per deployment: Swiss Arabian's Qatar domains need their own deployments (or a per-request host for those). Canonical / hreflang / og:url use `NEXT_PUBLIC_STOREFRONT_HOST`, so a Qatar domain served by the UAE deployment would point its canonicals at the UAE host.
+  - A Sapil build's global stylesheet still includes utilities of the Swiss Arabian views in `src/features/*/components` (shared folders). Moving those views under `src/brands/swiss-arabian/` would end it.
+  - `notFound()` / client 404 note above; `/en/...` addresses now 301 to the unprefixed one (before: 404).
 - **Visual diff, larger numbers:**
   - hero intro (real data and font wrap)
   - shell "Shop by" row and footer (intended differences)
@@ -124,4 +123,9 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Started 3 page agents (shell + home + content; catalog + product; bag + checkout + orders + auth + account).
   - The local Sapil market has no products, so the backend agent was asked for a local-only demo seed.
 - **2026-11-13 (later):** Backend/admin Sapil pieces and the demo seed are done. The shared `:3012` Sapil backend is running, and the page agents were pointed at it.
+- **2026-11-13 (review, reviewer 1 — platform, branch `review/platform`):**
+  - Closed: `getBrand()` adoption, brand-aware metadata, reviews copy in messages, `check:brand` in CI + Docker, server-rendered 404 for unmatched URLs.
+  - Fixed: open redirect in `?returnTo=` (`//host`), `/en/products?page=2` pagination links (301 hop), `next dev --hostname 127.0.0.1` 301 loop on every default-language page, sign-in / register / verify shipping only "Loading…" (now rendered per request as before), Sapil kit routes + ~60 KB of Sapil CSS in Swiss Arabian builds.
+  - Swiss Arabian check: home, /products, a collection (+ page 2), a product (en + ar), cart, checkout, login, register, /ar, /faq, /blog, /stores, /track, robots, 404 — HTML (head tags, visible text, links, labels) identical to `feat/homepage-start-from-storefront` apart from the intended changes (canonical origin = storefront host, `/en/…` → 301, 404 title "Page not found – Swiss Arabian UAE").
+  - Backend / admin `feat/sapil-cms` review: see the reviewer report (patches for the collection-summary cache, best-seller payment status and the demo seed's collection guard).
 - **2026-11-13 (later):** All three Sapil page branches are merged. Conflicts resolved: one wishlist hook, one collections hook, combined i18n areas and diff specs, the market delivery types. The shell now renders `SapilBagDrawer`. Next: the two reviewer agents, then the final UI check of both sites.
