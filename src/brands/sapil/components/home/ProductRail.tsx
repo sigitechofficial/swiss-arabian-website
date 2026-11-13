@@ -55,9 +55,9 @@ export function ProductRail({ sectionId, band, eyebrow, title, accent, descripti
           aria-label={t("home.railLabel")}
           className="grid grid-flow-col auto-cols-[calc((100%-72px)/4)] gap-[24px] overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-[4px] max-1100:auto-cols-[calc((100%-48px)/3)] max-900:auto-cols-[calc(50%-8px)] max-900:gap-[16px]"
         >
-          {products.map(({ product, tileColor }) => (
+          {products.map(({ product, tileColor, wasPrice }) => (
             <div role="listitem" key={product.id} className="snap-start">
-              <HomeProductTile product={product} tileColor={tileColor} />
+              <HomeProductTile product={product} tileColor={tileColor} wasPrice={wasPrice} />
             </div>
           ))}
         </div>

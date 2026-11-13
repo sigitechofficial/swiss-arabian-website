@@ -26,7 +26,7 @@ export function SapilCollectionsPage({
   const { collections, loading, loadFailed, retry } = useCollectionsList(initial);
 
   return (
-    <Wrap as="div" className="pb-[88px]">
+    <Wrap as="div" className="w-full pb-[88px]">
       <SapilContentCrumbs current={title ?? t("content.collections")} />
       <header className="mt-[24px] mb-[36px]">
         <p className={EYEBROW}>{t("content.collectionsEyebrow")}</p>

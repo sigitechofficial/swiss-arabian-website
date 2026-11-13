@@ -21,7 +21,7 @@ export type SapilStatePanelProps = {
  */
 export function SapilStatePanel({ eyebrow, title, accent, lead, sticker, stickerNote, actions, as: H = "h1", className }: SapilStatePanelProps) {
   return (
-    <Wrap as="section" className={cx("py-[48px] max-900:py-[24px]", className)}>
+    <Wrap as="section" className={cx("w-full py-[48px] max-900:py-[24px]", className)}>
       <div className="relative overflow-hidden rounded-[32px] pt-[56px] px-[56px] pb-[48px] bg-[linear-gradient(120deg,var(--sapil-p-pink)_0%,var(--sapil-p-peach)_55%,var(--sapil-p-butter)_100%)] max-900:rounded-[24px] max-900:pt-[32px] max-900:px-[20px] max-900:pb-[28px]">
         {sticker ? (
           <span

@@ -27,7 +27,7 @@ export function SapilSearchDialog() {
   const total = search.total;
   const hint = !searching
     ? t("shell.searchHint")
-    : search.isLoading
+    : search.isLoading || search.tooShort || search.isFetching
       ? t("shell.searchLoading")
       : search.isError
         ? t("shell.searchError")

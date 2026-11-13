@@ -32,9 +32,9 @@ function Block({ block }: { block: HomeBlock }) {
         <ProductRail
           sectionId="new"
           band
-          eyebrow={t("home.newEyebrow")}
-          title={block.rail.heading ?? t("home.newTitle")}
-          accent={block.rail.heading ? undefined : t("home.newAccent")}
+          eyebrow={block.rail.heading ?? t("home.newEyebrow")}
+          title={t("home.newTitle")}
+          accent={t("home.newAccent")}
           products={block.rail.products}
           viewAll={block.rail.viewAll}
         />
@@ -47,9 +47,9 @@ function Block({ block }: { block: HomeBlock }) {
       return (
         <ProductRail
           sectionId="bestsellers"
-          eyebrow={t("home.bestEyebrow")}
-          title={block.rail.heading ?? t("home.bestTitle")}
-          accent={block.rail.heading ? undefined : t("home.bestAccent")}
+          eyebrow={block.rail.heading ?? t("home.bestEyebrow")}
+          title={t("home.bestTitle")}
+          accent={t("home.bestAccent")}
           products={block.rail.products}
           viewAll={{
             label: block.rail.viewAll?.label ?? t("home.bestShopAll"),

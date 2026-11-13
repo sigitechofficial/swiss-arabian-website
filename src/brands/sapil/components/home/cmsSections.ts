@@ -50,14 +50,23 @@ export function textParts(text: string | null, emphasis: string | null, parts?: 
   ].filter((p) => p.text.length > 0);
 }
 
-/** A product card from a section, with its tile colour (API `tileColor`, when sent). */
-export type HomeProduct = { product: ProductSummary; tileColor: SapilPastel | null };
+/**
+ * A product card from a section, with its tile colour (API `tileColor`) and the
+ * market's was-price (`priceSummary.compareAtPrice`, only when above the price).
+ */
+export type HomeProduct = { product: ProductSummary; tileColor: SapilPastel | null; wasPrice: number | null };
 
 export function homeProduct(raw: unknown): HomeProduct | null {
   const r = rec(raw);
   if (!r) return null;
   const product = mapCmsProduct(r as unknown as CmsProductCard);
-  return product ? { product, tileColor: pastel(r.tileColor) } : null;
+  if (!product) return null;
+  const was = parseAmount(rec(r.priceSummary)?.compareAtPrice);
+  return {
+    product,
+    tileColor: pastel(r.tileColor),
+    wasPrice: was != null && product.price != null && was > product.price ? was : null,
+  };
 }
 
 export function homeProducts(raw: unknown): HomeProduct[] {

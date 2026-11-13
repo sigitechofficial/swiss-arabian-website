@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { IconButton, Wrap, cx, tintValue } from "../../ui";
@@ -202,7 +202,7 @@ export function SapilHeader({
           </IconButton>
         </span>
         <SapilLink href="/" aria-label={t("shell.home")} className="max-1280:mx-auto">
-          <Image
+          <MediaImage
             src={logo.src}
             alt={logo.alt}
             width={logo.width}

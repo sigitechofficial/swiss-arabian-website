@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  homeProduct,
   parseCollectionShowcase,
   parseHeroCampaign,
   parseHeroGallery,
@@ -53,6 +54,16 @@ describe("planHome", () => {
 
   it("never throws on malformed data", () => {
     expect(planHome([{ id: "x", type: "HERO_GALLERY", position: 0, data: null as never }, { id: "y", type: "MOOD_PICKER", position: 1, data: { moods: "no" } }])).toEqual([]);
+  });
+});
+
+describe("homeProduct", () => {
+  it("keeps the market was-price only when above the price", () => {
+    const card = { ...FIXTURE_PRODUCTS[0], priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "90" } };
+    expect(homeProduct(card)?.wasPrice).toBe(90);
+    expect(homeProduct({ ...card, priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "50" } })?.wasPrice).toBeNull();
+    expect(homeProduct(FIXTURE_PRODUCTS[0])?.wasPrice).toBeNull();
+    expect(homeProduct({ name: "no slug" })).toBeNull();
   });
 });
 

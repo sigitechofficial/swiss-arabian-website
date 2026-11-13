@@ -145,9 +145,10 @@ export function MoodWheel({ eyebrow, heading, spinLabel, moods }: { eyebrow: str
               type="button"
               onClick={spin}
               disabled={spinning}
+              aria-label={spinLabel ?? `${t("home.moodSpinSmall")} ${t("home.moodSpinBig")}`}
               className="absolute left-1/2 top-1/2 w-[30%] aspect-square [transform:translate(-50%,-50%)] rounded-full bg-sapil-white text-sapil-accent z-[2] grid place-content-center gap-[2px] shadow-[0_0_0_8px_var(--sapil-card),var(--sapil-sh-lg)] [transition:transform_.2s_var(--sapil-ease)] hover:[transform:translate(-50%,-50%)_scale(1.05)] active:[transform:translate(-50%,-50%)_scale(.96)] disabled:cursor-wait"
             >
-              <small className="text-[11px] tracking-[.14em] uppercase text-sapil-muted">{spinLabel ?? t("home.moodSpinSmall")}</small>
+              <small className="text-[11px] tracking-[.14em] uppercase text-sapil-muted">{t("home.moodSpinSmall")}</small>
               <b className="font-sapil-serif font-[400] text-[clamp(20px,2.2vw,28px)] leading-[1]">{t("home.moodSpinBig")}</b>
             </button>
           </div>
@@ -159,9 +160,9 @@ export function MoodWheel({ eyebrow, heading, spinLabel, moods }: { eyebrow: str
               {mood.notes.length ? ` ${t("home.moodNotes", { notes: mood.notes.join(", ").toLowerCase() })}` : null}
             </p>
             <div className="grid grid-cols-3 gap-[16px] mb-[28px] text-start max-900:grid-cols-none max-900:grid-flow-col max-900:auto-cols-[58%] max-900:overflow-x-auto max-900:snap-x max-900:snap-mandatory max-900:scroll-px-sapil-gut max-900:[scrollbar-width:none] max-900:-mx-sapil-gut max-900:mb-[24px] max-900:px-sapil-gut">
-              {mood.products.slice(0, 3).map(({ product, tileColor }) => (
+              {mood.products.slice(0, 3).map(({ product, tileColor, wasPrice }) => (
                 <div key={product.id} className="max-900:snap-start [&_h3]:!text-[15px] [&_.tabular-nums]:!text-[15px]">
-                  <HomeProductTile product={product} tileColor={tileColor} tileOverride="var(--sapil-card)" sizes="(max-width: 900px) 58vw, 16vw" />
+                  <HomeProductTile product={product} tileColor={tileColor} wasPrice={wasPrice} tileOverride="var(--sapil-card)" sizes="(max-width: 900px) 58vw, 16vw" />
                 </div>
               ))}
             </div>

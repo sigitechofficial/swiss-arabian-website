@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { useEffect, useId, useRef, type MouseEvent } from "react";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { IconButton, cx } from "../../ui";
@@ -69,7 +69,7 @@ export function SapilPhoneMenu({ open, onClose, logo, menu, quickLinks, accountH
           {t("shell.menu")}
         </h2>
         <div className="flex justify-between items-center mb-[8px]">
-          <Image src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[28px] w-auto" />
+          <MediaImage src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[28px] w-auto" />
           <IconButton ref={closeRef} label={t("shell.closeMenu")} onClick={onClose}>
             <CloseIcon />
           </IconButton>

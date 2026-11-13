@@ -27,9 +27,9 @@ export function NotesRail({ heading }: { heading: string | null }) {
       <Wrap>
         <SectionHead
           id={headingId}
-          eyebrow={t("home.notesEyebrow")}
-          title={heading ?? t("home.notesTitle")}
-          accent={heading ? undefined : t("home.notesAccent")}
+          eyebrow={heading ?? t("home.notesEyebrow")}
+          title={t("home.notesTitle")}
+          accent={t("home.notesAccent")}
           actions={
             <div className="flex gap-[24px] items-end flex-wrap">
               <p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{t("home.notesText")}</p>

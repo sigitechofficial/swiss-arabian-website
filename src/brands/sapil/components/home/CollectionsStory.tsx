@@ -28,9 +28,9 @@ export function CollectionsStory({ heading, text, cards }: { heading: string | n
       <Wrap>
         <SectionHead
           id={headingId}
-          eyebrow={t("home.collectionsEyebrow")}
-          title={heading ?? t("home.collectionsTitle")}
-          accent={heading ? undefined : t("home.collectionsAccent")}
+          eyebrow={heading ?? t("home.collectionsEyebrow")}
+          title={t("home.collectionsTitle")}
+          accent={t("home.collectionsAccent")}
           actions={
             <div className="flex gap-[24px] items-end flex-wrap">
               <p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{text ?? t("home.collectionsText")}</p>
@@ -77,7 +77,7 @@ export function CollectionsStory({ heading, text, cards }: { heading: string | n
                     <span
                       key={`${im.url}-${i}`}
                       className={cx(
-                        "absolute bottom-0 left-1/2 h-[92%] aspect-[1/2] [filter:drop-shadow(0_20px_20px_rgba(22,20,15,.18))] [transition:transform_.6s_var(--sapil-ease)]",
+                        "absolute bottom-0 left-1/2 h-[92%] aspect-square [filter:drop-shadow(0_20px_20px_rgba(22,20,15,.18))] [transition:transform_.6s_var(--sapil-ease)]",
                         IMG[i],
                       )}
                     >

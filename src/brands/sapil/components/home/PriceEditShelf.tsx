@@ -163,7 +163,7 @@ export function PriceEditShelf() {
                   (i === 0 || i === 4) && "max-900:hidden",
                 )}
               >
-                <span className="absolute bottom-[-10%] left-1/2 h-full aspect-[1/2] [transform:translateX(-50%)_scale(1.06)] origin-bottom [filter:drop-shadow(0_16px_16px_rgba(80,40,30,.2))] [transition:transform_.5s_var(--sapil-ease)] group-hover/sb:[transform:translateX(-50%)_scale(1.06)_translateY(-8px)]">
+                <span className="absolute bottom-[-10%] left-1/2 h-full aspect-square [transform:translateX(-50%)_scale(1.06)] origin-bottom [filter:drop-shadow(0_16px_16px_rgba(80,40,30,.2))] [transition:transform_.5s_var(--sapil-ease)] group-hover/sb:[transform:translateX(-50%)_scale(1.06)_translateY(-8px)]">
                   <MediaImage src={p.imageUrl as string} alt="" fill sizes="160px" className="!object-contain" />
                 </span>
                 <span

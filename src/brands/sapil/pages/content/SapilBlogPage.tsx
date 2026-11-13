@@ -25,7 +25,7 @@ export function SapilBlogPage({ posts, page, totalPages }: { posts: BlogPost[]; 
   const hrefForPage = (p: number) => (p <= 1 ? "/blog" : `/blog?page=${p}`);
 
   return (
-    <Wrap as="div" className="pb-[88px]">
+    <Wrap as="div" className="w-full pb-[88px]">
       <Breadcrumbs
         label={t("content.breadcrumb")}
         items={[{ label: t("content.home"), href: "/" }, { label: t("content.blog") }]}

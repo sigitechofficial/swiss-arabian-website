@@ -3,6 +3,8 @@
 import { useEffect, useId, useState, type CSSProperties } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useAddToCart } from "@/features/cart";
+import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
+import { parseAmount } from "../shared/money";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, EYEBROW, cx, tintValue } from "../../ui";
 import { PlusIcon } from "../shared/icons";
@@ -23,6 +25,17 @@ function useReducedMotion() {
   return reduce;
 }
 
+/** The gallery stats line: products in the market and the lowest price (listing total + price facet). */
+function useCatalogStats() {
+  const listing = useCatalogPlp({ kind: "products" }, { page: 1 });
+  const price = listing.facets?.price ?? null;
+  return {
+    total: listing.pagination?.total ?? null,
+    from: parseAmount(price?.min),
+    currency: price?.currencyCode ?? null,
+  };
+}
+
 /* .d-intro start padding: the page gutter, aligned with the 1440px wrap on wide screens */
 const INTRO_START = "min(clamp(28px,3.4vw,56px),max(var(--sapil-gut),calc((100vw - var(--sapil-wrap))/2 + var(--sapil-gut))))";
 const RISE = "animate-sapil-rise";
@@ -38,6 +51,7 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
   const reduce = useReducedMotion();
   const { addToCart } = useAddToCart();
   const baseId = useId();
+  const stats = useCatalogStats();
   const [open, setOpen] = useState(hero.initialRoom);
   const [added, setAdded] = useState<string | null>(null);
 
@@ -58,6 +72,7 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
     >
       <div className="grid grid-cols-[minmax(320px,31%)_minmax(0,1fr)] min-h-[clamp(620px,calc(100svh-112px),880px)] max-1100:grid-cols-[minmax(300px,36%)_minmax(0,1fr)] max-900:grid-cols-1 max-900:min-h-0">
         <div
+          data-hero-intro=""
           style={{ "--intro-ps": INTRO_START } as CSSProperties}
           className="flex flex-col justify-center py-[48px] pe-[clamp(28px,3.4vw,56px)] ps-[var(--intro-ps)] max-900:pt-[40px] max-900:pb-[34px] max-900:px-sapil-gut"
         >
@@ -95,10 +110,22 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
             className={cx("flex gap-[28px] mt-[40px] pt-[18px] border-t border-sapil-line max-480:gap-[20px]", RISE)}
             style={{ animationDelay: ".32s" }}
           >
+            {stats.total != null ? (
+              <div className="text-[12px] text-sapil-muted">
+                <b className="block font-sapil-serif font-[400] text-[24px] text-sapil-ink tabular-nums">{stats.total}</b>
+                {t("home.heroFragrances", { count: stats.total })}
+              </div>
+            ) : null}
             <div className="text-[12px] text-sapil-muted">
               <b className="block font-sapil-serif font-[400] text-[24px] text-sapil-ink tabular-nums">{hero.rooms.length}</b>
               {t("home.heroRooms", { count: hero.rooms.length })}
             </div>
+            {stats.from != null && stats.currency ? (
+              <div className="text-[12px] text-sapil-muted">
+                <b className="block font-sapil-serif font-[400] text-[24px] text-sapil-ink tabular-nums">{Math.round(stats.from)}</b>
+                {t("home.heroFrom", { currency: stats.currency })}
+              </div>
+            ) : null}
           </div>
         </div>
         <div

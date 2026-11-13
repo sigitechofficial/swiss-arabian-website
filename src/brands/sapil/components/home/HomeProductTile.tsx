@@ -50,6 +50,8 @@ export type HomeProductTileProps = {
   product: ProductSummary;
   /** pastel key from the API (`tileColor`) */
   tileColor?: string | null;
+  /** market was-price (`compareAtPrice`), shown struck out with a −% badge */
+  wasPrice?: number | null;
   /** white tiles (mood picks sit on a coloured band) */
   tileOverride?: string;
   /** the first visible product image of the page loads eagerly */
@@ -67,6 +69,7 @@ export type HomeProductTileProps = {
 export function HomeProductTile({
   product,
   tileColor,
+  wasPrice,
   tileOverride,
   priority,
   sizes = "(max-width: 900px) 50vw, (max-width: 1100px) 33vw, 25vw",
@@ -111,6 +114,8 @@ export function HomeProductTile({
           )
         }
         price={product.price != null ? price(product.price, product.currency) : t("home.priceUnavailable")}
+        was={wasPrice != null ? price(wasPrice, product.currency) : undefined}
+        discountPercent={wasPrice != null && product.price != null ? Math.round((1 - product.price / wasPrice) * 100) : undefined}
         tags={sellable ? undefined : [t("home.soldOut")]}
         tagsHighlighted={!sellable}
         onAdd={

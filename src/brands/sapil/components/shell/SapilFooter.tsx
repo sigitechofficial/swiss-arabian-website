@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { useId, type ReactNode } from "react";
 import { toast } from "@/components/ui/Toaster";
 import { useNewsletterSignup } from "@/features/newsletter/hooks/useNewsletterSignup";
@@ -50,7 +50,7 @@ export function SapilFooterView({
           style={{ gridTemplateColumns: `minmax(0,5fr) repeat(${Math.max(cols.length, 3)},minmax(0,2fr))` }}
         >
           <div className="max-900:col-span-full">
-            <Image src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[30px] w-auto" />
+            <MediaImage src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[30px] w-auto" />
             <h3 className="text-[30px] mt-[20px] mb-[10px]">
               {newsletterHeading || (
                 <>

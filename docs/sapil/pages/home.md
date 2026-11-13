@@ -1,0 +1,61 @@
+# Sapil home (v9 "Note by Note")
+
+Area: `home`. Page: `src/brands/sapil/pages/home/SapilHomePage.tsx` (`HomePageView`). Sections: `src/brands/sapil/components/home/`. Wording: `i18n/messages/{en,ar}/home.json`.
+
+## How it renders
+
+`SapilHomePage` reads the market's published CMS homepage with `usePublishedHome(initial)` (extracted from Swiss Arabian's `CmsHomePageView`; the route already loads `initial` on the server). States: skeleton on the pastel tile while loading, "We couldn't load the home page / Try again" on error, a "Coming soon" panel (link to the shop) when the market has no published home — never Swiss Arabian's legacy home.
+
+`cmsSections.ts` types and parses every section defensively (`planHome`); unknown, empty or malformed sections render nothing. The first section becomes the hero when its type has a hero layout. Shapes follow the backend contract on `feat/sapil-cms` (`docs/frontend/SAPIL_STOREFRONT_DATA_HANDOFF.md`, `docs/content/CMS_SAPIL_SECTIONS.md`).
+
+| # | v9 section | Component | CMS section / data |
+|---|---|---|---|
+| 1 | Hero, gallery doors | `HeroGallery` | `HERO_GALLERY` (first): `headingParts`, `rooms[]` (`titleParts`, `wallColor`, `collection`, `product`), `initialRoomIndex`, `autoAdvance`. Stats line: listing `pagination.total` + `facets.price.min` (`useCatalogPlp`) |
+| 1 | Hero, video | `HeroVideo` | `SHOPABLE_VIDEO_SHOWCASE` first → `useShopableVideo()` (3 films) |
+| 1 | Hero, campaign | `HeroCampaign` | `HERO_SLIDER` / `HERO_BANNER` first: slides, mobile image (`<picture>` via `getImageProps`), dots, autoplay interval |
+| 1 | Hero, promo | `HeroPromo` | `BUNDLE_PROMOTION_SHOWCASE` first: offer card + "add the bundle"; side tiles = market price edit + the offer's secondary link |
+| 2 | New arrivals rail | `ProductRail` | `PRODUCT_CAROUSEL` / `FEATURED_COLLECTION` `products[]` |
+| 2b | Under AED 99 shelf | `PriceEditShelf` | market `priceEditTiers` (`useMarketSettings`, middle tier) + listing `maxPrice` (`useCatalogPlp`): count, from-price facet, price bands, shelf. Placed after the first new-arrivals rail (not a CMS section). Hidden without tiers or products |
+| 3 | Collections scroll story | `CollectionsStory` | `COLLECTION_SHOWCASE` tiles + `summary { productCount, minPrice, currencyCode, images[≤3] }` |
+| 4 | Top sellers rail | `ProductRail` | `TRENDING_PRODUCTS` (`BEST_SELLING` or collection) `products[]` |
+| 4b | Mood wheel | `MoodWheel` | `MOOD_PICKER` `moods[]` (name, colour, line, notes, products); "add all" via the cart hook |
+| 5 | Shop by note | `NotesRail` | `FRAGRANCE_NOTES_SHOWCASE` slot → `useFragranceNotes()`; links `fragranceNotesPlpHref` |
+| 5b | Bundles | `HomeBundles` | consecutive `BUNDLE_PROMOTION_SHOWCASE` sections share one row; + adds every bottle (`useAddToCart`); the saving is the cart's promotions |
+| 6 | Instagram reels | `HomeReels` | `SHOPABLE_VIDEO_SHOWCASE` slot → `useShopableVideo()`; plays muted only in view (IntersectionObserver ≥35 %) and never with reduced motion; posters; `preload="none"` except the first; sound toggle; hands over on end |
+| 7 | About + facts | `AboutBlock` | `BRAND_STORY` (`paragraphs`, `statistics`, image, CTA) |
+| – | Newsletter | `HomeNewsletter` | `NEWSLETTER_SIGNUP` → `useNewsletterSignup` (provider not connected, same as Swiss Arabian) |
+
+Product cards: `HomeProductTile` = design-system `ProductCard` from a `ProductSummary` + `tileColor` (API pastel key, else neutral `sand`) + was-price (`priceSummary.compareAtPrice` → struck price and −% badge). Add to bag: `useAddToCart`; wishlist heart: `useWishlistToggle` (extracted). Sold-out cards hide the + button and show a "Sold out" tag. `TODO(integration)`: unify with the catalog area's card.
+
+## Hooks extracted (Swiss Arabian unchanged, with tests)
+
+- `features/cms/hooks/usePublishedHome.ts` (+ `publishedHomeState`) from `CmsHomePageView`.
+- `features/markets/hooks/useMarketSettings.ts` (new; `priceEditTiers`, `delivery` added to `StorefrontMarket` as optional fields).
+- `features/wishlist/hooks/useWishlistToggle.ts` from `WishlistHeartButton`.
+- `features/newsletter/hooks/useNewsletterSignup.ts` from `NewsletterSection`.
+
+## Performance
+
+- Only the hero's first visible image is preloaded (`preload`, eager); everything else lazy with `sizes`.
+- Videos: `preload="none"` (first reel `metadata`), play only in view.
+- No polling; the wheel and doors use CSS transitions / one `animationend`.
+
+## Visual diff
+
+See `docs/sapil/pages/shell.md` for the table (hero intro and section heads).
+
+## Known differences from v9
+
+- No "hero layout switcher" demo bar or "Concept 09" text (admin setting = which section is first).
+- Hero title is a paragraph, not an `<h1>`: the page's one H1 is the SEO title (route rule).
+- Reveal-on-scroll (`.rv`) is not reproduced (content is visible immediately; no CLS).
+- Door stats show only what the API knows (fragrances, rooms, from-price); the "rooms" count follows the CMS.
+- Bundles: v9's "Save AED X" chip and struck full price are not shown — the saving is computed by cart promotions, not known on the home page. Section accent reads "and easier." (v9 "and cheaper.") for the same reason.
+- About: v9's bottle tile over the photo is not shown (no CMS field for it).
+- Note cards show no "N bottles" count (not in the fragrance-notes API).
+- Mood cards: the v9 smaller quick-buy pill inside mood cards is the standard one.
+- Price-edit links go to `/products?maxPrice=…` until the price-edit pages exist (catalog area).
+
+## Local data
+
+Backend branch instance `http://127.0.0.1:3012` (demo seed: Sapil UAE `SAPIL_URD1`, 85 products, 14 collections, published 10-section home). Fragrance notes and shoppable video are not curated for Sapil yet: those two sections render nothing. The header menu has no children yet (menus not bound by the seed), so the "Shop by" chips are empty.

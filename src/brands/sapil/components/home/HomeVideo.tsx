@@ -224,9 +224,9 @@ export function HomeReels({ heading }: { heading: string | null }) {
       <Wrap>
         <SectionHead
           id={headingId}
-          eyebrow={t("home.reelsEyebrow")}
-          title={heading ?? t("home.reelsTitle")}
-          accent={heading ? undefined : t("home.reelsAccent")}
+          eyebrow={heading ?? t("home.reelsEyebrow")}
+          title={t("home.reelsTitle")}
+          accent={t("home.reelsAccent")}
           actions={
             <div className="flex gap-[16px] items-center flex-wrap">
               {instagram ? (
