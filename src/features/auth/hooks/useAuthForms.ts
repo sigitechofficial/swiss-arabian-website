@@ -41,6 +41,7 @@ import {
 } from "../schemas/auth.schema";
 import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
 import { markNewAccount } from "../utils/newAccountGreeting";
+import { safeReturnPath } from "../utils/safeReturnPath";
 
 /**
  * Auth form logic shared by every brand. Each hook reports what happened as a
@@ -87,8 +88,7 @@ function useFeedback(feedback: AuthFeedback = {}) {
 /** `?returnTo=` when it is a path on this site, else the account page. */
 function useReturnTo(fallbackWhenMissing = "/account") {
   const searchParams = useSearchParams();
-  const requested = searchParams.get("returnTo") || "";
-  return requested.startsWith("/") ? requested : fallbackWhenMissing;
+  return safeReturnPath(searchParams.get("returnTo"), fallbackWhenMissing);
 }
 
 /** Seconds before "Resend code" becomes available again. */
@@ -139,7 +139,7 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   const say = useFeedback(feedback);
   const marketDialCode = useMarketDialCode();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") || "/account";
+  const returnTo = safeReturnPath(searchParams.get("returnTo"));
   const [step, setStep] = useState<LoginStep>({ kind: "password" });
   const [resendSeconds, setResendSeconds] = useState(0);
 
@@ -164,7 +164,7 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   }, [resendSeconds]);
 
   function finishLogin() {
-    router.push(returnTo.startsWith("/") ? returnTo : "/account");
+    router.push(returnTo);
   }
 
   async function onSubmit(values: LoginFormValues) {
@@ -176,7 +176,7 @@ export function useLoginFlow(feedback?: AuthFeedback) {
       if (isEmailVerificationRequired(result)) {
         const query = new URLSearchParams({
           email: result.email,
-          returnTo: returnTo.startsWith("/") ? returnTo : "/account",
+          returnTo,
         });
         router.push(`/verify?${query.toString()}`);
         return;
