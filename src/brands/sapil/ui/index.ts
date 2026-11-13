@@ -35,7 +35,7 @@ export {
 } from "./Forms";
 export { Steps, type Step, type StepState } from "./Steps";
 export { QuantityStepper, type QuantityStepperProps } from "./QuantityStepper";
-export { ProductCard, type ProductCardProps } from "./ProductCard";
+export { ProductCard, PRODUCT_CARD_ZOOM, type ProductCardProps } from "./ProductCard";
 export { Tabs, TabPanel, type TabItem, type TabsProps } from "./Tabs";
 export { Accordion, type AccordionItem } from "./Accordion";
 export {

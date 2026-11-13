@@ -1,5 +1,7 @@
 export const merchKeys = {
   all: ["merchandising"] as const,
+  collectionSummaries: (zone?: string | null, currency?: string | null, language?: string | null) =>
+    [...merchKeys.all, "collection-summaries", zone ?? "default", currency ?? "default", language ?? "default"] as const,
   collection: (slug: string, zone?: string | null, currency?: string | null) =>
     [...merchKeys.all, "collection", slug, zone ?? "default", currency ?? "default"] as const,
   shopableVideo: (

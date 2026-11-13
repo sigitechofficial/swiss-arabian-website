@@ -15,6 +15,13 @@ export { BrandHead } from "./BrandHead";
 // --- home + content (HomePageView, Blog*, FaqPageView, SitePageView, …) ---
 
 // --- catalog (listings, product page, search, collections) ---
+export {
+  SapilProductsListing as ProductsListing,
+  SapilCollectionListing as CollectionListing,
+  SapilCategoryListing as CategoryListing,
+  SapilProductRoute as ProductDetailPageView,
+  SapilSearchRoute as SearchPageView,
+} from "./pages/catalog/SapilListings";
 
 // --- bag, checkout, orders, tracking ---
 

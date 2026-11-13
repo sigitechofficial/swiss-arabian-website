@@ -20,14 +20,60 @@
 @source "./";
 
 /* Breakpoints: the design is desktop-down (max-width). Registered largest first so the
-   smaller query wins when both match, exactly like the source CSS cascade. */
-@custom-variant max-1280 (@media (max-width: 1280px));
-@custom-variant max-1100 (@media (max-width: 1100px));
-@custom-variant max-900 (@media (max-width: 900px));
-@custom-variant max-760 (@media (max-width: 760px));
-@custom-variant max-749 (@media (max-width: 749px));
-@custom-variant max-600 (@media (max-width: 600px));
-@custom-variant max-480 (@media (max-width: 480px));
+   smaller query wins when both match, exactly like the source CSS cascade.
+   Each one also requires a Sapil ancestor (`:is([data-brand="sapil"] *)`, +1 attribute of
+   specificity): the host's global Tailwind build re-emits the plain utilities used here
+   (`grid-cols-4`, `grid-cols-[…]`) and its stylesheet loads after this one, so without the
+   extra specificity those base rules beat the breakpoint rules in production. */
+@custom-variant max-1280 {
+  @media (max-width: 1280px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-1100 {
+  @media (max-width: 1100px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-900 {
+  @media (max-width: 900px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-760 {
+  @media (max-width: 760px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-749 {
+  @media (max-width: 749px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-600 {
+  @media (max-width: 600px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant max-480 {
+  @media (max-width: 480px) {
+    &:is([data-brand="sapil"] *) {
+      @slot;
+    }
+  }
+}
 
 /* 1 · raw tokens, scoped */
 [data-brand="sapil"] {

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type ComponentProps, type ComponentType } from "react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CatalogPageView } from "@/features/catalog/components/CatalogPageView";
@@ -38,6 +38,39 @@ import {
  * sort and price filters are applied in the browser.
  */
 
+/**
+ * The client view a listing route renders, as a pair: `View` for the server's
+ * page (the Suspense fallback, prerendered and crawlable) and `FromUrl`, the
+ * same view reading its filters from the address (?sort, ?maxPrice, ?page …).
+ * Data loading, redirects, JSON-LD and metadata stay here; a brand passes its
+ * own pair to change only the look (see src/brands/sapil/pages/catalog).
+ */
+export type ListingViewPair<P extends { listingQuery: unknown }> = {
+  View: ComponentType<P>;
+  FromUrl: ComponentType<Omit<P, "listingQuery"> & { serverPage: number }>;
+};
+
+export type ProductsListingViewProps = ComponentProps<typeof CatalogPageView>;
+export type CollectionListingViewProps = ComponentProps<typeof CollectionDetailPageView>;
+export type CategoryListingViewProps = ComponentProps<typeof CategoryDetailPageView>;
+export type CollectionSeoTextProps = ComponentProps<typeof CollectionSeoText>;
+
+const DEFAULT_PRODUCTS_VIEW: ListingViewPair<ProductsListingViewProps> = {
+  View: CatalogPageView,
+  FromUrl: CatalogPageViewFromUrl,
+};
+const DEFAULT_COLLECTION_VIEW: ListingViewPair<CollectionListingViewProps> & {
+  SeoText: ComponentType<CollectionSeoTextProps>;
+} = {
+  View: CollectionDetailPageView,
+  FromUrl: CollectionDetailPageViewFromUrl,
+  SeoText: CollectionSeoText,
+};
+const DEFAULT_CATEGORY_VIEW: ListingViewPair<CategoryListingViewProps> = {
+  View: CategoryDetailPageView,
+  FromUrl: CategoryDetailPageViewFromUrl,
+};
+
 /** Seconds a prerendered catalog page is served before it is rebuilt. */
 export const CATALOG_REVALIDATE_SECONDS = 300;
 
@@ -75,12 +108,20 @@ export async function productsMetadata(page: number): Promise<Metadata> {
   return withPageCanonical(metadata, base, page);
 }
 
-export async function ProductsListing({ page }: { page: number }) {
+export async function ProductsListing({
+  page,
+  view = DEFAULT_PRODUCTS_VIEW,
+}: {
+  page: number;
+  /** The brand's client view (default: Swiss Arabian's). */
+  view?: ListingViewPair<ProductsListingViewProps>;
+}) {
   const { listing, zoneCode } = await loadServerListing("products", "", page);
   const props = { initialListing: listing, initialZoneCode: zoneCode };
+  const { View, FromUrl } = view;
   return (
-    <Suspense fallback={<CatalogPageView {...props} listingQuery={{ page }} />}>
-      <CatalogPageViewFromUrl {...props} serverPage={page} />
+    <Suspense fallback={<View {...props} listingQuery={{ page }} />}>
+      <FromUrl {...props} serverPage={page} />
     </Suspense>
   );
 }
@@ -117,7 +158,19 @@ export async function collectionMetadata(slug: string, page: number): Promise<Me
   return withPageCanonical(metadata, path, page);
 }
 
-export async function CollectionListing({ slug, page }: { slug: string; page: number }) {
+export async function CollectionListing({
+  slug,
+  page,
+  view = DEFAULT_COLLECTION_VIEW,
+}: {
+  slug: string;
+  page: number;
+  /** The brand's client view and SEO text block (default: Swiss Arabian's). */
+  view?: ListingViewPair<CollectionListingViewProps> & {
+    SeoText: ComponentType<CollectionSeoTextProps>;
+  };
+}) {
+  const { View, FromUrl, SeoText } = view;
   // Page 2+ included, so search engines get the product links without running JavaScript.
   const loaded = await loadCatalogDocument("collection", slug, page);
   const { locale, collection, listing, zoneCode } = loaded;
@@ -158,11 +211,11 @@ export async function CollectionListing({ slug, page }: { slug: string; page: nu
           { name, url: path },
         ])}
       />
-      <Suspense fallback={<CollectionDetailPageView {...props} listingQuery={{ page }} />}>
-        <CollectionDetailPageViewFromUrl {...props} serverPage={page} />
+      <Suspense fallback={<View {...props} listingQuery={{ page }} />}>
+        <FromUrl {...props} serverPage={page} />
       </Suspense>
       {/* Above the footer: this collection's SEO text, else the market's (one block only). */}
-      <CollectionSeoText
+      <SeoText
         content={collection?.seoContent}
         fallbackLocale={locale}
       />
@@ -201,7 +254,17 @@ export async function categoryMetadata(slug: string, page: number): Promise<Meta
   return withPageCanonical(metadata, path, page);
 }
 
-export async function CategoryListing({ slug, page }: { slug: string; page: number }) {
+export async function CategoryListing({
+  slug,
+  page,
+  view = DEFAULT_CATEGORY_VIEW,
+}: {
+  slug: string;
+  page: number;
+  /** The brand's client view (default: Swiss Arabian's). */
+  view?: ListingViewPair<CategoryListingViewProps>;
+}) {
+  const { View, FromUrl } = view;
   const { locale, category, missing } = await loadCatalogDocument("category", slug);
   if (missing) notFound();
   if (category?.slug && category.slug !== slug) {
@@ -227,8 +290,8 @@ export async function CategoryListing({ slug, page }: { slug: string; page: numb
           { name, url: path },
         ])}
       />
-      <Suspense fallback={<CategoryDetailPageView {...props} listingQuery={{ page }} />}>
-        <CategoryDetailPageViewFromUrl {...props} serverPage={page} />
+      <Suspense fallback={<View {...props} listingQuery={{ page }} />}>
+        <FromUrl {...props} serverPage={page} />
       </Suspense>
     </>
   );

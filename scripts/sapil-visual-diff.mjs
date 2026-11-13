@@ -10,6 +10,9 @@
  * Env:
  *   SAPIL_DESIGN_DIR  folder holding sapil-v9-*.html (default: the approved design folder)
  *   KIT_URL           default http://localhost:3021/sapil-kit
+ *                     (page specs with `kit: "catalog"` open `${KIT_URL}/catalog`: the catalog
+ *                     fixture page, src/brands/sapil/kit/CatalogKit.tsx, real page components
+ *                     filled with the v9 mock products)
  *   REF_PORT          static server for the design folder, default 3022
  *   CHROME_PATH       Chrome/Chromium binary (default: Playwright's cached Chromium, then Chrome)
  *
@@ -94,13 +97,55 @@ const SPECS = [
     page: "sapil-v9-blog.html",
     find: `document.querySelector('.crumbs')`,
   },
+  /* ——— catalog pages (kit: /sapil-kit/catalog, real Sapil components with the v9 mock products) ——— */
+  {
+    name: "shop-toolbar",
+    kit: "catalog",
+    page: "sapil-v9-shop.html",
+    find: `document.querySelector('#toolbar')`,
+  },
+  {
+    name: "shop-grid",
+    kit: "catalog",
+    page: "sapil-v9-shop.html",
+    // the first eight cards (two rows on desktop)
+    prepare: `document.querySelectorAll('#shopGrid > .card').forEach((c, i) => { if (i >= 8) c.remove(); })`,
+    find: `document.querySelector('#shopGrid')`,
+  },
+  {
+    name: "shop-hero",
+    kit: "catalog",
+    page: "sapil-v9-shop.html",
+    find: `document.querySelector('#shopHero')`,
+  },
+  {
+    name: "pdp-gallery",
+    kit: "catalog",
+    page: "sapil-v9-product.html?id=berry-crush",
+    find: `document.querySelector('.gallery')`,
+    kitSel: `[data-sapil="gallery"]`,
+  },
+  {
+    name: "pdp-pyramid",
+    kit: "catalog",
+    page: "sapil-v9-product.html?id=berry-crush",
+    find: `document.querySelector('.pyramid')`,
+    kitSel: `[data-sapil="pyramid"]`,
+  },
+  {
+    name: "pdp-buyrow",
+    kit: "catalog",
+    page: "sapil-v9-product.html?id=berry-crush",
+    find: `document.querySelector('.buy-row')`,
+    kitSel: `[data-sapil="buy-row"]`,
+  },
 ];
 
 /* Same freeze on both sides: no motion, reveal states shown, sticky/fixed chrome out of the way. */
 const FREEZE = `*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}
 .rv{opacity:1!important;transform:none!important}
 .hdr,.toolbar,.gallery,.co-sum{position:static!important}
-.hero-switch,.toast,.scrim,[data-kit-chrome]{display:none!important}
+.hero-switch,.toast,.scrim,[data-kit-chrome],[data-sapil=sticky-buy]{display:none!important}
 html{scroll-behavior:auto!important}`;
 
 /* ——— driver ——— */
@@ -266,15 +311,17 @@ async function refShot(browser, spec, width) {
 async function kitShot(browser, spec, width, refBox) {
   const pg = await browser.page(width);
   try {
-    await pg.goto(`${KIT_URL}?only=${spec.name}`);
+    await pg.goto(`${KIT_URL}${spec.kit ? `/${spec.kit}` : ""}?only=${spec.name}`);
     await pg.eval(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(FREEZE)}; document.head.append(s); })()`);
-    // the kit element takes the reference element's width (the grid column / container it sits in)
-    await pg.eval(`(() => { const el = document.querySelector('[data-kit="${spec.name}"]'); if (!el) return; el.style.width = '${refBox.w}px'; el.style.boxSizing = 'border-box';
+    // the kit element takes the reference element's width (the grid column / container it sits in);
+    // page specs point inside a real page with `kitSel`
+    const sel = spec.kitSel || `[data-kit="${spec.name}"]`;
+    await pg.eval(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return; el.style.width = '${refBox.w}px'; el.style.boxSizing = 'border-box';
       const f = v => ((v % 1) + 1) % 1; const r = el.getBoundingClientRect();
       el.style.position = 'relative'; el.style.left = (f(${refBox.fx} - f(r.left + scrollX))) + 'px'; el.style.top = (f(${refBox.fy} - f(r.top + scrollY))) + 'px';
       el.scrollIntoView({block:'center'}); })()`);
     await pg.eval(settle);
-    return await pg.shot(`[data-kit="${spec.name}"]`);
+    return await pg.shot(sel);
   } finally {
     await pg.close();
   }

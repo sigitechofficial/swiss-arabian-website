@@ -77,7 +77,7 @@ export function Price({ value, was, variant = "plain", className }: PriceProps) 
       {was && (
         <>
           {" "}
-          <s className="text-sapil-muted font-[400] text-[.875em] ml-[6px]">
+          <s className="text-sapil-muted font-[400] text-[.875em] ms-[6px]">
             <span className="sr-only">was </span>
             {was}
           </s>

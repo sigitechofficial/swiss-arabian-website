@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionDiscovery";
@@ -23,9 +22,9 @@ import { CatalogFilters } from "./catalog/CatalogFilters";
 import { CatalogGrid } from "./catalog/CatalogGrid";
 import { CatalogHero } from "./catalog/CatalogHero";
 import { CatalogToolbar } from "./catalog/CatalogToolbar";
+import { useListingNavigation } from "../hooks/useListingNavigation";
 import {
   catalogListingHasActiveFilters,
-  catalogListingHref,
   type CatalogListingQuery,
   type CatalogListingSort,
   type StorefrontCatalogFacets,
@@ -111,8 +110,8 @@ export function ProductCatalogView({
   isFetchingNextPage?: boolean;
   onLoadMore?: () => void;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const listingNavigation = useListingNavigation(listingQuery);
+  const { pathname } = listingNavigation;
   const copy = useShopCopy();
   const urlDriven = Boolean(listingQuery);
   const products = useMemo(() => productsProp ?? [], [productsProp]);
@@ -209,18 +208,7 @@ export function ProductCatalogView({
     );
   }
 
-  const pushListing = (next: CatalogListingQuery) => {
-    router.push(catalogListingHref(pathname, next), { scroll: false });
-  };
-
-  const patchListing = (patch: Partial<CatalogListingQuery>) => {
-    if (!listingQuery) return;
-    pushListing({
-      ...listingQuery,
-      ...patch,
-      page: 1,
-    });
-  };
+  const { push: pushListing, patch: patchListing } = listingNavigation;
 
   const setConcentration = (value: "all" | Concentration | string) => {
     if (urlDriven) {

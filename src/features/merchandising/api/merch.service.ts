@@ -103,3 +103,44 @@ export async function fetchFragranceNotes(): Promise<FragranceNotesView> {
     throw error;
   }
 }
+
+/** One collection with its summary (`includeSummary=true`): count, from-price and up to 3 product images. */
+export type CollectionSummaryItem = {
+  slug: string;
+  name: string;
+  description: string | null;
+  productCount: number;
+  summary: {
+    productCount: number;
+    minPrice: string | null;
+    currencyCode: string | null;
+    images: Array<{ url: string; slug?: string | null; name?: string | null }>;
+  } | null;
+};
+
+/** The market's merchandising collections with summaries (collection cards, "keep exploring"). */
+export async function fetchCollectionSummaries(limit = 50): Promise<CollectionSummaryItem[]> {
+  const qs = new URLSearchParams(storefrontContextQuery());
+  qs.set("includeSummary", "true");
+  qs.set("limit", String(limit));
+  const payload = await apiGet<{ items?: Array<Partial<CollectionSummaryItem> & { slug?: string | null }> }>(
+    `/storefront/merchandising/collections?${qs}`,
+    { skipAuth: true },
+  );
+  return (payload.items ?? [])
+    .filter((item): item is Partial<CollectionSummaryItem> & { slug: string } => Boolean(item.slug))
+    .map((item) => ({
+      slug: item.slug,
+      name: item.name ?? item.slug,
+      description: item.description ?? null,
+      productCount: Number(item.productCount ?? item.summary?.productCount ?? 0) || 0,
+      summary: item.summary
+        ? {
+            productCount: Number(item.summary.productCount ?? 0) || 0,
+            minPrice: item.summary.minPrice != null ? String(item.summary.minPrice) : null,
+            currencyCode: item.summary.currencyCode ?? null,
+            images: (item.summary.images ?? []).filter((img) => Boolean(img?.url)),
+          }
+        : null,
+    }));
+}

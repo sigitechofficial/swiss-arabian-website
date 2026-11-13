@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, type MouseEvent } from "react";
-import { useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
 import { Heart } from "lucide-react";
-import { useAuthBootstrapped, useIsAuthenticated } from "@/hooks/useCurrentUser";
-import { useWishlistMutations } from "../hooks/useWishlistMutations";
-import { useWishlistStatusMap } from "../hooks/useWishlistStatus";
-import { isProductUuid } from "../utils/productId";
-import { useWishlistStatusScope } from "./WishlistStatusScope";
+import { useWishlistToggle } from "../hooks/useWishlistToggle";
 
 type WishlistHeartButtonProps = {
   productId: string;
@@ -18,49 +13,24 @@ export function WishlistHeartButton({
   productId,
   size = "card",
 }: WishlistHeartButtonProps) {
-  const router = useRouter();
-  const isAuthenticated = useIsAuthenticated();
-  const bootstrapped = useAuthBootstrapped();
-  const scope = useWishlistStatusScope();
-  const fallback = useWishlistStatusMap(scope ? [] : [productId]);
-  const { toggle, add, remove } = useWishlistMutations();
+  const { available, inWishlist, isAuthenticated, disabled, toggle } =
+    useWishlistToggle(productId);
 
-  // Depend on the (stable) register/unregister functions, not the whole scope
-  // value: that changes whenever wishlist statuses load, and re-registering on
-  // each change fed a render loop.
-  const register = scope?.register;
-  const unregister = scope?.unregister;
-  useEffect(() => {
-    if (!isProductUuid(productId) || !register || !unregister) return;
-    register(productId);
-    return () => unregister(productId);
-  }, [productId, register, unregister]);
+  if (!available) return null;
 
-  if (!isProductUuid(productId)) return null;
-
-  const inWishlist = scope
-    ? scope.inWishlist(productId)
-    : fallback.inWishlist(productId);
-  const pending = add.isPending || remove.isPending;
   const compact = size === "card";
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
-    if (!bootstrapped || pending) return;
-    if (!isAuthenticated) {
-      const returnTo = `${window.location.pathname}${window.location.search}`;
-      router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
-      return;
-    }
-    void toggle(productId, inWishlist);
+    toggle();
   }
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={!bootstrapped || pending}
+      disabled={disabled}
       aria-pressed={inWishlist}
       aria-label={
         !isAuthenticated

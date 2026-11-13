@@ -40,12 +40,21 @@ export type ProductCardProps = {
   added?: boolean;
   /** "Shop Now" pill that rises on hover */
   quickLabel?: string;
+  /** accessible name of the image link; defaults to "View {name}" */
+  viewLabel?: string;
+  /** accessible name of the + button; defaults to "Add {name} to bag" */
+  addLabel?: string;
+  /** a status pill in the badge spot (e.g. "Out of stock"); wins over the −% badge */
+  badge?: ReactNode;
+  /** small round controls at the tile's top end corner (wishlist, quick view) */
+  actions?: ReactNode;
   headingLevel?: ElementType;
   LinkComponent?: SapilLinkComponent;
   className?: string;
 };
 
-const ZOOM = {
+/** Image zoom per shape; pages that pass their own image element apply it themselves. */
+export const PRODUCT_CARD_ZOOM = {
   bottle: "[transform:scale(1.62)] group-hover:[transform:scale(1.72)]",
   gift: "[transform:scale(1)] group-hover:[transform:scale(1.06)]",
   deo: "[transform:scale(1.15)] group-hover:[transform:scale(1.22)]",
@@ -69,6 +78,10 @@ export function ProductCard({
   onAdd,
   added,
   quickLabel = "Shop Now",
+  viewLabel,
+  addLabel,
+  badge,
+  actions,
   headingLevel: H = "h3",
   LinkComponent = DefaultLink,
   className,
@@ -79,28 +92,31 @@ export function ProductCard({
         style={tintStyle("--sapil-tile", tile)}
         className="relative aspect-[1/1.5] rounded-[18px] bg-sapil-tile overflow-hidden w-full max-749:rounded-[16px]"
       >
-        {discountPercent ? (
-          <span className="absolute top-[12px] left-[12px] z-[3] bg-sapil-white text-sapil-sale rounded-full py-[5px] px-[10px] text-[12px] font-[700] pointer-events-none">
-            −{discountPercent}%
+        {badge || discountPercent ? (
+          <span className="absolute top-[12px] start-[12px] z-[3] bg-sapil-white text-sapil-sale rounded-full py-[5px] px-[10px] text-[12px] font-[700] pointer-events-none">
+            {badge ?? `−${discountPercent}%`}
           </span>
         ) : null}
         <LinkComponent
           href={href}
-          aria-label={`View ${name}`}
+          aria-label={viewLabel ?? `View ${name}`}
           className="absolute inset-0 w-full h-full block [&>img]:w-full [&>img]:h-full [&>img]:object-contain [&>img]:[transition:transform_.45s]"
         >
           {typeof image === "string" ? (
             // eslint-disable-next-line @next/next/no-img-element -- presentational kit; pages may pass next/image instead
-            <img src={image} alt={imageAlt ?? `${name} bottle`} loading="lazy" className={ZOOM[shape]} />
+            <img src={image} alt={imageAlt ?? `${name} bottle`} loading="lazy" className={PRODUCT_CARD_ZOOM[shape]} />
           ) : (
             image
           )}
         </LinkComponent>
+        {actions ? (
+          <div className="absolute top-[12px] end-[12px] z-[5] flex flex-col gap-[8px]">{actions}</div>
+        ) : null}
         <LinkComponent
           href={href}
           tabIndex={-1}
           aria-hidden="true"
-          className="absolute left-[18px] right-[18px] bottom-[16px] z-[4] min-h-[48px] inline-flex items-center justify-center isolate overflow-hidden bg-sapil-white text-sapil-accent border border-sapil-white rounded-[80px] text-[15px] font-[700] opacity-0 [transform:translateY(18px)] [transition:color_.35s,transform_.35s,opacity_.35s] group-hover:opacity-100 group-hover:[transform:none] group-hover:text-sapil-white before:content-[''] before:absolute before:inset-[-24%] before:bg-sapil-accent before:[transform:translateY(118%)_rotate(-4deg)] before:[transition:transform_.6s_cubic-bezier(.22,.61,.36,1)] before:z-[-1] group-hover:before:[transform:translateY(0)_rotate(-4deg)] max-749:hidden"
+          className="absolute start-[18px] end-[18px] bottom-[16px] z-[4] min-h-[48px] inline-flex items-center justify-center isolate overflow-hidden bg-sapil-white text-sapil-accent border border-sapil-white rounded-[80px] text-[15px] font-[700] opacity-0 [transform:translateY(18px)] [transition:color_.35s,transform_.35s,opacity_.35s] group-hover:opacity-100 group-hover:[transform:none] group-hover:text-sapil-white before:content-[''] before:absolute before:inset-[-24%] before:bg-sapil-accent before:[transform:translateY(118%)_rotate(-4deg)] before:[transition:transform_.6s_cubic-bezier(.22,.61,.36,1)] before:z-[-1] group-hover:before:[transform:translateY(0)_rotate(-4deg)] max-749:hidden"
         >
           {quickLabel}
         </LinkComponent>
@@ -108,9 +124,9 @@ export function ProductCard({
           <button
             type="button"
             onClick={onAdd}
-            aria-label={`Add ${name} to bag`}
+            aria-label={addLabel ?? `Add ${name} to bag`}
             className={cx(
-              "absolute right-[14px] bottom-[14px] z-[4] w-[48px] h-[48px] rounded-full border border-sapil-white hidden max-749:grid place-items-center [transition:background_.2s,color_.2s] [&_svg]:w-[20px] [&_svg]:h-[20px]",
+              "absolute end-[14px] bottom-[14px] z-[4] w-[48px] h-[48px] rounded-full border border-sapil-white hidden max-749:grid place-items-center [transition:background_.2s,color_.2s] [&_svg]:w-[20px] [&_svg]:h-[20px]",
               added ? "bg-sapil-ok text-sapil-white" : "bg-sapil-white text-sapil-accent hover:bg-sapil-ink hover:text-sapil-white",
             )}
           >
