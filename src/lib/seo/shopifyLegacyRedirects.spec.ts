@@ -58,3 +58,17 @@ describe("shopifyLegacyRedirect", () => {
     expect(shopifyLegacyRedirect(path)).toBeNull();
   });
 });
+
+describe("shopifyLegacyRedirect per brand", () => {
+  it("applies Swiss Arabian's own page renames only to Swiss Arabian", () => {
+    expect(shopifyLegacyRedirect("/policies/privacy-policy", "SWISS_ARABIAN")).toBe("/pages/privacy-policy");
+    expect(shopifyLegacyRedirect("/policies/privacy-policy", "SAPIL")).toBeNull();
+    expect(shopifyLegacyRedirect("/uae/products", "SAPIL")).toBeNull();
+  });
+
+  it("keeps Shopify's standard URL shapes for every brand", () => {
+    expect(shopifyLegacyRedirect("/collections/all", "SAPIL")).toBe("/products");
+    expect(shopifyLegacyRedirect("/blogs/news/oud-guide", "SAPIL")).toBe("/blog/oud-guide");
+    expect(shopifyLegacyRedirect("/ar/account/login", "SAPIL")).toBe("/ar/login");
+  });
+});
