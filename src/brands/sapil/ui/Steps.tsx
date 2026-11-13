@@ -60,7 +60,7 @@ export function Steps({ steps, label = "Checkout progress", className }: { steps
                 type="button"
                 onClick={s.onSelect}
                 aria-label={s.selectLabel}
-                className="flex items-center gap-[12px] text-left rounded-[12px] m-[-6px] p-[6px] [transition:background_.2s_var(--sapil-ease)] hover:bg-sapil-paper max-900:gap-[8px]"
+                className="flex items-center gap-[12px] text-start rounded-[12px] m-[-6px] p-[6px] [transition:background_.2s_var(--sapil-ease)] hover:bg-sapil-paper max-900:gap-[8px]"
               >
                 {body}
               </button>

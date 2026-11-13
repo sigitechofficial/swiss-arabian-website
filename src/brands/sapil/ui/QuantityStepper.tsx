@@ -15,6 +15,9 @@ export type QuantityStepperProps = {
   variant?: "default" | "big" | "tinted" | "compact";
   /** at the minimum, "−" removes the item (bag): label it "Remove …" */
   removeAtMin?: boolean;
+  /** translated accessible names; default English ("Quantity, …", "Decrease …", "Increase …", "Remove …") */
+  labels?: { group?: string; decrease?: string; increase?: string; remove?: string };
+  disabled?: boolean;
   className?: string;
 };
 
@@ -27,6 +30,8 @@ export function QuantityStepper({
   max = 99,
   variant = "default",
   removeAtMin = false,
+  labels,
+  disabled = false,
   className,
 }: QuantityStepperProps) {
   const big = variant === "big";
@@ -40,7 +45,7 @@ export function QuantityStepper({
   return (
     <span
       role="group"
-      aria-label={`Quantity, ${itemLabel}`}
+      aria-label={labels?.group ?? `Quantity, ${itemLabel}`}
       className={cx(
         "inline-flex items-center border",
         big
@@ -55,8 +60,12 @@ export function QuantityStepper({
       <button
         type="button"
         className={btn}
-        disabled={atMin && !removeAtMin}
-        aria-label={`${atMin && removeAtMin ? "Remove" : "Decrease"} ${itemLabel}`}
+        disabled={disabled || (atMin && !removeAtMin)}
+        aria-label={
+          atMin && removeAtMin
+            ? (labels?.remove ?? `Remove ${itemLabel}`)
+            : (labels?.decrease ?? `Decrease ${itemLabel}`)
+        }
         onClick={() => onChange(value - 1)}
       >
         −
@@ -70,8 +79,8 @@ export function QuantityStepper({
       <button
         type="button"
         className={btn}
-        disabled={value >= max}
-        aria-label={`Increase ${itemLabel}`}
+        disabled={disabled || value >= max}
+        aria-label={labels?.increase ?? `Increase ${itemLabel}`}
         onClick={() => onChange(value + 1)}
       >
         +

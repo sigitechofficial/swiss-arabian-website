@@ -1,14 +1,10 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { Package } from "lucide-react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import {
-  cancelOrder,
-  getCustomerOrderDetail,
-  type CancelOrderResponse,
   type CancellationWindow,
 } from "@/features/account/api/customerOrders.service";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
@@ -16,12 +12,7 @@ import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { orderDeliveryLabel, orderPaymentLabel } from "@/features/checkout/utils/methodLabels";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import {
-  getOrderTracking,
-  getOrderTrackingTimeline,
-} from "@/features/tracking/api/orderTracking.service";
 import { OrderTrackingPanel } from "@/features/tracking/components/OrderTrackingPanel";
-import { ApiClientError } from "@/lib/api/apiError";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
 import { AppliedCampaigns } from "@/features/promotions/components/AppliedCampaigns";
 import { readPromotionSnapshot } from "@/features/promotions/types/promotions";
@@ -64,23 +55,18 @@ import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
-import { cancelOutcome, readOrderRefunds, refundCustomerStatus } from "../utils/orderAftercare";
+import { refundCustomerStatus } from "../utils/orderAftercare";
+import { useCancellationCountdown, useCustomerOrderDetail, type OrderCancelError } from "../hooks/useCustomerOrders";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
 
 type Feedback = { tone: keyof typeof orderNoticeTone; text: string };
 
-function cancelFeedback(result: CancelOrderResponse): Feedback {
-  return cancelOutcome(result);
-}
-
-function cancelErrorText(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    if (error.code === "BUSINESS_RULE_FAILED") return "This order can no longer be cancelled.";
-    if (error.status === 404) return "We couldn’t find this order.";
-    return error.message;
-  }
-  return "We couldn’t cancel this order. Please try again.";
+function cancelErrorText(error: OrderCancelError): string {
+  if (error === "closed") return "This order can no longer be cancelled.";
+  if (error === "notFound") return "We couldn’t find this order.";
+  if (error === "failed") return "We couldn’t cancel this order. Please try again.";
+  return error.message;
 }
 
 function Panel({
@@ -140,33 +126,10 @@ function CancelOrderPanel({
   onConfirm: () => void;
   onExpired: () => void;
 }) {
-  const [now, setNow] = useState(fetchedAt);
   const [confirming, setConfirming] = useState(false);
-  const expiredReported = useRef(false);
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const endsAtMs =
-    cw.remainingSeconds != null
-      ? fetchedAt + cw.remainingSeconds * 1000
-      : cw.endsAt
-        ? Date.parse(cw.endsAt)
-        : fetchedAt;
-  const remaining = Math.max(0, Math.floor((endsAtMs - now) / 1000));
-
-  useEffect(() => {
-    if (remaining > 0 || expiredReported.current) return;
-    expiredReported.current = true;
-    onExpired();
-  }, [remaining, onExpired]);
+  const { remaining, mmss } = useCancellationCountdown(cw, fetchedAt, onExpired);
 
   if (remaining <= 0) return null;
-
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
 
   return (
     <div className={orderCancel}>
@@ -175,7 +138,7 @@ function CancelOrderPanel({
         <p className="m-0 mt-0.5 text-[0.76rem]">
           Window closes in{" "}
           <span className="font-semibold tabular-nums" aria-live="off">
-            {mm}:{ss}
+            {mmss}
           </span>
         </p>
       </div>
@@ -204,48 +167,24 @@ function CancelOrderPanel({
 }
 
 export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
-  const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const detailQuery = useQuery({
-    queryKey: ["customer-order-detail", orderId],
-    queryFn: () => getCustomerOrderDetail(orderId),
-    retry: 1,
-  });
-  const orderNumber = detailQuery.data?.order.orderNumber ?? null;
+  const {
+    detailQuery,
+    trackingSummary: trackingFromHook,
+    timeline,
+    showCancel,
+    cancel,
+    cancelling,
+    cancelResult,
+    cancelFailure,
+    refreshOrder,
+    refunds: refundsFromHook,
+  } = useCustomerOrderDetail(orderId);
   const orderReward = useOrderReward(orderId);
-
-  // Richer tracking view (carrier, estimated delivery, shipment items). The
-  // detail payload is the fallback if it can't be loaded.
-  const trackingQuery = useQuery({
-    queryKey: ["order-tracking", orderNumber, "account"],
-    queryFn: () => getOrderTracking(orderNumber as string),
-    enabled: Boolean(orderNumber),
-    retry: false,
-    staleTime: 60_000,
-  });
-  const shipmentCount =
-    trackingQuery.data?.shipments.length ?? detailQuery.data?.order.shipments?.length ?? 0;
-  const timelineQuery = useQuery({
-    queryKey: ["order-tracking-timeline", orderNumber, "account"],
-    queryFn: () => getOrderTrackingTimeline(orderNumber as string),
-    enabled: Boolean(orderNumber) && shipmentCount > 0,
-    retry: false,
-    staleTime: 60_000,
-  });
-
-  const refreshOrder = () => {
-    void queryClient.invalidateQueries({ queryKey: ["customer-order-detail", orderId] });
-    void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
-    void queryClient.invalidateQueries({ queryKey: ["order-tracking"] });
-  };
-
-  const cancelMutation = useMutation({
-    mutationFn: () => cancelOrder(orderId, "Cancelled by customer"),
-    onSuccess: (result) => setFeedback(cancelFeedback(result)),
-    onError: (error) => setFeedback({ tone: "error", text: cancelErrorText(error) }),
-    onSettled: refreshOrder,
-  });
+  const feedback: Feedback | null = cancelResult
+    ? cancelResult
+    : cancelFailure
+      ? { tone: "error", text: cancelErrorText(cancelFailure) }
+      : null;
 
   if (detailQuery.isPending) {
     return (
@@ -278,14 +217,11 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const reference = order.orderNumber ?? orderId.slice(0, 8).toUpperCase();
   const shippingAddress = order.addresses.find((a) => a.addressType === "SHIPPING");
   const billingAddress = order.addresses.find((a) => a.addressType === "BILLING");
-  const trackingSummary = trackingQuery.data ?? trackingSummaryFromDetail(data);
+  const trackingSummary = trackingFromHook ?? trackingSummaryFromDetail(data);
   const payable = needsPayment(order.status, order.paymentStatus);
-  const showCancel =
-    Boolean(cancellationWindow?.canCancel && cancellationWindow.isInsideWindow) &&
-    !cancelMutation.isSuccess;
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
   const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
-  const refunds = readOrderRefunds(order.refunds);
+  const refunds = refundsFromHook;
   const staffQuote = readEmployeeCheckout(
     (order as { staffPurchase?: unknown }).staffPurchase ??
       (
@@ -351,10 +287,9 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
               <CancelOrderPanel
                 window={cancellationWindow}
                 fetchedAt={detailQuery.dataUpdatedAt}
-                pending={cancelMutation.isPending}
+                pending={cancelling}
                 onConfirm={() => {
-                  setFeedback(null);
-                  cancelMutation.mutate();
+                  cancel();
                 }}
                 onExpired={refreshOrder}
               />
@@ -370,7 +305,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
         <div className={accountLayout}>
           {/* Progress first, then what was ordered, then the shipment history. */}
-          <OrderTrackingPanel summary={trackingSummary} timeline={timelineQuery.data}>
+          <OrderTrackingPanel summary={trackingSummary} timeline={timeline}>
             <Panel title={`Items (${order.lines.length})`} flush>
               <ul className={orderLines} role="list">
                 {order.lines.map((line) => {

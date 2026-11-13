@@ -1,9 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
 import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
@@ -53,28 +51,13 @@ import {
 } from "@/styles/checkoutChrome";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
-import {
-  ORDER_PROGRESS_STEPS,
-  formatOrderDate,
-  orderProgressStep,
-} from "@/features/orders/utils/orderStatus";
-import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
+import { ORDER_PROGRESS_STEPS, formatOrderDate } from "@/features/orders/utils/orderStatus";
 import type { OrderAddressSummary } from "../types/checkout";
+import { useOrderConfirmation, type OrderPaymentState } from "../hooks/useOrderConfirmation";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
-import { trackPromotion } from "@/features/promotions/utils/promotionAnalytics";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 
-type PaymentState = "success" | "pending" | "failed";
-
-function paymentState(status?: string | null): PaymentState {
-  const s = status?.toUpperCase() ?? "";
-  // A refund (partial or full) only happens after the payment was confirmed.
-  if (s === "PAID" || s === "AUTHORIZED" || s === "PARTIALLY_REFUNDED" || s === "REFUNDED") {
-    return "success";
-  }
-  if (s === "FAILED" || s === "DECLINED" || s === "CANCELLED") return "failed";
-  return "pending";
-}
+type PaymentState = OrderPaymentState;
 
 const STEP_HINTS: Record<(typeof ORDER_PROGRESS_STEPS)[number], string> = {
   Placed: "We’ve received your order",
@@ -91,16 +74,6 @@ function countryName(code: string | null): string | null {
   } catch {
     return code;
   }
-}
-
-function sameAddress(a?: OrderAddressSummary, b?: OrderAddressSummary): boolean {
-  if (!a || !b) return false;
-  return (
-    a.fullName === b.fullName &&
-    a.address1 === b.address1 &&
-    a.city === b.city &&
-    a.countryCode === b.countryCode
-  );
 }
 
 function StatusBadge({ state }: { state: PaymentState }) {
@@ -161,55 +134,9 @@ function AddressBlock({ title, address }: { title: string; address: OrderAddress
 }
 
 export function OrderConfirmationView({ orderId }: { orderId: string }) {
-  const searchParams = useSearchParams();
-  const verify = searchParams.get("verify") === "1";
-
-  const orderQuery = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: () => getOrder(orderId),
-    retry: 1,
-  });
-
+  const { orderQuery, polling, state, details, checking, checkAgain } = useOrderConfirmation(orderId);
   // Frozen order snapshot — never the last cart estimate.
   const orderReward = useOrderReward(orderId);
-
-  const loadedOrder = orderQuery.data;
-  const method = loadedOrder?.selectedPaymentMethod;
-  // Cash on delivery has no gateway step to wait for.
-  const payOffline = /\bcod\b|cash/i.test(`${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`);
-
-  // Gateways (Paymob, Stripe 3DS) send the shopper here straight after paying —
-  // that proves nothing. While an online payment still reads pending, poll
-  // payment-status until the webhook settles it (or we time out).
-  const shouldPoll =
-    Boolean(loadedOrder) &&
-    !payOffline &&
-    (verify || paymentState(loadedOrder?.paymentStatus) === "pending");
-
-  const settle = useQuery({
-    queryKey: ["order-payment-settle", orderId],
-    queryFn: () => pollUntilPaymentSettles(orderId),
-    enabled: shouldPoll,
-    staleTime: Infinity,
-    gcTime: 0,
-    retry: false,
-  });
-  const polling = shouldPoll && !settle.data && !settle.isError;
-  const purchaseSent = useRef(false);
-
-  useEffect(() => {
-    const placed = orderQuery.data;
-    if (!placed || purchaseSent.current) return;
-    const method = placed.selectedPaymentMethod;
-    const offline = /\bcod\b|cash/i.test(
-      `${method?.providerCode ?? ""} ${method?.methodCode ?? ""}`,
-    );
-    const raw = paymentState(settle.data?.status ?? placed.paymentStatus);
-    const paid = offline && raw === "pending" ? "success" : raw;
-    if (paid !== "success") return;
-    purchaseSent.current = true;
-    trackPromotion("promotion_order_completed", { surface: "order" });
-  }, [orderQuery.data, settle.data?.status]);
 
   if (orderQuery.isPending || polling) {
     return (
@@ -242,31 +169,22 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     );
   }
 
-  const rawState = paymentState(settle.data?.status ?? order.paymentStatus);
-  // A cash-on-delivery order is confirmed on placement; payment comes later.
-  const state: PaymentState = payOffline && rawState === "pending" ? "success" : rawState;
+  const {
+    shippingAddress,
+    billingAddress,
+    billingSameAsShipping,
+    firstName,
+    email,
+    isGuest,
+    retryHref,
+    trackHref,
+    itemCount,
+    currentStep,
+    showProgress,
+  } = details!;
   const currency = order.currency;
-  const shippingAddress = order.addresses?.find((a) => a.addressType === "SHIPPING");
-  const billingAddress = order.addresses?.find((a) => a.addressType === "BILLING");
-  const firstName = (order.customer?.fullName ?? shippingAddress?.fullName ?? "")
-    .trim()
-    .split(/\s+/)[0];
-  const email = order.customer?.email;
-  const isGuest = Boolean(order.customer?.isGuest);
-  const retryHref = `/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`;
-  const trackHref = order.orderNumber
-    ? isGuest
-      ? `/track/${encodeURIComponent(order.orderNumber)}`
-      : `/account/orders/${encodeURIComponent(order.orderId)}#tracking`
-    : null;
   const totals = order.totals;
   const shippingTotal = Number(totals.shipping);
-  const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
-
-  // A just-paid order can still read PAYMENT_PENDING for a moment — never show it behind "Confirmed".
-  const rawStep = orderProgressStep(order.status);
-  const currentStep = state === "success" ? Math.max(rawStep, 1) : rawStep;
-  const showProgress = state !== "failed" && currentStep >= 0;
 
   return (
     <CheckoutStateShell current="Order confirmation">
@@ -362,13 +280,10 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
               <button
                 type="button"
                 className={checkoutCta}
-                disabled={settle.isFetching}
-                onClick={() => {
-                  void settle.refetch();
-                  void orderQuery.refetch();
-                }}
+                disabled={checking}
+                onClick={checkAgain}
               >
-                <span>{settle.isFetching ? "Checking…" : "Check again"}</span>
+                <span>{checking ? "Checking…" : "Check again"}</span>
                 <b aria-hidden="true">↗</b>
               </button>
               <LocaleLink className={checkoutCtaGhost} href={retryHref}>
@@ -503,7 +418,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             <h2 id="order-delivery">Delivery &amp; payment</h2>
             {shippingAddress ? <AddressBlock title="Ship to" address={shippingAddress} /> : null}
             {billingAddress ? (
-              sameAddress(shippingAddress, billingAddress) ? (
+              billingSameAsShipping ? (
                 <div className={ocAddress}>
                   <h3>Bill to</h3>
                   <p className={ocAddressSame}>Same as shipping address</p>

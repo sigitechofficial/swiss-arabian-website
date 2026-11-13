@@ -1,22 +1,13 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useState, type FormEvent } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import {
   CheckoutSpinnerState,
   CheckoutStateShell,
 } from "@/features/checkout/components/CheckoutStateShell";
-import {
-  getStoredGuestOrderAccessToken,
-  storeGuestOrderAccessToken,
-} from "@/features/checkout/utils/checkoutSession";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { formatOrderDate, orderStatusDisplay } from "@/features/orders/utils/orderStatus";
-import { useHydrated } from "@/hooks/useHydrated";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
 import {
   cbox,
@@ -32,7 +23,7 @@ import {
 } from "@/styles/checkoutChrome";
 import { GuestAfterSalesSection } from "@/features/afterSales";
 import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
-import { getOrderTracking, getOrderTrackingTimeline } from "../api/orderTracking.service";
+import { useGuestTracking } from "../hooks/useOrderTrackingLookup";
 import { OrderTrackingPanel } from "./OrderTrackingPanel";
 
 /**
@@ -40,76 +31,28 @@ import { OrderTrackingPanel } from "./OrderTrackingPanel";
  * one-time `orderAccessToken` issued at order creation — never the order number.
  */
 export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const hydrated = useHydrated();
-  const bootstrapped = useAuthStore((s) => s.bootstrapped);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  // Email links carry the token as `?token=`. Keep it (scoped to this order)
-  // and take it out of the address bar so it isn't shared or logged.
-  const rawUrlToken = searchParams.get("token") ?? searchParams.get("orderAccessToken");
-  const urlToken = rawUrlToken && rawUrlToken !== orderNumber ? rawUrlToken : null;
-  useEffect(() => {
-    if (!urlToken) return;
-    storeGuestOrderAccessToken(orderNumber, urlToken);
-    router.replace(pathname);
-  }, [urlToken, orderNumber, pathname, router]);
-
-  const storedToken = hydrated ? getStoredGuestOrderAccessToken(orderNumber) : null;
-  const [enteredToken, setEnteredToken] = useState<string | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const token = enteredToken ?? urlToken ?? storedToken;
-
-  const accountQuery = useQuery({
-    queryKey: ["order-tracking", orderNumber, "account"],
-    queryFn: () => getOrderTracking(orderNumber),
-    enabled: bootstrapped && isAuthenticated,
-    retry: false,
-  });
-
-  // Guests — or signed-in shoppers tracking an order that isn't theirs.
-  const guestEnabled =
-    bootstrapped && Boolean(token) && (!isAuthenticated || accountQuery.isError);
-  const guestQuery = useQuery({
-    queryKey: ["order-tracking", orderNumber, "guest", token],
-    queryFn: () => getOrderTracking(orderNumber, token),
-    enabled: guestEnabled,
-    retry: false,
-  });
-
-  // Persist a manually entered token only once it has actually worked.
-  useEffect(() => {
-    if (guestQuery.data && token) storeGuestOrderAccessToken(orderNumber, token);
-  }, [guestQuery.data, token, orderNumber]);
-
-  const summary = accountQuery.data ?? guestQuery.data ?? null;
-  const viaGuestToken = !accountQuery.data && Boolean(guestQuery.data);
-  const timelineQuery = useQuery({
-    queryKey: ["order-tracking-timeline", orderNumber, viaGuestToken ? token : "account"],
-    queryFn: () => getOrderTrackingTimeline(orderNumber, viaGuestToken ? token : null),
-    enabled: Boolean(summary?.shipments.length),
-    retry: false,
-  });
-
-  const loading =
-    !hydrated ||
-    !bootstrapped ||
-    (isAuthenticated && accountQuery.isPending) ||
-    (guestEnabled && guestQuery.isPending);
-
-  function lookup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = tokenInput.trim();
-    if (!value) return setFormError("Enter the tracking token from your confirmation email.");
-    if (value.toUpperCase() === orderNumber.toUpperCase()) {
-      return setFormError("That’s your order number — paste the tracking token from your confirmation email instead.");
-    }
-    setFormError(null);
-    setEnteredToken(value);
-  }
+  const {
+    pathname,
+    isAuthenticated,
+    loading,
+    summary,
+    timeline,
+    viaGuestToken,
+    token,
+    ownOrder,
+    notInAccount,
+    tokenRejected,
+    tokenInput,
+    setTokenInput,
+    formError: formErrorKind,
+    lookup,
+  } = useGuestTracking(orderNumber);
+  const formError =
+    formErrorKind === "empty"
+      ? "Enter the tracking token from your confirmation email."
+      : formErrorKind === "isOrderNumber"
+        ? "That’s your order number — paste the tracking token from your confirmation email instead."
+        : null;
 
   if (loading) {
     return (
@@ -137,7 +80,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
             </div>
           </header>
 
-          <OrderTrackingPanel summary={summary} timeline={timelineQuery.data} />
+          <OrderTrackingPanel summary={summary} timeline={timeline} />
 
           {viaGuestToken && token ? (
             <GuestAfterSalesSection
@@ -150,7 +93,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
           ) : null}
 
           <div className={`${checkoutDoneActions} pt-4`}>
-            {accountQuery.data && !summary.isGuestOrder ? (
+            {ownOrder ? (
               <LocaleLink
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href={`/account/orders/${encodeURIComponent(summary.orderId)}`}
@@ -172,9 +115,6 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
       </CheckoutStateShell>
     );
   }
-
-  const notInAccount = isAuthenticated && accountQuery.isError;
-  const tokenRejected = guestQuery.isError;
 
   return (
     <CheckoutStateShell current="Track order">

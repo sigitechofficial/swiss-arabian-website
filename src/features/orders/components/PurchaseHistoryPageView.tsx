@@ -1,22 +1,20 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
-import { listOrders, type OrderSummaryApi } from "@/features/account/api/customerOrders.service";
+import type { OrderSummaryApi } from "@/features/account/api/customerOrders.service";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
   formatOrderDate,
-  isActiveOrder,
   orderPrimaryAction,
   orderStatusDisplay,
   shipmentStatusLabel,
 } from "../utils/orderStatus";
+import { useCustomerOrders } from "../hooks/useCustomerOrders";
 
 const ACTION_CLASS =
   "flex h-8 items-center gap-1.5 rounded border px-3 text-[11px] font-semibold transition-colors";
@@ -116,25 +114,9 @@ function EmptyOrders() {
   );
 }
 
-const PAGE_SIZE = 20;
-
 export function PurchaseHistoryPageView() {
-  const [offset, setOffset] = useState(0);
-
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["customer-orders", offset],
-    queryFn: () => listOrders({ limit: PAGE_SIZE, offset }),
-    staleTime: 0,
-    refetchOnMount: "always",
-  });
-
-  const orders = data?.items ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-
-  const active = orders.filter((o) => isActiveOrder(o.status));
-  const past = orders.filter((o) => !isActiveOrder(o.status));
+  const { isLoading, isError, refetch, orders, active, past, totalPages, currentPage, previous, next } =
+    useCustomerOrders();
 
   return (
     <AccountPageShell>
@@ -147,7 +129,7 @@ export function PurchaseHistoryPageView() {
           <p className="text-[13px] text-sa-primary">We couldn’t load your orders.</p>
           <button
             type="button"
-            onClick={() => void refetch()}
+            onClick={refetch}
             className="mt-3 text-[12px] font-semibold text-terra underline underline-offset-4"
           >
             Try again
@@ -183,7 +165,7 @@ export function PurchaseHistoryPageView() {
             <div className={`${accountContainer} flex items-center justify-center gap-3 py-8`}>
               <button
                 type="button"
-                onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                onClick={previous}
                 disabled={currentPage === 1}
                 className="flex h-9 items-center gap-1.5 rounded border border-sa-border px-4 text-[12px] font-medium text-sa-primary transition-colors hover:border-terra disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -194,7 +176,7 @@ export function PurchaseHistoryPageView() {
               </span>
               <button
                 type="button"
-                onClick={() => setOffset(offset + PAGE_SIZE)}
+                onClick={next}
                 disabled={currentPage === totalPages}
                 className="flex h-9 items-center gap-1.5 rounded border border-sa-border px-4 text-[12px] font-medium text-sa-primary transition-colors hover:border-terra disabled:cursor-not-allowed disabled:opacity-40"
               >

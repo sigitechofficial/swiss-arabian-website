@@ -24,6 +24,8 @@ export type DrawerProps = {
   title: ReactNode;
   /** item count chip after the title (`.bag-n`); its label reads "3 items" */
   count?: number;
+  /** translated accessible name for the count chip, e.g. "3 items" */
+  countLabel?: string;
   closeLabel?: string;
   /** free-delivery card row (`.ship`), e.g. <FreeDeliveryCard /> */
   ship?: ReactNode;
@@ -37,7 +39,7 @@ export type DrawerProps = {
  * close button, Escape and the scrim close it, focus returns to the opener, and it is inert
  * while closed.
  */
-export function Drawer({ open, onClose, title, count, closeLabel = "Close bag", ship, footer, children }: DrawerProps) {
+export function Drawer({ open, onClose, title, count, countLabel, closeLabel = "Close bag", ship, footer, children }: DrawerProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   useReturnFocus(open);
@@ -65,8 +67,8 @@ export function Drawer({ open, onClose, title, count, closeLabel = "Close bag", 
         aria-labelledby={titleId}
         inert={!open}
         className={cx(
-          "fixed top-0 right-0 bottom-0 w-[min(440px,100%)] bg-sapil-paper z-[61] [transition:transform_.35s_var(--sapil-ease)] flex flex-col shadow-sapil-lg",
-          open ? "[transform:none]" : "[transform:translateX(100%)]",
+          "fixed top-0 end-0 bottom-0 w-[min(440px,100%)] bg-sapil-paper z-[61] [transition:transform_.35s_var(--sapil-ease)] flex flex-col shadow-sapil-lg",
+          open ? "[transform:none]" : "[transform:translateX(100%)] rtl:[transform:translateX(-100%)]",
         )}
       >
         <div className="flex justify-between items-center py-[20px] px-[24px] border-b border-transparent bg-[linear-gradient(120deg,var(--sapil-p-pink),var(--sapil-p-peach)_55%,var(--sapil-p-butter))]">
@@ -74,8 +76,8 @@ export function Drawer({ open, onClose, title, count, closeLabel = "Close bag", 
             {title}
             {count ? (
               <span
-                aria-label={`${count} item${count === 1 ? "" : "s"}`}
-                className="inline-grid place-items-center min-w-[28px] h-[28px] px-[9px] ml-[6px] rounded-full bg-sapil-white font-sapil-sans text-[13px] font-[600] text-sapil-ink align-middle shadow-[0_1px_3px_rgba(60,45,30,.1)]"
+                aria-label={countLabel ?? `${count} item${count === 1 ? "" : "s"}`}
+                className="inline-grid place-items-center min-w-[28px] h-[28px] px-[9px] ms-[6px] rounded-full bg-sapil-white font-sapil-sans text-[13px] font-[600] text-sapil-ink align-middle shadow-[0_1px_3px_rgba(60,45,30,.1)]"
               >
                 {count}
               </span>
@@ -164,7 +166,7 @@ export function Toast({ open, message, action }: ToastProps) {
         <button
           type="button"
           onClick={action.onClick}
-          className="ml-[12px] font-[700] text-sapil-white underline underline-offset-[3px] pointer-events-auto"
+          className="ms-[12px] font-[700] text-sapil-white underline underline-offset-[3px] pointer-events-auto"
         >
           {action.label}
         </button>
@@ -185,6 +187,8 @@ export type FreeDeliveryCardProps = {
   /** badge text; defaults to "Free" when unlocked, else "{percent}%" */
   badge?: ReactNode;
   icon?: ReactNode;
+  /** translated accessible name of the bar; default "Progress to free delivery" */
+  progressLabel?: string;
 };
 
 const TRUCK = (
@@ -201,7 +205,7 @@ const TICK = (
 );
 
 /** v9 `.ship-card`: progress to free delivery (navy), green once unlocked. */
-export function FreeDeliveryCard({ percent, unlocked, title, detail, badge, icon }: FreeDeliveryCardProps) {
+export function FreeDeliveryCard({ percent, unlocked, title, detail, badge, icon, progressLabel = "Progress to free delivery" }: FreeDeliveryCardProps) {
   const p = Math.max(0, Math.min(100, Math.round(percent)));
   return (
     <div
@@ -234,7 +238,7 @@ export function FreeDeliveryCard({ percent, unlocked, title, detail, badge, icon
       </span>
       <span
         role="progressbar"
-        aria-label="Progress to free delivery"
+        aria-label={progressLabel}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={p}
@@ -243,7 +247,7 @@ export function FreeDeliveryCard({ percent, unlocked, title, detail, badge, icon
         <span
           style={{ width: `${p}%` }}
           className={cx(
-            "absolute inset-[0_auto_0_0] rounded-[inherit] [transition:width_.6s_var(--sapil-ease)] overflow-hidden after:content-[''] after:absolute after:inset-0 after:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)] after:[transform:translateX(-100%)] after:animate-sapil-ship-shine",
+            "absolute inset-y-0 start-0 rounded-[inherit] [transition:width_.6s_var(--sapil-ease)] overflow-hidden after:content-[''] after:absolute after:inset-0 after:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)] after:[transform:translateX(-100%)] after:animate-sapil-ship-shine",
             unlocked
               ? "bg-[linear-gradient(90deg,var(--sapil-ok),var(--sapil-ok-2))]"
               : "bg-[linear-gradient(90deg,var(--sapil-accent),var(--sapil-accent-2))]",

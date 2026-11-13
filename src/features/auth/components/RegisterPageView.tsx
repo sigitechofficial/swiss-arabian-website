@@ -1,78 +1,19 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { toast } from "@/components/ui/Toaster";
-import { env } from "@/lib/config/env";
-import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
-import { useUiStore } from "@/stores/useUiStore";
-import { registerCustomer, splitFullName } from "../api/auth.service";
-import { applyAuthResult } from "../lib/applyAuthSession";
-import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
-import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
-import { markNewAccount } from "../utils/newAccountGreeting";
+import { Controller } from "react-hook-form";
+import { useRegisterForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
 
 export function RegisterPageView() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requested = searchParams.get("returnTo") || "";
-  const returnTo = requested.startsWith("/") ? requested : "/account";
-  const copy = useShopCopy();
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: "", email: "", phone: "", password: "" },
-  });
-
-  async function onSubmit(values: RegisterFormValues) {
-    try {
-      const { firstName, lastName } = splitFullName(values.fullName);
-      const saved = useUiStore.getState();
-      const zoneCode = toAuthZoneCode(saved.catalogContext?.zoneCode || saved.selectedMarketId);
-      if (!zoneCode) {
-        toast(copy("chooseCountry"), "error");
-        return;
-      }
-      const context = resolveStorefrontContext({ zoneCode });
-      const result = await registerCustomer({
-        zoneCode: context.zoneCode || zoneCode,
-        salesChannelCode: context.salesChannelCode || undefined,
-        email: values.email,
-        // Already E.164 from the phone field.
-        phone: values.phone,
-        password: values.password,
-        firstName,
-        lastName,
-        // Without the code screen there is nowhere to finish, so only ask when it is on.
-        verifyEmailFirst: env.flags.verification,
-      });
-      // The first dashboard visit says "Welcome", not "Welcome back".
-      markNewAccount(values.email);
-      if (isEmailVerificationRequired(result)) {
-        // The account exists; the emailed code finishes the sign-up and signs in.
-        const query = new URLSearchParams({ email: result.email, returnTo });
-        router.push(`/verify?${query.toString()}`);
-        return;
-      }
-      if (isAuthResult(result)) {
-        applyAuthResult(result);
-        router.push(returnTo);
-      }
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const { form, oauthEnabled, submit } = useRegisterForm();
 
   return (
     <AuthShell heading="Create an account" subtitle="Join Swiss Arabian to check out faster and save your favourites.">
-      <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
-        {env.flags.oauth ? (
+      <form className="flex w-full flex-col" onSubmit={submit}>
+        {oauthEnabled ? (
           <>
             <AuthSocialButtons />
             <AuthDivider />
