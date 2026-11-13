@@ -24,7 +24,7 @@ export function priceEditChip(tiers: number[], currency: string | null, label: (
   return {
     id: `under-${tier}`,
     label: label(price(tier, currency)),
-    href: `/products?maxPrice=${tier}`,
+    href: `/products?under=${tier}`,
     color: "pink" as const,
     sale: true,
   };

@@ -62,18 +62,17 @@ Each default is reversible. It is used only so the work isn't blocked.
 
 ## Known gaps (for the reviewer agents)
 
-- **Product cards:**
-  - Home rails use `HomeProductTile` and the account wishlist uses an inline `ProductCard`. Both should move to the shared `SapilProductCard`, keeping the mood band's white tiles.
+- ~~**Product cards:** home rails / wishlist on `HomeProductTile` / inline `ProductCard`~~ — closed by reviewer 2: every Sapil card (home rails, mood band with white tiles, search dialog, wishlist, grids) is `SapilProductCard`.
 - **Wording not yet Sapil's or translated:**
-  - Payment screens' inner copy is English / Swiss Arabian-styled.
-  - The global Toaster is raised by shared account mutations.
+  - ~~Payment screens' inner copy~~ — return screens (success, cancel / retry, Tabby, Telr) closed by reviewer 2 (Sapil views, en + ar). **Still open:** the Paymob and Stripe card-form screens render the shared provider views (Swiss Arabian copy and styling) inside Sapil's frame.
+  - Toasts on Sapil pages are drawn by `SapilToastHost` (Sapil style), but sentences raised by shared hooks (account mutations, wishlist) are the shared English ones.
   - API error sentences.
   - `features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.
-- **Per-brand metadata:** some route metadata still uses Swiss Arabian wording from `src/messages` (e.g. the blog meta description). It needs brand-aware defaults from `getBrand()`.
+- ~~**Per-brand metadata**~~ — closed by reviewer 2: `routeTranslator()` fills `{brand}` with the deployment brand's name, and the five route descriptions (blog, collections, track, stores, FAQ) use it. A Sapil build's HTML has no "Swiss Arabian" / "سويس" text.
 - **`getBrand()` adoption** (callers listed in `src/lib/brand/README.md`):
   - analytics, Insider, Tabby, Maps, catalog media base and storefront host still read env directly
   - layout icons and site name
-  - the Insider default in `env.ts`
+  - ~~the Insider default in `env.ts`~~ — closed by reviewer 2: `env.insider` comes from the deployment brand (`deploymentInsider()`); Sapil builds no longer load Swiss Arabian's `ins.js` (account 10015366).
 - **Not yet Sapil-styled:**
   - `OfferShop`
   - rewards / subscriptions / employee benefits / gift box (off for Sapil; never linked)
@@ -84,6 +83,10 @@ Each default is reversible. It is used only so the work isn't blocked.
   - No collection colour field.
   - No product FAQ source.
   - Sapil Arabic font.
+- **Platform (found by reviewer 2, not changed: shared routing):**
+  - Transactional paths (`/checkout`, `/login`, `/register`, `/track`, `/order-confirmation`, …) are never locale-prefixed by `localizeHref`, so an Arabic shopper who clicks "Checkout", "Create account" or "Track" lands on the **English** page. The `/ar/…` versions of those routes render correctly in Arabic. Their RSC prefetch from an `/ar` page also 404s (console noise; navigation falls back to a full load). Needs a product decision: keep the language through checkout and sign-in (recommended), or keep them English.
+  - Swiss Arabian merchandising slugs (`you-may-also-like`, `dont-miss-this`, `new-launches`) are requested on Sapil and 404 until Sapil's admin creates those rails (data; or make the slugs per brand).
+  - Forgot password puts the shopper's email in the reset URL (`/reset-password?identifier=…`); better kept in session storage.
 - **Platform:**
   - Unmatched URLs get Next's error shell (the client then draws our 404), not a server-rendered 404.
   - `check:brand` not yet wired into CI / Docker.

@@ -7,7 +7,7 @@ const css = fs.readFileSync(path.join(__dirname, "theme.css"), "utf8");
 /** v9 :root tokens (assets/sapil-v9.css), name → value. */
 const V9: Record<string, string> = {
   paper: "#f7f3ee", sand: "#efe8de", card: "#fffdfa", ink: "#1e1b18", "ink-2": "#4a443d",
-  muted: "#7a7166", line: "#e4ddd2", "line-2": "#d6cdc0",
+  muted: "#6f665b" /* v9 #7a7166, darkened for contrast (see below) */, line: "#e4ddd2", "line-2": "#d6cdc0",
   accent: "#16305c", "accent-2": "#22447d", "accent-soft": "#e7ebf3",
   "p-pink": "#fbe5ee", "p-peach": "#fdebe1", "p-butter": "#fff3d4", "p-mint": "#dff3ea", "p-sky": "#e2edfb",
   "p-lilac": "#eee6fb", "p-sand": "#f4ece1", "p-sage": "#e9efe1", "p-lime": "#f0f7d4",
@@ -19,6 +19,16 @@ const V9: Record<string, string> = {
 describe("Sapil theme tokens", () => {
   it.each(Object.entries(V9))("--sapil-%s matches v9", (name, value) => {
     expect(css).toMatch(new RegExp(`--sapil-${name}:\\s*${value};`));
+  });
+
+  it("keeps muted text at WCAG AA (4.5:1) on paper, sand and every pastel", () => {
+    const lum = (hex: string) => {
+      const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    };
+    const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+    for (const bg of ["paper", "sand", "card", ...Object.keys(V9).filter((n) => n.startsWith("p-"))])
+      expect(ratio(V9.muted, V9[bg]), bg).toBeGreaterThanOrEqual(4.5);
   });
 
   it("scopes raw tokens to [data-brand=sapil], never :root", () => {

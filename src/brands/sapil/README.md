@@ -52,7 +52,7 @@ Swiss Arabian's navbar uses a bare `data-brand` attribute (logo wrapper) and has
 | v9 token | Tailwind | value |
 |---|---|---|
 | `--paper` `--sand` `--card` | `sapil-paper` `sapil-sand` `sapil-card` | #f7f3ee #efe8de #fffdfa |
-| `--ink` `--ink-2` `--muted` | `sapil-ink` `sapil-ink-2` `sapil-muted` | #1e1b18 #4a443d #7a7166 |
+| `--ink` `--ink-2` `--muted` | `sapil-ink` `sapil-ink-2` `sapil-muted` | #1e1b18 #4a443d #6f665b (v9 #7a7166, darkened to 4.5:1 on paper/sand/pastels; needs design sign-off) |
 | `--line` `--line-2` | `sapil-line` `sapil-line-2` | #e4ddd2 #d6cdc0 |
 | `--accent` `--accent-2` `--accent-soft` | `sapil-accent` `sapil-accent-2` `sapil-accent-soft` | #16305c #22447d #e7ebf3 |
 | `--p-pink … --p-lime` (9) | `sapil-p-pink` `-peach` `-butter` `-mint` `-sky` `-lilac` `-sand` `-sage` `-lime` | #fbe5ee #fdebe1 #fff3d4 #dff3ea #e2edfb #eee6fb #f4ece1 #e9efe1 #f0f7d4 |

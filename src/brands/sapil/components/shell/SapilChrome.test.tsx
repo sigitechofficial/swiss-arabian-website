@@ -75,7 +75,7 @@ describe("SapilChrome", () => {
     settings.value = { ...settings.value, freeDeliveryThreshold: 100, cashOnDelivery: true, priceEditTiers: [50, 99, 199] };
     render(<SapilChrome>page</SapilChrome>);
     expect(screen.getByText("Free delivery over AED 100 · Pay on delivery")).toBeInTheDocument();
-    expect(within(screen.getByRole("navigation", { name: "Shop by" })).getByRole("link", { name: "Under AED 99" })).toHaveAttribute("href", "/products?maxPrice=99");
+    expect(within(screen.getByRole("navigation", { name: "Shop by" })).getByRole("link", { name: "Under AED 99" })).toHaveAttribute("href", "/products?under=99");
   });
 
   it("opens the bag, search and phone menu, and shows shared toasts", () => {
