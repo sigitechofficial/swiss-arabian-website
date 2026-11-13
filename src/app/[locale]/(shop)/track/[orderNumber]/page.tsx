@@ -18,7 +18,7 @@ export default async function GuestTrackingPage({
 }) {
   const { orderNumber } = await params;
   return (
-    <Suspense fallback={<PageLoading label="Looking up your order…" fill />}>
+    <Suspense fallback={<PageLoading label="Looking up your order…" labelKey="orderLookup" fill />}>
       <GuestTrackingPageView orderNumber={decodeURIComponent(orderNumber)} />
     </Suspense>
   );

@@ -197,5 +197,21 @@
   "cardErrNeedsEmail": "Your order has no email address. Please contact us to finish paying.",
   "cardErrNeedsPhone": "Your order has no phone number. Please contact us to finish paying.",
   "cardErrNeedsName": "Your order has no name. Please contact us to finish paying.",
-  "cardOrderNumber": "Order {number}"
+  "cardOrderNumber": "Order {number}",
+  "inlineSecuredStripe": "Card details go straight to Stripe. We never store your full card number.",
+  "inlineSecuredPaymob": "Card details go straight to Paymob. We never store your full card number.",
+  "inlinePayHint": "Your card is charged when you tap Pay below.",
+  "inlineErrNeedsEmail": "Add your email in the delivery details, then tap Pay again.",
+  "inlineErrNeedsPhone": "Add your phone number in the delivery details, then tap Pay again.",
+  "inlineErrNeedsName": "Add your full name in the delivery details, then tap Pay again.",
+  "inlineSessionFailed": "This card payment couldn’t be loaded.",
+  "inlineOtherMethod": "Choose another way to pay",
+  "walletAppleNote": "You’ll confirm the payment with Face ID, Touch ID or your device passcode.",
+  "walletGoogleNote": "You’ll pick one of the cards saved in your Google account.",
+  "threeDsTitle": "Confirming your payment",
+  "threeDsBody": "Your bank is checking it’s you. Please don’t close or refresh this page.",
+  "threeDsFrame": "Card verification by your bank",
+  "threeDsCancelled": "The card check was cancelled. You can try again with the same card.",
+  "threeDsDeclined": "Your card was declined. Please try another card.",
+  "threeDsUnconfirmed": "We couldn’t confirm your payment. If your card was charged, please contact us before trying again."
 }

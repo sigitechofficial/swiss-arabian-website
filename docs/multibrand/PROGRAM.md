@@ -65,7 +65,7 @@ Each default is reversible. It is used only so the work isn't blocked.
 
 - ~~**Product cards:** home rails / wishlist on `HomeProductTile` / inline `ProductCard`~~ — closed by reviewer 2: every Sapil card (home rails, mood band with white tiles, search dialog, wishlist, grids) is `SapilProductCard`.
 - **Wording not yet Sapil's or translated:**
-  - ~~Payment screens' inner copy~~ — return screens (success, cancel / retry, Tabby, Telr) closed by reviewer 2 (Sapil views, en + ar). ~~Paymob and Stripe card-form screens~~ ✅ final UI check: Sapil's own views (`SapilCardPayment.tsx`, en + ar) on shared hooks. **Still open:** the inline card / wallet forms inside the checkout payment step (`InlineMethodPayment`, shared) and the Paymob 3-D Secure overlay's error sentence are Swiss Arabian's.
+  - ~~Payment screens' inner copy~~ — return screens (success, cancel / retry, Tabby, Telr) closed by reviewer 2 (Sapil views, en + ar). ~~Paymob and Stripe card-form screens~~ ✅ final UI check: Sapil's own views (`SapilCardPayment.tsx`, en + ar) on shared hooks. ~~The inline card / wallet forms inside the checkout payment step (`InlineMethodPayment`), the Tabby card and the Paymob 3-D Secure overlay's error sentence~~ ✅ `fix/remaining-gaps`: Sapil's own `SapilInlinePayment`, `SapilTabbyCard`, `SapilThreeDsModal` (en + ar) on shared hooks.
   - Toasts on Sapil pages are drawn by `SapilToastHost` (Sapil style), but sentences raised by shared hooks (account mutations, wishlist) are the shared English ones.
   - API error sentences.
   - ~~`features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.~~ ✅ closed (reviewer 1): `reviews.*` in `src/messages/en.json` + `ar.json` (plurals), the reply line names the brand.
@@ -200,10 +200,13 @@ scrolls sideways at 390 px exactly as on `5a55282`. Sapil v9 diff unchanged (0 %
 components; known data / copy differences on hero intro and footer).
 
 **Still open:** Sapil announcement links to `/shop?maxPrice=99` (CMS data; no `/shop` route);
-Swiss Arabian product "Details" panel empty in this build (not touched here); signed-in account
-pages not swept; Sapil has no posts / CMS pages / offers locally to see those views with data;
-Sapil checkout's inline card / wallet forms, Tabby card and 3-D Secure sentence are still Swiss
-Arabian's; Arabic web font for Sapil. Details: `docs/ui-check/BRAND_COVERAGE.md`.
+Sapil has no posts / CMS pages / offers locally to see those views with data; Arabic web font for
+Sapil. Details: `docs/ui-check/BRAND_COVERAGE.md`.
+~~Swiss Arabian product "Details" panel empty~~ (no regression: identical to `5a55282`, the diff
+was tab rotation timing), ~~signed-in account pages not swept~~, ~~Sapil checkout's inline card /
+wallet forms, Tabby card and 3-D Secure sentence still Swiss Arabian's~~, ~~`/ar/cart` sideways
+scroll~~, ~~React script-tag warning~~, ~~Sapil generic loading label~~ — closed by
+`fix/remaining-gaps` (log below).
 
 ## End-to-end order test from the screens (2026-11-13)
 
@@ -313,3 +316,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
 - **2026-11-13 (gaps round 2):** website `fix/order-flow-gaps` merged (2e4a90e); backend/admin fixes committed on `feat/sapil-cms`. Website: tsc + eslint clean, 1156 tests × 2 UIs.
 - **2026-11-13 (brand design coverage, branch `fix/brand-design-coverage`):** brand feature switches enforced (proxy 404 + page guard + link filters; `employeeBenefits` added, Sapil blog on); Sapil's own views for `/pages`, `/policies`, `/preview/home`, `/review/[token]`, `/offers/[code]`, loading, placeholders, footer SEO text, `/our-story` fallback and the free-gift dialog; Sapil Arabic controls keep Sapil's font. Every route swept for both brands (en + ar, 1280 + 390); results in `docs/ui-check/BRAND_COVERAGE.md`.
 - **2026-11-13 (brand coverage merged):** `fix/brand-design-coverage` merged (8edf8c5); tsc + eslint clean, 1210 tests x 2 UIs. Demo seed links fixed (backend 462667be). Content still needed for Sapil launch: policy pages (privacy, terms, delivery, returns), blog posts, CMS pages, offers - entered in the admin.
+- **2026-11-13 (remaining gaps, branch `fix/remaining-gaps`):** Swiss Arabian "Details" panel checked against `5a55282` (no regression; test added); `/ar/cart` sideways scroll fixed (logical margin); React "script tag" warning gone (root-layout inline scripts render from the server HTML only); Arabic mega-menu ids fixed (duplicate keys on every Swiss Arabian `/ar` page); Sapil's own inline card / wallet forms, Tabby card and 3-D Secure overlay on new shared hooks; Sapil loading lines translated per route; signed-in account pages swept for both brands (128 loads, all pass; `docs/ui-check/BRAND_COVERAGE.md`). tsc + eslint clean, 207 files / 1231 tests × 2 UIs, both builds pass. Open: the local API answers `inline-form` with `ready: false`, so inline card forms were not seen with a live provider session (unit-tested).

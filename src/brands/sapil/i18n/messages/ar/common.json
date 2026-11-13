@@ -1,6 +1,12 @@
 {
   "skipToContent": "تخطَّ إلى المحتوى",
   "loading": "جارٍ التحميل…",
+  "loadingSession": "جارٍ التحقق من تسجيل دخولك…",
+  "loadingRedirecting": "جارٍ نقلك إلى تسجيل الدخول…",
+  "loadingSavedItems": "جارٍ تحميل المحفوظات…",
+  "loadingWishlist": "جارٍ تحميل قائمة الأمنيات…",
+  "loadingOrder": "جارٍ تحميل طلبك…",
+  "loadingOrderLookup": "جارٍ البحث عن طلبك…",
   "tryAgain": "حاول مرة أخرى",
   "loadFailed": "تعذّر تحميل هذا الآن."
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { ServerInlineScript } from "@/components/layout/ServerInlineScript";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { getBrand } from "@/lib/brand";
@@ -108,14 +109,10 @@ export default async function RootLayout({
       <head>
         {/* Brand-specific head tags (Swiss Arabian: font preloads). */}
         <BrandHead />
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ServerInlineScript html={themeInitScript} />
         {insider.enabled && insider.accountId ? (
           <>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: insiderQueueBootScript,
-              }}
-            />
+            <ServerInlineScript html={insiderQueueBootScript} />
             <script
               async
               src={`https://${insider.scriptHost}/ins.js?id=${encodeURIComponent(insider.accountId)}`}

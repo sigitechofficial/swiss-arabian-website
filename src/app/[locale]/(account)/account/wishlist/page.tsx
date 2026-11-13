@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function AccountWishlistPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading wishlist…" fill />}>
+    <Suspense fallback={<PageLoading label="Loading wishlist…" labelKey="wishlist" fill />}>
       <AccountWishlistPageView title="Wishlist" />
     </Suspense>
   );

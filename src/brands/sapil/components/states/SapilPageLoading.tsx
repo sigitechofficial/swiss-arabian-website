@@ -4,7 +4,9 @@ import "@/brands/sapil/theme.css";
 import { SapilRoot } from "../../ui/SapilRoot";
 import { cx } from "../../ui/shared";
 import { useHasSapilCopy, useSapilCopy } from "../../i18n/SapilCopy";
+import type { SapilCopyKey } from "../../i18n/catalog";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import type { PageLoadingLabelKey } from "@/components/ui/PageLoading";
 
 /**
  * Sapil's `PageLoading` (route and sign-in-check fallbacks): three pastel
@@ -12,14 +14,32 @@ import { useShopCopy } from "@/lib/i18n/useShopCopy";
  * Arabian's perfume-bottle medallion. Some fallbacks render outside the Sapil
  * shell (sign-in pages), so it brings its own Sapil root.
  *
- * The route's English `label` is not shown: the text is "Loading…" in the
- * page's language (Sapil's wording inside the shell, the shared one outside).
+ * The route's English `label` is not shown: its `labelKey` picks Sapil's
+ * line in the page's language ("Loading your order…"), else "Loading…".
+ * Outside the shell (no Sapil copy) the shared "Loading…" is used.
  */
-export function SapilPageLoading({ fill = false }: { label?: string; fill?: boolean }) {
+const LABELS: Record<PageLoadingLabelKey, SapilCopyKey> = {
+  page: "common.loading",
+  session: "common.loadingSession",
+  redirecting: "common.loadingRedirecting",
+  savedItems: "common.loadingSavedItems",
+  wishlist: "common.loadingWishlist",
+  order: "common.loadingOrder",
+  orderLookup: "common.loadingOrderLookup",
+};
+
+export function SapilPageLoading({
+  labelKey = "page",
+  fill = false,
+}: {
+  label?: string;
+  labelKey?: PageLoadingLabelKey;
+  fill?: boolean;
+}) {
   const hasSapilCopy = useHasSapilCopy();
   const t = useSapilCopy();
   const shared = useShopCopy();
-  const label = hasSapilCopy ? t("common.loading") : shared("reviews.loading");
+  const label = hasSapilCopy ? t(LABELS[labelKey] ?? "common.loading") : shared("reviews.loading");
   return (
     <SapilRoot
       role="status"
