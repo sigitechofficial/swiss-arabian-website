@@ -19,7 +19,7 @@ import { SapilLink } from "../../components/commerce/shared";
 export function SapilCheckoutStateShell({ children }: { current?: string; children: ReactNode }) {
   const t = useSapilCopy();
   return (
-    <Wrap as="main" className="pt-[20px] pb-[88px] max-900:pb-[56px]">
+    <Wrap className="pt-[20px] pb-[88px] max-900:pb-[56px]">
       <Breadcrumbs
         label={t("content.breadcrumb")}
         items={[{ label: t("checkout.stepBag"), href: "/cart" }, { label: t("checkout.title") }]}

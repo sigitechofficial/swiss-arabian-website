@@ -7,6 +7,7 @@ import { SapilChrome } from "./SapilChrome";
 import { emphasized } from "./SapilAnnouncement";
 
 const nav = (id: string, type: NavItem["type"], href: string | null, children: NavItem[] = []): NavItem => ({ id, label: id, slug: null, type, href, children });
+const loading = vi.hoisted(() => ({ region: false, markets: false }));
 const settings = vi.hoisted(() => ({
   value: { zoneCode: "SAPIL_URD1", currencyCode: "AED", freeDeliveryThreshold: null as number | null, cashOnDelivery: null as boolean | null, priceEditTiers: [] as number[] },
 }));
@@ -31,7 +32,11 @@ vi.mock("@/features/navigation", () => ({
   }),
 }));
 vi.mock("@/features/markets/hooks/useMarketSettings", () => ({ useMarketSettings: () => settings.value }));
+vi.mock("@/features/markets/hooks/useStorefrontMarkets", () => ({
+  useStorefrontMarkets: () => ({ data: loading.markets ? undefined : { markets: [] }, isError: false }),
+}));
 vi.mock("@/features/cms/hooks/useCmsGlobalRegion", () => ({
+  useCmsGlobalRegion: () => ({ data: loading.region ? undefined : { sections: [] }, isError: false }),
   useAnnouncementBar: () => ({ items: [{ message: "New: The Scent Society", link: { type: "INTERNAL_PATH", url: "/collections/scent-society" } }], rotationIntervalMs: null, backgroundColor: null, textColor: null }),
   useFooterContent: () => ({ newsletterHeading: null, newsletterPlaceholder: null, newsletterButtonLabel: null, copyrightText: null, showPaymentBadges: true, socialLinks: [] }),
 }));
@@ -44,6 +49,8 @@ vi.mock("@/features/promotions/components/GiftChoiceHost", () => ({ GiftChoiceHo
 
 beforeEach(() => {
   settings.value = { ...settings.value, freeDeliveryThreshold: null, cashOnDelivery: null, priceEditTiers: [] };
+  loading.region = false;
+  loading.markets = false;
   window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as never;
   HTMLDialogElement.prototype.showModal ??= function () {};
 });
@@ -69,6 +76,21 @@ describe("SapilChrome", () => {
     expect(container.textContent).not.toMatch(/swiss arabian/i);
     // no market delivery data: the info text stays hidden (never hard-coded)
     expect(screen.queryByText(/Free delivery/)).toBeNull();
+  });
+
+  it("holds the announcement and Shop by rows' height while their data loads (no layout shift)", () => {
+    loading.region = true;
+    loading.markets = true;
+    const { container, rerender } = render(<SapilChrome>page</SapilChrome>);
+    expect(container.querySelector('[data-sapil-reserve="announce"]')).not.toBeNull();
+    expect(container.querySelector('[data-sapil-reserve="shop-by"]')).not.toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Shop by" })).toBeNull();
+    loading.region = false;
+    loading.markets = false;
+    rerender(<SapilChrome>page</SapilChrome>);
+    expect(container.querySelector("[data-sapil-reserve]")).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Shop by" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "New: The Scent Society" })).toBeInTheDocument();
   });
 
   it("shows the market's free-delivery and cash-on-delivery note and its price edit chip", () => {

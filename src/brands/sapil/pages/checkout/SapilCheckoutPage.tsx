@@ -229,7 +229,7 @@ export function SapilCheckoutPage() {
   /* ——— states before the form ——— */
   if (!f.hydrated) {
     return (
-      <Wrap className="pt-[40px] pb-[88px]" aria-busy="true">
+      <Wrap className="pt-[40px] pb-[88px] min-h-[70vh]" aria-busy="true">
         <p className="sr-only" role="status">
           {t("checkout.loading")}
         </p>
@@ -250,7 +250,7 @@ export function SapilCheckoutPage() {
         ? [t("checkout.unavailableTitle"), t("checkout.unavailableBody"), t("checkout.backToBag"), "/cart"]
         : [t("checkout.notOrderableTitle"), t("checkout.notOrderableBody"), t("checkout.backToBag"), "/cart"];
     return (
-      <Wrap as="main" className="pt-[24px] pb-[88px] max-900:pt-[16px] max-900:pb-[56px]">
+      <Wrap className="pt-[24px] pb-[88px] max-900:pt-[16px] max-900:pb-[56px] min-h-[70vh]">
         <CheckoutEmptyCard title={title} body={body} actions={<Button href={href} LinkComponent={SapilLink}>{cta}</Button>} />
       </Wrap>
     );
@@ -455,7 +455,6 @@ export function SapilCheckoutPage() {
         onOpenBag={() => setCartOpen(true)}
       />
       <Wrap
-        as="main"
         className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start pt-[24px] pb-[88px] max-900:grid-cols-[1fr] max-900:gap-[16px] max-900:pt-[16px] max-900:pb-[56px]"
       >
         <SummaryToggle
