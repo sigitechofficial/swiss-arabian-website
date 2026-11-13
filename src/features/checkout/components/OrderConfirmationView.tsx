@@ -261,6 +261,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
     : null;
   const totals = order.totals;
   const shippingTotal = Number(totals.shipping);
+  const paidByOtherTenders =
+    totals.amountPayable != null &&
+    (Number(totals.giftCardApplied ?? 0) > 0 || Number(totals.loyaltyApplied ?? 0) > 0);
   const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
 
   // A just-paid order can still read PAYMENT_PENDING for a moment — never show it behind "Confirmed".
@@ -490,6 +493,28 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 <dt>Total</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
               </div>
+              {/* Gift card and reward points are tenders, not discounts: the
+                  total stays the same, but the shopper must see how it was
+                  paid. Without these rows a AED 216 order paid AED 200 by gift
+                  card read as AED 216 charged to the payment method. */}
+              {Number(totals.giftCardApplied ?? 0) > 0 ? (
+                <div>
+                  <dt>Paid by gift card</dt>
+                  <dd dir="ltr">−{formatMoney(Number(totals.giftCardApplied), currency)}</dd>
+                </div>
+              ) : null}
+              {Number(totals.loyaltyApplied ?? 0) > 0 ? (
+                <div>
+                  <dt>Paid with reward points</dt>
+                  <dd dir="ltr">−{formatMoney(Number(totals.loyaltyApplied), currency)}</dd>
+                </div>
+              ) : null}
+              {paidByOtherTenders ? (
+                <div className={checkoutTotalsLine}>
+                  <dt>{orderPaymentLabel(order.selectedPaymentMethod)}</dt>
+                  <dd dir="ltr">{formatMoney(Number(totals.amountPayable ?? 0), currency)}</dd>
+                </div>
+              ) : null}
             </dl>
           </section>
 
