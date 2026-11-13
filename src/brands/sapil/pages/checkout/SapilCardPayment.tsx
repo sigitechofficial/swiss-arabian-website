@@ -313,7 +313,7 @@ function SapilStripeForm({ orderId, order }: { orderId: string; order: OrderResp
               {t("checkout.cardFormLoading")}
             </p>
           ) : null}
-          {pay.loadFailed ? (
+          {pay.loadFailed && !pay.sessionError ? (
             <ErrorNote>
               {t("checkout.cardFormFailed")}{" "}
               <SapilLink href={CANCEL_HREF} className="underline font-[600]">
