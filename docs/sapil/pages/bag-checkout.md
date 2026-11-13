@@ -124,10 +124,16 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
   `usePaymentRetry` (`features/checkout/hooks/usePaymentReturn.ts`, extracted in the review
   pass; Swiss Arabian's views use them with no visible change). Tabby refusals keep Tabby's
   required wording. Telr's transaction ids (Swiss Arabian's `MetaNote`) are not shown.
-  The **card forms** (`/checkout/payment/paymob`, `/stripe`) still render the shared
-  provider screens inside Sapil's shell and spinner: their inner copy and styling are Swiss
-  Arabian's English (Paymob Pixel / Stripe Elements logic is inline there; extract before
-  restyling). Sapil UAE's local methods: Stripe card / Apple Pay / Google Pay, Paymob card,
+  The **card forms** (`/checkout/payment/paymob`, `/stripe`) are Sapil's own views since the final
+  UI check (`pages/checkout/SapilCardPayment.tsx`): eyebrow + Gloock "Pay *securely.*", a card box
+  with the provider form, `Pay {amount}`, Sapil's order summary card, errors and the expired session
+  in Sapil wording (`checkout.card*`, en + ar), v9 colours / 10px radius / Poppins inside the Stripe
+  Element (`StripeElementsLook`) and the Paymob Pixel (`customStyle`). Logic is shared:
+  `useCardPaymentSession`, `useStripeCardPayment` (+ `stripeConfirmError` codes),
+  `usePaymobCardForm`, `useStripeSessionOptions` (Swiss Arabian's views use them with no visible
+  change). Still Swiss Arabian's: the inline card / wallet forms inside the checkout payment step
+  (`InlineMethodPayment`, shared) and the Paymob 3-D Secure overlay's error sentence. Sapil UAE's
+  local methods: Stripe card / Apple Pay / Google Pay, Paymob card,
   Telr (hosted), cash on delivery.
 - Phone field shows the market's dial code (+971) and stores E.164.
 
@@ -149,7 +155,11 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
   error, Arabic, no order), declined success, Tabby refusal.
 - Big totals use the language's currency sign on `/ar` (`د.إ.`, was "AED 63" in Arabic text).
 - Bag / checkout reserve 70vh while the bag rehydrates (CLS at 390: 0.14 → 0.05).
-- **Language through checkout (platform, open):** `/checkout`, `/order-confirmation`, `/track`,
-  `/login`, `/register` are never locale-prefixed by `localizeHref`, so an Arabic shopper who
-  starts checkout from the drawer lands on the English checkout, and the confirmation after an
-  `/ar/checkout` order is English. `/ar/…` versions of these routes render correctly. Product decision.
+- ~~**Language through checkout (platform, open)**~~ ✅ final UI check: `localizeHref` prefixes
+  checkout, sign-in, tracking and the confirmation; programmatic navigation goes through
+  `useLocaleRouter` / `checkoutHref`, so the drawer's "Checkout" from `/ar/…` opens
+  `/ar/checkout` and the order confirmation stays Arabic (both brands). Only the providers' fixed
+  returns `/payments/tabby|telr/return` stay unprefixed.
+- Bag / checkout loading skeletons are full width (`Wrap` is `w-full`): at 768px the skeleton was
+  252px wide and jumped to the full card (CLS 0.077 at 768px before the fix; not re-measured
+  with data, the API was down).

@@ -96,7 +96,10 @@ Loyalty / rewards, subscriptions, employee benefits and gift box are off in
 - Live: sign-in labels, empty submit (inline errors + focus on the first), wrong password (inline
   `role="alert"`), register validation, forgot password → reset page, verify page, signed-out
   `/account/*` → `/login?returnTo=…`. All pass.
-- Forgot password puts the email in the reset URL (`?identifier=…`, shared hook) — privacy note for
-  the platform.
-- From `/ar/login`, "Create account" opens the **English** `/register` (transactional paths are not
-  locale-prefixed; see `docs/multibrand/PROGRAM.md`).
+- ~~Forgot password puts the email in the reset URL~~ ✅ final UI check: `useForgotPasswordForm`
+  keeps the identifier in this tab's sessionStorage (`features/auth/utils/resetIdentifier.ts`) and
+  opens `/reset-password` with no query; `useResetPasswordForm` fills it in after hydration and
+  clears it once the password is set (tests: `usePasswordReset.spec.tsx`).
+- ~~From `/ar/login`, "Create account" opens the English `/register`~~ ✅ final UI check: sign-in,
+  register, forgot / reset, verify and the account guard keep `/ar` (`localizeHref` +
+  `useLocaleRouter`); `/ar/account` signed out → `/ar/login?returnTo=%2Far%2Faccount`.

@@ -88,11 +88,41 @@ the page down by ~95 px (CLS 0.105 on every page). The chrome now holds their he
 HTML included) until the data answers, and collapses only if the market has neither. Bag and
 checkout reserve 70vh while the bag rehydrates (empty-bag CLS at 390 px: 0.14 → 0.05).
 
+## LCP — final UI check (2026-11-13)
+
+Re-measured on the same machine and method (Sapil build of `6c2ef47`, :3012 demo data, median of 3):
+
+| Page | Perf | A11y | FCP | LCP | TBT | CLS | LCP element |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Home `/` | 63 | 100 | 1.7 s | 7.5 s | 490 ms | 0.001 | hero "door" bottle `<img>` from `uae.sapil.com` |
+| Shop `/products` | 65 | 100 | 1.5 s | 5.6 s | 485 ms | 0.000 | shop-hero bottle `<img>` from `uae.sapil.com` |
+| Collection, product | — | — | — | — | — | — | not measured: the API (:3012) went down mid-run; reviewer 2's 5.7 s / 6.5 s stand |
+
+**What the HTML actually showed** (the earlier diagnosis was wrong):
+- Catalog cards **are** server-rendered: the listing route renders the view with the server's
+  first page as the Suspense fallback, and the first card is `loading="eager" fetchPriority="high"`.
+- The product page's main image **is** server-rendered and preloaded
+  (`<link rel="preload" as="image" imageSrcSet … fetchPriority="high">`).
+- The real cause on home / shop / collection: most demo product images are on
+  **`uae.sapil.com`/cdn/shop/files**, which was not on the image allowlist (only `sapil.com` was).
+  `MediaImage` therefore rendered them `unoptimized`: the LCP bottle was a **300 KB PNG**, no
+  `srcset`. Lighthouse's breakdown for `/products`: load delay 0.8 s, **load time 4.4 s (63 %)**,
+  render delay 1.3 s.
+
+**Fix:** `uae.sapil.com` added to `REMOTE_IMAGE_PATTERNS` (`src/lib/images/remoteImagePatterns.ts`),
+so these images go through `/_next/image` (WebP/AVIF at the card / hero size, ~15–30 KB). No
+route change was needed, nothing changes for Swiss Arabian (its hosts are untouched).
+
+**After:** not measured. The API was down for the rest of the session and was not restarted (brief).
+Expected: the image load phase drops from ~4.4 s to well under 1 s on the simulated 4G link, i.e.
+shop / collection LCP ≈ 2.5–3.5 s and home ≈ 4 s (home also waits for the hero data, which loads
+in the browser). Re-run `lighthouse` on `/`, `/products`, `/collections/juicy-pleasures`,
+`/products/berry-crush` once :3012 is up.
+
 ## Still open
 
-- **LCP 5.6–6.7 s**: the LCP image is discovered late (catalog cards render after hydration;
-  product image in the client gallery). Server-rendering the first card row / gallery image (or a
-  `preload` from the route) is the next step; it touches the shared listing routes.
+- **LCP**: measure after the image fix (above). The home hero gallery and the "Shop by" row are
+  client-rendered (market data in the browser); server-rendering them needs the market on the server.
 - **TBT ~450 ms**: hydration of the shell + page; `framer-motion` and `zod` still come with shared
   providers.
 - Checkout JS 752 KB.
