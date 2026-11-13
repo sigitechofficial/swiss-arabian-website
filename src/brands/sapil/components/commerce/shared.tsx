@@ -55,7 +55,19 @@ export function useSapilMoneyParts() {
       } catch {
         number = amount.toFixed(whole ? 0 : 2);
       }
-      return { currency, amount: number };
+      // v9's "AED 79" in English; the language's own currency sign elsewhere ("د.إ." in Arabic).
+      let sign = currency;
+      if (locale !== "en") {
+        try {
+          sign =
+            new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency })
+              .formatToParts(amount)
+              .find((p) => p.type === "currency")?.value ?? currency;
+        } catch {
+          sign = currency;
+        }
+      }
+      return { currency: sign, amount: number };
     },
     [locale],
   );
