@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { ConsentBanner } from "@/components/layout/ConsentBanner";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
 import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
@@ -66,6 +67,7 @@ export default async function RootLayout({
         <JourneyEventsPoller />
         <PlatformTracker />
         <OnsiteMessageHost />
+        <ConsentBanner />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

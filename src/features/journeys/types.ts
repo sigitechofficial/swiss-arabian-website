@@ -20,7 +20,7 @@ export type JourneyEvent = {
   owner: "PLATFORM";
   brandCode: string;
   zoneCode: string;
-  entity: { type: "checkout" | "cart" | "order" | "product" | "customer"; id: string };
+  entity: { type: "checkout" | "cart" | "order" | "product" | "customer" | "customer_cycle"; id: string };
   currency: string;
   subtotal: string;
   total: string;
