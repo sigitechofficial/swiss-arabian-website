@@ -102,13 +102,23 @@ function etaText(method: DeliveryMethodOption, t: SapilTranslator): string | und
   return typeof days === "number" ? t("checkout.etaDays", { count: days }) : undefined;
 }
 
-function feeText(method: DeliveryMethodOption, currency: string, money: SapilMoney, t: SapilTranslator): string {
-  const fee = method.estimatedFee == null ? 0 : Number(method.estimatedFee);
-  return Number.isFinite(fee) && fee > 0 ? money(fee, currency) : t("checkout.methodFree");
+/** A missing fee means "not priced yet" (backend guide: free / TBD), so no price is shown; only an explicit 0 is "Free". */
+function feeText(method: DeliveryMethodOption, currency: string, money: SapilMoney, t: SapilTranslator): string | undefined {
+  if (method.estimatedFee == null || method.estimatedFee.trim() === "") return undefined;
+  const fee = Number(method.estimatedFee);
+  if (!Number.isFinite(fee)) return undefined;
+  return fee > 0 ? money(fee, currency) : t("checkout.methodFree");
 }
 
-function payTitle(row: PayRow, t: SapilTranslator): string {
-  if (row.kind === "card") return t("checkout.payCard");
+const CARD_PROVIDER_NAMES: Record<NonNullable<PayRow["provider"]>, string> = { stripe: "Stripe", paymob: "Paymob" };
+
+/** `nameProvider`: more than one card option is on offer, so each one says whose it is. */
+function payTitle(row: PayRow, t: SapilTranslator, nameProvider = false): string {
+  if (row.kind === "card") {
+    return nameProvider && row.provider
+      ? t("checkout.payCardVia", { provider: CARD_PROVIDER_NAMES[row.provider] })
+      : t("checkout.payCard");
+  }
   if (row.kind === "apple_pay") return t("checkout.payApple");
   if (row.kind === "google_pay") return t("checkout.payGoogle");
   return row.method?.displayName ?? row.title;
@@ -350,6 +360,7 @@ export function SapilCheckoutPage() {
   const selectedDelivery = checkout.deliveryMethods.find((m) => m.zoneDeliveryMethodId === checkout.selectedDeliveryId);
 
   const payRows = payment.groups.filter((group) => group.id !== "more").flatMap((group) => group.rows);
+  const severalCards = payRows.filter((row) => row.kind === "card").length > 1;
   const payOptions: RadioCardOption[] = payRows.map((row) => {
     const active = row.key === payment.activeKey;
     let panel: ReactNode = undefined;
@@ -375,7 +386,7 @@ export function SapilCheckoutPage() {
     const isTabby = Boolean(row.method && isTabbyPaymentMethod(row.method));
     return {
       value: row.key,
-      title: payTitle(row, t),
+      title: payTitle(row, t, severalCards),
       description: payNote(row, t),
       logos:
         row.kind === "card" ? (

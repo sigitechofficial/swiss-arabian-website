@@ -1,11 +1,15 @@
+import { routeTranslator } from "@/lib/i18n/routeLocale";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CheckoutSpinnerState, CheckoutStateShell, TelrReturnView } from "@brand-ui";
 
-export const metadata: Metadata = {
-  title: "Confirming Telr payment",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await routeTranslator();
+  return {
+    title: t("pages.title.telrConfirming"),
+    robots: { index: false, follow: false },
+  };
+}
 
 function TelrReturnFallback() {
   return (

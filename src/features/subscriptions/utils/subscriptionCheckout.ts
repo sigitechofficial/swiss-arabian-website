@@ -22,8 +22,10 @@ export function subscriptionDeliveryChoices<T extends { estimatedFee: string | n
   methods: T[],
   shippingAmount: string | null | undefined,
 ): T[] {
-  const fee = Number(shippingAmount);
-  const estimatedFee = Number.isFinite(fee) && fee > 0 ? shippingAmount!.trim() : null;
+  // The plan's shipping amount: 0 → "0" (shown as Free), missing → null (no price shown).
+  const trimmed = shippingAmount?.trim() ?? "";
+  const fee = Number(trimmed);
+  const estimatedFee = trimmed !== "" && Number.isFinite(fee) ? (fee > 0 ? trimmed : "0") : null;
   return methods.map((method) => ({ ...method, estimatedFee }));
 }
 

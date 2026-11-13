@@ -60,6 +60,7 @@
   "paymentNone": "لا تتوفر خيارات دفع حاليًا.",
   "paymentCovered": "لا حاجة للدفع: بطاقة الهدية تغطي هذا الطلب.",
   "payCard": "بطاقة ائتمان أو خصم",
+  "payCardVia": "بطاقة ائتمان أو خصم · {provider}",
   "payCardBrands": "فيزا، ماستركارد، أمريكان إكسبريس",
   "payCardBrandsShort": "فيزا، ماستركارد",
   "payApple": "Apple Pay",

@@ -60,6 +60,7 @@
   "paymentNone": "No payment options are available right now.",
   "paymentCovered": "No payment needed: your gift card covers this order.",
   "payCard": "Credit or debit card",
+  "payCardVia": "Credit or debit card · {provider}",
   "payCardBrands": "Visa, Mastercard, American Express",
   "payCardBrandsShort": "Visa, Mastercard",
   "payApple": "Apple Pay",

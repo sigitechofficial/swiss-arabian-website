@@ -171,11 +171,16 @@ export function deliveryEta(method: DeliveryMethodOption): string {
   return "";
 }
 
-/** The guide treats a `null` fee as free / not priced — never as unknown cost. */
+/**
+ * The guide says a `null` fee is "free / TBD". The backend sends it when the market has no fee
+ * configured, and then keeps the session's previous shipping amount, so "Free" could be wrong.
+ * Only an explicit 0 is labelled "Free"; a missing fee shows no price (the summary shows the real amount).
+ */
 export function deliveryFeeLabel(method: DeliveryMethodOption, currency: string): string {
-  if (method.estimatedFee == null) return "Free";
+  if (method.estimatedFee == null || method.estimatedFee.trim() === "") return "";
   const fee = Number(method.estimatedFee);
-  return Number.isFinite(fee) && fee > 0 ? formatMoney(fee, currency) : "Free";
+  if (!Number.isFinite(fee)) return "";
+  return fee > 0 ? formatMoney(fee, currency) : "Free";
 }
 
 // ─── Order summaries (confirmation page) ────────────────────────────────────
