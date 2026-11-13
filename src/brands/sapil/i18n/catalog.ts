@@ -10,9 +10,13 @@
  * its files are loaded by path.
  */
 import common from "./messages/en/common.json";
+import catalog from "./messages/en/catalog.json";
+import product from "./messages/en/product.json";
 
 export const ENGLISH = {
   common,
+  catalog,
+  product,
 } as const;
 
 export type SapilArea = keyof typeof ENGLISH;

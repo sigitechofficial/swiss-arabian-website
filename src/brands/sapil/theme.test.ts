@@ -33,8 +33,13 @@ describe("Sapil theme tokens", () => {
   });
 
   it("has the desktop-down breakpoints, largest first", () => {
-    const order = [...css.matchAll(/@custom-variant max-(\d+) \(@media \(max-width: (\d+)px\)\)/g)].map((m) => +m[2]);
+    const order = [...css.matchAll(/@custom-variant max-(\d+) \{\s*@media \(max-width: (\d+)px\)/g)].map((m) => +m[2]);
     expect(order).toEqual([1280, 1100, 900, 760, 749, 600, 480]);
+  });
+
+  it("scopes the breakpoint variants to a Sapil subtree (beats the host's re-emitted base utilities)", () => {
+    const scoped = css.match(/&:is\(\[data-brand="sapil"\] \*\) \{\s*@slot;/g) ?? [];
+    expect(scoped).toHaveLength(7);
   });
 
   it("defines the eight keyframes, prefixed", () => {
