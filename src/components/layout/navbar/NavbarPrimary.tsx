@@ -107,8 +107,9 @@ export function NavbarPrimary({
                               )}
                             </p>
                             <ul className={megaList} role="list">
-                              {group.links.map((link) => (
-                                <li key={link.label}>
+                              {group.links.map((link, index) => (
+                                // CMS links may have no label in a language: the position keeps keys unique.
+                                <li key={`${index}:${link.label}`}>
                                   <LocaleLink href={link.href}>{link.label}</LocaleLink>
                                 </li>
                               ))}
