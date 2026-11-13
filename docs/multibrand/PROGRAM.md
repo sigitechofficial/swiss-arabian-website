@@ -41,8 +41,8 @@ Other rules:
 | E | Shop logic moved out of components into shared hooks | done per page inside G | ✅ ~40 hooks extracted (cart, checkout, orders, tracking, auth, account, catalog, PDP, CMS, search, wishlist, newsletter…); Swiss Arabian views use them unchanged |
 | F | `@brand-ui` contract + `BrandHead` + Sapil per-area messages + Sapil shell (header, chip row, phone menu, search, bag drawer, footer, market/language switcher) | merged | ✅ |
 | G | Sapil pages: shell + home + content (`feat/sapil-shell-home`), catalog + product + search (`feat/sapil-catalog`), bag + checkout + payments + orders + tracking + auth + account (`feat/sapil-commerce`) | merged into `feat/multibrand-sapil` | ✅ built; reviewer pass next. Docs: `docs/sapil/pages/*.md` |
-| H | Right-to-left layout, performance budgets, visual-diff + isolation checks | — | ⏳ |
-| I | Two reviewer agents | — | ⏳ |
+| H | Right-to-left layout, performance budgets, visual-diff + isolation checks | done in I and J | ✅ RTL checked en/ar on all routes; budgets in `docs/sapil/PERFORMANCE.md` (LCP still over); isolation: no Swiss Arabian text/ids in Sapil HTML, Sapil CSS/kit out of Swiss Arabian builds |
+| I | Two reviewer agents | `review/platform`, `review/sapil` (website); backend `review/sapil-cms` (`9dff01a5`) | ✅ merged |
 | J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` |
 
 ## Decisions still open, and the defaults used until answered
@@ -215,3 +215,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Lighthouse (mobile, median of 3): home 41 → 65, shop 46 → 64, collection 55 → 66, product 42 → 68; a11y 100 on all four. Details: `docs/sapil/PERFORMANCE.md`.
   - Flows checked on the build (en + ar): browse, filter / sort, product, drawer, bag, guest cash-on-delivery order, confirmation, tracking, sign-in / register / forgot / reset / verify, account guard, search, language and market switchers, 404, API failure, empty states; no horizontal scroll at 390 / 768 / 1280.
   - Open for product: Arabic shoppers lose Arabic on checkout / sign-in / tracking (transactional paths unprefixed); the muted colour change; rotating announcement without a pause control.
+- **2026-11-13 (close):** `review/ui` merged into `feat/multibrand-sapil`. Final checks on the merged code: tsc and eslint clean, vitest 184 files / 1116 tests with both brand UIs, Swiss Arabian and Sapil builds pass. Backend fixes from review 1 committed on backend `review/sapil-cms` (`9dff01a5`, on top of `feat/sapil-cms`). Nothing pushed or deployed. Open items: see "Final UI check → still open" and the decision tables above.
