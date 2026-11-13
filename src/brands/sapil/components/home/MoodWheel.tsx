@@ -11,7 +11,17 @@ import { useAddBundle } from "./HomeBundles";
 
 const C = 200;
 const R = 200;
-const pt = (a: number, r: number) => [C + r * Math.sin((a * Math.PI) / 180), C - r * Math.cos((a * Math.PI) / 180)];
+/**
+ * 3 decimals: Math.sin / Math.cos may differ in the last digits between the server (Node) and the
+ * browser, and an SVG attribute built from them would not hydrate (26.794919243112332 vs …304).
+ */
+export const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/** Point on the wheel at angle `a` (degrees, clockwise from 12 o’clock), radius `r`, rounded. */
+export const pt = (a: number, r: number): [number, number] => [
+  round3(C + r * Math.sin((a * Math.PI) / 180)),
+  round3(C - r * Math.cos((a * Math.PI) / 180)),
+];
 
 /** Rotation that brings mood `i` under the pointer from `rot`, after `turns` full turns. */
 export function spinTarget(rot: number, i: number, count: number, turns: number): number {
@@ -125,7 +135,7 @@ export function MoodWheel({ eyebrow, heading, spinLabel, moods }: { eyebrow: str
                         strokeWidth="3"
                         className="[transition:filter_.2s] group-hover/seg:brightness-[.97]"
                       />
-                      {img ? <image href={img} x={ix - 24} y={iy - 24} width="48" height="48" transform={`rotate(${mid} ${ix} ${iy})`} /> : null}
+                      {img ? <image href={img} x={round3(ix - 24)} y={round3(iy - 24)} width="48" height="48" transform={`rotate(${mid} ${ix} ${iy})`} /> : null}
                       <text
                         x={tx}
                         y={ty}
