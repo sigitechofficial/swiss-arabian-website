@@ -32,12 +32,13 @@ export const sapil = defineBrand({
   },
   // TODO(brand): Sapil social profiles.
   social: {},
-  // TODO(brand): confirm Sapil's policy page slugs (same CMS pages as Swiss Arabian for now).
+  // Sapil's CMS pages (seeded from Swiss Arabian's, rebranded). Privacy and refund
+  // are pages with Arabic text; terms and shipping exist only as policies.
   legal: {
     privacy: "/pages/privacy-policy",
-    terms: "/pages/terms-and-conditions",
+    terms: "/policies/terms-of-service",
     refund: "/pages/refund-policy",
-    shipping: "/pages/shipping-delivery-policy",
+    shipping: "/policies/shipping-policy",
   },
   seo: {
     defaultTitle: { en: "Sapil", ar: "سابيل" },

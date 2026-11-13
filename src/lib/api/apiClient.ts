@@ -25,6 +25,17 @@ type RequestOptions = {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
+/**
+ * The page's language (`<html lang>`), sent as `x-storefront-language` so the
+ * backend writes emails (sign-in codes, welcome) in the language the shopper
+ * is reading. Server-side calls send none; the backend then uses the brand default.
+ */
+export function pageLanguage(): string | null {
+  if (typeof document === "undefined") return null;
+  const lang = document.documentElement.lang?.trim();
+  return lang || null;
+}
+
 const PUBLIC_AUTH_PATH =
   /^\/storefront\/auth\/(login|register|refresh|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
 
@@ -88,6 +99,8 @@ async function request<T>(
 
   const storefrontHost = await resolveStorefrontHost();
   if (storefrontHost) headers.set("x-storefront-host", storefrontHost);
+  const language = pageLanguage();
+  if (language) headers.set("x-storefront-language", language);
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,
