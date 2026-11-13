@@ -41,6 +41,35 @@ export type StorefrontMarket = {
   currencies: StorefrontMarketCurrency[];
   languages: StorefrontMarketLanguage[];
   catalogContext: StorefrontMarketCatalogContext;
+  /** Max prices for the "Under <currency> X" price edits, ascending (absent on older APIs). */
+  priceEditTiers?: number[];
+  /** Delivery and payment facts (absent on older APIs). */
+  delivery?: StorefrontMarketDelivery;
+};
+
+/** A delivery method's promise (fee, free-delivery threshold, days). */
+export type StorefrontMarketDeliveryPromise = {
+  methodCode: string;
+  methodType: string;
+  displayName: string;
+  fee: string | null;
+  freeDeliveryThreshold: string | null;
+  estimatedMinDays: number | null;
+  estimatedMaxDays: number | null;
+};
+
+export type StorefrontMarketDelivery = {
+  currencyCode: string | null;
+  /** Lowest free-delivery threshold of the market's delivery methods (null = none). */
+  freeDeliveryThreshold: string | null;
+  standard: StorefrontMarketDeliveryPromise | null;
+  express: StorefrontMarketDeliveryPromise | null;
+  cashOnDelivery: {
+    available: boolean;
+    minOrderAmount: string | null;
+    maxOrderAmount: string | null;
+    fee: string | null;
+  };
 };
 
 export type StorefrontMarketListResponse = {

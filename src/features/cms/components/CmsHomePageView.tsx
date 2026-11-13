@@ -1,71 +1,29 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
-import { useMarket } from "@/providers/MarketProvider";
 import { env } from "@/lib/config/env";
-import {
-  cmsContentKeys,
-  fetchPublishedHome,
-} from "../api/cmsContent.service";
 import { CmsSectionList } from "./CmsSectionList";
-import type { CmsHomeResult } from "../types/cmsHome.types";
 import { LegacyHomeFallback } from "./LegacyHomeFallback";
+import {
+  cmsHomeEnabled,
+  usePublishedHome,
+  type CmsHomeInitial,
+} from "../hooks/usePublishedHome";
 
-function cmsHomeEnabled(): boolean {
-  // Default ON — set NEXT_PUBLIC_CMS_HOME_ENABLED=false to force legacy only.
-  return env.cmsHomeEnabled !== false;
-}
+export type { CmsHomeInitial };
 
 function legacyFallbackEnabled(): boolean {
   // When CMS returns empty, keep the previous Homepage until markets are published.
   return env.cmsHomeLegacyFallback !== false;
 }
 
-/** Homepage the server already loaded, and which market and language it is for. */
-export type CmsHomeInitial = {
-  zoneCode: string;
-  languageCode: string;
-  data: CmsHomeResult;
-};
-
 export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null } = {}) {
-  // The Homepage is published under the market's own language code ("en-us"),
-  // not the "en" in the address. Wait until the market's languages are known.
-  const languageCode = useMarket().contentLanguage ?? "";
-  const market = useSelectedCatalogMarket();
-  const zoneCode =
-    market?.zoneCode?.trim() ||
-    market?.countryCode?.trim() ||
-    "";
-  const enabled = cmsHomeEnabled() && Boolean(zoneCode && languageCode);
-  // The server's homepage is for one market + language: use it only for that one,
-  // or while the browser has not worked out the market yet (same as the server's).
-  const known = Boolean(zoneCode && languageCode);
-  const initialMatches =
-    initial && known && initial.zoneCode === zoneCode && initial.languageCode === languageCode;
-
-  const query = useQuery({
-    queryKey: cmsContentKeys.home(zoneCode, languageCode),
-    queryFn: () =>
-      fetchPublishedHome({
-        zoneCode,
-        languageCode,
-      }),
-    enabled,
-    initialData: initialMatches ? initial.data : undefined,
-    staleTime: 60_000,
-    // Bound revalidation: refetch on window focus / reconnect for publish visibility.
-    refetchOnWindowFocus: true,
-  });
+  const home = usePublishedHome(initial);
 
   if (!cmsHomeEnabled()) {
     return <LegacyHomeFallback />;
   }
 
-  const shown = query.data ?? (!known ? initial?.data : undefined);
-
-  if (!shown && (!known || query.isPending)) {
+  if (home.status === "loading") {
     return (
       <div
         className="min-h-[40vh] animate-pulse bg-[var(--cream,#faf6ee)]"
@@ -75,7 +33,7 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
     );
   }
 
-  if (!shown && query.isError) {
+  if (home.status === "error") {
     if (legacyFallbackEnabled()) return <LegacyHomeFallback />;
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
@@ -90,11 +48,7 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
     );
   }
 
-  const result = shown;
-  const hasCms =
-    Boolean(result?.page) && Array.isArray(result?.sections) && result.sections.length > 0;
-
-  if (!hasCms) {
+  if (home.status === "empty") {
     if (legacyFallbackEnabled()) return <LegacyHomeFallback />;
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
@@ -108,9 +62,10 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
     );
   }
 
+  const result = home.data;
   return (
-    <div data-cms-home="published" data-zone={result?.page?.zoneCode} data-locale={result?.page?.locale}>
-      <CmsSectionList sections={result!.sections} logUnknown />
+    <div data-cms-home="published" data-zone={result.page?.zoneCode} data-locale={result.page?.locale}>
+      <CmsSectionList sections={result.sections} logUnknown />
     </div>
   );
 }
