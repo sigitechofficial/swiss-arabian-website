@@ -123,5 +123,16 @@
   "emptyTitle": "شيء جديد",
   "emptyAccent": "في الطريق.",
   "emptyLead": "نرتّب صفحتنا الرئيسية الآن. كل العطور متوفرة في المتجر.",
-  "emptyCta": "تسوّق كل العطور"
+  "emptyCta": "تسوّق كل العطور",
+  "previewBar": "معاينة المسودة · {zone} · {language}",
+  "previewExit": "إنهاء المعاينة",
+  "previewExpiredEyebrow": "معاينة المسودة",
+  "previewExpiredTitle": "انتهت صلاحية",
+  "previewExpiredAccent": "هذه المعاينة.",
+  "previewExpiredLead": "جلسة المعاينة غير موجودة أو انتهت. افتح المعاينة مرة أخرى من لوحة الإدارة.",
+  "previewBack": "العودة إلى المتجر",
+  "previewEmptyEyebrow": "معاينة المسودة",
+  "previewEmptyTitle": "لا شيء في",
+  "previewEmptyAccent": "هذه المسودة.",
+  "previewEmptyLead": "لا تحتوي المسودة على أقسام مفعّلة، أو أن رابط المعاينة غير صالح لهذا السوق."
 }

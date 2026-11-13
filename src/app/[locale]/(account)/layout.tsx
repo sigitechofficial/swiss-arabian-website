@@ -1,5 +1,5 @@
 import { AuthGuard } from "@/components/guards/AuthGuard";
-import { StorefrontShell } from "@brand-ui";
+import { PageLoading, StorefrontShell } from "@brand-ui";
 
 export default function AccountLayout({
   children,
@@ -8,7 +8,14 @@ export default function AccountLayout({
 }) {
   return (
     <StorefrontShell>
-      <AuthGuard requireAuth>{children}</AuthGuard>
+      <AuthGuard
+        requireAuth
+        // The brand's loading state (Sapil: v9 pastel tiles, not Swiss Arabian's bottle mark).
+        checking={<PageLoading label="Checking session…" fill />}
+        redirecting={<PageLoading label="Redirecting…" fill />}
+      >
+        {children}
+      </AuthGuard>
     </StorefrontShell>
   );
 }

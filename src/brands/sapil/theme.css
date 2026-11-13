@@ -277,6 +277,11 @@
   [data-brand="sapil"] button {
     cursor: pointer;
   }
+  /* The host's globals.css gives right-to-left buttons and fields Swiss Arabian's Arabic
+     font ("GE SS"); inside Sapil they keep Sapil's font, like the rest of the page. */
+  html[dir="rtl"] [data-brand="sapil"] :is(button, input, textarea, select) {
+    font-family: inherit;
+  }
   [data-brand="sapil"] :focus-visible {
     outline: 2px solid var(--sapil-accent);
     outline-offset: 3px;

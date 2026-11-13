@@ -38,5 +38,15 @@
   "collectionsErrorTitle": "We couldn’t load the collections",
   "collectionsEmptyTitle": "No collections yet.",
   "collectionsEmptyText": "Every fragrance is still in the shop.",
-  "collectionCount": { "one": "{count} fragrance", "other": "{count} fragrances" }
+  "collectionCount": { "one": "{count} fragrance", "other": "{count} fragrances" },
+  "previewVersion": "Preview of version {number}: “{label}”",
+  "previewScheduled": "scheduled for {date}",
+  "previewLive": "live now",
+  "previewNotLive": "not live",
+  "previewHidden": "Shoppers don’t see this link.",
+  "storyEyebrow": "About Sapil",
+  "storyTitle": "Our story",
+  "storyAccent": "is on its way.",
+  "storyLead": "We’re writing it down. Meanwhile, every fragrance is waiting in the shop.",
+  "storyCta": "Shop all fragrances"
 }

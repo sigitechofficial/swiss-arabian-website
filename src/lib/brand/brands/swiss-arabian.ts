@@ -63,6 +63,7 @@ export const swissArabian = defineBrand({
     loyalty: true,
     subscriptions: true,
     giftBox: true,
+    employeeBenefits: true,
   },
   ownedIds: {
     // TODO(brand): add the live GTM / GA4 ids once they exist (Key Vault next-public-gtm-id / -ga4-id).

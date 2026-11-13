@@ -9,6 +9,7 @@ import type { ChromeNavItem } from "@/features/home/constants/chromeNav";
 import { fetchNavigation } from "../api/navigation.service";
 import { apiNavToChromeNav } from "../utils/toChromeNav";
 import { withDirectNavHrefs } from "../utils/directNavHrefs";
+import { withoutDisabledSections } from "../utils/brandSections";
 import type { NavItem } from "../types/navigation";
 
 type MobileNavHeading = { label: string; kind: "heading" };
@@ -100,8 +101,15 @@ export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
 
   const data = zoneQuery.data;
   const isLoading = !zone || zoneQuery.isLoading;
-  const header = useMemo(() => (data ? withDirectNavHrefs(data.header) : []), [data]);
-  const footer = useMemo(() => (data ? withDirectNavHrefs(data.footer) : []), [data]);
+  // Links into sections the brand has switched off are never shown (brand features).
+  const header = useMemo(
+    () => (data ? withoutDisabledSections(withDirectNavHrefs(data.header)) : []),
+    [data],
+  );
+  const footer = useMemo(
+    () => (data ? withoutDisabledSections(withDirectNavHrefs(data.footer)) : []),
+    [data],
+  );
 
   return {
     headerItems: apiNavToMobileNav(header),

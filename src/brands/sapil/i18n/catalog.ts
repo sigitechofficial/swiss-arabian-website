@@ -18,6 +18,8 @@ import content from "./messages/en/content.json";
 import home from "./messages/en/home.json";
 import product from "./messages/en/product.json";
 import shell from "./messages/en/shell.json";
+import review from "./messages/en/review.json";
+import offers from "./messages/en/offers.json";
 
 export const ENGLISH = {
   common,
@@ -29,6 +31,8 @@ export const ENGLISH = {
   bag,
   checkout,
   account,
+  review,
+  offers,
 } as const;
 
 export type SapilArea = keyof typeof ENGLISH;

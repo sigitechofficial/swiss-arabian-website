@@ -48,3 +48,38 @@ describe("proxy: locale routing", () => {
     expect(forwarded(response, SHOP_LOCALE_HEADER)).toBe("en");
   });
 });
+
+describe("proxy: brand feature switches", () => {
+  const original = process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE;
+  const restore = () => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE;
+    else process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = original;
+  };
+
+  it("sends a switched-off section to the server-rendered 404, in the address's language", async () => {
+    process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = "SAPIL";
+    try {
+      const en = await proxy(request("/account/rewards?x=1"));
+      expect(en.headers.get("x-middleware-rewrite")).toBe("http://localhost:3041/en/_section-off");
+      expect(forwarded(en, SHOP_LOCALE_HEADER)).toBe("en");
+      const ar = await proxy(request("/ar/subscriptions/PLAN/checkout"));
+      expect(ar.headers.get("x-middleware-rewrite")).toBe("http://localhost:3041/ar/_section-off");
+      expect(forwarded(ar, SHOP_LOCALE_HEADER)).toBe("ar");
+      // Sections Sapil keeps are untouched.
+      const blog = await proxy(request("/blog"));
+      expect(blog.headers.get("x-middleware-rewrite")).toBe("http://localhost:3041/en/blog");
+    } finally {
+      restore();
+    }
+  });
+
+  it("leaves every section to Swiss Arabian", async () => {
+    process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = "SWISS_ARABIAN";
+    try {
+      const response = await proxy(request("/stores"));
+      expect(response.headers.get("x-middleware-rewrite")).toBe("http://localhost:3041/en/stores");
+    } finally {
+      restore();
+    }
+  });
+});

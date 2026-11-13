@@ -8,19 +8,19 @@
  */
 export { BrandHead } from "./BrandHead";
 
-// --- shared, brand-neutral parts and the Swiss Arabian views Sapil still uses ---
+// --- shared, brand-neutral parts (nothing visible: JSON-LD script, a path-based slot) ---
 // Imported from their own modules (not from feature barrels) so nothing else comes along.
-export { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
-export { PageLoading } from "@/components/ui/PageLoading";
 export { CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
-export { CmsPreviewHomeView } from "@/features/cms/components/CmsPreviewHomeView";
-export { FooterSeoText } from "@/features/seo-footer/FooterSeoText";
 export { MarketSeoTextSlot } from "@/features/seo-footer/MarketSeoTextSlot";
-export { SitePageRoute } from "@/features/site-pages/sitePageRoute";
-export { ReviewRequestPageView } from "@/features/reviews/components/ReviewRequestPageView";
-// Swiss Arabian's: promotions page not rebuilt yet (see docs/sapil/pages/content.md).
-export { OfferShop } from "@/features/promotions/components/OfferShop";
-// Off for Sapil (brand features) and never linked; the routes keep Swiss Arabian's views.
+// --- Sapil's own loading / placeholder / SEO text ---
+export { SapilPageLoading as PageLoading } from "./components/states/SapilPageLoading";
+export {
+  SapilFeaturePlaceholder as FeaturePlaceholder,
+  SapilOurStoryFallback as OurStoryFallbackView,
+} from "./components/states/SapilPlaceholders";
+export { SapilFooterSeoText as FooterSeoText } from "./components/shell/SapilFooterSeoText";
+// Off for Sapil (brand features): every route below answers "not found" before it renders
+// (requireBrandFeature) and is never linked. Swiss Arabian's views stay only to fill the contract.
 export { AccountPlaceholderPageView } from "@/features/account/components/AccountPlaceholderPageView";
 export { AccountRewardsPageView } from "@/features/account/components/AccountRewardsPageView";
 export { EmployeeBenefitsAccountView as AccountEmployeeBenefitsPageView } from "@/features/employeeBenefits/components/EmployeeBenefitsAccountView";
@@ -36,11 +36,15 @@ export { SapilShopUnavailableView as ShopUnavailableView } from "./components/st
 
 // --- home + content (HomePageView, Blog*, FaqPageView, SitePageView, …) ---
 export { SapilHomePage as HomePageView } from "./pages/home/SapilHomePage";
+export { SapilCmsPreviewHome as CmsPreviewHomeView } from "./pages/home/SapilCmsPreviewHome";
 export { SapilBlogPage as BlogPageView } from "./pages/content/SapilBlogPage";
 export { SapilBlogArticlePage as BlogArticlePageView } from "./pages/content/SapilBlogArticlePage";
 export { SapilFaqPage as FaqPageView } from "./pages/content/SapilFaqPage";
 export { SapilSitePage as SitePageView } from "./pages/content/SapilSitePage";
+export { SapilSitePageRoute as SitePageRoute } from "./pages/content/SapilSitePageRoute";
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
+export { SapilReviewRequestPage as ReviewRequestPageView } from "./pages/content/SapilReviewRequestPage";
+export { SapilOfferPage as OfferPageView } from "./pages/content/SapilOfferPage";
 
 // --- catalog (listings, product page, search, collections) ---
 export {
@@ -79,8 +83,6 @@ export {
   SapilResetPasswordPage as ResetPasswordPageView,
   SapilVerifyPage as VerifyPageView,
 } from "./pages/auth/SapilAuthPages";
-// Loyalty / rewards, subscriptions, employee benefits and gift box are off for Sapil
-// (brand features): their routes keep Swiss Arabian's views and Sapil never links to them.
 export {
   SapilAccountAddressesPage as AccountAddressesPageView,
   SapilAccountAfterSalesPage as AccountAfterSalesPageView,

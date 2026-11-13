@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-
-/** Height of the closed block (about 6 lines of body text). */
-const COLLAPSED_PX = 168;
+import { useCollapsibleText } from "./useCollapsibleText";
 
 /**
  * SEO text body above the footer: a fixed height with a fade; when the text is
@@ -12,27 +9,10 @@ const COLLAPSED_PX = 168;
  * always in the page (search engines read all of it), only its height changes.
  */
 export function SeoTextBody({ html, lang: _lang }: { html: string; lang: string }) {
-  const id = useId();
-  const ref = useRef<HTMLDivElement>(null);
-  const [fullHeight, setFullHeight] = useState(0);
-  const [open, setOpen] = useState(false);
+  const { id, ref, open, toggle, overflows, closed, maxHeight } = useCollapsibleText(html);
   // Buttons in the page's language (the text itself may be another language).
   const t = useShopCopy();
   const labels = { more: t("seoText.more"), less: t("seoText.less") };
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => setFullHeight(el.scrollHeight);
-    measure();
-    // Watch the text itself: its height changes with the window width even while the box is capped.
-    const observer = new ResizeObserver(measure);
-    observer.observe(el.firstElementChild ?? el);
-    return () => observer.disconnect();
-  }, [html]);
-
-  const overflows = fullHeight > COLLAPSED_PX + 8;
-  const closed = overflows && !open;
 
   return (
     <div>
@@ -40,7 +20,7 @@ export function SeoTextBody({ html, lang: _lang }: { html: string; lang: string 
         id={id}
         ref={ref}
         className="site-page-body relative overflow-hidden text-sm transition-[max-height] duration-300"
-        style={{ maxHeight: closed ? COLLAPSED_PX : overflows ? fullHeight : undefined }}
+        style={{ maxHeight }}
       >
         <div dangerouslySetInnerHTML={{ __html: html }} />
         {closed ? (
@@ -55,7 +35,7 @@ export function SeoTextBody({ html, lang: _lang }: { html: string; lang: string 
           type="button"
           aria-expanded={open}
           aria-controls={id}
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-[0.78rem] font-semibold tracking-[0.08em] text-copper uppercase underline underline-offset-4"
         >
           {open ? labels.less : labels.more}

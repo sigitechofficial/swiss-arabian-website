@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
 import { pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
-import { faqDrawers } from "@/features/faq/data/faqContent";
 import {
   loadMarketFixedPage,
   marketFixedPageMetadata,
 } from "@/features/site-pages/marketFixedPage";
 import { pickStoryPage } from "@/features/site-pages/utils/pickMarketPage";
-import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
+import { CatalogJsonLd, OurStoryFallbackView, SitePageView } from "@brand-ui";
 
 const loadStory = () => loadMarketFixedPage("our-story", pickStoryPage);
-
-/** The brand history already published in the FAQ: shown until the market publishes its story page. */
-const BRAND_HISTORY =
-  faqDrawers
-    .flatMap((drawer) => drawer.items)
-    .find((item) => item.id === "general-name")?.answer ?? "";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, page } = await loadStory();
@@ -33,5 +26,6 @@ export default async function OurStoryPage() {
       </>
     );
   }
-  return <FeaturePlaceholder title="Our story" description={BRAND_HISTORY} />;
+  // The brand's own words until the market publishes its story (never another brand's history).
+  return <OurStoryFallbackView />;
 }

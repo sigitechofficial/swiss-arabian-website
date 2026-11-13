@@ -7,6 +7,7 @@ import {
   localeRouting,
 } from "@/lib/i18n/localeRouting";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
+import { brandLinkEnabled } from "@/lib/brand/features";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
   matchRedirect,
@@ -15,6 +16,9 @@ import {
   redirectsFor,
   redirectZone,
 } from "@/lib/seo/storedRedirects";
+
+/** An address no route matches: rewriting to it renders the global 404. */
+const FEATURE_OFF_SEGMENT = "_section-off";
 
 /** Served outside the `[locale]` tree (API proxies in next.config rewrites). */
 const PASS_THROUGH = /^\/(?:_next|api|storefront|catalog|webhooks)(?:\/|$)/;
@@ -63,6 +67,15 @@ export async function proxy(request: NextRequest) {
   if (decision.search !== undefined) url.search = decision.search;
   if (decision.type === "redirect") return NextResponse.redirect(url, 301);
   const forwarded = withLocale(request, decision.pathname);
+  // A section this brand has switched off (brand `features`): the server-rendered
+  // 404 (app/global-not-found.tsx: the brand's chrome, status 404), also for
+  // sign-in-only pages whose own notFound() would only show after sign-in.
+  if (!brandLinkEnabled(pathname)) {
+    url.pathname = `/${localeFromPathname(decision.pathname)}/${FEATURE_OFF_SEGMENT}`;
+    url.search = "";
+    forwarded.set(INTERNAL_REWRITE_HEADER, "1");
+    return NextResponse.rewrite(url, { request: { headers: forwarded } });
+  }
   if (decision.type === "rewrite") {
     forwarded.set(INTERNAL_REWRITE_HEADER, "1");
     return NextResponse.rewrite(url, { request: { headers: forwarded } });

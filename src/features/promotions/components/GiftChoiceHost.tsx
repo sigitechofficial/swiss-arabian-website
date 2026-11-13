@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { useCartStore } from "@/stores/useCartStore";
@@ -14,13 +14,16 @@ import {
   readGiftRevealSeen,
   writeGiftRevealSeen,
 } from "../utils/giftWithPurchase";
-import { GiftChoiceModal } from "./GiftChoiceModal";
+import { GiftChoiceModal, type GiftChoiceModalProps } from "./GiftChoiceModal";
 
 function cartSurface(pathname: string, cartOpen: boolean): boolean {
   return cartOpen || pathname === "/cart" || pathname.startsWith("/cart/");
 }
 
-export function GiftChoiceHost() {
+/** Opens the free-gift choice; `Modal` is the brand's dialog (default: Swiss Arabian's). */
+export function GiftChoiceHost({
+  Modal = GiftChoiceModal,
+}: { Modal?: ComponentType<GiftChoiceModalProps> } = {}) {
   const pathname = stripLocalePrefix(usePathname() ?? "/");
   const cartOpen = useUiStore((s) => s.cartOpen);
   const promotions = useCartStore((s) => s.promotions);
@@ -78,7 +81,7 @@ export function GiftChoiceHost() {
   if (!award || !choosing) return null;
 
   return (
-    <GiftChoiceModal
+    <Modal
       award={award}
       celebrate={celebrate}
       onClose={() => useGiftChoiceStore.getState().close()}

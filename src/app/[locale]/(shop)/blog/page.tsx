@@ -4,6 +4,7 @@ import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogPosts } from "@/features/blog/api/blogApi";
 import { BlogPageView } from "@brand-ui";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 const PAGE_SIZE = 12;
 
@@ -24,6 +25,7 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
+  requireBrandFeature("blog");
   const { t } = await routeTranslator();
   const base = await pageMetadata({
     path: "/blog",
@@ -40,6 +42,7 @@ export default async function BlogPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  requireBrandFeature("blog");
   const { page, result } = await load((await searchParams).page);
   return (
     <BlogPageView posts={result.posts} page={page} totalPages={result.totalPages} total={result.total} />

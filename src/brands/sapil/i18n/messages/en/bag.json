@@ -51,5 +51,16 @@
   "pageAmountDue": "To pay",
   "pageTaxIncluded": "Includes {amount} {label}",
   "pageTaxAdded": "{label}",
-  "pageSecure": "Secure checkout"
+  "pageSecure": "Secure checkout",
+  "giftKicker": "Free gift",
+  "giftTitle": "A gift is",
+  "giftAccent": "yours.",
+  "giftLede": "Choose one. You can change it before checkout.",
+  "giftChoices": "Free gift choices",
+  "giftSelect": "Choose",
+  "giftLater": "Not now",
+  "giftUnavailable": "This free gift is unavailable.",
+  "giftRemoved": "This free gift was removed.",
+  "giftIneligible": "This offer no longer includes a free gift.",
+  "giftFailed": "We couldn’t update your free gift. Try again."
 }

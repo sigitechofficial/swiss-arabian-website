@@ -123,5 +123,16 @@
   "emptyTitle": "Something new is",
   "emptyAccent": "on its way.",
   "emptyLead": "Our home page is being arranged. Every fragrance is already in the shop.",
-  "emptyCta": "Shop all perfume"
+  "emptyCta": "Shop all perfume",
+  "previewBar": "Draft preview · {zone} · {language}",
+  "previewExit": "Exit preview",
+  "previewExpiredEyebrow": "Draft preview",
+  "previewExpiredTitle": "This preview",
+  "previewExpiredAccent": "has expired.",
+  "previewExpiredLead": "The preview session is missing or has expired. Open Preview again from the admin.",
+  "previewBack": "Back to the shop",
+  "previewEmptyEyebrow": "Draft preview",
+  "previewEmptyTitle": "Nothing in",
+  "previewEmptyAccent": "this Draft.",
+  "previewEmptyLead": "The Draft has no enabled sections, or the preview link is not valid for this market."
 }

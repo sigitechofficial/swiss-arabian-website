@@ -1,317 +1,36 @@
 "use client";
 
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { localeFromPathname } from "@/lib/i18n/localePath";
-import { useResetOnChange } from "@/hooks/useResetOnChange";
-import { promotionKeys } from "../api/promotions.keys";
-import { apiGet, apiPost } from "@/lib/api/apiClient";
-import {
-  addCartItems,
-  storefrontCartQuery,
-} from "@/features/cart/api/cart.service";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { useCartStore } from "@/stores/useCartStore";
-import { useUiStore } from "@/stores/useUiStore";
-import type { DiscoveryOffer } from "../types/discovery";
-import { rememberEmptyOrigin } from "../utils/emptyBagMemory";
-import { trackPromotion } from "../utils/promotionAnalytics";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { offerProductPrice as productPrice, useOfferShop } from "../hooks/useOfferShop";
 
-type ShopProduct = {
-  productId: string;
-  variantId: string | null;
-  sku: string;
-  slug: string | null;
-  title: string;
-  image: string | null;
-  price: string | null;
-  amount: string | null;
-  inStock: boolean;
-};
-
-type ShopGroup = {
-  id: string;
-  name: string;
-  requiredQuantity: number | null;
-  selectionMode: "replace" | "many";
-  products: ShopProduct[];
-};
-
-type ShopCopy = {
-  choose: string;
-  remove: string;
-  replace: string;
-  tray: string;
-  soldOut?: string;
-  add: string;
-  completed?: string;
-  current?: string;
-  next?: string;
-  before: string;
-  saving: string;
-  offerSaving?: string;
-  otherSavings?: string;
-  totalSavings?: string;
-  total: string;
-  search: string;
-};
-
-type ShopPayload = {
-  available: true;
-  offer: DiscoveryOffer;
-  groups: ShopGroup[];
-  copy: ShopCopy;
-};
-
-type Selection = { groupId: string; sku: string; quantity: number };
-
-type Preview = {
-  beforeSavings: string;
-  offerSaving?: string | null;
-  otherSavings?: string | null;
-  totalSavings?: string | null;
-  promotionSaving?: string | null;
-  yourTotal: string;
-  subtotalAmount?: string | null;
-  savingsAmount?: string | null;
-  totalAmount?: string | null;
-  message: string;
-  readyToAdd: boolean;
-  unavailable: Array<{ groupId: string; sku: string }>;
-};
-
-function moneyNumber(value: string | null | undefined): number | null {
-  if (value == null || String(value).trim() === "") return null;
-  const amount = Number(value);
-  return Number.isFinite(amount) ? amount : null;
-}
-
-function productPrice(product: ShopProduct, currency: string) {
-  const amount = moneyNumber(product.amount);
-  return amount == null ? product.price : formatMoney(amount, currency);
-}
-
-function storageKey(market: string, code: string) {
-  return `swiss-offer:${market}:${code}`;
-}
-
-function readSelections(key: string): Selection[] {
-  try {
-    const raw = JSON.parse(sessionStorage.getItem(key) || "[]");
-    if (!Array.isArray(raw)) return [];
-    return raw.flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const groupId = String((item as { groupId?: unknown }).groupId || "");
-      const sku = String((item as { sku?: unknown }).sku || "");
-      const quantity = Math.floor(
-        Number((item as { quantity?: unknown }).quantity),
-      );
-      if (!groupId || !sku || !Number.isFinite(quantity) || quantity < 1)
-        return [];
-      return [{ groupId, sku, quantity }];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function keepSellable(groups: ShopGroup[], rows: Selection[]): Selection[] {
-  return rows.flatMap((row) => {
-    const group = groups.find((item) => item.id === row.groupId);
-    const product = group?.products.find(
-      (item) => item.sku === row.sku && item.inStock,
-    );
-    if (!group || !product) return [];
-    const cap = group.requiredQuantity ?? 20;
-    return [{ ...row, quantity: Math.min(row.quantity, cap) }];
-  });
-}
-
+/** Swiss Arabian's offer link page (/offers/[code]); logic in `useOfferShop`. */
 export function OfferShop({ code }: { code: string }) {
   const t = useShopCopy();
-  const [selections, setSelections] = useState<Selection[]>([]);
-  const [fetchedPreview, setFetchedPreview] = useState<Preview | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
-  const opened = useRef(false);
-  const locale = localeFromPathname(usePathname() || "/");
-  const setCartFromApi = useCartStore((state) => state.setCartFromApi);
-  const cartId = useCartStore((state) => state.cartId);
-  const setCartOpen = useUiStore((state) => state.setCartOpen);
-  const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
-  const currency = useMarketCurrency();
-
-  // Offer page data (market + locale scoped); React Query owns loading/error.
-  const shopQuery = useQuery({
-    queryKey: promotionKeys.offerShop(code, zoneCode, locale),
-    queryFn: () => {
-      const params = storefrontCartQuery();
-      params.set("locale", locale);
-      return apiGet<ShopPayload | { available: false }>(
-        `/storefront/promotions/offers/${encodeURIComponent(code)}?${params.toString()}`,
-      );
-    },
-    enabled: Boolean(zoneCode),
-  });
-  const shop =
-    shopQuery.data && "offer" in shopQuery.data ? shopQuery.data : null;
-  const missing = shopQuery.isSuccess && !shop;
-  const loadError = shopQuery.isError;
-
-  // Restore the shopper's picks for this offer/market (sessionStorage) when
-  // the offer loads; the query only runs in the browser.
-  const selectionsKey = shop ? storageKey(shop.offer.marketCode, code) : "";
-  useResetOnChange(selectionsKey, () => {
-    setSelections(
-      shop ? keepSellable(shop.groups, readSelections(selectionsKey)) : [],
-    );
-    setFetchedPreview(null);
-  });
-
-  useEffect(() => {
-    if (!selectionsKey) return;
-    sessionStorage.setItem(selectionsKey, JSON.stringify(selections));
-  }, [selectionsKey, selections]);
-
-  useEffect(() => {
-    if (!shop || opened.current) return;
-    opened.current = true;
-    if (shop.offer.mechanic === "SET_BUNDLE") {
-      rememberEmptyOrigin(shop.offer.marketCode, shop.offer.campaignCode);
-    }
-    trackPromotion("promotion_builder_opened", {
-      campaignId: shop.offer.campaignId,
-      campaignCode: shop.offer.campaignCode,
-      mechanic: shop.offer.mechanic,
-      market: shop.offer.marketCode,
-      brand: null,
-      surface: "offer",
-    });
-  }, [shop]);
-
-  useEffect(() => {
-    if (!shop || selections.length === 0) return;
-    const handle = window.setTimeout(() => {
-      const params = storefrontCartQuery();
-      apiPost<Preview | { available: false }>(
-        `/storefront/promotions/offers/${encodeURIComponent(code)}/preview?${params.toString()}`,
-        {
-          locale,
-          selections,
-        },
-      )
-        .then((data) => {
-          if (!data || !("yourTotal" in data)) return;
-          setFetchedPreview(data);
-          if (data.unavailable.length) {
-            setSelections((current) =>
-              current.filter(
-                (row) =>
-                  !data.unavailable.some(
-                    (gone) =>
-                      gone.groupId === row.groupId && gone.sku === row.sku,
-                  ),
-              ),
-            );
-          }
-        })
-        .catch(() => setFetchedPreview(null));
-    }, 350);
-    return () => window.clearTimeout(handle);
-  }, [shop, selections, code, locale]);
-
-  // No picks, no price preview (an older preview must not linger).
-  const preview = selections.length > 0 ? fetchedPreview : null;
-
-  const productsBySku = useMemo(() => {
-    const map = new Map<string, ShopProduct>();
-    for (const group of shop?.groups ?? []) {
-      for (const product of group.products)
-        map.set(`${group.id}:${product.sku}`, product);
-    }
-    return map;
-  }, [shop]);
-
-  if (!zoneCode || (!shop && !missing && !loadError)) return <p>Loading.</p>;
-  if (loadError) return <p>We could not load this page.</p>;
-  if (missing || !shop) return <p>This is not available in your market.</p>;
-  const page = shop;
-
-  function choose(group: ShopGroup, product: ShopProduct) {
-    if (!product.inStock) return;
-    setSelections((current) => {
-      const rest =
-        group.selectionMode === "replace"
-          ? current.filter((row) => row.groupId !== group.id)
-          : current.filter(
-              (row) => !(row.groupId === group.id && row.sku === product.sku),
-            );
-      return [...rest, { groupId: group.id, sku: product.sku, quantity: 1 }];
-    });
-    trackPromotion("promotion_product_selected", {
-      campaignId: page.offer.campaignId,
-      campaignCode: page.offer.campaignCode,
-      mechanic: page.offer.mechanic,
-      market: page.offer.marketCode,
-      surface: "offer",
-    });
-  }
-
-  async function addSelected() {
-    if (!preview?.readyToAdd || adding) return;
-    setAdding(true);
-    setAddError(null);
-    try {
-      const cart = await addCartItems(
-        selections.map((row) => ({ sku: row.sku, quantity: row.quantity })),
-        cartId,
-      );
-      setCartFromApi(cart);
-      setCartOpen(true);
-      trackPromotion("promotion_multi_add", {
-        campaignId: page.offer.campaignId,
-        campaignCode: page.offer.campaignCode,
-        mechanic: page.offer.mechanic,
-        market: page.offer.marketCode,
-        surface: "offer",
-      });
-    } catch {
-      setAddError(page.copy.add);
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  const groupFilled = (group: ShopGroup) => {
-    const have = selections
-      .filter((row) => row.groupId === group.id)
-      .reduce((sum, row) => sum + row.quantity, 0);
-    return group.requiredQuantity ? have >= group.requiredQuantity : have > 0;
-  };
-  const removeSelection = (groupId: string, sku: string) => {
-    setSelections((current) =>
-      current.filter((item) => !(item.groupId === groupId && item.sku === sku)),
-    );
-    trackPromotion("promotion_product_removed", {
-      campaignId: shop.offer.campaignId,
-      campaignCode: shop.offer.campaignCode,
-      mechanic: shop.offer.mechanic,
-      market: shop.offer.marketCode,
-      surface: "offer",
-    });
-  };
-  const unfilled = shop.groups.filter((group) => !groupFilled(group));
-  const activeId = unfilled[0]?.id ?? shop.groups[0]?.id;
-  const ready =
-    unfilled.length === 0 && Boolean(preview?.readyToAdd) && !adding;
-  const subtotal = moneyNumber(preview?.subtotalAmount);
-  const savings = moneyNumber(preview?.savingsAmount);
-  const total = moneyNumber(preview?.totalAmount);
+  const offer = useOfferShop(code);
+  if (offer.status === "loading") return <p>Loading.</p>;
+  if (offer.status === "error") return <p>We could not load this page.</p>;
+  if (offer.status === "missing" || !offer.shop) return <p>This is not available in your market.</p>;
+  const shop = offer.shop;
+  const {
+    selections,
+    productsBySku,
+    currency,
+    choose,
+    removeSelection,
+    addSelected,
+    groupFilled,
+    unfilled,
+    activeId,
+    ready,
+    subtotal,
+    savings,
+    total,
+    preview,
+  } = offer;
+  const addError = offer.addFailed ? shop.copy.add : null;
   const addPiece = t("bundle.add");
   const addedPiece = t("bundle.added");
   const soldOut = shop.copy.soldOut || t("bundle.soldOut");

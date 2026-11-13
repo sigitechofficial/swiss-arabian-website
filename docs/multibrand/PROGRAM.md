@@ -44,6 +44,7 @@ Other rules:
 | H | Right-to-left layout, performance budgets, visual-diff + isolation checks | done in I and J | ✅ RTL checked en/ar on all routes; budgets in `docs/sapil/PERFORMANCE.md` (LCP still over); isolation: no Swiss Arabian text/ids in Sapil HTML, Sapil CSS/kit out of Swiss Arabian builds |
 | I | Two reviewer agents | `review/platform`, `review/sapil` (website); backend `review/sapil-cms` (`9dff01a5`) | ✅ merged |
 | J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` |
+| K | Brand design coverage: every route in its own brand's design, brand feature switches enforced | `fix/brand-design-coverage` | ✅ see "Brand design coverage" below and `docs/ui-check/BRAND_COVERAGE.md` |
 
 ## Decisions still open, and the defaults used until answered
 
@@ -52,7 +53,7 @@ Each default is reversible. It is used only so the work isn't blocked.
 | # | Open item | Default used |
 |---|---|---|
 | 1 | Sapil domains / first market (O1, O2) | Local `sapil.test` / `sp.localhost`, staging `sapil-website.vercel.app`; market Sapil UAE |
-| 2 | Day-one scope (O7) | All v9 pages + auth, account (orders, addresses, wishlist, profile), search, bag page, blog post, FAQ / policies, 404. Loyalty, subscriptions, gift box and employee benefits are off for Sapil (brand feature flags) |
+| 2 | Day-one scope (O7) | All v9 pages + auth, account (orders, addresses, wishlist, profile), search, bag page, blog + blog post, FAQ / policies, 404. Store locator, loyalty, subscriptions, gift box and employee benefits are off for Sapil (brand feature switches: those routes answer 404 and are never linked) |
 | 3 | Cash on delivery for Sapil | Shown when the market's delivery method supports it (backend `supportsCOD`); fee comes from the API |
 | 4 | Payment providers (Sapil UAE) | Whatever the market's payment methods return (credential packs; test mode locally) |
 | 5 | Price-edit URLs | `/collections/under-99`-style listing with a `maxPrice` filter, tiers from the market setting |
@@ -70,9 +71,7 @@ Each default is reversible. It is used only so the work isn't blocked.
   - ~~`features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.~~ ✅ closed (reviewer 1): `reviews.*` in `src/messages/en.json` + `ar.json` (plurals), the reply line names the brand.
 - ~~**Per-brand metadata:** some route metadata still uses Swiss Arabian wording.~~ ✅ closed (reviewer 1): page meta descriptions use `{brand}` (filled by `routeTranslator()` from `getBrand()`); the brand-identity fallback and layout icons come from the brand config.
 - ~~**`getBrand()` adoption**~~ ✅ closed (reviewer 1): analytics, Insider, Tabby, Maps, payment switches, catalog media base, storefront host, SEO indexing, layout icons / site name read the brand (`brandIntegrations()`); `env.ts` holds no per-brand setting and no Insider default (Sapil no longer inherits Swiss Arabian's account). Caller table in `src/lib/brand/README.md`.
-- **Not yet Sapil-styled:**
-  - `OfferShop`
-  - rewards / subscriptions / employee benefits / gift box (off for Sapil; never linked)
+- ~~**Not yet Sapil-styled:** `OfferShop`; rewards / subscriptions / employee benefits / gift box~~ ✅ brand coverage pass: `SapilOfferPage`; the switched-off sections answer 404 on Sapil (proxy + page guard) and are never linked.
 - **Data / decisions:**
   - "Shop by" chips need a CMS menu.
   - Gender / mood / season filters (collections vs attributes).
@@ -167,6 +166,44 @@ Sapil has no blog posts / CMS pages yet; Swiss Arabian merchandising slugs 404 o
 
 **Decisions for the product owner:** Arabic web font for Sapil; whether `/verify` should drop the
 email from the URL too; Sapil content in Arabic (menus, moods, collection copy) in the admin.
+
+## Brand design coverage (2026-11-13, branch `fix/brand-design-coverage`)
+
+Every route under `src/app/[locale]` (except `(dev)`) checked for both brands, English and `/ar`,
+at 1280 and 390 px, on production builds; Swiss Arabian also against the pre-program build
+`5a55282`. Route × brand table and method: `docs/ui-check/BRAND_COVERAGE.md`.
+
+**Feature switches are enforced** (`src/lib/brand/features.ts`, documented in `src/brands/README.md`):
+- `storeLocator` → `/stores`; `blog` → `/blog/**`; `loyalty` → `/account/rewards`, `/account/membership`;
+  `subscriptions` → `/subscriptions/**`, `/account/subscription/**`; `giftBox` → `/gift-box`;
+  new `employeeBenefits` → `/account/employee-benefits` (Swiss Arabian on, Sapil off).
+- Off: the proxy answers with the server-rendered 404 (brand chrome, status 404), each page also
+  calls `requireBrandFeature()`, and links are filtered (CMS menus, account tabs and tiles, mobile
+  menu, `/pages` → `/stores` redirect, sitemap). Sapil now has `blog: true` (v9 blog design).
+- Swiss Arabian keeps every section on.
+
+**Sapil views added** (logic in shared hooks, Swiss Arabian's views use them unchanged):
+`SapilSitePageRoute` (`/pages`, `/policies`), `SapilCmsPreviewHome` (`/preview/home`),
+`SapilReviewRequestPage` (`/review/[token]`), `SapilOfferPage` (`/offers/[code]`),
+`SapilPageLoading` (also the account sign-in check), `SapilFeaturePlaceholder`,
+`SapilFooterSeoText`, `SapilOurStoryFallback` (Sapil no longer shows Swiss Arabian's brand history),
+`SapilGiftChoiceDialog`. Contract changes: `OfferShop` → `OfferPageView`, new `OurStoryFallbackView`.
+
+**Found by the sweep and fixed:** Sapil `/ar` buttons and fields used Swiss Arabian's Arabic font
+stack (`GE SS`); sign-in-only pages of switched-off sections answered 200 (now 404 from the proxy).
+
+**Sweep results:** Sapil 120 / 120 page loads pass (drawn in the Sapil root, no Swiss Arabian
+text / font / asset, no horizontal scroll, switched-off sections 404). Swiss Arabian: no Sapil
+markup or text anywhere; visible text identical to `5a55282` except the program's pagination
+routes, the newer in-page 404 block and the product "Details" panel (open item); `/ar/cart`
+scrolls sideways at 390 px exactly as on `5a55282`. Sapil v9 diff unchanged (0 % on the static
+components; known data / copy differences on hero intro and footer).
+
+**Still open:** Sapil announcement links to `/shop?maxPrice=99` (CMS data; no `/shop` route);
+Swiss Arabian product "Details" panel empty in this build (not touched here); signed-in account
+pages not swept; Sapil has no posts / CMS pages / offers locally to see those views with data;
+Sapil checkout's inline card / wallet forms, Tabby card and 3-D Secure sentence are still Swiss
+Arabian's; Arabic web font for Sapil. Details: `docs/ui-check/BRAND_COVERAGE.md`.
 
 ## End-to-end order test from the screens (2026-11-13)
 
@@ -274,3 +311,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
 - **2026-11-13 (backend fixes):** per-brand email identity and failure logging on backend `feat/sapil-cms`; verified with two more Sapil orders. Remaining gaps above.
 - **2026-11-13 (order-flow gaps):** branch `fix/order-flow-gaps`: tracking wording / order / time zone / delivered date / review wording, unit counts, checkout title, page-SEO lookups cached and skipped for catalog paths, catalog pages error (not 404) when the API is down, staff tracking notes hidden. Both brands.
 - **2026-11-13 (gaps round 2):** website `fix/order-flow-gaps` merged (2e4a90e); backend/admin fixes committed on `feat/sapil-cms`. Website: tsc + eslint clean, 1156 tests × 2 UIs.
+- **2026-11-13 (brand design coverage, branch `fix/brand-design-coverage`):** brand feature switches enforced (proxy 404 + page guard + link filters; `employeeBenefits` added, Sapil blog on); Sapil's own views for `/pages`, `/policies`, `/preview/home`, `/review/[token]`, `/offers/[code]`, loading, placeholders, footer SEO text, `/our-story` fallback and the free-gift dialog; Sapil Arabic controls keep Sapil's font. Every route swept for both brands (en + ar, 1280 + 390); results in `docs/ui-check/BRAND_COVERAGE.md`.
