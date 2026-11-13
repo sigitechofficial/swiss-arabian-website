@@ -38,9 +38,9 @@ Other rules:
 | B | Multi-language `[locale]` routing + static rendering | `feat/i18n-locale-routing` (`e6a0750`) | ✅ merged — catalog pages ISR, N languages via `NEXT_PUBLIC_SHOP_LOCALES` + `src/messages/<lang>.json` |
 | C | Sapil v9 design system (Tailwind tokens, fonts, components, visual diff) | `feat/sapil-design-system` (`15900fe`) | ✅ merged — scoped to `[data-brand="sapil"]`, ~20 components, diff 0–0.1% (inputs 1.6% at 390px) |
 | D | Backend + admin: hero gallery, mood picker, tile colour, best sellers, collection summaries, price tiers, delivery summary, demo seed | backend `feat/sapil-cms` (`417fd109`, `1294ed75`, `80634f35`, `27a08212`), admin `feat/sapil-cms` (`b3fc689`) | ✅ done — contract: backend `docs/frontend/SAPIL_STOREFRONT_DATA_HANDOFF.md` |
-| E | Shop logic moved out of components into shared hooks | done per page inside G | 🔄 |
-| F | Per-brand UI selection (`@brand-ui` contract, `BrandHead`, Sapil per-area messages, conventions) + Sapil app shell | `feat/multibrand-sapil` + `feat/sapil-shell-home` | ✅ contract merged; 🔄 shell in progress |
-| G | Sapil pages (plan: [`SAPIL_PAGES_PLAN.md`](../sapil/SAPIL_PAGES_PLAN.md), rules: [`BUILD_CONVENTIONS.md`](../sapil/BUILD_CONVENTIONS.md)) | `feat/sapil-shell-home`, `feat/sapil-catalog`, `feat/sapil-commerce` | 🔄 3 agents in progress |
+| E | Shop logic moved out of components into shared hooks | done per page inside G | ✅ ~40 hooks extracted (cart, checkout, orders, tracking, auth, account, catalog, PDP, CMS, search, wishlist, newsletter…); Swiss Arabian views use them unchanged |
+| F | `@brand-ui` contract + `BrandHead` + Sapil per-area messages + Sapil shell (header, chip row, phone menu, search, bag drawer, footer, market/language switcher) | merged | ✅ |
+| G | Sapil pages: shell + home + content (`feat/sapil-shell-home`), catalog + product + search (`feat/sapil-catalog`), bag + checkout + payments + orders + tracking + auth + account (`feat/sapil-commerce`) | merged into `feat/multibrand-sapil` | ✅ built; reviewer pass next. Docs: `docs/sapil/pages/*.md` |
 | H | Right-to-left layout, performance budgets, visual-diff + isolation checks | — | ⏳ |
 | I | Two reviewer agents | — | ⏳ |
 | J | Final UI check of both sites + fixes | — | ⏳ |
@@ -59,6 +59,39 @@ Each default is reversible. It is used only so the work isn't blocked.
 | 6 | Blog URL | Same as Swiss Arabian (`/blog`); Shopify `/blogs/news/*` → 301 redirects at cutover |
 | 7 | Arabic / other-script fonts for Sapil | Arabic: the platform's existing Arabic font until the designer picks one |
 | 8 | Data owners (bottle colours, moods, hero rooms, bundles) | Admin editors + seed data from the v9 mock catalog for local demo only |
+
+## Known gaps (for the reviewer agents)
+
+- **Product cards:**
+  - Home rails use `HomeProductTile` and the account wishlist uses an inline `ProductCard`. Both should move to the shared `SapilProductCard`, keeping the mood band's white tiles.
+- **Wording not yet Sapil's or translated:**
+  - Payment screens' inner copy is English / Swiss Arabian-styled.
+  - The global Toaster is raised by shared account mutations.
+  - API error sentences.
+  - `features/catalog/i18n/reviewsCopy.ts` is not in the JSON message files.
+- **Per-brand metadata:** some route metadata still uses Swiss Arabian wording from `src/messages` (e.g. the blog meta description). It needs brand-aware defaults from `getBrand()`.
+- **`getBrand()` adoption** (callers listed in `src/lib/brand/README.md`):
+  - analytics, Insider, Tabby, Maps, catalog media base and storefront host still read env directly
+  - layout icons and site name
+  - the Insider default in `env.ts`
+- **Not yet Sapil-styled:**
+  - `OfferShop`
+  - rewards / subscriptions / employee benefits / gift box (off for Sapil; never linked)
+- **Data / decisions:**
+  - "Shop by" chips need a CMS menu.
+  - Gender / mood / season filters (collections vs attributes).
+  - Sapil fragrance-notes and video tiles not curated.
+  - No collection colour field.
+  - No product FAQ source.
+  - Sapil Arabic font.
+- **Platform:**
+  - Unmatched URLs get Next's error shell (the client then draws our 404), not a server-rendered 404.
+  - `check:brand` not yet wired into CI / Docker.
+  - One storefront host per deployment: Swiss Arabian's Qatar domains need their own deployments (or a per-request host for those).
+- **Visual diff, larger numbers:**
+  - hero intro (real data and font wrap)
+  - shell "Shop by" row and footer (intended differences)
+  - checkout empty bag (no demo "sample bag")
 
 ## Local Sapil test backend
 
@@ -91,3 +124,4 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Started 3 page agents (shell + home + content; catalog + product; bag + checkout + orders + auth + account).
   - The local Sapil market has no products, so the backend agent was asked for a local-only demo seed.
 - **2026-11-13 (later):** Backend/admin Sapil pieces and the demo seed are done. The shared `:3012` Sapil backend is running, and the page agents were pointed at it.
+- **2026-11-13 (later):** All three Sapil page branches are merged. Conflicts resolved: one wishlist hook, one collections hook, combined i18n areas and diff specs, the market delivery types. The shell now renders `SapilBagDrawer`. Next: the two reviewer agents, then the final UI check of both sites.
