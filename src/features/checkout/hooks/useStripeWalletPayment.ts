@@ -6,6 +6,7 @@ import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js
 import { clearPaymentState } from "../utils/checkoutSession";
 import { checkoutHref } from "../utils/checkoutLocale";
 import {
+  confirmEmail,
   ignoreIfAlreadyOnSession,
   resolveStripeContact,
   stripeConfirmError,
@@ -49,6 +50,7 @@ export function useStripeWalletPayment({
       const confirmResult = await checkout.confirm({
         redirect: "if_required",
         expressCheckoutConfirmEvent: event,
+        ...confirmEmail(checkout, contact.email),
         ...(contact.phone ? { phoneNumber: contact.phone } : {}),
         billingAddress: contact.billingAddress,
       });

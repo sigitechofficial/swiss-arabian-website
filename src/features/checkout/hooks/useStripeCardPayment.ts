@@ -90,6 +90,15 @@ function readCheckoutControl(name: string): string {
   return field?.value?.trim() || "";
 }
 
+/**
+ * The email to hand `confirm()`: only when the session has none. A session
+ * created with the customer's email rejects a second one.
+ */
+export function confirmEmail(checkout: { email?: string | null }, email: string): { email?: string } {
+  if (!email.includes("@")) return {};
+  return checkout.email ? {} : { email };
+}
+
 export async function ignoreIfAlreadyOnSession(run: () => Promise<unknown>) {
   try {
     await run();
@@ -176,6 +185,7 @@ export function useStripeCardPayment({
       await ignoreIfAlreadyOnSession(() => checkout.updateBillingAddress(contact.billingAddress));
       const confirmResult = await checkout.confirm({
         redirect: "if_required",
+        ...confirmEmail(checkout, contact.email),
         phoneNumber: contact.phone,
         billingAddress: contact.billingAddress,
       });
