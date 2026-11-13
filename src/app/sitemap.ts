@@ -9,6 +9,7 @@ import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
 import { fixedPathForPage } from "@/features/site-pages/utils/pickMarketPage";
 import { fetchBlogSlugs } from "@/features/blog/api/blogApi";
+import { brandFeatureEnabled } from "@/lib/brand/features";
 
 /** Public pages that are not catalog entities (search is noindex, so not listed). */
 // Placeholder pages (our story, stores) join when their CMS content exists.
@@ -62,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Journal posts exist in one language each: list them only at that language's address.
   const blogEntries: MetadataRoute.Sitemap = [];
-  try {
+  if (brandFeatureEnabled("blog")) try {
     const { zoneCode } = await resolveServerCatalogMarket();
     for (const language of LOCALES) {
       const posts = await fetchBlogSlugs({ zoneCode, languageCode: language });

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { requireBrandFeature } from "@/lib/brand/features";
 
 /**
  * Not built yet (no purchase flow behind it). Answers "not found" so shoppers
@@ -6,5 +7,6 @@ import { notFound } from "next/navigation";
  * feature ships.
  */
 export default function GiftBoxPage() {
+  requireBrandFeature("giftBox");
   notFound();
 }

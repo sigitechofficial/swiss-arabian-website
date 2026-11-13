@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { AccountRewardsPageView } from "@brand-ui";
+import { requireBrandFeature } from "@/lib/brand/features";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await routeTranslator();
@@ -10,5 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function AccountRewardsPage() {
+  requireBrandFeature("loyalty");
   return <AccountRewardsPageView />;
 }

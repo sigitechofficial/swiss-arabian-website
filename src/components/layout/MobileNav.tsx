@@ -8,6 +8,7 @@ import {
   type MobileNavItem,
 } from "@/features/home/constants/homeAssets";
 import { useNavigation } from "@/features/navigation/hooks/useNavigation";
+import { brandLinkEnabled } from "@/lib/brand/features";
 import { performLogout } from "@/features/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -158,6 +159,7 @@ export function MobileNav({ items }: { items?: MobileNavItem[] }) {
 
       <div className="mt-auto border-t border-sa-border px-6 py-6">
         <ul className="flex flex-col gap-1 text-[15px] font-semibold uppercase tracking-wide">
+          {brandLinkEnabled("/stores") ? (
           <li>
             <Link
               href="/stores"
@@ -167,6 +169,7 @@ export function MobileNav({ items }: { items?: MobileNavItem[] }) {
               Stores
             </Link>
           </li>
+          ) : null}
           {isAuthenticated ? (
             <li>
               <button

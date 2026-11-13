@@ -9,10 +9,12 @@ import { pageMetadata } from "@/lib/seo/pageSeo";
 import { getTranslator } from "@/lib/i18n/messages";
 import { brandDisplayName } from "@/lib/brand";
 import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
+import { requireBrandFeature } from "@/lib/brand/features";
 
 const loadStores = () => loadMarketFixedPage("stores", pickStoresPage);
 
 export async function generateMetadata(): Promise<Metadata> {
+  requireBrandFeature("storeLocator");
   const { locale, page } = await loadStores();
   if (page) return marketFixedPageMetadata("/stores", locale, page);
   // No store list published for the market yet: kept out of search.
@@ -26,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StoresPage() {
+  requireBrandFeature("storeLocator");
   const { locale, page } = await loadStores();
   if (page) {
     return (

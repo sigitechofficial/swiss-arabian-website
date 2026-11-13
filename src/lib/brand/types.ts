@@ -119,13 +119,24 @@ export const brandConfigSchema = z.object({
     defaultTitle: localizedText,
     defaultDescription: localizedText,
   }),
-  /** Brand-level switches (whole sections of the site). */
+  /**
+   * Brand-level switches (whole sections of the site). A section that is off
+   * answers "not found" and is never linked: `src/lib/brand/features.ts` maps
+   * each switch to its routes.
+   */
   features: z.object({
+    /** `/stores` */
     storeLocator: z.boolean(),
+    /** `/blog`, `/blog/[slug]` */
     blog: z.boolean(),
+    /** `/account/rewards`, `/account/membership` */
     loyalty: z.boolean(),
+    /** `/subscriptions/**`, `/account/subscription/**` */
     subscriptions: z.boolean(),
+    /** `/gift-box` */
     giftBox: z.boolean(),
+    /** `/account/employee-benefits` (staff benefits from D365) */
+    employeeBenefits: z.boolean(),
   }),
   /**
    * Public ids that BELONG to this brand. Not used at runtime — the build

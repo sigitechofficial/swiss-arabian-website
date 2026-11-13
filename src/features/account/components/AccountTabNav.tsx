@@ -21,6 +21,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountTabNav } from "@/lib/navigation/storeNavigation";
+import { brandLinkEnabled } from "@/lib/brand/features";
 import { accountTab, accountTabs, accountTabsList } from "@/styles/accountChrome";
 
 import { accountContainer } from "../constants/accountLayout";
@@ -45,7 +46,9 @@ export function AccountTabNav() {
   const listRef = useRef<HTMLDivElement>(null);
   const { isEmployee } = useEmployeeBenefitsAccount();
   const tabs = accountTabNav.filter(
-    (item) => item.href !== "/account/employee-benefits" || isEmployee,
+    (item) =>
+      brandLinkEnabled(item.href) &&
+      (item.href !== "/account/employee-benefits" || isEmployee),
   );
 
   // Scroll only far enough to reveal the current section. Centering it clips the first tab.

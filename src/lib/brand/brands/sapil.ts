@@ -47,13 +47,14 @@ export const sapil = defineBrand({
       ar: "تسوّق عطور سابيل أونلاين.",
     },
   },
-  // TODO(brand): which sections Sapil launches with.
+  // TODO(brand): which sections Sapil launches with. The Journal is built from the v9 blog design.
   features: {
     storeLocator: false,
-    blog: false,
+    blog: true,
     loyalty: false,
     subscriptions: false,
     giftBox: false,
+    employeeBenefits: false,
   },
   ownedIds: {
     // TODO(brand): Sapil's own GTM / GA4 / Insider / Tabby / Maps ids.

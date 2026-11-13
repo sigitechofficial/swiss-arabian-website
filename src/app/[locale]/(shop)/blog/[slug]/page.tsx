@@ -4,6 +4,7 @@ import { pageMetadata } from "@/lib/seo/pageSeo";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogArticle } from "@/features/blog/api/blogApi";
 import { BlogArticlePageView } from "@brand-ui";
+import { requireBrandFeature } from "@/lib/brand/features";
 
 async function load(slug: string) {
   const { zoneCode, contentLanguage, locale } = await resolveRequestCatalogMarket();
@@ -15,6 +16,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  requireBrandFeature("blog");
   const { slug } = await params;
   const article = await load(slug);
   if (!article) return { title: "Article not found", robots: { index: false, follow: true } };
@@ -30,6 +32,7 @@ export default async function BlogArticlePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  requireBrandFeature("blog");
   const { slug } = await params;
   const article = await load(slug);
   if (!article) notFound();
