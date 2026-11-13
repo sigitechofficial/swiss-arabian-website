@@ -1,5 +1,7 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { brandLink, brandLinkMinimal, brandWordmark } from "@/styles/siteChrome";
 import { brandWordmarkFont } from "./brandWordmarkFont";
@@ -17,6 +19,7 @@ export function NavbarBrand({
 }) {
   // The brand's own logo, with a descriptive file name and alt text (SEO audit).
   const logo = useStorefrontLogo();
+  const t = useShopCopy();
   if (wordmark) {
     return (
       <LocaleLink
@@ -24,7 +27,7 @@ export function NavbarBrand({
         data-brand
         data-brand-wordmark
         href="/"
-        aria-label={`${logo.name} home`}
+        aria-label={t("auth.homeAria", { brand: logo.name })}
       >
         {logo.name.replace(/ /g, "\u00A0")}
       </LocaleLink>
@@ -37,7 +40,7 @@ export function NavbarBrand({
       data-brand
       data-brand-crop={crop ? "" : undefined}
       href="/"
-      aria-label={`${logo.name} home`}
+      aria-label={t("auth.homeAria", { brand: logo.name })}
     >
       <MediaImage src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} loading="eager" />
     </LocaleLink>

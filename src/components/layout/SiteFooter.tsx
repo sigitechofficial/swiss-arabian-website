@@ -162,7 +162,7 @@ export function SiteFooter() {
           </p>
           <div className={footerNewsletterRow}>
             <label className={visuallyHidden} htmlFor="footer-email">
-              Email address
+              {copy("email")}
             </label>
             <input
               className={footerNewsletterInput}
@@ -233,10 +233,10 @@ export function SiteFooter() {
 
         <div className={footerLegal}>
           <p>
-            {cms.copyrightText?.trim() || "Copyright © 2026 Swiss Arabian Global"}
+            {cms.copyrightText?.trim() || copy("footer.copyright")}
           </p>
           {cms.showPaymentBadges === false ? null : (
-          <ul className={footerPayments} aria-label="Accepted payment methods">
+          <ul className={footerPayments} aria-label={copy("footer.payments")}>
             <li>
               <span className={`${payMark} ${payMarkAmex}`} role="img" aria-label="American Express">
                 AMEX

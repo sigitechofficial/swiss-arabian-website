@@ -1,5 +1,7 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { PRIMARY_NAV, type ChromeNavItem } from "@/features/home/constants/chromeNav";
@@ -34,8 +36,9 @@ export function NavbarPrimary({
   chrome: NavbarChrome;
   items?: readonly ChromeNavItem[];
 }) {
+  const t = useShopCopy();
   return (
-    <nav className={primaryNav} data-primary-nav aria-label="Primary" onMouseLeave={() => chrome.setOpenMega(null)}>
+    <nav className={primaryNav} data-primary-nav aria-label={t("nav.primary")} onMouseLeave={() => chrome.setOpenMega(null)}>
       <ul className={primaryNavList} data-primary-list role="list">
         {items.map((item) => {
           if (item.type === "link") {
@@ -78,7 +81,7 @@ export function NavbarPrimary({
                 onClick={() => chrome.setOpenMega(isOpen ? null : item.id)}
               >
                 <CaretIcon />
-                <span className={visuallyHidden}>{item.label} submenu</span>
+                <span className={visuallyHidden}>{t("nav.submenu", { label: item.label })}</span>
               </button>
               <AnimatePresence>
                 {isOpen ? (

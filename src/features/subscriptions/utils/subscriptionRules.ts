@@ -258,10 +258,10 @@ export function statusLabel(status: string, t: Translator = englishTranslator): 
   return status;
 }
 
-export function modeLabel(mode: SubscriptionSelectionMode): string {
-  if (mode === "REPLENISHMENT") return "Replenishment";
-  if (mode === "QUEUE") return "Queue";
-  return "Surprise Me";
+export function modeLabel(mode: SubscriptionSelectionMode, t: Translator = englishTranslator): string {
+  if (mode === "REPLENISHMENT") return t("subs.mode.replenishment");
+  if (mode === "QUEUE") return t("subs.mode.queue");
+  return t("subs.mode.surprise");
 }
 
 const FORBIDDEN_COPY = [
