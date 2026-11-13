@@ -29,7 +29,24 @@ localized(brand.name, locale);         // "Swiss Arabian" / "سويس أرابي
 brand.logo.src;
 brand.integrations.analytics.gtmId;    // instead of process.env.NEXT_PUBLIC_GTM_ID
 brand.integrations.payments.tabby;
+
+brandIntegrations().insider;           // just the integration ids (parsed once per brand)
+brandDisplayName(locale);              // "Swiss Arabian" / "سابيل" …
 ```
+
+Callers (all moved off `env.ts` / `process.env`, 2026-11-13 review):
+
+| Integration | Read in |
+| --- | --- |
+| GTM / GA4 | `components/layout/AnalyticsScripts.tsx` |
+| Insider | `app/[locale]/layout.tsx` (head tag), `components/layout/InsiderScripts.tsx`, `lib/insider.ts` |
+| Tabby keys, Tabby / Tamara / Paymob switches | `features/catalog/utils/instalments.ts`, `features/cart/components/CartTabbyPromo.tsx`, `features/checkout/utils/paymentMethod.ts` |
+| Google Maps | `lib/google/GooglePlacesProvider.tsx` |
+| Catalog media base | `features/catalog/utils/resolveCatalogImageUrl.ts` (`next.config` image patterns still read the env var at build time) |
+| Storefront host, brand code | `lib/storefront/brand.ts`, `lib/api/storefrontHost.ts` (via `readProcessPublicEnv`; `@/lib/brand` imports them) |
+| SEO indexing | `app/[locale]/layout.tsx`, `app/robots.ts` |
+| Site name, icons, default description | `app/[locale]/layout.tsx`, `lib/seo/brandIdentity.ts` (fallback when the API has no identity) |
+| `{brand}` in page meta descriptions | `lib/i18n/routeLocale.ts` (`routeTranslator()` fills it) |
 
 Which brand: `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` → else the brand whose
 `hosts` list the shop host → else Swiss Arabian. Locally
@@ -86,8 +103,10 @@ comes from the backend per market.
 Malformed values are dropped at runtime (no broken or foreign tag loads).
 Insider: an empty account id uses the brand's `integrationDefaults` (Swiss
 Arabian's UAT account) or, for brands without one, leaves Insider off.
-`src/lib/config/env.ts` still falls back to Swiss Arabian's account for every
-brand until its consumers move to `getBrand()` — the check below catches that.
+`src/lib/config/env.ts` no longer holds any per-brand setting (and no Insider
+default). One difference from the old `env.ts`: an Insider account set to an
+empty string now also falls back to the brand default (before, only an unset
+one did); deployments always pass a value (Dockerfile / Key Vault defaults).
 
 ## Build-time check: `npm run check:brand`
 
@@ -103,7 +122,7 @@ brand and exits 1 on any error:
   switched on without its public key + merchant code (warning on staging).
 - Any env: a GTM / GA4 / Insider / Tabby / Maps map id that is in another
   brand's `ownedIds`, or an empty Insider account while Insider is on when the
-  `env.ts` fallback belongs to another brand.
+  brand's own `integrationDefaults` point at another brand's account.
 - Any env: storefront host or return URL host listed under another brand.
 - Production: brand has no `hosts.production`; storefront host or production
   return URL host not in the brand's production hosts. Staging: storefront
@@ -115,25 +134,24 @@ Example (Sapil production build with Swiss Arabian leftovers):
 
 ```
 Brand config check: SAPIL / NEXT_PUBLIC_APP_ENV=production
-  ✖ NEXT_PUBLIC_INSIDER_ACCOUNT_ID is empty, so the site falls back to "10015366", which belongs to Swiss Arabian (SWISS_ARABIAN), not Sapil (SAPIL). …
+  ✖ NEXT_PUBLIC_INSIDER_ACCOUNT_ID="10015366" belongs to Swiss Arabian (SWISS_ARABIAN), not Sapil (SAPIL).
   ✖ NEXT_PUBLIC_STOREFRONT_HOST="uae.swissarabian.com" is a Swiss Arabian (SWISS_ARABIAN) host, not Sapil (SAPIL).
   ✖ Sapil (SAPIL) has no production hosts in src/lib/brand/brands/*.ts …
 ```
 
 ### CI
 
-Run it right before `next build`, with the same env as the build:
+Wired in (2026-11-13), right before `next build` with the same env as the build:
 
-```yaml
-# .github/workflows/storefront-ci.yml, job "build" (env block already set)
-- run: npm ci
-- run: npm run check:brand
-- run: npm run build
-```
+- `.github/workflows/storefront-ci.yml`, job `build`: `npm run check:brand`
+  then `npm run build` (env sets `NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SWISS_ARABIAN`).
+- `Dockerfile`, builder stage: `RUN npm run check:brand && npm run build` after
+  the `ENV` lines, so it sees the build args. The image takes
+  `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` (default `SWISS_ARABIAN`) and
+  `NEXT_PUBLIC_STOREFRONT_HOST` as build args. Today's dev deployment
+  (`NEXT_PUBLIC_APP_ENV=dev`, Swiss Arabian values) passes.
 
-For the Docker image, run it in the builder stage after the `ENV` lines and
-before `npm run build` (`RUN npm run check:brand && npm run build`), so it sees
-the build args. The `build` script itself is unchanged on purpose: making
+The `build` script itself is unchanged on purpose: making
 `next build` fail for every existing deployment (e.g. a Sapil preview built
 with `NEXT_PUBLIC_APP_ENV=production` before Sapil has production hosts) should
 be a deliberate switch, one pipeline at a time.

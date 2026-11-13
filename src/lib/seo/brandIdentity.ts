@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { apiGet } from "@/lib/api/apiClient";
-import { storefrontLogo } from "@/lib/storefront/brand";
+import { getBrandConfig, localized } from "@/lib/brand";
 
 /** Brand as search engines and link previews see it (SEO Management → Brand identity). */
 export type BrandIdentity = {
@@ -20,13 +20,17 @@ export type BrandIdentity = {
   sameAs: string[];
 };
 
-/** The storefront's own brand (per domain), when the API cannot be reached. */
-export function fallbackBrandIdentity(): BrandIdentity {
-  const { name } = storefrontLogo();
+/**
+ * This deployment's brand (src/lib/brand) in the page's language, when the API
+ * cannot be reached: never another brand's name or wording.
+ */
+export function fallbackBrandIdentity(locale = "en"): BrandIdentity {
+  const brand = getBrandConfig();
+  const name = localized(brand.name, locale, brand.defaultLocale);
   return {
     name,
-    names: [name],
-    description: null,
+    names: [...new Set([name, ...Object.values(brand.name)])],
+    description: localized(brand.seo.defaultDescription, locale, brand.defaultLocale) || null,
     url: null,
     logo: null,
     squareLogo: null,
@@ -48,7 +52,7 @@ export const loadBrandIdentityFor = cache(
         `/storefront/website/seo/brand-identity?${qs.toString()}`,
         { skipAuth: true },
       );
-      const fallback = fallbackBrandIdentity();
+      const fallback = fallbackBrandIdentity(locale);
       const name = data.name?.trim() || fallback.name;
       return {
         name,
@@ -62,7 +66,7 @@ export const loadBrandIdentityFor = cache(
         sameAs: data.sameAs ?? [],
       };
     } catch {
-      return fallbackBrandIdentity();
+      return fallbackBrandIdentity(locale);
     }
   },
 );

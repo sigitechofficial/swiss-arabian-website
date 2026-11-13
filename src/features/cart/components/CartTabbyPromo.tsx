@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { TabbyDialog, payInFour, tabbyPopupUrl } from "@/features/catalog/components/pdp/PdpInstalments";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { pdpPayBtnMore, pdpPayMarkTabby } from "@/styles/pdpChrome";
 
@@ -23,7 +23,7 @@ export function CartTabbyPromo({ amount, currency }: { amount: number; currency:
     openerRef.current?.focus();
   }, []);
 
-  if (!env.flags.tabby || !(amount > 0)) return null;
+  if (!brandIntegrations().payments.tabby || !(amount > 0)) return null;
   const src = tabbyPopupUrl(amount, currency, locale);
   if (!src) return null;
 

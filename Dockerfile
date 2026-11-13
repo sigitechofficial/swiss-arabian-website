@@ -16,6 +16,10 @@ COPY . .
 
 # NEXT_PUBLIC_* are inlined at build time for the client bundle.
 ARG NEXT_PUBLIC_APP_ENV=dev
+# One image per brand: the brand code picks the brand config + design system
+# (src/lib/brand, src/brands). Default: Swiss Arabian (as before).
+ARG NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SWISS_ARABIAN
+ARG NEXT_PUBLIC_STOREFRONT_HOST=
 ARG NEXT_PUBLIC_DEV_API_BASE_URL=https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
 ARG NEXT_PUBLIC_DEV_RETURN_URL=https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
 ARG NEXT_PUBLIC_ENABLE_MFA=false
@@ -34,6 +38,8 @@ ARG NEXT_PUBLIC_GA4_ID=
 ARG NEXT_PUBLIC_SEO_INDEXING_ENABLED=false
 
 ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
+    NEXT_PUBLIC_STOREFRONT_BRAND_CODE=$NEXT_PUBLIC_STOREFRONT_BRAND_CODE \
+    NEXT_PUBLIC_STOREFRONT_HOST=$NEXT_PUBLIC_STOREFRONT_HOST \
     NEXT_PUBLIC_DEV_API_BASE_URL=$NEXT_PUBLIC_DEV_API_BASE_URL \
     NEXT_PUBLIC_DEV_RETURN_URL=$NEXT_PUBLIC_DEV_RETURN_URL \
     NEXT_PUBLIC_ENABLE_MFA=$NEXT_PUBLIC_ENABLE_MFA \
@@ -50,7 +56,9 @@ ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
     NEXT_PUBLIC_SEO_INDEXING_ENABLED=$NEXT_PUBLIC_SEO_INDEXING_ENABLED \
     NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+# Fails the image when a per-brand setting is malformed, missing for production
+# or belongs to another brand (src/lib/brand/validate.ts).
+RUN npm run check:brand && npm run build
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app

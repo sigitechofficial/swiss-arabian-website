@@ -1,4 +1,8 @@
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
+
+function paymobOn(): boolean {
+  return brandIntegrations().payments.paymob;
+}
 import type { PaymentMethodOption } from "../types/checkout";
 
 export function isPaymobPaymentMethod(method: PaymentMethodOption): boolean {
@@ -19,7 +23,7 @@ export function pickPreferredPaymentMethod(
 ): PaymentMethodOption | undefined {
   const list = methods.filter(isSelectable);
   const pool = list.length > 0 ? list : methods;
-  if (env.flags.paymob) {
+  if (paymobOn()) {
     return (
       pool.find((method) => isPaymobPaymentMethod(method) && method.isDefault) ??
       pool.find(isPaymobPaymentMethod) ??
@@ -33,7 +37,7 @@ export function pickPreferredPaymentMethod(
 export function sortPaymentMethodsForDisplay(
   methods: PaymentMethodOption[],
 ): PaymentMethodOption[] {
-  if (!env.flags.paymob) return [...methods];
+  if (!paymobOn()) return [...methods];
   return [...methods].sort((a, b) => {
     const aPaymob = isPaymobPaymentMethod(a) ? 0 : 1;
     const bPaymob = isPaymobPaymentMethod(b) ? 0 : 1;

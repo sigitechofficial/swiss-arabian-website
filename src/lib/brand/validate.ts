@@ -13,15 +13,6 @@ import {
   type BrandPublicEnv,
 } from "./types";
 
-/**
- * What src/lib/config/env.ts uses when NEXT_PUBLIC_INSIDER_ACCOUNT_ID /
- * _SCRIPT_HOST are empty (Swiss Arabian's UAT account). Kept in sync by
- * validate.spec.ts. Any brand that leaves them empty ships these values.
- */
-export const ENV_TS_INSIDER_FALLBACK = {
-  accountId: "10015366",
-  scriptHost: "swissarabianuatnew.api.useinsider.com",
-} as const;
 
 type AppEnv = "local" | "dev" | "staging" | "production";
 
@@ -143,16 +134,20 @@ export function validateBrandEnv(
   }
 
   // 4. Nothing that belongs to another brand. Empty Insider settings count as
-  //    the env.ts fallback, because that is what the site would load.
+  //    the brand's own `integrationDefaults`, because that is what the site
+  //    would load (src/lib/brand/publicEnv.ts); a brand without defaults
+  //    leaves Insider off.
   const insiderOn = envValue(raw, "NEXT_PUBLIC_INSIDER_ENABLED") !== "false";
   const effective = (key: BrandEnvKey): { value: string; fallback: boolean } => {
     const value = envValue(raw, key);
     if (value || !insiderOn) return { value, fallback: false };
     if (key === "NEXT_PUBLIC_INSIDER_ACCOUNT_ID") {
-      return { value: ENV_TS_INSIDER_FALLBACK.accountId, fallback: true };
+      const id = brand.integrationDefaults.insiderAccountId ?? "";
+      return { value: id, fallback: Boolean(id) };
     }
     if (key === "NEXT_PUBLIC_INSIDER_SCRIPT_HOST") {
-      return { value: ENV_TS_INSIDER_FALLBACK.scriptHost, fallback: true };
+      const host = brand.integrationDefaults.insiderScriptHost ?? "";
+      return { value: host, fallback: Boolean(host) };
     }
     return { value, fallback: false };
   };

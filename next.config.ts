@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import os from "node:os";
 import { REMOTE_IMAGE_PATTERNS } from "./src/lib/images/remoteImagePatterns";
 import { brandForCode, DEFAULT_BRAND_CODE } from "./src/lib/brand/registry";
@@ -24,7 +25,22 @@ function lanDevOrigins(): string[] {
   return [...hosts];
 }
 
-const nextConfig: NextConfig = {
+/**
+ * Dev-only reference routes (`src/app/[locale]/(dev)/**\/page.dev.tsx`: the
+ * Sapil kit / preview for the visual diff) are routes only in `next dev`, in a
+ * Sapil build, or with SAPIL_KIT=1. A Swiss Arabian build has no such route,
+ * so it ships none of the Sapil kit code.
+ */
+function devRouteExtensions(phase: string): string[] {
+  const on =
+    phase === PHASE_DEVELOPMENT_SERVER ||
+    BRAND_UI_THEME === "sapil" ||
+    process.env.SAPIL_KIT === "1";
+  return on ? ["dev.tsx"] : [];
+}
+
+const nextConfig = (phase: string): NextConfig => ({
+  pageExtensions: ["tsx", "ts", "jsx", "js", ...devRouteExtensions(phase)],
   // Git worktrees share the main checkout's node_modules through a junction, which
   // Turbopack rejects unless its root covers it. Opt-in only (unset in CI and deploys).
   turbopack: {
@@ -41,6 +57,7 @@ const nextConfig: NextConfig = {
   // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
   // already produces its own optimized deployment output.
   output: process.env.VERCEL ? undefined : "standalone",
+  experimental: { globalNotFound: true },
   allowedDevOrigins: [
     ...lanDevOrigins(),
     "127.0.0.1",
@@ -84,6 +101,6 @@ const nextConfig: NextConfig = {
     // Shared with <MediaImage>, which serves other hosts unoptimized.
     remotePatterns: REMOTE_IMAGE_PATTERNS,
   },
-};
+});
 
 export default nextConfig;

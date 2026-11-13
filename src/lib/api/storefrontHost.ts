@@ -3,7 +3,7 @@
  * The backend resolves Brand from this host. Never substitute a default domain.
  */
 
-import { env } from "@/lib/config/env";
+import { envValue, readProcessPublicEnv } from "@/lib/brand/publicEnv";
 import { localStorefrontForHost } from "@/lib/storefront/localStorefront";
 
 /** First value when a proxy sends a comma-separated forwarded-host list. */
@@ -44,10 +44,7 @@ export function isLoopbackHost(host: string): boolean {
 export function configuredStorefrontHost(liveHost?: string | null): string | null {
   const local = localStorefrontForHost(liveHost);
   if (local) return local.host;
-  const raw =
-    env.storefrontHost?.trim() ||
-    process.env.NEXT_PUBLIC_STOREFRONT_HOST?.trim() ||
-    "";
+  const raw = envValue(readProcessPublicEnv(), "NEXT_PUBLIC_STOREFRONT_HOST");
   if (!raw) return null;
   return (
     raw

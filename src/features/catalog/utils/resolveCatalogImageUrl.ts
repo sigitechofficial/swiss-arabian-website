@@ -1,3 +1,4 @@
+import { brandIntegrations } from "@/lib/brand";
 import { env } from "@/lib/config/env";
 
 export function resolveCatalogImageUrl(
@@ -10,6 +11,6 @@ export function resolveCatalogImageUrl(
   if (raw.startsWith("//")) return `https:${raw}`;
 
   const path = raw.startsWith("/") ? raw : `/${raw}`;
-  const base = (env.catalogMediaBaseUrl || env.apiBaseUrl).replace(/\/+$/, "");
+  const base = (brandIntegrations().catalogMediaBaseUrl || env.apiBaseUrl).replace(/\/+$/, "");
   return `${base}${path}`;
 }

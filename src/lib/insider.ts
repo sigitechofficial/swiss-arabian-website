@@ -1,4 +1,4 @@
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 
 declare global {
   interface Window {
@@ -38,7 +38,8 @@ const INSIDER_LANGUAGE = "en_US";
 const INSIDER_CURRENCY = "AED";
 
 function envAllows(): boolean {
-  return env.insider.enabled && Boolean(env.insider.accountId);
+  const { insider } = brandIntegrations();
+  return insider.enabled && Boolean(insider.accountId);
 }
 
 function hasRealSdk(): boolean {

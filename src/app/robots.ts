@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 
@@ -8,7 +8,7 @@ export const revalidate = 3600;
 
 /**
  * Nothing is crawled until indexing is switched on for the production site
- * (env.seoIndexingEnabled: production + NEXT_PUBLIC_SEO_INDEXING_ENABLED=true).
+ * (brandIntegrations().seoIndexingEnabled: production + NEXT_PUBLIC_SEO_INDEXING_ENABLED=true).
  */
 const PRIVATE_PATHS = [
   "/cart",
@@ -31,7 +31,7 @@ const PRIVATE_PATHS = [
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const origin = await requestOrigin();
-  if (!env.seoIndexingEnabled) {
+  if (!brandIntegrations().seoIndexingEnabled) {
     return {
       rules: {
         userAgent: "*",

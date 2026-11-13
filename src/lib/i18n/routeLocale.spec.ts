@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({ locale: "en", brand: "SWISS_ARABIAN" }));
 vi.mock("next/root-params", () => ({ locale: async () => state.locale }));
 vi.mock("@/lib/brand", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/brand")>();
-  return { ...actual, getBrandConfig: () => BRANDS[state.brand] };
+  return { ...actual, brandDisplayName: (locale: string) => actual.localized(BRANDS[state.brand].name, locale) };
 });
 
 import { routeTranslator } from "./routeLocale";

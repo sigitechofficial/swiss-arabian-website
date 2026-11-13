@@ -1,6 +1,6 @@
 import { locale as localeParam } from "next/root-params";
+import { brandDisplayName } from "@/lib/brand";
 import { toLocale, type ShopLocale } from "./locales";
-import { getBrandConfig, localized } from "@/lib/brand";
 import { getTranslator, type Translator } from "./messages";
 
 /**
@@ -19,13 +19,18 @@ export async function routeLocale(): Promise<ShopLocale> {
 
 /**
  * The route's locale and its translator (`t(key, values?)`). `{brand}` in a
- * message defaults to this deployment's brand name in that language, so shared
- * route metadata never names another brand.
+ * message defaults to this deployment's brand name in the route's language
+ * ("Swiss Arabian" / "سويس أرابيان", "Sapil" …), so default page wording never
+ * names another brand. A `brand` value passed by the caller wins.
  */
-export async function routeTranslator(): Promise<{ locale: ShopLocale; t: Translator }> {
+export async function routeTranslator(): Promise<{
+  locale: ShopLocale;
+  t: Translator;
+  brandName: string;
+}> {
   const locale = await routeLocale();
   const translate = await getTranslator(locale);
-  const brand = localized(getBrandConfig().name, locale);
-  const t: Translator = (key, values) => translate(key, { brand, ...values });
-  return { locale, t };
+  const brandName = brandDisplayName(locale);
+  const t: Translator = (key, values) => translate(key, { brand: brandName, ...values });
+  return { locale, t, brandName };
 }

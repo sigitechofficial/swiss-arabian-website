@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Sapil's design system is its own Tailwind entry (src/brands/sapil/theme.css,
+   which scans only that folder). Scanning it here too put ~60 KB of Sapil-only
+   utilities into every Swiss Arabian page's stylesheet. */
+@source not "../brands/sapil";
 
 /* Theme toggle uses html.dark — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
