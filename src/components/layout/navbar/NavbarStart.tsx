@@ -28,7 +28,7 @@ export function NavbarStart({ chrome }: { chrome: NavbarChrome }) {
         className={`${iconBtn} ${navStartSearch}`}
         data-icon-btn
         type="button"
-        aria-label="Search"
+        aria-label={t("nav.search")}
         aria-expanded={chrome.searchOpen}
         aria-controls="ai-search"
         onClick={() => chrome.setSearchOpen(true)}

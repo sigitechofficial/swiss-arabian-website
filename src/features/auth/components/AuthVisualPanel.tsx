@@ -7,6 +7,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { brandDisplayName } from "@/lib/brand";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+
 
 /** Mirrors the reference auth pages (`/login`, `/register`, `/forgot-password`)
  *  on the production storefront — a slow, auto-rotating brand slideshow with
@@ -26,6 +29,7 @@ const SLIDE_INTERVAL_MS = 6000;
 export function AuthVisualPanel() {
   const logo = useStorefrontLogo();
   const t = useShopCopy();
+  const locale = useShopLocale();
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
@@ -60,7 +64,7 @@ export function AuthVisualPanel() {
 
         <LocaleLink
           className="relative z-1 block h-14 w-44 xl:h-16 xl:w-52"
-          aria-label={t("auth.homeAria", { brand: logo.name })}
+          aria-label={t("auth.homeAria", { brand: locale === "en" ? logo.name : brandDisplayName(locale) })}
           href="/"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

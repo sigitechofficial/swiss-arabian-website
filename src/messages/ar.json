@@ -1248,5 +1248,6 @@
   "nav.submenu": "القائمة الفرعية لـ{label}",
   "nav.openMenu": "فتح القائمة",
   "nav.closeMenu": "إغلاق القائمة",
-  "footer.payments": "وسائل الدفع المقبولة"
+  "footer.payments": "وسائل الدفع المقبولة",
+  "nav.searchFragrances": "ابحث عن العطور"
 }

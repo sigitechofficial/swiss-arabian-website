@@ -1225,5 +1225,6 @@
   "nav.submenu": "{label} submenu",
   "nav.openMenu": "Open menu",
   "nav.closeMenu": "Close menu",
-  "footer.payments": "Accepted payment methods"
+  "footer.payments": "Accepted payment methods",
+  "nav.searchFragrances": "Search fragrances"
 }

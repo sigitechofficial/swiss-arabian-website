@@ -248,7 +248,7 @@ export function PhoneNumberField({
             onClick={() => setOpen((v) => !v)}
           >
             <Flag country={activeCountry} />
-            <span>+{getCountryCallingCode(activeCountry)}</span>
+            <span dir="ltr">+{getCountryCallingCode(activeCountry)}</span>
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M2.5 4.5 6 8l3.5-3.5" />
             </svg>
@@ -283,7 +283,7 @@ export function PhoneNumberField({
                     >
                       <Flag country={code} />
                       <span className="min-w-0 flex-1 truncate">{label}</span>
-                      <span className="shrink-0 text-sa-secondary">+{dial}</span>
+                      <span className="shrink-0 text-sa-secondary" dir="ltr">+{dial}</span>
                     </button>
                   </li>
                 ))}

@@ -3,6 +3,9 @@
 import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { brandDisplayName } from "@/lib/brand";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+
 import { AuthVisualPanel } from "./AuthVisualPanel";
 
 import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
@@ -19,6 +22,7 @@ type AuthShellProps = {
 export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
   const logo = useStorefrontLogo();
   const t = useShopCopy();
+  const locale = useShopLocale();
   return (
     <div className="flex min-h-dvh bg-page font-sans text-sa-primary">
       <AuthVisualPanel />
@@ -26,7 +30,7 @@ export function AuthShell({ heading, subtitle, children }: AuthShellProps) {
         <div className="w-full max-w-[26rem] sm:max-w-[28rem]">
           <div className="flex w-full flex-col items-stretch">
             <div className="flex flex-col items-center gap-2 text-center">
-              <LocaleLink className="relative block h-16 w-[150px] shrink-0" aria-label={t("auth.homeAria", { brand: logo.name })} href="/">
+              <LocaleLink className="relative block h-16 w-[150px] shrink-0" aria-label={t("auth.homeAria", { brand: locale === "en" ? logo.name : brandDisplayName(locale) })} href="/">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={logo.src} alt="" className="h-full w-full object-contain dark:[filter:brightness(0)_invert(0.93)_sepia(0.12)]" />
               </LocaleLink>
