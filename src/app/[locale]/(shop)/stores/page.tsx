@@ -9,7 +9,7 @@ import { pageMetadata } from "@/lib/seo/pageSeo";
 import { getTranslator } from "@/lib/i18n/messages";
 import { brandDisplayName } from "@/lib/brand";
 import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
-import { requireBrandFeature } from "@/lib/brand/features";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 const loadStores = () => loadMarketFixedPage("stores", pickStoresPage);
 

@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { envValue, readProcessPublicEnv } from "./publicEnv";
 import { resolveBrand } from "./registry";
@@ -7,7 +6,8 @@ import type { BrandConfig } from "./types";
 /**
  * Brand feature switches (`features` in `brands/<brand>.ts`) and the routes
  * each one owns. A section that is off:
- * - answers "not found" (`requireBrandFeature()` at the top of its page), and
+ * - answers "not found": the proxy (`src/proxy.ts`) sends its addresses to the 404
+ *   page, and each of its pages starts with `requireBrandFeature()` (`./featureGate`), and
  * - is never linked (`brandLinkEnabled()` filters navigation, menus, tiles).
  *
  * Features follow the deployment's brand (`NEXT_PUBLIC_STOREFRONT_BRAND_CODE`),
@@ -68,12 +68,4 @@ export function featureForPath(href: string): BrandFeature | null {
 export function brandLinkEnabled(href: string, features: BrandFeatures = brandFeatures()): boolean {
   const feature = featureForPath(href);
   return feature ? brandFeatureEnabled(feature, features) : true;
-}
-
-/**
- * Route guard (server): a page of a switched-off section answers "not found".
- * Call it first in the page (and in `generateMetadata` when that fetches data).
- */
-export function requireBrandFeature(feature: BrandFeature, features: BrandFeatures = brandFeatures()): void {
-  if (!brandFeatureEnabled(feature, features)) notFound();
 }

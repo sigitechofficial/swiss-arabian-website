@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/seo/pageSeo";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogArticle } from "@/features/blog/api/blogApi";
 import { BlogArticlePageView } from "@brand-ui";
-import { requireBrandFeature } from "@/lib/brand/features";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 async function load(slug: string) {
   const { zoneCode, contentLanguage, locale } = await resolveRequestCatalogMarket();

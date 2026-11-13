@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireBrandFeature } from "@/lib/brand/features";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 /**
  * Not built yet (no purchase flow behind it). Answers "not found" so shoppers

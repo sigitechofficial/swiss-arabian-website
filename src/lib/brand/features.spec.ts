@@ -32,9 +32,9 @@ import {
   brandFeatures,
   brandLinkEnabled,
   featureForPath,
-  requireBrandFeature,
   type BrandFeature,
 } from "./features";
+import { requireBrandFeature } from "./featureGate";
 import { withoutDisabledSections } from "@/features/navigation/utils/brandSections";
 import type { NavItem } from "@/features/navigation/types/navigation";
 

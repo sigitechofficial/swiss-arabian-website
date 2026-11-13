@@ -1,5 +1,5 @@
 import { SubscriptionsPageView } from "@brand-ui";
-import { requireBrandFeature } from "@/lib/brand/features";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 type Props = { params: Promise<{ planCode: string }> };
 

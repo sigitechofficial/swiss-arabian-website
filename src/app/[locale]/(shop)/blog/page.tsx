@@ -4,7 +4,7 @@ import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogPosts } from "@/features/blog/api/blogApi";
 import { BlogPageView } from "@brand-ui";
-import { requireBrandFeature } from "@/lib/brand/features";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 const PAGE_SIZE = 12;
 
