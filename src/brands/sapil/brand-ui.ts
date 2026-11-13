@@ -1,14 +1,33 @@
 /**
  * Sapil's UI for every route (the brand UI contract, see src/brands/README.md).
  *
- * Starts from Swiss Arabian's components; each page Sapil has built in its own
- * design system (v9) is exported below by the same name and replaces the
- * default. An explicit export always wins over `export *`.
+ * Every name of the contract is exported here by name (no `export *` of
+ * Swiss Arabian's barrel, which pulled its whole UI into Sapil's bundles).
+ * `src/brands/contract.check.ts` fails the type check if a name is missing.
  * Keep each area's lines inside its block (see docs/sapil/BUILD_CONVENTIONS.md).
  */
-export * from "../swiss-arabian/brand-ui";
-
 export { BrandHead } from "./BrandHead";
+
+// --- shared, brand-neutral parts and the Swiss Arabian views Sapil still uses ---
+// Imported from their own modules (not from feature barrels) so nothing else comes along.
+export { FeaturePlaceholder } from "@/components/shared/FeaturePlaceholder";
+export { PageLoading } from "@/components/ui/PageLoading";
+export { CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
+export { CmsPreviewHomeView } from "@/features/cms/components/CmsPreviewHomeView";
+export { FooterSeoText } from "@/features/seo-footer/FooterSeoText";
+export { MarketSeoTextSlot } from "@/features/seo-footer/MarketSeoTextSlot";
+export { SitePageRoute } from "@/features/site-pages/sitePageRoute";
+export { ReviewRequestPageView } from "@/features/reviews/components/ReviewRequestPageView";
+// Swiss Arabian's: promotions page not rebuilt yet (see docs/sapil/pages/content.md).
+export { OfferShop } from "@/features/promotions/components/OfferShop";
+// Off for Sapil (brand features) and never linked; the routes keep Swiss Arabian's views.
+export { AccountPlaceholderPageView } from "@/features/account/components/AccountPlaceholderPageView";
+export { AccountRewardsPageView } from "@/features/account/components/AccountRewardsPageView";
+export { EmployeeBenefitsAccountView as AccountEmployeeBenefitsPageView } from "@/features/employeeBenefits/components/EmployeeBenefitsAccountView";
+export { AccountSubscriptionDetailPageView } from "@/features/subscriptions/components/AccountSubscriptionDetailPageView";
+export { AccountSubscriptionsPageView } from "@/features/subscriptions/components/AccountSubscriptionsPageView";
+export { SubscriptionCheckoutPageView } from "@/features/subscriptions/components/SubscriptionCheckoutPageView";
+export { SubscriptionsPageView } from "@/features/subscriptions/components/SubscriptionsPageView";
 
 // --- shell (StorefrontShell, error and 404 chrome) ---
 export { SapilStorefrontShell as StorefrontShell } from "./components/shell/SapilStorefrontShell";
@@ -22,7 +41,6 @@ export { SapilBlogArticlePage as BlogArticlePageView } from "./pages/content/Sap
 export { SapilFaqPage as FaqPageView } from "./pages/content/SapilFaqPage";
 export { SapilSitePage as SitePageView } from "./pages/content/SapilSitePage";
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
-// OfferShop: Swiss Arabian's (a large promotions page with its own logic; not rebuilt yet).
 
 // --- catalog (listings, product page, search, collections) ---
 export {

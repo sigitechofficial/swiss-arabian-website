@@ -81,7 +81,7 @@ details), `brands/sapil/components/bag/bag.test.tsx` (free-delivery mapping, dra
 ## Visual diff (v9 vs `/sapil-kit/commerce`, % pixels differing)
 
 `node scripts/sapil-visual-diff.mjs --only=drawer,drawer-empty,co-head,co-method,co-summary,co-review,co-empty`
-with the kit served by `next start` (`SAPIL_KIT=1`). Fixtures copy the v9 mock values
+with the kit served by a Sapil build (the kit routes (`page.dev.tsx`) exist only in `next dev`, in a Sapil build, or in a build made with `SAPIL_KIT=1` (a build-time rule in `next.config.ts`: a Swiss Arabian production build has no kit route and ships none of its code); a production server also needs `SAPIL_KIT=1` at runtime, else the page 404s. In practice: build **and** start the Sapil build with `SAPIL_KIT=1`). Fixtures copy the v9 mock values
 (Berry Crush AED 63 / was AED 90, free over AED 100, standard AED 16).
 
 | element (v9 source) | 390 | 768 | 1280 | 1440 |

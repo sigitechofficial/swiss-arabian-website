@@ -29,7 +29,7 @@ export function SapilCartPage() {
         <SapilSkeleton className="h-[48px] w-[220px] mb-[24px]" />
         <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
           <SapilSkeleton className="h-[320px] !rounded-[24px]" />
-          <SapilSkeleton className="h-[320px] !rounded-[28px]" />
+          <SapilSkeleton className="h-[320px] !rounded-[28px] max-900:hidden" />
         </div>
       </Wrap>
     );

@@ -4,7 +4,9 @@
  * and the same component from our kit page (/sapil-kit), at 390 / 768 / 1280 / 1440 px,
  * and reports the share of pixels that differ.
  *
- *   1. Run the kit:   SAPIL_KIT=1 npx next dev -p 3021      (or next start with SAPIL_KIT=1)
+ *   1. Run the kit:   SAPIL_KIT=1 npx next dev -p 3021      (or a Sapil build: the kit routes are
+ *      page.dev.tsx, compiled only in dev, in a Sapil build or with SAPIL_KIT=1 at build time;
+ *      `next start` also needs SAPIL_KIT=1 at runtime)
  *   2. Run the diff:  node scripts/sapil-visual-diff.mjs [--only=card,buttons] [--widths=390,1440] [--out=dir]
  *
  * Specs with `side: "preview"` compare against /sapil-preview (the Sapil chrome and static

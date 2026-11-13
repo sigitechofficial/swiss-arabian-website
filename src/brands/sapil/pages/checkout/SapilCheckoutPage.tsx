@@ -236,7 +236,7 @@ export function SapilCheckoutPage() {
         <SapilSkeleton className="h-[52px] w-[260px] mb-[20px]" />
         <SapilSkeleton className="h-[72px] mb-[24px] !rounded-[20px]" />
         <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
-          <SapilSkeleton className="h-[420px] !rounded-[24px]" />
+          <SapilSkeleton className="h-[420px] !rounded-[24px] max-900:h-[300px]" />
           <SapilSkeleton className="h-[420px] !rounded-[28px] max-900:hidden" />
         </div>
       </Wrap>
