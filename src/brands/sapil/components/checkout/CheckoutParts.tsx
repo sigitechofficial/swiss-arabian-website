@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, type FormEvent, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import {
   Button,
   Field,
@@ -380,7 +380,7 @@ export function OrderSummary({
         {lines.map((line) => (
           <li
             key={line.key}
-            style={line.tile ? ({ "--sapil-tile": `var(--sapil-p-${line.tile})` } as React.CSSProperties) : undefined}
+            style={line.tile ? ({ "--sapil-tile": `var(--sapil-p-${line.tile})` } as CSSProperties) : undefined}
             className="grid grid-cols-[68px_1fr_auto] gap-[14px] items-center py-[12px] border-b border-sapil-line"
           >
             <span className="relative aspect-square rounded-[14px] bg-sapil-tile grid place-items-center">

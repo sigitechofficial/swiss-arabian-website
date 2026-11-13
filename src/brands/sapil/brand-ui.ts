@@ -19,5 +19,9 @@ export { BrandHead } from "./BrandHead";
 // --- bag, checkout, orders, tracking ---
 export { SapilCartPage as CartPageView } from "./pages/checkout/SapilCartPage";
 export { SapilCheckoutPage as CheckoutPageView } from "./pages/checkout/SapilCheckoutPage";
+export { SapilOrderConfirmationPage as OrderConfirmationView } from "./pages/orders/SapilOrderConfirmationPage";
+export { SapilOrdersPage as PurchaseHistoryPageView } from "./pages/orders/SapilOrdersPage";
+export { SapilOrderDetailPage as AccountOrderDetailPageView } from "./pages/orders/SapilOrderDetailPage";
+export { SapilGuestTrackingPage as GuestTrackingPageView, SapilTrackLookupPage as TrackLookupView } from "./pages/orders/SapilTrackPages";
 
 // --- auth + account ---
