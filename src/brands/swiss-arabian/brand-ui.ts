@@ -44,3 +44,4 @@ export { SubscriptionsPageView } from "@/features/subscriptions/components/Subsc
 export { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
 export { TrackLookupView } from "@/features/tracking/components/TrackLookupView";
 export { AccountWishlistPageView } from "@/features/wishlist";
+export { BrandHead } from "./BrandHead";

@@ -10,6 +10,7 @@ import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
 import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
 import { loadMessages } from "@/lib/i18n/messages";
+import { BrandHead } from "@brand-ui";
 import { AppProviders } from "../providers";
 import "../globals.css";
 
@@ -105,18 +106,8 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Main site font weights load first (page speed). The "BentonSans Regular" option in
-            globals.css also needs https://fonts.cdnfonts.com/css/bentonsans-regular here. */}
-        {[400, 500, 700].map((weight) => (
-          <link
-            key={weight}
-            rel="preload"
-            href={`/fonts/benton-sans-wide-${weight}.woff2`}
-            as="font"
-            type="font/woff2"
-            crossOrigin="anonymous"
-          />
-        ))}
+        {/* Brand-specific head tags (Swiss Arabian: font preloads). */}
+        <BrandHead />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {env.insider.enabled && env.insider.accountId ? (
           <>
