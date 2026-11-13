@@ -81,7 +81,7 @@ export function GiftChoiceHost({
   if (!award || !choosing) return null;
 
   return (
-    <GiftChoiceModal
+    <Modal
       award={award}
       celebrate={celebrate}
       onClose={() => useGiftChoiceStore.getState().close()}
