@@ -1,6 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type StarRatingProps = {
   value: number;
@@ -15,8 +16,9 @@ export function StarRating({
   onChange,
   size = 18,
   readOnly = false,
-  label = "Rating",
+  label,
 }: StarRatingProps) {
+  const t = useShopCopy();
   const filled = Math.round(Math.min(5, Math.max(0, value)));
   const interactive = Boolean(onChange) && !readOnly;
 
@@ -25,7 +27,7 @@ export function StarRating({
       className="inline-flex items-center gap-0.5"
       role={interactive ? "radiogroup" : "img"}
       aria-label={
-        interactive ? label : `${filled} out of 5 stars`
+        interactive ? (label ?? t("reviewForm.rating")) : t("reviewForm.starsOutOf", { count: filled })
       }
     >
       {[1, 2, 3, 4, 5].map((star) => {
@@ -49,7 +51,7 @@ export function StarRating({
             type="button"
             role="radio"
             aria-checked={value === star}
-            aria-label={`${star} star${star === 1 ? "" : "s"}`}
+            aria-label={t("reviewForm.stars", { count: star })}
             onClick={() => onChange?.(star)}
             className={`${className} rounded-sm p-0.5 hover:opacity-80`}
           >

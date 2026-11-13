@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   accountBtnGhost,
   accountBtnPrimary,
@@ -43,6 +45,7 @@ export function ReviewWriteForm({
   onSubmitted,
   onConflict,
 }: ReviewWriteFormProps) {
+  const t = useShopCopy();
   const user = useCurrentUser();
   const { create, update } = useReviewMutations();
   const isEdit = Boolean(existing);
@@ -79,29 +82,29 @@ export function ReviewWriteForm({
               reviewId: existing.reviewId,
               dto: toUpdateReviewDto(values),
             });
-            toast(reviewSavedToast(saved?.status), "success");
+            toast(reviewSavedToast(saved?.status, t), "success");
             onSubmitted?.(saved);
             return;
           }
           const saved = await create.unwrap(
             toCreateReviewDto(values, { productId, variantId }),
           );
-          toast(reviewSavedToast(saved?.status), "success");
+          toast(reviewSavedToast(saved?.status, t), "success");
           onSubmitted?.(saved);
         } catch (error) {
           if (!isEdit && error instanceof ApiClientError && error.status === 409) {
             const own = await findOwnReviewForProduct(productId).catch(() => null);
-            toast(reviewWriteErrorMessage(error), "info");
+            toast(reviewWriteErrorMessage(error, t), "info");
             if (own) onConflict?.(own);
             return;
           }
-          toast(reviewWriteErrorMessage(error), "error");
+          toast(reviewWriteErrorMessage(error, t), "error");
         }
       })}
     >
       <div>
         <p className="mb-1.5 text-[12px] font-medium text-sa-muted">
-          Rating
+          {t("reviewForm.rating")}
         </p>
         <Controller
           name="rating"
@@ -111,53 +114,53 @@ export function ReviewWriteForm({
           )}
         />
         {errors.rating ? (
-          <p className="mt-1 text-[11px] text-red-600">{errors.rating.message}</p>
+          <p className="mt-1 text-[11px] text-red-600">{formErrorText(t, errors.rating.message)}</p>
         ) : null}
       </div>
 
       <div>
         <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-          Title
+          {t("reviewForm.title")}
         </label>
         <input
           className={accountInputClass}
-          placeholder="Sum up your experience"
+          placeholder={t("reviewForm.titlePlaceholder")}
           maxLength={120}
           {...register("title")}
         />
         {errors.title ? (
-          <p className="mt-1 text-[11px] text-red-600">{errors.title.message}</p>
+          <p className="mt-1 text-[11px] text-red-600">{formErrorText(t, errors.title.message)}</p>
         ) : null}
       </div>
 
       <div>
         <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-          Review
+          {t("reviewForm.review")}
         </label>
         <textarea
           className={`${accountInputClass} h-28 py-2.5`}
-          placeholder="How does it wear? What did you notice?"
+          placeholder={t("reviewForm.reviewPlaceholder")}
           maxLength={4000}
           {...register("body")}
         />
         {errors.body ? (
-          <p className="mt-1 text-[11px] text-red-600">{errors.body.message}</p>
+          <p className="mt-1 text-[11px] text-red-600">{formErrorText(t, errors.body.message)}</p>
         ) : null}
       </div>
 
       <div>
         <label className="mb-1.5 block text-[12px] font-medium text-sa-muted">
-          Display name
+          {t("reviewForm.displayName")}
         </label>
         <input
           className={accountInputClass}
-          placeholder="How should we show your name?"
+          placeholder={t("reviewForm.displayNamePlaceholder")}
           maxLength={80}
           {...register("displayName")}
         />
         {errors.displayName ? (
           <p className="mt-1 text-[11px] text-red-600">
-            {errors.displayName.message}
+            {formErrorText(t, errors.displayName.message)}
           </p>
         ) : null}
       </div>
@@ -165,10 +168,10 @@ export function ReviewWriteForm({
       <div className="flex flex-wrap justify-center gap-3">
         <button type="submit" className={accountBtnPrimary} disabled={pending}>
           {pending
-            ? "Submitting…"
+            ? t("reviewForm.submitting")
             : isEdit
-              ? "Save review"
-              : "Submit review"}
+              ? t("reviewForm.save")
+              : t("reviewForm.submit")}
         </button>
         {onCancel ? (
           <button
@@ -177,7 +180,7 @@ export function ReviewWriteForm({
             onClick={onCancel}
             disabled={pending}
           >
-            Cancel
+            {t("account.cancel")}
           </button>
         ) : null}
       </div>
