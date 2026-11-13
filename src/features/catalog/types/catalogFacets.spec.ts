@@ -34,6 +34,18 @@ describe("parseCatalogFacets", () => {
     expect(facets?.featuredNote[0]?.code).toBe("oud");
     expect(facets?.fragranceFamily).toEqual([]);
   });
+
+  it("reads the market price-edit tier counts and drops bad rows", () => {
+    const facets = parseCatalogFacets({
+      price: null,
+      priceTiers: [{ maxPrice: 50, count: 52 }, { maxPrice: "99", count: "74" }, { maxPrice: "x", count: 1 }],
+    });
+    expect(facets?.priceTiers).toEqual([
+      { maxPrice: 50, count: 52 },
+      { maxPrice: 99, count: 74 },
+    ]);
+    expect(parseCatalogFacets({ price: null })?.priceTiers).toEqual([]);
+  });
 });
 
 describe("catalog listing query", () => {

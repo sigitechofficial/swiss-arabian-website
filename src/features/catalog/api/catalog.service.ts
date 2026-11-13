@@ -411,8 +411,11 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     brandName,
     collections,
     tileColor: tileColorKey(product.tileColor),
-    compareAtPrice: compareAtPrice(priceSummary, price),
-    pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
+    // Variants may not carry the was-price; the product-level summary does.
+    compareAtPrice: compareAtPrice(
+      { ...priceSummary, price: priceSummary?.price ?? null, compareAtPrice: priceSummary?.compareAtPrice ?? raw.priceSummary?.compareAtPrice },
+      price,
+    ),    pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
     prVideo: pickPrVideo(raw),
     shippingPromise: parseShippingPromise(raw.shippingPromise),
     reviews: parsePdpReviews(raw.reviews),
