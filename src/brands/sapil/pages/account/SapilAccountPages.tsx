@@ -9,6 +9,8 @@ import { useCustomerPhones } from "@/features/account/hooks/useCustomerPhones";
 import { useMarketingConsents } from "@/features/account/hooks/useMarketingConsents";
 import { useUpdateCustomerMe } from "@/features/account/hooks/useUpdateCustomerMe";
 import { regionsForCountry } from "@/features/account/data/regionsByCountry";
+import { countryLabel, regionLabel } from "@/features/account/utils/addressDisplay";
+import { useShopLocale, useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
 import {
   ADDRESS_COUNTRIES,
   addressBookSchema,
@@ -50,8 +52,21 @@ function Loading() {
 
 /* ——— dashboard ——— */
 
+/** Saved address region / country in the page's language (stored values stay English). */
+function useAddressPlaceNames() {
+  const shopT = useShopTranslator();
+  const locale = useShopLocale();
+  return {
+    region: (countryCode: string | null | undefined, region: string | null | undefined) =>
+      region && countryCode ? regionLabel(countryCode, region, shopT) : region,
+    country: (countryCode: string | null | undefined, saved: string | null | undefined) =>
+      countryCode ? countryLabel(countryCode, locale, saved) : saved,
+  };
+}
+
 export function SapilAccountPage() {
   const t = useSapilCopy();
+  const place = useAddressPlaceNames();
   const money = useSapilMoney();
   const date = useSapilDate();
   const { firstName, isNew, recentQuery, recentOrder, addresses, logout } = useAccountDashboard();
@@ -122,7 +137,7 @@ export function SapilAccountPage() {
                 <br />
                 {[primary.address1, primary.address2].filter(Boolean).join(", ")}
                 <br />
-                {[primary.city, primary.province].filter(Boolean).join(", ")}
+                {[primary.city, place.region(primary.countryCode, primary.province)].filter(Boolean).join(", ")}
               </p>
             ) : (
               <p className="text-sapil-ink-2 text-[15px]">{t("account.dashAddressNone")}</p>
@@ -311,6 +326,8 @@ function AddressForm({
   onSubmit: (values: AddressBookFormValues) => Promise<void>;
 }) {
   const t = useSapilCopy();
+  const shopT = useShopTranslator();
+  const locale = useShopLocale();
   const form = useForm<AddressBookFormValues>({
     resolver: zodResolver(addressBookSchema),
     defaultValues: {
@@ -340,7 +357,7 @@ function AddressForm({
           <SelectField id="ad-country" label={t("account.addressesCountry")} {...form.register("countryCode")}>
             {ADDRESS_COUNTRIES.map((c) => (
               <option key={c.code} value={c.code}>
-                {c.name}
+                {countryLabel(c.code, locale, c.name)}
               </option>
             ))}
           </SelectField>
@@ -348,7 +365,7 @@ function AddressForm({
             <option value="">—</option>
             {regions.map((region) => (
               <option key={region} value={region}>
-                {region}
+                {regionLabel(country, region, shopT)}
               </option>
             ))}
           </SelectField>
@@ -394,6 +411,7 @@ function AddressForm({
 
 export function SapilAccountAddressesPage() {
   const t = useSapilCopy();
+  const place = useAddressPlaceNames();
   const { list, create, update, remove, setDefault } = useCustomerAddresses();
   const [mode, setMode] = useState<"idle" | "create" | string>("idle");
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -453,7 +471,13 @@ export function SapilAccountAddressesPage() {
                     <br />
                     {[address.address1, address.address2].filter(Boolean).join(", ")}
                     <br />
-                    {[address.city, address.province, address.country].filter(Boolean).join(", ")}
+                    {[
+                      address.city,
+                      place.region(address.countryCode, address.province),
+                      place.country(address.countryCode, address.country),
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
                     {address.phoneE164 ? (
                       <>
                         <br />

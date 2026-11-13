@@ -17,6 +17,8 @@ import {
 import { buttonClass } from "../../ui/Button";
 import { ChevronIcon, cx, DefaultLink, type SapilLinkComponent } from "../../ui/shared";
 import { useSapilCopy } from "../../i18n/SapilCopy";
+import { useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
+import { regionLabel as regionName } from "@/features/account/utils/addressDisplay";
 import { SapilPhoneField } from "../commerce/SapilPhoneField";
 
 /* ——— heading + progress (v9 `.co-head`) ——— */
@@ -161,6 +163,7 @@ export function AddressFieldset({
   regionLabel,
   regionPlaceholder,
   regions,
+  countryCode,
   errors,
 }: {
   legend: ReactNode;
@@ -170,9 +173,12 @@ export function AddressFieldset({
   regionLabel: string;
   regionPlaceholder: string;
   regions: readonly string[];
+  /** Shows each region in the page's language (the saved value stays English). */
+  countryCode?: string;
   errors: AddressErrors;
 }) {
   const t = useSapilCopy();
+  const shopT = useShopTranslator();
   return (
     <Fieldset legend={legend}>
       <FieldGrid>
@@ -199,7 +205,7 @@ export function AddressFieldset({
           <option value="">{regionPlaceholder}</option>
           {regions.map((region) => (
             <option key={region} value={region}>
-              {region}
+              {countryCode ? regionName(countryCode, region, shopT) : region}
             </option>
           ))}
         </SelectField>

@@ -47,6 +47,8 @@ import {
   useSapilMoneyParts,
   type SapilMoney,
 } from "../../components/commerce/shared";
+import { useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
+import { regionLabel as regionName } from "@/features/account/utils/addressDisplay";
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -142,6 +144,7 @@ function payNote(row: PayRow, t: SapilTranslator): string | undefined {
 /** v9 checkout: delivery (contact, address, method) → payment, with the order summary beside it. */
 export function SapilCheckoutPage() {
   const t = useSapilCopy();
+  const shopT = useShopTranslator();
   const money = useSapilMoney();
   const moneyParts = useSapilMoneyParts();
   const f = useCheckoutForm();
@@ -427,7 +430,14 @@ export function SapilCheckoutPage() {
     },
     {
       label: t("checkout.reviewDeliverTo"),
-      value: `${address.fullName}, ${[address.address2, address.address1, address.city, address.emirate].filter(Boolean).join(", ")}`,
+      value: `${address.fullName}, ${[
+        address.address2,
+        address.address1,
+        address.city,
+        address.emirate ? regionName(f.countryCode, address.emirate, shopT) : "",
+      ]
+        .filter(Boolean)
+        .join(", ")}`,
       onChange: () => go("delivery"),
     },
     ...(selectedDelivery
@@ -508,6 +518,7 @@ export function SapilCheckoutPage() {
                 regionLabel={regionLabel}
                 regionPlaceholder={regionPlaceholder}
                 regions={regions}
+                countryCode={f.countryCode}
                 errors={errors}
               />
               <DeliveryMethodFieldset
@@ -560,6 +571,7 @@ export function SapilCheckoutPage() {
                   regionLabel={regionLabel}
                   regionPlaceholder={regionPlaceholder}
                   regions={regions}
+                  countryCode={f.countryCode}
                   errors={billingErrors}
                 />
               ) : null}
