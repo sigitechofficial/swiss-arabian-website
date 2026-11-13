@@ -113,6 +113,13 @@ async function discover(browser, base) {
   return found;
 }
 
+let shotChain = Promise.resolve();
+function shotLock(fn) {
+  const run = shotChain.then(fn, fn);
+  shotChain = run.catch(() => {});
+  return run;
+}
+
 function withTimeout(promise, ms, what) {
   let timer;
   return Promise.race([
@@ -206,7 +213,7 @@ async function sweep() {
   const only = args.only ? args.only.split(",") : null;
   const jobs = [];
   for (const route of ROUTES) {
-    if (only && !only.some((o) => route.includes(o))) continue;
+    if (only && !only.some((o) => (args.exact ? route === o : route.includes(o)))) continue;
     for (const locale of (args.locales || "en,ar").split(",")) jobs.push({ route, locale });
   }
   const results = [];
@@ -242,8 +249,19 @@ async function sweep() {
           }
           const data = await withTimeout(page.evaluate(inspect, brand), 20000, "inspect");
           const shot = path.join(outDir, `${slug}-${width}.jpg`);
-          await withTimeout(page.screenshot({ path: shot, type: "jpeg", quality: 55 }), 30000, "screenshot");
-          row.widths[width] = { ...data, shot: path.basename(shot) };
+          const snap = () => page.screenshot({ path: shot, type: "jpeg", quality: 55, captureBeyondViewport: false, optimizeForSpeed: true });
+          row.widths[width] = { ...data };
+          // A screenshot that never comes back (some pages keep repainting) loses only the image.
+          try {
+            // One screenshot at a time, from the front tab: background tabs may never paint a frame.
+            await shotLock(async () => {
+              await page.bringToFront();
+              await withTimeout(snap(), 20000, "screenshot");
+            });
+            row.widths[width].shot = path.basename(shot);
+          } catch (e) {
+            row.widths[width].shotError = String(e).slice(0, 120);
+          }
         }
         row.text = await withTimeout(
           page.evaluate(() => (document.body.innerText || "").replace(/\s+/g, " ").trim().slice(0, 4000)),
@@ -264,6 +282,12 @@ async function sweep() {
   }
   await Promise.all(Array.from({ length: concurrency }, worker));
   await browser.close();
+  // --merge: replace only the re-run pages in an earlier results.json.
+  const earlier = path.join(outDir, "results.json");
+  if (args.merge && fs.existsSync(earlier)) {
+    const old = JSON.parse(fs.readFileSync(earlier, "utf8")).results;
+    for (const row of old) if (!results.some((r) => r.route === row.route && r.locale === row.locale)) results.push(row);
+  }
   results.sort((a, b) => ROUTES.indexOf(a.route) - ROUTES.indexOf(b.route) || a.locale.localeCompare(b.locale));
   fs.writeFileSync(path.join(outDir, "results.json"), JSON.stringify({ base, brand, params, results }, null, 2));
   console.log(`wrote ${path.join(outDir, "results.json")}`);
