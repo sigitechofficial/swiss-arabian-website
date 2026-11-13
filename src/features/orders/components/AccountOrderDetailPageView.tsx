@@ -1,6 +1,9 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useState, type ReactNode } from "react";
 import { Package } from "lucide-react";
 import { PageLoading } from "@/components/ui/PageLoading";
@@ -62,10 +65,10 @@ import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employee
 
 type Feedback = { tone: keyof typeof orderNoticeTone; text: string };
 
-function cancelErrorText(error: OrderCancelError): string {
-  if (error === "closed") return "This order can no longer be cancelled.";
-  if (error === "notFound") return "We couldn’t find this order.";
-  if (error === "failed") return "We couldn’t cancel this order. Please try again.";
+function cancelErrorText(error: OrderCancelError, t: Translator): string {
+  if (error === "closed") return t("orders.cancel.closed");
+  if (error === "notFound") return t("orders.notFound");
+  if (error === "failed") return t("orders.cancel.failed");
   return error.message;
 }
 
@@ -126,6 +129,7 @@ function CancelOrderPanel({
   onConfirm: () => void;
   onExpired: () => void;
 }) {
+  const t = useShopCopy();
   const [confirming, setConfirming] = useState(false);
   const { remaining, mmss } = useCancellationCountdown(cw, fetchedAt, onExpired);
 
@@ -134,9 +138,9 @@ function CancelOrderPanel({
   return (
     <div className={orderCancel}>
       <div>
-        <p className="m-0 text-[0.86rem] font-semibold">You can still cancel this order</p>
+        <p className="m-0 text-[0.86rem] font-semibold">{t("orders.cancel.stillCan")}</p>
         <p className="m-0 mt-0.5 text-[0.76rem]">
-          Window closes in{" "}
+          {t("orders.cancel.closesIn")}{" "}
           <span className="font-semibold tabular-nums" aria-live="off">
             {mmss}
           </span>
@@ -144,9 +148,9 @@ function CancelOrderPanel({
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[0.76rem]">Cancel this order?</span>
+          <span className="text-[0.76rem]">{t("orders.cancel.confirm")}</span>
           <button type="button" disabled={pending} onClick={onConfirm} className={orderCancelConfirm}>
-            {pending ? "Cancelling…" : "Yes, cancel order"}
+            {pending ? t("orders.cancel.cancelling") : t("orders.cancel.yes")}
           </button>
           <button
             type="button"
@@ -154,12 +158,12 @@ function CancelOrderPanel({
             onClick={() => setConfirming(false)}
             className="cursor-pointer border-0 bg-transparent p-0 text-[0.76rem] font-medium text-inherit underline underline-offset-2 [font:inherit]"
           >
-            Keep order
+            {t("orders.cancel.keep")}
           </button>
         </div>
       ) : (
         <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
-          Cancel order
+          {t("orders.cancel.button")}
         </button>
       )}
     </div>
@@ -179,17 +183,19 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     refreshOrder,
     refunds: refundsFromHook,
   } = useCustomerOrderDetail(orderId);
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const orderReward = useOrderReward(orderId);
   const feedback: Feedback | null = cancelResult
     ? cancelResult
     : cancelFailure
-      ? { tone: "error", text: cancelErrorText(cancelFailure) }
+      ? { tone: "error", text: cancelErrorText(cancelFailure, t) }
       : null;
 
   if (detailQuery.isPending) {
     return (
       <AccountPageShell>
-        <PageLoading label="Loading your order…" />
+        <PageLoading label={t("orders.loadingOne")} />
       </AccountPageShell>
     );
   }
@@ -199,12 +205,12 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     return (
       <AccountPageShell>
         <div className={`${accountContainer} py-20 text-center`}>
-          <p className={`${accountLede} mx-auto mt-0!`}>We couldn’t find this order.</p>
+          <p className={`${accountLede} mx-auto mt-0!`}>{t("orders.notFound")}</p>
           <LocaleLink
             href="/account/orders"
             className="mt-4 inline-block text-[0.8rem] font-medium text-[var(--copper,#8c4435)] underline underline-offset-4"
           >
-            Back to Purchase History
+            {t("orders.backToHistory")}
           </LocaleLink>
         </div>
       </AccountPageShell>
@@ -212,7 +218,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   }
 
   const { order, cancellationWindow } = data;
-  const { label, tone } = orderStatusDisplay(order.status);
+  const { label, tone } = orderStatusDisplay(order.status, t);
   const currency = order.currency;
   const reference = order.orderNumber ?? orderId.slice(0, 8).toUpperCase();
   const shippingAddress = order.addresses.find((a) => a.addressType === "SHIPPING");
@@ -241,13 +247,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   return (
     <AccountPageShell>
       <div className={accountContainer}>
-        <nav aria-label="Breadcrumb" className={accountCrumbs}>
+        <nav aria-label={t("account.breadcrumbNav")} className={accountCrumbs}>
           <ol className={crumbsList} role="list">
             <li>
-              <LocaleLink href="/">Home</LocaleLink>
+              <LocaleLink href="/">{t("home")}</LocaleLink>
             </li>
             <li>
-              <LocaleLink href="/account/orders">Purchase History</LocaleLink>
+              <LocaleLink href="/account/orders">{t("account.tab.orders")}</LocaleLink>
             </li>
             <li aria-current="page">{reference}</li>
           </ol>
@@ -255,13 +261,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
         <header className={accountHead}>
           <div className="min-w-0">
-            <p className={accountEyebrow}>Order</p>
+            <p className={accountEyebrow}>{t("account.orderLabel")}</p>
             <h1 className={`${pageTitle} break-words`}>{reference}</h1>
             <p className={orderHeadMeta}>
               <AccountStatusPill label={label} tone={tone} />
               <span className={`${accountLede} mt-0!`}>
-                Placed on {formatOrderDate(order.createdAt, { long: true })} · {itemCount}{" "}
-                {itemCount === 1 ? "item" : "items"}
+                {t("orders.placedOn", { date: formatOrderDate(order.createdAt, { long: true, locale }) })} ·{" "}
+                {t("account.itemCount", { count: itemCount })}
               </span>
             </p>
           </div>
@@ -270,7 +276,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
               href={`/checkout/payment/cancel?orderId=${encodeURIComponent(order.orderId)}`}
               className={accountPrimaryCta}
             >
-              Complete payment
+              {t("orders.completePayment")}
             </LocaleLink>
           ) : null}
         </header>
@@ -297,7 +303,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {needsSupport ? (
               <p className={`${orderNotice} ${orderNoticeTone.info}`}>
-                Need help with this order? Please contact our customer care team and quote the order number above.
+                {t("orders.needHelp")}
               </p>
             ) : null}
           </div>
@@ -306,7 +312,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
         <div className={accountLayout}>
           {/* Progress first, then what was ordered, then the shipment history. */}
           <OrderTrackingPanel summary={trackingSummary} timeline={timeline}>
-            <Panel title={`Items (${order.lines.length})`} flush>
+            <Panel title={t("orders.items", { count: order.lines.length })} flush>
               <ul className={orderLines} role="list">
                 {order.lines.map((line) => {
                   const quantity = Number.parseInt(line.quantity, 10) || 1;
@@ -331,10 +337,10 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                             line.variantName.trim().toLowerCase() !== "default title"
                               ? line.variantName
                               : null,
-                            line.isGift ? "Free gift" : null,
-                            `Qty ${quantity}`,
+                            line.isGift ? t("orders.freeGift") : null,
+                            t("orders.qty", { count: quantity }),
                             quantity > 1 && !line.isGift
-                              ? `${formatMoney(Number(line.unitPrice), lineCurrency)} each`
+                              ? t("orders.each", { price: formatMoney(Number(line.unitPrice), lineCurrency) })
                               : null,
                             line.sku,
                           ]
@@ -348,7 +354,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                         />
                       </div>
                       <p className={orderLinePrice}>
-                        {line.isGift ? "Free" : formatMoney(Number(line.lineTotal), lineCurrency)}
+                        {line.isGift ? t("orders.free") : formatMoney(Number(line.lineTotal), lineCurrency)}
                       </p>
                     </li>
                   );
@@ -364,52 +370,52 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             lines={mapOrderLinesForAfterSales(order.lines)}
           />
 
-          <aside className={accountCol} aria-label="Order summary and delivery">
-            <Panel title="Order summary">
+          <aside className={accountCol} aria-label={t("orders.summaryAndDelivery")}>
+            <Panel title={t("orders.summary")}>
               <dl className={orderTotals}>
                 <div>
-                  <dt>Subtotal</dt>
+                  <dt>{t("orders.subtotal")}</dt>
                   <dd>{formatMoney(Number(order.totals.subtotal), currency)}</dd>
                 </div>
                 {Number(order.totals.discount) > 0 ? (
                   <div>
-                    <dt>Discount</dt>
+                    <dt>{t("orders.discount")}</dt>
                     <dd className={orderSave}>−{formatMoney(Number(order.totals.discount), currency)}</dd>
                   </div>
                 ) : null}
                 <div>
-                  <dt>Shipping</dt>
+                  <dt>{t("orders.shipping")}</dt>
                   <dd>
-                    {Number(order.totals.shipping) > 0 ? formatMoney(Number(order.totals.shipping), currency) : "Free"}
+                    {Number(order.totals.shipping) > 0 ? formatMoney(Number(order.totals.shipping), currency) : t("orders.free")}
                   </dd>
                 </div>
                 {Number(order.totals.tax) > 0 ? (
                   <div>
-                    <dt>Tax</dt>
+                    <dt>{t("orders.tax")}</dt>
                     <dd>{formatMoney(Number(order.totals.tax), currency)}</dd>
                   </div>
                 ) : null}
                 <HistoricalGiftNote snapshot={order.promotionSnapshot} className={orderLineMeta} />
                 <AppliedCampaigns snapshot={readPromotionSnapshot(order.promotionSnapshot)} />
                 <div className={orderTotalRow}>
-                  <dt>Total</dt>
+                  <dt>{t("orders.total")}</dt>
                   <dd>{formatMoney(Number(order.totals.total), currency)}</dd>
                 </div>
               </dl>
             </Panel>
 
-            <Panel title="Delivery and payment">
-              {shippingAddress ? <AddressBlock label="Ship to" address={shippingAddress} /> : null}
-              {billingAddress ? <AddressBlock label="Bill to" address={billingAddress} /> : null}
+            <Panel title={t("orders.deliveryAndPayment")}>
+              {shippingAddress ? <AddressBlock label={t("orders.shipTo")} address={shippingAddress} /> : null}
+              {billingAddress ? <AddressBlock label={t("orders.billTo")} address={billingAddress} /> : null}
               <dl className={`${orderDetailBlock} m-0 grid grid-cols-2 gap-4`}>
                 <div>
-                  <dt className={orderFactLabel}>Delivery</dt>
+                  <dt className={orderFactLabel}>{t("orders.delivery")}</dt>
                   <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
                     {orderDeliveryLabel(order.selectedDeliveryMethod)}
                   </dd>
                 </div>
                 <div>
-                  <dt className={orderFactLabel}>Payment</dt>
+                  <dt className={orderFactLabel}>{t("orders.payment")}</dt>
                   <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
                     {orderPaymentLabel(order.selectedPaymentMethod)}
                   </dd>
@@ -418,13 +424,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             </Panel>
 
             {hasOrderLoyaltySection(orderReward) ? (
-              <Panel title="Rewards">
+              <Panel title={t("account.tab.rewards")}>
                 <OrderRewardNote reward={orderReward} showHeading={false} />
               </Panel>
             ) : null}
 
             {refunds.length > 0 ? (
-              <Panel title="Refunds">
+              <Panel title={t("orders.refunds")}>
                 <ul className="m-0 grid list-none gap-3 p-0">
                   {refunds.map((refund, index) => (
                     <li key={refund.refundId ?? `refund-${index}`} className="text-[13px] leading-relaxed text-sa-primary">
@@ -434,9 +440,9 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                           {refund.amount}
                         </p>
                       ) : null}
-                      <p className="m-0 mt-1 text-sa-secondary">{refundCustomerStatus(refund)}</p>
+                      <p className="m-0 mt-1 text-sa-secondary">{refundCustomerStatus(refund, t)}</p>
                       {refund.refundId ? (
-                        <p className="m-0 mt-1 text-[12px] text-sa-muted">Reference {refund.refundId}</p>
+                        <p className="m-0 mt-1 text-[12px] text-sa-muted">{t("orders.reference", { id: refund.refundId })}</p>
                       ) : null}
                     </li>
                   ))}
@@ -445,7 +451,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             ) : null}
 
             {staffQuote ? (
-              <Panel title="Staff discount">
+              <Panel title={t("orders.staffDiscount")}>
                 <StaffDiscountSummary checkout={staffQuote} currency={currency} surface="order" />
               </Panel>
             ) : null}

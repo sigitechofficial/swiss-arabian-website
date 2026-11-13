@@ -11,6 +11,7 @@ import {
 } from "@/features/account/api/customerOrders.service";
 import { getOrderTracking, getOrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 import { ApiClientError } from "@/lib/api/apiError";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { cancelOutcome, readOrderRefunds } from "../utils/orderAftercare";
 import { isActiveOrder, needsPayment } from "../utils/orderStatus";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
@@ -65,6 +66,7 @@ function cancelError(error: unknown): OrderCancelError {
  */
 export function useCustomerOrderDetail(orderId: string) {
   const queryClient = useQueryClient();
+  const copy = useShopCopy();
   const [cancelResult, setCancelResult] = useState<OrderCancelFeedback | null>(null);
   const [cancelFailure, setCancelFailure] = useState<OrderCancelError | null>(null);
 
@@ -103,7 +105,7 @@ export function useCustomerOrderDetail(orderId: string) {
     mutationFn: () => cancelOrder(orderId, "Cancelled by customer"),
     onSuccess: (result: CancelOrderResponse) => {
       setCancelFailure(null);
-      setCancelResult(cancelOutcome(result));
+      setCancelResult(cancelOutcome(result, copy));
     },
     onError: (error) => {
       setCancelResult(null);

@@ -2,8 +2,10 @@
 
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
-  ORDER_PROGRESS_STEPS,
+  ORDER_PROGRESS_STEP_KEYS,
   customerOrderTimeline,
   deliveryDateFact,
   formatOrderDate,
@@ -67,13 +69,15 @@ function TrackingCard({
 }
 
 function ProgressStepper({ step }: { step: number }) {
-  const last = ORDER_PROGRESS_STEPS.length - 1;
+  const t = useShopCopy();
+  const last = ORDER_PROGRESS_STEP_KEYS.length - 1;
   return (
-    <ol className={orderSteps} aria-label="Delivery progress">
-      {ORDER_PROGRESS_STEPS.map((label, idx) => {
+    <ol className={orderSteps} aria-label={t("track.progress")}>
+      {ORDER_PROGRESS_STEP_KEYS.map((key, idx) => {
+        const label = t(key);
         const state = idx < step ? "done" : idx === step ? "current" : "next";
         return (
-          <li key={label} className={orderStep} aria-current={state === "current" ? "step" : undefined}>
+          <li key={key} className={orderStep} aria-current={state === "current" ? "step" : undefined}>
             <div className={orderStepRail} aria-hidden="true">
               <span className={orderStepLine} data-on={idx <= step} data-edge={idx === 0} />
               <span className={orderStepDot} data-state={state}>
@@ -84,7 +88,7 @@ function ProgressStepper({ step }: { step: number }) {
             <span className={orderStepLabel} data-state={state}>
               {label}
               <span className="sr-only">
-                {state === "current" ? " (current step)" : state === "done" ? " (completed)" : " (upcoming)"}
+                {state === "current" ? t("track.stepCurrent") : state === "done" ? t("track.stepDone") : t("track.stepNext")}
               </span>
             </span>
           </li>
@@ -95,17 +99,19 @@ function ProgressStepper({ step }: { step: number }) {
 }
 
 function DeliveryEstimate({ summary }: { summary: OrderTrackingSummary }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const fact = deliveryDateFact(summary);
   if (fact?.kind === "delivered") {
-    return <p className={orderFactValue}>{formatOrderDate(fact.at, { long: true })}</p>;
+    return <p className={orderFactValue}>{formatOrderDate(fact.at, { long: true, locale })}</p>;
   }
   if (fact?.kind === "estimate") {
-    return <p className={orderFactValue}>By {formatOrderDate(fact.at, { long: true })}</p>;
+    return <p className={orderFactValue}>{t("track.byDate", { date: formatOrderDate(fact.at, { long: true, locale }) })}</p>;
   }
   if (summary.status === "DELIVERED") {
-    return <p className={orderFactValue}>Delivered</p>;
+    return <p className={orderFactValue}>{t("orders.tracking.delivered")}</p>;
   }
-  return <p className={orderFactNote}>We’ll share a date once your order ships.</p>;
+  return <p className={orderFactNote}>{t("track.dateLater")}</p>;
 }
 
 export function OrderTrackingPanel({
@@ -119,15 +125,17 @@ export function OrderTrackingPanel({
   /** Shown between the progress card and the shipment history (the account page puts the items here). */
   children?: ReactNode;
 }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const step = orderProgressStep(summary.status);
   const eventsByShipment = new Map<string, TrackingEvent[]>(
     (timeline?.shipments ?? []).map((s) => [s.shipmentId, s.events]),
   );
-  const orderEventsList = customerOrderTimeline(summary.timeline ?? []);
+  const orderEventsList = customerOrderTimeline(summary.timeline ?? [], t);
 
   return (
     <div id="tracking" className="flex min-w-0 scroll-mt-40 flex-col gap-[clamp(20px,3vw,28px)]">
-      <TrackingCard title="Delivery progress" flush={step >= 0}>
+      <TrackingCard title={t("track.progress")} flush={step >= 0}>
         {step >= 0 ? (
           <>
             <ProgressStepper step={step} />
@@ -136,44 +144,44 @@ export function OrderTrackingPanel({
               <div className={orderFact}>
                 <p className={orderFactLabel}>
                   {summary.deliveredAt
-                    ? "Delivered on"
+                    ? t("track.deliveredOn")
                     : summary.status === "DELIVERED"
-                      ? "Delivery"
-                      : "Estimated delivery"}
+                      ? t("orders.delivery")
+                      : t("track.estimated")}
                 </p>
                 <DeliveryEstimate summary={summary} />
               </div>
               <div className={orderFact}>
-                <p className={orderFactLabel}>Latest update</p>
+                <p className={orderFactLabel}>{t("track.latest")}</p>
                 {summary.latestTrackingStatus ? (
                   <>
-                    <p className={orderFactValue}>{shipmentStatusLabel(summary.latestTrackingStatus)}</p>
+                    <p className={orderFactValue}>{shipmentStatusLabel(summary.latestTrackingStatus, t)}</p>
                     {summary.latestTrackingEventTime ? (
                       <p className={orderFactNote}>
-                        {formatOrderDate(summary.latestTrackingEventTime, { time: true })}
+                        {formatOrderDate(summary.latestTrackingEventTime, { time: true, locale })}
                       </p>
                     ) : null}
                   </>
                 ) : (
-                  <p className={orderFactNote}>No shipment updates yet. They’ll appear here once it leaves our warehouse.</p>
+                  <p className={orderFactNote}>{t("track.noUpdates")}</p>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <p className={`${orderFactNote} mt-0!`}>{stoppedOrderMessage(summary.status)}</p>
+          <p className={`${orderFactNote} mt-0!`}>{stoppedOrderMessage(summary.status, t)}</p>
         )}
       </TrackingCard>
 
       {children}
 
       {summary.shipments.length > 0 ? (
-        <TrackingCard title={`Shipments (${summary.shipments.length})`} flush>
+        <TrackingCard title={t("track.shipments", { count: summary.shipments.length })} flush>
           {summary.shipments.map((shipment) => {
             const events =
               eventsByShipment.get(shipment.shipmentId) ??
               (shipment.latestTrackingEvent ? [shipment.latestTrackingEvent] : []);
-            const history = trackingHistory(events);
+            const history = trackingHistory(events, t);
             const carrierLine = [
               shipment.shippingPartner?.displayName,
               shipment.deliveryMethod?.displayName,
@@ -185,16 +193,16 @@ export function OrderTrackingPanel({
               <article key={shipment.shipmentId} className={orderShipment}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={orderLineName}>{shipmentStatusLabel(shipment.status)}</p>
+                    <p className={orderLineName}>{shipmentStatusLabel(shipment.status, t)}</p>
                     {carrierLine ? <p className={orderLineMeta}>{carrierLine}</p> : null}
                     {shipment.trackingNumber ? (
                       <p className={orderLineMeta}>
-                        Tracking number <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.trackingNumber}</b>
+                        {t("track.trackingNumber")} <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.trackingNumber}</b>
                       </p>
                     ) : null}
                     {shipment.shipmentNumber ? (
                       <p className={orderLineMeta}>
-                        Shipment <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.shipmentNumber}</b>
+                        {t("track.shipment")} <b className="font-semibold text-[var(--ink,#241f1b)]">{shipment.shipmentNumber}</b>
                       </p>
                     ) : null}
                     {shipment.estimatedDeliveryAt &&
@@ -202,7 +210,7 @@ export function OrderTrackingPanel({
                     shipment.status !== "DELIVERED" &&
                     summary.status !== "DELIVERED" ? (
                       <p className={orderLineMeta}>
-                        Arriving by {formatOrderDate(shipment.estimatedDeliveryAt, { long: true })}
+                        {t("track.arrivingBy", { date: formatOrderDate(shipment.estimatedDeliveryAt, { long: true, locale }) })}
                       </p>
                     ) : null}
                   </div>
@@ -213,7 +221,7 @@ export function OrderTrackingPanel({
                       rel="noopener noreferrer"
                       className={orderShipmentCta}
                     >
-                      Carrier tracking ↗
+                      {t("track.carrier")}
                     </a>
                   ) : null}
                 </div>
@@ -242,7 +250,7 @@ export function OrderTrackingPanel({
                             {entry.detail ? <span> · {entry.detail}</span> : null}
                           </p>
                           <p className={orderEventTime}>
-                            {[formatOrderDate(entry.occurredAt, { time: true }), entry.location]
+                            {[formatOrderDate(entry.occurredAt, { time: true, locale }), entry.location]
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
@@ -258,7 +266,7 @@ export function OrderTrackingPanel({
       ) : null}
 
       {orderEventsList.length > 0 ? (
-        <TrackingCard title="Order timeline">
+        <TrackingCard title={t("track.timeline")}>
           <ol className={orderEvents}>
             {[...orderEventsList].reverse().map((event, idx, list) => (
               <li key={event.key} className={orderEvent}>
@@ -268,7 +276,7 @@ export function OrderTrackingPanel({
                 </div>
                 <div className="min-w-0">
                   <p className={orderEventTitle}>{event.label}</p>
-                  <p className={orderEventTime}>{formatOrderDate(event.occurredAt, { time: true })}</p>
+                  <p className={orderEventTime}>{formatOrderDate(event.occurredAt, { time: true, locale })}</p>
                 </div>
               </li>
             ))}
