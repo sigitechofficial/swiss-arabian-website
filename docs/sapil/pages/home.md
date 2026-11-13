@@ -54,6 +54,9 @@ See `docs/sapil/pages/shell.md` for the table (hero intro and section heads).
 - About: v9's bottle tile over the photo is not shown (no CMS field for it).
 - Note cards show no "N bottles" count (not in the fragrance-notes API).
 - Mood cards: the v9 smaller quick-buy pill inside mood cards is the standard one.
+- CMS section headings show as the eyebrow; the v9 headline (e.g. "Just landed, *still fizzing.*") stays as translated Sapil wording, because the CMS headings are short labels ("New arrivals").
+- Price-edit shelf chips (price bands with counts) show only when every product under the ceiling is loaded (first listing page); otherwise the count line and the shelf show without chips. `facets.priceTiers` could drive tier chips once the shared listing type parses it (catalog area).
+- Gift sets use the bottle zoom (1.62) on cards: the card summary has no product kind yet (`.card.gift` needs it).
 - Price-edit links go to `/products?maxPrice=…` until the price-edit pages exist (catalog area).
 
 ## Local data

@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { AnnouncementItem } from "@/features/cms/hooks/useCmsGlobalRegion";
 import { resolveCmsLink } from "@/features/cms/utils/resolveCmsLink";
 import { AnnouncementBar } from "../../ui";
 import { SapilLink } from "../shared/SapilLink";
 
 const DEFAULT_INTERVAL_MS = 4500;
+
+/** `**words**` in a CMS message are set in bold (v9 `.announce b`). */
+export function emphasized(message: string): ReactNode[] {
+  return message.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i}>{part}</b> : part));
+}
 
 /**
  * v9 `.announce` from the market's announcement bar (CMS). Several messages
@@ -33,7 +38,7 @@ export function SapilAnnouncement({ items, intervalMs }: { items: AnnouncementIt
   return (
     <div aria-live={items.length > 1 ? "polite" : undefined}>
       <AnnouncementBar href={href} LinkComponent={SapilLink}>
-        {item.message}
+        {emphasized(item.message)}
       </AnnouncementBar>
     </div>
   );

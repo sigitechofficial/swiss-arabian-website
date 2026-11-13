@@ -50,13 +50,28 @@ Area: `shell`. Code in `src/brands/sapil/components/shell/` and `components/stat
 
 `node scripts/sapil-visual-diff.mjs --group=preview` against a Sapil build started with `SAPIL_KIT=1` on :3031 (`/sapil-preview` renders the chrome and static home parts with v9's mock values; `src/brands/sapil/kit/SapilShellPreview.tsx`).
 
-RESULTS_TABLE
+Last run (Chromium 1217, puppeteer-core, % of pixels differing; Sapil build on the backend branch API, 2026-11-13):
+
+| piece (v9 source) | 390 | 768 | 1280 | 1440 | notes |
+|---|---|---|---|---|---|
+| announcement `.announce` | 0.00 | 0.00 | 0.00 | 0.00 | `**bold**` in the CMS message |
+| header `.hdr` | 0.26 | 0.13 | 1.45* | 0.02 | *menu button shown at ≤1280 (see below) |
+| "Shop by" `.subnav` | 7.03 | 6.72 | 4.03 | 3.59 | same chips/text; chip edges anti-alias differently (sub-pixel x offset of the row) |
+| footer | 7.46 | 0.55 | 5.54 | 5.29 | static columns match; newsletter line without "once a fortnight", legal row (v9 concept note) |
+| hero intro `.d-intro` | 20.18 | 26.75 | 10.11 | 9.23 | data-driven: stats from the API; the eyebrow wraps one line earlier with self-hosted Poppins (text width sits exactly on the column edge), shifting what follows |
+| `#new .sec-head` | 0.00 | 0.00 | 0.03 | 0.00 | |
+| `#collections .sec-head` | 0.09 | 0.06 | 0.07 | 0.06 | |
+| `#bestsellers .sec-head` | 0.00 | 0.00 | 0.06 | 0.00 | |
+| `#bundles .sec-head` | 1.73 | 1.03 | 1.95 | 1.78 | headline accent "and easier." (v9 "and cheaper.") |
+
+Data-driven parts (rails, doors, collection cards, mood, bundles, shelf, footer links) were compared side by side in the built site against the seeded Sapil UAE market: same grid tracks, gaps, radii, tile colours and type.
 
 ## Known differences from v9
 
 - The menu button shows at ≤1280px (v9 hides the main menu at ≤1280 but shows the button only at ≤900, leaving 901–1280 with no menu at all).
 - Logo comes from the brand config (`/assets/sapil-online-perfume-store.png`, 195×80) — slightly wider than v9's file at 34px high.
-- Announcement text is the CMS message as plain text (v9 bolds "The Scent Society").
+- Announcement text is the CMS message; `**words**` render bold (v9 bolds "The Scent Society").
+- The announcement and "Shop by" rows are client-rendered once the market is known (same as Swiss Arabian's ticker), so they appear a moment after the header (layout shift at the top). Server-rendering them needs the market on the server (open question).
 - Mega-menu tiles show the collection picture from the menu API (v9: a bottle and "N scents"); there is no per-option count in the menu API.
 - Footer legal row: copyright + market/language pickers (v9: concept note and "All concepts" link).
 - "Shop by" chips come from the header menu's collection links: there is no dedicated CMS menu for this row yet. With the local seed (menus not bound) the row shows only the price-edit chip.

@@ -4,6 +4,7 @@ import type { NavItem } from "@/features/navigation/types/navigation";
 import { toast } from "@/components/ui/Toaster";
 import { useUiStore } from "@/stores/useUiStore";
 import { SapilChrome } from "./SapilChrome";
+import { emphasized } from "./SapilAnnouncement";
 
 const nav = (id: string, type: NavItem["type"], href: string | null, children: NavItem[] = []): NavItem => ({ id, label: id, slug: null, type, href, children });
 const settings = vi.hoisted(() => ({
@@ -45,6 +46,13 @@ beforeEach(() => {
   settings.value = { ...settings.value, freeDeliveryThreshold: null, cashOnDelivery: null, priceEditTiers: [] };
   window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as never;
   HTMLDialogElement.prototype.showModal ??= function () {};
+});
+
+describe("emphasized", () => {
+  it("bolds **words** in announcement messages", () => {
+    render(<p data-testid="m">{emphasized("New: **The Scent Society** · now")}</p>);
+    expect(screen.getByTestId("m").innerHTML).toBe("New: <b>The Scent Society</b> · now");
+  });
 });
 
 describe("SapilChrome", () => {

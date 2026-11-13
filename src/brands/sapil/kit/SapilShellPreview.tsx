@@ -61,7 +61,7 @@ export function SapilShellPreview({ only, lead }: { only?: string; lead?: string
   return (
     <>
       <Piece id="shell-announce" only={only}>
-        <SapilAnnouncement items={[{ message: "New: The Scent Society · Four expressions, one signature →", link: { type: "INTERNAL_PATH", url: "/collections/x" } }]} />
+        <SapilAnnouncement items={[{ message: "New: **The Scent Society** · Four expressions, one signature →", link: { type: "INTERNAL_PATH", url: "/collections/x" } }]} />
       </Piece>
       <Piece id="shell-header" only={only}>
         <SapilHeader logo={LOGO} menu={MENU} pathname="/" bagCount={0} accountHref="#" onOpenMenu={() => {}} onOpenSearch={() => {}} onOpenBag={() => {}} />
