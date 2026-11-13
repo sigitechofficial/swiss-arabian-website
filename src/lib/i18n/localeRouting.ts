@@ -1,5 +1,6 @@
 import {
   internalLocalePath,
+  localeFromPathname,
   localePrefixOf,
   stripLocalePrefix,
   withLocalePrefix,
@@ -28,6 +29,15 @@ const INTERNAL_PAGE = /^(\/(?:products|collections\/[^/]+|categories\/[^/]+))\/p
 
 export const LISTING_PAGE_SEGMENT = "p";
 
+/** Request header with the address's language (read by app/global-not-found.tsx). */
+export const SHOP_LOCALE_HEADER = "x-shop-locale";
+/**
+ * Set on the proxy's own rewrites. If the server runs the proxy again on the
+ * rewritten `/en/...` path (`next dev --hostname 127.0.0.1` treats the rewrite
+ * as external), it must not redirect it back to `/...` (a 301 loop).
+ */
+export const INTERNAL_REWRITE_HEADER = "x-shop-internal-rewrite";
+
 /** `?page=` as a whole number ≥ 1 (anything else is page 1). */
 export function listingPageParam(value: string | null | undefined): number {
   const page = Number.parseInt(value ?? "", 10);
@@ -36,6 +46,18 @@ export function listingPageParam(value: string | null | undefined): number {
 
 export function isListingPath(bare: string): boolean {
   return LISTING.test(bare);
+}
+
+/**
+ * The public address of a route path. Prerendered pages see their internal
+ * path (`/en/products`, `/en/collections/x/p/3`); links built from it must use
+ * the public one (`/products`, `/collections/x`), or every click is a 301.
+ */
+export function publicPathname(pathname: string): string {
+  const locale = localeFromPathname(pathname || "/");
+  const bare = stripLocalePrefix(pathname || "/");
+  const internal = INTERNAL_PAGE.exec(bare);
+  return withLocalePrefix(internal ? internal[1]! : bare, locale);
 }
 
 function searchWith(params: URLSearchParams, changes: Record<string, string | null>): string {

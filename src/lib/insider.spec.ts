@@ -1,14 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-vi.mock("@/lib/config/env", () => ({
-  env: {
-    insider: {
-      enabled: true,
-      accountId: "10015366",
-      scriptHost: "swissarabianuatnew.api.useinsider.com",
-    },
-  },
-}));
+// Insider is on through Swiss Arabian's integration defaults (src/lib/brand).
+
 
 import {
   beginInsiderRouteFlush,

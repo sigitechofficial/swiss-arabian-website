@@ -1,5 +1,3 @@
-import { cleanGa4Id, cleanGtmId } from "@/lib/analytics/analyticsIds";
-
 export type AppEnv = "local" | "dev" | "staging" | "production";
 
 const AZURE_DEV_API =
@@ -89,17 +87,14 @@ const apiBaseUrl =
     : "");
 
 /**
- * Search engines may index the site only when this is the production site AND
- * indexing was switched on on purpose (NEXT_PUBLIC_SEO_INDEXING_ENABLED=true).
- * Off by default, so a production deploy before go-live stays out of Google.
+ * Shared / technical settings only. Everything that differs per brand
+ * deployment (analytics, Insider, Tabby, Maps, payment switches, catalog
+ * media, storefront host, SEO indexing) is read through `getBrand()` /
+ * `brandIntegrations()` in src/lib/brand, so no brand inherits another
+ * brand's ids (e.g. Swiss Arabian's Insider account).
  */
-const SEO_INDEXING_ENABLED =
-  APP_ENV === "production" &&
-  readPublic(process.env.NEXT_PUBLIC_SEO_INDEXING_ENABLED) === "true";
-
 export const env = {
   appEnv: APP_ENV,
-  seoIndexingEnabled: SEO_INDEXING_ENABLED,
   apiBaseUrl,
   returnUrl: RETURN_URL_BY_ENV[APP_ENV],
   isDev: process.env.NODE_ENV === "development",
@@ -112,10 +107,6 @@ export const env = {
     verification:
       readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     oauth: readPublic(process.env.NEXT_PUBLIC_ENABLE_OAUTH) === "true",
-    paymob: readPublic(process.env.NEXT_PUBLIC_ENABLE_PAYMOB) === "true",
-    /** Pay-in-4 providers that can actually be chosen at checkout. Off: shown as coming soon. */
-    tabby: readPublic(process.env.NEXT_PUBLIC_ENABLE_TABBY) === "true",
-    tamara: readPublic(process.env.NEXT_PUBLIC_ENABLE_TAMARA) === "true",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",
@@ -124,26 +115,6 @@ export const env = {
     process.env.NODE_ENV === "development"
       ? readPublic(process.env.NEXT_PUBLIC_CUSTOMER_MASTER_OTP)
       : "",
-  /**
-   * Tabby merchant details for their "Learn more" pop-up. Both are safe in the browser.
-   * Empty until the merchant account exists: the pop-up then shows Tabby's standard plans.
-   */
-  tabby: {
-    publicKey: readPublic(process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY),
-    merchantCode: readPublic(process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE),
-  },
-  googleMapsApiKey: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
-  googleMapsMapId: readPublic(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
-  catalogMediaBaseUrl: readPublic(
-    process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
-  ),
-  /**
-   * Shop hostname for `X-Storefront-Host` (no scheme/port).
-   * Required on localhost to act as Sapil (`sapil-website.vercel.app`).
-   */
-  storefrontHost: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_HOST),
-  /** When set (e.g. SAPIL), hide other-tenant markets in the switcher. */
-  storefrontBrandCode: readPublic(process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE),
   /**
    * Local only: `*.localhost` aliases to other brands, e.g. `sp=SAPIL@sapil.test`
    * (see lib/storefront/localStorefront.ts). Empty → built-in `sp` = Sapil.
@@ -162,25 +133,4 @@ export const env = {
   cmsHomeLegacyFallback:
     readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
     "false",
-  /**
-   * Insider Web SDK. Script loads only when enabled AND accountId is set.
-   * Default enabled unless NEXT_PUBLIC_INSIDER_ENABLED=false.
-   */
-  /** Google Tag Manager or GA4. Nothing loads until an ID is set. */
-  analytics: {
-    gtmId: cleanGtmId(readPublic(process.env.NEXT_PUBLIC_GTM_ID, "")),
-    ga4Id: cleanGa4Id(readPublic(process.env.NEXT_PUBLIC_GA4_ID, "")),
-  },
-  insider: {
-    enabled:
-      readPublic(process.env.NEXT_PUBLIC_INSIDER_ENABLED, "true") !== "false",
-    accountId: readPublic(
-      process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
-      "10015366",
-    ),
-    scriptHost: readPublic(
-      process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
-      "swissarabianuatnew.api.useinsider.com",
-    ),
-  },
 } as const;

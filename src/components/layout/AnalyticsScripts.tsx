@@ -1,5 +1,5 @@
 import Script from "next/script";
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 
 /**
  * Google Tag Manager (preferred: GA4 and other tags are managed there) or GA4 directly.
@@ -7,7 +7,7 @@ import { env } from "@/lib/config/env";
  * GA4 records page changes in this single-page app through its history tracking.
  */
 export function AnalyticsScripts() {
-  const { gtmId, ga4Id } = env.analytics;
+  const { gtmId, ga4Id } = brandIntegrations().analytics;
   if (gtmId) {
     return (
       <>

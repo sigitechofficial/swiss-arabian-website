@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { publicPathname } from "@/lib/i18n/localeRouting";
 import {
   catalogListingHref,
   type CatalogListingQuery,
@@ -19,7 +20,8 @@ export function useListingNavigation(
   keep?: Record<string, string>,
 ) {
   const router = useRouter();
-  const pathname = usePathname();
+  // Public address: a prerendered listing sees its internal `/en/...` path.
+  const pathname = publicPathname(usePathname() || "/");
   const keepKey = keep ? new URLSearchParams(keep).toString() : "";
 
   /** Go to exactly this filter state. */

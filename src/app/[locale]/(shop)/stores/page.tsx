@@ -7,6 +7,7 @@ import {
 import { pickStoresPage } from "@/features/site-pages/utils/pickMarketPage";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { getTranslator } from "@/lib/i18n/messages";
+import { brandDisplayName } from "@/lib/brand";
 import { CatalogJsonLd, FeaturePlaceholder, SitePageView } from "@brand-ui";
 
 const loadStores = () => loadMarketFixedPage("stores", pickStoresPage);
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const base = await pageMetadata({
     path: "/stores",
     title: t("pages.stores.title"),
-    description: t("pages.stores.description"),
+    description: t("pages.stores.description", { brand: brandDisplayName(locale) }),
   });
   return { ...base, robots: { index: false, follow: true } };
 }

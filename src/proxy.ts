@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isLocaleSwitchablePath } from "@/lib/i18n/localePath";
-import { localeRouting } from "@/lib/i18n/localeRouting";
+import { isLocaleSwitchablePath, localeFromPathname } from "@/lib/i18n/localePath";
+import {
+  INTERNAL_REWRITE_HEADER,
+  SHOP_LOCALE_HEADER,
+  localeRouting,
+} from "@/lib/i18n/localeRouting";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
@@ -19,6 +23,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (PASS_THROUGH.test(pathname) || pathname.includes(".")) {
     return NextResponse.next();
+  }
+
+  // Our own rewrite seen a second time (see INTERNAL_REWRITE_HEADER): serve it.
+  if (request.headers.get(INTERNAL_REWRITE_HEADER) === "1") {
+    return NextResponse.next({ request: { headers: withLocale(request, pathname) } });
   }
 
   // URL redirects from the admin (imported from Shopify or added by hand),
@@ -53,8 +62,19 @@ export async function proxy(request: NextRequest) {
   url.pathname = decision.pathname;
   if (decision.search !== undefined) url.search = decision.search;
   if (decision.type === "redirect") return NextResponse.redirect(url, 301);
-  if (decision.type === "rewrite") return NextResponse.rewrite(url);
-  return NextResponse.next();
+  const forwarded = withLocale(request, decision.pathname);
+  if (decision.type === "rewrite") {
+    forwarded.set(INTERNAL_REWRITE_HEADER, "1");
+    return NextResponse.rewrite(url, { request: { headers: forwarded } });
+  }
+  return NextResponse.next({ request: { headers: forwarded } });
+}
+
+/** Request headers plus the address's language, for app/global-not-found.tsx. */
+function withLocale(request: NextRequest, routePath: string): Headers {
+  const headers = new Headers(request.headers);
+  headers.set(SHOP_LOCALE_HEADER, localeFromPathname(routePath));
+  return headers;
 }
 
 export const config = {

@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { isLocaleSwitchablePath } from "./localePath";
-import { listingPageParam, localeRouting } from "./localeRouting";
+import { listingPageParam, localeRouting, publicPathname } from "./localeRouting";
+
+describe("publicPathname", () => {
+  it("turns internal route paths into the public address", () => {
+    expect(publicPathname("/en/products")).toBe("/products");
+    expect(publicPathname("/en")).toBe("/");
+    expect(publicPathname("/en/collections/oud/p/3")).toBe("/collections/oud");
+    expect(publicPathname("/ar/products/p/2")).toBe("/ar/products");
+  });
+
+  it("keeps public addresses as they are", () => {
+    expect(publicPathname("/products")).toBe("/products");
+    expect(publicPathname("/ar/collections/oud")).toBe("/ar/collections/oud");
+    expect(publicPathname("/")).toBe("/");
+  });
+});
 
 function route(address: string) {
   const url = new URL(address, "https://shop.example");
