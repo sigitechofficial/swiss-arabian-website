@@ -41,6 +41,35 @@ export type StorefrontMarket = {
   currencies: StorefrontMarketCurrency[];
   languages: StorefrontMarketLanguage[];
   catalogContext: StorefrontMarketCatalogContext;
+  /** Price-edit tiers, e.g. [50, 99, 199]. Older backends omit it. */
+  priceEditTiers?: number[] | null;
+  /** Delivery promises (free-delivery threshold, standard / express, COD). Older backends omit it. */
+  delivery?: StorefrontMarketDelivery | null;
+};
+
+/** One delivery method's promise (admin Market → Shipping). Money is a decimal string. */
+export type StorefrontMarketDeliveryMethod = {
+  methodCode: string;
+  methodType: string | null;
+  displayName: string | null;
+  fee: string | null;
+  freeDeliveryThreshold: string | null;
+  estimatedMinDays: number | null;
+  estimatedMaxDays: number | null;
+};
+
+export type StorefrontMarketDelivery = {
+  currencyCode: string | null;
+  freeDeliveryThreshold: string | null;
+  standard: StorefrontMarketDeliveryMethod | null;
+  express: StorefrontMarketDeliveryMethod | null;
+  cashOnDelivery: {
+    available: boolean;
+    minOrderAmount: string | null;
+    maxOrderAmount: string | null;
+    /** Always null today: the platform has no COD fee. */
+    fee: string | null;
+  } | null;
 };
 
 export type StorefrontMarketListResponse = {

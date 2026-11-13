@@ -1,19 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, LogOut, Package, ShoppingBag } from "lucide-react";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { localizeHref } from "@/lib/i18n/localePath";
-import { logoutCustomer } from "@/features/auth/api/auth.service";
-import { endSession } from "@/lib/auth/endSession";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { useApiQuery } from "@/lib/api/queryHooks";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { isNewAccount, welcomeHeading } from "@/features/auth/utils/newAccountGreeting";
-import { listOrders } from "@/features/account/api/customerOrders.service";
+import { welcomeHeading } from "@/features/auth/utils/newAccountGreeting";
+import { useAccountDashboard } from "../hooks/useAccountPages";
 import { toOrderSummaryView } from "@/features/orders/utils/toOrderSummaryView";
 import {
   accountAddressLines,
@@ -47,8 +38,6 @@ import {
 import { drawerEmptyCopy, drawerEmptyCta, drawerEmptyIcon, drawerEmptyTitle } from "@/styles/cartChrome";
 import { pageTitle } from "@/styles/shopChrome";
 
-import { customerAccountKeys } from "../api/customerAccount.keys";
-import { listCustomerAddresses } from "../api/customerAccount.service";
 import { accountContainer } from "../constants/accountLayout";
 import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountQuickLinks, accountSupportLinks } from "../data/accountDashboardContent";
@@ -57,16 +46,9 @@ import { AccountBreadcrumb } from "./AccountBreadcrumb";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountStatusPill } from "./AccountStatus";
 
-function RecentOrderPanel() {
-  // Latest real order — shares the "customer-orders" key prefix, so placing an
-  // order or cancelling one refreshes this panel too.
-  const recentQuery = useQuery({
-    queryKey: ["customer-orders", "recent"],
-    queryFn: () => listOrders({ limit: 1, offset: 0 }),
-    staleTime: 60_000,
-    // One retry: a rejected request should not hold this panel on "Loading" for long.
-    retry: 1,
-  });
+type Dashboard = ReturnType<typeof useAccountDashboard>;
+
+function RecentOrderPanel({ recentQuery }: { recentQuery: Dashboard["recentQuery"] }) {
   const recent = recentQuery.data?.items?.[0];
   const order = recent ? toOrderSummaryView(recent) : null;
 
@@ -175,9 +157,7 @@ function ShortcutsPanel() {
   );
 }
 
-function AddressPanel() {
-  // Shares the address book's cache, so edits there update this panel.
-  const addresses = useApiQuery(customerAccountKeys.addresses(), listCustomerAddresses);
+function AddressPanel({ addresses }: { addresses: Dashboard["addresses"] }) {
   const saved = Array.isArray(addresses.data) ? addresses.data : [];
   const primary = saved.find((address) => address.isDefaultShipping) ?? saved[0];
   const name = primary
@@ -251,32 +231,8 @@ function HelpPanel() {
   );
 }
 
-function noopSubscribe() {
-  return () => {};
-}
-
 function DashboardContent() {
-  const user = useCurrentUser();
-  const router = useRouter();
-  const pathname = usePathname() || "/";
-  const firstName = user?.firstName?.trim() || user?.fullName?.trim().split(/\s+/)[0] || "";
-  // Read after hydration so the server and first client render agree.
-  const isNew = useSyncExternalStore(
-    noopSubscribe,
-    () => isNewAccount(user?.email),
-    () => false,
-  );
-
-  async function handleLogout() {
-    try {
-      await logoutCustomer();
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      endSession();
-      router.push(localizeHref("/", pathname));
-    }
-  }
+  const { firstName, isNew, recentQuery, addresses, logout: handleLogout } = useAccountDashboard();
 
   return (
     <>
@@ -295,11 +251,11 @@ function DashboardContent() {
 
         <div className={accountLayout}>
           <div className={accountCol}>
-            <RecentOrderPanel />
+            <RecentOrderPanel recentQuery={recentQuery} />
             <ShortcutsPanel />
           </div>
           <aside className={accountCol} aria-label="Address and help">
-            <AddressPanel />
+            <AddressPanel addresses={addresses} />
             <HelpPanel />
           </aside>
         </div>

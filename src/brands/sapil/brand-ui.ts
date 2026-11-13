@@ -17,5 +17,7 @@ export { BrandHead } from "./BrandHead";
 // --- catalog (listings, product page, search, collections) ---
 
 // --- bag, checkout, orders, tracking ---
+export { SapilCartPage as CartPageView } from "./pages/checkout/SapilCartPage";
+export { SapilCheckoutPage as CheckoutPageView } from "./pages/checkout/SapilCheckoutPage";
 
 // --- auth + account ---

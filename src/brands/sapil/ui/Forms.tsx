@@ -92,7 +92,7 @@ function Shell({
 }
 
 export type FieldProps = FieldShell &
-  Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className"> & {
+  Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className" | "prefix"> & {
     type?: "text" | "email" | "tel" | "number" | "password" | "search";
     /** fixed prefix box, e.g. "+971" (v9 `.phone b`) */
     prefix?: ReactNode;

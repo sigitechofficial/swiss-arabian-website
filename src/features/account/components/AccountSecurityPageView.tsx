@@ -2,36 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "@/components/ui/Toaster";
-import { changeCustomerPassword } from "@/features/auth/api/auth.service";
-import { endSession } from "@/lib/auth/endSession";
-import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { useChangePassword, type ChangePasswordValues } from "../hooks/useAccountPages";
 
 import { accountBtnPrimary, accountInputClass } from "../constants/accountForm";
 import { accountContainer } from "../constants/accountLayout";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountPageTitle } from "./AccountPageTitle";
-
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Enter your current password"),
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(1, "Confirm your new password"),
-  })
-  .refine((values) => values.newPassword === values.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  })
-  .refine((values) => values.newPassword !== values.currentPassword, {
-    message: "Choose a password you haven’t used here before",
-    path: ["newPassword"],
-  });
-
-type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 
 function PasswordField({
   id,
@@ -83,34 +60,14 @@ function PasswordField({
  * password change, so the shopper is signed out here and sent to sign in again.
  */
 export function AccountSecurityPageView() {
-  const router = useRouter();
-  const [done, setDone] = useState(false);
-
   const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ChangePasswordValues>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
-  });
-
-  async function onSubmit(values: ChangePasswordValues) {
-    try {
-      await changeCustomerPassword({
-        currentPassword: values.currentPassword,
-        newPassword: values.newPassword,
-      });
-      reset();
-      setDone(true);
-      toast("Password updated. Please sign in again.", "success");
-      endSession();
-      router.push("/login?returnTo=/account/profile");
-    } catch (error) {
-      toast(getUserFacingErrorMessage(error), "error");
-    }
-  }
+    form: {
+      register,
+      formState: { errors, isSubmitting },
+    },
+    done,
+    submit,
+  } = useChangePassword();
 
   return (
     <AccountPageShell>
@@ -126,7 +83,7 @@ export function AccountSecurityPageView() {
             Use at least 8 characters. You’ll be signed out on this and any other device.
           </p>
 
-          <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form className="mt-5 flex flex-col gap-4" onSubmit={submit} noValidate>
             <PasswordField
               id="currentPassword"
               label="Current password"

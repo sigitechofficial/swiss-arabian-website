@@ -7,6 +7,10 @@
  *   1. Run the kit:   SAPIL_KIT=1 npx next dev -p 3021      (or next start with SAPIL_KIT=1)
  *   2. Run the diff:  node scripts/sapil-visual-diff.mjs [--only=card,buttons] [--widths=390,1440] [--out=dir]
  *
+ * Page-level specs (bag drawer, checkout) compare against /sapil-kit/commerce, which renders the
+ * real Sapil page components with fixture data copied from the v9 mock (`kitPath`). `prepare`
+ * runs on the reference page, `kitPrepare` on the kit page, before either is measured.
+ *
  * Env:
  *   SAPIL_DESIGN_DIR  folder holding sapil-v9-*.html (default: the approved design folder)
  *   KIT_URL           default http://localhost:3021/sapil-kit
@@ -35,6 +39,7 @@ const DESIGN_DIR =
   process.env.SAPIL_DESIGN_DIR ||
   "C:/Users/DELL/Downloads/sapil/repo/sapil-Ahsan";
 const KIT_URL = process.env.KIT_URL || "http://localhost:3021/sapil-kit";
+const KIT_ORIGIN = new URL(KIT_URL).origin;
 const REF_PORT = Number(process.env.REF_PORT || 3022);
 const WIDTHS = (args.widths || "390,768,1280,1440").split(",").map(Number);
 const THRESHOLD = Number(args.threshold || 24);
@@ -93,6 +98,70 @@ const SPECS = [
     name: "crumbs",
     page: "sapil-v9-blog.html",
     find: `document.querySelector('.crumbs')`,
+  },
+  /* ——— bag drawer + checkout (pages, against /sapil-kit/commerce) ——— */
+  {
+    // the open drawer with Berry Crush ×1, laid out in the page flow at a fixed height
+    name: "drawer",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { document.querySelector('#bagBtn').click(); const d = document.querySelector('#drawer');
+      d.style.cssText = 'position:relative;inset:auto;transform:none;height:760px;box-shadow:none;margin-left:auto'; })()`,
+    find: `document.querySelector('#drawer')`,
+    kitPrepare: `(() => { const a = document.querySelector('[data-kit-wrap="drawer"] aside'); a.setAttribute('data-kit', 'drawer');
+      a.style.cssText = 'position:relative;inset:auto;transform:none;height:760px;box-shadow:none;margin-left:auto'; })()`,
+  },
+  {
+    name: "drawer-empty",
+    page: "sapil-v9-checkout.html",
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { document.querySelector('#bagBtn').click(); const d = document.querySelector('#drawer');
+      d.style.cssText = 'position:relative;inset:auto;transform:none;height:640px;box-shadow:none;margin-left:auto'; })()`,
+    find: `document.querySelector('#drawer')`,
+    kitPrepare: `(() => { const a = document.querySelector('[data-kit-wrap="drawer-empty"] aside'); a.setAttribute('data-kit', 'drawer-empty');
+      a.style.cssText = 'position:relative;inset:auto;transform:none;height:640px;box-shadow:none;margin-left:auto'; })()`,
+  },
+  {
+    // checkout heading: serif title, secure note, progress tracker (step 2 current)
+    name: "co-head",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelector('#coHead')`,
+  },
+  {
+    name: "co-method",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelectorAll('#stepDelivery fieldset')[2]`,
+  },
+  {
+    // order summary; on phones it is opened with the summary toggle first
+    name: "co-summary",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { if (getComputedStyle(document.querySelector('#summary')).display === 'none') document.querySelector('#sumToggle').click(); })()`,
+    find: `document.querySelector('#summary')`,
+  },
+  {
+    // payment step: review of the delivery details (form filled and submitted)
+    name: "co-review",
+    page: "sapil-v9-checkout.html",
+    cart: true,
+    kitPath: "/sapil-kit/commerce",
+    prepare: `(() => { const f = document.querySelector('#stepDelivery'), set = (n, v) => { f.elements[n].value = v; };
+      set('email', 'mariam@example.com'); set('phone', '50 123 4567'); set('name', 'Mariam Al Falasi'); set('emirate', 'Dubai');
+      set('area', 'Business Bay'); set('street', 'Bay Square Building 7'); set('apt', 'Apt 1204'); f.requestSubmit(); })()`,
+    find: `document.querySelector('#review')`,
+  },
+  {
+    name: "co-empty",
+    page: "sapil-v9-checkout.html",
+    kitPath: "/sapil-kit/commerce",
+    find: `document.querySelector('#coEmpty')`,
   },
 ];
 
@@ -266,8 +335,9 @@ async function refShot(browser, spec, width) {
 async function kitShot(browser, spec, width, refBox) {
   const pg = await browser.page(width);
   try {
-    await pg.goto(`${KIT_URL}?only=${spec.name}`);
+    await pg.goto(`${spec.kitPath ? KIT_ORIGIN + spec.kitPath : KIT_URL}?only=${spec.name}`);
     await pg.eval(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(FREEZE)}; document.head.append(s); })()`);
+    if (spec.kitPrepare) await pg.eval(spec.kitPrepare);
     // the kit element takes the reference element's width (the grid column / container it sits in)
     await pg.eval(`(() => { const el = document.querySelector('[data-kit="${spec.name}"]'); if (!el) return; el.style.width = '${refBox.w}px'; el.style.boxSizing = 'border-box';
       const f = v => ((v % 1) + 1) % 1; const r = el.getBoundingClientRect();
