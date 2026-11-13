@@ -270,8 +270,12 @@ export const cartEmptyState = "flex flex-col gap-2 pb-[clamp(2.5rem,5vw,4rem)]";
 export const cartEmptyHero =
   "mb-2 flex flex-col items-center rounded-[var(--radius-lg,4px)] border border-[var(--line)] bg-white px-6 py-10 text-center shadow-[0_8px_28px_rgba(0,0,0,0.04)]";
 
-/** Recovery rails carry the drawer's 22px gutter; pull them flush with the page column. */
-export const cartEmptyRails = "-ml-[22px] min-w-0";
+/**
+ * Recovery rails carry the drawer's 22px gutter; pull them flush with the page
+ * column on the reading side (logical margin: in Arabic a left margin pushed
+ * the rail past the screen edge and the page scrolled sideways).
+ */
+export const cartEmptyRails = "-ms-[22px] min-w-0";
 
 export const cartEmptyNote = "m-0 mb-3 text-[0.85rem] text-[rgb(33_33_33/0.62)]";
 
