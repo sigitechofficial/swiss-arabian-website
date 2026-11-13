@@ -33,11 +33,11 @@ export function AuthGuard({
   }, [bootstrapped, isAuthenticated, requireAuth, router, pathname]);
 
   if (!bootstrapped) {
-    return checking ?? <PageLoading label="Checking session…" fill />;
+    return checking ?? <PageLoading label="Checking session…" labelKey="session" fill />;
   }
 
   if (requireAuth && !isAuthenticated) {
-    return redirecting ?? <PageLoading label="Redirecting…" fill />;
+    return redirecting ?? <PageLoading label="Redirecting…" labelKey="redirecting" fill />;
   }
 
   return children;

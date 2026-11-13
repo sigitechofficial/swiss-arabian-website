@@ -10,10 +10,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function AccountWishlistPage() {
+export default async function AccountWishlistPage() {
+  const { t } = await routeTranslator();
   return (
     <Suspense fallback={<PageLoading label="Loading wishlist…" labelKey="wishlist" fill />}>
-      <AccountWishlistPageView title="Wishlist" />
+      <AccountWishlistPageView title={t("pages.title.wishlist")} />
     </Suspense>
   );
 }

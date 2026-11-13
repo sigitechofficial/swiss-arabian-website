@@ -3,7 +3,7 @@ import { PageLoading, VerifyPageView } from "@brand-ui";
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading…" />}>
+    <Suspense fallback={<PageLoading label="Loading…" labelKey="page" />}>
       <VerifyPageView />
     </Suspense>
   );

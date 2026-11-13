@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import { accountBtnPrimary } from "../constants/accountForm";
 import { useMarketingConsents } from "../hooks/useMarketingConsents";
@@ -11,11 +13,11 @@ import type {
   ConsentStatus,
 } from "../types/customerAccount";
 
-const CHANNELS: Array<{ channel: ConsentChannel; label: string }> = [
-  { channel: "EMAIL", label: "Email offers" },
-  { channel: "SMS", label: "SMS / text" },
-  { channel: "WHATSAPP", label: "WhatsApp" },
-  { channel: "PUSH", label: "Push notifications" },
+const CHANNELS: Array<{ channel: ConsentChannel; label: MessageKey }> = [
+  { channel: "EMAIL", label: "account.consent.email" },
+  { channel: "SMS", label: "account.consent.sms" },
+  { channel: "WHATSAPP", label: "account.consent.whatsapp" },
+  { channel: "PUSH", label: "account.consent.push" },
 ];
 
 function asStatus(value: string | undefined): ConsentStatus {
@@ -26,6 +28,7 @@ function asStatus(value: string | undefined): ConsentStatus {
 }
 
 export function AccountConsentsSection() {
+  const t = useShopCopy();
   const user = useCurrentUser();
   const { list, update } = useMarketingConsents();
   const [overrides, setOverrides] = useState<
@@ -43,12 +46,11 @@ export function AccountConsentsSection() {
   return (
     <div>
       <p className="max-w-[660px] text-[12px] text-sa-secondary">
-        Choose how Swiss Arabian can contact you about offers. Order updates
-        still go through transactional channels.
+        {t("account.consent.intro")}
       </p>
 
       {list.isPending ? (
-        <p className="mt-4 text-[12px] text-sa-secondary">Loading preferences…</p>
+        <p className="mt-4 text-[12px] text-sa-secondary">{t("account.consent.loading")}</p>
       ) : list.isError ? (
         <p className="mt-4 text-[12px] text-red-600">
           {getUserFacingErrorMessage(list.error)}
@@ -69,15 +71,14 @@ export function AccountConsentsSection() {
                       }))
                     }
                   />
-                  {label}
+                  {t(label)}
                 </label>
               </li>
             ))}
           </ul>
           {!user?.zoneId ? (
             <p className="mt-3 text-[12px] text-sa-secondary">
-              Consents save against your market zone. If nothing changes after
-              save, your account may be missing a zone.
+              {t("account.consent.noZone")}
             </p>
           ) : null}
           <button
@@ -96,7 +97,7 @@ export function AccountConsentsSection() {
                 .then(() => setOverrides({}));
             }}
           >
-            {update.isPending ? "Saving…" : "Save preferences"}
+            {update.isPending ? t("account.saving") : t("account.consent.save")}
           </button>
         </>
       )}

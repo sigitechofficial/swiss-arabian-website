@@ -16,6 +16,7 @@ import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { endSession } from "@/lib/auth/endSession";
 import { localizeHref } from "@/lib/i18n/localePath";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { customerAccountKeys } from "../api/customerAccount.keys";
 import { listCustomerAddresses } from "../api/customerAccount.service";
 import { listOrders } from "../api/customerOrders.service";
@@ -94,6 +95,7 @@ export function useChangePassword(
   options: { onDone?: () => void; onError?: (message: string) => void } = {},
 ) {
   const router = useLocaleRouter();
+  const copy = useShopCopy();
   const [done, setDone] = useState(false);
   const form = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -106,7 +108,7 @@ export function useChangePassword(
       form.reset();
       setDone(true);
       if (options.onDone) options.onDone();
-      else toast("Password updated. Please sign in again.", "success");
+      else toast(copy("account.security.updated"), "success");
       endSession();
       router.push("/login?returnTo=/account/profile");
     } catch (error) {

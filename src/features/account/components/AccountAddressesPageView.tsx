@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import {
   accountBtnGhost,
@@ -19,7 +22,6 @@ import {
   ADDRESS_COUNTRIES,
   addressBookSchema,
   addressFormToDto,
-  countryNameForCode,
   type AddressBookFormValues,
 } from "../schemas/addressBook.schema";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
@@ -30,6 +32,7 @@ import type {
   CreateCustomerAddressDto,
   StorefrontCustomerAddressView,
 } from "../types/customerAccount";
+import { countryLabel, regionLabel, regionSetLabels } from "../utils/addressDisplay";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountPageTitle } from "./AccountPageTitle";
 
@@ -42,13 +45,14 @@ function Field({
   error?: string;
   children: React.ReactNode;
 }) {
+  const t = useShopCopy();
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-sa-muted">
         {label}
       </span>
       {children}
-      {error ? <span className="mt-1 block text-[11px] text-red-600">{error}</span> : null}
+      {error ? <span className="mt-1 block text-[11px] text-red-600">{formErrorText(t, error)}</span> : null}
     </label>
   );
 }
@@ -93,8 +97,11 @@ function AddressForm({
     resolver: zodResolver(addressBookSchema),
     defaultValues: defaults,
   });
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const [countryCode, setCountryCode] = useState(defaults.countryCode);
   const regionSet = regionsForCountry(countryCode);
+  const regionText = regionSet ? regionSetLabels(regionSet, t) : null;
   const address1 = useWatch({ control, name: "address1" });
 
   return (
@@ -107,21 +114,21 @@ function AddressForm({
       noValidate
     >
       <p className="mb-5 text-[15px] font-semibold text-sa-primary">
-        {initial ? "Edit address" : "Add a new address"}
+        {initial ? t("address.edit") : t("address.addNew")}
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="First name" error={errors.firstName?.message}>
+        <Field label={t("account.firstName")} error={errors.firstName?.message}>
           <input className={accountInputClass} autoComplete="given-name" {...register("firstName")} />
         </Field>
-        <Field label="Last name" error={errors.lastName?.message}>
+        <Field label={t("account.lastName")} error={errors.lastName?.message}>
           <input className={accountInputClass} autoComplete="family-name" {...register("lastName")} />
         </Field>
         <div className="sm:col-span-2">
-          <Field label="Address" error={errors.address1?.message}>
+          <Field label={t("address.address")} error={errors.address1?.message}>
             <PlacesAddressInput
               className={accountInputClass}
-              placeholder="Start typing your street address"
+              placeholder={t("address.streetPlaceholder")}
               value={address1}
               countryCode={countryCode}
               onChange={(value) =>
@@ -166,11 +173,11 @@ function AddressForm({
           </Field>
         </div>
         <div className="sm:col-span-2">
-          <Field label="Apartment, suite, etc. (optional)">
+          <Field label={t("address.address2")}>
             <input className={accountInputClass} autoComplete="address-line2" {...register("address2")} />
           </Field>
         </div>
-        <Field label="Country" error={errors.countryCode?.message}>
+        <Field label={t("address.country")} error={errors.countryCode?.message}>
           <select
             className={accountSelectClass}
             autoComplete="country"
@@ -189,18 +196,18 @@ function AddressForm({
           >
             {ADDRESS_COUNTRIES.map((c) => (
               <option key={c.code} value={c.code}>
-                {c.name}
+                {countryLabel(c.code, locale, c.name)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label={regionSet?.label ?? "Region"}>
+        <Field label={regionText?.label ?? t("address.kind.region")}>
           {regionSet ? (
             <select className={accountSelectClass} autoComplete="address-level1" {...register("province")}>
-              <option value="">{regionSet.placeholder}</option>
+              <option value="">{regionText?.placeholder}</option>
               {regionSet.regions.map((region) => (
                 <option key={region} value={region}>
-                  {region}
+                  {regionLabel(countryCode, region, t)}
                 </option>
               ))}
             </select>
@@ -208,10 +215,10 @@ function AddressForm({
             <input className={accountInputClass} autoComplete="address-level1" {...register("province")} />
           )}
         </Field>
-        <Field label="City" error={errors.city?.message}>
+        <Field label={t("address.city")} error={errors.city?.message}>
           <input className={accountInputClass} autoComplete="address-level2" {...register("city")} />
         </Field>
-        <Field label="Phone (optional)" error={errors.phone?.message}>
+        <Field label={t("address.phoneOptional")} error={errors.phone?.message}>
           <Controller
             name="phone"
             control={control}
@@ -232,20 +239,20 @@ function AddressForm({
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
         <label className="flex cursor-pointer items-center gap-2 text-[13px] text-sa-primary">
           <input type="checkbox" className="size-4 accent-terra" {...register("isDefaultShipping")} />
-          Default shipping address
+          {t("address.defaultShippingAddress")}
         </label>
         <label className="flex cursor-pointer items-center gap-2 text-[13px] text-sa-primary">
           <input type="checkbox" className="size-4 accent-terra" {...register("isDefaultBilling")} />
-          Default billing address
+          {t("address.defaultBillingAddress")}
         </label>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button type="submit" className={accountBtnPrimary} disabled={submitting}>
-          {submitting ? "Saving…" : "Save address"}
+          {submitting ? t("account.saving") : t("address.save")}
         </button>
         <button type="button" className={accountBtnGhost} onClick={onCancel} disabled={submitting}>
-          Cancel
+          {t("account.cancel")}
         </button>
       </div>
     </form>
@@ -266,14 +273,17 @@ function AddressCard({
   onDelete: () => void;
   onDefault: () => void;
 }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const [confirming, setConfirming] = useState(false);
   const name =
     address.fullName?.trim() ||
     [address.firstName, address.lastName].filter(Boolean).join(" ").trim() ||
-    "Address";
+    t("address.address");
   const line = [address.address1, address.address2].filter(Boolean).join(", ");
-  const place = [address.city, address.province].filter(Boolean).join(", ");
-  const country = address.country || countryNameForCode(address.countryCode ?? "");
+  const province = address.province && address.countryCode ? regionLabel(address.countryCode, address.province, t) : address.province;
+  const place = [address.city, province].filter(Boolean).join(", ");
+  const country = countryLabel(address.countryCode, locale, address.country);
   const isDefault = address.isDefaultShipping || address.isDefaultBilling;
 
   return (
@@ -283,15 +293,15 @@ function AddressCard({
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <p className="mr-auto text-[15px] font-semibold text-sa-primary">{name}</p>
+        <p className="me-auto text-[15px] font-semibold text-sa-primary">{name}</p>
         {address.isDefaultShipping ? (
           <span className="rounded-full bg-terra/10 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-terra">
-            Default shipping
+            {t("address.defaultShipping")}
           </span>
         ) : null}
         {address.isDefaultBilling ? (
           <span className="rounded-full bg-section-soft px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-sa-secondary">
-            Default billing
+            {t("address.defaultBilling")}
           </span>
         ) : null}
       </div>
@@ -306,27 +316,27 @@ function AddressCard({
       <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-sa-border pt-4 text-[12.5px] font-semibold">
         {confirming ? (
           <>
-            <span className="font-normal text-sa-secondary">Remove this address?</span>
+            <span className="font-normal text-sa-secondary">{t("address.removeConfirm")}</span>
             <button
               type="button"
               className="text-[#b4483f] hover:underline disabled:opacity-50"
               disabled={busy}
               onClick={onDelete}
             >
-              Yes, remove
+              {t("address.yesRemove")}
             </button>
             <button
               type="button"
               className="text-sa-secondary hover:text-sa-primary"
               onClick={() => setConfirming(false)}
             >
-              Keep
+              {t("address.keep")}
             </button>
           </>
         ) : (
           <>
             <button type="button" className="text-terra hover:underline disabled:opacity-50" disabled={busy} onClick={onEdit}>
-              Edit
+              {t("account.edit")}
             </button>
             {!address.isDefaultShipping || !address.isDefaultBilling ? (
               <button
@@ -335,16 +345,16 @@ function AddressCard({
                 disabled={busy}
                 onClick={onDefault}
               >
-                Set as default
+                {t("address.setDefault")}
               </button>
             ) : null}
             <button
               type="button"
-              className="ml-auto text-sa-secondary hover:text-[#b4483f] disabled:opacity-50"
+              className="ms-auto text-sa-secondary hover:text-[#b4483f] disabled:opacity-50"
               disabled={busy}
               onClick={() => setConfirming(true)}
             >
-              Remove
+              {t("account.remove")}
             </button>
           </>
         )}
@@ -354,6 +364,7 @@ function AddressCard({
 }
 
 export function AccountAddressesPageView() {
+  const t = useShopCopy();
   const { list, create, update, remove, setDefault } = useCustomerAddresses();
   const [mode, setMode] = useState<"idle" | "create" | string>("idle");
 
@@ -363,22 +374,22 @@ export function AccountAddressesPageView() {
   return (
     <AccountPageShell>
       <AccountPageTitle
-        title="Addresses"
-        subtitle="Save shipping and billing addresses for faster checkout."
+        title={t("pages.title.addresses")}
+        subtitle={t("address.subtitle")}
       />
       <div className={`${accountContainer} pb-20`}>
         {list.isPending ? (
-          <PageLoading label="Loading your addresses…" />
+          <PageLoading label={t("address.loading")} />
         ) : list.isError ? (
           <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10 text-center">
-            <p className="text-[14px] text-sa-primary">We couldn’t load your addresses.</p>
+            <p className="text-[14px] text-sa-primary">{t("address.loadFailed")}</p>
             <p className="mt-1 text-[12.5px] text-sa-secondary">{getUserFacingErrorMessage(list.error)}</p>
             <button
               type="button"
               onClick={() => void list.refetch()}
               className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
             >
-              Try again
+              {t("tryAgain")}
             </button>
           </div>
         ) : (
@@ -391,12 +402,12 @@ export function AccountAddressesPageView() {
                     <circle cx="12" cy="9.5" r="2.5" />
                   </svg>
                 </span>
-                <p className="mt-4 text-[15px] font-semibold text-sa-primary">No saved addresses yet</p>
+                <p className="mt-4 text-[15px] font-semibold text-sa-primary">{t("address.empty")}</p>
                 <p className="mt-1 max-w-sm text-[13px] text-sa-secondary">
-                  Add a delivery address and we’ll fill it in for you at checkout.
+                  {t("address.emptyText")}
                 </p>
                 <button type="button" className={`${accountBtnPrimary} mt-6`} onClick={() => setMode("create")}>
-                  + Add an address
+                  {t("address.addAn")}
                 </button>
               </div>
             ) : (
@@ -444,7 +455,7 @@ export function AccountAddressesPageView() {
                     className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-sa-border bg-transparent text-[13px] font-semibold text-terra transition-colors hover:border-terra hover:bg-surface disabled:opacity-40"
                   >
                     <span className="text-[22px] leading-none" aria-hidden="true">+</span>
-                    Add a new address
+                    {t("address.addNew")}
                   </button>
                 )}
               </div>

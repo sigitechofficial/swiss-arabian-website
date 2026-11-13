@@ -43,7 +43,8 @@ import { accountContainer } from "../constants/accountLayout";
 import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/useEmployeeBenefitsAccount";
 import { accountQuickLinks, accountSupportLinks } from "../data/accountDashboardContent";
 import { brandLinkEnabled } from "@/lib/brand/features";
-import { countryNameForCode } from "../schemas/addressBook.schema";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { countryLabel, regionLabel } from "../utils/addressDisplay";
 import { AccountBreadcrumb } from "./AccountBreadcrumb";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountStatusPill } from "./AccountStatus";
@@ -165,6 +166,7 @@ function ShortcutsPanel() {
 
 function AddressPanel({ addresses }: { addresses: Dashboard["addresses"] }) {
   const t = useShopCopy();
+  const locale = useShopLocale();
   const saved = Array.isArray(addresses.data) ? addresses.data : [];
   const primary = saved.find((address) => address.isDefaultShipping) ?? saved[0];
   const name = primary
@@ -173,8 +175,13 @@ function AddressPanel({ addresses }: { addresses: Dashboard["addresses"] }) {
   const lines = primary
     ? [
         [primary.address1, primary.address2].filter(Boolean).join(", "),
-        [primary.city, primary.province].filter(Boolean).join(", "),
-        primary.country || countryNameForCode(primary.countryCode ?? ""),
+        [
+          primary.city,
+          primary.province && primary.countryCode ? regionLabel(primary.countryCode, primary.province, t) : primary.province,
+        ]
+          .filter(Boolean)
+          .join(", "),
+        countryLabel(primary.countryCode, locale, primary.country),
       ].filter(Boolean)
     : [];
 
