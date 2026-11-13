@@ -8,6 +8,7 @@ import { useMarketSettings } from "@/features/markets/hooks/useMarketSettings";
 import { useStorefrontMarkets } from "@/features/markets/hooks/useStorefrontMarkets";
 import { useNavigation } from "@/features/navigation";
 import { GiftChoiceHost } from "@/features/promotions/components/GiftChoiceHost";
+import { SapilGiftChoiceDialog } from "../bag/SapilGiftChoiceDialog";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useIsAuthenticated } from "@/hooks/useCurrentUser";
 import { getBrand, localized } from "@/lib/brand";
@@ -146,7 +147,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
       <SapilSearchDialog />
       <SapilToastHost />
       <SapilBagDrawer />
-      <GiftChoiceHost />
+      <GiftChoiceHost Modal={SapilGiftChoiceDialog} />
     </div>
   );
 }

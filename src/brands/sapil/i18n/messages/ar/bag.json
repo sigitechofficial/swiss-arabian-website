@@ -51,5 +51,16 @@
   "pageAmountDue": "المبلغ المستحق",
   "pageTaxIncluded": "يشمل {amount} {label}",
   "pageTaxAdded": "{label}",
-  "pageSecure": "دفع آمن"
+  "pageSecure": "دفع آمن",
+  "giftKicker": "هدية مجانية",
+  "giftTitle": "هدية",
+  "giftAccent": "لك.",
+  "giftLede": "اختر واحدة. يمكنك تغييرها قبل الدفع.",
+  "giftChoices": "خيارات الهدية المجانية",
+  "giftSelect": "اختيار",
+  "giftLater": "ليس الآن",
+  "giftUnavailable": "هذه الهدية المجانية غير متاحة.",
+  "giftRemoved": "أُزيلت هذه الهدية المجانية.",
+  "giftIneligible": "لم يعد هذا العرض يتضمن هدية مجانية.",
+  "giftFailed": "تعذّر تحديث هديتك المجانية. حاول مرة أخرى."
 }
