@@ -70,3 +70,10 @@ cards, actions), `orderParts.tsx` (steps, frozen totals, lines, address), `Track
 
 - Sapil care contact (WhatsApp / phone) for the help card.
 - Should guest confirmations link to `/track/{number}` (current) or show tracking inline?
+
+## Review 2 (2026-11-13)
+
+- The "Confirmed" step hint reads "We’ve accepted your order" (was "Payment confirmed", wrong for
+  cash on delivery); Arabic updated.
+- Guest confirmation → `/track/{number}` works (checked live after a cash-on-delivery order).
+- Confirmation / tracking open in English after an Arabic checkout (see `bag-checkout.md`).

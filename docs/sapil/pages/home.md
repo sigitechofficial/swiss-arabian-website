@@ -57,8 +57,17 @@ See `docs/sapil/pages/shell.md` for the table (hero intro and section heads).
 - CMS section headings show as the eyebrow; the v9 headline (e.g. "Just landed, *still fizzing.*") stays as translated Sapil wording, because the CMS headings are short labels ("New arrivals").
 - Price-edit shelf chips (price bands with counts) show only when every product under the ceiling is loaded (first listing page); otherwise the count line and the shelf show without chips. `facets.priceTiers` could drive tier chips once the shared listing type parses it (catalog area).
 - Gift sets use the bottle zoom (1.62) on cards: the card summary has no product kind yet (`.card.gift` needs it).
-- Price-edit links go to `/products?maxPrice=…` until the price-edit pages exist (catalog area).
+- Price-edit links (shelf CTA, other tiers, bundles promo tile, "Shop by" chip) open the price edit `/products?under=N`. The shelf's price-band chips stay plain `minPrice` / `maxPrice` filters.
 
 ## Local data
 
 Backend branch instance `http://127.0.0.1:3012` (demo seed: Sapil UAE `SAPIL_URD1`, 85 products, 14 collections, published 10-section home). Fragrance notes and shoppable video are not curated for Sapil yet: those two sections render nothing. The header menu has no children yet (menus not bound by the seed), so the "Shop by" chips are empty.
+
+## Review 2 (2026-11-13)
+
+- Cards: `HomeProductTile` removed; rails, mood band (white tiles via `tile`), search use `SapilProductCard`.
+- Accessibility: collection-story cards and price-edit shelf tags have names that include their
+  visible text (Lighthouse `label-content-name-mismatch`); home a11y 97 → 100.
+- Checked live (390 / 768 / 1280, en + ar): no horizontal scroll, RTL mirrored (doors, rails, arrows,
+  price tags), no console errors; React commits: 5 in 10 s idle (announcement rotation + doors), no loop.
+- Performance: see `docs/sapil/PERFORMANCE.md` (home JS 770 → 409 KB, TBT 2.9 s → 0.44 s, CLS 0.106 → 0.001).

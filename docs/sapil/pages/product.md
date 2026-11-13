@@ -81,3 +81,10 @@ The toolbar fixture uses v9's facet titles (Collection, Highlights, Price, For, 
 ## Open questions
 
 - Gender field on products; product FAQ source; bundle data; review write flow on the page.
+
+## Review 2 (2026-11-13)
+
+- Live: add to bag opens the drawer with focus inside, Escape closes it and returns focus to "Add to
+  bag"; en + ar, no horizontal scroll. Lighthouse 68 (was 42), a11y 100, TBT 369 ms.
+- The only console error is the `you-may-also-like` merch rail 404 (Swiss Arabian slug; Sapil has
+  no such rail yet — data, or make the slug per brand).

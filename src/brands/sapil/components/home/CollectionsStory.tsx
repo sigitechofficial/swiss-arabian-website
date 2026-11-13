@@ -51,18 +51,10 @@ export function CollectionsStory({ heading, text, cards }: { heading: string | n
         className="flex gap-[22px] overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-[12px] pb-[8px] px-[max(var(--sapil-gut),calc((100vw-var(--sapil-wrap))/2+var(--sapil-gut)))] scroll-px-[max(var(--sapil-gut),calc((100vw-var(--sapil-wrap))/2+var(--sapil-gut)))] max-900:gap-[14px]"
       >
         {cards.map((c) => {
-          const label = [
-            c.title,
-            c.count != null ? t("home.collectionCount", { count: c.count }) : null,
-            c.fromPrice != null && c.currency ? t("home.fromPrice", { price: price(c.fromPrice, c.currency) }) : null,
-          ]
-            .filter(Boolean)
-            .join(", ");
           return (
             <SapilLink
               key={c.id}
               href={c.href}
-              aria-label={label}
               style={{ "--c": tintValue(c.color) } as CSSProperties}
               className="group/cc flex-[0_0_clamp(270px,28vw,400px)] h-[clamp(380px,60vh,540px)] rounded-[32px] bg-[var(--c)] relative overflow-hidden p-[26px] flex flex-col justify-between text-start snap-start [transition:transform_.5s_var(--sapil-ease)] hover:[transform:translateY(-8px)] max-900:flex-[0_0_80vw] max-900:h-[440px] max-900:rounded-[24px] max-900:p-[22px]"
             >

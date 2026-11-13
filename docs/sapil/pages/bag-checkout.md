@@ -138,3 +138,18 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
 - Should the drawer show the standard delivery fee from `GET /storefront/markets` as an
   estimate (it would not be part of the API total)?
 - Courier notes and newsletter consent at checkout (backend fields).
+
+## Review 2 (2026-11-13)
+
+- End to end on the build (en at 1440, ar at 390): product → add (drawer) → bag page → guest
+  checkout (contact, address, standard delivery) → payment list (Stripe card / Apple Pay / Google
+  Pay, Paymob card, Telr, test method, cash on delivery) → **cash on delivery order placed** →
+  confirmation → tracking. All pass.
+- Return screens are Sapil views (see above); `SapilPaymentScreens.test.tsx` covers cancel (gateway
+  error, Arabic, no order), declined success, Tabby refusal.
+- Big totals use the language's currency sign on `/ar` (`د.إ.`, was "AED 63" in Arabic text).
+- Bag / checkout reserve 70vh while the bag rehydrates (CLS at 390: 0.14 → 0.05).
+- **Language through checkout (platform, open):** `/checkout`, `/order-confirmation`, `/track`,
+  `/login`, `/register` are never locale-prefixed by `localizeHref`, so an Arabic shopper who
+  starts checkout from the drawer lands on the English checkout, and the confirmation after an
+  `/ar/checkout` order is English. `/ar/…` versions of these routes render correctly. Product decision.

@@ -56,7 +56,7 @@ Last run (Chromium 1217, puppeteer-core, % of pixels differing; Sapil build on t
 |---|---|---|---|---|---|
 | announcement `.announce` | 0.00 | 0.00 | 0.00 | 0.00 | `**bold**` in the CMS message |
 | header `.hdr` | 0.26 | 0.13 | 1.45* | 0.02 | *menu button shown at ≤1280 (see below) |
-| "Shop by" `.subnav` | 7.03 | 6.72 | 4.03 | 3.59 | same chips/text; chip edges anti-alias differently (sub-pixel x offset of the row) |
+| "Shop by" `.subnav` | 0.00 | 0.00 | 0.00 | 0.00 | was 7.03 / 6.72 / 4.03 / 3.59, documented as anti-aliasing; it was a bug: `isCurrentHref("#…", "/")` marked every in-page chip current (ink ring). Fixed in review 2 |
 | footer | 7.46 | 0.55 | 5.54 | 5.29 | static columns match; newsletter line without "once a fortnight", legal row (v9 concept note) |
 | hero intro `.d-intro` | 20.18 | 26.75 | 10.11 | 9.23 | data-driven: stats from the API; the eyebrow wraps one line earlier with self-hosted Poppins (text width sits exactly on the column edge), shifting what follows |
 | `#new .sec-head` | 0.00 | 0.00 | 0.03 | 0.00 | |
@@ -81,3 +81,24 @@ Data-driven parts (rails, doors, collection cards, mood, bundles, shelf, footer 
 - A dedicated CMS menu (or menu handle) for the "Shop by" row.
 - Newsletter → Sapil's CRM / Insider consent (no provider wired for any brand yet).
 - Shared route metadata still uses Swiss Arabian wording from `src/messages` (e.g. `pages.blog.description`, serialized page messages) — outside this area, needs per-brand page metadata.
+
+## Review 2 (2026-11-13)
+
+- Full visual diff re-run (`REF_URL=file:///…/sapil-Ahsan`, Sapil build on :3042): every row of the
+  table above reproduced except "Shop by" (bug fixed, now 0.00). Footer and hero intro differences
+  were inspected image by image: footer = copy (no "once a fortnight", no concept note / "All
+  concepts" link), hero intro = the eyebrow wraps at the column edge with our Poppins, shifting the
+  rest by one line, plus API stats. Both intended.
+- The announcement and "Shop by" rows now hold their height while their data loads (CLS 0.105 →
+  0.001 on every page; `SapilChrome.test.tsx`).
+- The "Under AED 99" chip opens the price edit (`/products?under=99`, v9 under-99 page), not a
+  plain `maxPrice` filter.
+- Search dialog cards are `SapilProductCard`; the native blue search-clear button is hidden.
+- Page wrappers no longer render a second `<main>` inside the shell's.
+- Breadcrumbs are labelled from `content.breadcrumb` on every page (was English on `/ar`).
+- `--sapil-muted` is #6f665b (v9 #7a7166 failed AA at 3.9–4.3:1 on paper / sand / pastels);
+  inside the diff threshold. **Needs design sign-off.**
+- Keyboard: skip link → logo → menu → search → account → bag → chips in order with a visible ring;
+  phone menu and search dialog trap focus, Escape closes and returns focus (checked in the build).
+- Open: the rotating announcement has no pause control (WCAG 2.2.2) and announces each message
+  (`aria-live`); v9 has no control either. Decide whether to keep rotation.

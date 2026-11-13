@@ -90,3 +90,13 @@ Loyalty / rewards, subscriptions, employee benefits and gift box are off in
   the order detail links to the returns page).
 - Social sign-in buttons (`env.flags.oauth`) are not rendered on Sapil.
 - Region and country names in address forms come from `regionsByCountry` (English).
+
+## Review 2 (2026-11-13)
+
+- Live: sign-in labels, empty submit (inline errors + focus on the first), wrong password (inline
+  `role="alert"`), register validation, forgot password → reset page, verify page, signed-out
+  `/account/*` → `/login?returnTo=…`. All pass.
+- Forgot password puts the email in the reset URL (`?identifier=…`, shared hook) — privacy note for
+  the platform.
+- From `/ar/login`, "Create account" opens the **English** `/register` (transactional paths are not
+  locale-prefixed; see `docs/multibrand/PROGRAM.md`).

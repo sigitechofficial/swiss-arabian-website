@@ -92,7 +92,7 @@ Each default is reversible. It is used only so the work isn't blocked.
   - `notFound()` / client 404 note above; `/en/...` addresses now 301 to the unprefixed one (before: 404).
 - **Visual diff, larger numbers:**
   - hero intro (real data and font wrap)
-  - shell "Shop by" row and footer (intended differences)
+  - ~~shell "Shop by" row~~ (was a current-chip bug, now 0.00 — reviewer 2); footer copy (intended)
   - checkout empty bag (no demo "sample bag")
 
 ## Local Sapil test backend
@@ -132,3 +132,8 @@ The `:3002` API runs the other chat's code. Sapil development uses the `feat/sap
   - Swiss Arabian check: home, /products, a collection (+ page 2), a product (en + ar), cart, checkout, login, register, /ar, /faq, /blog, /stores, /track, robots, 404 — HTML (head tags, visible text, links, labels) identical to `feat/homepage-start-from-storefront` apart from the intended changes (canonical origin = storefront host, `/en/…` → 301, 404 title "Page not found – Swiss Arabian UAE").
   - Backend / admin `feat/sapil-cms` review: see the reviewer report (patches for the collection-summary cache, best-seller payment status and the demo seed's collection guard).
 - **2026-11-13 (later):** All three Sapil page branches are merged. Conflicts resolved: one wishlist hook, one collections hook, combined i18n areas and diff specs, the market delivery types. The shell now renders `SapilBagDrawer`. Next: the two reviewer agents, then the final UI check of both sites.
+- **2026-11-13 (reviewer 2, Sapil, branch `review/sapil`):**
+  - Closed: all Sapil cards on `SapilProductCard` (home rails, mood band with white tiles, search, wishlist); payment return screens in Sapil wording (en + ar) on extracted hooks (`usePaymentReturn`); Sapil bundle isolation (named `@brand-ui` exports + `src/brands/sapil/package.json` `sideEffects`: home JS 770 → 409 KB); no layout shift from the chrome (CLS 0.105 → 0.001); AA contrast (`--sapil-muted` #6f665b, design sign-off pending); price-edit links → `/products?under=N`; "Shop by" current-chip bug; nested `<main>`; localised breadcrumbs and Arabic currency sign.
+  - Lighthouse (mobile, median of 3): home 41 → 65, shop 46 → 64, collection 55 → 66, product 42 → 68; a11y 100 on all four. Details: `docs/sapil/PERFORMANCE.md`.
+  - Flows checked on the build (en + ar): browse, filter / sort, product, drawer, bag, guest cash-on-delivery order, confirmation, tracking, sign-in / register / forgot / reset / verify, account guard, search, language and market switchers, 404, API failure, empty states; no horizontal scroll at 390 / 768 / 1280.
+  - Open for product: Arabic shoppers lose Arabic on checkout / sign-in / tracking (transactional paths unprefixed); the muted colour change; rotating announcement without a pause control.

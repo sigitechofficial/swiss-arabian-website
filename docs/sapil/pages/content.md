@@ -48,3 +48,9 @@ The blog has a v9 design; its breadcrumb is covered by the existing `crumbs` kit
 - Blog URL: keep `/blog` or Shopify's `/blogs/news` (plan decision 5).
 - Sapil FAQ content: until Sapil publishes an FAQ page per market, `/faq` shows the help panel.
 - `OfferShop` redesign.
+
+## Review 2 (2026-11-13)
+
+- Route meta descriptions (blog, collections, track, stores, FAQ) name the deployment's brand
+  (`{brand}`); the Sapil build's HTML has no Swiss Arabian text, asset or Insider id.
+- Blog / FAQ / collections checked at 390 / 768 / 1280, en + ar: no horizontal scroll, RTL.
