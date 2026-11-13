@@ -52,7 +52,8 @@ export function RailButtons({
     if (!rail || !first) return;
     const rtl = getComputedStyle(rail).direction === "rtl";
     const step = (first.getBoundingClientRect().width + gap) * 2;
-    rail.scrollBy({ left: (forward ? step : -step) * (rtl ? -1 : 1), behavior: "smooth" });
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rail.scrollBy({ left: (forward ? step : -step) * (rtl ? -1 : 1), behavior: reduce ? "auto" : "smooth" });
   };
 
   return (

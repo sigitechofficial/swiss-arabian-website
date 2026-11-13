@@ -319,7 +319,7 @@ function PriceEditView({
           chipsLabel={t("catalog.tiersLabel")}
           onChip={(value) => {
             listing.toolbar.onToggle("price", value);
-            document.querySelector("[data-sapil-toolbar]")?.scrollIntoView({ behavior: "smooth" });
+            document.querySelector("[data-sapil-toolbar]")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
           }}
           ctaLabel={t("catalog.tierShopAll", { count: listing.total })}
           ctaHref="#products"
