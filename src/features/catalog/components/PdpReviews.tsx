@@ -15,10 +15,10 @@ import { useReviewsCopy } from "../i18n/reviewsCopy";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   createCustomerReview,
-  fetchProductReviews,
   markReviewHelpful,
   reportReview,
 } from "../api/reviews.service";
+import { usePdpReviewList } from "../hooks/usePdpReviewList";
 import { writeReviewSchema, type WriteReviewValues } from "../schemas/review.schema";
 import type {
   ReviewSort,
@@ -171,55 +171,10 @@ export function PdpReviews({
   const display = reviews?.display ?? DEFAULT_REVIEW_DISPLAY;
   const reviewCount = summary?.reviewCount ?? 0;
 
-  const [sort, setSort] = useState<ReviewSort>(reviews?.sort ?? "useful");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [starFilter, setStarFilter] = useState<number | null>(null);
-  const [items, setItems] = useState<StorefrontPublicReview[]>(reviews?.items ?? []);
-  const [total, setTotal] = useState(reviews?.total ?? 0);
-  const [shown, setShown] = useState(FIRST_ROW);
-  const [loading, setLoading] = useState(false);
+  const list = usePdpReviewList(productId, reviews, { firstRow: FIRST_ROW, nextRow: NEXT_ROW });
+  const { sort, verifiedOnly, starFilter, total, shown, loading, applyFilters, viewMore, visible } = list;
   const [reading, setReading] = useState<StorefrontPublicReview | null>(null);
   const [writing, setWriting] = useState(false);
-
-  async function load(next: { sort: ReviewSort; verified: boolean; rating: number | null }, offset = 0) {
-    setLoading(true);
-    try {
-      const page = await fetchProductReviews(
-        productId,
-        { sort: next.sort, verified: next.verified, rating: next.rating, offset, limit: 24 },
-        market,
-      );
-      setItems((prev) => (offset === 0 ? page.items : [...prev, ...page.items]));
-      setTotal(page.total);
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function applyFilters(next: { sort?: ReviewSort; verified?: boolean; rating?: number | null }) {
-    const value = {
-      sort: next.sort ?? sort,
-      verified: next.verified ?? verifiedOnly,
-      rating: next.rating === undefined ? starFilter : next.rating,
-    };
-    setSort(value.sort);
-    setVerifiedOnly(value.verified);
-    setStarFilter(value.rating);
-    setShown(FIRST_ROW);
-    void load(value);
-  }
-
-  async function viewMore() {
-    const nextShown = shown + NEXT_ROW;
-    if (nextShown > items.length && items.length < total) {
-      await load({ sort, verified: verifiedOnly, rating: starFilter }, items.length);
-    }
-    setShown(nextShown);
-  }
-
-  const visible = items.slice(0, shown);
   const breakdown = summary?.ratingBreakdown;
 
   return (

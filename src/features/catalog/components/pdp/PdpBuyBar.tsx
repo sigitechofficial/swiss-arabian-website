@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { setQuantityOptimistic, useAddToCart } from "@/features/cart";
-import { atStockLimit, fullLineMessage } from "@/features/cart/utils/stockLimit";
+import { fullLineMessage } from "@/features/cart/utils/stockLimit";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { StockAlertButton } from "./StockAlertButton";
 import { buySlot, pdpAdd, pdpBuy, pdpBuyDocked, pdpQty, pdpQtyBtn, pdpQtyValue, pdpStatus, pdpWish } from "@/styles/pdpChrome";
 import type { CartLine } from "@/stores/useCartStore";
-import { useCartStore } from "@/stores/useCartStore";
 import type { CatalogProduct } from "../../constants/catalogProducts";
 import { useResetOnChange } from "@/hooks/useResetOnChange";
+import { useProductPurchase } from "../../hooks/useProductPurchase";
 
 type PdpBuyBarProps = {
   product: CatalogProduct;
@@ -20,21 +19,16 @@ type PdpBuyBarProps = {
 
 export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProps) {
   const copy = useShopCopy();
-  const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
   const [status, setStatus] = useState("");
   const [buyDocked, setBuyDocked] = useState(false);
   const [buyBarHeight, setBuyBarHeight] = useState<number | null>(null);
   const buySlotRef = useRef<HTMLDivElement>(null);
   const buyBarRef = useRef<HTMLDivElement>(null);
-  const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
-  const { addToCart } = useAddToCart();
-  const displayQty = cartLine ? cartLine.quantity : quantity;
-  const needsAlert =
-    product.price == null || product.isSellable === false || product.inStock === false;
+  const purchase = useProductPurchase(product, cartLine);
+  const { displayQty, needsAlert } = purchase;
 
   useResetOnChange(product.slug, () => {
-    setQuantity(1);
     setWished(false);
     setStatus("");
   });
@@ -99,19 +93,8 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               className={pdpQtyBtn}
               type="button"
               aria-label="Decrease quantity"
-              disabled={displayQty <= 1}
-              onClick={() => {
-                if (cartLine) {
-                  const next = Math.max(1, cartLine.quantity - 1);
-                  if (cartLine.remote || cartLine.cartItemId) {
-                    setQuantityOptimistic(cartLine.variantId, next);
-                  } else {
-                    updateLocalQuantity(cartLine.variantId, next);
-                  }
-                  return;
-                }
-                setQuantity((current) => Math.max(1, current - 1));
-              }}
+              disabled={!purchase.canDecrease}
+              onClick={purchase.decrease}
             >
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                 <path d="M4 10h12" />
@@ -124,19 +107,8 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               className={pdpQtyBtn}
               type="button"
               aria-label="Increase quantity"
-              disabled={cartLine ? atStockLimit(cartLine) : false}
-              onClick={() => {
-                if (cartLine) {
-                  const next = Math.min(9, cartLine.quantity + 1);
-                  if (cartLine.remote || cartLine.cartItemId) {
-                    setQuantityOptimistic(cartLine.variantId, next);
-                  } else {
-                    updateLocalQuantity(cartLine.variantId, next);
-                  }
-                  return;
-                }
-                setQuantity((current) => Math.min(9, current + 1));
-              }}
+              disabled={!purchase.canIncrease}
+              onClick={purchase.increase}
             >
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                 <path d="M10 4v12M4 10h12" />
@@ -152,21 +124,12 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
               className={pdpAdd}
               type="button"
               onClick={() => {
-                if (cartLine?.maxQuantity != null && atStockLimit(cartLine)) {
-                  setStatus(fullLineMessage(cartLine.maxQuantity));
-                  return;
-                }
-                void addToCart({
-                  sku: product.sku,
-                  variantId: product.variantId,
-                  slug: product.slug,
-                  title: product.title,
-                  imageUrl: product.imageUrl,
-                  price: product.price,
-                  currency: product.currency,
-                  quantity: cartLine ? 1 : quantity,
-                });
-                setStatus(`Added ${product.title} to your bag.`);
+                const result = purchase.add();
+                setStatus(
+                  result.status === "full"
+                    ? fullLineMessage(result.maxQuantity)
+                    : `Added ${product.title} to your bag.`,
+                );
               }}
             >
               {product.price != null ? `${copy("addToBag")} · ${formatMoney(product.price, product.currency)}` : copy("addToBag")}

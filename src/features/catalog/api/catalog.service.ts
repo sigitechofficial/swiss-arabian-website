@@ -120,6 +120,8 @@ export const catalogKeys = {
 
 type ApiPriceSummary = {
   price: number | string | null;
+  /** Full price before a markdown, when the market has one. */
+  compareAtPrice?: number | string | null;
   currencyCode?: string | null;
   hasValidPrice?: boolean;
 };
@@ -157,6 +159,7 @@ type ApiCatalogProduct = {
   houseCollection?: string | null;
   featuredNote?: string | null;
   fragranceFamilyCodes?: string[] | null;
+  tileColor?: string | null;
 };
 
 type ApiProductDetailVariant = {
@@ -184,6 +187,7 @@ type ApiProductDetailData = {
     seoDescription?: string | null;
     brandCode?: string | null;
     brandName?: string | null;
+    tileColor?: string | null;
     pdpMetafields?: Record<string, unknown> | null;
     prVideo?: { url?: string | null; name?: string | null } | null;
   };
@@ -222,6 +226,20 @@ function parseMoney(value: number | string | null | undefined): number | null {
   if (value == null || value === "") return null;
   const n = typeof value === "number" ? value : Number(String(value).trim());
   return Number.isFinite(n) ? n : null;
+}
+
+/** The struck-out full price, only when it is really above the selling price. */
+function compareAtPrice(
+  summary: ApiPriceSummary | null | undefined,
+  price: number | null,
+): number | null {
+  const full = parseMoney(summary?.compareAtPrice);
+  return full != null && price != null && full > price ? full : null;
+}
+
+function tileColorKey(value: string | null | undefined): string | null {
+  const key = value?.trim().toLowerCase();
+  return key ? key : null;
 }
 
 function mapGalleryUrls(
@@ -284,6 +302,8 @@ function mapProduct(raw: ApiCatalogProduct): ProductDetail {
     availableQty: availableQty ?? undefined,
     blockReasons: raw.blockReasons ?? undefined,
     tags: Array.isArray(raw.tags) ? raw.tags : undefined,
+    tileColor: tileColorKey(raw.tileColor),
+    compareAtPrice: compareAtPrice(raw.priceSummary, price),
     ...mapListingFacetFields(raw),
   };
 }
@@ -390,6 +410,8 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
     blockReasons: raw.blockReasons ?? variant?.blockReasons ?? undefined,
     brandName,
     collections,
+    tileColor: tileColorKey(product.tileColor),
+    compareAtPrice: compareAtPrice(priceSummary, price),
     pdpMetafields: pickPdpMetafields(raw.pdpMetafields ?? product.pdpMetafields),
     prVideo: pickPrVideo(raw),
     shippingPromise: parseShippingPromise(raw.shippingPromise),
