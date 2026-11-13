@@ -974,5 +974,16 @@
   "loyalty.rewardsTier": "فئة المكافآت",
   "loyalty.nextTier": "الفئة التالية",
   "loyalty.tierHistory": "سجل الفئات",
-  "loyalty.tierHistoryLoading": "جارٍ تحميل سجل الفئات…"
+  "loyalty.tierHistoryLoading": "جارٍ تحميل سجل الفئات…",
+  "loyalty.order.used": "استخدمت",
+  "loyalty.order.returned": "أُعيدت بعد الاسترداد",
+  "loyalty.order.net": "صافي النقاط المستخدمة",
+  "loyalty.order.earned": "كسبت",
+  "loyalty.order.adjusted": "عُدّلت بعد الاسترداد",
+  "loyalty.order.current": "المكافأة الحالية من هذا الطلب",
+  "loyalty.order.pointsAvailable": "{points} نقطة متاحة",
+  "loyalty.order.ready": "هذه النقاط جاهزة للاستخدام.",
+  "loyalty.order.pointsPending": "{points} نقطة معلّقة",
+  "loyalty.order.qualifies": "ستصبح نقاطك متاحة بعد تأهل هذا الطلب.",
+  "loyalty.order.availableFrom": "متاحة اعتبارًا من {date} تقريبًا"
 }

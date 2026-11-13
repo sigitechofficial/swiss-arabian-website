@@ -955,5 +955,16 @@
   "loyalty.rewardsTier": "Rewards tier",
   "loyalty.nextTier": "Next tier",
   "loyalty.tierHistory": "Tier history",
-  "loyalty.tierHistoryLoading": "Loading tier history…"
+  "loyalty.tierHistoryLoading": "Loading tier history…",
+  "loyalty.order.used": "You used",
+  "loyalty.order.returned": "Returned after refund",
+  "loyalty.order.net": "Net points used",
+  "loyalty.order.earned": "You earned",
+  "loyalty.order.adjusted": "Adjusted after refund",
+  "loyalty.order.current": "Current reward from this order",
+  "loyalty.order.pointsAvailable": "{points} points available",
+  "loyalty.order.ready": "These points are ready to use.",
+  "loyalty.order.pointsPending": "{points} points pending",
+  "loyalty.order.qualifies": "Your points will become available after this order qualifies.",
+  "loyalty.order.availableFrom": "Available from approximately {date}"
 }
