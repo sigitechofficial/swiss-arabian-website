@@ -22,6 +22,8 @@ export type ProductCardProps = {
   price: ReactNode;
   /** struck-out full price, e.g. "AED 90" */
   was?: ReactNode;
+  /** screen-reader word before the was-price (default "was") */
+  wasLabel?: string;
   /** whole-number discount for the "−30%" badge (`.card-off`) */
   discountPercent?: number;
   /** two pill tags, e.g. ["EDP", "Unisex"] */
@@ -69,6 +71,7 @@ export function ProductCard({
   tile,
   price,
   was,
+  wasLabel,
   discountPercent,
   tags,
   tagsHighlighted,
@@ -158,7 +161,7 @@ export function ProductCard({
         {showFamily && family && (
           <p className="text-[11px] tracking-[.12em] uppercase text-sapil-muted mt-[2px] mb-[6px]">{family}</p>
         )}
-        <Price variant="card" value={price} was={was} />
+        <Price variant="card" value={price} was={was} wasLabel={wasLabel} />
       </div>
     </article>
   );

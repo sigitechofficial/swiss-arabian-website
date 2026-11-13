@@ -73,7 +73,7 @@ export function SapilQuickView({
             <p className="font-sapil-serif italic text-[19px] text-sapil-ink-2 mb-[18px]">{tagline}</p>
           ) : null}
           <div className="flex items-center gap-[16px] flex-wrap mt-[18px]">
-            <Price value={model.price} was={model.was} className="text-[24px]" />
+            <Price value={model.price} was={model.was} wasLabel={t("product.was")} className="text-[24px]" />
             {onAdd ? (
               <Button
                 onClick={() => {

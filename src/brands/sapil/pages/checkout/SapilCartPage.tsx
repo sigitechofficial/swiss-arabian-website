@@ -25,7 +25,7 @@ export function SapilCartPage() {
 
   if (!bag.mounted) {
     return (
-      <Wrap className="pt-[32px] pb-[88px] min-h-[70vh]" aria-busy="true">
+      <Wrap className="w-full pt-[32px] pb-[88px] min-h-[70vh]" aria-busy="true">
         <SapilSkeleton className="h-[48px] w-[220px] mb-[24px]" />
         <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
           <SapilSkeleton className="h-[320px] !rounded-[24px]" />
@@ -37,7 +37,7 @@ export function SapilCartPage() {
 
   if (bag.isEmpty) {
     return (
-      <Wrap className="pt-[32px] pb-[88px] max-900:pb-[56px] min-h-[70vh]">
+      <Wrap className="w-full pt-[32px] pb-[88px] max-900:pb-[56px] min-h-[70vh]">
         <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} />
         <div className="mt-[24px]">
           <CheckoutEmptyCard
@@ -94,7 +94,7 @@ export function SapilCartPage() {
   const payable = bag.amountPayable ?? bag.total;
 
   return (
-    <Wrap className="pt-[32px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px] min-h-[70vh]">
+    <Wrap className="w-full pt-[32px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px] min-h-[70vh]">
       <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} />
       <header className="flex items-end gap-[14px] mt-[18px] mb-[24px]">
         <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,52px)] leading-[1]">{t("bag.title")}</h1>
