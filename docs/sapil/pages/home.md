@@ -25,7 +25,7 @@ Area: `home`. Page: `src/brands/sapil/pages/home/SapilHomePage.tsx` (`HomePageVi
 | 7 | About + facts | `AboutBlock` | `BRAND_STORY` (`paragraphs`, `statistics`, image, CTA) |
 | – | Newsletter | `HomeNewsletter` | `NEWSLETTER_SIGNUP` → `useNewsletterSignup` (provider not connected, same as Swiss Arabian) |
 
-Product cards: `HomeProductTile` = design-system `ProductCard` from a `ProductSummary` + `tileColor` (API pastel key, else neutral `sand`) + was-price (`priceSummary.compareAtPrice` → struck price and −% badge). Add to bag: `useAddToCart`; wishlist heart: `useWishlistToggle` (extracted). Sold-out cards hide the + button and show a "Sold out" tag. `TODO(integration)`: unify with the catalog area's card.
+Product cards: the shared `SapilProductCard` (`components/product`, see `catalog.md`) on every rail. `homeProduct()` puts the section card's `tileColor` and was-price (`priceSummary.compareAtPrice`, only when above the price) on the product, so the card shows the pastel tile, struck price and −% badge, the "Out of stock" pill, wishlist heart and quick view exactly like the shop grid. The mood band passes `tile="var(--sapil-card)"` (white tiles on the coloured band) and no quick view. (`HomeProductTile` was removed in the review pass.)
 
 ## Hooks extracted (Swiss Arabian unchanged, with tests)
 

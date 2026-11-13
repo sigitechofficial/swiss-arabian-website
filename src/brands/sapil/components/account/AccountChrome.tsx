@@ -81,7 +81,7 @@ export function AccountPage({
   const path = pathname.replace(/^\/[a-z]{2}(?:-[a-z]{2})?(?=\/account)/, "");
   return (
     <Wrap as="main" className="pt-[28px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px]">
-      <Breadcrumbs
+      <Breadcrumbs label={t("content.breadcrumb")}
         items={[
           { label: t("account.home"), href: "/" },
           ...(crumb === t("account.account") ? [] : [{ label: t("account.account"), href: "/account" }]),

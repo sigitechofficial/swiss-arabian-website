@@ -38,7 +38,7 @@ export function SapilCartPage() {
   if (bag.isEmpty) {
     return (
       <Wrap as="main" className="pt-[32px] pb-[88px] max-900:pb-[56px]">
-        <Breadcrumbs items={crumbs} LinkComponent={SapilLink} />
+        <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} />
         <div className="mt-[24px]">
           <CheckoutEmptyCard
             title={t("bag.emptyTitle")}
@@ -95,7 +95,7 @@ export function SapilCartPage() {
 
   return (
     <Wrap as="main" className="pt-[32px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px]">
-      <Breadcrumbs items={crumbs} LinkComponent={SapilLink} />
+      <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} />
       <header className="flex items-end gap-[14px] mt-[18px] mb-[24px]">
         <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,52px)] leading-[1]">{t("bag.title")}</h1>
         <span className="text-[15px] text-sapil-muted pb-[4px]">{t("bag.items", { count: bag.itemCount })}</span>

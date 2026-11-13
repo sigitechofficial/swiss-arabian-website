@@ -91,7 +91,7 @@ export function SapilProductPage({
   return (
     <CatalogRoot>
       <Wrap>
-        <Breadcrumbs
+        <Breadcrumbs label={t("content.breadcrumb")}
           LinkComponent={SapilLocaleLink}
           items={[
             { label: t("catalog.home"), href: "/" },

@@ -101,7 +101,7 @@ export function SapilOrderView({
   const t = useSapilCopy();
   return (
     <Wrap as="main" className="pb-[72px]">
-      <Breadcrumbs items={crumbs} LinkComponent={SapilLink} className="pt-[20px]" />
+      <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} className="pt-[20px]" />
       <header
         className={cx(
           "grid grid-cols-[auto_minmax(0,1fr)_auto] gap-[28px] items-center rounded-[32px] py-[40px] px-[44px] mt-[24px] mb-[20px]",

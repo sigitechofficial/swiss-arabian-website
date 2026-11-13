@@ -64,7 +64,7 @@ export function SapilSearchPage({ query, sort = "newest" }: { query: string; sor
   return (
     <CatalogRoot>
       <Wrap>
-        <Breadcrumbs
+        <Breadcrumbs label={t("content.breadcrumb")}
           LinkComponent={SapilLocaleLink}
           items={
             hasQuery
@@ -87,7 +87,7 @@ export function SapilSearchPage({ query, sort = "newest" }: { query: string; sor
             onChange={(event) => setDraft(event.target.value)}
             placeholder={t("catalog.searchPlaceholder")}
             aria-label={t("catalog.search")}
-            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] text-sapil-ink outline-none max-600:text-[22px]"
+            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] text-sapil-ink outline-none max-600:text-[22px] [&::-webkit-search-cancel-button]:appearance-none"
           />
           {hasQuery ? (
             <Button variant="link" href="/search" LinkComponent={SapilLocaleLink} className="text-[14px]">

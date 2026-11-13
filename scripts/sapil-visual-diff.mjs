@@ -23,6 +23,8 @@
  *                     fixture page, src/brands/sapil/kit/CatalogKit.tsx, real page components
  *                     filled with the v9 mock products)
  *   REF_PORT          static server for the design folder, default 3022
+ *   REF_URL           open the design from this base instead (e.g. file:///C:/…/sapil-Ahsan): no
+ *                     static server, so no extra port
  *   CHROME_PATH       Chrome/Chromium binary (default: Playwright's cached Chromium, then Chrome)
  *
  * Browser driver: `playwright` / `playwright-core` if installed, else `puppeteer-core` from
@@ -50,6 +52,7 @@ const KIT_URL = process.env.KIT_URL || "http://localhost:3021/sapil-kit";
 const PREVIEW_URL = process.env.PREVIEW_URL || "http://localhost:3031/sapil-preview";
 const KIT_ORIGIN = new URL(KIT_URL).origin;
 const REF_PORT = Number(process.env.REF_PORT || 3022);
+const REF_BASE = (process.env.REF_URL || `http://127.0.0.1:${REF_PORT}`).replace(/\/+$/, "");
 const WIDTHS = (args.widths || "390,768,1280,1440").split(",").map(Number);
 const THRESHOLD = Number(args.threshold || 24);
 const OUT = args.out || path.join(os.tmpdir(), "sapil-visual-diff");
@@ -378,7 +381,7 @@ async function refShot(browser, spec, width) {
   const pg = await browser.page(width);
   try {
     await pg.init(`try{localStorage.setItem('sapil_cart_v9', ${JSON.stringify(spec.cart ? CART : "[]")})}catch(e){}`);
-    await pg.goto(`http://127.0.0.1:${REF_PORT}/${spec.page}`);
+    await pg.goto(`${REF_BASE}/${spec.page}`);
     await pg.eval(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(FREEZE)}; document.head.append(s);
       document.querySelectorAll('img[loading=lazy]').forEach(i => i.loading = 'eager'); })()`);
     if (spec.prepare) await pg.eval(spec.prepare);
@@ -452,7 +455,8 @@ async function main() {
   const driver = await loadDriver();
   console.log(`driver: ${driver.kind}; chrome: ${chromePath()}`);
   fs.mkdirSync(OUT, { recursive: true });
-  const srv = await serve(DESIGN_DIR, REF_PORT);
+  // REF_URL=file:///…: open the design files directly (no static server, no extra port).
+  const srv = process.env.REF_URL ? { close() {} } : await serve(DESIGN_DIR, REF_PORT);
   const browser = await openBrowser(driver);
   const only = args.only
     ? args.only.split(",")
@@ -464,7 +468,7 @@ async function main() {
     for (const spec of SPECS.filter((s) => !only || only.includes(s.name))) {
       const pg = await browser.page(Number(args.probe) > 1 ? Number(args.probe) : 1440);
       await pg.init(`try{localStorage.setItem('sapil_cart_v9', ${JSON.stringify(spec.cart ? CART : "[]")})}catch(e){}`);
-      await pg.goto(`http://127.0.0.1:${REF_PORT}/${spec.page}`);
+      await pg.goto(`${REF_BASE}/${spec.page}`);
       if (spec.prepare) await pg.eval(spec.prepare);
       console.log(`\n=== ${spec.name}\n` + (await pg.eval(`(() => { const el = ${spec.find}; return el ? Math.round(el.getBoundingClientRect().width) + 'px ' + el.outerHTML : 'NOT FOUND'; })()`)));
       await pg.close();

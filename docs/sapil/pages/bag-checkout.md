@@ -118,9 +118,17 @@ Run on the production Sapil build (`next start`), Chromium 1217, 2026-11-13.
   total; we never add numbers in the browser.
 - Drawer has no "Layer your scents" rail, quick-add or confetti (Swiss Arabian extras).
 - Tiles use the neutral `sand` pastel until the API sends `tileColor` (`feat/sapil-cms`).
-- Payment screens: Sapil shell and spinner around Swiss Arabian's provider screens; the
-  inner copy and buttons of those screens are still Swiss-styled English (provider logic
-  untouched by design).
+- Payment screens: the **return screens** (`/checkout/payment/success`, `/cancel`,
+  `/payments/tabby/return`, `/payments/telr/return`) are Sapil's own views with Sapil wording
+  (`checkout.pay*`, English + Arabic) on the shared hooks `useSettlePayment` /
+  `usePaymentRetry` (`features/checkout/hooks/usePaymentReturn.ts`, extracted in the review
+  pass; Swiss Arabian's views use them with no visible change). Tabby refusals keep Tabby's
+  required wording. Telr's transaction ids (Swiss Arabian's `MetaNote`) are not shown.
+  The **card forms** (`/checkout/payment/paymob`, `/stripe`) still render the shared
+  provider screens inside Sapil's shell and spinner: their inner copy and styling are Swiss
+  Arabian's English (Paymob Pixel / Stripe Elements logic is inline there; extract before
+  restyling). Sapil UAE's local methods: Stripe card / Apple Pay / Google Pay, Paymob card,
+  Telr (hosted), cash on delivery.
 - Phone field shows the market's dial code (+971) and stores E.164.
 
 ## Open questions

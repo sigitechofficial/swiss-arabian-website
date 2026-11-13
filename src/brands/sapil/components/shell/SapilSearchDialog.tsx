@@ -53,7 +53,7 @@ export function SapilSearchDialog() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("shell.searchPlaceholder")}
             aria-label={t("shell.search")}
-            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] font-[400] text-sapil-ink outline-none"
+            className="flex-1 min-w-0 border-0 bg-transparent font-sapil-serif text-[28px] font-[400] text-sapil-ink outline-none [&::-webkit-search-cancel-button]:appearance-none"
           />
         </form>
         <p className="text-sapil-muted mb-[28px] text-[15px]" aria-live="polite">
