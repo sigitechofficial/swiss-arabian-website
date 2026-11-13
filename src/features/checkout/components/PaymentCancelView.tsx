@@ -1,21 +1,9 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
-import { checkoutErrorMessage } from "../utils/checkoutIssues";
-import {
-  getStoredOrderId,
-  getStoredOrderNumber,
-  getStoredPaymentMethodId,
-  getStoredPaymentProviderCode,
-  getStoredZonePaymentMethodId,
-  incrementPayAttempt,
-  storeOrderId,
-} from "../utils/checkoutSession";
-import { PaymentGatewayError, PaymentRejectedError, startPayment } from "../utils/startPayment";
-import { tabbyLang } from "../utils/tabby";
+import { storedOrderIdIf, usePaymentRetry } from "../hooks/usePaymentReturn";
 import { CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
@@ -36,53 +24,21 @@ const GATEWAY_ERROR =
  * Cancelling payment never cancels the order — it just waits to be paid.
  */
 export function PaymentCancelView() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
-  const storedOrderId = hydrated ? getStoredOrderId() : null;
-  const orderId = searchParams.get("orderId") ?? storedOrderId;
-  const isStoredOrder = Boolean(orderId && orderId === storedOrderId);
-  const orderNumber = isStoredOrder ? getStoredOrderNumber() : null;
-
-  const [retrying, setRetrying] = useState(false);
-  // Sent here straight from checkout when the gateway returned no payment page.
-  const [error, setError] = useState<string | null>(
-    searchParams.get("reason") === "gateway" ? GATEWAY_ERROR : null,
-  );
-
-  async function retry() {
-    if (!orderId) return;
-    setRetrying(true);
-    setError(null);
-    try {
-      // The success page recovers the order from storage after the gateway round-trip.
-      storeOrderId(orderId);
-      // Gateway sessions are single-use — a retry needs a fresh idempotency key.
-      incrementPayAttempt();
-      await startPayment(
-        orderId,
-        (href) => router.push(href),
-        // Stored method ids belong to the last order placed in this tab; for any
-        // other order let the backend use the method saved on the order.
-        isStoredOrder
-          ? {
-              zonePaymentMethodId: getStoredZonePaymentMethodId(),
-              paymentMethodId: getStoredPaymentMethodId(),
-              providerCode: getStoredPaymentProviderCode(),
-            }
-          : {},
-      );
-    } catch (e) {
-      setError(
-        e instanceof PaymentRejectedError
-          ? e.messages[tabbyLang(document.documentElement.lang)]
-          : e instanceof PaymentGatewayError
-            ? GATEWAY_ERROR
-            : checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),
-      );
-      setRetrying(false);
-    }
-  }
+  const { orderId, orderNumber, retrying, error: retryError, retry } = usePaymentRetry({
+    queryOrderId: searchParams.get("orderId"),
+    storedOrderId: storedOrderIdIf(hydrated),
+    // Sent here straight from checkout when the gateway returned no payment page.
+    gatewayReason: searchParams.get("reason") === "gateway",
+  });
+  const error = !retryError
+    ? null
+    : retryError.kind === "gateway"
+      ? GATEWAY_ERROR
+      : retryError.kind === "rejected"
+        ? retryError.message
+        : retryError.message || "We couldn’t restart your payment. Please try again or contact us.";
 
   if (hydrated && !orderId) {
     return (
