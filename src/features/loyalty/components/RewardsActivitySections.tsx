@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { knownText } from "@/lib/i18n/formErrors";
+import type { Translator } from "@/lib/i18n/messages";
+import { intlLocale } from "@/lib/i18n/locales";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   fetchLoyaltyTransactions,
   type LoyaltyMarketQuery,
@@ -15,26 +20,26 @@ import {
 import {
   externalActivityLabel,
   formatExternalActivityPoints,
-  OMNICHANNEL_COPY,
   type ExternalLoyaltyActivityView,
 } from "../types/omnichannel";
+import { useOmnichannelCopy } from "./useOmnichannelCopy";
 
-function activityDate(value: string | null): string | null {
+function activityDate(value: string | null, locale = "en"): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
     day: "2-digit",
     month: "short",
     year: "numeric",
   }).format(date);
 }
 
-function pointsLabel(points: number): string {
+function pointsLabel(points: number, t: Translator): string {
   const formatted = formatPoints(Math.abs(points));
-  if (points > 0) return `+${formatted} points`;
-  if (points < 0) return `−${formatted} points`;
-  return `${formatted} points`;
+  if (points > 0) return t("loyalty.points", { points: `+${formatted}` });
+  if (points < 0) return t("loyalty.points", { points: `−${formatted}` });
+  return t("loyalty.points", { points: formatted });
 }
 
 function OnlineActivity({
@@ -54,34 +59,37 @@ function OnlineActivity({
   onRetry: () => void;
   onLoadMore: () => void;
 }) {
+  const omni = useOmnichannelCopy();
+  const t = useShopCopy();
+  const locale = useShopLocale();
   return (
     <section aria-labelledby="online-activity-heading">
       <h2
         id="online-activity-heading"
         className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
       >
-        {OMNICHANNEL_COPY.onlineActivity}
+        {omni.onlineActivity}
       </h2>
       {pending ? (
         <p className="mt-4 text-[13px] text-sa-secondary" role="status">
-          Loading reward activity…
+          {t("loyalty.activityLoading")}
         </p>
       ) : error ? (
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
           <p className="text-[14px] text-sa-primary">
-            We couldn&apos;t load your rewards right now.
+            {t("loyalty.loadFailed")}
           </p>
           <button
             type="button"
             onClick={onRetry}
             className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
           >
-            Try again
+            {t("tryAgain")}
           </button>
         </div>
       ) : rows.length === 0 ? (
         <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">
-          {OMNICHANNEL_COPY.onlineEmpty}
+          {omni.onlineEmpty}
         </p>
       ) : (
         <>
@@ -93,7 +101,7 @@ function OnlineActivity({
               >
                 <div className="min-w-0">
                   <p className="break-words text-[13px] font-medium text-sa-primary">
-                    {row.label}
+                    {knownText(t, "loyalty.text.", row.label)}
                   </p>
                   {row.detail ? (
                     <p className="mt-0.5 text-[12px] text-sa-muted">
@@ -102,18 +110,18 @@ function OnlineActivity({
                   ) : null}
                   {row.state ? (
                     <p className="mt-0.5 text-[12px] text-sa-secondary">
-                      {row.state}
+                      {knownText(t, "loyalty.text.", row.state)}
                     </p>
                   ) : null}
-                  {activityDate(row.occurredAt) ? (
+                  {activityDate(row.occurredAt, locale) ? (
                     <p className="mt-1 text-[12px] text-sa-muted">
-                      {activityDate(row.occurredAt)}
+                      {activityDate(row.occurredAt, locale)}
                     </p>
                   ) : null}
                 </div>
                 {row.points != null ? (
-                  <p className="shrink-0 break-words text-right text-[13px] font-semibold text-sa-primary tabular-nums">
-                    {pointsLabel(row.points)}
+                  <p className="shrink-0 break-words text-end text-[13px] font-semibold text-sa-primary tabular-nums">
+                    {pointsLabel(row.points, t)}
                   </p>
                 ) : null}
               </li>
@@ -126,7 +134,7 @@ function OnlineActivity({
               disabled={loadingMore}
               className="mt-4 text-[12.5px] font-semibold text-terra hover:underline disabled:opacity-60"
             >
-              {OMNICHANNEL_COPY.loadMoreOnline}
+              {omni.loadMoreOnline}
             </button>
           ) : null}
         </>
@@ -154,47 +162,50 @@ function StoreActivity({
   onRetry: () => void;
   onLoadMore: () => void;
 }) {
+  const omni = useOmnichannelCopy();
+  const t = useShopCopy();
+  const locale = useShopLocale();
   return (
     <section aria-labelledby="store-activity-heading">
       <h2
         id="store-activity-heading"
         className="text-[16px] font-semibold text-sa-primary sm:text-[18px]"
       >
-        {OMNICHANNEL_COPY.activityHeading}
+        {omni.activityHeading}
       </h2>
       {stale && !pending && !error ? (
         <p className="mt-2 text-[13px] text-sa-secondary" role="status">
-          {OMNICHANNEL_COPY.activityStale}
+          {omni.activityStale}
         </p>
       ) : null}
       {pending ? (
         <p className="mt-4 text-[13px] text-sa-secondary" role="status">
-          {OMNICHANNEL_COPY.activityLoading}
+          {omni.activityLoading}
         </p>
       ) : error ? (
         <div className="mt-4 rounded-lg border border-sa-border bg-section-soft px-5 py-8">
           <p className="text-[14px] text-sa-primary">
-            {OMNICHANNEL_COPY.activityError}
+            {omni.activityError}
           </p>
           <button
             type="button"
             onClick={onRetry}
             className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
           >
-            Try again
+            {t("tryAgain")}
           </button>
         </div>
       ) : rows.length === 0 ? (
         <p className="mt-4 text-[13px] leading-relaxed text-sa-secondary">
-          {OMNICHANNEL_COPY.activityEmpty}
+          {omni.activityEmpty}
         </p>
       ) : (
         <>
           <ul className="mt-4 divide-y divide-sa-border rounded-lg border border-sa-border">
             {rows.map((row, index) => {
-              const originLabel = row.origin === "STORE" ? "Store" : null;
-              const receipt = row.receiptId ? `Receipt ${row.receiptId}` : null;
-              const expires = activityDate(row.expirationDate);
+              const originLabel = row.origin === "STORE" ? t("loyalty.store") : null;
+              const receipt = row.receiptId ? t("loyalty.receipt", { id: row.receiptId }) : null;
+              const expires = activityDate(row.expirationDate, locale);
               return (
                 <li
                   key={`${row.entryDate ?? "row"}-${row.receiptId ?? index}-${row.points}`}
@@ -202,7 +213,7 @@ function StoreActivity({
                 >
                   <div className="min-w-0">
                     <p className="break-words text-[13px] font-medium text-sa-primary">
-                      {externalActivityLabel(row)}
+                      {knownText(t, "loyalty.text.", externalActivityLabel(row))}
                     </p>
                     {originLabel ? (
                       <p className="mt-0.5 text-[12px] text-sa-muted">
@@ -216,17 +227,17 @@ function StoreActivity({
                     ) : null}
                     {expires ? (
                       <p className="mt-0.5 text-[12px] text-sa-secondary">
-                        Expires {expires}
+                        {t("loyalty.expires", { date: expires })}
                       </p>
                     ) : null}
-                    {activityDate(row.entryDate) ? (
+                    {activityDate(row.entryDate, locale) ? (
                       <p className="mt-1 text-[12px] text-sa-muted">
-                        {activityDate(row.entryDate)}
+                        {activityDate(row.entryDate, locale)}
                       </p>
                     ) : null}
                   </div>
-                  <p className="shrink-0 break-words text-right text-[13px] font-semibold text-sa-primary tabular-nums">
-                    {formatExternalActivityPoints(row)}
+                  <p className="shrink-0 break-words text-end text-[13px] font-semibold text-sa-primary tabular-nums">
+                    {t("loyalty.points", { points: formatExternalActivityPoints(row).replace(/ points$/, "") })}
                   </p>
                 </li>
               );
@@ -239,7 +250,7 @@ function StoreActivity({
               disabled={loadingMore}
               className="mt-4 text-[12.5px] font-semibold text-terra hover:underline disabled:opacity-60"
             >
-              {OMNICHANNEL_COPY.loadMore}
+              {omni.loadMore}
             </button>
           ) : null}
         </>

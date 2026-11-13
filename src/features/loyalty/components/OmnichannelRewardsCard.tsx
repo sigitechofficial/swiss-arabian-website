@@ -1,18 +1,21 @@
 "use client";
 
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { intlLocale } from "@/lib/i18n/locales";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useOmnichannelCopy } from "./useOmnichannelCopy";
 import type { ReactNode } from "react";
 import {
   formatPointQuantity,
-  OMNICHANNEL_COPY,
   type OmnichannelLoyaltyView,
 } from "../types/omnichannel";
 
-function activityDate(value: string | null): string | null {
+function activityDate(value: string | null, locale = "en"): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -32,6 +35,7 @@ function RefreshControl({
 }: {
   control: OmnichannelRefreshControl | null;
 }) {
+  const omni = useOmnichannelCopy();
   if (!control?.visible) return null;
   return (
     <div className="mt-4 flex min-w-0 flex-col items-start gap-2">
@@ -41,11 +45,11 @@ function RefreshControl({
         disabled={control.disabled}
         aria-busy={control.busy}
         aria-label={
-          control.busy ? OMNICHANNEL_COPY.refreshing : OMNICHANNEL_COPY.refresh
+          control.busy ? omni.refreshing : omni.refresh
         }
         className="text-[12.5px] font-semibold text-terra hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
       >
-        {control.busy ? OMNICHANNEL_COPY.refreshing : OMNICHANNEL_COPY.refresh}
+        {control.busy ? omni.refreshing : omni.refresh}
       </button>
       {control.message ? (
         <p
@@ -81,21 +85,25 @@ function LinkedBalance({
   omnichannel: OmnichannelLoyaltyView;
   refresh: OmnichannelRefreshControl | null;
 }) {
+  const omni = useOmnichannelCopy();
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const active = omnichannel.balance?.activePoints ?? "";
   const known = lastKnownBalance(omnichannel);
   const stale = omnichannel.sync.isFresh === false;
   const syncedAt = activityDate(
     omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt,
+    locale,
   );
 
   return (
     <section aria-labelledby="store-rewards-heading">
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-        {OMNICHANNEL_COPY.eyebrow}
+        {omni.eyebrow}
       </p>
       <p
         className="mt-3 font-sans text-[40px] font-medium leading-none tracking-[-0.03em] text-sa-primary tabular-nums sm:text-[48px]"
-        aria-label={`${formatPointQuantity(active)} store reward points`}
+        aria-label={t("loyalty.storePointsAria", { points: formatPointQuantity(active) })}
       >
         {formatPointQuantity(active)}
       </p>
@@ -103,10 +111,10 @@ function LinkedBalance({
         id="store-rewards-heading"
         className="mt-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-sa-muted"
       >
-        {known ? OMNICHANNEL_COPY.lastKnownHeading : "Active points"}
+        {known ? omni.lastKnownHeading : t("loyalty.activePoints")}
       </h2>
       <p className="mt-3 text-[13px] leading-relaxed text-sa-secondary">
-        {known ? OMNICHANNEL_COPY.lastKnownHint : OMNICHANNEL_COPY.linkedHint}
+        {known ? omni.lastKnownHint : omni.linkedHint}
       </p>
       {stale ? (
         <p
@@ -114,8 +122,8 @@ function LinkedBalance({
           role="status"
         >
           {syncedAt
-            ? `${OMNICHANNEL_COPY.lastSynced} ${syncedAt}`
-            : OMNICHANNEL_COPY.stale}
+            ? `${omni.lastSynced} ${syncedAt}`
+            : omni.stale}
         </p>
       ) : null}
       <RefreshControl control={refresh} />
@@ -131,6 +139,7 @@ export function OmnichannelRewardsCard({
   omnichannel: OmnichannelLoyaltyView | null | undefined;
   refresh?: OmnichannelRefreshControl | null;
 }) {
+  const omni = useOmnichannelCopy();
   if (!omnichannel) return null;
 
   if (omnichannel.status === "LINKED" && omnichannel.balance?.activePoints) {
@@ -145,13 +154,13 @@ export function OmnichannelRewardsCard({
     return (
       <CardShell>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-          {OMNICHANNEL_COPY.eyebrow}
+          {omni.eyebrow}
         </p>
         <p
           className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary"
           role="status"
         >
-          {OMNICHANNEL_COPY.balanceUnavailable}
+          {omni.balanceUnavailable}
         </p>
         <RefreshControl control={refresh} />
       </CardShell>
@@ -162,10 +171,10 @@ export function OmnichannelRewardsCard({
     return (
       <CardShell>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-          {OMNICHANNEL_COPY.eyebrow}
+          {omni.eyebrow}
         </p>
         <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-primary">
-          {OMNICHANNEL_COPY.notEnrolled}
+          {omni.notEnrolled}
         </p>
         <RefreshControl control={refresh} />
       </CardShell>
@@ -176,17 +185,17 @@ export function OmnichannelRewardsCard({
     return (
       <CardShell>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-          {OMNICHANNEL_COPY.eyebrow}
+          {omni.eyebrow}
         </p>
         <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-primary">
-          {OMNICHANNEL_COPY.actionRequired}
+          {omni.actionRequired}
         </p>
-        <Link
+        <LocaleLink
           href="/faq#contact"
           className="mt-4 inline-flex text-[12.5px] font-semibold text-terra hover:underline"
         >
-          {OMNICHANNEL_COPY.contact}
-        </Link>
+          {omni.contact}
+        </LocaleLink>
         <RefreshControl control={refresh} />
       </CardShell>
     );
@@ -195,13 +204,13 @@ export function OmnichannelRewardsCard({
   return (
     <CardShell>
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-        {OMNICHANNEL_COPY.eyebrow}
+        {omni.eyebrow}
       </p>
       <p
         className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-secondary"
         role="status"
       >
-        {OMNICHANNEL_COPY.unavailable}
+        {omni.unavailable}
       </p>
       <RefreshControl control={refresh} />
     </CardShell>
