@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pollUntilPaymentSettles } from "../api/orders.service";
+import { checkoutHref } from "../utils/checkoutLocale";
 import { checkoutErrorMessage } from "../utils/checkoutIssues";
 import {
   clearPaymentState,
@@ -41,7 +42,7 @@ export function useSettlePayment(orderId: string | null): PaymentSettlement | nu
       if (result.success) {
         clearPaymentState();
         setSettlement({ kind: "paid" });
-        router.replace(`/order-confirmation/${orderId}`);
+        router.replace(checkoutHref(`/order-confirmation/${orderId}`));
         return;
       }
       setSettlement(result.status === "TIMEOUT" ? { kind: "timeout" } : { kind: "failed", status: result.status });
@@ -89,7 +90,7 @@ export function usePaymentRetry({
       incrementPayAttempt();
       await startPayment(
         orderId,
-        (href) => router.push(href),
+        (href) => router.push(checkoutHref(href)),
         // Stored method ids belong to the last order placed in this tab; for any
         // other order let the backend use the method saved on the order.
         isStoredOrder

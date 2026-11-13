@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   amountPayableFrom,
@@ -35,7 +35,7 @@ export function useBagPage() {
   const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
   const syncing = useCartStore((s) => s.syncing);
   const { validate } = useCartMutations();
-  const router = useRouter();
+  const router = useLocaleRouter();
   const mounted = useHydrated();
 
   const lines = mounted ? persistedLines : [];

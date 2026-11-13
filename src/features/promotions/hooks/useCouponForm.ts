@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useCouponMutations } from "@/features/cart/hooks/useCouponMutations";
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -17,7 +18,7 @@ import { couponLoginHref, peekPendingCoupon, takePendingCoupon } from "../utils/
  */
 export function useCouponForm() {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useLocaleRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const promotions = useCartStore((s) => s.promotions);

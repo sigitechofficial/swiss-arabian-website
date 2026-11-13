@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   getStoredGuestOrderAccessToken,
@@ -19,7 +20,7 @@ export type TrackLookupError = "orderNumber" | "token";
  * The token goes to the tracking page through storage, never the URL.
  */
 export function useTrackLookup() {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [orderNumber, setOrderNumber] = useState("");
   const [token, setToken] = useState("");
@@ -46,7 +47,7 @@ export type GuestTokenError = "empty" | "isOrderNumber";
  * or typed in). Also loads the carrier timeline once there is a shipment.
  */
 export function useGuestTracking(orderNumber: string) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();

@@ -8,17 +8,13 @@ import {
 
 export type { ShopLocale } from "./locales";
 
-/** Transactional addresses stay unprefixed. Every other shop path keeps the language. */
-const UNSWITCHABLE = [
-  /^\/checkout(\/|$)/,
-  /^\/login(\/|$)/,
-  /^\/register(\/|$)/,
-  /^\/forgot-password(\/|$)/,
-  /^\/reset-password(\/|$)/,
-  /^\/verify(\/|$)/,
-  /^\/order-confirmation(\/|$)/,
-  /^\/track(\/|$)/,
-];
+/**
+ * Addresses that stay unprefixed: the payment providers' browser returns, whose
+ * paths are fixed with the backend (`/payments/tabby/return`, `/payments/telr/return`).
+ * Every other shop path keeps the language, checkout and sign-in included
+ * (their `[locale]` routes exist), so an Arabic shopper stays in Arabic.
+ */
+const UNSWITCHABLE = [/^\/payments(\/|$)/];
 
 /** The configured locale a path starts with ("/ar/x" → "ar"), else null. */
 export function localePrefixOf(pathname: string): ShopLocale | null {

@@ -1,3 +1,4 @@
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 const KEY = "sa-pending-coupon";
 
 export function stashPendingCoupon(code: string) {
@@ -19,7 +20,8 @@ export function takePendingCoupon(): string | null {
 }
 
 export function couponLoginHref(returnTo: string, code: string): string {
-  const path = returnTo.startsWith("/checkout") || returnTo === "/cart" ? returnTo : "/cart";
+  const bare = stripLocalePrefix(returnTo);
+  const path = bare.startsWith("/checkout") || bare === "/cart" ? returnTo : "/cart";
   stashPendingCoupon(code);
   return `/login?returnTo=${encodeURIComponent(path)}`;
 }

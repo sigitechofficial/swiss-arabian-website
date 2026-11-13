@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import {
   cartSnapshotFromLines,
   quotedCartShipping,
@@ -30,7 +31,8 @@ import { usePersistHydrated } from "@/hooks/usePersistHydrated";
  * ProductDetailPageView — skip here.
  */
 export function InsiderScripts() {
-  const pathname = usePathname();
+  // Page types are read from the bare path: `/ar/checkout` is the checkout too.
+  const pathname = stripLocalePrefix(usePathname() || "/");
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
@@ -48,7 +50,7 @@ export function InsiderScripts() {
     if (!bootstrapped) return;
     if (isProductDetail(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
-    const routePath = window.location.pathname || pathname;
+    const routePath = stripLocalePrefix(window.location.pathname || pathname);
     const merchandise =
       totals?.subtotal ??
       lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);

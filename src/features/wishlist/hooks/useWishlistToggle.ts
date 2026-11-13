@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useAuthBootstrapped, useIsAuthenticated } from "@/hooks/useCurrentUser";
 import { useWishlistStatusScope } from "../components/WishlistStatusScope";
 import { isProductUuid } from "../utils/productId";
@@ -30,7 +30,7 @@ export type WishlistToggleState = {
 export type WishlistToggle = WishlistToggleState;
 
 export function useWishlistToggle(productId: string): WishlistToggleState {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const isAuthenticated = useIsAuthenticated();
   const bootstrapped = useAuthBootstrapped();
   const scope = useWishlistStatusScope();

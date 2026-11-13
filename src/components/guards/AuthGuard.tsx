@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { PageLoading } from "@/components/ui";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -12,7 +13,7 @@ export function AuthGuard({
   children: ReactNode;
   requireAuth?: boolean;
 }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
