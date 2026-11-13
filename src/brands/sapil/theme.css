@@ -15,8 +15,11 @@
  * Preflight is NOT imported here: the host app's Tailwind (globals.css) provides it.
  * A standalone Sapil app (monorepo package) should `@import "tailwindcss/preflight.css" layer(base)`.
  */
-@layer theme, base, components, utilities;
-@import "tailwindcss/utilities.css" layer(utilities) source(none);
+/* Sapil utilities sit in their own layer after `utilities`: the host app's global Tailwind sheet also emits the
+   arbitrary classes used here (it scans the repo), and when it loads after this sheet its unprefixed copies
+   (e.g. grid-cols-[...]) would otherwise override the max-* responsive variants below. */
+@layer theme, base, components, utilities, sapil-utilities;
+@import "tailwindcss/utilities.css" layer(sapil-utilities) source(none);
 @source "./";
 
 /* Breakpoints: the design is desktop-down (max-width). Registered largest first so the
