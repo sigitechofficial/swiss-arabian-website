@@ -1,12 +1,12 @@
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 import type { ShopLocale } from "@/lib/i18n/localePath";
 
 export type InstalmentProvider = "tamara" | "tabby";
 
 /** Pay-in-4 providers, in display order. `live`: offered at checkout today. */
 export const INSTALMENT_PROVIDERS: Record<InstalmentProvider, { name: string; live: boolean }> = {
-  tamara: { name: "Tamara", live: env.flags.tamara },
-  tabby: { name: "Tabby", live: env.flags.tabby },
+  tamara: { name: "Tamara", live: brandIntegrations().payments.tamara },
+  tabby: { name: "Tabby", live: brandIntegrations().payments.tabby },
 };
 
 /** Four payments to the cent. The last one carries whatever rounding left over, so they add up to the price. */
@@ -27,7 +27,7 @@ export function tabbyPopupUrl(
   price: number,
   currency: string,
   locale: ShopLocale,
-  keys: { publicKey: string; merchantCode: string } = env.tabby,
+  keys: { publicKey: string; merchantCode: string } = brandIntegrations().tabby,
 ): string | null {
   const code = currency.toUpperCase();
   if (!TABBY_CURRENCIES.has(code)) return null;

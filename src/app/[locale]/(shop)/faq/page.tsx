@@ -7,6 +7,7 @@ import {
 import { pickFaqPage } from "@/features/site-pages/utils/pickMarketPage";
 import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import { getTranslator } from "@/lib/i18n/messages";
+import { brandDisplayName } from "@/lib/brand";
 import { faqEntriesFromHtml } from "@/lib/seo/faqContent";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { CatalogJsonLd, FaqPageView, SitePageView } from "@brand-ui";
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return pageMetadata({
       path: "/faq",
       title: t("pages.faq.title"),
-      description: t("pages.faq.description"),
+      description: t("pages.faq.description", { brand: brandDisplayName(locale) }),
     });
   }
   return marketFixedPageMetadata("/faq", locale, page);

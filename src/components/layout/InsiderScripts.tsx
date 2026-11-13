@@ -7,7 +7,7 @@ import {
   quotedCartShipping,
   quotedCartTotal,
 } from "@/features/cart/utils/insiderCartItem";
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
 import {
   beginInsiderRouteFlush,
@@ -35,14 +35,16 @@ export function InsiderScripts() {
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const cartHydrated = usePersistHydrated(useCartStore);
+  const { insider } = brandIntegrations();
+  const insiderOn = insider.enabled && Boolean(insider.accountId);
 
   useEffect(() => {
-    if (!env.insider.enabled || !env.insider.accountId) return;
+    if (!insiderOn) return;
     startInsiderSdk();
-  }, []);
+  }, [insiderOn]);
 
   useEffect(() => {
-    if (!env.insider.enabled || !env.insider.accountId) return;
+    if (!insiderOn) return;
     if (!bootstrapped) return;
     if (isProductDetail(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
@@ -103,7 +105,7 @@ export function InsiderScripts() {
       return;
     }
     insiderOtherPage(otherPageName(routePath));
-  }, [pathname, cartHydrated, bootstrapped, lines, totals]);
+  }, [insiderOn, pathname, cartHydrated, bootstrapped, lines, totals]);
 
   return null;
 }

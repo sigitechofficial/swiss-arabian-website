@@ -2,16 +2,21 @@
 
 import type { ReactNode } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { env } from "@/lib/config/env";
+import { brandIntegrations } from "@/lib/brand";
+
+function mapsApiKey(): string {
+  return brandIntegrations().googleMaps.apiKey;
+}
 
 export function googlePlacesEnabled(): boolean {
-  return Boolean(env.googleMapsApiKey);
+  return Boolean(mapsApiKey());
 }
 
 export function GooglePlacesProvider({ children }: { children: ReactNode }) {
-  if (!env.googleMapsApiKey) return children;
+  const apiKey = mapsApiKey();
+  if (!apiKey) return children;
   return (
-    <APIProvider apiKey={env.googleMapsApiKey} libraries={["places"]}>
+    <APIProvider apiKey={apiKey} libraries={["places"]}>
       {children}
     </APIProvider>
   );

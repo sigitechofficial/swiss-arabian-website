@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { sapil } from "./brands/sapil";
 import { swissArabian } from "./brands/swiss-arabian";
 import type { BrandConfig, BrandPublicEnv } from "./types";
-import { ENV_TS_INSIDER_FALLBACK, formatBrandCheck, validateBrandEnv } from "./validate";
+import { formatBrandCheck, validateBrandEnv } from "./validate";
 
 const swissProduction: BrandPublicEnv = {
   NEXT_PUBLIC_APP_ENV: "production",
@@ -118,9 +118,19 @@ describe("validateBrandEnv", () => {
     );
   });
 
-  it("fails when Sapil leaves Insider on with no account (env.ts would load Swiss Arabian's)", () => {
+  it("passes when Sapil leaves Insider on with no account (no fallback: Insider stays off)", () => {
     const { NEXT_PUBLIC_INSIDER_ENABLED: _off, ...insiderOn } = sapilProduction;
     const result = validateBrandEnv(insiderOn, brands);
+    expect(result.errors.join("\n")).not.toMatch(/INSIDER/);
+  });
+
+  it("fails when a brand's Insider defaults are another brand's account", () => {
+    const { NEXT_PUBLIC_INSIDER_ENABLED: _off, ...insiderOn } = sapilProduction;
+    const borrowed: BrandConfig = {
+      ...sapilLive,
+      integrationDefaults: { insiderAccountId: "10015366" },
+    };
+    const result = validateBrandEnv(insiderOn, { ...brands, SAPIL: borrowed });
     expect(result.errors.join("\n")).toMatch(
       /NEXT_PUBLIC_INSIDER_ACCOUNT_ID is empty, so the site falls back to "10015366", which belongs to Swiss Arabian/,
     );
@@ -166,22 +176,18 @@ describe("validateBrandEnv", () => {
   });
 });
 
-describe("ENV_TS_INSIDER_FALLBACK", () => {
-  it("matches what src/lib/config/env.ts uses when Insider settings are empty", async () => {
-    const saved = {
-      id: process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
-      host: process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
-    };
-    delete process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID;
-    delete process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST;
-    try {
-      vi.resetModules();
-      const { env } = await import("@/lib/config/env");
-      expect(env.insider.accountId).toBe(ENV_TS_INSIDER_FALLBACK.accountId);
-      expect(env.insider.scriptHost).toBe(ENV_TS_INSIDER_FALLBACK.scriptHost);
-    } finally {
-      if (saved.id !== undefined) process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID = saved.id;
-      if (saved.host !== undefined) process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST = saved.host;
-    }
+describe("Insider defaults", () => {
+  it("only Swiss Arabian ships a default Insider account; Sapil has none", async () => {
+    const { parseBrandIntegrations } = await import("./publicEnv");
+    expect(parseBrandIntegrations({}, swissArabian).insider).toEqual({
+      enabled: true,
+      accountId: "10015366",
+      scriptHost: "swissarabianuatnew.api.useinsider.com",
+    });
+    expect(parseBrandIntegrations({}, sapil).insider).toEqual({
+      enabled: false,
+      accountId: "",
+      scriptHost: "",
+    });
   });
 });

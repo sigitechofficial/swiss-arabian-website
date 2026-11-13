@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
-import { env } from "@/lib/config/env";
+import { getBrand } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
-import { storefrontLogo } from "@/lib/storefront/brand";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
 import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
@@ -53,18 +52,18 @@ export async function generateMetadata({
   const origin = await requestOrigin();
   // Site name in the page's language and the storefront's market (SEO Management → Brand identity).
   const brand = await loadRequestBrandIdentity(isLocale(locale) ? locale : DEFAULT_LOCALE);
-  const logo = storefrontLogo(await devRequestHost());
+  const site = getBrand(await devRequestHost());
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
     // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
     title: { default: brand.name, template: `%s – ${brand.name}` },
     ...(brand.description ? { description: brand.description } : {}),
-    // The brand's own icon (imported from the Shopify theme), else its logo.
+    // The market's icon (SEO Management), else the brand's own (src/lib/brand).
     icons: {
-      icon: brand.favicon || logo.src,
-      apple: brand.favicon || logo.src,
+      icon: brand.favicon || site.icons.favicon,
+      apple: brand.favicon || site.icons.appleTouchIcon,
     },
-    robots: env.seoIndexingEnabled
+    robots: site.integrations.seoIndexingEnabled
       ? { index: true, follow: true }
       : { index: false, follow: false },
   };
@@ -98,6 +97,7 @@ export default async function RootLayout({
     loadMessages(locale),
     devRequestHost(),
   ]);
+  const { insider } = getBrand(storefrontHost).integrations;
   return (
     <html
       lang={locale}
@@ -109,7 +109,7 @@ export default async function RootLayout({
         {/* Brand-specific head tags (Swiss Arabian: font preloads). */}
         <BrandHead />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        {env.insider.enabled && env.insider.accountId ? (
+        {insider.enabled && insider.accountId ? (
           <>
             <script
               dangerouslySetInnerHTML={{
@@ -118,7 +118,7 @@ export default async function RootLayout({
             />
             <script
               async
-              src={`https://${env.insider.scriptHost}/ins.js?id=${encodeURIComponent(env.insider.accountId)}`}
+              src={`https://${insider.scriptHost}/ins.js?id=${encodeURIComponent(insider.accountId)}`}
             />
           </>
         ) : null}

@@ -1,25 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const flags = vi.hoisted(() => ({ tabby: true }));
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/cart" }));
-vi.mock("@/lib/config/env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/config/env")>();
-  return {
-    env: {
-      ...actual.env,
-      flags: { ...actual.env.flags, ...flags },
-      tabby: { publicKey: "pk_test_x", merchantCode: "store_uae" },
-    },
-  };
-});
 
 import { CartTabbyPromo } from "./CartTabbyPromo";
 
+// Per-brand switches and keys come from getBrand() (src/lib/brand), read from env.
 describe("CartTabbyPromo", () => {
   beforeEach(() => {
-    flags.tabby = true;
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_TABBY", "true");
+    vi.stubEnv("NEXT_PUBLIC_TABBY_PUBLIC_KEY", "pk_test_x");
+    vi.stubEnv("NEXT_PUBLIC_TABBY_MERCHANT_CODE", "store_uae");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("splits the bag total in four and opens Tabby's own pop-up", () => {
@@ -39,6 +33,12 @@ describe("CartTabbyPromo", () => {
 
   it("is hidden for a currency Tabby does not cover", () => {
     const { container } = render(<CartTabbyPromo amount={252} currency="USD" />);
+    expect(container.textContent).toBe("");
+  });
+
+  it("is hidden when Tabby is off for the brand", () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_TABBY", "false");
+    const { container } = render(<CartTabbyPromo amount={252} currency="AED" />);
     expect(container.textContent).toBe("");
   });
 
