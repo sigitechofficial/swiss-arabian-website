@@ -36,8 +36,22 @@ export function LoaderMark({ size = 112, className = "" }: LoaderMarkProps) {
   );
 }
 
+/**
+ * What a route is loading, for brands that word the loading line in the
+ * page's language (Sapil). Swiss Arabian shows `label` as before.
+ */
+export type PageLoadingLabelKey =
+  | "page"
+  | "session"
+  | "redirecting"
+  | "savedItems"
+  | "wishlist"
+  | "order"
+  | "orderLookup";
+
 type PageLoadingProps = {
   label?: string;
+  labelKey?: PageLoadingLabelKey;
   /** Full content area (route/guard loading) — taller than an in-page section. */
   fill?: boolean;
 };

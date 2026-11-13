@@ -18,7 +18,7 @@ export default async function OrderConfirmationPage({
 }) {
   const { orderId } = await params;
   return (
-    <Suspense fallback={<PageLoading label="Loading your order…" fill />}>
+    <Suspense fallback={<PageLoading label="Loading your order…" labelKey="order" fill />}>
       <OrderConfirmationView orderId={orderId} />
     </Suspense>
   );

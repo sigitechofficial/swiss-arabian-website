@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function AccountSavedPage() {
   return (
-    <Suspense fallback={<PageLoading label="Loading saved items…" fill />}>
+    <Suspense fallback={<PageLoading label="Loading saved items…" labelKey="savedItems" fill />}>
       <AccountWishlistPageView title="Saved Items" />
     </Suspense>
   );

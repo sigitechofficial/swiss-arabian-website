@@ -27,6 +27,26 @@ describe("SapilPageLoading", () => {
     expect(container.innerHTML).not.toMatch(/terra|loading-perfume/);
   });
 
+  it("words what the route is loading, in the page's language", async () => {
+    const en = await loadSapilMessages("en");
+    const { unmount } = render(
+      <SapilCopyProvider messages={en}>
+        <SapilPageLoading label="Loading your order…" labelKey="order" fill />
+      </SapilCopyProvider>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Loading your order…");
+    unmount();
+    const ar = await loadSapilMessages("ar");
+    render(
+      <ShopLocaleProvider locale="ar" messages={await loadMessages("ar")}>
+        <SapilCopyProvider messages={ar}>
+          <SapilPageLoading label="Checking session…" labelKey="session" fill />
+        </SapilCopyProvider>
+      </ShopLocaleProvider>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("جارٍ التحقق من تسجيل دخولك…");
+  });
+
   it("speaks the page's language outside the Sapil shell (sign-in fallbacks)", async () => {
     const shared = await loadMessages("ar");
     render(

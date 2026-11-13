@@ -1,6 +1,12 @@
 {
   "skipToContent": "Skip to content",
   "loading": "Loading…",
+  "loadingSession": "Checking you’re signed in…",
+  "loadingRedirecting": "Taking you to sign in…",
+  "loadingSavedItems": "Loading your saved items…",
+  "loadingWishlist": "Loading your wishlist…",
+  "loadingOrder": "Loading your order…",
+  "loadingOrderLookup": "Looking up your order…",
   "tryAgain": "Try again",
   "loadFailed": "We couldn’t load this right now."
 }

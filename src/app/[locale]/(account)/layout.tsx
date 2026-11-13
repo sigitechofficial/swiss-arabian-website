@@ -11,8 +11,8 @@ export default function AccountLayout({
       <AuthGuard
         requireAuth
         // The brand's loading state (Sapil: v9 pastel tiles, not Swiss Arabian's bottle mark).
-        checking={<PageLoading label="Checking session…" fill />}
-        redirecting={<PageLoading label="Redirecting…" fill />}
+        checking={<PageLoading label="Checking session…" labelKey="session" fill />}
+        redirecting={<PageLoading label="Redirecting…" labelKey="redirecting" fill />}
       >
         {children}
       </AuthGuard>
