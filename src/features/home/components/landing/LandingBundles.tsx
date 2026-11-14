@@ -82,7 +82,7 @@ const shopRestore =
  * the card: only short text is shown.
  */
 function shortLabel(subtitle: string | null | undefined): string | null {
-  const text = (subtitle ?? "Eau de Parfum").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const text = stripHtml(subtitle ?? "Eau de Parfum").replace(/\s+/g, " ").trim();
   return text && text.length <= 40 ? text : null;
 }
 
@@ -239,7 +239,7 @@ export function LandingBundles({
                 <span className="min-w-0 flex-1">
                   <span className={shopName} title={product.title}>{product.title}</span>
                   {shortLabel(product.subtitle) ? (
-                    <span className={shopConc} title={shortLabel(product.subtitle)}>{shortLabel(product.subtitle)}</span>
+                    <span className={shopConc} title={shortLabel(product.subtitle) ?? undefined}>{shortLabel(product.subtitle)}</span>
                   ) : null}
                 </span>
                 <span className={shopPrice}>
