@@ -5,6 +5,7 @@ import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
 import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
+import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
 import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
@@ -333,6 +334,8 @@ export function SapilCheckoutPage() {
   const taxLabel = taxDisplay?.taxLabel || "VAT";
   if (f.tax > 0 && !taxIncluded) rows.push({ key: "tax", label: taxLabel, value: money(f.tax, currency) });
   const payable = f.amountPayable ?? f.total;
+  // The checkout session's own quote wins over the cart's stored one.
+  const sessionPointsQuote = readLoyaltyRedemption(f.promoSnapshot, session?.promotionSnapshot, session?.promotions);
   const showPayable = f.amountPayable != null && f.amountPayable !== f.total;
   if (showPayable) {
     rows.push({ key: "total", label: t("checkout.total"), value: money(f.total, currency) });
@@ -349,9 +352,7 @@ export function SapilCheckoutPage() {
     }
     // Reward points are a tender too: without this row the gap between the
     // total and what the payment method collects goes unexplained.
-    const points = loyaltyLineFromQuote(
-      readLoyaltyRedemption(f.promoSnapshot, session?.promotionSnapshot, session?.promotions) ?? cartLoyalty,
-    );
+    const points = loyaltyLineFromQuote(sessionPointsQuote ?? cartLoyalty);
     if (points && points.amount > 0) {
       rows.push({
         key: "points",
@@ -658,6 +659,7 @@ export function SapilCheckoutPage() {
                 : t("checkout.promoApply"),
             message: couponMessage,
           }}
+          rewards={<SapilPointsBox quoteOverride={sessionPointsQuote} />}
           rows={rows}
           grand={{ label: showPayable ? t("checkout.toPay") : t("checkout.total"), ...grandParts }}
           vatNote={f.tax > 0 && taxIncluded ? t("checkout.taxIncluded", { amount: money(f.tax, currency), label: taxLabel }) : undefined}

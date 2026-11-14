@@ -7,6 +7,8 @@ import { useFreeShippingBar } from "@/features/promotions";
 import { useApplicablePromotions } from "@/features/promotions/hooks/useApplicablePromotions";
 import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useLoyaltyRedemption } from "@/features/loyalty/hooks/useLoyaltyRedemption";
+import { formatPoints } from "@/features/loyalty/types/loyalty";
 import { useUiStore } from "@/stores/useUiStore";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SapilLink, useSapilMoney } from "../commerce/shared";
@@ -30,6 +32,24 @@ export function SapilBagDrawer() {
   const ship = useFreeShippingBar();
   const progress = useApplicablePromotions().data?.progress;
   const { views: giftViews } = useGiftAwards(null, bag.currency);
+  const points = useLoyaltyRedemption();
+
+  // The points editor lives on the bag page; the drawer says what is used, or links there.
+  const pointsQuote = points.hidden ? null : points.quote;
+  const pointsNote = !pointsQuote ? undefined : pointsQuote.appliedPoints > 0 ? (
+    <>
+      {t("bag.pointsUsing", { points: formatPoints(pointsQuote.appliedPoints) })}
+      {pointsQuote.appliedAmount > 0 ? ` (−${money(pointsQuote.appliedAmount, pointsQuote.currencyCode || bag.currency)})` : ""}
+      {" · "}
+      <SapilLink href="/cart" onClick={close} className="underline underline-offset-[3px]">
+        {t("bag.pointsChange")}
+      </SapilLink>
+    </>
+  ) : pointsQuote.enabled && pointsQuote.eligible ? (
+    <SapilLink href="/cart" onClick={close} className="underline underline-offset-[3px]">
+      {t("bag.pointsUse", { points: formatPoints(pointsQuote.availablePoints) })}
+    </SapilLink>
+  ) : undefined;
 
   // The bag lives in browser storage: the first render matches the server (empty).
   const lines = hydrated ? bag.orderedLines : [];
@@ -99,6 +119,7 @@ export function SapilBagDrawer() {
             : money(bag.amountDue, bag.currency)
       }
       promoNote={progress?.primary?.message ?? progress?.unlockedSummary ?? undefined}
+      pointsNote={pointsNote}
       checkoutHref="/checkout"
       checkoutBlocked={bag.checkoutBlocked}
       syncing={bag.syncing}
