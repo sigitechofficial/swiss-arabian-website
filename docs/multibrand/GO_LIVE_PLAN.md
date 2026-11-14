@@ -2,6 +2,9 @@
 
 Status: agreed 2026-11-14. Nothing deployed yet.
 
+Decisions and work log (what was decided, why, commits, next directions): backend
+`docs/brand-architecture/MULTI_MARKET_GO_LIVE_LOG.md` and ADR-002 – ADR-005 there.
+
 ## Decisions
 
 | # | Decision |
