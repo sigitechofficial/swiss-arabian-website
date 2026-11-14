@@ -1,32 +1,28 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { ServerInlineScript } from "@/components/layout/ServerInlineScript";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { getBrand } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
+import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
-import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
+import { currentSiteHost } from "@/lib/site/currentSite";
+import { hostFromSiteKey } from "@/lib/site/siteKey";
+import { staticSiteKeys } from "@/lib/site/staticSites";
 import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
 import { loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
-import { AppProviders } from "../providers";
-import "../globals.css";
+import { AppProviders } from "@/app/providers";
+import "@/lib/site/siteParam";
+import "@/app/globals.css";
 
 /**
- * The address the page was requested on, for local brand aliases
- * (sp.localhost) in `next dev` only. Production reads no request data here:
- * the brand comes from build-time settings (one deployment per brand), so
- * the layout does not make every page dynamic.
+ * The website address this page tree is for (`[site]`), e.g. for local brand
+ * aliases (sp.localhost → Sapil). A root param: reading it keeps pages static.
  */
-async function devRequestHost(): Promise<string | null> {
-  if (process.env.NODE_ENV !== "development") return null;
-  const incoming = await headers();
-  return storefrontHostFromHeaderValues(
-    incoming.get("x-forwarded-host"),
-    incoming.get("host"),
-  );
+async function siteHost(): Promise<string | null> {
+  return currentSiteHost();
 }
 
 /**
@@ -35,9 +31,14 @@ async function devRequestHost(): Promise<string | null> {
  */
 export const revalidate = 3600;
 
-/** One prerendered tree per configured language. */
-export function generateStaticParams() {
-  return LOCALES.map((locale) => ({ locale }));
+/**
+ * One prerendered tree per website address and language: the deployment's own
+ * address and every market website of the brand. Other known addresses render
+ * on first visit (ISR).
+ */
+export async function generateStaticParams() {
+  const sites = await staticSiteKeys();
+  return sites.flatMap((site) => LOCALES.map((locale) => ({ site, locale })));
 }
 
 /**
@@ -53,7 +54,7 @@ export async function generateMetadata({
   const origin = await requestOrigin();
   // Site name in the page's language and the storefront's market (SEO Management → Brand identity).
   const brand = await loadRequestBrandIdentity(isLocale(locale) ? locale : DEFAULT_LOCALE);
-  const site = getBrand(await devRequestHost());
+  const site = getBrand(await siteHost());
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
     // "ZAHRA – Swiss Arabian UAE": same pattern as the Shopify stores (market's site name).
@@ -89,15 +90,26 @@ export default async function RootLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
+  params: Promise<{ site: string; locale: string }>;
 }>) {
-  const { locale } = await params;
-  // The proxy only sends configured languages here; anything else is a 404.
-  if (!isLocale(locale)) notFound();
-  const [messages, storefrontHost] = await Promise.all([
+  const { site, locale } = await params;
+  // The proxy only sends known addresses and configured languages here;
+  // anything else (a hand-made internal path) is a 404.
+  if (!hostFromSiteKey(site) || !isLocale(locale)) notFound();
+  const [messages, storefrontHost, catalogMarket] = await Promise.all([
     loadMessages(locale),
-    devRequestHost(),
+    siteHost(),
+    resolveCatalogMarketFor(locale),
   ]);
+  // Which website / market this page is, for the brand's one tag setup.
+  const marketContext = catalogMarket.market;
+  const analyticsContext = {
+    siteHost: storefrontHost,
+    market: catalogMarket.zoneCode || null,
+    country: "countryCode" in marketContext ? (marketContext.countryCode ?? null) : null,
+    currency: "currencyCode" in marketContext ? (marketContext.currencyCode ?? null) : null,
+    language: locale,
+  };
   const { insider } = getBrand(storefrontHost).integrations;
   return (
     <html
@@ -121,7 +133,7 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="flex min-h-dvh flex-col">
-        <AnalyticsScripts />
+        <AnalyticsScripts context={analyticsContext} />
         <InsiderScripts />
         <AppProviders
           storefrontHost={storefrontHost}

@@ -7,7 +7,7 @@ The storefront runs several brands (Swiss Arabian, Sapil, more later) from one c
 | Settings: name, hosts, logo, IDs, feature flags | `src/lib/brand/brands/<brand>.ts` (see `src/lib/brand/README.md`) | yes |
 | Design system: tokens, fonts, components | `src/brands/<theme>/` (Sapil: `theme.css`, `fonts.ts`, `ui/`) | yes |
 | Page components for every route | `src/brands/<theme>/brand-ui.ts` (+ `brand-ui.client.ts`) | yes |
-| Routes, data loading, SEO metadata | `src/app/[locale]/**` | shared |
+| Routes, data loading, SEO metadata | `src/app/[site]/[locale]/**` | shared |
 | API calls, hooks, stores | `src/features/*/api`, `src/features/*/hooks`, `src/stores` | shared |
 
 ## The brand UI contract (`@brand-ui`)
@@ -28,7 +28,7 @@ At build time `@brand-ui` points at the active brand's `brand-ui.ts`:
 Each deployment's bundle contains only that brand's UI. What still crosses over (checked in `.next` on 2026-11-13):
 - The brand **configs** (`src/lib/brand/brands/*.ts`: names, hosts, logo paths, public ids) of every brand ship to the browser, because the host → brand lookup needs them. No UI code.
 - **CSS:** `src/app/globals.css` does not scan `src/brands/sapil` (`@source not`), so Swiss Arabian pages don't carry Sapil utilities. A Sapil build's global stylesheet still contains the utilities of the Swiss Arabian views that live in `src/features/*/components` (shared folders are scanned).
-- **Dev routes:** `src/app/[locale]/(dev)/**/page.dev.tsx` (Sapil kit / preview) are routes only in `next dev`, in a Sapil build, or with `SAPIL_KIT=1` at build time (`pageExtensions` in `next.config.ts`). A Swiss Arabian production build has no such route.
+- **Dev routes:** `src/app/[site]/[locale]/(dev)/**/page.dev.tsx` (Sapil kit / preview) are routes only in `next dev`, in a Sapil build, or with `SAPIL_KIT=1` at build time (`pageExtensions` in `next.config.ts`). A Swiss Arabian production build has no such route.
 
 **Client route files** (`error.tsx`, `not-found.tsx`) import from `@brand-ui/client`. That entry may only export client-safe components, never anything that imports `next/headers`.
 

@@ -26,7 +26,7 @@ function lanDevOrigins(): string[] {
 }
 
 /**
- * Dev-only reference routes (`src/app/[locale]/(dev)/**\/page.dev.tsx`: the
+ * Dev-only reference routes (`src/app/[site]/[locale]/(dev)/**\/page.dev.tsx`: the
  * Sapil kit / preview for the visual diff) are routes only in `next dev`, in a
  * Sapil build, or with SAPIL_KIT=1. A Swiss Arabian build has no such route,
  * so it ships none of the Sapil kit code.

@@ -14,7 +14,7 @@ Status: agreed 2026-11-14. Nothing deployed yet.
 
 ## What is already in place
 
-- The website reads the live address on every request, so one deployment serves all of a brand's subdomains.
+- One deployment per brand serves all of its subdomains, each with its own cached pages (phase 3; before it, production server-rendered pages used the one configured address).
 - Backend address table `StorefrontDomain`: address → brand → market (optional). Unknown addresses never fall back to Swiss Arabian.
 - Markets exist for both brands (SA: UAE, KSA, Qatar; Sapil: UAE, KSA, Oman).
 - Per brand: design, emails (colours, language, logos), payment credential packs, feature switches, legacy redirects. Email senders per brand + market.
@@ -48,7 +48,13 @@ Plan as written:
 6. CRM (Insider) attributes: `markets_used`, `main_market`, `signup_market`, last order per market.
 7. Admin customer page: "Markets" panel (market, last seen, orders, consent); export of customers by market.
 
-## Phase 3 — shopper experience and SEO across subdomains (~3–4 days, development)
+## Phase 3 — shopper experience and SEO across subdomains (~3–4 days, development) — ✅ done 2026-11-15
+
+As built: [MARKET_WEBSITES.md](./MARKET_WEBSITES.md). Each subdomain is its own cached
+page set inside one deployment per brand (route segment `[site]`), checked against the
+backend address table (unknown → 404); root domain → 307 to a market website by
+earlier choice, country, else default. Merchant Center links per market website.
+Plan as written:
 
 1. Market switcher goes to the other subdomain, keeping language and page.
 2. Canonical address per site; hreflang between markets and languages; sitemap and robots.txt per site.

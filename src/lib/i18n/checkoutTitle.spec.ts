@@ -8,7 +8,7 @@ vi.mock("@/lib/i18n/routeLocale", () => ({
 }));
 vi.mock("@brand-ui", () => ({ CheckoutPageView: () => null }));
 
-import { generateMetadata } from "@/app/[locale]/(checkout)/checkout/page";
+import { generateMetadata } from "@/app/[site]/[locale]/(checkout)/checkout/page";
 
 describe("checkout page title", () => {
   it("is translated, not just the brand name", async () => {

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { routeLocale } from "@/lib/i18n/routeLocale";
-import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 
 /**
  * The market the shopper chose (market cookie), else the default market.
@@ -12,6 +12,8 @@ import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
  */
 export async function resolveRequestCatalogMarket() {
   const locale = await routeLocale();
+  // A market address decides the market: no cookie is read, so its pages stay static.
+  if ((await loadServerMarkets())?.siteMarketCode) return resolveCatalogMarketFor(locale);
   const zoneCookie = (await cookies()).get(ZONE_COOKIE)?.value?.trim() || "";
   return resolveCatalogMarketFor(locale, zoneCookie);
 }

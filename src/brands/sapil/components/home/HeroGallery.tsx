@@ -80,7 +80,7 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
           className="flex flex-col justify-center py-[48px] pe-[clamp(28px,3.4vw,56px)] ps-[var(--intro-ps)] max-900:pt-[40px] max-900:pb-[34px] max-900:px-sapil-gut"
         >
           {hero.eyebrow ? <p className={cx(EYEBROW, RISE)}>{hero.eyebrow}</p> : null}
-          {/* Not a heading: the page's one H1 is the SEO title (see app/[locale]/(shop)/page.tsx). */}
+          {/* Not a heading: the page's one H1 is the SEO title (see app/[site]/[locale]/(shop)/page.tsx). */}
           <p
             className={cx(
               "font-sapil-serif [text-wrap:balance] !font-[300] text-[clamp(56px,6.4vw,104px)] !leading-[.92] !tracking-[-.03em] mt-[20px] mb-[22px] max-900:text-[clamp(54px,15vw,84px)]",

@@ -39,13 +39,13 @@ Callers (all moved off `env.ts` / `process.env`, 2026-11-13 review):
 | Integration | Read in |
 | --- | --- |
 | GTM / GA4 | `components/layout/AnalyticsScripts.tsx` |
-| Insider | `app/[locale]/layout.tsx` (head tag), `components/layout/InsiderScripts.tsx`, `lib/insider.ts` |
+| Insider | `app/[site]/[locale]/layout.tsx` (head tag), `components/layout/InsiderScripts.tsx`, `lib/insider.ts` |
 | Tabby keys, Tabby / Tamara / Paymob switches | `features/catalog/utils/instalments.ts`, `features/cart/components/CartTabbyPromo.tsx`, `features/checkout/utils/paymentMethod.ts` |
 | Google Maps | `lib/google/GooglePlacesProvider.tsx` |
 | Catalog media base | `features/catalog/utils/resolveCatalogImageUrl.ts` (`next.config` image patterns still read the env var at build time) |
 | Storefront host, brand code | `lib/storefront/brand.ts`, `lib/api/storefrontHost.ts` (via `readProcessPublicEnv`; `@/lib/brand` imports them) |
-| SEO indexing | `app/[locale]/layout.tsx`, `app/robots.ts` |
-| Site name, icons, default description | `app/[locale]/layout.tsx`, `lib/seo/brandIdentity.ts` (fallback when the API has no identity) |
+| SEO indexing | `app/[site]/[locale]/layout.tsx`, `lib/seo/siteRobots.ts` (`app/[site]/robots.txt`) |
+| Site name, icons, default description | `app/[site]/[locale]/layout.tsx`, `lib/seo/brandIdentity.ts` (fallback when the API has no identity) |
 | `{brand}` in page meta descriptions | `lib/i18n/routeLocale.ts` (`routeTranslator()` fills it) |
 
 Which brand: `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` → else the brand whose

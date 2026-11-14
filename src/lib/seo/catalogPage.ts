@@ -33,7 +33,8 @@ import {
   getTranslator,
   type Translator,
 } from "@/lib/i18n/messages";
-import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import { buildMarketHreflang, catalogPathsFor, marketSites } from "@/lib/seo/marketAlternates";
 
 export { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 
@@ -263,10 +264,30 @@ export async function catalogMetadata(
 ): Promise<Metadata> {
   const { zoneCode, market } = await resolveServerCatalogMarket(input.locale);
   const brand = await loadBrandIdentityFor(input.locale, zoneCode);
-  return buildCatalogMetadata(input, {
+  const metadata = buildCatalogMetadata(input, {
     brand,
     countryCode: "countryCode" in market ? market.countryCode : null,
     t: await getTranslator(input.locale),
+  });
+  // On a market website: hreflang across the brand's market websites.
+  const languages = await crossMarketLanguages(input.path);
+  if (languages) metadata.alternates = { ...metadata.alternates, languages };
+  return metadata;
+}
+
+/** hreflang across market websites for this page, or null (language-only alternates stay). */
+async function crossMarketLanguages(path: string): Promise<Record<string, string> | null> {
+  const list = await loadServerMarkets();
+  const ownZoneCode = list?.siteMarketCode;
+  if (!ownZoneCode) return null;
+  const sites = marketSites(list);
+  if (sites.length < 2) return null;
+  return buildMarketHreflang({
+    path,
+    ownZoneCode,
+    defaultZoneCode: list?.brandDefaultMarketCode ?? null,
+    sites,
+    catalogPaths: await catalogPathsFor(sites, ownZoneCode, path),
   });
 }
 

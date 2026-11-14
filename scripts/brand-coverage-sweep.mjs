@@ -69,7 +69,7 @@ function chromePath() {
   throw new Error("No Chrome found; set CHROME_PATH.");
 }
 
-/** Every route under src/app/[locale] except (dev). `{x}` placeholders are discovered from the site. */
+/** Every route under src/app/[site]/[locale] except (dev). `{x}` placeholders are discovered from the site. */
 export const ROUTES = [
   "/", "/products", "/products/p/2", "/products/{product}", "/collections", "/collections/{collection}",
   "/collections/{collection}/p/2", "/categories/{category}", "/categories/{category}/p/2", "/search?q=oud",

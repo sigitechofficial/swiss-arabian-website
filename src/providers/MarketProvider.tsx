@@ -40,6 +40,7 @@ import {
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import { marketSiteUrl } from "@/features/markets/utils/marketSiteUrl";
 import { employeeBenefitsKeys } from "@/features/employeeBenefits/api/employeeBenefits.keys";
 import { loyaltyKeys } from "@/features/loyalty/api/loyalty.keys";
 import { promotionKeys } from "@/features/promotions/api/promotions.keys";
@@ -131,7 +132,15 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const ready = list.filter((market) => market.isCatalogReady);
     const pool = ready.length ? ready : list;
     const filtered = filterMarketsForTenant(pool, storefrontHost);
-    return filtered.length ? filtered : pool;
+    const markets = filtered.length ? filtered : pool;
+    // On a market website the address decides the market: the picker offers the
+    // markets that have a website of their own (choosing one goes there).
+    const siteMarket = marketsQuery.data?.siteMarketCode;
+    if (!siteMarket) return markets;
+    const withSite = markets.filter(
+      (market) => market.zoneCode === siteMarket || market.storefrontUrl,
+    );
+    return withSite.length ? withSite : markets;
   }, [marketsQuery.data, storefrontHost]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {
@@ -179,8 +188,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // A stored zone counts only if it is one of this brand's markets.
-    const stored = storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
+    // A market website's own market always wins (no saved choice overrides
+    // the address); elsewhere a stored zone counts only if it is one of this
+    // brand's markets.
+    const siteMarket = marketsQuery.data.siteMarketCode;
+    const stored = siteMarket || storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
     const pick =
       shoppable.find((market) => market.zoneCode === stored) ??
       marketsQuery.data.defaultMarket ??
@@ -315,6 +327,20 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     (id: string | null) => {
       if (!id || id === marketId) return;
       const market = shoppable.find((item) => item.zoneCode === id);
+      // A market with its own website: go there, same page and language. Its
+      // bag, prices and sign-in belong to that website.
+      const elsewhere = market
+        ? marketSiteUrl(market, {
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            search: window.location.search,
+            hash: window.location.hash,
+          })
+        : null;
+      if (elsewhere) {
+        window.location.assign(elsewhere);
+        return;
+      }
       const next = {
         ...(market
           ? contextFromMarket(market, pathLanguage)
