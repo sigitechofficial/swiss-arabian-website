@@ -73,6 +73,11 @@ Details in [`../sapil/LAUNCH_CHECKLISTS.md`](../sapil/LAUNCH_CHECKLISTS.md).
 
 ## Phase 5 — staging and go-live, one market at a time
 
+Tooling built 2026-11-15: admin Brands → Domains → Market websites (checks, Go live,
+Roll back, history; permission `markets.golive`, password step-up) and
+`npm run ops:market-website:check` (same checks from the command line). Runbook:
+backend `docs/storefront/MARKET_WEBSITE_CUTOVER.md`.
+
 1. Staging subdomain per brand and market. Smoke test: browse; prices and currency; checkout with every payment method; emails and their links; language switch; market switch; a customer active in two markets shows both in the admin.
 2. Rollout order: **Swiss Arabian UAE** (replaces live Shopify) → **Sapil UAE** → **Swiss Arabian KSA, Qatar, Kuwait, Oman** → **Sapil KSA, Oman**. A market goes live only when its phase 4 items are done.
 3. Each cutover: switch DNS, check 301s on the top old URLs, watch orders, payments and errors for 24–48 h, keep Shopify ready to roll back.

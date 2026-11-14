@@ -84,9 +84,13 @@ its market website. Old Shopify URL shapes are handled in code
 ## Adding a market website
 
 1. Backend: market exists; address linked to it (`npm run ops:storefront:market-domains`).
+   Linked is not live: no other website, email or payment return uses it yet.
 2. DNS and hosting: point the subdomain at the brand's website project (same deployment).
 3. Nothing to build: the address renders on first visit; the next build prerenders it.
 4. Register the address with payment providers and Search Console; add its GTM routing.
+5. Cutover: admin → Brands → Domains → Market websites → Checks → **Go live**
+   (backend `docs/storefront/MARKET_WEBSITE_CUTOVER.md`). Only live addresses get
+   `storefrontUrl`, so only they appear in the picker, hreflang and the root redirect.
 
 ## Local testing
 
