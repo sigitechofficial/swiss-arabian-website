@@ -243,16 +243,17 @@ export function SapilOrderView({
                     <dd className="text-[26px] font-[700] tracking-[-.02em] tabular-nums whitespace-nowrap">{grandTotal.value}</dd>
                   </div>
                 ) : null}
-                {tenders?.length ? (
-                  <div className="border-t border-sapil-line mt-[8px] pt-[8px]">
-                    {tenders.map((row) => (
-                      <TotalRow key={row.key} row={row} />
-                    ))}
-                  </div>
-                ) : null}
               </dl>
             ) : null}
             {vatNote ? <p className="text-[13px] text-sapil-muted text-end">{vatNote}</p> : null}
+            {/* After the VAT note, which belongs to the total, not to what the payment method took. */}
+            {tenders?.length ? (
+              <dl className="border-t border-sapil-line mt-[10px] pt-[8px]">
+                {tenders.map((row) => (
+                  <TotalRow key={row.key} row={row} />
+                ))}
+              </dl>
+            ) : null}
           </section>
           <aside className="flex flex-col gap-[20px]">{side}</aside>
         </div>
