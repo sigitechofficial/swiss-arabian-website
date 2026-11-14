@@ -449,7 +449,7 @@
 | Blog | `/blog`, `/blog/[slug]` | Static posts |
 | FAQ | `/faq` | Static |
 | Our Story | `/our-story` | Static |
-| Stores | `/stores` | Static UAE list; Google Maps if key set |
+| Stores | `/stores`, `/stores/[area]`, `/stores/[area]/[store]` | From the store locator API (admin → Website → Stores); Google Maps if key set, else a free street map. See `docs/storefront/STORE_LOCATOR.md` |
 
 ---
 
