@@ -76,6 +76,16 @@ const shopCta = `${pillSolid} mx-[1.85rem] mt-4 mb-[1.4rem] box-border flex w-[c
 const shopRestore =
   "absolute right-[clamp(1rem,3vw,2.5rem)] bottom-[clamp(1.25rem,3vw,2.5rem)] z-[2] inline-flex size-12 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-[0_12px_30px_rgba(10,6,3,0.35)] backdrop-blur-xl backdrop-saturate-[1.6] transition-[background] duration-300 hover:bg-white/24 max-[1023px]:top-[var(--chrome-edge,1rem)] max-[1023px]:right-[var(--chrome-edge,1rem)] max-[1023px]:bottom-auto max-[1023px]:z-10 max-[1023px]:size-[52px] max-[1023px]:border-copper max-[1023px]:bg-copper max-[1023px]:shadow-[0_10px_28px_rgba(10,6,3,0.45)] max-[1023px]:hover:border-copper-deep max-[1023px]:hover:bg-copper-deep [&_svg]:size-[19px]";
 
+/**
+ * The small line under a product name ("Eau de Parfum", "100 ml"). Products
+ * picked in the admin carry their whole short description here, which filled
+ * the card: only short text is shown.
+ */
+function shortLabel(subtitle: string | null | undefined): string | null {
+  const text = (subtitle ?? "Eau de Parfum").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return text && text.length <= 40 ? text : null;
+}
+
 export type LandingBundlesProps = {
   eyebrow?: string | null;
   heading?: string | null;
@@ -228,9 +238,9 @@ export function LandingBundles({
                 />
                 <span className="min-w-0 flex-1">
                   <span className={shopName} title={product.title}>{product.title}</span>
-                  <span className={shopConc} title={stripHtml(product.subtitle) || undefined}>
-                    {stripHtml(product.subtitle) || "Eau de Parfum"}
-                  </span>
+                  {shortLabel(product.subtitle) ? (
+                    <span className={shopConc} title={shortLabel(product.subtitle)}>{shortLabel(product.subtitle)}</span>
+                  ) : null}
                 </span>
                 <span className={shopPrice}>
                   {formatMoney(product.price, product.currency)}
