@@ -40,3 +40,9 @@ Swiss Arabian (local, 44 seeded UAE stores, 42 published): locator, area, store 
 - Google Business Profile sync (phase 4): hours, rating and links still come from admin.
 - Designer-approved layouts: both brands' pages are built from their existing design systems.
 - Arabic store names / addresses and opening hours for most stores: content to enter in admin.
+
+## Phase 5
+
+- **Store pages** (both brands): "Recent reviews on Google" shows the newest 3 Google reviews with text (stars, name or "A Google user", month, the shop's reply). No review structured data. When the store has no photos of its own, Google's photos are shown with "Photos from Google".
+- **Available in our shops** (Swiss Arabian product page, `SaInStoreAvailability`): shops of the market that have the selected SKU, "In stock" / "Only a few left", with status, phone and a link to the shop page. Hidden when the store locator is off or no shop has a D365 warehouse yet. Data: `GET storefront/stores/availability?sku=` (`useStoreAvailability`).
+- Copy: `stores.googleReviewsTitle`, `stores.anonymousReviewer`, `stores.reviewStars`, `stores.reviewReply`, `stores.photosFromGoogle`, `stores.inStore*`, `stores.stock*` (en/ar).

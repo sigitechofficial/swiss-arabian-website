@@ -9,6 +9,7 @@ import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useLoyaltyRedemption } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { formatPoints } from "@/features/loyalty/types/loyalty";
+import { brandFeatureEnabled } from "@/lib/brand/features";
 import { useUiStore } from "@/stores/useUiStore";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SapilLink, useSapilMoney } from "../commerce/shared";
@@ -35,7 +36,7 @@ export function SapilBagDrawer() {
   const points = useLoyaltyRedemption();
 
   // The points editor lives on the bag page; the drawer says what is used, or links there.
-  const pointsQuote = points.hidden ? null : points.quote;
+  const pointsQuote = !brandFeatureEnabled("loyalty") || points.hidden ? null : points.quote;
   const pointsNote = !pointsQuote ? undefined : pointsQuote.appliedPoints > 0 ? (
     <>
       {t("bag.pointsUsing", { points: formatPoints(pointsQuote.appliedPoints) })}

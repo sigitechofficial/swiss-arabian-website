@@ -6,6 +6,7 @@ import { useLoyaltyRedemption } from "@/features/loyalty/hooks/useLoyaltyRedempt
 import { formatPoints } from "@/features/loyalty/types/loyalty";
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { ApiClientError } from "@/lib/api/apiError";
+import { brandFeatureEnabled } from "@/lib/brand/features";
 import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
 import type { SapilCopyKey } from "../../i18n/catalog";
 import { Button } from "../../ui";
@@ -44,8 +45,8 @@ function errorText(t: SapilTranslator, error: unknown): string {
 /**
  * Spend reward points on the bag (shared redemption logic, as Swiss Arabian's
  * bag page and checkout). Signed-in members only; hidden when the market has
- * no loyalty programme. Points are reserved on the cart, so the checkout and
- * the order pick them up.
+ * no loyalty programme, and while the brand's `loyalty` feature is off. Points
+ * are reserved on the cart, so the checkout and the order pick them up.
  */
 export function SapilPointsBox({ quoteOverride }: { quoteOverride?: unknown }) {
   const t = useSapilCopy();
@@ -59,7 +60,7 @@ export function SapilPointsBox({ quoteOverride }: { quoteOverride?: unknown }) {
 
   const applied = Boolean(quote && quote.appliedPoints > 0);
   const editing = editingRequested && applied;
-  if (hidden || !quote) return null;
+  if (!brandFeatureEnabled("loyalty") || hidden || !quote) return null;
 
   const currency = quote.currencyCode ?? wallet.data?.currencyCode ?? marketCurrency;
   const worth = wallet.data?.availableValue ?? null;

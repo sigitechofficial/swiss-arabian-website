@@ -70,6 +70,21 @@ export type StoreAreaData = {
   otherAreas: Array<{ slug: string; name: string }>;
 };
 
+export type StoreReview = {
+  id: string;
+  /** null = anonymous reviewer */
+  author: string | null;
+  rating: number;
+  text: string | null;
+  createdAt: string | null;
+  reply: string | null;
+};
+
+export type StoreStock = "IN_STOCK" | "LOW" | "OUT_OF_STOCK";
+
+/** `GET /storefront/stores/availability?sku=` */
+export type StoreAvailability = { sku: string; stores: Array<StoreCard & { stock: StoreStock }> };
+
 export type StoreDetail = StoreCard & {
   language: string;
   area: StoreAreaText;
@@ -77,6 +92,10 @@ export type StoreDetail = StoreCard & {
   description: string | null;
   email: string | null;
   photos: Array<{ url: string; alt: string }>;
+  /** Where the photos come from: the store's own, or Google's (credit them). */
+  photosFrom?: "store" | "google" | null;
+  /** Newest Google reviews (newest first). */
+  reviews?: StoreReview[];
   googleReviewUri: string | null;
   seoTitle: string | null;
   seoDescription: string | null;

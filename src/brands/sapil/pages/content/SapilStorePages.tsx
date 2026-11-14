@@ -18,6 +18,7 @@ import {
   whatsappUrl,
 } from "@/features/stores/utils/storeLinks";
 import { dayHoursText } from "@/features/stores/utils/storeText";
+import { reviewMonth, shownReviews } from "@/features/stores/utils/storeReviews";
 import { Breadcrumbs, Button, EYEBROW, Wrap, cx } from "../../ui";
 import { SapilLink } from "../../components/shared/SapilLink";
 import { SapilStoreFinder, SapilStoreStatus } from "../../components/content/SapilStoreFinder";
@@ -103,6 +104,7 @@ export function SapilStorePage({ store }: { store: StoreDetail }) {
   const locale = useShopLocale();
   const intl = intlLocale(locale);
   const now = useNow();
+  const reviews = shownReviews(store);
   const closed = store.openState === "CLOSED_PERMANENTLY";
   const days = now ? weekAhead(store, now) : STORE_DAYS.map((day) => hoursOn({ ...store, specialHours: [] }, "", day));
 
@@ -217,6 +219,35 @@ export function SapilStorePage({ store }: { store: StoreDetail }) {
             </section>
           ) : null}
 
+          {reviews.length ? (
+            <section className="mt-[24px]" aria-labelledby="store-reviews">
+              <h2 id="store-reviews" className={H2}>
+                {t("stores.googleReviewsTitle")}
+              </h2>
+              <ul className="flex flex-col gap-[12px]">
+                {reviews.map((r) => (
+                  <li key={r.id} className="bg-sapil-white rounded-[18px] p-[16px]">
+                    <p className="flex flex-wrap items-baseline gap-x-[8px] text-[14px]">
+                      <span className="text-sapil-accent" role="img" aria-label={t("stores.reviewStars", { rating: r.rating })}>
+                        {"★".repeat(r.rating)}
+                        <span className="text-sapil-line-2">{"★".repeat(5 - r.rating)}</span>
+                      </span>
+                      <b className="font-[600]">{r.author ?? t("stores.anonymousReviewer")}</b>
+                      <span className="text-sapil-muted">{reviewMonth(r.createdAt, intl)}</span>
+                    </p>
+                    <p className="mt-[6px] text-[15px] text-sapil-ink-2 whitespace-pre-line line-clamp-4">{r.text}</p>
+                    {r.reply ? (
+                      <p className="mt-[8px] border-s-2 border-sapil-line ps-[10px] text-[14px] text-sapil-muted">
+                        <b className="font-[600] text-sapil-ink">{t("stores.reviewReply")}: </b>
+                        {r.reply}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           <div className="mt-[20px] flex flex-wrap items-center gap-[16px] text-[15px]">
             {store.googleRating != null ? (
               <span>
@@ -254,6 +285,9 @@ export function SapilStorePage({ store }: { store: StoreDetail }) {
                 </div>
               ))}
             </div>
+          ) : null}
+          {store.photos.length && store.photosFrom === "google" ? (
+            <p className="text-[13px] text-sapil-muted">{t("stores.photosFromGoogle")}</p>
           ) : null}
         </div>
       </div>

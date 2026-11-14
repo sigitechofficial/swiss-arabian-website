@@ -1,5 +1,5 @@
 import { apiGet } from "@/lib/api/apiClient";
-import type { StoreAreaData, StoreDetail, StoreLocatorData, StoreSlugs } from "../types";
+import type { StoreAreaData, StoreAvailability, StoreDetail, StoreLocatorData, StoreSlugs } from "../types";
 
 type MarketInput = { zoneCode: string; languageCode: string };
 
@@ -58,5 +58,18 @@ export async function fetchStoreSlugs(input: { zoneCode: string }): Promise<Stor
     return { areas: data.areas ?? [], stores: data.stores ?? [] };
   } catch {
     return { areas: [], stores: [] };
+  }
+}
+
+/** Which of the market's stores have this SKU in stock (only stores with a D365 warehouse). Empty on failure. */
+export async function fetchStoreAvailability(input: MarketInput & { sku: string }): Promise<StoreAvailability> {
+  const empty = { sku: input.sku, stores: [] };
+  if (!input.zoneCode || !input.sku) return empty;
+  try {
+    const q = new URLSearchParams({ zoneCode: input.zoneCode, languageCode: input.languageCode || "en", sku: input.sku });
+    const data = await apiGet<StoreAvailability>(`/storefront/stores/availability?${q.toString()}`, { skipAuth: true });
+    return { sku: data.sku ?? input.sku, stores: data.stores ?? [] };
+  } catch {
+    return empty;
   }
 }

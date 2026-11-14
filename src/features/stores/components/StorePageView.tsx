@@ -8,6 +8,7 @@ import { useNow } from "../hooks/useStoreLocator";
 import type { StoreDetail } from "../types";
 import { STORE_DAYS, dayName, hasHours, hoursOn, weekAhead } from "../utils/openingHours";
 import { directionsUrl, mapsUrl, storeAreaPath, storePath, storesPath, telUrl, whatsappUrl } from "../utils/storeLinks";
+import { reviewMonth, shownReviews } from "../utils/storeReviews";
 import { dayHoursText } from "../utils/storeText";
 import { StoreMap } from "./map/StoreMap";
 import { SaStatusLine } from "./SaStoreFinder";
@@ -24,6 +25,7 @@ export function StorePageView({ store }: { store: StoreDetail }) {
   const locale = useShopLocale();
   const intl = intlLocale(locale);
   const now = useNow();
+  const reviews = shownReviews(store);
   const closed = store.openState === "CLOSED_PERMANENTLY";
   // Server HTML (and the first paint) shows the plain week, Monday first; in the
   // browser it becomes "today and the next six days" with holidays applied.
@@ -151,6 +153,35 @@ export function StorePageView({ store }: { store: StoreDetail }) {
               </section>
             ) : null}
 
+            {reviews.length ? (
+              <section className="mt-10 max-w-[640px]" aria-labelledby="store-reviews">
+                <h2 id="store-reviews" className={H2}>
+                  {t("stores.googleReviewsTitle")}
+                </h2>
+                <ul className="mt-3 flex flex-col gap-4">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="border-b border-sa-border pb-4 last:border-b-0">
+                      <p className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+                        <span className="text-gold" role="img" aria-label={t("stores.reviewStars", { rating: r.rating })}>
+                          {"★".repeat(r.rating)}
+                          <span className="text-sa-border">{"★".repeat(5 - r.rating)}</span>
+                        </span>
+                        <span className="font-semibold text-sa-primary">{r.author ?? t("stores.anonymousReviewer")}</span>
+                        <span className="text-sa-muted">{reviewMonth(r.createdAt, intlLocale(locale))}</span>
+                      </p>
+                      <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-[14px] leading-relaxed text-sa-secondary">{r.text}</p>
+                      {r.reply ? (
+                        <p className="mt-2 border-s-2 border-sa-border ps-3 text-[13px] text-sa-muted">
+                          <span className="font-semibold text-sa-primary">{t("stores.reviewReply")}: </span>
+                          {r.reply}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {store.description ? (
               <section className="mt-10 max-w-[640px]" aria-labelledby="store-about">
                 <h2 id="store-about" className={H2}>
@@ -179,6 +210,9 @@ export function StorePageView({ store }: { store: StoreDetail }) {
                   </div>
                 ))}
               </div>
+            ) : null}
+            {store.photos.length && store.photosFrom === "google" ? (
+              <p className="-mt-3 text-[12px] text-sa-muted">{t("stores.photosFromGoogle")}</p>
             ) : null}
           </div>
         </div>
