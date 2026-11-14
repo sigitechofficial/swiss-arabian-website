@@ -1,5 +1,6 @@
 "use client";
 
+import { useConsentFor } from "@/lib/consent/useConsent";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -26,11 +27,14 @@ export function OnsiteMessageHost() {
   const pathname = usePathname();
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const [message, setMessage] = useState<OnsiteMessage | null>(null);
+  // Popups and banners are personalised marketing and need a stored visitor id for their
+  // frequency limits, so they appear only after the shopper allowed marketing.
+  const marketing = useConsentFor("marketing");
   const contextRef = useRef<OnsiteContext | null>(null);
   const showing = useRef(false);
 
   useEffect(() => {
-    if (!env.onsite.enabled) return;
+    if (!env.onsite.enabled || !marketing) return;
     if (typeof window === "undefined") return;
     let cancelled = false;
     let stop: () => void = () => undefined;
@@ -74,7 +78,7 @@ export function OnsiteMessageHost() {
       showing.current = false;
       setMessage(null);
     };
-  }, [pathname, zoneCode]);
+  }, [pathname, zoneCode, marketing]);
 
   const report = useCallback((type: "CLICKED" | "DISMISSED", ruleId: string) => {
     const context = contextRef.current;

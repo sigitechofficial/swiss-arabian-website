@@ -9,6 +9,7 @@ import {
   trackScrollDepth,
 } from "@/lib/analytics/siteEvents";
 import { env } from "@/lib/config/env";
+import { useConsentFor } from "@/lib/consent/useConsent";
 
 /**
  * Page view, engagement (visible seconds) and scroll depth for every route, sent to our own backend.
@@ -16,16 +17,18 @@ import { env } from "@/lib/config/env";
  */
 export function PlatformTracker() {
   const pathname = usePathname();
+  // Starts (and records this page) as soon as the shopper allows analytics.
+  const allowed = useConsentFor("analytics");
 
   useEffect(() => {
-    if (!env.tracking.enabled) return;
+    if (!env.tracking.enabled || !allowed) return;
     trackPageViewed(pathname);
     return startEngagementWatch({
       seconds: env.tracking.engagementSeconds,
       onThreshold: trackEngagementThreshold,
       onScrollDepth: trackScrollDepth,
     });
-  }, [pathname]);
+  }, [pathname, allowed]);
 
   return null;
 }

@@ -10,7 +10,9 @@ import {
 } from "@/features/cart/utils/insiderCartItem";
 import { brandIntegrations } from "@/lib/brand";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
+import { useConsentFor } from "@/lib/consent/useConsent";
 import {
+  activateInsiderAfterConsent,
   beginInsiderRouteFlush,
   insiderCheckoutPage,
   insiderHomePage,
@@ -38,11 +40,16 @@ export function InsiderScripts() {
   const totals = useCartStore((s) => s.totals);
   const cartHydrated = usePersistHydrated(useCartStore);
   const { insider } = brandIntegrations();
-  const insiderOn = insider.enabled && Boolean(insider.accountId);
+  // Insider runs only after the shopper allowed marketing in the cookie banner.
+  const marketing = useConsentFor("marketing");
+  const insiderOn = insider.enabled && Boolean(insider.accountId) && marketing;
 
   useEffect(() => {
     if (!insiderOn) return;
-    startInsiderSdk();
+    // Consent stored before this page: the <head> script already loaded ins.js.
+    // Consent given just now: load it here, the same way, before this route's page type is sent.
+    if (window.__saInsiderBooted) startInsiderSdk();
+    else activateInsiderAfterConsent();
   }, [insiderOn]);
 
   useEffect(() => {

@@ -5,11 +5,21 @@ vi.mock("@/lib/config/env", () => ({
 }));
 
 import { insiderCustomEvent } from "@/lib/insider";
+import { resetConsentCacheForTests, setConsent } from "@/lib/consent/consent";
 
 describe("insiderCustomEvent", () => {
   beforeEach(() => {
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
+    localStorage.clear();
+    resetConsentCacheForTests();
+    setConsent({ analytics: false, marketing: true });
+  });
+
+  it("queues nothing without marketing consent", () => {
+    setConsent({ analytics: true, marketing: false });
+    expect(insiderCustomEvent("cart_abandonment_eligible", { step: 1 })).toBe(false);
+    expect(window.InsiderQueue).toEqual([]);
   });
 
   it("queues a custom_event row with typed custom parameters and no init", () => {

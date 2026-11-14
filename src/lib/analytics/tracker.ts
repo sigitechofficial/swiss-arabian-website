@@ -2,6 +2,7 @@ import { getAccessToken } from "@/lib/auth/token";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { env } from "@/lib/config/env";
 import { storefrontContextQuery } from "@/lib/storefront/context";
+import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
 
 /**
  * First-party behavior tracker. Sends browser events to our own backend
@@ -26,7 +27,6 @@ export type BehaviorEventV1 = {
   properties: Record<string, string | number | boolean>;
 };
 
-const CONSENT_KEY = "sa_tracking_consent";
 const VISITOR_KEY = "sa_visitor_id";
 const SESSION_KEY = "sa_session";
 const SESSION_IDLE_MS = 30 * 60_000;
@@ -54,31 +54,41 @@ export function uuidv4(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/** The shopper's analytics choice from the cookie banner (`@/lib/consent`). */
 export function getTrackingConsent(): TrackingConsent {
-  if (typeof window === "undefined") return "UNKNOWN";
-  try {
-    const value = window.localStorage.getItem(CONSENT_KEY);
-    if (value === "granted") return "GRANTED";
-    if (value === "denied") return "DENIED";
-  } catch {
-    // storage blocked: treated as unknown
-  }
-  return "UNKNOWN";
+  const choices = getConsent();
+  if (!choices) return "UNKNOWN";
+  return choices.analytics ? "GRANTED" : "DENIED";
 }
 
-/** Called by a future consent banner. Denying also clears anything not yet sent. */
+/** Sets only the analytics choice, keeping marketing as it was. Denying also clears anything not yet sent. */
 export function setTrackingConsent(value: "granted" | "denied"): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(CONSENT_KEY, value);
-  } catch {
-    // ignore
-  }
+  setConsent({
+    analytics: value === "granted",
+    marketing: getConsent()?.marketing === true,
+  });
   if (value === "denied") queue = [];
 }
 
+/** Drops events waiting to be sent (analytics was refused). */
+export function clearTrackingQueue(): void {
+  queue = [];
+}
+
+/** Used only until the shopper allows analytics or marketing: lives in memory, never stored. */
+let pageVisitorId: string | null = null;
+
+/**
+ * The browser's visitor id. Stored only once the shopper allowed analytics or marketing (on-site
+ * messages need it for "once per visit / per day"); before that, a per-page id that is never saved.
+ */
 export function getVisitorId(): string {
   if (typeof window === "undefined") return uuidv4();
+  if (!hasConsent("analytics") && !hasConsent("marketing")) {
+    pageVisitorId ??= uuidv4();
+    return pageVisitorId;
+  }
   try {
     const existing = window.localStorage.getItem(VISITOR_KEY);
     if (existing) return existing;
@@ -91,8 +101,15 @@ export function getVisitorId(): string {
 }
 
 /** One session id per tab, rotated after 30 minutes without an event. */
+let pageSessionId: string | null = null;
+
 export function getSessionId(now = Date.now()): string {
   if (typeof window === "undefined") return uuidv4();
+  // Same rule as the visitor id: nothing stored before the shopper allowed analytics or marketing.
+  if (!hasConsent("analytics") && !hasConsent("marketing")) {
+    pageSessionId ??= uuidv4();
+    return pageSessionId;
+  }
   try {
     const raw = window.sessionStorage.getItem(SESSION_KEY);
     if (raw) {
@@ -143,7 +160,8 @@ export function track(
   options: TrackOptions = {},
 ): boolean {
   if (typeof window === "undefined" || !trackingEnabled()) return false;
-  if (getTrackingConsent() === "DENIED") return false;
+  // Nothing is queued or sent until the shopper allowed analytics in the cookie banner.
+  if (getTrackingConsent() !== "GRANTED") return false;
 
   const now = Date.now();
   const signature = `${eventName}|${options.dedupeKey ?? ""}`;

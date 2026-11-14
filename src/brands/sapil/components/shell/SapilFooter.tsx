@@ -2,6 +2,7 @@
 
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useId, type ReactNode } from "react";
+import { CookieSettingsLink } from "@/components/layout/CookieSettingsLink";
 import { toast } from "@/components/ui/Toaster";
 import { useNewsletterSignup } from "@/features/newsletter/hooks/useNewsletterSignup";
 import { useSapilCopy } from "../../i18n/SapilCopy";
@@ -108,7 +109,9 @@ export function SapilFooterView({
           ))}
         </div>
         <div className="flex justify-between items-center gap-[16px] flex-wrap mt-[56px] pt-[24px] border-t border-sapil-line text-[13px] text-sapil-muted">
-          <span>{copyright}</span>
+          <span>
+            {copyright} <CookieSettingsLink className="hover:text-sapil-accent" />
+          </span>
           {legalEnd}
         </div>
       </Wrap>

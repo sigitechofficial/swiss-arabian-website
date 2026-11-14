@@ -1,4 +1,5 @@
 import { brandIntegrations } from "@/lib/brand";
+import { hasConsent } from "@/lib/consent/consent";
 import {
   trackCartItemAdded,
   trackCartItemRemoved,
@@ -48,7 +49,9 @@ const INSIDER_CURRENCY = "AED";
 
 function envAllows(): boolean {
   const { insider } = brandIntegrations();
-  return insider.enabled && Boolean(insider.accountId);
+  // Insider is a marketing tool: nothing is queued, stored or sent until the shopper allowed
+  // marketing in the cookie banner. ins.js itself is only loaded after that (layout head script).
+  return insider.enabled && Boolean(insider.accountId) && hasConsent("marketing");
 }
 
 function hasRealSdk(): boolean {
@@ -56,6 +59,8 @@ function hasRealSdk(): boolean {
 }
 
 function queue(): NonNullable<Window["InsiderQueue"]> {
+  // Without marketing consent, calls land in a throwaway array: never read, never sent.
+  if (!envAllows()) return [];
   window.InsiderQueue = window.InsiderQueue || [];
   return window.InsiderQueue;
 }
@@ -130,6 +135,7 @@ export function resetInsiderRouteFlushForTests(): void {
 
 export function getOrCreateInsiderUuid(): string {
   if (typeof window === "undefined") return "anon";
+  if (!envAllows()) return "anon";
   try {
     const existing = localStorage.getItem(INSIDER_UUID_KEY);
     if (existing) return existing;
@@ -143,7 +149,7 @@ export function getOrCreateInsiderUuid(): string {
 }
 
 function persistInsiderUserValue(value: Record<string, unknown>): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !envAllows()) return;
   try {
     localStorage.setItem(INSIDER_USER_KEY, JSON.stringify(value));
     if (typeof value.uuid === "string" && value.uuid) {
@@ -174,6 +180,27 @@ function clearStoredInsiderUser(): void {
   } catch {
     // ignore
   }
+}
+
+declare global {
+  interface Window {
+    /** Defined by the <head> boot script: queues context + page type and loads ins.js. */
+    __saInsiderBoot?: () => void;
+    /** Set once the boot script ran on this page. */
+    __saInsiderBooted?: boolean;
+  }
+}
+
+/**
+ * The shopper just allowed marketing: start Insider on this page the same way the <head> script
+ * does on a page load (context, page type, init, then ins.js), then replay anything queued.
+ * Nothing from before the choice is sent: the queue is emptied first.
+ */
+export function activateInsiderAfterConsent(): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  resetInsiderQueueInPlace();
+  window.__saInsiderBoot?.();
+  startInsiderSdk();
 }
 
 /** After ins.js loads, replay identify/track calls that fired first. */

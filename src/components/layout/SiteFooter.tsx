@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { CookieSettingsLink } from "@/components/layout/CookieSettingsLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useNavigation } from "@/features/navigation";
 import type { NavItem } from "@/features/navigation/types/navigation";
@@ -233,7 +234,8 @@ export function SiteFooter() {
 
         <div className={footerLegal}>
           <p>
-            {cms.copyrightText?.trim() || copy("footer.copyright")}
+            {cms.copyrightText?.trim() || copy("footer.copyright")}{" "}
+            <CookieSettingsLink />
           </p>
           {cms.showPaymentBadges === false ? null : (
           <ul className={footerPayments} aria-label={copy("footer.payments")}>
