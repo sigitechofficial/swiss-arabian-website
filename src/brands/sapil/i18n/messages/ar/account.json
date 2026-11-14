@@ -295,6 +295,8 @@
   "odDeliveryCard": "التوصيل",
   "odPaymentCard": "الدفع",
   "odPaid": "تم دفع {amount}",
+  "odPaidGiftCard": "المدفوع ببطاقة الهدية",
+  "odPaidPoints": "المدفوع بنقاط المكافآت",
   "odPayCash": "جهّز {amount} للمندوب، نقدًا أو بالبطاقة.",
   "odPayPending": "دفعة {amount} قيد المعالجة.",
   "odPayFailed": "لم تكتمل دفعة {amount}.",

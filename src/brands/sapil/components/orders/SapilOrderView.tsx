@@ -54,6 +54,17 @@ function HeroMark({ tone }: { tone: OrderTone }) {
   );
 }
 
+function TotalRow({ row }: { row: OrderTotalRow }) {
+  return (
+    <div className={cx("flex justify-between gap-[16px] py-[5px] text-[15px]", row.tone === "save" ? "text-sapil-ok" : "text-sapil-ink-2")}>
+      <dt>{row.label}</dt>
+      <dd className={cx("font-[500] tabular-nums whitespace-nowrap", row.tone === "save" ? "text-sapil-ok" : "text-sapil-ink")}>
+        {row.value}
+      </dd>
+    </div>
+  );
+}
+
 /**
  * v9 order page (`.od`): thank-you / status hero, delivery tracker, items with
  * totals, delivery and payment cards, help. Used by the confirmation page, the
@@ -73,6 +84,7 @@ export function SapilOrderView({
   lines,
   totals,
   grandTotal,
+  tenders,
   vatNote,
   side,
   after,
@@ -93,6 +105,8 @@ export function SapilOrderView({
   lines?: OrderLineView[];
   totals?: OrderTotalRow[];
   grandTotal?: { label: ReactNode; value: ReactNode };
+  /** rows under the total: how it was paid (gift card, points, the payment method) */
+  tenders?: OrderTotalRow[];
   vatNote?: ReactNode;
   side?: ReactNode;
   after?: ReactNode;
@@ -221,23 +235,19 @@ export function SapilOrderView({
             {totals ? (
               <dl className="mt-[14px] border-t border-sapil-line pt-[12px]">
                 {totals.map((row) => (
-                  <div
-                    key={row.key}
-                    className={cx(
-                      "flex justify-between gap-[16px] py-[5px] text-[15px]",
-                      row.tone === "save" ? "text-sapil-ok" : "text-sapil-ink-2",
-                    )}
-                  >
-                    <dt>{row.label}</dt>
-                    <dd className={cx("font-[500] tabular-nums whitespace-nowrap", row.tone === "save" ? "text-sapil-ok" : "text-sapil-ink")}>
-                      {row.value}
-                    </dd>
-                  </div>
+                  <TotalRow key={row.key} row={row} />
                 ))}
                 {grandTotal ? (
                   <div className="flex justify-between gap-[16px] border-t border-sapil-line mt-[8px] pt-[14px] pb-[5px] text-[18px] text-sapil-ink font-[600]">
                     <dt>{grandTotal.label}</dt>
                     <dd className="text-[26px] font-[700] tracking-[-.02em] tabular-nums whitespace-nowrap">{grandTotal.value}</dd>
+                  </div>
+                ) : null}
+                {tenders?.length ? (
+                  <div className="border-t border-sapil-line mt-[8px] pt-[8px]">
+                    {tenders.map((row) => (
+                      <TotalRow key={row.key} row={row} />
+                    ))}
                   </div>
                 ) : null}
               </dl>

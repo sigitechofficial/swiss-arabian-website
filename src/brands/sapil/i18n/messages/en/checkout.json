@@ -102,6 +102,7 @@
   "deliveryFree": "Free",
   "deliveryDiscount": "Delivery discount",
   "giftCard": "Gift card {code}",
+  "rewardPoints": "Reward points ({points})",
   "total": "Total",
   "toPay": "To pay",
   "taxIncluded": "Includes {amount} {label}",

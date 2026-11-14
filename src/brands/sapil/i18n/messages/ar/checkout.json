@@ -102,6 +102,7 @@
   "deliveryFree": "مجاني",
   "deliveryDiscount": "خصم التوصيل",
   "giftCard": "بطاقة هدية {code}",
+  "rewardPoints": "نقاط المكافآت ({points})",
   "total": "الإجمالي",
   "toPay": "المبلغ المستحق",
   "taxIncluded": "يشمل {amount} {label}",

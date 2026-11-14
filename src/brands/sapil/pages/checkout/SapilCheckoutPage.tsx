@@ -15,6 +15,9 @@ import { appliedCoupon, useFreeShippingBar } from "@/features/promotions";
 import { useCouponForm } from "@/features/promotions/hooks/useCouponForm";
 import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
 import { getBrand } from "@/lib/brand";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
+import { readLoyaltyRedemption } from "@/features/loyalty/types/loyalty";
+import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { Button, CardLogo, Checkbox, Fieldset, RadioCardGroup, Wrap, type RadioCardOption } from "../../ui";
 import { buttonClass } from "../../ui/Button";
@@ -153,6 +156,7 @@ export function SapilCheckoutPage() {
   const ship = useFreeShippingBar();
   const marketDelivery = useMarketDelivery();
   const setCartOpen = useUiStore((s) => s.setCartOpen);
+  const cartLoyalty = useCartStore((s) => s.loyaltyRedemption);
   const { checkout, session, currency } = f;
   const gifts = useGiftAwards(f.promoSnapshot, currency);
 
@@ -342,6 +346,19 @@ export function SapilCheckoutPage() {
           tone: "save",
         });
       }
+    }
+    // Reward points are a tender too: without this row the gap between the
+    // total and what the payment method collects goes unexplained.
+    const points = loyaltyLineFromQuote(
+      readLoyaltyRedemption(f.promoSnapshot, session?.promotionSnapshot, session?.promotions) ?? cartLoyalty,
+    );
+    if (points && points.amount > 0) {
+      rows.push({
+        key: "points",
+        label: t("checkout.rewardPoints", { points: points.points }),
+        value: `−${money(points.amount, points.currency || currency)}`,
+        tone: "save",
+      });
     }
   }
   const grandParts = moneyParts(payable, currency);

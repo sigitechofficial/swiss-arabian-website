@@ -17,7 +17,39 @@ export function orderSteps(t: SapilTranslator, currentStep: number): OrderStep[]
   }));
 }
 
-type OrderTotals = { subtotal: string; discount: string; shipping: string; tax: string; total: string };
+type OrderTotals = {
+  subtotal: string;
+  discount: string;
+  shipping: string;
+  tax: string;
+  total: string;
+  giftCardApplied?: string | null;
+  loyaltyApplied?: string | null;
+  amountPayable?: string | null;
+};
+
+/**
+ * Gift card and reward points are tenders, not discounts: the total stays the
+ * same, but the shopper must see how it was paid, and what the payment method
+ * itself collected. Empty when the payment method paid everything.
+ */
+export function orderTenders(
+  t: SapilTranslator,
+  money: SapilMoney,
+  totals: OrderTotals,
+  currency: string,
+  paymentLabel: ReactNode,
+): { rows: OrderTotalRow[]; charged: number | null } {
+  const giftCard = Number(totals.giftCardApplied ?? 0);
+  const points = Number(totals.loyaltyApplied ?? 0);
+  if (totals.amountPayable == null || (giftCard <= 0 && points <= 0)) return { rows: [], charged: null };
+  const charged = Number(totals.amountPayable);
+  const rows: OrderTotalRow[] = [];
+  if (giftCard > 0) rows.push({ key: "gc", label: t("account.odPaidGiftCard"), value: `−${money(giftCard, currency)}`, tone: "save" });
+  if (points > 0) rows.push({ key: "points", label: t("account.odPaidPoints"), value: `−${money(points, currency)}`, tone: "save" });
+  rows.push({ key: "charged", label: paymentLabel, value: money(charged, currency) });
+  return { rows, charged };
+}
 
 /**
  * The order's frozen money, as rows. Whether the tax is already inside the
