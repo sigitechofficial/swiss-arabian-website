@@ -16,6 +16,7 @@ import { buttonClass } from "../../ui/Button";
 import { cx, tintStyle } from "../../ui/shared";
 import { productGender } from "../product/productCardModel";
 import { SapilLocaleLink } from "../product/SapilLocaleLink";
+import { SapilWishlistButton } from "../product/SapilWishlistButton";
 import { deliveryPerks } from "./deliveryPerks";
 import { noteRows, noteTone } from "./notes";
 import { PdpInstalments } from "./PdpInstalments";
@@ -171,6 +172,8 @@ export function PdpBuyBox({
             </button>
           </>
         )}
+        {/* Saving matters most when the product can't be bought right now. */}
+        <SapilWishlistButton productId={product.id} name={product.title} variant="page" />
       </div>
       <p role="status" className="text-[14px] text-sapil-ink-2 mt-[8px] empty:hidden">
         {status}
