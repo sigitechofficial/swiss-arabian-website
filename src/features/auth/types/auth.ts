@@ -48,6 +48,8 @@ export type RegisterPayload = {
   salesChannelCode?: string;
   /** Create the account but hold the session until the emailed code is confirmed. */
   verifyEmailFirst?: boolean;
+  /** Guest cart token, so the guest bag follows the shopper into the account. */
+  guestToken?: string;
 };
 
 /** Tokens come back only when sign-in was asked for and the backend supports it. */

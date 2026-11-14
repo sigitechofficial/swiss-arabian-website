@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
+import { readGuestToken } from "@/features/cart/utils/guestToken";
 import type {
   AuthResult,
   CustomerProfileView,
@@ -43,21 +44,36 @@ export function splitFullName(fullName: string): {
   };
 }
 
+/**
+ * Adds the shopper's guest cart token to a sign-in request, so the API moves the
+ * guest bag to the account (or adds its lines to the account's bag). Without it
+ * the bag looks empty after signing in.
+ */
+export function withGuestToken<T extends { guestToken?: string }>(payload: T): T {
+  if (payload.guestToken) return payload;
+  const guestToken = readGuestToken();
+  return guestToken ? { ...payload, guestToken } : payload;
+}
+
 /** With `verifyEmailFirst` the answer may be EMAIL_VERIFICATION_REQUIRED and no tokens. */
 export async function registerCustomer(
   payload: RegisterPayload,
 ): Promise<PasswordLoginResult> {
-  return apiPost<PasswordLoginResult>("/storefront/auth/register", payload, {
-    skipAuth: true,
-  });
+  return apiPost<PasswordLoginResult>(
+    "/storefront/auth/register",
+    withGuestToken(payload),
+    { skipAuth: true },
+  );
 }
 
 export async function loginCustomer(
   payload: LoginPayload,
 ): Promise<PasswordLoginResult> {
-  return apiPost<PasswordLoginResult>("/storefront/auth/login", payload, {
-    skipAuth: true,
-  });
+  return apiPost<PasswordLoginResult>(
+    "/storefront/auth/login",
+    withGuestToken(payload),
+    { skipAuth: true },
+  );
 }
 
 export async function requestEmailLoginCode(email: string) {
@@ -73,7 +89,7 @@ export async function confirmEmailLoginCode(
 ): Promise<AuthResult> {
   return apiPost<AuthResult>(
     "/storefront/auth/login/email-code/confirm",
-    payload,
+    withGuestToken(payload),
     { skipAuth: true },
   );
 }
@@ -140,7 +156,11 @@ export async function confirmEmailVerification(
 ) {
   return apiPost<EmailVerificationConfirmResult>(
     "/storefront/auth/verify-email/confirm",
-    options.signIn ? { email, code, signIn: true } : { email, code },
+    options.signIn
+      ? withGuestToken<{ email: string; code: string; signIn: true; guestToken?: string }>(
+          { email, code, signIn: true },
+        )
+      : { email, code },
     { skipAuth: true },
   );
 }
