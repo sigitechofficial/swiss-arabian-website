@@ -1342,5 +1342,16 @@
   "stores.areaMetaTitle": "متاجر العطور في {area}",
   "stores.areaMetaDescription": "اعثر على متاجر عطور {brand} في {area}: العناوين وساعات العمل والاتجاهات.",
   "stores.storeMetaDescription": "{name}، {address}. ساعات العمل والاتجاهات وبيانات التواصل لهذا المتجر من {brand}.",
-  "stores.breadcrumb": "مسار التنقل"
+  "stores.breadcrumb": "مسار التنقل",
+  "consentTitle": "خصوصيتك",
+  "consentBody": "نستخدم ملفات تعريف الارتباط وأدوات مشابهة لفهم طريقة استخدام المتجر وتحسينه.",
+  "consentAccept": "موافق",
+  "consentDecline": "رفض",
+  "consentLearnMore": "سياسة الخصوصية",
+  "unsubscribeTitle": "إيقاف الرسائل التسويقية",
+  "unsubscribeBody": "لن تصلك بعد الآن رسائل تسويقية منا. ستصلك رسائل الطلبات والحساب كالمعتاد.",
+  "unsubscribeAction": "إلغاء الاشتراك",
+  "unsubscribeDone": "تم إلغاء اشتراكك. لن نرسل لك رسائل تسويقية.",
+  "unsubscribeFailed": "هذا الرابط غير صالح أو منتهي الصلاحية. يمكنك أيضًا إدارة الرسائل من حسابك.",
+  "unsubscribeBack": "العودة إلى المتجر"
 }

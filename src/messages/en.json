@@ -1311,5 +1311,16 @@
   "stores.areaMetaTitle": "Perfume shops in {area}",
   "stores.areaMetaDescription": "Find {brand} perfume shops in {area}: addresses, opening hours and directions.",
   "stores.storeMetaDescription": "{name}, {address}. Opening hours, directions and contact details for this {brand} shop.",
-  "stores.breadcrumb": "Breadcrumb"
+  "stores.breadcrumb": "Breadcrumb",
+  "consentTitle": "Your privacy",
+  "consentBody": "We use cookies and similar tools to understand how the shop is used and to improve it.",
+  "consentAccept": "Accept",
+  "consentDecline": "Decline",
+  "consentLearnMore": "Privacy policy",
+  "unsubscribeTitle": "Stop marketing emails",
+  "unsubscribeBody": "You will no longer receive marketing emails from us. Order and account emails will still reach you.",
+  "unsubscribeAction": "Unsubscribe",
+  "unsubscribeDone": "You are unsubscribed. We will not send you marketing emails.",
+  "unsubscribeFailed": "This link is not valid or has expired. You can also manage emails from your account.",
+  "unsubscribeBack": "Back to the shop"
 }

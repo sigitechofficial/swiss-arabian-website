@@ -133,4 +133,23 @@ export const env = {
   cmsHomeLegacyFallback:
     readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
     "false",
+  /**
+   * First-party behavior tracking: sends browser events to our own backend
+   * (POST /storefront/analytics/events) so history never depends on a third-party SDK.
+   * Off unless NEXT_PUBLIC_TRACKING_ENABLED=true. The backend still applies its own
+   * enable flag and consent policy.
+   */
+  /** On-site popups and banners decided by the backend. On unless NEXT_PUBLIC_ONSITE_ENABLED=false. */
+  onsite: {
+    enabled: readPublic(process.env.NEXT_PUBLIC_ONSITE_ENABLED, "true") !== "false",
+  },
+  tracking: {
+    enabled: readPublic(process.env.NEXT_PUBLIC_TRACKING_ENABLED, "false") === "true",
+    /** Seconds of visible time on one page before `engagement_threshold_reached`. */
+    engagementSeconds:
+      Number.parseInt(
+        readPublic(process.env.NEXT_PUBLIC_TRACKING_ENGAGEMENT_SECONDS, "10"),
+        10,
+      ) || 10,
+  },
 } as const;

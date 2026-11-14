@@ -4,6 +4,10 @@ import { headers } from "next/headers";
 import { ServerInlineScript } from "@/components/layout/ServerInlineScript";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
+import { ConsentBanner } from "@/components/layout/ConsentBanner";
+import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
+import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
+import { PlatformTracker } from "@/components/layout/PlatformTracker";
 import { getBrand } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
@@ -127,7 +131,15 @@ export default async function RootLayout({
           storefrontHost={storefrontHost}
           locale={locale}
           messages={messages}
-        >{children}</AppProviders>
+        >
+          {/* Journeys, first-party tracking, on-site messages and the consent banner (inside the
+              providers so the banner speaks the page's language). */}
+          <JourneyEventsPoller />
+          <PlatformTracker />
+          <OnsiteMessageHost />
+          <ConsentBanner />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

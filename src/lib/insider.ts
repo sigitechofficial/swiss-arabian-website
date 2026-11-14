@@ -1,4 +1,13 @@
 import { brandIntegrations } from "@/lib/brand";
+import {
+  trackCartItemAdded,
+  trackCartItemRemoved,
+  trackCartViewed,
+  trackCheckoutViewed,
+  trackHomeViewed,
+  trackListingViewed,
+  trackProductViewed,
+} from "@/lib/analytics/siteEvents";
 
 declare global {
   interface Window {
@@ -502,16 +511,19 @@ export function insiderInit(): void {
 
 /** Home — `home_page_view`. */
 export function insiderHomePage(): void {
+  trackHomeViewed();
   pushPage("home");
 }
 
 /** Listing / collection / search PLP — `listing_page_view`. Partner schema: breadcrumb[]. */
 export function insiderListingPage(page?: InsiderListingPage): void {
+  trackListingViewed();
   pushPage("category", { breadcrumb: listingBreadcrumb(page) });
 }
 
 /** Cart page — `cart_page_view`. Must include the current line items. */
 export function insiderCartPage(cart: InsiderCartSnapshot): void {
+  trackCartViewed();
   pushPage("cart", cartQueueValue(cart));
 }
 
@@ -521,6 +533,7 @@ export function insiderCartPage(cart: InsiderCartSnapshot): void {
  * confirms this partner accepts it. Funnel start stays backend `checkout_started`.
  */
 export function insiderCheckoutPage(): void {
+  trackCheckoutViewed();
   pushPage("other", { name: "Checkout" });
 }
 
@@ -593,6 +606,11 @@ export function ensureInsiderProductPage(product: InsiderProductPayload): void {
 }
 
 export function insiderProductViewed(product: InsiderProductPayload): void {
+  trackProductViewed({
+    productId: product.id,
+    sku: product.sku,
+    currencyCode: product.currency,
+  });
   ensureInsiderProductPage(product);
 }
 
@@ -602,6 +620,12 @@ export function insiderProductViewed(product: InsiderProductPayload): void {
  * Does not need a following `init` (Insider Web SDK).
  */
 export function insiderAddToCart(item: InsiderCartItemPayload): void {
+  trackCartItemAdded({
+    productId: item.id,
+    sku: item.sku,
+    currencyCode: item.currency,
+    quantity: item.quantity,
+  });
   runWhenReady(() => {
     queue().push({
       type: "add_to_cart",
@@ -616,10 +640,35 @@ export function insiderAddToCart(item: InsiderCartItemPayload): void {
  * Does not need a following `init`.
  */
 export function insiderRemoveFromCart(item: InsiderCartItemPayload): void {
+  trackCartItemRemoved({
+    productId: item.id,
+    sku: item.sku,
+    currencyCode: item.currency,
+    quantity: item.quantity,
+  });
   runWhenReady(() => {
     queue().push({
       type: "remove_from_cart",
       value: productQueueValue(item, item.quantity),
     });
   });
+}
+
+/**
+ * Web SDK custom event. `eventName` must exist in Insider Attributes & Events and every parameter
+ * type must match its configuration. Fire AFTER ins.js is loaded; never followed by `init`.
+ * Returns false when Insider is disabled so callers do not report a delivery that never happened.
+ */
+export function insiderCustomEvent(
+  eventName: string,
+  custom: Record<string, string | number | boolean>,
+): boolean {
+  if (typeof window === "undefined" || !envAllows()) return false;
+  runWhenReady(() => {
+    queue().push({
+      type: "custom_event",
+      value: [{ event_name: eventName, event_parameters: { custom } }],
+    });
+  });
+  return true;
 }

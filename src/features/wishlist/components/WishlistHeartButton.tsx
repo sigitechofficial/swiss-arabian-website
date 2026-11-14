@@ -8,11 +8,14 @@ import { useShopCopy } from "@/lib/i18n/useShopCopy";
 type WishlistHeartButtonProps = {
   productId: string;
   size?: "card" | "pdp";
+  /** Replaces the default look (for example the product page buy bar styling). Behavior is unchanged. */
+  className?: string;
 };
 
 export function WishlistHeartButton({
   productId,
   size = "card",
+  className,
 }: WishlistHeartButtonProps) {
   const { available, inWishlist, isAuthenticated, disabled, toggle } =
     useWishlistToggle(productId);
@@ -41,14 +44,18 @@ export function WishlistHeartButton({
             ? t("wishlist.remove")
             : t("wishlist.add")
       }
-      className={`flex cursor-pointer items-center justify-center rounded-full border bg-page/90 text-sa-primary transition-colors hover:border-terra hover:text-terra disabled:cursor-wait ${
-        compact
-          ? "size-8 border-sa-border"
-          : "size-[42px] border-sa-input"
-      } ${inWishlist ? "border-terra text-terra" : ""}`}
+      className={
+        className
+          ? `${className} disabled:cursor-wait`
+          : `flex cursor-pointer items-center justify-center rounded-full border bg-page/90 text-sa-primary transition-colors hover:border-terra hover:text-terra disabled:cursor-wait ${
+              compact
+                ? "size-8 border-sa-border"
+                : "size-[42px] border-sa-input"
+            } ${inWishlist ? "border-terra text-terra" : ""}`
+      }
     >
       <Heart
-        className={compact ? "size-4" : "size-5"}
+        className={className ? undefined : compact ? "size-4" : "size-5"}
         strokeWidth={1.75}
         fill={inWishlist ? "currentColor" : "none"}
       />
