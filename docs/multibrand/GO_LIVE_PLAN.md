@@ -20,14 +20,25 @@ Status: agreed 2026-11-14. Nothing deployed yet.
 - Per brand: design, emails (colours, language, logos), payment credential packs, feature switches, legacy redirects. Email senders per brand + market.
 - Accounts: unique per brand; registration stores the sign-up market (`customer.zoneId`). Marketing consent per channel per market (`CustomerMarketingConsent.zoneId`). Orders store their market.
 
-## Phase 1 — market subdomains work correctly (~3 days, development)
+## Phase 1 — market subdomains work correctly (~3 days, development) — ✅ done 2026-11-14
+
+Backend `feat/sapil-cms` 579776bc; details in backend `docs/storefront/MARKET_DOMAINS.md`.
 
 1. Link every subdomain to its market in `StorefrontDomain` and mark each market's primary address (locally `ksa.`, `om.`, `qa.`, `kw.swissarabian.com` still fall to the default market).
 2. Per-market public address: email links and Tabby / Telr return addresses use the order's market site (today one address per brand: `STOREFRONT_PUBLIC_BASE_URL__<BRAND>`, pack `returnBaseUrl`).
 3. Production CORS reads allowed origins from the address table (today a fixed list in config).
 4. Tests: each subdomain resolves to the right brand, market, prices and currency.
 
-## Phase 2 — one account, many markets (~3–4 days, development)
+## Phase 2 — one account, many markets (~3–4 days, development) — ✅ done 2026-11-14
+
+Backend and admin `feat/sapil-cms`; details in backend `docs/customers/CUSTOMER_MARKETS.md`.
+As built: activity (first / last seen, last sign-in, language, sign-up flag) is stored per
+customer per market (`customers.customer_markets`); order count, spend and last order are
+computed from the orders table when read, so they never drift. Backfill:
+`npm run ops:customers:backfill-markets -- --apply` (run once per environment after the
+migration). Admin market lists default to "use this market" (signed up here, active here
+or ordered here) with a "signed up here" switch; CSV export per market (`customers.export`).
+Plan as written:
 
 1. New record per customer per market: first / last seen, first / last order, order count, amount spent, last language, sign-up market flag.
 2. Updated on sign-up, every sign-in and session refresh (market from the site address) and every order.
