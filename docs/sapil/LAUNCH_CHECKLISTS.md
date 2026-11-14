@@ -30,8 +30,8 @@ test transactions and its status check refuses a live account. Going live with
 Telr needs development work (remove the test-only guard, verify on a live
 test store). Stripe, Tabby and Paymob are ready for live keys.
 
-Small follow-up: Telr's payment page asks the shopper for name, email and
-phone again; the backend can pass them from checkout.
+Telr's payment page is prefilled from checkout (name, email, phone, billing
+address), so the shopper only types the card (backend 4100bdf4).
 
 **Done when:** each provider pays a test order on the Sapil staging site and
 the order shows Paid; then live keys are added at launch.
