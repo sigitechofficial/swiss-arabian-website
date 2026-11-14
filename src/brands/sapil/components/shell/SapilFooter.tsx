@@ -110,7 +110,8 @@ export function SapilFooterView({
         </div>
         <div className="flex justify-between items-center gap-[16px] flex-wrap mt-[56px] pt-[24px] border-t border-sapil-line text-[13px] text-sapil-muted">
           <span>
-            {copyright} <CookieSettingsLink className="hover:text-sapil-accent" />
+            {copyright}
+            <CookieSettingsLink className="ms-2 hover:text-sapil-accent before:me-2 before:inline-block before:content-['·']" />
           </span>
           {legalEnd}
         </div>

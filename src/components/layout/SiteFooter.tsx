@@ -234,8 +234,8 @@ export function SiteFooter() {
 
         <div className={footerLegal}>
           <p>
-            {cms.copyrightText?.trim() || copy("footer.copyright")}{" "}
-            <CookieSettingsLink />
+            {cms.copyrightText?.trim() || copy("footer.copyright")}
+            <CookieSettingsLink className="ms-2 before:me-2 before:content-['·'] before:no-underline before:inline-block" />
           </p>
           {cms.showPaymentBadges === false ? null : (
           <ul className={footerPayments} aria-label={copy("footer.payments")}>
