@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   accountBtnGhost,
   accountBtnPrimary,
@@ -15,14 +16,8 @@ import {
   type ReturnRequestFormValues,
 } from "../schemas/afterSales.schema";
 import type { AfterSalesOrderLine, CreateReturnDto } from "../types/afterSales";
-import {
-  afterSalesErrorMessage,
-  RETURN_SUBMITTED_TOAST,
-} from "../utils/afterSalesErrors";
-import {
-  RETURN_REASON_LABELS,
-  RETURN_RESOLUTION_LABELS,
-} from "../utils/eligibility";
+import { afterSalesErrorMessage } from "../utils/afterSalesErrors";
+import { afterSalesOptionCodes, afterSalesOptionLabel } from "../utils/eligibility";
 import { AfterSalesLinePicker } from "./AfterSalesLinePicker";
 
 type ReturnRequestFormProps = {
@@ -56,6 +51,7 @@ function toReturnDto(values: ReturnRequestFormValues): CreateReturnDto {
 
 export function ReturnRequestForm(props: ReturnRequestFormProps) {
   const { lines, onCancel, onSubmitted } = props;
+  const t = useShopCopy();
   const { createReturn, createGuestReturn } = useAfterSalesMutations();
   const {
     register,
@@ -96,16 +92,16 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
               dto,
             });
           }
-          toast(RETURN_SUBMITTED_TOAST, "success");
+          toast(t("afterSales.returnSubmitted"), "success");
           onSubmitted?.();
         } catch (error) {
-          toast(afterSalesErrorMessage(error), "error");
+          toast(afterSalesErrorMessage(error, t), "error");
         }
       })}
     >
-      <p className="text-[14px] font-semibold text-sa-primary">Request a return</p>
+      <p className="text-[14px] font-semibold text-sa-primary">{t("afterSales.requestAReturn")}</p>
       <p className="text-[13px] leading-relaxed text-sa-muted">
-        This submits a request only. It does not refund the order.
+        {t("afterSales.returnNote")}
       </p>
 
       <AfterSalesLinePicker
@@ -118,29 +114,29 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-            Reason
+            {t("afterSales.reason")}
           </span>
           <select className={accountSelectClass} {...register("reasonCode")}>
-            {Object.entries(RETURN_REASON_LABELS).map(([value, label]) => (
+            {afterSalesOptionCodes("returnReason").map((value) => (
               <option key={value} value={value}>
-                {label}
+                {afterSalesOptionLabel("returnReason", value, t)}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-            Preferred resolution
+            {t("afterSales.resolution")}
           </span>
           <select
             className={accountSelectClass}
             {...register("requestedResolution")}
           >
-            {Object.entries(RETURN_RESOLUTION_LABELS)
-              .filter(([value]) => value === "REFUND" || value === "EXCHANGE")
-              .map(([value, label]) => (
+            {afterSalesOptionCodes("returnResolution")
+              .filter((value) => value === "REFUND" || value === "EXCHANGE")
+              .map((value) => (
               <option key={value} value={value}>
-                {label}
+                {afterSalesOptionLabel("returnResolution", value, t)}
               </option>
             ))}
           </select>
@@ -149,7 +145,7 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-          More detail (optional)
+          {t("afterSales.moreDetail")}
         </span>
         <textarea
           rows={3}
@@ -160,7 +156,7 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-          Note for our team (optional)
+          {t("afterSales.teamNote")}
         </span>
         <textarea
           rows={2}
@@ -171,11 +167,11 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={pending} className={accountBtnPrimary}>
-          {pending ? "Submitting…" : "Submit return request"}
+          {pending ? t("reviewForm.submitting") : t("afterSales.submitReturn")}
         </button>
         {onCancel ? (
           <button type="button" className={accountBtnGhost} onClick={onCancel}>
-            Cancel
+            {t("account.cancel")}
           </button>
         ) : null}
       </div>

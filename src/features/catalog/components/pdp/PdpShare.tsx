@@ -1,31 +1,10 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
-import { localeFromPathname } from "@/lib/i18n/localePath";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pdpShare, pdpShareBtn, pdpShareLabel, pdpShareList, pdpShareStatus } from "@/styles/pdpChrome";
 import { shareLinks } from "../../utils/shareLinks";
 
-const COPY = {
-  en: {
-    share: "Share",
-    shareOn: "Share on",
-    native: "Share this product",
-    copy: "Copy link",
-    copied: "Link copied",
-    copyFailed: "Could not copy the link",
-    newTab: "(opens in a new tab)",
-  },
-  ar: {
-    share: "مشاركة",
-    shareOn: "مشاركة عبر",
-    native: "مشاركة هذا المنتج",
-    copy: "نسخ الرابط",
-    copied: "تم نسخ الرابط",
-    copyFailed: "تعذّر نسخ الرابط",
-    newTab: "(يفتح في نافذة جديدة)",
-  },
-} as const;
 
 const noSubscribe = () => () => {};
 
@@ -46,8 +25,16 @@ function useNativeShare(): boolean {
  * product's canonical address.
  */
 export function PdpShare({ url, title, image }: { url: string; title: string; image?: string | null }) {
-  const locale = localeFromPathname(usePathname() || "/");
-  const copy = COPY[locale];
+  const t = useShopCopy();
+  const copy = {
+    share: t("share.share"),
+    shareOn: t("share.shareOn"),
+    native: t("share.native"),
+    copy: t("share.copy"),
+    copied: t("share.copied"),
+    copyFailed: t("share.copyFailed"),
+    newTab: t("share.newTab"),
+  };
   const native = useNativeShare();
   const [status, setStatus] = useState<"" | "copied" | "failed">("");
   const links = shareLinks({ url, title, image });

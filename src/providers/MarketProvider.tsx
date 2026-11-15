@@ -11,6 +11,11 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import { dir as textDirection } from "@/lib/i18n/locales";
+import {
+  marketLanguageOptions,
+  type LanguageOption,
+} from "@/features/markets/utils/marketLanguageOptions";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/auth/token";
 import {
@@ -30,10 +35,14 @@ import {
   isoForMarket,
 } from "@/features/markets/utils/flagForMarket";
 import {
+  answerCountrySuggestion,
   readZoneCookie,
+  storedZoneFor,
+  writeMarketChoice,
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
+import { marketSiteUrl } from "@/features/markets/utils/marketSiteUrl";
 import { employeeBenefitsKeys } from "@/features/employeeBenefits/api/employeeBenefits.keys";
 import { loyaltyKeys } from "@/features/loyalty/api/loyalty.keys";
 import { promotionKeys } from "@/features/promotions/api/promotions.keys";
@@ -60,6 +69,8 @@ type MarketContextValue = {
    * Published content is stored under it. Null until the market's languages are known.
    */
   contentLanguage: string | null;
+  /** Language picker: the selected market's languages, else every configured one. */
+  languageOptions: LanguageOption[];
 };
 
 const MarketContext = createContext<MarketContextValue | null>(null);
@@ -123,7 +134,15 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const ready = list.filter((market) => market.isCatalogReady);
     const pool = ready.length ? ready : list;
     const filtered = filterMarketsForTenant(pool, storefrontHost);
-    return filtered.length ? filtered : pool;
+    const markets = filtered.length ? filtered : pool;
+    // On a market website the address decides the market: the picker offers the
+    // markets that have a website of their own (choosing one goes there).
+    const siteMarket = marketsQuery.data?.siteMarketCode;
+    if (!siteMarket) return markets;
+    const withSite = markets.filter(
+      (market) => market.zoneCode === siteMarket || market.storefrontUrl,
+    );
+    return withSite.length ? withSite : markets;
   }, [marketsQuery.data, storefrontHost]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {
@@ -153,12 +172,16 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const saved = useUiStore.getState().selectedMarketId || readZoneCookie();
 
     if (!marketsQuery.data) {
-      if (saved && !useUiStore.getState().catalogContext) {
-        selectMarket(saved, {
-          ...fallbackCatalogContext(saved),
+      // Before the brand's markets are known, only this site's own store (per
+      // origin) is trusted: a cookie can come from another brand served on the
+      // same host (another port locally, a sibling deployment on staging).
+      const own = useUiStore.getState().selectedMarketId;
+      if (own && !useUiStore.getState().catalogContext) {
+        selectMarket(own, {
+          ...fallbackCatalogContext(own),
           languageCode: pathLanguage,
         });
-        writeZoneCookie(saved);
+        writeZoneCookie(own);
       }
       return;
     }
@@ -167,8 +190,13 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // A market website's own market always wins (no saved choice overrides
+    // the address); elsewhere a stored zone counts only if it is one of this
+    // brand's markets.
+    const siteMarket = marketsQuery.data.siteMarketCode;
+    const stored = siteMarket || storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
     const pick =
-      shoppable.find((market) => market.zoneCode === saved) ??
+      shoppable.find((market) => market.zoneCode === stored) ??
       marketsQuery.data.defaultMarket ??
       shoppable[0];
 
@@ -218,7 +246,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
   useEffect(() => {
     const root = document.documentElement;
-    const dir = pathLanguage === "ar" ? "rtl" : "ltr";
+    const dir = textDirection(pathLanguage);
     if (root.lang !== pathLanguage) root.lang = pathLanguage;
     if (root.dir !== dir) root.dir = dir;
   }, [pathLanguage]);
@@ -300,7 +328,25 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const setMarketId = useCallback(
     (id: string | null) => {
       if (!id || id === marketId) return;
+      // The shopper's own choice: the country suggestion is answered.
+      answerCountrySuggestion(id);
       const market = shoppable.find((item) => item.zoneCode === id);
+      // A market with its own website: go there, same page and language. Its
+      // bag, prices and sign-in belong to that website.
+      const elsewhere = market
+        ? marketSiteUrl(market, {
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            search: window.location.search,
+            hash: window.location.hash,
+          })
+        : null;
+      if (elsewhere) {
+        // Remembered for the brand's root domain (it sends the shopper back here).
+        writeMarketChoice(id, marketsQuery.data?.brandDomain);
+        window.location.assign(elsewhere);
+        return;
+      }
       const next = {
         ...(market
           ? contextFromMarket(market, pathLanguage)
@@ -319,6 +365,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     },
     [
       marketId,
+      marketsQuery.data?.brandDomain,
       pathLanguage,
       redrawForMarket,
       refreshMarketScopedData,
@@ -337,6 +384,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     );
   }, [marketId, marketsQuery.isError, pathLanguage, shoppable]);
 
+  const languageOptions = useMemo(() => {
+    const selected = shoppable.find((market) => market.zoneCode === marketId);
+    return marketLanguageOptions(selected?.languages, pathLanguage);
+  }, [marketId, pathLanguage, shoppable]);
+
   const value = useMemo(
     () => ({
       marketId,
@@ -344,8 +396,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       catalogContext,
       regionOptions,
       contentLanguage,
+      languageOptions,
     }),
-    [catalogContext, contentLanguage, marketId, regionOptions, setMarketId],
+    [catalogContext, contentLanguage, languageOptions, marketId, regionOptions, setMarketId],
   );
 
   return (

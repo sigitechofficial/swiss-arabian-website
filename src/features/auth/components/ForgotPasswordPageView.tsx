@@ -1,55 +1,33 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/Toaster";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { forgotPassword, toLoginIdentifier } from "../api/auth.service";
-import {
-  forgotPasswordSchema,
-  type ForgotPasswordFormValues,
-} from "../schemas/auth.schema";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useForgotPasswordForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import { AuthField, AuthSubmitButton } from "./AuthFormControls";
 
 export function ForgotPasswordPageView() {
-  const router = useRouter();
-  const form = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { identifier: "" },
-  });
-
-  async function onSubmit(values: ForgotPasswordFormValues) {
-    try {
-      await forgotPassword(toLoginIdentifier(values.identifier));
-      toast("If an account exists, a reset code has been sent.", "success");
-      router.push(
-        `/reset-password?identifier=${encodeURIComponent(values.identifier)}`,
-      );
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const { form, submit } = useForgotPasswordForm();
+  const t = useShopCopy();
 
   return (
-    <AuthShell heading="Forgot password" subtitle="We’ll send a one-time code if the account exists.">
-      <form className="flex w-full flex-col gap-5" onSubmit={form.handleSubmit(onSubmit)}>
+    <AuthShell heading={t("auth.forgot.heading")} subtitle={t("auth.forgot.subtitle")}>
+      <form className="flex w-full flex-col gap-5" onSubmit={submit}>
         <AuthField
           id="identifier"
-          label="Email or phone"
-          placeholder="you@email.com"
+          label={t("auth.emailOrPhone")}
+          placeholder={t("auth.emailPlaceholder")}
           autoComplete="username"
           {...form.register("identifier")}
-          error={form.formState.errors.identifier?.message}
+          error={formErrorText(t, form.formState.errors.identifier?.message)}
         />
         <AuthSubmitButton disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Sending…" : "Send reset code"}
+          {form.formState.isSubmitting ? t("auth.sending") : t("auth.forgot.send")}
         </AuthSubmitButton>
         <p className="text-center text-[12.5px] font-normal text-sa-secondary">
           <LocaleLink className="font-medium text-[var(--sa-action-primary)]" href="/login">
-            Back to sign in
+            {t("auth.backToSignIn")}
           </LocaleLink>
         </p>
       </form>

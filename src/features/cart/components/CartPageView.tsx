@@ -1,10 +1,7 @@
 "use client";
 
-import { cartCurrency } from "@/features/cart/utils/cartCurrency";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import { useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
@@ -16,8 +13,6 @@ import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { LoyaltyRedemptionEditor } from "@/features/loyalty/components/LoyaltyRedemptionEditor";
 import { useEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
-import { useCartStore } from "@/stores/useCartStore";
-import { useHydrated } from "@/hooks/useHydrated";
 import { useUiStore } from "@/stores/useUiStore";
 import {
   cartCrumbs,
@@ -66,16 +61,10 @@ import {
 } from "@/styles/cartChrome";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
-import { useCartMutations } from "../hooks/useCartMutations";
-import {
-  addItemOptimistic,
-  removeItemOptimistic,
-  setQuantityOptimistic,
-} from "../api/optimisticCart";
-import {
-  PRICE_CHANGED,
-  cartErrorMessage,
-} from "../constants/validationMessages";
+import { addItemOptimistic } from "../api/optimisticCart";
+import { useBagPage } from "../hooks/useBagPage";
+import { bundleTags } from "../utils/bundleTags";
+import { cartErrorMessage } from "../constants/validationMessages";
 import {
   CouponForm,
   AppliedCampaigns,
@@ -86,14 +75,7 @@ import {
   PromoLinePrice,
   PromotionProgressRail,
   PromotionQuickAdd,
-  amountPayableFrom,
-  bundleLinesFirst,
-  setBundleLineLabel,
-  shippingDiscountAmount,
-  useApplicablePromotions,
-  visibleGiftCards,
 } from "@/features/promotions";
-import { quotedCartTotal } from "../utils/insiderCartItem";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
@@ -110,47 +92,36 @@ function sizeLabelFor(product: CatalogProduct) {
 }
 
 export function CartPageView() {
-  const persistedLines = useCartStore((s) => s.lines);
-  const totals = useCartStore((s) => s.totals);
-  const cartId = useCartStore((s) => s.cartId);
-  const persistedSubtotal = useCartStore((s) => s.subtotal());
-  const persistedItemCount = useCartStore((s) => s.itemCount());
-  const { validate } = useCartMutations();
-  const syncing = useCartStore((s) => s.syncing);
-  const validation = useCartStore((s) => s.validation);
-  const updateLocalQuantity = useCartStore((s) => s.updateQuantity);
-  const removeLocalLine = useCartStore((s) => s.removeLine);
+  const {
+    totals,
+    orderedLines,
+    bundleLabel,
+    setLineQuantity,
+    removeLine,
+    isEmpty,
+    itemCount,
+    subtotal,
+    currency,
+    promotions,
+    employeeCheckout,
+    loyaltyRedemption,
+    cartId,
+    syncing,
+    quotePending,
+    discount,
+    shipDiscount,
+    shipping,
+    giftCards,
+    total,
+    amountPayable,
+    blockingErrors,
+    priceChanged,
+    validating,
+    checkoutDisabled,
+    goToCheckout,
+  } = useBagPage();
   const earnPreview = useEarnPreview({ cartId });
-  const router = useRouter();
 
-  const blockingErrors = validation?.isValid === false ? validation.errors : [];
-  const priceChanged = Boolean(
-    validation?.warnings?.some((w) => w.type === PRICE_CHANGED),
-  );
-
-  /**
-   * Guide: always re-validate before checkout, and block the button when the
-   * cart comes back invalid rather than letting checkout fail later.
-   */
-  async function goToCheckout() {
-    if (lines.some((line) => line.isSellable === false)) return;
-    if (!cartId) {
-      router.push("/checkout");
-      return;
-    }
-    try {
-      const cart = await validate.mutateAsync(cartId);
-      if (cart.validation && cart.validation.isValid === false) return;
-      router.push("/checkout");
-    } catch {
-      /* `useCartMutations` already surfaces the API error. */
-    }
-  }
-
-  // The cart is persisted to localStorage, invisible to the server — so the
-  // very first client render must still report an empty bag (matching SSR)
-  // and only pick up the real, rehydrated cart once mounted. See the same
-  // guard in `SiteHeader`'s bag-count badge.
   // Completing a bundle on this page: bring the "You saved" banner into view,
   // then the same party poppers + flash as the bag drawer. Skipped while the
   // drawer is open — it celebrates there instead.
@@ -177,65 +148,7 @@ export function CartPageView() {
     onClear: () => setLinesFlash(false),
   });
 
-  // Persisted cart state is browser-only: read it after hydration (no
-  // setState-in-effect "mounted" flag).
-  const mounted = useHydrated();
-
-  const lines = mounted ? persistedLines : [];
-  const subtotal = mounted ? persistedSubtotal : 0;
-  const itemCount = mounted ? persistedItemCount : 0;
-
-  const promotions = useCartStore((s) => s.promotions);
-  const employeeCheckout = useCartStore((s) => s.employeeCheckout);
-  const loyaltyRedemption = useCartStore((s) => s.loyaltyRedemption);
-  const marketCurrency = useSelectedCatalogMarket()?.currencyCode;
-  const currency = cartCurrency({
-    totalsCurrency: totals?.currency ?? promotions?.context?.currencyCode,
-    lines,
-    marketCurrency,
-  });
-  const isEmpty = lines.length === 0;
-
-  const applicable = useApplicablePromotions();
-  const quotePending = syncing && totals == null;
-  const quotedShip = Number(totals?.shipping ?? 0);
-  const discount = totals?.discount ?? 0;
-  const shipDiscount = shippingDiscountAmount(promotions);
-  const freeDeliveryUnlocked = (applicable.data?.progress?.marks ?? []).some(
-    (mark) => mark.rewardType === "FREE_SHIPPING" && mark.state === "complete",
-  );
-  const shipping =
-    !mounted || quotePending
-      ? null
-      : quotedShip > 0
-        ? quotedShip
-        : shipDiscount > 0
-          ? shipDiscount
-          : freeDeliveryUnlocked
-            ? 0
-            : null;
-  const giftCards = visibleGiftCards(promotions);
-  const payable = amountPayableFrom(promotions, [
-    totals?.amountPayable != null ? String(totals.amountPayable) : null,
-  ]);
-  const total =
-    !mounted || quotePending
-      ? subtotal
-      : quotedCartTotal({
-          merchandise: subtotal,
-          quotedTotal: totals?.total,
-          quotedShipping: totals?.shipping,
-          shipping: quotedShip > 0 ? quotedShip : 0,
-        });
-  const extraShipping =
-    totals && quotedShip > 0 && shipping != null
-      ? Math.max(0, shipping - totals.shipping)
-      : 0;
-  const amountPayable =
-    payable != null && extraShipping > 0 ? payable + extraShipping : payable;
-
   const missThis = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss).slice(0, 4);
-  const offers = applicable.data?.offers ?? [];
 
   // Instant: the line lands in the bag now; the API sync runs behind.
   function addFromCart(product: CatalogProduct) {
@@ -294,8 +207,8 @@ export function CartPageView() {
                 <div
                   className={`${cartLinesCard} ${linesFlash ? drawerPanelFlash : ""}`}
                 >
-                  {bundleLinesFirst(lines, promotions).map((line) => {
-                    const bundle = setBundleLineLabel(promotions, line, offers);
+                  {orderedLines.map((line) => {
+                    const bundle = bundleLabel(line);
                     return (
                       <article
                         className={cartRow}
@@ -336,22 +249,18 @@ export function CartPageView() {
                           ) : null}
                           {bundle ? (
                             <p className={cartRowTags}>
-                              {bundle
-                                .split("·")
-                                .map((part) => part.trim())
-                                .filter(Boolean)
-                                .map((part) => (
-                                  <span
-                                    className={
-                                      /%|off/i.test(part)
-                                        ? drawerLineTagStrong
-                                        : drawerLineTag
-                                    }
-                                    key={part}
-                                  >
-                                    {part}
-                                  </span>
-                                ))}
+                              {bundleTags(bundle).map((tag) => (
+                                <span
+                                  className={
+                                    tag.strong
+                                      ? drawerLineTagStrong
+                                      : drawerLineTag
+                                  }
+                                  key={tag.text}
+                                >
+                                  {tag.text}
+                                </span>
+                              ))}
                             </p>
                           ) : null}
                           <div className={cartRowActions}>
@@ -360,14 +269,12 @@ export function CartPageView() {
                                 type="button"
                                 aria-label="Decrease"
                                 disabled={line.isSellable === false}
-                                onClick={() => {
-                                  const next = Math.max(1, line.quantity - 1);
-                                  if (line.remote || line.cartItemId) {
-                                    setQuantityOptimistic(line.variantId, next);
-                                  } else {
-                                    updateLocalQuantity(line.variantId, next);
-                                  }
-                                }}
+                                onClick={() =>
+                                  setLineQuantity(
+                                    line,
+                                    Math.max(1, line.quantity - 1),
+                                  )
+                                }
                               >
                                 <Minus size={13} />
                               </button>
@@ -379,14 +286,9 @@ export function CartPageView() {
                                   line.isSellable === false ||
                                   atStockLimit(line)
                                 }
-                                onClick={() => {
-                                  const next = line.quantity + 1;
-                                  if (line.remote || line.cartItemId) {
-                                    setQuantityOptimistic(line.variantId, next);
-                                  } else {
-                                    updateLocalQuantity(line.variantId, next);
-                                  }
-                                }}
+                                onClick={() =>
+                                  setLineQuantity(line, line.quantity + 1)
+                                }
                               >
                                 <Plus size={13} />
                               </button>
@@ -394,13 +296,7 @@ export function CartPageView() {
                             <button
                               type="button"
                               className={cartRowRemove}
-                              onClick={() => {
-                                if (line.remote || line.cartItemId) {
-                                  removeItemOptimistic(line.variantId);
-                                } else {
-                                  removeLocalLine(line.variantId);
-                                }
-                              }}
+                              onClick={() => removeLine(line)}
                             >
                               Remove
                             </button>
@@ -495,17 +391,12 @@ export function CartPageView() {
                   type="button"
                   className={cartCta}
                   onClick={goToCheckout}
-                  disabled={
-                    syncing ||
-                    validate.isPending ||
-                    blockingErrors.length > 0 ||
-                    lines.some((line) => line.isSellable === false)
-                  }
+                  disabled={checkoutDisabled}
                 >
                   <span>
                     {syncing
                       ? "Updating bag…"
-                      : validate.isPending
+                      : validating
                         ? "Checking availability…"
                         : "Proceed to checkout"}
                   </span>

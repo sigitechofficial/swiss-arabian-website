@@ -1,78 +1,22 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { toast } from "@/components/ui/Toaster";
-import { env } from "@/lib/config/env";
+import { formErrorText } from "@/lib/i18n/formErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
-import { useUiStore } from "@/stores/useUiStore";
-import { registerCustomer, splitFullName } from "../api/auth.service";
-import { applyAuthResult } from "../lib/applyAuthSession";
-import { registerSchema, type RegisterFormValues } from "../schemas/auth.schema";
-import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
-import { markNewAccount } from "../utils/newAccountGreeting";
+import { Controller } from "react-hook-form";
+import { useRegisterForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import { AuthDivider, AuthField, AuthPasswordField, AuthSocialButtons, AuthSubmitButton } from "./AuthFormControls";
 
 export function RegisterPageView() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requested = searchParams.get("returnTo") || "";
-  const returnTo = requested.startsWith("/") ? requested : "/account";
-  const copy = useShopCopy();
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: "", email: "", phone: "", password: "" },
-  });
-
-  async function onSubmit(values: RegisterFormValues) {
-    try {
-      const { firstName, lastName } = splitFullName(values.fullName);
-      const saved = useUiStore.getState();
-      const zoneCode = toAuthZoneCode(saved.catalogContext?.zoneCode || saved.selectedMarketId);
-      if (!zoneCode) {
-        toast(copy("chooseCountry"), "error");
-        return;
-      }
-      const context = resolveStorefrontContext({ zoneCode });
-      const result = await registerCustomer({
-        zoneCode: context.zoneCode || zoneCode,
-        salesChannelCode: context.salesChannelCode || undefined,
-        email: values.email,
-        // Already E.164 from the phone field.
-        phone: values.phone,
-        password: values.password,
-        firstName,
-        lastName,
-        // Without the code screen there is nowhere to finish, so only ask when it is on.
-        verifyEmailFirst: env.flags.verification,
-      });
-      // The first dashboard visit says "Welcome", not "Welcome back".
-      markNewAccount(values.email);
-      if (isEmailVerificationRequired(result)) {
-        // The account exists; the emailed code finishes the sign-up and signs in.
-        const query = new URLSearchParams({ email: result.email, returnTo });
-        router.push(`/verify?${query.toString()}`);
-        return;
-      }
-      if (isAuthResult(result)) {
-        applyAuthResult(result);
-        router.push(returnTo);
-      }
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const { form, oauthEnabled, submit } = useRegisterForm();
+  const t = useShopCopy();
 
   return (
-    <AuthShell heading="Create an account" subtitle="Join Swiss Arabian to check out faster and save your favourites.">
-      <form className="flex w-full flex-col" onSubmit={form.handleSubmit(onSubmit)}>
-        {env.flags.oauth ? (
+    <AuthShell heading={t("auth.createAccount")} subtitle={t("auth.register.subtitle")}>
+      <form className="flex w-full flex-col" onSubmit={submit}>
+        {oauthEnabled ? (
           <>
             <AuthSocialButtons />
             <AuthDivider />
@@ -81,20 +25,20 @@ export function RegisterPageView() {
         <div className="flex w-full flex-col gap-4">
           <AuthField
             id="fullName"
-            label="Full name"
-            placeholder="Aisha Al Nuaimi"
+            label={t("auth.fullName")}
+            placeholder={t("auth.fullNamePlaceholder")}
             autoComplete="name"
             {...form.register("fullName")}
-            error={form.formState.errors.fullName?.message}
+            error={formErrorText(t, form.formState.errors.fullName?.message)}
           />
           <AuthField
             id="email"
-            label="Email address"
+            label={t("email")}
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
             {...form.register("email")}
-            error={form.formState.errors.email?.message}
+            error={formErrorText(t, form.formState.errors.email?.message)}
           />
           <Controller
             name="phone"
@@ -105,33 +49,33 @@ export function RegisterPageView() {
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                hint="Choose your country, then enter the number without the code."
-                error={form.formState.errors.phone?.message}
+                hint={t("auth.register.phoneHint")}
+                error={formErrorText(t, form.formState.errors.phone?.message)}
               />
             )}
           />
           <AuthPasswordField
             id="password"
-            label="Password"
+            label={t("account.password")}
             autoComplete="new-password"
-            placeholder="Your password"
+            placeholder={t("auth.passwordPlaceholder")}
             {...form.register("password")}
-            error={form.formState.errors.password?.message}
+            error={formErrorText(t, form.formState.errors.password?.message)}
           />
         </div>
         <div className="pt-5">
           <AuthSubmitButton disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating…" : "Create account"}
+            {form.formState.isSubmitting ? t("auth.register.creating") : t("auth.register.create")}
           </AuthSubmitButton>
         </div>
         <p className="mt-6 text-center text-[13px] font-normal text-sa-secondary">
-          Already registered?{" "}
+          {t("auth.register.already")}{" "}
           <LocaleLink className="font-medium text-terra hover:text-[var(--sa-action-primary-hover)]" href="/login">
-            Sign in
+            {t("auth.signIn")}
           </LocaleLink>
         </p>
         <p className="mt-4 text-center text-[11px] font-normal leading-relaxed text-sa-muted">
-          By continuing you agree to Swiss Arabian&apos;s Terms &amp; Conditions and Privacy Policy.
+          {t("auth.terms")}
         </p>
       </form>
     </AuthShell>

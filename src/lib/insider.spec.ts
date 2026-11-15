@@ -1,14 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-vi.mock("@/lib/config/env", () => ({
-  env: {
-    insider: {
-      enabled: true,
-      accountId: "10015366",
-      scriptHost: "swissarabianuatnew.api.useinsider.com",
-    },
-  },
-}));
+// Insider is on through Swiss Arabian's integration defaults (src/lib/brand).
+
 
 import {
   beginInsiderRouteFlush,
@@ -33,6 +26,8 @@ import {
 
 describe("Insider page-view queues", () => {
   beforeEach(() => {
+    // The root layout marks Insider on when the address's market has its tag (ADR-005 phase E).
+    window.__SA_INSIDER_ON__ = true;
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
     resetInsiderRouteFlushForTests();
@@ -403,6 +398,8 @@ describe("toInsiderPurchaseValue", () => {
 
 describe("cart shipping", () => {
   beforeEach(() => {
+    // The root layout marks Insider on when the address's market has its tag (ADR-005 phase E).
+    window.__SA_INSIDER_ON__ = true;
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
     resetInsiderRouteFlushForTests();
@@ -463,5 +460,16 @@ describe("cart shipping", () => {
     expect(value.quantity).toBeUndefined();
     expect(value.items?.[0]).toMatchObject({ quantity: 1, unit_price: 390 });
     expect(value.items?.[0]?.shipping_cost).toBeUndefined();
+  });
+});
+
+describe("Insider switched off for the address", () => {
+  it("queues nothing when the page did not render Insider's tag", () => {
+    window.__SA_INSIDER_ON__ = undefined;
+    window.InsiderQueue = [];
+    window.Insider = { initialized: true };
+    resetInsiderRouteFlushForTests();
+    insiderHomePage();
+    expect(window.InsiderQueue).toEqual([]);
   });
 });

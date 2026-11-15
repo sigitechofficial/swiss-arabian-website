@@ -65,7 +65,7 @@ export const cardTagStack =
 
 /** Offer line under a merch pill. Cream, so it stays readable next to the copper Best Seller chip. */
 export const cardStockChip =
-  "m-0 text-[0.62rem] [&>span]:inline-block [&>span]:rounded-full [&>span]:bg-[#8a8178] [&>span]:px-[0.75em] [&>span]:py-[0.4em] [&>span]:leading-[1.25] [&>span]:font-semibold [&>span]:tracking-[0.08em] [&>span]:text-white [&>span]:uppercase";
+  "m-0 text-[0.62rem] [&>span]:inline-block [&>span]:rounded-full [&>span]:bg-[#716960] [&>span]:px-[0.75em] [&>span]:py-[0.4em] [&>span]:leading-[1.25] [&>span]:font-semibold [&>span]:tracking-[0.08em] [&>span]:text-white [&>span]:uppercase";
 
 export const cardOfferTag =
   "m-0 max-w-full text-[0.62rem] [&>span]:inline-block [&>span]:max-w-full [&>span]:rounded-full [&>span]:bg-[#fffdf8] [&>span]:px-[0.75em] [&>span]:py-[0.4em] [&>span]:leading-[1.25] [&>span]:font-semibold [&>span]:text-balance [&>span]:text-copper [&>span]:shadow-[0_1px_4px_rgba(36,31,27,0.1)] [&>span]:ring-1 [&>span]:ring-copper/25";

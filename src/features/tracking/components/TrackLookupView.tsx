@@ -1,8 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
 import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
 import {
@@ -15,38 +14,27 @@ import {
   fldFull,
   fldHint,
 } from "@/styles/checkoutChrome";
-import { storeGuestOrderAccessToken } from "@/features/checkout/utils/checkoutSession";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useTrackLookup } from "../hooks/useOrderTrackingLookup";
 
 /** `/track` — find an order by number, with the token from the confirmation email. */
 export function TrackLookupView() {
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [orderNumber, setOrderNumber] = useState("");
-  const [token, setToken] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const number = orderNumber.trim().toUpperCase();
-    if (!number) return setError("Enter your order number.");
-    if (!isAuthenticated && !token.trim()) {
-      return setError("Enter the tracking token from your confirmation email.");
-    }
-    setError(null);
-    // Hand the token over through storage, not the URL.
-    if (token.trim()) storeGuestOrderAccessToken(number, token.trim());
-    router.push(`/track/${encodeURIComponent(number)}`);
-  }
+  const { isAuthenticated, orderNumber, setOrderNumber, token, setToken, error: errorKind, submit } = useTrackLookup();
+  const t = useShopCopy();
+  const error =
+    errorKind === "orderNumber"
+      ? t("track.errOrderNumber")
+      : errorKind === "token"
+        ? t("track.errToken")
+        : null;
 
   return (
-    <CheckoutStateShell current="Track order">
+    <CheckoutStateShell current={t("track.trackOrder")}>
       <div className="mx-auto w-full max-w-md pb-16">
         <header className="text-center">
-          <p className={checkoutEyebrow}>Order tracking</p>
-          <h1 className={pageTitle}>Track your order</h1>
+          <p className={checkoutEyebrow}>{t("track.eyebrow")}</p>
+          <h1 className={pageTitle}>{t("track.title")}</h1>
           <p className={checkoutNote}>
-            Your order number and tracking token are in your order confirmation email.
+            {t("track.lookupIntro")}
           </p>
         </header>
 
@@ -58,7 +46,7 @@ export function TrackLookupView() {
               </p>
             ) : null}
             <label className={fldFull}>
-              <span>Order number</span>
+              <span>{t("track.orderNumber")}</span>
               <input
                 type="text"
                 name="orderNumber"
@@ -71,20 +59,21 @@ export function TrackLookupView() {
             </label>
             <label className={fldFull}>
               <span>
-                Tracking token{isAuthenticated ? <span className={fldHint}> (not needed for your own orders)</span> : null}
+                {t("track.token")}
+                {isAuthenticated ? <span className={fldHint}>{t("track.tokenOwnHint")}</span> : null}
               </span>
               <input
                 type="text"
                 name="token"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="Paste your token here"
+                placeholder={t("track.tokenPlaceholder")}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
               />
             </label>
             <button type="submit" className={checkoutCta}>
-              <span>Track order</span>
+              <span>{t("track.trackOrder")}</span>
               <b aria-hidden="true">↗</b>
             </button>
           </div>
@@ -93,12 +82,13 @@ export function TrackLookupView() {
         <p className={`${checkoutLegal} mt-4`}>
           {isAuthenticated ? (
             <>
-              All your orders are in <LocaleLink href="/account/orders">Purchase History</LocaleLink>.
+              {t("track.allOrdersIn")} <LocaleLink href="/account/orders">{t("account.tab.orders")}</LocaleLink>
+              {t("orders.guestEnd")}
             </>
           ) : (
             <>
-              Have an account? <LocaleLink href="/login?returnTo=%2Faccount%2Forders">Sign in</LocaleLink> to see all your
-              orders.
+              {t("track.haveAccount")} <LocaleLink href="/login?returnTo=%2Faccount%2Forders">{t("track.signIn")}</LocaleLink>{" "}
+              {t("track.toSeeAllOrders")}
             </>
           )}
         </p>

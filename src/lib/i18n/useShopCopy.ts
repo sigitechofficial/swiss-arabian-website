@@ -1,10 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { localeFromPathname } from "./localePath";
-import { shopCopy, type ShopCopyKey } from "./shopCopy";
+import type { MessageKey } from "./messages";
+import { useShopTranslator } from "./ShopLocaleProvider";
 
+export type ShopCopyKey = MessageKey;
+
+/** `copy(key, values?)` in the page's language (see `src/messages/*.json`). */
 export function useShopCopy() {
-  const locale = localeFromPathname(usePathname() || "/");
-  return (key: ShopCopyKey) => shopCopy(locale, key);
+  return useShopTranslator();
 }

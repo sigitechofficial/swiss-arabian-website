@@ -6,6 +6,7 @@ import { fetchCustomerMe } from "@/features/auth/api/auth.service";
 import { applyCustomerProfile } from "@/features/auth/lib/applyAuthSession";
 import { useApiMutation, useApiQuery } from "@/lib/api/queryHooks";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { customerAccountKeys } from "../api/customerAccount.keys";
 import {
   createCustomerPhone,
@@ -22,6 +23,7 @@ async function refreshMe() {
 
 export function useCustomerPhones() {
   const queryClient = useQueryClient();
+  const t = useShopCopy();
   const list = useApiQuery(customerAccountKeys.phones(), listCustomerPhones);
 
   const invalidate = async () => {
@@ -40,7 +42,7 @@ export function useCustomerPhones() {
     {
       onSuccess: async () => {
         await invalidate();
-        toast("Phone saved", "success");
+        toast(t("account.toast.phoneSaved"), "success");
       },
       onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
     },
@@ -49,7 +51,7 @@ export function useCustomerPhones() {
   const remove = useApiMutation(deleteCustomerPhone, {
     onSuccess: async () => {
       await invalidate();
-      toast("Phone removed", "success");
+      toast(t("account.toast.phoneRemoved"), "success");
     },
     onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
   });
@@ -57,7 +59,7 @@ export function useCustomerPhones() {
   const setPrimary = useApiMutation(setDefaultCustomerPhone, {
     onSuccess: async () => {
       await invalidate();
-      toast("Primary phone updated", "success");
+      toast(t("account.toast.primaryPhone"), "success");
     },
     onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
   });

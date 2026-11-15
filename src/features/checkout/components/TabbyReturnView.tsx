@@ -1,11 +1,12 @@
 "use client";
 
+import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
-import { pollUntilPaymentSettles } from "../api/orders.service";
-import { clearPaymentState, getStoredOrderId, storeOrderId } from "../utils/checkoutSession";
+import { useSettlePayment } from "../hooks/usePaymentReturn";
+import { getStoredOrderId, storeOrderId } from "../utils/checkoutSession";
 import { useTabbyLang } from "../hooks/useTabbyLang";
 import {
   TABBY_CANCELLED_MESSAGE,
@@ -22,7 +23,7 @@ import {
   checkoutLink,
 } from "@/styles/checkoutChrome";
 
-type TabbyResultHint = "success" | "cancel" | "failure" | "unknown";
+export type TabbyResultHint = "success" | "cancel" | "failure" | "unknown";
 
 type SettleOutcome =
   | { kind: "paid" }
@@ -30,9 +31,9 @@ type SettleOutcome =
   | { kind: "timeout" }
   | { kind: "no-order" };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const ORDER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function parseResultHint(raw: string | null): TabbyResultHint {
+export function parseResultHint(raw: string | null): TabbyResultHint {
   const value = (raw ?? "").trim().toLowerCase();
   if (value === "success") return "success";
   if (value === "cancel" || value === "cancelled" || value === "canceled") return "cancel";
@@ -109,7 +110,6 @@ const COPY: Record<
  * captures it. The cancel and not-approved messages are Tabby's own wording.
  */
 export function TabbyReturnView() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const lang = useTabbyLang();
@@ -121,27 +121,12 @@ export function TabbyReturnView() {
   // order last placed in this browser is only a fallback. They differ when the
   // payment was for another order, such as an exchange replacement.
   const orderId = hydrated
-    ? (queryOrderId && UUID.test(queryOrderId) ? queryOrderId : getStoredOrderId())
+    ? (queryOrderId && ORDER_UUID.test(queryOrderId) ? queryOrderId : getStoredOrderId())
     : null;
 
-  const [polled, setPolled] = useState<SettleOutcome | null>(null);
-  const started = useRef(false);
-  const outcome: SettleOutcome | null = hydrated && !orderId ? { kind: "no-order" } : polled;
-
-  useEffect(() => {
-    if (!hydrated || !orderId || started.current) return;
-    started.current = true;
-    void (async () => {
-      const result = await pollUntilPaymentSettles(orderId);
-      if (result.success) {
-        clearPaymentState();
-        setPolled({ kind: "paid" });
-        router.replace(`/order-confirmation/${orderId}`);
-        return;
-      }
-      setPolled({ kind: result.status === "TIMEOUT" ? "timeout" : "failed" });
-    })();
-  }, [hydrated, orderId, router]);
+  const settlement = useSettlePayment(orderId);
+  const outcome: SettleOutcome | null =
+    hydrated && !orderId ? { kind: "no-order" } : settlement ? { kind: settlement.kind } : null;
 
   const retryHref = orderId
     ? `/checkout/payment/cancel?orderId=${encodeURIComponent(orderId)}`
@@ -179,7 +164,7 @@ export function TabbyReturnView() {
     const message = cancelled ? TABBY_CANCELLED_MESSAGE[lang] : TABBY_REJECTED_MESSAGE[lang];
     return (
       <CheckoutStateShell current="Payment">
-        <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+        <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
           <p className={stateEyebrow}>{cancelled ? copy.cancelEyebrow : copy.failureEyebrow}</p>
           <h1 className={doneTitle} role="alert">
             {message}
@@ -208,7 +193,7 @@ export function TabbyReturnView() {
   // or a success link we can't match to an order in this browser.
   return (
     <CheckoutStateShell current="Payment">
-      <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+      <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
         <p className={stateEyebrow}>{copy.pendingEyebrow}</p>
         <h1 className={doneTitle}>
           {outcome.kind === "no-order" ? (

@@ -6,6 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import {
   accountBtnGhost,
@@ -35,6 +38,7 @@ function DetailRow({
   onEdit?: () => void;
   editHref?: string;
 }) {
+  const t = useShopCopy();
   const editClass =
     "shrink-0 text-[12px] font-semibold text-terra hover:underline";
 
@@ -46,11 +50,11 @@ function DetailRow({
       </div>
       {editHref ? (
         <LocaleLink href={editHref} className={editClass}>
-          Edit
+          {t("account.edit")}
         </LocaleLink>
       ) : onEdit ? (
         <button type="button" onClick={onEdit} className={editClass}>
-          Edit
+          {t("account.edit")}
         </button>
       ) : null}
     </div>
@@ -82,8 +86,8 @@ function PrefBlock({
   );
 }
 
-function soon(label: string) {
-  toast(`${label} will be available soon.`, "info");
+function soon(t: Translator, label: string) {
+  toast(t("account.soon", { label }), "info");
 }
 
 function NameEditor({
@@ -91,6 +95,7 @@ function NameEditor({
 }: {
   onDone: () => void;
 }) {
+  const t = useShopCopy();
   const user = useCurrentUser();
   const updateMe = useUpdateCustomerMe();
   const {
@@ -116,23 +121,23 @@ function NameEditor({
         onDone();
       })}
     >
-      <p className="text-[12px] font-semibold text-sa-primary">Name</p>
+      <p className="text-[12px] font-semibold text-sa-primary">{t("account.name")}</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <input
             className={accountInputClass}
-            placeholder="First name"
+            placeholder={t("account.firstName")}
             {...register("firstName")}
           />
           {errors.firstName ? (
             <p className="mt-1 text-[11px] text-red-600">
-              {errors.firstName.message}
+              {formErrorText(t, errors.firstName.message)}
             </p>
           ) : null}
         </div>
         <input
           className={accountInputClass}
-          placeholder="Last name"
+          placeholder={t("account.lastName")}
           {...register("lastName")}
         />
       </div>
@@ -142,7 +147,7 @@ function NameEditor({
           className={accountBtnPrimary}
           disabled={updateMe.isPending}
         >
-          {updateMe.isPending ? "Saving…" : "Save"}
+          {updateMe.isPending ? t("account.saving") : t("account.save")}
         </button>
         <button
           type="button"
@@ -150,7 +155,7 @@ function NameEditor({
           onClick={onDone}
           disabled={updateMe.isPending}
         >
-          Cancel
+          {t("account.cancel")}
         </button>
       </div>
     </form>
@@ -158,6 +163,7 @@ function NameEditor({
 }
 
 function ProfileContent() {
+  const t = useShopCopy();
   const user = useCurrentUser();
   const [editingName, setEditingName] = useState(false);
   const displayName =
@@ -170,43 +176,43 @@ function ProfileContent() {
     <>
       <header className="border-b border-sa-border py-6">
         <div className={accountContainer}>
-          <h1 className="text-[24px] font-bold text-sa-primary">Profile</h1>
+          <h1 className="text-[24px] font-bold text-sa-primary">{t("account.tab.profile")}</h1>
         </div>
       </header>
 
       <section className={`${accountContainer} py-8`}>
         <div className={MEASURE}>
           <h2 className="text-[15px] font-semibold text-sa-primary">
-            Account Details
+            {t("account.details")}
           </h2>
           <div className="mt-2">
             {editingName ? (
               <NameEditor onDone={() => setEditingName(false)} />
             ) : (
               <DetailRow
-                label="Name"
+                label={t("account.name")}
                 value={displayName}
                 onEdit={() => setEditingName(true)}
               />
             )}
-            <DetailRow label="Email" value={email} />
+            <DetailRow label={t("account.email")} value={email} />
             <DetailRow
-              label="Password"
+              label={t("account.password")}
               value="••••••••••••"
               editHref="/account/security"
             />
           </div>
           <AccountPhonesSection />
           <div className="border-b border-sa-border py-5">
-            <p className="text-[12px] font-semibold text-sa-primary">Reviews</p>
+            <p className="text-[12px] font-semibold text-sa-primary">{t("pages.title.reviews")}</p>
             <p className="mt-1 text-[13.5px] text-sa-secondary">
-              View pending and published product reviews.
+              {t("account.reviewsText")}
             </p>
             <LocaleLink
               href="/account/reviews"
               className="mt-2 inline-block text-[12px] font-semibold text-terra hover:underline"
             >
-              Manage reviews
+              {t("account.manageReviews")}
             </LocaleLink>
           </div>
         </div>
@@ -216,20 +222,18 @@ function ProfileContent() {
         <div className={accountContainer}>
           <div className={MEASURE}>
             <h2 className="text-[15px] font-semibold text-sa-primary">
-              Passkeys
+              {t("account.passkeys")}
             </h2>
             <p className="mt-3 text-[13px] leading-normal text-sa-secondary">
-              Passkeys are an easier and more secure alternative to passwords.
-              They let you sign in with just your fingerprint, face scan or
-              screen lock.
+              {t("account.passkeysText")}
             </p>
             <div className="mt-8 border-t border-sa-border pt-3">
               <button
                 type="button"
-                onClick={() => soon("Passkeys")}
+                onClick={() => soon(t, t("account.passkeys"))}
                 className="text-[13px] font-semibold text-terra hover:underline"
               >
-                + Add a passkey
+                {t("account.addPasskey")}
               </button>
             </div>
           </div>
@@ -238,29 +242,29 @@ function ProfileContent() {
 
       <section className={`${accountContainer} py-6`}>
         <h2 className="text-[19px] font-bold text-sa-primary">
-          Checkout preferences
+          {t("account.checkoutPrefs")}
         </h2>
       </section>
 
-      <PrefBlock title="Shipping addresses">
+      <PrefBlock title={t("account.shippingAddresses")}>
         <LocaleLink
           href="/account/addresses"
           className="text-[13px] font-semibold text-terra hover:underline"
         >
-          Manage addresses
+          {t("account.manageAddresses")}
         </LocaleLink>
       </PrefBlock>
 
-      <PrefBlock title="Payment methods">
+      <PrefBlock title={t("account.paymentMethods")}>
         <LocaleLink
           href="/account/payments"
           className="text-[13px] font-semibold text-terra hover:underline"
         >
-          View payments
+          {t("account.viewPayments")}
         </LocaleLink>
       </PrefBlock>
 
-      <PrefBlock title="Communication preferences" soft>
+      <PrefBlock title={t("account.commsPrefs")} soft>
         <AccountConsentsSection />
       </PrefBlock>
 
@@ -268,13 +272,13 @@ function ProfileContent() {
         <div className={MEASURE}>
           <button
             type="button"
-            onClick={() => soon("Account deletion")}
+            onClick={() => soon(t, t("account.deletion"))}
             className="text-[12px] text-sa-secondary hover:text-terra hover:underline"
           >
-            Delete account
+            {t("account.delete")}
           </button>
           <p className="mt-1 text-[12px] text-sa-secondary">
-            Permanently remove your Swiss Arabian account and data.
+            {t("account.deleteText")}
           </p>
         </div>
       </section>

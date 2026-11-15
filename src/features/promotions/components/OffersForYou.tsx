@@ -1,5 +1,8 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { dir as textDirection, type ShopLocale } from "@/lib/i18n/locales";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -30,15 +33,16 @@ export function OffersForYou({
 }) {
   const query = usePromotionDiscovery(product.id ? [product.id] : []);
   const discovery = query.data;
-  const arabic = discovery?.locale.toLowerCase().startsWith("ar") ?? false;
-  const offers = discovery ? mapDiscoveryOffers(discovery.offers, arabic) : [];
+  const t = useShopCopy();
+  const locale = useShopLocale();
+  const offers = discovery ? mapDiscoveryOffers(discovery.offers, t) : [];
   if (!offers.length) return null;
 
   return (
     <>
       <OfferVoucher
         offers={offers}
-        arabic={arabic}
+        locale={locale}
         onOpen={(trigger) => {
           openerRef.current = trigger;
           onOpenChange(true);
@@ -47,7 +51,7 @@ export function OffersForYou({
       {open ? (
         <OffersDialog
           offers={offers}
-          arabic={arabic}
+          locale={locale}
           product={product}
           quantity={Math.max(1, quantity)}
           onClose={() => {
@@ -62,11 +66,11 @@ export function OffersForYou({
 
 function OfferVoucher({
   offers,
-  arabic,
+  locale,
   onOpen,
 }: {
   offers: PdpOffer[];
-  arabic: boolean;
+  locale: ShopLocale;
   onOpen: (trigger: HTMLButtonElement) => void;
 }) {
   const titleId = useId();
@@ -74,16 +78,15 @@ function OfferVoucher({
   const first = offers[0];
   const headline =
     first.headline || (typeof first.title === "string" ? first.title : "");
-  const subline = voucherSubline(offers, arabic);
+  const t = useShopCopy();
+  const subline = voucherSubline(offers, t);
   const percent = bundlePercent(offers);
-  const countLabel = arabic
-    ? `${offers.length} عروض`
-    : `${offers.length} ${offers.length === 1 ? "offer" : "offers"}`;
+  const countLabel = t("promo.offerCount", { count: offers.length });
 
   return (
     <button
       type="button"
-      dir={arabic ? "rtl" : "ltr"}
+      dir={textDirection(locale)}
       className="offer-voucher group flex w-full cursor-pointer overflow-hidden rounded-xl border border-[#E8D5B0] bg-[#FFF8EC] text-start"
       aria-haspopup="dialog"
       aria-controls="pdp-offers-dialog"
@@ -93,20 +96,20 @@ function OfferVoucher({
       <span className="grid w-[5.25rem] shrink-0 place-items-center bg-[#8A4332] px-2 py-2 text-[#FFF8EC] max-[420px]:w-[4.25rem]">
         <span className="grid justify-items-center gap-0">
           <span className="text-[0.56rem] font-bold tracking-[0.14em] uppercase">
-            {arabic ? "حتى" : "Up to"}
+            {t("promo.upTo")}
           </span>
           <span className="font-[family-name:var(--font-display)] text-[1.35rem] leading-none max-[420px]:text-[1.15rem]">
             {percent ? `${percent}%` : offers.length}
           </span>
           <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">
-            {percent ? (arabic ? "خصم" : "Off") : arabic ? "عروض" : "Offers"}
+            {percent ? t("promo.off") : t("promo.offers")}
           </span>
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-s border-dashed border-[#E8D5B0] px-3 py-2">
         <span className="flex items-center justify-between gap-2">
           <span className="text-[0.62rem] font-bold tracking-[0.14em] text-[#8A4332] uppercase">
-            {arabic ? "عروض لك" : "Offers for you"}
+            {t("promo.forYou")}
           </span>
           <span className="inline-flex min-h-6 items-center rounded-full border border-[#8A4332]/70 px-2 text-[0.68rem] font-semibold text-[#8A4332]">
             {countLabel}
@@ -131,7 +134,7 @@ function OfferVoucher({
           </span>
         )}
         <span className="mt-0.5 inline-flex items-center gap-1 text-[0.68rem] font-bold tracking-[0.08em] text-[#8A4332] uppercase">
-          {arabic ? "عرض كل العروض" : "View all offers"}
+          {t("promo.viewAll")}
           <svg
             viewBox="0 0 20 20"
             className="size-3.5 rtl:-scale-x-100"
@@ -154,17 +157,18 @@ function OfferVoucher({
 
 function OffersDialog({
   offers,
-  arabic,
+  locale,
   product,
   quantity,
   onClose,
 }: {
   offers: PdpOffer[];
-  arabic: boolean;
+  locale: ShopLocale;
   product: CatalogProduct;
   quantity: number;
   onClose: () => void;
 }) {
+  const t = useShopCopy();
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [closing, setClosing] = useState(false);
@@ -215,9 +219,9 @@ function OffersDialog({
   const copyCode = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
-      setToast(arabic ? `تم نسخ الرمز ${code}` : `Code ${code} copied`);
+      setToast(t("promo.codeCopied", { code }));
     } catch {
-      setToast(arabic ? "تعذر نسخ الرمز" : "Could not copy the code");
+      setToast(t("promo.copyFailed"));
     }
   };
 
@@ -227,7 +231,7 @@ function OffersDialog({
     <dialog
       ref={dialogRef}
       id="pdp-offers-dialog"
-      dir={arabic ? "rtl" : "ltr"}
+      dir={textDirection(locale)}
       aria-labelledby={titleId}
       data-closing={closing ? "" : undefined}
       className="offer-dialog z-[1400] m-auto h-fit max-h-[min(84vh,760px)] w-[min(560px,calc(100%-2rem))] overflow-hidden rounded-[14px] border-0 bg-[#FFF8EC] p-0 text-[#211B17] shadow-[0_28px_70px_rgba(24,20,17,0.28)] open:animate-offer-pop data-closing:animate-offer-out motion-reduce:animate-none max-[640px]:mt-auto max-[640px]:mb-0 max-[640px]:max-h-[88vh] max-[640px]:w-full max-[640px]:rounded-t-2xl max-[640px]:rounded-b-none max-[640px]:open:animate-offer-sheet max-[640px]:data-closing:animate-offer-sheet-out max-[640px]:pb-[env(safe-area-inset-bottom)]"
@@ -260,32 +264,28 @@ function OffersDialog({
           <div className="flex items-start gap-3">
             <span className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-[#FFF8EC] px-3 font-[family-name:var(--font-display)] text-[1.05rem] leading-none text-[#8A4332]">
               {percent
-                ? `${percent}% ${arabic ? "خصم" : "off"}`
-                : arabic
-                  ? `${offers.length} عروض`
-                  : `${offers.length} offers`}
+                ? t("promo.percentOff", { percent })
+                : t("promo.offerCount", { count: offers.length })}
             </span>
             <div className="min-w-0 flex-1 pt-0.5">
               <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] uppercase">
-                {arabic ? "عروض لك" : "Offers for you"}
+                {t("promo.forYou")}
               </p>
               <h2
                 id={titleId}
                 className="m-0 mt-1 font-[family-name:var(--font-display)] text-[1.35rem] leading-none"
               >
-                {arabic
-                  ? `${offers.length} طرق للتوفير`
-                  : `${offers.length} ${offers.length === 1 ? "way" : "ways"} to save`}
+                {t("promo.waysToSave", { count: offers.length })}
               </h2>
               <p className="m-0 mt-1 line-clamp-2 text-[0.82rem] text-[#FFF8EC]/85">
-                {arabic ? `على ${product.title}` : `on ${product.title}`}
+                {t("promo.onProduct", { title: product.title })}
               </p>
             </div>
             <button
               type="button"
               data-offer-close
               className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[#FFF8EC] bg-transparent text-[#FFF8EC]"
-              aria-label={arabic ? "إغلاق" : "Close"}
+              aria-label={t("promo.close")}
               onClick={requestClose}
             >
               <svg

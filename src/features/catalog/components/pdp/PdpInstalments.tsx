@@ -1,13 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
 import { ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { env } from "@/lib/config/env";
-import { localeFromPathname, type ShopLocale } from "@/lib/i18n/localePath";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
+import { useInstalmentPlan } from "../../hooks/useInstalmentPlan";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
+import {
+  INSTALMENT_PROVIDER_NAMES,
+  instalmentProviders,
+  payInFour,
+  type InstalmentProvider,
+} from "../../utils/instalments";
 import {
   pdpPay,
   pdpPayAmount,
@@ -43,43 +48,21 @@ import {
   pdpPayWhen,
 } from "@/styles/pdpChrome";
 
-type Provider = "tamara" | "tabby";
+type Provider = InstalmentProvider;
 
-const PROVIDERS: Record<Provider, { name: string; mark: string; live: boolean }> = {
-  tamara: { name: "Tamara", mark: pdpPayMarkTamara, live: env.flags.tamara },
-  tabby: { name: "Tabby", mark: pdpPayMarkTabby, live: env.flags.tabby },
+const PROVIDERS: Record<Provider, { name: string; mark: string }> = {
+  tamara: { name: INSTALMENT_PROVIDER_NAMES.tamara, mark: pdpPayMarkTamara },
+  tabby: { name: INSTALMENT_PROVIDER_NAMES.tabby, mark: pdpPayMarkTabby },
 };
+
+/** Whether the market's checkout offers each provider now (ADR-005 phase E). */
+function useLiveProviders() {
+  return instalmentProviders(useSiteIntegrations().paymentPromos);
+}
 
 const WHEN = ["Today", "In 1 month", "In 2 months", "In 3 months"] as const;
 
-/** Four payments to the cent. The last one carries whatever rounding left over, so they add up to the price. */
-export function payInFour(price: number): number[] {
-  const cents = Math.round(price * 100);
-  const each = Math.floor(cents / 4);
-  return [each, each, each, cents - each * 3].map((value) => value / 100);
-}
-
-/** Currencies Tabby's own pop-up covers. Anywhere else the Tabby box keeps our dialog. */
-const TABBY_CURRENCIES = new Set(["AED", "SAR", "KWD"]);
-
-/**
- * Tabby's own "Learn more" page, the same one their snippet shows. Their docs ask custom boxes to open it
- * rather than a home-made dialog. The merchant keys are added once the account exists.
- */
-export function tabbyPopupUrl(
-  price: number,
-  currency: string,
-  locale: ShopLocale,
-  keys: { publicKey: string; merchantCode: string } = env.tabby,
-): string | null {
-  const code = currency.toUpperCase();
-  if (!TABBY_CURRENCIES.has(code)) return null;
-  const host = code === "SAR" ? "https://checkout.tabby.sa" : "https://checkout.tabby.ai";
-  const params = new URLSearchParams({ price: price.toFixed(code === "KWD" ? 3 : 2), currency: code });
-  if (keys.merchantCode) params.set("merchant_code", keys.merchantCode);
-  if (keys.publicKey) params.set("public_key", keys.publicKey);
-  return `${host}/promos/product-page/installments/${locale}/?${params.toString()}`;
-}
+export { payInFour, tabbyPopupUrl } from "../../utils/instalments";
 
 /** Escape closes, the page behind stops scrolling, and focus starts on the close button. */
 function useDialogChrome(onClose: () => void) {
@@ -104,6 +87,7 @@ function useDialogChrome(onClose: () => void) {
 
 export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
   const closeRef = useDialogChrome(onClose);
+  const live = useLiveProviders();
 
   return createPortal(
     <div className={giftChoiceRoot}>
@@ -119,7 +103,7 @@ export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void
           sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="strict-origin-when-cross-origin"
         />
-        {PROVIDERS.tabby.live ? null : <p className={pdpPayFrameSoon}>Tabby is coming soon to our checkout.</p>}
+        {live.tabby.live ? null : <p className={pdpPayFrameSoon}>Tabby is coming soon to our checkout.</p>}
       </section>
     </div>,
     document.body,
@@ -151,7 +135,8 @@ function PayDialog({
   currency: string;
   onClose: () => void;
 }) {
-  const { name, mark, live } = PROVIDERS[provider];
+  const { name, mark } = PROVIDERS[provider];
+  const { live } = useLiveProviders()[provider];
   const titleId = useId();
   const closeRef = useDialogChrome(onClose);
   const payments = payInFour(price);
@@ -211,16 +196,9 @@ function PayDialog({
  * Tabby opens Tabby's own pop-up; Tamara opens our schedule dialog.
  */
 export function PdpInstalments({ price, currency }: { price: number; currency: string }) {
-  const [open, setOpen] = useState<Provider | null>(null);
-  const openerRef = useRef<HTMLButtonElement | null>(null);
-  const locale = localeFromPathname(usePathname() || "/");
-  const tabbyUrl = tabbyPopupUrl(price, currency, locale);
-  const each = formatMoney(payInFour(price)[0], currency);
-
-  const close = useCallback(() => {
-    setOpen(null);
-    openerRef.current?.focus();
-  }, []);
+  const plan = useInstalmentPlan(price, currency);
+  const { open, tabbyUrl, close } = plan;
+  const each = formatMoney(plan.each, currency);
 
   return (
     <>
@@ -256,16 +234,14 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
                 type="button"
                 className={pdpPayBtn}
                 aria-haspopup="dialog"
-                aria-label={`Learn more about paying with ${name}`}
                 key={provider}
-                onClick={(event) => {
-                  openerRef.current = event.currentTarget;
-                  setOpen(provider);
-                }}
+                onClick={(event) => plan.openProvider(provider, event.currentTarget)}
               >
                 <span className={mark}>{name}</span>
                 <span className={pdpPayBtnMore}>
                   Learn more
+                  {/* Visible text stays in the accessible name ("Tabby Learn more about paying with Tabby"). */}
+                  <span className="sr-only"> about paying with {name}</span>
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>

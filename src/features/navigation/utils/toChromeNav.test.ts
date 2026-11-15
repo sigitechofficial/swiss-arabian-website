@@ -40,6 +40,16 @@ describe("apiNavToChromeNav", () => {
     });
   });
 
+  it("Arabic menus get distinct ids (keys, panel ids, which panel is open)", () => {
+    const items = apiNavToChromeNav([
+      nav("p", "عطور", "/collections/perfumes", [nav("m", "رجال", "/collections/men")]),
+      nav("o", "العطور الزيتية", "/collections/perfume-oil", [nav("c", "زيوت", "/collections/oils")]),
+      nav("x", "  ", "/collections/x", [nav("y", "Y", "/collections/y")]),
+    ]);
+    const ids = items.map((item) => (item.type === "mega" ? item.id : null));
+    expect(ids).toEqual(["عطور", "العطور-الزيتية", "menu-x"]);
+  });
+
   it("a top-level link without children stays a plain link", () => {
     expect(apiNavToChromeNav([nav("s", "SALE", "/collections/sale")])).toEqual([
       { type: "link", label: "SALE", href: "/collections/sale" },

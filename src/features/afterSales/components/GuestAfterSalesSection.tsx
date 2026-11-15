@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { getStoredGuestOrderLines } from "@/features/checkout/utils/checkoutSession";
-import { useGuestExchanges, useGuestReturns } from "../hooks/useAfterSales";
+import {
+  useGuestAfterSalesOptions,
+  useGuestExchanges,
+  useGuestReturns,
+} from "../hooks/useAfterSales";
 import type { AfterSalesOrderLine } from "../types/afterSales";
+import { resolveAfterSalesActions } from "../utils/afterSalesOptions";
 import { isOrderEligibleForAfterSales } from "../utils/eligibility";
 import {
   GuestExchangeRequestCard,
@@ -28,13 +34,18 @@ export function GuestAfterSalesSection({
   fulfillmentStatus,
   lines,
 }: GuestAfterSalesSectionProps) {
+  const t = useShopCopy();
   const [form, setForm] = useState<"return" | "exchange" | null>(null);
   const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
   const returns = useGuestReturns(orderNumber, orderAccessToken);
   const exchanges = useGuestExchanges(orderNumber, orderAccessToken);
   const creatableLines =
     lines.length > 0 ? lines : getStoredGuestOrderLines(orderNumber);
-  const canCreate = eligible && creatableLines.length > 0;
+  const options = useGuestAfterSalesOptions(orderNumber, orderAccessToken);
+  const actions = resolveAfterSalesActions(options.data, eligible, t);
+  const hasLines = creatableLines.length > 0;
+  const canReturn = actions.canReturn && hasLines;
+  const canExchange = actions.canExchange && hasLines;
   const returnItems = returns.data?.items ?? [];
   const exchangeItems = exchanges.data?.items ?? [];
 
@@ -42,37 +53,42 @@ export function GuestAfterSalesSection({
     <section className="overflow-hidden border border-sa-border bg-page">
       <div className="border-b border-sa-border bg-section-soft px-5 py-3">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-sa-muted">
-          Returns & exchanges
+          {t("afterSales.title")}
         </h2>
       </div>
       <div className="flex flex-col gap-4 px-5 py-5">
-        {canCreate ? (
+        {canReturn || canExchange ? (
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className={accountBtnGhost}
-              onClick={() => setForm("return")}
-            >
-              Request return
-            </button>
-            <button
-              type="button"
-              className={accountBtnGhost}
-              onClick={() => setForm("exchange")}
-            >
-              Request exchange
-            </button>
+            {canReturn ? (
+              <button
+                type="button"
+                className={accountBtnGhost}
+                onClick={() => setForm("return")}
+              >
+                {t("afterSales.requestReturn")}
+              </button>
+            ) : null}
+            {canExchange ? (
+              <button
+                type="button"
+                className={accountBtnGhost}
+                onClick={() => setForm("exchange")}
+              >
+                {t("afterSales.requestExchange")}
+              </button>
+            ) : null}
           </div>
-        ) : eligible && creatableLines.length === 0 ? (
+        ) : null}
+        {(actions.canReturn || actions.canExchange) && !hasLines ? (
           <p className="text-[13px] leading-relaxed text-sa-muted">
-            Existing requests for this order are listed below. New requests need
-            the original order line details.
+            {t("afterSales.guestNoLines")}
           </p>
-        ) : (
-          <p className="text-[13px] leading-relaxed text-sa-muted">
-            Return and exchange requests are available after this order ships.
+        ) : null}
+        {actions.notes.map((note) => (
+          <p key={note} className="text-[13px] leading-relaxed text-sa-muted">
+            {note}
           </p>
-        )}
+        ))}
 
         {form === "return" ? (
           <ReturnRequestForm

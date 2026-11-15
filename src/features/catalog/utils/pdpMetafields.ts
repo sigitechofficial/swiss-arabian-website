@@ -55,7 +55,7 @@ export function familyChips(
 }
 
 /** Named notes in a pyramid layer. "Pink pepper, Cumin" is two notes. */
-function noteNames(value: string | null | undefined): string[] {
+export function noteNames(value: string | null | undefined): string[] {
   const raw = text(value);
   if (!raw) return [];
   return raw

@@ -1,3 +1,8 @@
+import {
+  localePrefixOf,
+  stripLocalePrefix,
+  withLocalePrefix,
+} from "@/lib/i18n/localePath";
 import { env } from "@/lib/config/env";
 import {
   configuredStorefrontHost,
@@ -51,8 +56,8 @@ function isSitePath(target: string) {
 
 /**
  * The new address for a request path, or null.
- * An Arabic address (/ar/…) uses its own redirect first, else the English
- * one with the /ar prefix kept on a site target.
+ * An address in another language (/ar/…) uses its own redirect first, else
+ * the default language's one with the language prefix kept on a site target.
  */
 export function matchRedirect(
   map: RedirectMap,
@@ -61,12 +66,12 @@ export function matchRedirect(
   const path = normalizeRequestPath(pathname);
   const exact = map.get(path);
   if (exact) return exact;
-  if (path.startsWith("/ar/")) {
-    const target = map.get(path.slice(3));
+  const prefix = localePrefixOf(path);
+  if (prefix && path !== `/${prefix}`) {
+    const target = map.get(stripLocalePrefix(path));
     if (!target) return null;
-    if (!isSitePath(target) || target === "/ar" || target.startsWith("/ar/"))
-      return target;
-    return target === "/" ? "/ar" : `/ar${target}`;
+    if (!isSitePath(target) || localePrefixOf(target)) return target;
+    return withLocalePrefix(target, prefix);
   }
   return null;
 }

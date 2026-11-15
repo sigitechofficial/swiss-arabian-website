@@ -1,18 +1,25 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { PageLoading } from "@/components/ui";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function AuthGuard({
   children,
   requireAuth = false,
+  checking,
+  redirecting,
 }: {
   children: ReactNode;
   requireAuth?: boolean;
+  /** Shown while the session is checked: pass the brand's `PageLoading` (from `@brand-ui`). */
+  checking?: ReactNode;
+  /** Shown while a signed-out shopper is sent to sign in. */
+  redirecting?: ReactNode;
 }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
@@ -26,11 +33,11 @@ export function AuthGuard({
   }, [bootstrapped, isAuthenticated, requireAuth, router, pathname]);
 
   if (!bootstrapped) {
-    return <PageLoading label="Checking session…" fill />;
+    return checking ?? <PageLoading label="Checking session…" labelKey="session" fill />;
   }
 
   if (requireAuth && !isAuthenticated) {
-    return <PageLoading label="Redirecting…" fill />;
+    return redirecting ?? <PageLoading label="Redirecting…" labelKey="redirecting" fill />;
   }
 
   return children;

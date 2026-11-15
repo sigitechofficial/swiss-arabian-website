@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { historicalLineDiscount } from "../utils/historicalLineDiscount";
 
@@ -11,11 +14,12 @@ export function HistoricalLineDiscount({
   currency: string;
   className: string;
 }) {
+  const t = useShopCopy();
   const amount = historicalLineDiscount(snapshot);
   if (amount == null) return null;
   return (
     <p className={className}>
-      Discount <span dir="ltr">−{formatMoney(amount, currency)}</span>
+      {t("orders.discount")} <span dir="ltr">−{formatMoney(amount, currency)}</span>
     </p>
   );
 }

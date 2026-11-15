@@ -208,3 +208,22 @@ export type AfterSalesOrderLine = {
   variantName: string | null;
   quantity: number;
 };
+
+/** Whether one of return / exchange can be requested for an order, and if not, why. */
+export type AfterSalesOption = {
+  allowed: boolean;
+  /** ORDER_NOT_ELIGIBLE, RETURNS_DISABLED, AFTER_SALES_SIGN_IN_REQUIRED, … */
+  code: string | null;
+  /** Customer-facing explanation when not allowed. */
+  message: string | null;
+  eligibleUntil: string | null;
+};
+
+/** Follows the market's returns & exchanges settings and the order's state. */
+export type AfterSalesOptions = {
+  orderId: string;
+  orderNumber: string | null;
+  signedIn: boolean;
+  returns: AfterSalesOption;
+  exchanges: AfterSalesOption;
+};

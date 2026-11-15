@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/Toaster";
 import { useApiMutation, useApiQuery } from "@/lib/api/queryHooks";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { customerAccountKeys } from "../api/customerAccount.keys";
 import {
   createCustomerAddress,
@@ -19,6 +20,7 @@ import type {
 
 export function useCustomerAddresses() {
   const queryClient = useQueryClient();
+  const t = useShopCopy();
   const list = useApiQuery(customerAccountKeys.addresses(), listCustomerAddresses);
 
   // Checkout prefills from its own saved-addresses query — refresh both.
@@ -31,7 +33,7 @@ export function useCustomerAddresses() {
   const create = useApiMutation(createCustomerAddress, {
     onSuccess: async () => {
       await invalidate();
-      toast("Address saved", "success");
+      toast(t("account.toast.addressSaved"), "success");
     },
     onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
   });
@@ -42,7 +44,7 @@ export function useCustomerAddresses() {
     {
       onSuccess: async () => {
         await invalidate();
-        toast("Address updated", "success");
+        toast(t("account.toast.addressUpdated"), "success");
       },
       onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
     },
@@ -51,7 +53,7 @@ export function useCustomerAddresses() {
   const remove = useApiMutation(deleteCustomerAddress, {
     onSuccess: async () => {
       await invalidate();
-      toast("Address removed", "success");
+      toast(t("account.toast.addressRemoved"), "success");
     },
     onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
   });
@@ -62,7 +64,7 @@ export function useCustomerAddresses() {
     {
       onSuccess: async () => {
         await invalidate();
-        toast("Default address updated", "success");
+        toast(t("account.toast.defaultAddress"), "success");
       },
       onError: (error) => toast(getUserFacingErrorMessage(error), "error"),
     },

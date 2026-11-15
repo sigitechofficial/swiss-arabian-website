@@ -1,5 +1,6 @@
 import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import type { SitePage } from "../api/sitePages.service";
+import type { ShopLocale } from "@/lib/i18n/locales";
 
 /**
  * A text page or policy. The body is the market's HTML, cleaned before it is
@@ -9,11 +10,14 @@ import type { SitePage } from "../api/sitePages.service";
 export function SitePageView({
   page,
   contactDetails,
-  locale,
+  locale: _locale,
+  contactDetailsLabel = "Contact details",
 }: {
   page: SitePage;
   contactDetails?: SitePage | null;
-  locale: "en" | "ar";
+  locale: ShopLocale;
+  /** Heading of the contact details block, in the page's language. */
+  contactDetailsLabel?: string;
 }) {
   // The page title below is the page's one H1.
   const body = sanitizePageHtml(page.bodyHtml, { demoteH1: true });
@@ -40,7 +44,7 @@ export function SitePageView({
             id="contact-details"
             className="text-lg font-semibold text-[var(--ink,#241f1b)]"
           >
-            {locale === "ar" ? "معلومات التواصل" : "Contact details"}
+            {contactDetailsLabel}
           </h2>
           <div
             className="site-page-body mt-4"

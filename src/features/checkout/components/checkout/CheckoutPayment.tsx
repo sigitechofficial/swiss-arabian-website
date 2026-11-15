@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
   checkoutCta,
   checkoutError,
@@ -14,12 +13,13 @@ import {
 import type { CheckoutStatus } from "../../hooks/useCheckout";
 import type { PaymentMethodOption } from "../../types/checkout";
 import type { InlinePaymentSession } from "../../utils/startPayment";
-import { isStripePaymentMethod, paymentMethodNote, upcomingPaymentMethods } from "../../utils/methodLabels";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { InlineMethodPayment, type PaymentSurface } from "./InlineMethodPayment";
+import { InlineMethodPayment } from "./InlineMethodPayment";
 import { TabbyCheckoutCard } from "./TabbyCheckoutCard";
 import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
-import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang } from "../../utils/tabby";
+import type { TabbyLang } from "../../utils/tabby";
+import { usePaymentOptions } from "../../hooks/usePaymentOptions";
+import type { PayMark } from "../../utils/paymentOptions";
 import { pdpPayMarkTabby } from "@/styles/pdpChrome";
 
 type CheckoutPaymentProps = {
@@ -67,47 +67,19 @@ export function CheckoutPayment({
   tabbyPrescore = { state: "idle" },
   tabbyLang = "en",
 }: CheckoutPaymentProps) {
-  const covered = amountPayable === 0;
-  const opening = useRef(false);
-  const [optionKey, setOptionKey] = useState<string | null>(null);
-  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang);
-  const rows = groups.flatMap((group) => group.rows);
-  const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
-  const fallbackKey = selected ? defaultRowKey(selected) : null;
-  // The shopper's option applies while it belongs to the selected method;
-  // otherwise the selected method's default option is active.
-  const chosenRow = rows.find((row) => row.key === optionKey);
-  const activeKey =
-    chosenRow && (!selected || chosenRow.zoneId === selected.zonePaymentMethodId)
-      ? optionKey
-      : fallbackKey;
-  const activeRow = rows.find((row) => row.key === activeKey) ?? null;
-  const selectedOpensHere = Boolean(
-    activeRow?.surface &&
-      activeRow.provider === "paymob" &&
-      selected &&
-      selected.zonePaymentMethodId === activeRow.zoneId &&
-      selected.providerCode?.toLowerCase() === "paymob",
-  );
-
-  useEffect(() => {
-    if (!submitting && !inlinePayment) opening.current = false;
-  }, [submitting, inlinePayment]);
-
-  function payNow() {
-    if (submitting || opening.current) return;
-    opening.current = true;
-    onPayNow();
-    window.setTimeout(() => {
-      opening.current = false;
-    }, 0);
-  }
-
-  function pick(row: PayRow) {
-    if (row.disabled) return;
-    setOptionKey(row.key);
-    if (row.zoneId && row.zoneId !== selectedId) void onSelect(row.zoneId);
-  }
+  const { covered, groups, activeKey, activeRow, selectedOpensHere, formReady, hideSubmit, pick, payNow } =
+    usePaymentOptions({
+      methods,
+      countryCode,
+      selectedId,
+      submitting,
+      amountPayable,
+      inlinePayment,
+      onSelect,
+      onPayNow,
+      tabbyPrescore,
+      tabbyLang,
+    });
 
   const payLabel = submitting
     ? "Placing order…"
@@ -139,12 +111,7 @@ export function CheckoutPayment({
                   <div className="overflow-hidden rounded-xl border border-[#d3d8df] bg-white">
                     {group.rows.map((row) => {
                       const on = row.key === activeKey;
-                      const dropReady =
-                        on &&
-                        row.surface &&
-                        inlinePayment &&
-                        ((row.provider === "stripe" && inlinePayment.provider === "stripe") ||
-                          (row.provider === "paymob" && inlinePayment.provider === "paymob"));
+                      const dropReady = formReady(row);
                       return (
                         <div key={row.key} className={`border-t border-[#d3d8df] first:border-t-0 ${row.disabled ? "opacity-55" : ""}`}>
                           <label className={`flex min-h-14 items-center gap-3 px-4 py-3.5 ${row.disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
@@ -171,7 +138,7 @@ export function CheckoutPayment({
                           </label>
                           {on && row.surface ? (
                             <div className="px-4 pb-4 ps-12">
-                              {dropReady ? (
+                              {dropReady && inlinePayment ? (
                                 <InlineMethodPayment
                                   session={inlinePayment}
                                   surface={row.surface}
@@ -235,12 +202,7 @@ export function CheckoutPayment({
         className={checkoutCta}
         id="place-order"
         disabled={!canSubmit}
-        hidden={
-          !covered &&
-          (Boolean(inlinePayment) ||
-            selectedOpensHere ||
-            Boolean(selected && isStripePaymentMethod(selected)))
-        }
+        hidden={hideSubmit}
       >
         <span>{ctaLabel}</span>
         <b aria-hidden="true">↗</b>
@@ -251,135 +213,6 @@ export function CheckoutPayment({
       </p>
     </>
   );
-}
-
-type PayMark = "visa" | "mc" | "amex";
-
-type PayRow = {
-  key: string;
-  title: string;
-  sub?: string;
-  marks?: PayMark[];
-  wallet?: "apple" | "google";
-  badge?: string;
-  disabled?: boolean;
-  zoneId?: string;
-  surface?: PaymentSurface;
-  provider?: "stripe" | "paymob";
-  /** Tabby row: snippet settings from the backend (`false` when they are missing). */
-  tabby?: ReturnType<typeof tabbySnippetConfig> | false;
-};
-
-function paymentGroups(
-  methods: PaymentMethodOption[],
-  countryCode: string | null | undefined,
-  tabbyPrescore: TabbyPrescore,
-  tabbyLang: TabbyLang,
-): Array<{ id: string; title: string | null; rows: PayRow[] }> {
-  const country = (countryCode || "AE").toUpperCase();
-  const stripeFirst = !["SA", "EG", "PK"].includes(country);
-  const stripe = methods.find((method) => isStripePaymentMethod(method));
-  const paymob = methods.find((method) => method.providerCode?.toLowerCase() === "paymob");
-  const used = new Set([stripe?.zonePaymentMethodId, paymob?.zonePaymentMethodId].filter(Boolean));
-  const groups: Array<{ id: string; title: string | null; rows: PayRow[] }> = [];
-
-  const stripeGroup: { id: string; title: string; rows: PayRow[] } | null = stripe
-    ? {
-        id: "stripe",
-        title: "Stripe",
-        rows: [
-          {
-            key: "apple_pay@stripe",
-            title: "Apple Pay",
-            wallet: "apple",
-            zoneId: stripe.zonePaymentMethodId,
-            surface: "apple_pay",
-            provider: "stripe",
-          },
-          {
-            key: "google_pay@stripe",
-            title: "Google Pay",
-            wallet: "google",
-            zoneId: stripe.zonePaymentMethodId,
-            surface: "google_pay",
-            provider: "stripe",
-          },
-          {
-            key: "card@stripe",
-            title: "Credit or debit card",
-            sub: "Visa, Mastercard, Amex",
-            marks: ["visa", "mc", "amex"],
-            zoneId: stripe.zonePaymentMethodId,
-            surface: "card",
-            provider: "stripe",
-          },
-        ],
-      }
-    : null;
-  const paymobGroup: { id: string; title: string; rows: PayRow[] } | null = paymob
-    ? {
-        id: "paymob",
-        title: "Paymob",
-        rows: [
-          { key: "card@paymob", title: "Credit or debit card", sub: "Visa, Mastercard", marks: ["visa", "mc"], zoneId: paymob.zonePaymentMethodId, surface: "card", provider: "paymob" },
-        ],
-      }
-    : null;
-
-  for (const group of stripeFirst ? [stripeGroup, paymobGroup] : [paymobGroup, stripeGroup]) {
-    if (group) groups.push(group);
-  }
-
-  const others = methods.filter((method) => !used.has(method.zonePaymentMethodId));
-  if (others.length) {
-    groups.push({
-      id: "other",
-      title: "Other",
-      rows: others.map((method) => {
-        const row: PayRow = {
-          key: method.zonePaymentMethodId,
-          title: method.displayName,
-          sub: paymentMethodNote(method) || undefined,
-          zoneId: method.zonePaymentMethodId,
-        };
-        if (!isTabbyPaymentMethod(method)) return row;
-        // Tabby: their mark, and their own wording when they can't approve this shopper.
-        row.tabby = tabbySnippetConfig(method) ?? false;
-        if (tabbyPrescore.state === "rejected") {
-          row.disabled = true;
-          row.sub = tabbyPrescore.message[tabbyLang];
-        } else if (tabbyPrescore.state === "checking") {
-          row.sub = "Checking eligibility…";
-        }
-        return row;
-      }),
-    });
-  }
-
-  const more = (methods.length ? upcomingPaymentMethods(countryCode, methods) : []).filter(
-    (method) => method.selectsProvider !== "stripe" && method.id !== "paymob-apple-pay" && method.id !== "paymob-google-pay",
-  );
-  if (more.length) {
-    groups.push({
-      id: "more",
-      title: "More ways to pay",
-      rows: more.map((method) => ({
-        key: method.id,
-        title: method.title,
-        sub: method.note,
-        badge: "Coming soon",
-        disabled: true,
-      })),
-    });
-  }
-
-  return groups;
-}
-
-function defaultRowKey(method: PaymentMethodOption): string {
-  if (isStripePaymentMethod(method)) return "card@stripe";
-  if (method.providerCode?.toLowerCase() === "paymob") return "card@paymob";
-  return method.zonePaymentMethodId;
 }
 
 function WalletMark({ kind }: { kind: "apple" | "google" }) {

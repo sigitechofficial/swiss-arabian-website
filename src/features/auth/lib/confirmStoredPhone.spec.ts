@@ -10,8 +10,7 @@ vi.mock("../api/auth.service", () => ({
 
 vi.mock("@/lib/config/env", () => ({
   env: {
-    appEnv: "dev",
-    flags: { useLocalApi: true },
+    appEnv: "local",
   },
 }));
 
@@ -38,21 +37,13 @@ describe("stored phone confirmation on the existing verify screen", () => {
     expect(confirmPhoneVerification).toHaveBeenCalledWith("+971501112233", "000000");
   });
 
-  it("does not offer the email code as phone proof in production", () => {
-    expect(
-      shouldConfirmStoredPhoneWithSameCode({
-        appEnv: "production",
-        nodeEnv: "production",
-        useLocalApi: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldConfirmStoredPhoneWithSameCode({
-        appEnv: "dev",
-        nodeEnv: "production",
-        useLocalApi: true,
-      }),
-    ).toBe(false);
+  it("offers the same code as phone proof only on a local dev server", () => {
+    expect(shouldConfirmStoredPhoneWithSameCode({ appEnv: "local", nodeEnv: "development" })).toBe(true);
+    // Every deployed environment, and any production build, skips it.
+    for (const appEnv of ["dev", "staging", "production"]) {
+      expect(shouldConfirmStoredPhoneWithSameCode({ appEnv, nodeEnv: "development" })).toBe(false);
+    }
+    expect(shouldConfirmStoredPhoneWithSameCode({ appEnv: "local", nodeEnv: "production" })).toBe(false);
   });
 
   it("does not call phone verification when the customer has no stored phone", async () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   useEffect,
   useEffectEvent,
@@ -216,6 +217,7 @@ export function PromotionOfferHub({
   discovery: PromotionDiscovery;
   surface: string;
 }) {
+  const t = useShopCopy();
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState<DiscoveryOffer | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -323,9 +325,10 @@ export function PromotionOfferHub({
                   type="button"
                   onClick={() => setShowAll(true)}
                 >
-                  {discovery.locale.toLowerCase().startsWith("ar")
-                    ? `${discovery.chrome.viewAll} (${discovery.offers.length})`
-                    : `View all ${discovery.offers.length} benefits`}
+                  {t("promo.viewAllBenefits", {
+                    label: discovery.chrome.viewAll,
+                    count: discovery.offers.length,
+                  })}
                 </button>
               </div>
             ) : null}
@@ -562,6 +565,7 @@ export function PdpOffersPanel({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const t = useShopCopy();
   const query = usePromotionDiscovery(productId ? [productId] : []);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [activeCode, setActiveCode] = useState<string | null>(null);
@@ -586,11 +590,8 @@ export function PdpOffersPanel({
   }, [open]);
 
   if (!discovery || offers.length === 0) return null;
-  const arabic = discovery.locale.toLowerCase().startsWith("ar");
-  const title = arabic ? "مزايا لك" : "Offers for you";
-  const countLabel = arabic
-    ? `${offers.length} متاحة`
-    : `${offers.length} ${offers.length === 1 ? "offer" : "offers"}`;
+  const title = t("promo.benefitsTitle");
+  const countLabel = t("promo.benefitsCount", { count: offers.length });
 
   return (
     <section className="m-0" id="pdp-offers">
@@ -619,7 +620,7 @@ export function PdpOffersPanel({
           <button
             className="fixed inset-0 z-[1400] cursor-pointer border-0 bg-[rgba(24,20,17,0.46)] backdrop-blur-[6px]"
             type="button"
-            aria-label={arabic ? "إغلاق" : "Close"}
+            aria-label={t("promo.close")}
             onClick={close}
           />
           <div className="pointer-events-none fixed inset-0 z-[1401] grid place-items-center p-4 sm:p-6">
@@ -646,7 +647,7 @@ export function PdpOffersPanel({
                 <button
                   className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-[rgb(26_21_18/0.06)]"
                   type="button"
-                  aria-label={arabic ? "إغلاق" : "Close"}
+                  aria-label={t("promo.close")}
                   onClick={close}
                 >
                   <svg
@@ -729,7 +730,7 @@ export function PdpOffersPanel({
                               onClick={close}
                             >
                               {offer.details.ctaLabel ||
-                                (arabic ? "اختَر القطع" : "Choose your pieces")}
+                                t("promo.choosePieces")}
                             </LocaleLink>
                           ) : null}
                         </div>

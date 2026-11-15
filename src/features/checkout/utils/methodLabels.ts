@@ -171,11 +171,16 @@ export function deliveryEta(method: DeliveryMethodOption): string {
   return "";
 }
 
-/** The guide treats a `null` fee as free / not priced — never as unknown cost. */
+/**
+ * The guide says a `null` fee is "free / TBD". The backend sends it when the market has no fee
+ * configured, and then keeps the session's previous shipping amount, so "Free" could be wrong.
+ * Only an explicit 0 is labelled "Free"; a missing fee shows no price (the summary shows the real amount).
+ */
 export function deliveryFeeLabel(method: DeliveryMethodOption, currency: string): string {
-  if (method.estimatedFee == null) return "Free";
+  if (method.estimatedFee == null || method.estimatedFee.trim() === "") return "";
   const fee = Number(method.estimatedFee);
-  return Number.isFinite(fee) && fee > 0 ? formatMoney(fee, currency) : "Free";
+  if (!Number.isFinite(fee)) return "";
+  return fee > 0 ? formatMoney(fee, currency) : "Free";
 }
 
 // ─── Order summaries (confirmation page) ────────────────────────────────────
@@ -199,12 +204,15 @@ export function orderDeliveryLabel(
 ): string {
   const code = method?.methodCode ?? "";
   if (!code) return "Standard delivery";
-  const partnerPrefix = method?.partnerCode?.split(/[_-]/)[0]?.toLowerCase();
-  const parts = code.split(/[_-]/);
-  const trimmed =
-    partnerPrefix && parts.length > 1 && parts[0].toLowerCase() === partnerPrefix
-      ? parts.slice(1).join(" ")
-      : code;
+  // Drop every leading word the method code shares with the partner code:
+  // `sapil_demo_courier` + `sapil_demo_standard` → "standard", `smoke_standard` + `smoke_standard_standard` → "standard".
+  const partnerParts = (method?.partnerCode ?? "").toLowerCase().split(/[_-]/).filter(Boolean);
+  const parts = code.split(/[_-]/).filter(Boolean);
+  let shared = 0;
+  while (shared < parts.length - 1 && shared < partnerParts.length && parts[shared].toLowerCase() === partnerParts[shared]) {
+    shared += 1;
+  }
+  const trimmed = shared > 0 ? parts.slice(shared).join(" ") : code;
   const label = titleCase(trimmed);
   return /delivery|shipping|collect/i.test(label) ? label : `${label} delivery`;
 }

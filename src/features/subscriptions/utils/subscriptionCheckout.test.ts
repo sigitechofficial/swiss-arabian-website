@@ -97,7 +97,9 @@ describe("subscription checkout", () => {
         metadata: { estimatedMinDays: 2, estimatedMaxDays: 4 },
       },
     ];
-    expect(subscriptionDeliveryChoices(methods, "0.00")[0].estimatedFee).toBeNull();
+    expect(subscriptionDeliveryChoices(methods, "0.00")[0].estimatedFee).toBe("0");
+    expect(subscriptionDeliveryChoices(methods, null)[0].estimatedFee).toBeNull();
+    expect(subscriptionDeliveryChoices(methods, undefined)[0].estimatedFee).toBeNull();
     expect(subscriptionDeliveryChoices(methods, "15.00")[0].estimatedFee).toBe("15.00");
     expect(subscriptionDeliveryChoices(methods, "15.00")[0].displayName).toBe("Standard delivery");
   });

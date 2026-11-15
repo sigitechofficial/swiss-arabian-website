@@ -1,43 +1,42 @@
 "use client";
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
 import type { StripeCheckoutElementsSdkOptions } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
 import { checkoutError, checkoutNote } from "@/styles/checkoutChrome";
-import { pollUntilPaymentSettles } from "../../api/orders.service";
 import type { InlinePaymentSession } from "../../utils/startPayment";
 import { stripeCheckoutElementsOptions } from "../../utils/stripeCheckoutAppearance";
-import { finishPaidCheckout } from "../../utils/paymobThreeDs";
+import { submitCheckoutForm, useInlinePaymobCard } from "../../hooks/useInlinePaymobCard";
 import { StripeCardPaymentForm, StripeWalletPaymentForm } from "../StripeCardPaymentForm";
 import { usePaymobThreeDsModal } from "../PaymobThreeDsModal";
-const PIXEL_SRC = "https://cdn.jsdelivr.net/npm/paymob-pixel@1.2.10/main.js";
 
-function loadPixelScript(): Promise<void> {
-  if (typeof window === "undefined" || window.Pixel) return Promise.resolve();
-  let existing = document.querySelector<HTMLScriptElement>("script[data-paymob-pixel]");
-  if (!existing) {
-    const script = document.createElement("script");
-    script.src = PIXEL_SRC;
-    script.type = "module";
-    script.async = true;
-    script.dataset.paymobPixel = "true";
-    document.head.appendChild(script);
-    existing = script;
-  }
-  return new Promise((resolve, reject) => {
-    const started = Date.now();
-    const timer = window.setInterval(() => {
-      if (window.Pixel) {
-        window.clearInterval(timer);
-        resolve();
-      } else if (Date.now() - started > 15_000) {
-        window.clearInterval(timer);
-        reject(new Error("Paymob Pixel did not load"));
-      }
-    }, 50);
-  });
-}
+/** Swiss Arabian's look for the Paymob Pixel card fields. */
+const PAYMOB_INLINE_STYLE = {
+  Font_Family: "Arial",
+  Font_Size_Label: "16",
+  Font_Size_Input_Fields: "16",
+  Font_Size_Payment_Button: "16",
+  Font_Weight_Label: 500,
+  Font_Weight_Input_Fields: 400,
+  Font_Weight_Payment_Button: 500,
+  Color_Container: "#ffffff",
+  Color_Border_Input_Fields: "#e4e0d8",
+  Color_Border_Payment_Button: "#8c4435",
+  Radius_Border: "8",
+  Color_Disabled: "#a3978a",
+  Color_Error: "#b4483f",
+  Color_Primary: "#8c4435",
+  Color_Input_Fields: "#ffffff",
+  Text_Color_For_Label: "#241f1b",
+  Text_Color_For_Payment_Button: "#ffffff",
+  Text_Color_For_Input_Fields: "#241f1b",
+  Color_For_Text_Placeholder: "#a3978a",
+  Width_of_Container: "100%",
+  Vertical_Padding: "48",
+  Vertical_Spacing_between_components: "14",
+  Container_Padding: "0",
+};
 
 export type PaymentSurface = "card" | "apple_pay" | "google_pay";
 
@@ -78,10 +77,7 @@ export function InlineMethodPayment({
             name={name}
             phone={phone}
             country={country}
-            onNeedOrder={() => {
-              const form = document.getElementById("checkout-form");
-              if (form instanceof HTMLFormElement) form.requestSubmit();
-            }}
+            onNeedOrder={submitCheckoutForm}
           />
         ) : (
           <StripeCardPaymentForm
@@ -90,10 +86,7 @@ export function InlineMethodPayment({
             name={name}
             phone={phone}
             country={country}
-            onNeedOrder={() => {
-              const form = document.getElementById("checkout-form");
-              if (form instanceof HTMLFormElement) form.requestSubmit();
-            }}
+            onNeedOrder={submitCheckoutForm}
           />
         )}
       </CheckoutElementsProvider>
@@ -109,87 +102,14 @@ export function InlineMethodPayment({
 
 function PaymobDrop({ session }: { session: InlinePaymentSession }) {
   const threeDs = usePaymobThreeDsModal(session.orderId);
-  const [failed, setFailed] = useState(false);
   const hostId = "paymob-elements-inline";
-  const mounted = useRef(false);
-  // SDK callbacks registered in the effect below read the latest order id.
-  const currentOrderId = useEffectEvent(() => session.orderId);
-
-  useEffect(() => {
-    if (!session.publicKey) return;
-    let cancelled = false;
-    mounted.current = false;
-    loadPixelScript()
-      .then(() => {
-        if (cancelled || !window.Pixel || mounted.current) return;
-        const host = document.getElementById(hostId);
-        if (!host) return;
-        host.replaceChildren();
-        mounted.current = true;
-        try {
-        new window.Pixel({
-          publicKey: session.publicKey!,
-          clientSecret: session.clientSecret,
-          paymentMethods: ["card"],
-          elementId: hostId,
-          disablePay: true,
-          showSaveCard: false,
-          forceSaveCard: false,
-          beforePaymentComplete: async () => true,
-          afterPaymentComplete: async () => {
-            const orderId = currentOrderId();
-            if (!orderId) return;
-            const result = await pollUntilPaymentSettles(orderId);
-            if (result.success) finishPaidCheckout(orderId);
-          },
-          customStyle: {
-            Font_Family: "Arial",
-            Font_Size_Label: "16",
-            Font_Size_Input_Fields: "16",
-            Font_Size_Payment_Button: "16",
-            Font_Weight_Label: 500,
-            Font_Weight_Input_Fields: 400,
-            Font_Weight_Payment_Button: 500,
-            Color_Container: "#ffffff",
-            Color_Border_Input_Fields: "#e4e0d8",
-            Color_Border_Payment_Button: "#8c4435",
-            Radius_Border: "8",
-            Color_Disabled: "#a3978a",
-            Color_Error: "#b4483f",
-            Color_Primary: "#8c4435",
-            Color_Input_Fields: "#ffffff",
-            Text_Color_For_Label: "#241f1b",
-            Text_Color_For_Payment_Button: "#ffffff",
-            Text_Color_For_Input_Fields: "#241f1b",
-            Color_For_Text_Placeholder: "#a3978a",
-            Width_of_Container: "100%",
-            Vertical_Padding: "48",
-            Vertical_Spacing_between_components: "14",
-            Container_Padding: "0",
-          },
-        });
-        } catch {
-          if (!cancelled) setFailed(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      document.getElementById(hostId)?.replaceChildren();
-    };
-  }, [session.clientSecret, session.publicKey]);
-
-  useEffect(() => {
-    function pay(event: Event) {
-      const orderId = (event as CustomEvent<{ orderId?: string }>).detail?.orderId || session.orderId;
-      if (!orderId) return;
-      window.dispatchEvent(new Event("payFromOutside"));
-    }
-    window.addEventListener("sa-inline-pay", pay);
-    return () => window.removeEventListener("sa-inline-pay", pay);
-  }, [session.orderId]);
+  const { failed } = useInlinePaymobCard({
+    orderId: session.orderId,
+    clientSecret: session.clientSecret,
+    publicKey: session.publicKey,
+    elementId: hostId,
+    customStyle: PAYMOB_INLINE_STYLE,
+  });
 
   return (
     <div className="flex flex-col gap-3">

@@ -6,7 +6,7 @@
 **Swagger:** tags `Storefront — *`  
 **Envelope:** `{ success, statusCode, code, message, data, error, errors, meta }` — read **`data`**.
 
-This is the **single customer-FE pack** for Brand work on `sapil` (through Phase 11 catalog isolation). Same idea as the admin pack: what changed on the API, what you must implement, what you must not do.
+This is the **single customer-FE pack** for Brand work on backend `main` (through Phase 11 catalog isolation). Same idea as the admin pack: what changed on the API, what you must implement, what you must not do.
 
 **Admin FE is a different contract.** Never send `X-Admin-Brand-*` on `/storefront/*`. Never send `X-Storefront-Host` on `/admin/*`.
 

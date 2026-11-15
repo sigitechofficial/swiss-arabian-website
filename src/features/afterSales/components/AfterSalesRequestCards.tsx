@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   AccountStatusPill,
   type AccountStatusTone,
@@ -15,13 +17,8 @@ import type {
   StorefrontReturnSummaryView,
 } from "../types/afterSales";
 import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
-import {
-  afterSalesStatusLabel,
-  RETURN_REASON_LABELS,
-  RETURN_RESOLUTION_LABELS,
-  EXCHANGE_REASON_LABELS,
-  EXCHANGE_TYPE_LABELS,
-} from "../utils/eligibility";
+import { afterSalesOptionLabel, afterSalesStatusLabel } from "../utils/eligibility";
+import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 
 function statusTone(status: string): AccountStatusTone {
   switch (status?.toUpperCase()) {
@@ -37,14 +34,16 @@ function statusTone(status: string): AccountStatusTone {
   }
 }
 
-function formatDate(iso: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-AE", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+/** "en-AE" short date in English (as before); the page's language otherwise. */
+function useRequestDate() {
+  const locale = useShopLocale();
+  return (iso: string) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    return locale === "en"
+      ? date.toLocaleDateString("en-AE", { year: "numeric", month: "short", day: "numeric" })
+      : formatOrderDate(iso, { locale });
+  };
 }
 
 export function ReturnRequestCard({
@@ -54,6 +53,8 @@ export function ReturnRequestCard({
   item: StorefrontReturnSummaryView;
   expandable?: boolean;
 }) {
+  const t = useShopCopy();
+  const formatDate = useRequestDate();
   const [open, setOpen] = useState(false);
   const detail = useCustomerReturnDetail(open ? item.returnRequestId : null);
 
@@ -66,29 +67,28 @@ export function ReturnRequestCard({
           </p>
           <p className="mt-1 text-[13px] text-sa-muted">
             {item.orderNumber ? (
-              <Link
+              <LocaleLink
                 href={`/account/orders/${item.orderId}`}
                 className="font-medium text-terra hover:underline"
               >
                 {item.orderNumber}
-              </Link>
+              </LocaleLink>
             ) : (
-              "Order"
+              t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${item.itemCount} item${item.itemCount === 1 ? "" : "s"}`}
+            {` · ${t("account.itemCount", { count: item.itemCount })}`}
           </p>
         </div>
         <AccountStatusPill
-          label={afterSalesStatusLabel(item.status)}
+          label={afterSalesStatusLabel(item.status, t)}
           tone={statusTone(item.status)}
         />
       </div>
       <p className="mt-3 text-[13px] text-sa-primary">
-        {RETURN_REASON_LABELS[item.reasonCode] ?? item.reasonCode}
+        {afterSalesOptionLabel("returnReason", item.reasonCode, t)}
         {" · "}
-        {RETURN_RESOLUTION_LABELS[item.requestedResolution] ??
-          item.requestedResolution}
+        {afterSalesOptionLabel("returnResolution", item.requestedResolution, t)}
       </p>
       {item.latestStatusMessage ? (
         <p className="mt-1 text-[13px] leading-relaxed text-sa-muted">
@@ -101,7 +101,7 @@ export function ReturnRequestCard({
           className="mt-3 text-[13px] font-semibold text-terra hover:underline"
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? "Hide details" : "View details"}
+          {open ? t("afterSales.hideDetails") : t("afterSales.viewDetails")}
         </button>
       ) : null}
       {open && detail.data ? (
@@ -112,14 +112,14 @@ export function ReturnRequestCard({
                 {line.productName ?? line.sku}
               </p>
               <p className="text-sa-muted">
-                Qty {line.requestedQty}
+                {t("orders.qty", { count: line.requestedQty })}
                 {line.variantName ? ` · ${line.variantName}` : ""}
               </p>
             </li>
           ))}
           {detail.data.customerNote ? (
             <li className="py-2.5 text-[13px] text-sa-muted">
-              Note: {detail.data.customerNote}
+              {t("afterSales.note", { note: detail.data.customerNote })}
             </li>
           ) : null}
         </ul>
@@ -135,6 +135,8 @@ export function ExchangeRequestCard({
   item: StorefrontExchangeSummaryView;
   expandable?: boolean;
 }) {
+  const t = useShopCopy();
+  const formatDate = useRequestDate();
   const [open, setOpen] = useState(false);
   const detail = useCustomerExchangeDetail(
     open ? item.exchangeRequestId : null,
@@ -149,28 +151,28 @@ export function ExchangeRequestCard({
           </p>
           <p className="mt-1 text-[13px] text-sa-muted">
             {item.orderNumber ? (
-              <Link
+              <LocaleLink
                 href={`/account/orders/${item.orderId}`}
                 className="font-medium text-terra hover:underline"
               >
                 {item.orderNumber}
-              </Link>
+              </LocaleLink>
             ) : (
-              "Order"
+              t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${item.itemCount} item${item.itemCount === 1 ? "" : "s"}`}
+            {` · ${t("account.itemCount", { count: item.itemCount })}`}
           </p>
         </div>
         <AccountStatusPill
-          label={afterSalesStatusLabel(item.status)}
+          label={afterSalesStatusLabel(item.status, t)}
           tone={statusTone(item.status)}
         />
       </div>
       <p className="mt-3 text-[13px] text-sa-primary">
-        {EXCHANGE_REASON_LABELS[item.reasonCode] ?? item.reasonCode}
+        {afterSalesOptionLabel("exchangeReason", item.reasonCode, t)}
         {" · "}
-        {EXCHANGE_TYPE_LABELS[item.exchangeType] ?? item.exchangeType}
+        {afterSalesOptionLabel("exchangeType", item.exchangeType, t)}
       </p>
       {item.latestStatusMessage ? (
         <p className="mt-1 text-[13px] leading-relaxed text-sa-muted">
@@ -187,7 +189,7 @@ export function ExchangeRequestCard({
           className="mt-3 text-[13px] font-semibold text-terra hover:underline"
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? "Hide details" : "View details"}
+          {open ? t("afterSales.hideDetails") : t("afterSales.viewDetails")}
         </button>
       ) : null}
       {open && detail.data ? (
@@ -198,24 +200,24 @@ export function ExchangeRequestCard({
                 {line.productName ?? line.sku}
               </p>
               <p className="text-sa-muted">
-                Qty {line.requestedQty} → {line.replacementSku}
+                {t("orders.qty", { count: line.requestedQty })} → {line.replacementSku}
                 {line.replacementSize ? ` (${line.replacementSize})` : ""}
               </p>
             </li>
           ))}
           {detail.data.customerNote ? (
             <li className="py-2.5 text-[13px] text-sa-muted">
-              Note: {detail.data.customerNote}
+              {t("afterSales.note", { note: detail.data.customerNote })}
             </li>
           ) : null}
           {detail.data.money?.replacementOrderId ? (
             <li className="py-2.5 text-[13px]">
-              <Link
+              <LocaleLink
                 href={`/account/orders/${detail.data.money.replacementOrderId}`}
                 className="font-semibold text-terra hover:underline"
               >
-                {detail.data.money.replacementOrderNumber ?? "View replacement order"}
-              </Link>
+                {detail.data.money.replacementOrderNumber ?? t("afterSales.viewReplacement")}
+              </LocaleLink>
             </li>
           ) : null}
         </ul>
@@ -229,6 +231,8 @@ export function GuestReturnRequestCard({
 }: {
   item: StorefrontReturnSummaryView;
 }) {
+  const t = useShopCopy();
+  const formatDate = useRequestDate();
   return (
     <article className="border border-sa-border bg-page p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -238,11 +242,11 @@ export function GuestReturnRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${item.itemCount} item${item.itemCount === 1 ? "" : "s"}`}
+            {` · ${t("account.itemCount", { count: item.itemCount })}`}
           </p>
         </div>
         <AccountStatusPill
-          label={afterSalesStatusLabel(item.status)}
+          label={afterSalesStatusLabel(item.status, t)}
           tone={statusTone(item.status)}
         />
       </div>
@@ -264,6 +268,8 @@ export function GuestExchangeRequestCard({
   orderNumber: string;
   orderAccessToken: string;
 }) {
+  const t = useShopCopy();
+  const formatDate = useRequestDate();
   return (
     <article className="border border-sa-border bg-page p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -273,11 +279,11 @@ export function GuestExchangeRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${item.itemCount} item${item.itemCount === 1 ? "" : "s"}`}
+            {` · ${t("account.itemCount", { count: item.itemCount })}`}
           </p>
         </div>
         <AccountStatusPill
-          label={afterSalesStatusLabel(item.status)}
+          label={afterSalesStatusLabel(item.status, t)}
           tone={statusTone(item.status)}
         />
       </div>

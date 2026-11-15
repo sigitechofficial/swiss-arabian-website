@@ -5,10 +5,14 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
-/** "PERFUME OILS" → "perfume-oils" — used as the mega panel's DOM id. */
+/**
+ * "PERFUME OILS" → "perfume-oils" — the mega panel's DOM id and React key.
+ * Letters of any script are kept ("عطور" → "عطور"): an ASCII-only slug made
+ * every Arabic menu "", so their keys clashed and one hover opened them all.
+ */
 function slugId(value: string): string {
   return normalize(value)
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -87,7 +91,7 @@ export function apiNavToChromeNav(items: readonly NavItem[]): ChromeNavItem[] {
 
     result.push({
       type: "mega",
-      id: slugId(item.label),
+      id: slugId(item.label) || `menu-${slugId(item.id) || result.length}`,
       label: item.label,
       href,
       groups,

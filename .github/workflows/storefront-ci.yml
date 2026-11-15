@@ -63,11 +63,8 @@ jobs:
     name: Production build
     runs-on: ubuntu-latest
     env:
-      # Public build-time settings only (no secrets): the same non-secret
-      # values the dev deployment bakes in.
-      NEXT_PUBLIC_APP_ENV: dev
-      NEXT_PUBLIC_DEV_API_BASE_URL: https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
-      NEXT_PUBLIC_DEV_RETURN_URL: https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
+      # A brand image's only build setting (no environment, deployment plan W4).
+      NEXT_PUBLIC_STOREFRONT_BRAND_CODE: SWISS_ARABIAN
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
@@ -82,4 +79,6 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - run: npm ci
+      # Per-brand settings check (src/lib/brand/README.md), same env as the build.
+      - run: npm run check:brand
       - run: npm run build

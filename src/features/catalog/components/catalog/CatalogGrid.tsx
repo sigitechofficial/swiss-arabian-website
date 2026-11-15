@@ -4,7 +4,13 @@ import { catalogOfferTile, productGrid } from "@/styles/shopChrome";
 import { badgeForProduct, type DiscoveryOffer, type PromotionDiscovery } from "@/features/promotions/types/discovery";
 import type { CatalogProduct } from "../../constants/catalogProducts";
 import { gridEmpty } from "../../catalogChrome";
-import { CatalogProductCard } from "./CatalogProductCard";
+import { CatalogProductCard, type CardImagePriority } from "./CatalogProductCard";
+
+/** The grid's first row (3 columns, 2 on smaller screens) is above the fold; the first card is usually the LCP. */
+function cardImagePriority(index: number): CardImagePriority {
+  if (index === 0) return "high";
+  return index < 3 ? "eager" : "lazy";
+}
 
 /** First tile after four products, the next after eight. A short list keeps them at the end. */
 function offerTileAt(slot: number, productCount: number): number {
@@ -35,6 +41,7 @@ export function CatalogGrid({ products, collectionSlug, campaignTiles, discovery
               collectionSlug={collectionSlug}
               promotionBadge={badge?.badge}
               promotionLabel={badge?.title}
+              imagePriority={cardImagePriority(index)}
             />
           );
           const tiles = campaignTiles.flatMap((offer, slot) => {

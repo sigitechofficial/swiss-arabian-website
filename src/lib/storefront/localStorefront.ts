@@ -1,14 +1,14 @@
 import { env } from "@/lib/config/env";
 
 /**
- * Local only (NEXT_PUBLIC_APP_ENV=local): one dev server runs every brand,
+ * Local only (APP_ENV=local): one dev server runs every brand,
  * picked by the first label of a `*.localhost` address.
  *
  *   http://sp.localhost:3004  → Sapil (shop host sapil.test, brand SAPIL)
  *   http://sa.localhost:3004  → the .env storefront (Swiss Arabian)
  *   http://localhost:3004     → the .env storefront (unchanged)
  *
- * NEXT_PUBLIC_LOCAL_STOREFRONTS replaces the built-in list:
+ * LOCAL_STOREFRONTS replaces the built-in list:
  *   sp=SAPIL@sapil.test,sa=SWISS_ARABIAN@uae.swissarabian.com
  */
 export type LocalStorefront = { brandCode: string; host: string };
@@ -58,4 +58,38 @@ export function localStorefrontForHost(
   if (!alias) return null;
   const aliases = options.aliases ?? (env.localStorefronts || BUILT_IN_ALIASES);
   return parseLocalStorefronts(aliases).get(alias) ?? null;
+}
+
+/**
+ * Local only: a market website's public address as the local alias that stands
+ * for it, so switching market stays on this machine
+ * (`https://ksa.swissarabian.com` → `http://ksa.localhost:3004` when the alias
+ * `ksa=SWISS_ARABIAN@ksa.swissarabian.com` is configured). Anything else is
+ * returned unchanged.
+ */
+export function localSiteUrl(
+  publicUrl: string,
+  currentOrigin: string,
+  options: { appEnv?: string; aliases?: string } = {},
+): string {
+  if ((options.appEnv ?? env.appEnv) !== "local") return publicUrl;
+  let target: URL;
+  let current: URL;
+  try {
+    target = new URL(publicUrl);
+    current = new URL(currentOrigin);
+  } catch {
+    return publicUrl;
+  }
+  if (!current.hostname.endsWith(".localhost") && current.hostname !== "localhost") return publicUrl;
+  const aliases = parseLocalStorefronts(options.aliases ?? (env.localStorefronts || BUILT_IN_ALIASES));
+  for (const [alias, storefront] of aliases) {
+    if (storefront.host !== target.hostname.toLowerCase()) continue;
+    const local = new URL(target.toString());
+    local.protocol = current.protocol;
+    local.hostname = `${alias}.localhost`;
+    local.port = current.port;
+    return local.toString();
+  }
+  return publicUrl;
 }

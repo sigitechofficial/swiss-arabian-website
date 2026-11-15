@@ -1,7 +1,10 @@
-import { env } from "@/lib/config/env";
-
 declare global {
   interface Window {
+    /**
+     * Set by the root layout's Insider boot script, which is only rendered when
+     * Insider's website tag is on for this address's market (ADR-005 phase E).
+     */
+    __SA_INSIDER_ON__?: boolean;
     InsiderQueue?: Array<Record<string, unknown>>;
     /** Pathname already flushed with type+init in <head> (before ins.js). */
     __SA_INSIDER_HEAD_PATH__?: string;
@@ -37,8 +40,9 @@ const INSIDER_USER_KEY = "sa_insider_user";
 const INSIDER_LANGUAGE = "en_US";
 const INSIDER_CURRENCY = "AED";
 
+/** Insider's tag is on for this page (the server rendered its boot script). */
 function envAllows(): boolean {
-  return env.insider.enabled && Boolean(env.insider.accountId);
+  return typeof window !== "undefined" && window.__SA_INSIDER_ON__ === true;
 }
 
 function hasRealSdk(): boolean {

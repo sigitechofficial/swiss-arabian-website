@@ -1,4 +1,5 @@
 import type { OrderSummaryApi } from "@/features/account/api/customerOrders.service";
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import type { OrderSummaryView } from "../types/order";
 import {
   formatOrderDate,
@@ -7,41 +8,45 @@ import {
   shipmentStatusLabel,
 } from "./orderStatus";
 
-function headline(status: string): string {
+function headlineKey(status: string): MessageKey {
   switch (status) {
     case "PAYMENT_PENDING":
-      return "Your order is waiting for payment.";
+      return "orders.headline.PAYMENT_PENDING";
     case "SHIPMENT_CREATED":
     case "IN_TRANSIT":
-      return "Your order is on its way.";
+      return "orders.headline.onTheWay";
     case "DELIVERED":
-      return "Your order has been delivered.";
+      return "orders.headline.DELIVERED";
     case "CANCELLED":
-      return "This order was cancelled.";
+      return "orders.headline.CANCELLED";
     case "REFUND_PENDING":
-      return "This order is being refunded.";
+      return "orders.headline.REFUND_PENDING";
     case "REFUNDED":
-      return "This order was refunded.";
+      return "orders.headline.REFUNDED";
     case "MANUAL_REVIEW":
-      return "Your order is being reviewed.";
+      return "orders.headline.MANUAL_REVIEW";
     case "FAILED":
-      return "This order couldn’t be completed.";
+      return "orders.headline.FAILED";
     default:
-      return "We’re preparing your order.";
+      return "orders.headline.preparing";
   }
 }
 
-/** Live order summary → the dashboard's order card model. */
-export function toOrderSummaryView(order: OrderSummaryApi): OrderSummaryView {
-  const { label, tone } = orderStatusDisplay(order.status);
+/** Live order summary → the dashboard's order card model, in the translator's language. */
+export function toOrderSummaryView(
+  order: OrderSummaryApi,
+  t: Translator = englishTranslator,
+  locale = "en",
+): OrderSummaryView {
+  const { label, tone } = orderStatusDisplay(order.status, t);
   return {
     id: order.orderId,
     reference: order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase(),
-    dateLabel: formatOrderDate(order.createdAt),
+    dateLabel: formatOrderDate(order.createdAt, { locale }),
     channel: "ONLINE",
-    fulfilmentLabel: order.shipment ? shipmentStatusLabel(order.shipment.status) : "Ship",
+    fulfilmentLabel: order.shipment ? shipmentStatusLabel(order.shipment.status, t) : t("orders.fulfilment.ship"),
     itemCount: order.itemCount,
-    headline: headline(order.status),
+    headline: t(headlineKey(order.status)),
     statusLabel: label,
     statusTone: tone,
     // The orders list carries no product imagery; the card shows a placeholder.

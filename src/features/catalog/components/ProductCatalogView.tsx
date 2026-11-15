@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { usePromotionDiscovery } from "@/features/promotions/hooks/usePromotionDiscovery";
@@ -23,9 +22,9 @@ import { CatalogFilters } from "./catalog/CatalogFilters";
 import { CatalogGrid } from "./catalog/CatalogGrid";
 import { CatalogHero } from "./catalog/CatalogHero";
 import { CatalogToolbar } from "./catalog/CatalogToolbar";
+import { useListingNavigation } from "../hooks/useListingNavigation";
 import {
   catalogListingHasActiveFilters,
-  catalogListingHref,
   type CatalogListingQuery,
   type CatalogListingSort,
   type StorefrontCatalogFacets,
@@ -88,7 +87,12 @@ export function ProductCatalogView({
   hasNextPage = false,
   isFetchingNextPage = false,
   onLoadMore,
+  loadFailed = false,
+  onRetry,
 }: {
+  /** The live products could not be loaded (store unreachable): show an error with a retry. */
+  loadFailed?: boolean;
+  onRetry?: () => void;
   slug?: string;
   /**
    * Live catalog products. Omitted → the static catalog (unchanged). An empty
@@ -106,8 +110,8 @@ export function ProductCatalogView({
   isFetchingNextPage?: boolean;
   onLoadMore?: () => void;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const listingNavigation = useListingNavigation(listingQuery);
+  const { pathname } = listingNavigation;
   const copy = useShopCopy();
   const urlDriven = Boolean(listingQuery);
   const products = useMemo(() => productsProp ?? [], [productsProp]);
@@ -204,18 +208,7 @@ export function ProductCatalogView({
     );
   }
 
-  const pushListing = (next: CatalogListingQuery) => {
-    router.push(catalogListingHref(pathname, next), { scroll: false });
-  };
-
-  const patchListing = (patch: Partial<CatalogListingQuery>) => {
-    if (!listingQuery) return;
-    pushListing({
-      ...listingQuery,
-      ...patch,
-      page: 1,
-    });
-  };
+  const { push: pushListing, patch: patchListing } = listingNavigation;
 
   const setConcentration = (value: "all" | Concentration | string) => {
     if (urlDriven) {
@@ -412,6 +405,19 @@ export function ProductCatalogView({
         {loading ? (
           <div className={pageContainer}>
             <PageLoading label={copy("loading")} />
+          </div>
+        ) : loadFailed ? (
+          <div className={`${pageContainer} py-[clamp(3rem,7vw,6rem)] text-center`} role="alert">
+            <p className="font-display text-[1.75rem] leading-[1.1] font-medium">
+              {copy("productsLoadFailed")}
+            </p>
+            {onRetry ? (
+              <p className="mt-4">
+                <button type="button" className="underline underline-offset-2" onClick={onRetry}>
+                  {copy("tryAgain")}
+                </button>
+              </p>
+            ) : null}
           </div>
         ) : emptyCollection ? (
           <CatalogCollectionEmpty />

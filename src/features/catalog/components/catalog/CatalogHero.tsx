@@ -18,7 +18,9 @@ import {
   crumbs,
   crumbsList,
 } from "@/styles/shopChrome";
+import { getImageProps } from "next/image";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { isOptimizableImageSrc } from "@/lib/images/remoteImagePatterns";
 import { sanitizeCatalogHtml } from "@/features/catalog/utils/catalogHtml";
 
 const HTML_TAG = /<\/?[a-z][a-z0-9]*\b[^>]*>/i;
@@ -42,6 +44,54 @@ type CatalogHeroMeta = {
   wide?: boolean;
 };
 
+/** The banner spans the page container (max 1200px). */
+const BANNER_SIZES = "(max-width: 1200px) 100vw, 1200px";
+
+/**
+ * Resized `srcSet` for a banner when the optimiser can serve it and its pixel
+ * size is known (needed for the aspect ratio). Otherwise the original file.
+ */
+function bannerSource(src: string, width: number | null | undefined, height: number | null | undefined) {
+  if (!width || !height || !isOptimizableImageSrc(src)) {
+    return { src, srcSet: undefined, sizes: undefined };
+  }
+  const { props } = getImageProps({ src, alt: "", width, height, sizes: BANNER_SIZES });
+  return { src: props.src, srcSet: props.srcSet, sizes: props.sizes };
+}
+
+/** Wide store banner, the page's LCP image. Art-directed: the mobile banner is a different image, not a resize. */
+function CollectionBanner({ meta, alt }: { meta: CatalogHeroMeta; alt: string }) {
+  const size = meta.heroSize;
+  const desktop = bannerSource(meta.heroImage, size?.width, size?.height);
+  const mobile = meta.heroImageMobile
+    ? bannerSource(meta.heroImageMobile, size?.mobileWidth, size?.mobileHeight)
+    : null;
+  return (
+    <picture className={collectionBanner}>
+      {mobile ? (
+        <source
+          media="(max-width: 767px)"
+          srcSet={mobile.srcSet ?? mobile.src}
+          sizes={mobile.sizes}
+          width={size?.mobileWidth ?? undefined}
+          height={size?.mobileHeight ?? undefined}
+        />
+      ) : null}
+      <img
+        className={collectionBannerImage}
+        src={desktop.src}
+        srcSet={desktop.srcSet}
+        sizes={desktop.sizes}
+        alt={alt}
+        width={size?.width ?? undefined}
+        height={size?.height ?? undefined}
+        fetchPriority="high"
+        loading="eager"
+      />
+    </picture>
+  );
+}
+
 export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt: string }) {
   const copy = useShopCopy();
   return (
@@ -58,28 +108,7 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
           </ol>
         </nav>
 
-        {meta.wide && meta.heroImage ? (
-          <picture className={collectionBanner}>
-            {meta.heroImageMobile ? (
-              <source
-                media="(max-width: 767px)"
-                srcSet={meta.heroImageMobile}
-                width={meta.heroSize?.mobileWidth ?? undefined}
-                height={meta.heroSize?.mobileHeight ?? undefined}
-              />
-            ) : null}
-            {/* Art-directed <picture>: the mobile banner is a different image, not a resize. */}
-            <img
-              className={collectionBannerImage}
-              src={meta.heroImage}
-              alt={heroAlt}
-              width={meta.heroSize?.width ?? undefined}
-              height={meta.heroSize?.height ?? undefined}
-              fetchPriority="high"
-              loading="eager"
-            />
-          </picture>
-        ) : null}
+        {meta.wide && meta.heroImage ? <CollectionBanner meta={meta} alt={heroAlt} /> : null}
 
         <div className={meta.wide && meta.heroImage ? collectionHeroWide : collectionHero}>
           {meta.heroImage && !meta.wide ? (
@@ -89,8 +118,9 @@ export function CatalogHero({ meta, heroAlt }: { meta: CatalogHeroMeta; heroAlt:
               alt={heroAlt}
               width={720}
               height={1040}
+              sizes="(max-width: 860px) 100vw, 500px"
               fetchPriority="high"
-          loading="eager"
+              loading="eager"
             />
           ) : null}
           <div className={collectionHeroPanel}>

@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
-import { ApiClientError } from "@/lib/api/apiError";
-import { useGiftCatalogMap } from "../hooks/useGiftCatalog";
-import { useGiftChoice } from "../hooks/useGiftChoice";
+import { useGiftChoiceDialog } from "../hooks/useGiftChoiceDialog";
 import type { PromotionGiftAward } from "../types/promotions";
-import { giftDisplayName, giftErrorMessage } from "../utils/giftWithPurchase";
+import { giftErrorMessage } from "../utils/giftWithPurchase";
 import {
   cartHint,
   giftChoiceBackdrop,
@@ -22,19 +20,17 @@ import {
 } from "@/styles/cartChrome";
 import { useHydrated } from "@/hooks/useHydrated";
 
-export function GiftChoiceModal({
-  award,
-  celebrate,
-  onClose,
-}: {
+export type GiftChoiceModalProps = {
   award: PromotionGiftAward;
   celebrate: boolean;
   onClose: () => void;
-}) {
+};
+
+/** Swiss Arabian's free-gift choice dialog (logic in `useGiftChoiceDialog`). */
+export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalProps) {
   const titleId = useId();
-  const choice = useGiftChoice();
-  const catalog = useGiftCatalogMap(award.choices.map((gift) => gift.sku));
-  const [error, setError] = useState<string | null>(null);
+  const dialog = useGiftChoiceDialog(award, onClose);
+  const error = dialog.error ? giftErrorMessage(dialog.error.code, dialog.error.message) : null;
   // Portal target (document.body) exists only after hydration.
   const mounted = useHydrated();
 
@@ -52,21 +48,6 @@ export function GiftChoiceModal({
   }, [onClose]);
 
   if (!mounted) return null;
-
-  async function select(sku: string) {
-    setError(null);
-    try {
-      await choice.select.mutateAsync({
-        sku,
-        promotionCode: award.promotionCode,
-      });
-      onClose();
-    } catch (caught) {
-      const code = caught instanceof ApiClientError ? caught.code : null;
-      const message = caught instanceof ApiClientError ? caught.message : null;
-      setError(giftErrorMessage(code, message));
-    }
-  }
 
   return createPortal(
     <div className={giftChoiceRoot}>
@@ -88,10 +69,8 @@ export function GiftChoiceModal({
           Choose one. You can change it before checkout.
         </p>
         <ul className={giftChoiceList} aria-label="Free gift choices">
-          {award.choices.map((gift, index) => {
-            const product = catalog.get(gift.sku);
-            const title = product?.title || giftDisplayName(gift);
-            const image = product?.imageUrl || gift.imageUrl;
+          {dialog.gifts.map((gift, index) => {
+            const { title, image } = gift;
             return (
               <li
                 key={gift.sku}
@@ -105,14 +84,14 @@ export function GiftChoiceModal({
                 )}
                 <span className={giftChoiceName}>
                   {title}
-                  {!gift.sku.includes(":") && gift.sku.length <= 48 ? (
+                  {gift.showSku ? (
                     <small>{gift.sku}</small>
                   ) : null}
                 </span>
                 <button
                   type="button"
-                  disabled={choice.select.isPending}
-                  onClick={() => void select(gift.sku)}
+                  disabled={dialog.pending}
+                  onClick={() => void dialog.select(gift.sku)}
                 >
                   Select
                 </button>

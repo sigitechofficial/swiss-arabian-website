@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { PageLoading } from "@/components/ui";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -16,20 +18,21 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { hasExchangePaymentReturn } from "../utils/exchangeMoney";
 
-const KIND_TABS = [
-  { value: "returns" as const, label: "Returns" },
-  { value: "exchanges" as const, label: "Exchanges" },
+const KIND_TABS: { value: "returns" | "exchanges"; label: MessageKey }[] = [
+  { value: "returns", label: "afterSales.returns" },
+  { value: "exchanges", label: "afterSales.exchanges" },
 ];
 
-const STATUS_FILTERS: { value: string | null; label: string }[] = [
-  { value: null, label: "All" },
-  { value: "REQUESTED", label: "Requested" },
-  { value: "PENDING_REVIEW", label: "Pending review" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
+const STATUS_FILTERS: { value: string | null; label: MessageKey }[] = [
+  { value: null, label: "payments.filter.all" },
+  { value: "REQUESTED", label: "afterSales.status.requested" },
+  { value: "PENDING_REVIEW", label: "afterSales.status.pendingReview" },
+  { value: "APPROVED", label: "afterSales.status.approved" },
+  { value: "REJECTED", label: "afterSales.status.rejected" },
 ];
 
 export function AccountAfterSalesPageView() {
+  const t = useShopCopy();
   const [chosenKind, setKind] = useState<"returns" | "exchanges" | null>(null);
   // Back from paying an exchange difference: open Exchanges so the result shows.
   const hydrated = useHydrated();
@@ -54,14 +57,14 @@ export function AccountAfterSalesPageView() {
   const items = kind === "returns" ? returnItems : exchangeItems;
   const emptyCopy =
     kind === "returns"
-      ? "You have no return requests yet."
-      : "You have no exchange requests yet.";
+      ? t("afterSales.emptyReturns")
+      : t("afterSales.emptyExchanges");
 
   return (
     <AccountPageShell>
       <AccountPageTitle
-        title="Returns & exchanges"
-        subtitle="Requests are reviewed by our team. Submitting a request does not refund or ship a replacement."
+        title={t("pages.title.returns")}
+        subtitle={t("afterSales.subtitle")}
       />
 
       <div className={`${accountContainer} pb-16`}>
@@ -79,7 +82,7 @@ export function AccountAfterSalesPageView() {
                     : "border border-sa-border text-sa-secondary hover:border-terra hover:text-terra"
                 }`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             );
           })}
@@ -99,16 +102,16 @@ export function AccountAfterSalesPageView() {
                     : "border border-sa-border text-sa-secondary hover:border-terra hover:text-terra"
                 }`}
               >
-                {filter.label}
+                {t(filter.label)}
               </button>
             );
           })}
         </div>
 
-        {feed.isLoading ? <PageLoading /> : null}
+        {feed.isLoading ? <PageLoading label={t("loadingLabel.page")} /> : null}
         {feed.isError ? (
           <p className="text-[14px] text-sa-muted">
-            Could not load your requests. Please try again.
+            {t("afterSales.loadFailed")}
           </p>
         ) : null}
         {!feed.isLoading && !feed.isError && items.length === 0 ? (
@@ -135,7 +138,7 @@ export function AccountAfterSalesPageView() {
             onClick={() => feed.fetchNextPage()}
             disabled={feed.isFetchingNextPage}
           >
-            {feed.isFetchingNextPage ? "Loading…" : "Load more"}
+            {feed.isFetchingNextPage ? t("loadingLabel.page") : t("myReviews.loadMore")}
           </button>
         ) : null}
       </div>

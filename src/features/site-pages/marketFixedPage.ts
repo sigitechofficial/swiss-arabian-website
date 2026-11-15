@@ -1,9 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import {
-  catalogMetadata,
-  resolveServerCatalogMarket,
-} from "@/lib/seo/catalogPage";
+import { catalogMetadata } from "@/lib/seo/catalogPage";
+import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
+import type { ShopLocale } from "@/lib/i18n/locales";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import {
@@ -24,8 +23,8 @@ export const loadMarketFixedPage = cache(
   async (
     key: string,
     pick: Picker,
-  ): Promise<{ locale: "en" | "ar"; page: SitePage | null }> => {
-    const { locale, zoneCode } = await resolveServerCatalogMarket();
+  ): Promise<{ locale: ShopLocale; page: SitePage | null }> => {
+    const { locale, zoneCode } = await resolveRequestCatalogMarket();
     if (!zoneCode) return { locale, page: null };
     const pages = await fetchSitePages(zoneCode).catch(() => []);
     const chosen = pick(pages);
@@ -41,7 +40,7 @@ export const loadMarketFixedPage = cache(
 /** Head tags for a fixed address showing a market page; SEO Management can override. */
 export async function marketFixedPageMetadata(
   path: string,
-  locale: "en" | "ar",
+  locale: ShopLocale,
   page: SitePage,
 ): Promise<Metadata> {
   const { seo } = await loadPublishedPageSeo(path);

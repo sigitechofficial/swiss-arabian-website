@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { PageLoading } from "@/components/ui";
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -11,16 +11,7 @@ import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptySta
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogPagination } from "@/features/catalog/components/CatalogPagination";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import { useMarket } from "@/providers/MarketProvider";
-import { wishlistKeys } from "../api/wishlist.keys";
-import { fetchWishlist } from "../api/wishlist.service";
-import { useWishlistMutations } from "../hooks/useWishlistMutations";
-import {
-  uniqueProductUuids,
-  WISHLIST_LIST_PAGE_SIZE,
-} from "../utils/productId";
-import type { StorefrontWishlistStatusView } from "../types/wishlist";
-import { toWishlistCatalogProduct } from "../utils/toWishlistProductCard";
+import { useAccountWishlist } from "../hooks/useAccountWishlist";
 import { WishlistHeartButton } from "./WishlistHeartButton";
 import { wishlistBand, wishlistGrid } from "@/styles/shopChrome";
 
@@ -29,67 +20,25 @@ type AccountWishlistPageViewProps = {
 };
 
 export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps) {
-  const searchParams = useSearchParams();
-  const { marketId } = useMarket();
-  const zoneCode = marketId || "";
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
-  const offset = (page - 1) * WISHLIST_LIST_PAGE_SIZE;
-  const [confirmClear, setConfirmClear] = useState(false);
-  const queryClient = useQueryClient();
-  const { clear } = useWishlistMutations();
-
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: wishlistKeys.list(zoneCode, WISHLIST_LIST_PAGE_SIZE, offset),
-    queryFn: () =>
-      fetchWishlist({
-        zoneCode,
-        limit: WISHLIST_LIST_PAGE_SIZE,
-        offset,
-      }),
-    enabled: Boolean(zoneCode),
-  });
-
-  const items = data?.items;
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / WISHLIST_LIST_PAGE_SIZE));
-  const listPath =
-    title.toLowerCase().includes("saved") ? "/account/saved" : "/account/wishlist";
-
-  const cards = useMemo(
-    () =>
-      (items ?? []).map((item) => ({
-        item,
-        card: item.product ? toWishlistCatalogProduct(item.product) : null,
-      })),
-    [items],
-  );
-
-  useEffect(() => {
-    if (!items?.length) return;
-    const ids = uniqueProductUuids(items.map((item) => item.productId));
-    if (ids.length === 0) return;
-    queryClient.setQueryData<StorefrontWishlistStatusView>(
-      wishlistKeys.status(ids),
-      {
-        items: ids.map((productId) => ({ productId, inWishlist: true })),
-      },
-    );
-  }, [items, queryClient]);
+  const { data, items, isLoading, isError, error, refetch, isFetching, page, total, totalPages, cards, confirmClear, setConfirmClear, clear } =
+    useAccountWishlist();
+  const t = useShopCopy();
+  // The same view serves both addresses; the title is translated, so read the path.
+  const pathname = stripLocalePrefix(usePathname() || "/");
+  const listPath = pathname.startsWith("/account/saved") ? "/account/saved" : "/account/wishlist";
 
   return (
     <AccountPageShell>
       <AccountPageTitle
         title={title}
         subtitle={
-          total > 0
-            ? `${total} saved ${total === 1 ? "fragrance" : "fragrances"}`
-            : "Save fragrances from the shop to find them here later."
+          total > 0 ? t("wishlist.count", { count: total }) : t("wishlist.emptyLede")
         }
       />
 
       <div className={`${accountContainer} pb-16`}>
         {isLoading && !data ? (
-          <PageLoading label="Loading saved items…" />
+          <PageLoading label={t("loadingLabel.savedItems")} />
         ) : isError ? (
           <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
             <p className="text-[13px] text-sa-secondary">
@@ -100,18 +49,19 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
               onClick={() => void refetch()}
               className="mt-4 text-[12px] font-semibold text-terra hover:underline"
             >
-              Try again
+              {t("tryAgain")}
             </button>
           </div>
         ) : !items?.length && total === 0 ? (
           <CatalogEmptyState
-            title="No saved items yet"
-            description="Tap the heart on a product to save it here. Your wishlist is available after you sign in."
+            title={t("wishlist.empty")}
+            description={t("wishlist.emptyText")}
+            backLabel={t("wishlist.backHome")}
           />
         ) : !items?.length ? (
           <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
             <p className="text-[13px] text-sa-secondary">
-              Saved items on this page are hidden in the current market.
+              {t("wishlist.hiddenPage")}
             </p>
             {totalPages > 1 ? (
               <CatalogPagination
@@ -130,7 +80,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
               {confirmClear ? (
                 <div className="flex flex-wrap items-center gap-3 text-[12px]">
                   <span className="text-sa-secondary">
-                    Remove all saved items?
+                    {t("wishlist.clearConfirm")}
                   </span>
                   <button
                     type="button"
@@ -140,14 +90,14 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                     }}
                     className="cursor-pointer font-semibold text-terra hover:underline disabled:opacity-50"
                   >
-                    {clear.isPending ? "Removing…" : "Yes, clear all"}
+                    {clear.isPending ? t("wishlist.removing") : t("wishlist.yesClear")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClear(false)}
                     className="cursor-pointer font-semibold text-sa-muted hover:text-sa-primary"
                   >
-                    Cancel
+                    {t("account.cancel")}
                   </button>
                 </div>
               ) : (
@@ -156,7 +106,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                   onClick={() => setConfirmClear(true)}
                   className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.08em] text-sa-muted hover:text-terra"
                 >
-                  Clear all
+                  {t("wishlist.clearAll")}
                 </button>
               )}
             </div>
@@ -172,10 +122,10 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                           className="flex min-h-[280px] flex-col justify-between rounded-lg border border-sa-border bg-section-soft p-4"
                         >
                           <p className="text-[13px] font-medium text-sa-primary">
-                            {item.product?.name || "This product is unavailable"}
+                            {item.product?.name || t("wishlist.unavailableProduct")}
                           </p>
                           <p className="mt-2 text-[12px] text-sa-muted">
-                            It may be hidden in this market. You can still remove it.
+                            {t("wishlist.hiddenItem")}
                           </p>
                           <div className="mt-4 self-end">{heart}</div>
                         </li>
@@ -188,7 +138,7 @@ export function AccountWishlistPageView({ title }: AccountWishlistPageViewProps)
                         product={card}
                         action={heart}
                         hideAdd={unavailable}
-                        note={unavailable ? "Currently unavailable" : undefined}
+                        note={unavailable ? t("wishlist.currentlyUnavailable") : undefined}
                       />
                     );
                   })}

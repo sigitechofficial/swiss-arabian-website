@@ -1,58 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  cmsGlobalKeys,
-  fetchCmsGlobalRegion,
-  firstSectionOfType,
-} from "@/features/cms/api/cmsGlobalRegion.service";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
-import { useMarket } from "@/providers/MarketProvider";
+import { useAnnouncementBar } from "@/features/cms/hooks/useCmsGlobalRegion";
 import { topbarTicker, topbarTickerLine } from "@/styles/siteChrome";
 
 const DEFAULT_INTERVAL_MS = 3500;
 
 export function TopbarTicker() {
-  const market = useSelectedCatalogMarket();
-  const zoneCode = market?.zoneCode ?? "";
-  // Content is published under the market's own language code, not the one in the address.
-  const languageCode = useMarket().contentLanguage ?? "";
-
-  const cmsQuery = useQuery({
-    queryKey: cmsGlobalKeys.region("announcement-bar", zoneCode, languageCode),
-    queryFn: () =>
-      fetchCmsGlobalRegion({
-        slug: "announcement-bar",
-        zoneCode,
-        languageCode,
-      }),
-    enabled: Boolean(zoneCode && languageCode),
-    staleTime: 60_000,
-  });
-
-  const cmsSection = firstSectionOfType(
-    cmsQuery.data?.sections ?? [],
-    "ANNOUNCEMENT_BAR",
+  // Messages come only from the market's announcement bar (admin): fixed
+  // texts here could promise delivery or returns the market does not offer.
+  const announcement = useAnnouncementBar();
+  const messages = useMemo(
+    () => announcement.items.map((item) => item.message),
+    [announcement.items],
   );
-  const cmsData = (cmsSection?.data ?? {}) as {
-    enabled?: boolean;
-    messages?: Array<{ message?: string }>;
-    backgroundColor?: string | null;
-    textColor?: string | null;
-    rotationIntervalMs?: number;
+  const cmsData = {
+    backgroundColor: announcement.backgroundColor,
+    textColor: announcement.textColor,
+    rotationIntervalMs: announcement.rotationIntervalMs ?? undefined,
   };
-
-  const messages = useMemo(() => {
-    if (cmsData.enabled === false) return [];
-    const fromCms = (cmsData.messages ?? [])
-      .map((m) => m.message?.trim())
-      .filter((m): m is string => Boolean(m));
-    // Messages come only from the market's announcement bar (admin): fixed
-    // texts here could promise delivery or returns the market does not offer.
-    return fromCms;
-  }, [cmsData.enabled, cmsData.messages]);
 
   const [index, setIndex] = useState(0);
   const interval = Math.min(
