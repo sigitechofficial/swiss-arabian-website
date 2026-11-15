@@ -67,6 +67,11 @@ export type PreparedInlinePayment = {
   publicKey?: string;
   publishableKey?: string;
   providerReference?: string | null;
+  /**
+   * Integration account the session was opened with. The backend reuses the
+   * prepared session only when the payment runs under this same account.
+   */
+  accountId?: string | null;
 };
 
 export async function startPayment(
@@ -116,6 +121,7 @@ export async function startPayment(
             ...(prepared.publicKey ? { preparedPublicKey: prepared.publicKey } : {}),
             ...(prepared.publishableKey ? { preparedPublishableKey: prepared.publishableKey } : {}),
             ...(prepared.providerReference ? { preparedProviderReference: prepared.providerReference } : {}),
+            ...(prepared.accountId ? { preparedAccountId: prepared.accountId } : {}),
           },
         }
       : {}),
