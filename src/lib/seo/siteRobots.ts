@@ -1,4 +1,4 @@
-import { brandIntegrations } from "@/lib/brand";
+import { seoIndexingEnabled } from "@/lib/config/runtime";
 import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { loadServerMarkets } from "@/lib/seo/serverMarket";
@@ -27,12 +27,12 @@ const PRIVATE_PATHS = [
 /**
  * robots.txt of the website being served (run inside `withSiteHost`). Nothing
  * is crawled until indexing is switched on for the production site
- * (brandIntegrations().seoIndexingEnabled). A market website names its own
+ * (seoIndexingEnabled(): production with SEO_INDEXING_ENABLED=true). A market website names its own
  * sitemap; a root domain without a market of its own (it redirects to market
  * websites) names its market websites' sitemaps.
  */
 export async function siteRobotsTxt(): Promise<string> {
-  if (!brandIntegrations().seoIndexingEnabled) {
+  if (!seoIndexingEnabled()) {
     return ["User-agent: *", "Disallow: /", ""].join("\n");
   }
   const origin = await requestOrigin();

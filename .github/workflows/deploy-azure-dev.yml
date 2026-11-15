@@ -18,7 +18,6 @@ env:
   AZURE_CONTAINER_APP_WEBSITE: ${{ vars.AZURE_CONTAINER_APP_WEBSITE || 'ca-swissarabian-website-dev' }}
   AZURE_CONTAINER_APPS_ENV: ${{ vars.AZURE_CONTAINER_APPS_ENV || 'cae-swissarabian-dev' }}
   DEV_API_BASE_URL: https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
-  DEV_RETURN_URL: https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
   AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME || 'kv-swissarabian-dev' }}
 
 jobs:
@@ -70,15 +69,15 @@ jobs:
 
       - name: Build Docker image
         run: |
+          # No environment in the image (deployment plan W4): only the brand,
+          # product switches and the commit. Environment settings are set on the
+          # container below.
           docker build \
-            --build-arg NEXT_PUBLIC_APP_ENV=dev \
-            --build-arg "NEXT_PUBLIC_DEV_API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
-            --build-arg "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
+            --build-arg NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SWISS_ARABIAN \
             --build-arg NEXT_PUBLIC_ENABLE_MFA=false \
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
             --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
-            --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
-            --build-arg NEXT_PUBLIC_SEO_INDEXING_ENABLED=false \
+            --build-arg "NEXT_DEPLOYMENT_ID=${{ github.sha }}" \
             -t "${{ steps.vars.outputs.image }}" \
             .
 
@@ -147,9 +146,9 @@ jobs:
               "NODE_ENV=production" \
               "PORT=3000" \
               "HOSTNAME=0.0.0.0" \
-              "NEXT_PUBLIC_APP_ENV=dev" \
-              "NEXT_PUBLIC_DEV_API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
-              "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
+              "APP_ENV=dev" \
+              "API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
+              "SEO_INDEXING_ENABLED=false" \
               "GIT_COMMIT_SHA=${{ github.sha }}" \
               "GIT_SHORT_SHA=${{ steps.vars.outputs.short_sha }}" \
               "GIT_BRANCH=${{ github.ref_name }}" \
@@ -161,7 +160,7 @@ jobs:
 
       # ADR-005 phase E: analytics, Insider's website tag, Tabby promos and Google Maps
       # come from the backend per address (integrations switchboard), not from this build.
-      - name: Remove website settings that moved to the integrations switchboard
+      - name: Remove website settings it no longer reads (switchboard; runtime environment)
         run: |
           set -euo pipefail
           az containerapp update \
@@ -172,7 +171,9 @@ jobs:
               NEXT_PUBLIC_GOOGLE_MAPS_API_KEY NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID \
               NEXT_PUBLIC_GTM_ID NEXT_PUBLIC_GA4_ID \
               NEXT_PUBLIC_TABBY_PUBLIC_KEY NEXT_PUBLIC_TABBY_MERCHANT_CODE \
-              NEXT_PUBLIC_ENABLE_TABBY NEXT_PUBLIC_ENABLE_TAMARA NEXT_PUBLIC_ENABLE_PAYMOB >/dev/null
+              NEXT_PUBLIC_ENABLE_TABBY NEXT_PUBLIC_ENABLE_TAMARA NEXT_PUBLIC_ENABLE_PAYMOB \
+              NEXT_PUBLIC_APP_ENV NEXT_PUBLIC_DEV_API_BASE_URL NEXT_PUBLIC_DEV_RETURN_URL \
+              NEXT_PUBLIC_SEO_INDEXING_ENABLED >/dev/null
 
       # The backend signs its "refresh this address's settings" calls with this secret
       # (same Key Vault secret as the backend's SITE_REVALIDATE_SECRET). Optional: without

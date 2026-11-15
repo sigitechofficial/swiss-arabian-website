@@ -1,62 +1,25 @@
 import { BRAND_ENV_FORMATS, envValue } from "./publicEnv";
+import { BRANDS, normalizeBrandCode } from "./registry";
 import {
-  BRANDS,
-  DEFAULT_BRAND_CODE,
-  brandHosts,
-  brandOwningHost,
-  normalizeBrandCode,
-} from "./registry";
-import {
-  BRAND_ENV_KEYS,
   REMOVED_ENV_KEYS,
+  REMOVED_ENV_SETTINGS,
   type BrandConfig,
-  type BrandEnvKey,
   type BrandPublicEnv,
 } from "./types";
-
-
-type AppEnv = "local" | "dev" | "staging" | "production";
 
 export type BrandCheckResult = {
   ok: boolean;
   brandCode: string;
-  appEnv: AppEnv;
   errors: string[];
   warnings: string[];
 };
 
-function appEnvOf(raw: BrandPublicEnv): AppEnv {
-  const value = envValue(raw, "NEXT_PUBLIC_APP_ENV") || "dev";
-  return value === "local" || value === "staging" || value === "production"
-    ? value
-    : "dev";
-}
-
-function hostOf(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .replace(/:\d+$/, "")
-    .replace(/\.$/, "");
-}
-
-/** Never print keys in CI logs; ids are public and printed as-is. */
-function shown(key: BrandEnvKey, value: string): string {
-  if (!key.includes("KEY")) return `"${value}"`;
-  return value.length <= 8 ? '"****"' : `"${value.slice(0, 4)}…${value.slice(-2)}"`;
-}
-
-const HOST_SETTINGS: BrandEnvKey[] = [
-  "NEXT_PUBLIC_STOREFRONT_HOST",
-  "NEXT_PUBLIC_STAGING_RETURN_URL",
-  "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
-];
-
 /**
- * Checks this deployment's per-brand settings against the brand registry.
- * Errors stop the build; warnings are printed only.
+ * Checks a brand image's build settings (`npm run check:brand`, run by the
+ * Dockerfile before `next build`). A build has one setting: which brand it is.
+ * Environment settings are checked when the server starts
+ * (src/lib/config/runtime.ts `assertRuntimeConfig`), because one image serves
+ * every environment (deployment plan W4).
  */
 export function validateBrandEnv(
   raw: BrandPublicEnv,
@@ -64,112 +27,34 @@ export function validateBrandEnv(
 ): BrandCheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const appEnv = appEnvOf(raw);
-  const isProduction = appEnv === "production";
   const known = Object.keys(brands).join(", ");
 
-  // 1. Which brand is this deployment?
-  const rawCode = normalizeBrandCode(raw.NEXT_PUBLIC_STOREFRONT_BRAND_CODE);
-  let selected: BrandConfig | undefined = rawCode ? brands[rawCode] : undefined;
-  if (rawCode && !selected) {
+  // 1. Which brand this image is: required, and known.
+  const value = envValue(raw, "NEXT_PUBLIC_STOREFRONT_BRAND_CODE");
+  const rawCode = normalizeBrandCode(value);
+  if (!rawCode) {
+    errors.push(`NEXT_PUBLIC_STOREFRONT_BRAND_CODE is not set: a brand image must name its brand (one of: ${known}).`);
+  } else if (!BRAND_ENV_FORMATS.NEXT_PUBLIC_STOREFRONT_BRAND_CODE.safeParse(value).success) {
+    errors.push(`NEXT_PUBLIC_STOREFRONT_BRAND_CODE="${value}" is not a brand code like SWISS_ARABIAN.`);
+  } else if (!brands[rawCode]) {
     errors.push(
       `NEXT_PUBLIC_STOREFRONT_BRAND_CODE="${rawCode}" is not a known brand (known: ${known}). Add src/lib/brand/brands/<brand>.ts and register it in registry.ts.`,
     );
   }
-  if (!rawCode) {
-    const byHost = brandOwningHost(envValue(raw, "NEXT_PUBLIC_STOREFRONT_HOST"));
-    selected = (byHost && brands[byHost.code]) || brands[DEFAULT_BRAND_CODE];
-    const message = `NEXT_PUBLIC_STOREFRONT_BRAND_CODE is not set; checking as ${selected?.code ?? DEFAULT_BRAND_CODE}. Set it explicitly (one of: ${known}).`;
-    if (isProduction) errors.push(message);
-    else warnings.push(message);
-  }
-  if (!selected) {
-    return { ok: false, brandCode: rawCode, appEnv, errors, warnings };
-  }
-  const brand: BrandConfig = selected;
-  const label = `${brand.name.en} (${brand.code})`;
-  const others = Object.values(brands).filter((other) => other.code !== brand.code);
 
-  // 2. Well-formed values.
-  for (const key of BRAND_ENV_KEYS) {
-    const value = envValue(raw, key);
-    const format = BRAND_ENV_FORMATS[key];
-    if (!value || !format) continue;
-    const parsed = format.safeParse(value);
-    if (!parsed.success) {
-      errors.push(`${key}=${shown(key, value)} is not ${parsed.error.issues[0]?.message ?? "valid"}.`);
-    }
-  }
-
-  // 3. Required settings.
-  const require = (key: BrandEnvKey, why: string) => {
-    if (envValue(raw, key)) return;
-    const message = `${key} is missing (${why}).`;
-    if (isProduction) errors.push(message);
-    else if (appEnv === "staging") warnings.push(message);
-  };
-  for (const key of brand.requiredInProduction) {
-    require(key, `required for a production ${label} build`);
-  }
-
-  // 3b. Settings that moved to the integrations switchboard (ADR-005 phase E):
-  //     set here they would do nothing, so the build refuses them.
+  // 2. Settings no longer read: set here they would do nothing.
   for (const key of REMOVED_ENV_KEYS) {
     if (!envValue(raw, key)) continue;
-    errors.push(
-      `${key} is no longer read: analytics, Insider's website tag, Tabby / Tamara promos and Google Maps are set per market in the admin (Settings → Integrations). Remove it from this deployment.`,
-    );
+    errors.push(`${key} is no longer read: ${REMOVED_ENV_SETTINGS[key]}. Remove it from this build.`);
   }
 
-  // 4. No host of another brand.
-  for (const key of HOST_SETTINGS) {
-    const value = envValue(raw, key);
-    if (!value) continue;
-    const host = hostOf(value);
-    const owner = others.find((other) => brandHosts(other).includes(host));
-    if (owner) {
-      errors.push(`${key}=${shown(key, value)} is a ${owner.name.en} (${owner.code}) host, not ${label}.`);
-    }
-  }
-
-  // 5. Hosts must be this brand's.
-  const storefrontHost = hostOf(envValue(raw, "NEXT_PUBLIC_STOREFRONT_HOST"));
-  const productionReturn = hostOf(envValue(raw, "NEXT_PUBLIC_PRODUCTION_RETURN_URL"));
-  const stagingReturn = hostOf(envValue(raw, "NEXT_PUBLIC_STAGING_RETURN_URL"));
-  const production = brand.hosts.production;
-  const liveOrStaging = [...production, ...brand.hosts.staging];
-  if (isProduction && production.length === 0) {
-    errors.push(
-      `${label} has no production hosts in src/lib/brand/brands/*.ts (hosts.production is empty). Add the shop domains before a production build.`,
-    );
-  }
-  const expectHost = (key: BrandEnvKey, host: string, allowed: string[], strict: boolean) => {
-    if (!host || allowed.length === 0 || allowed.includes(host)) return;
-    const message = `${key} host "${host}" is not one of ${label}'s hosts (${allowed.join(", ")}).`;
-    if (strict) errors.push(message);
-    else warnings.push(message);
-  };
-  if (isProduction) {
-    expectHost("NEXT_PUBLIC_STOREFRONT_HOST", storefrontHost, production, true);
-    expectHost("NEXT_PUBLIC_PRODUCTION_RETURN_URL", productionReturn, production, true);
-  } else if (appEnv === "staging") {
-    expectHost("NEXT_PUBLIC_STOREFRONT_HOST", storefrontHost, liveOrStaging, true);
-    expectHost("NEXT_PUBLIC_STAGING_RETURN_URL", stagingReturn, brand.hosts.staging, false);
-  } else {
-    expectHost("NEXT_PUBLIC_STOREFRONT_HOST", storefrontHost, brandHosts(brand), false);
-  }
-
-  if (!isProduction && envValue(raw, "NEXT_PUBLIC_SEO_INDEXING_ENABLED") === "true") {
-    warnings.push(`NEXT_PUBLIC_SEO_INDEXING_ENABLED=true has no effect on a ${appEnv} build (production only).`);
-  }
-
-  return { ok: errors.length === 0, brandCode: brand.code, appEnv, errors, warnings };
+  return { ok: errors.length === 0, brandCode: rawCode, errors, warnings };
 }
 
 /** Human-readable report for the CLI. */
 export function formatBrandCheck(result: BrandCheckResult): string {
   const lines = [
-    `Brand config check: ${result.brandCode || "(unknown)"} / NEXT_PUBLIC_APP_ENV=${result.appEnv}`,
+    `Brand build check: ${result.brandCode || "(unknown)"}`,
   ];
   for (const error of result.errors) lines.push(`  ✖ ${error}`);
   for (const warning of result.warnings) lines.push(`  ⚠ ${warning}`);

@@ -1,13 +1,13 @@
 import { hostFromSiteKey } from "@/lib/site/siteKey";
 import { withSiteHost } from "@/lib/site/siteScope";
-import { staticSiteKeys } from "@/lib/site/staticSites";
 import { siteSitemap, sitemapXml } from "@/lib/seo/siteSitemap";
 
 /** Rebuilt at most once an hour per website address (no request data is read). */
 export const revalidate = 3600;
 
-export async function generateStaticParams() {
-  return (await staticSiteKeys()).map((site) => ({ site }));
+/** Rendered per address on first request (no build-time environment, W4). */
+export function generateStaticParams(): Array<{ site: string }> {
+  return [];
 }
 
 /** `/sitemap.xml` of each website address: its own market's pages and hreflang. */

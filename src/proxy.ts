@@ -9,6 +9,7 @@ import {
 import { MARKET_CHOICE_COOKIE, ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { brandLinkEnabled } from "@/lib/brand/features";
 import { getBrandConfig } from "@/lib/brand";
+import { apiBaseUrl } from "@/lib/config/runtime";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
   matchRedirect,
@@ -25,8 +26,15 @@ import { edgeCheck, visitorCountry } from "@/lib/site/edge";
 /** An address no route matches: rewriting to it renders the global 404. */
 const FEATURE_OFF_SEGMENT = "_section-off";
 
-/** Served outside the site tree (API proxies in next.config rewrites, route handlers). */
-const PASS_THROUGH = /^\/(?:_next|api|storefront|catalog|webhooks)(?:\/|$)/;
+/** The website's own route handlers and assets, served outside the site tree. */
+const PASS_THROUGH = /^\/(?:_next|api)(?:\/|$)/;
+
+/**
+ * The backend's paths the browser calls on its own address (API calls, catalog
+ * images): forwarded to the backend of this environment (API_BASE_URL, read at
+ * runtime), so no backend address is ever built into the website.
+ */
+const BACKEND_PATHS = /^\/(?:storefront|catalog)(?:\/|$)/;
 
 /**
  * `/<host.name>[__port]/<more>`: the shape of an address's internal tree.
@@ -69,6 +77,16 @@ export async function proxy(request: NextRequest) {
     }
   }
   if (PASS_THROUGH.test(pathname)) return NextResponse.next();
+  if (BACKEND_PATHS.test(pathname)) {
+    const backend = apiBaseUrl();
+    if (!backend) {
+      return new NextResponse("Service unavailable", {
+        status: 503,
+        headers: { "cache-control": "no-store" },
+      });
+    }
+    return NextResponse.rewrite(new URL(`${pathname}${request.nextUrl.search}`, `${backend}/`));
+  }
 
   // The address the shopper used decides the website (and its own cached pages).
   const liveHost = normalizeSiteHost(

@@ -32,7 +32,7 @@ const { BRAND_ENV_KEYS, REMOVED_ENV_KEYS } = await jiti.import(
   path.join(root, "src/lib/brand/types.ts"),
 );
 
-const raw = { NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV };
+const raw = {};
 // Removed settings are read too, so a deployment still setting one fails the check.
 for (const key of [...BRAND_ENV_KEYS, ...REMOVED_ENV_KEYS]) raw[key] = process.env[key];
 

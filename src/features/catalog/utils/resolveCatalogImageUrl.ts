@@ -1,6 +1,8 @@
-import { brandIntegrations } from "@/lib/brand";
-import { env } from "@/lib/config/env";
-
+/**
+ * A catalog image's address. Paths from the backend (`/catalog/media/…`) stay on
+ * the website's own address, which forwards them to the backend (src/proxy.ts):
+ * the same in every environment, so nothing is fixed at build time.
+ */
 export function resolveCatalogImageUrl(
   image: string | null | undefined,
 ): string | null {
@@ -10,7 +12,5 @@ export function resolveCatalogImageUrl(
   if (/^https?:\/\//i.test(raw)) return raw;
   if (raw.startsWith("//")) return `https:${raw}`;
 
-  const path = raw.startsWith("/") ? raw : `/${raw}`;
-  const base = (brandIntegrations().catalogMediaBaseUrl || env.apiBaseUrl).replace(/\/+$/, "");
-  return `${base}${path}`;
+  return raw.startsWith("/") ? raw : `/${raw}`;
 }

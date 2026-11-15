@@ -65,9 +65,4 @@ export const swissArabian = defineBrand({
     giftBox: true,
     employeeBenefits: true,
   },
-  requiredInProduction: [
-    "NEXT_PUBLIC_STOREFRONT_BRAND_CODE",
-    "NEXT_PUBLIC_STOREFRONT_HOST",
-    "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
-  ],
 });

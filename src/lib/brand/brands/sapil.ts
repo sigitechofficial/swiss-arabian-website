@@ -57,9 +57,4 @@ export const sapil = defineBrand({
     giftBox: false,
     employeeBenefits: false,
   },
-  requiredInProduction: [
-    "NEXT_PUBLIC_STOREFRONT_BRAND_CODE",
-    "NEXT_PUBLIC_STOREFRONT_HOST",
-    "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
-  ],
 });

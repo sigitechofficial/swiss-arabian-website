@@ -3,7 +3,6 @@ import { sapil } from "./brands/sapil";
 import { swissArabian } from "./brands/swiss-arabian";
 import { defineBrand } from "./defineBrand";
 import { localized } from "./index";
-import { parseBrandIntegrations } from "./publicEnv";
 import {
   BRANDS,
   DEFAULT_BRAND_CODE,
@@ -74,24 +73,6 @@ describe("brand registry", () => {
     );
     expect(DEFAULT_BRAND_CODE).toBe("SWISS_ARABIAN");
   });
-});
-
-describe("brand integrations", () => {
-  it("groups and validates the deployment settings", () => {
-    const integrations = parseBrandIntegrations(
-      {
-        NEXT_PUBLIC_APP_ENV: "production",
-        NEXT_PUBLIC_STOREFRONT_HOST: "UAE.swissarabian.com",
-        NEXT_PUBLIC_PRODUCTION_RETURN_URL: "https://uae.swissarabian.com/",
-        NEXT_PUBLIC_SEO_INDEXING_ENABLED: "true",
-      },
-      swissArabian,
-    );
-    expect(integrations.storefrontHost).toBe("uae.swissarabian.com");
-    expect(integrations.returnUrls.production).toBe("https://uae.swissarabian.com");
-    expect(integrations.seoIndexingEnabled).toBe(true);
-  });
-
 });
 
 describe("localized", () => {

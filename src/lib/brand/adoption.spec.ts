@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/root-params", () => ({ locale: async () => "ar" }));
 
-import { brandDisplayName, brandIntegrations } from "./index";
+import { brandDisplayName, getBrand } from "./index";
 import { fallbackBrandIdentity } from "@/lib/seo/brandIdentity";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
@@ -16,20 +16,21 @@ function deployAs(code: string, extra: Record<string, string> = {}) {
   for (const [key, value] of Object.entries(extra)) vi.stubEnv(key, value);
 }
 
-describe("brandIntegrations (getBrand adoption)", () => {
-  it("reads catalog media from the deployment", () => {
-    deployAs("SAPIL", {
-      NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL: "https://media.example.com/",
-    });
-    expect(brandIntegrations().catalogMediaBaseUrl).toBe("https://media.example.com");
-    expect(resolveCatalogImageUrl("/catalog/a.jpg")).toBe("https://media.example.com/catalog/a.jpg");
+describe("getBrand: the build's brand, no environment in it (deployment plan W4)", () => {
+  it("keeps catalog images on the website's own address in every environment", () => {
+    deployAs("SAPIL");
+    expect(resolveCatalogImageUrl("/catalog/media/a.jpg")).toBe("/catalog/media/a.jpg");
+    expect(resolveCatalogImageUrl("catalog/media/a.jpg")).toBe("/catalog/media/a.jpg");
+    expect(resolveCatalogImageUrl("https://cdn.shopify.com/s/files/a.jpg")).toBe(
+      "https://cdn.shopify.com/s/files/a.jpg",
+    );
   });
 
-  it("carries no analytics, Insider, Tabby or Maps ids: those come per address from the backend (ADR-005 phase E)", () => {
+  it("carries no integration ids or environment settings", () => {
     deployAs("SWISS_ARABIAN", { NEXT_PUBLIC_GTM_ID: "GTM-ABC1234" });
-    const integrations = brandIntegrations() as Record<string, unknown>;
-    for (const key of ["analytics", "insider", "tabby", "googleMaps", "payments"]) {
-      expect(integrations[key]).toBeUndefined();
+    const brand = getBrand() as Record<string, unknown>;
+    for (const key of ["integrations", "analytics", "insider", "tabby", "googleMaps", "payments"]) {
+      expect(brand[key]).toBeUndefined();
     }
   });
 });

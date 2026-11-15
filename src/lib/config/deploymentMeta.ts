@@ -1,3 +1,5 @@
+import { appEnv as runtimeAppEnv } from "./runtime";
+
 const startedAtMs = Date.now();
 
 function env(name: string, fallback = ""): string {
@@ -19,7 +21,7 @@ export function getDeploymentMeta() {
   const workflowRunUrl = env("GITHUB_RUN_URL");
   const branch = env("GIT_BRANCH", env("GITHUB_REF_NAME", "unknown"));
   const nodeEnv = env("NODE_ENV", "production");
-  const appEnv = env("NEXT_PUBLIC_APP_ENV", "dev");
+  const appEnv = runtimeAppEnv();
 
   return {
     commitSha,

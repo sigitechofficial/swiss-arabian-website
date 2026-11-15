@@ -26,9 +26,8 @@ export function originFromHeaders(
 }
 
 /**
- * The storefront's public origin from build-time settings
- * (`NEXT_PUBLIC_STOREFRONT_HOST`): one deployment per brand, so pages can be
- * prerendered without reading the request.
+ * Local only: the origin a plain `localhost` stands for (STOREFRONT_HOST, see
+ * src/lib/config/runtime.ts). Deployed websites always take the request's address.
  */
 export function siteOrigin(): string | null {
   const host = configuredStorefrontHost(null);

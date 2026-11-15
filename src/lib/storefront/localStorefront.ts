@@ -1,14 +1,14 @@
 import { env } from "@/lib/config/env";
 
 /**
- * Local only (NEXT_PUBLIC_APP_ENV=local): one dev server runs every brand,
+ * Local only (APP_ENV=local): one dev server runs every brand,
  * picked by the first label of a `*.localhost` address.
  *
  *   http://sp.localhost:3004  → Sapil (shop host sapil.test, brand SAPIL)
  *   http://sa.localhost:3004  → the .env storefront (Swiss Arabian)
  *   http://localhost:3004     → the .env storefront (unchanged)
  *
- * NEXT_PUBLIC_LOCAL_STOREFRONTS replaces the built-in list:
+ * LOCAL_STOREFRONTS replaces the built-in list:
  *   sp=SAPIL@sapil.test,sa=SWISS_ARABIAN@uae.swissarabian.com
  */
 export type LocalStorefront = { brandCode: string; host: string };

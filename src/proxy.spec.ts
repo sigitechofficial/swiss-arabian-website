@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SiteInfo, SiteLookup } from "@/lib/site/siteRegistry";
@@ -177,6 +178,20 @@ describe("proxy: served only through the hosting edge", () => {
   it("lets the container health probe through directly", async () => {
     process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
     expect((await proxy(request("/api/health"))).status).not.toBe(403);
+  });
+});
+
+describe("proxy: the browser's API calls go to this environment's backend (W4)", () => {
+  it("forwards /storefront and /catalog (images too) to API_BASE_URL, keeping the query", async () => {
+    const api = await proxy(request("/storefront/markets?countryCode=AE"));
+    expect(api.headers.get("x-middleware-rewrite")).toBe("http://api.test/storefront/markets?countryCode=AE");
+    const media = await proxy(request("/catalog/media/abc.jpg"));
+    expect(media.headers.get("x-middleware-rewrite")).toBe("http://api.test/catalog/media/abc.jpg");
+  });
+
+  it("does not forward anything else (the backend's webhooks are not on the website)", async () => {
+    const response = await proxy(request("/webhooks/stripe"));
+    expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("api.test");
   });
 });
 

@@ -11,7 +11,7 @@ import { currentSiteHost } from "@/lib/site/currentSite";
 import { loadSiteIntegrations } from "@/lib/site/siteIntegrations";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { hostFromSiteKey } from "@/lib/site/siteKey";
-import { staticSiteKeys } from "@/lib/site/staticSites";
+import { runtimeConfigScript, seoIndexingEnabled } from "@/lib/config/runtime";
 import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
 import { loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
@@ -34,13 +34,13 @@ async function siteHost(): Promise<string | null> {
 export const revalidate = 3600;
 
 /**
- * One prerendered tree per website address and language: the deployment's own
- * address and every market website of the brand. Other known addresses render
- * on first visit (ISR).
+ * Nothing is rendered at build time: a brand's image has no environment (it is
+ * promoted unchanged from staging to production, deployment plan W4). Each
+ * address renders on its first visit, in the environment it runs in, and is
+ * cached in the shared page cache (ISR); a deployment warms it up.
  */
-export async function generateStaticParams() {
-  const sites = await staticSiteKeys();
-  return sites.flatMap((site) => LOCALES.map((locale) => ({ site, locale })));
+export function generateStaticParams(): Array<{ site: string; locale: string }> {
+  return [];
 }
 
 /**
@@ -67,7 +67,7 @@ export async function generateMetadata({
       icon: brand.favicon || site.icons.favicon,
       apple: brand.favicon || site.icons.appleTouchIcon,
     },
-    robots: site.integrations.seoIndexingEnabled
+    robots: seoIndexingEnabled()
       ? { index: true, follow: true }
       : { index: false, follow: false },
   };
@@ -125,6 +125,8 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* This environment's settings for the browser (src/lib/config/runtime.ts): first. */}
+        <ServerInlineScript html={runtimeConfigScript()} />
         {/* Brand-specific head tags (Swiss Arabian: font preloads). */}
         <BrandHead />
         <ServerInlineScript html={themeInitScript} />

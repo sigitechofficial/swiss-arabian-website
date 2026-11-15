@@ -1,5 +1,5 @@
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
-import { envValue, readProcessPublicEnv } from "./publicEnv";
+import { buildBrandCode } from "./publicEnv";
 import { resolveBrand } from "./registry";
 import type { BrandConfig } from "./types";
 
@@ -30,7 +30,7 @@ export const FEATURE_ROUTES: Readonly<Record<BrandFeature, readonly string[]>> =
 /** The deployment's brand config (build-time brand code, else the default brand). */
 function deploymentBrand(): BrandConfig {
   return resolveBrand({
-    brandCode: envValue(readProcessPublicEnv(), "NEXT_PUBLIC_STOREFRONT_BRAND_CODE"),
+    brandCode: buildBrandCode(),
   });
 }
 
