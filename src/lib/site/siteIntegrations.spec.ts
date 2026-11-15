@@ -23,6 +23,7 @@ const full = {
   insiderTag: { accountId: "10015366", scriptHost: "swissarabianuatnew.api.useinsider.com" },
   paymentPromos: { tabby: { merchantCode: "SAUAE", publicKey: "pk_test_abc" }, tamara: null },
   googleMaps: { browserKey: "AIzaSyTestKeyForSpecs-123", mapId: null },
+  signIn: { google: { clientId: "123-abc.apps.googleusercontent.com" }, apple: null },
 };
 
 describe("parseSiteIntegrations (backend answer → what the page may load)", () => {
@@ -42,6 +43,12 @@ describe("parseSiteIntegrations (backend answer → what the page may load)", ()
     expect(parsed.analytics).toBeNull();
     expect(parsed.googleMaps).toEqual(full.googleMaps);
     expect(parsed.paymentPromos.tabby).toEqual(full.paymentPromos.tabby);
+    expect(parsed.signIn.google).toEqual(full.signIn.google);
+  });
+
+  it("drops a sign-in client id that is not an id (never rendered into the page)", () => {
+    const parsed = parseSiteIntegrations({ ...full, signIn: { google: { clientId: "x\"><script>" }, apple: null } });
+    expect(parsed.signIn).toEqual({ google: null, apple: null });
   });
 
   it("is all off for nonsense", () => {

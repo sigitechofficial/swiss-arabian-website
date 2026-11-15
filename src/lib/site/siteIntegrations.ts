@@ -48,6 +48,10 @@ const responseSchema = z.object({
       mapId: id(/^[A-Za-z0-9_-]{1,64}$/).nullable(),
     })
     .nullable(),
+  signIn: z.object({
+    google: z.object({ clientId: id(/^[A-Za-z0-9._-]{8,200}$/) }).nullable(),
+    apple: z.object({ clientId: id(/^[A-Za-z0-9._-]{3,200}$/) }).nullable(),
+  }),
 });
 
 /**
@@ -67,6 +71,8 @@ export function parseSiteIntegrations(raw: unknown): SiteIntegrations {
   };
   const promos = (data.paymentPromos ?? {}) as Record<string, unknown>;
   const promoShape = shape.paymentPromos.shape;
+  const signIn = (data.signIn ?? {}) as Record<string, unknown>;
+  const signInShape = shape.signIn.shape;
   return {
     marketCode: pick(shape.marketCode, data.marketCode, null),
     analytics: pick(shape.analytics, data.analytics, null),
@@ -76,6 +82,10 @@ export function parseSiteIntegrations(raw: unknown): SiteIntegrations {
       tamara: pick(promoShape.tamara, promos.tamara, null),
     },
     googleMaps: pick(shape.googleMaps, data.googleMaps, null),
+    signIn: {
+      google: pick(signInShape.google, signIn.google, null),
+      apple: pick(signInShape.apple, signIn.apple, null),
+    },
   };
 }
 

@@ -2,8 +2,8 @@
 
 import { forwardRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
 import { toast } from "@/components/ui/Toaster";
-import { env } from "@/lib/config/env";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 
 type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -81,13 +81,15 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthFieldProps>(fu
   );
 });
 
-/** Google/Apple buttons. Gated behind NEXT_PUBLIC_ENABLE_OAUTH — while OAuth is
- *  off (default) social sign-in stays unwired, so the buttons are not rendered. */
+/** Google / Apple buttons: each only when that sign-in is on for this website's
+ *  market on the integrations switchboard (ADR-005 phase G). */
 export function AuthSocialButtons() {
   const t = useShopCopy();
-  if (!env.flags.oauth) return null;
+  const { google, apple } = useSiteIntegrations().signIn;
+  if (!google && !apple) return null;
   return (
     <div className="flex w-full flex-col gap-2">
+      {google ? (
       <button
         type="button"
         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-sa-border bg-surface py-2.5 text-[13px] font-normal text-sa-primary transition-colors hover:bg-section-soft"
@@ -97,6 +99,8 @@ export function AuthSocialButtons() {
         <img src="/assets/auth/google.svg" alt="" width={16} height={16} className="size-[16px] shrink-0" />
         {t("auth.google")}
       </button>
+      ) : null}
+      {apple ? (
       <button
         type="button"
         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-sa-border bg-surface py-2.5 text-[13px] font-normal text-sa-primary transition-colors hover:bg-section-soft"
@@ -106,6 +110,7 @@ export function AuthSocialButtons() {
         <img src="/assets/auth/apple.svg" alt="" width={16} height={16} className="size-[16px] shrink-0" />
         {t("auth.apple")}
       </button>
+      ) : null}
     </div>
   );
 }

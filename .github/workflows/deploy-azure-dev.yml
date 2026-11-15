@@ -76,7 +76,6 @@ jobs:
             --build-arg "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
             --build-arg NEXT_PUBLIC_ENABLE_MFA=false \
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
-            --build-arg NEXT_PUBLIC_ENABLE_OAUTH=false \
             --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
             --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
             --build-arg NEXT_PUBLIC_SEO_INDEXING_ENABLED=false \

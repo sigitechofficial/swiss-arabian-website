@@ -17,6 +17,11 @@ export type SiteIntegrations = {
     tamara: { merchantCode: string | null } | null;
   };
   googleMaps: { browserKey: string; mapId: string | null } | null;
+  /** Social sign-in on for the market: the website's client id per provider (ADR-005 phase G). */
+  signIn: {
+    google: { clientId: string } | null;
+    apple: { clientId: string } | null;
+  };
 };
 
 /** Everything off: no answer from the backend never means "use some default". */
@@ -26,6 +31,7 @@ export const SITE_INTEGRATIONS_OFF: SiteIntegrations = {
   insiderTag: null,
   paymentPromos: { tabby: null, tamara: null },
   googleMaps: null,
+  signIn: { google: null, apple: null },
 };
 
 /** Cache tag of an address's settings; the backend's refresh call names the address. */

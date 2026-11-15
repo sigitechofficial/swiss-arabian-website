@@ -89,9 +89,10 @@ describe("validateBrandEnv", () => {
     }
   });
 
-  it("lists every moved setting (analytics, Insider, Tabby / Tamara / Paymob switches, Maps)", () => {
+  it("lists every moved setting (analytics, Insider, Tabby / Tamara / Paymob switches, Maps, social sign-in)", () => {
     expect([...REMOVED_ENV_KEYS].sort()).toEqual(
       [
+        "NEXT_PUBLIC_ENABLE_OAUTH",
         "NEXT_PUBLIC_ENABLE_PAYMOB",
         "NEXT_PUBLIC_ENABLE_TABBY",
         "NEXT_PUBLIC_ENABLE_TAMARA",

@@ -53,6 +53,8 @@ export const REMOVED_ENV_KEYS = [
   "NEXT_PUBLIC_ENABLE_PAYMOB",
   "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
   "NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID",
+  // Phase G: social sign-in follows the market's sign-in accounts.
+  "NEXT_PUBLIC_ENABLE_OAUTH",
 ] as const;
 export type RemovedEnvKey = (typeof REMOVED_ENV_KEYS)[number];
 
