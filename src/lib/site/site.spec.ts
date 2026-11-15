@@ -4,9 +4,9 @@ import {
   clearSiteCache,
   lookupSite,
   marketSiteForVisitor,
-  visitorCountry,
   type SiteInfo,
 } from "./siteRegistry";
+import { assertEdgeConfigured, edgeCheck, visitorCountry } from "./edge";
 
 describe("site key (the address's internal route segment)", () => {
   it("round-trips hosts with and without a port", () => {
@@ -58,10 +58,36 @@ describe("root domain → market website", () => {
     ).toBeNull();
   });
 
-  it("reads the visitor's country from the hosting edge", () => {
-    expect(visitorCountry(new Headers({ "x-vercel-ip-country": "sa" }))).toBe("SA");
-    expect(visitorCountry(new Headers({ "cf-ipcountry": "XX" }))).toBeNull();
+  it("reads the visitor's country from Front Door's header only", () => {
+    expect(visitorCountry(new Headers({ "x-client-country": "sa" }))).toBe("SA");
+    // Front Door's "no market country" value, and any other hosting's headers.
+    expect(visitorCountry(new Headers({ "x-client-country": "ZZ" }))).toBeNull();
+    expect(visitorCountry(new Headers({ "x-vercel-ip-country": "SA", "cf-ipcountry": "SA" }))).toBeNull();
     expect(visitorCountry(new Headers())).toBeNull();
+  });
+});
+
+describe("hosting edge (Front Door) trust", () => {
+  const prod = { trustedEdgeIds: "11111111-aaaa, 22222222-bbbb", appEnv: "production" };
+
+  it("trusts only requests carrying one of the configured Front Door ids", () => {
+    expect(edgeCheck(new Headers({ "x-azure-fdid": "22222222-BBBB" }), prod)).toBe("trusted");
+    expect(edgeCheck(new Headers({ "x-azure-fdid": "33333333-cccc" }), prod)).toBe("untrusted");
+    // Reaching the app directly (no Front Door): refused.
+    expect(edgeCheck(new Headers(), prod)).toBe("untrusted");
+  });
+
+  it("staging and production without an edge configured are refused, never open", () => {
+    expect(edgeCheck(new Headers(), { trustedEdgeIds: "", appEnv: "production" })).toBe("misconfigured");
+    expect(edgeCheck(new Headers(), { trustedEdgeIds: " ", appEnv: "staging" })).toBe("misconfigured");
+    expect(() => assertEdgeConfigured({ trustedEdgeIds: "", appEnv: "production" })).toThrow(/TRUSTED_EDGE_IDS/);
+    expect(() => assertEdgeConfigured(prod)).not.toThrow();
+  });
+
+  it("local and dev may run without an edge", () => {
+    expect(edgeCheck(new Headers(), { trustedEdgeIds: "", appEnv: "local" })).toBe("trusted");
+    expect(edgeCheck(new Headers(), { trustedEdgeIds: "", appEnv: "dev" })).toBe("trusted");
+    expect(() => assertEdgeConfigured({ trustedEdgeIds: "", appEnv: "dev" })).not.toThrow();
   });
 });
 
