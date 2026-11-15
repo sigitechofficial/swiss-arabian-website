@@ -91,4 +91,10 @@ export type StorefrontMarketListResponse = {
   siteMarketCode?: string | null;
   /** The brand's default market (hreflang x-default). Older backends omit it. */
   brandDefaultMarketCode?: string | null;
+  /**
+   * The brand's root domain this address sits under (`swissarabian.com`), from
+   * the backend address table: where the shopper's market choice is kept for the
+   * root domain. Null when under none (local aliases). Older backends omit it.
+   */
+  brandDomain?: string | null;
 };

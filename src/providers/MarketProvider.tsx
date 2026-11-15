@@ -37,6 +37,7 @@ import {
 import {
   readZoneCookie,
   storedZoneFor,
+  writeMarketChoice,
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
@@ -338,6 +339,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
           })
         : null;
       if (elsewhere) {
+        // Remembered for the brand's root domain (it sends the shopper back here).
+        writeMarketChoice(id, marketsQuery.data?.brandDomain);
         window.location.assign(elsewhere);
         return;
       }
@@ -359,6 +362,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     },
     [
       marketId,
+      marketsQuery.data?.brandDomain,
       pathLanguage,
       redrawForMarket,
       refreshMarketScopedData,

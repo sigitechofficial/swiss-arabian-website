@@ -26,6 +26,60 @@ export function readZoneCookie(): string | null {
   return value || null;
 }
 
+/**
+ * The market a shopper chose with the picker, kept on the brand's domain
+ * (`Domain=swissarabian.com`) so the brand's root domain can send them back to
+ * it. Separate from the per-address cookie above: market websites never read it
+ * (their address decides the market).
+ */
+export function marketChoiceCookieName(brandCode: string): string {
+  return zoneCookieName(brandCode).replace(/-zone-code$/, "-market-choice");
+}
+
+/** This deployment's market choice cookie. */
+export const MARKET_CHOICE_COOKIE = marketChoiceCookieName(getBrand().code);
+
+/**
+ * The `Domain` a choice is kept on: the brand's domain from the backend address
+ * table, only when this page's address is that domain or under it (a browser
+ * would refuse anything else). Null = this address only (e.g. local aliases).
+ */
+export function choiceCookieDomain(
+  brandDomain: string | null | undefined,
+  pageHost: string,
+): string | null {
+  const domain = brandDomain?.trim().toLowerCase().replace(/^\./, "") ?? "";
+  const host = pageHost.trim().toLowerCase().replace(/:\d+$/, "");
+  if (!domain || domain.endsWith("localhost")) return null;
+  return host === domain || host.endsWith(`.${domain}`) ? domain : null;
+}
+
+/** The cookie line that keeps a market choice (pure, for tests). */
+export function marketChoiceCookie(
+  zoneCode: string,
+  options: { brandDomain: string | null | undefined; pageHost: string; secure: boolean },
+): string {
+  const domain = choiceCookieDomain(options.brandDomain, options.pageHost);
+  return [
+    `${MARKET_CHOICE_COOKIE}=${encodeURIComponent(zoneCode)}`,
+    "Path=/",
+    `Max-Age=${MAX_AGE}`,
+    "SameSite=Lax",
+    ...(domain ? [`Domain=${domain}`] : []),
+    ...(options.secure ? ["Secure"] : []),
+  ].join("; ");
+}
+
+/** Keep the shopper's market choice for the brand's root domain. */
+export function writeMarketChoice(zoneCode: string, brandDomain: string | null | undefined): void {
+  if (typeof document === "undefined") return;
+  document.cookie = marketChoiceCookie(zoneCode, {
+    brandDomain,
+    pageHost: window.location.hostname,
+    secure: window.location.protocol === "https:",
+  });
+}
+
 export function writeZoneCookie(zoneCode: string): void {
   if (typeof document === "undefined") return;
   document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(zoneCode)}; Path=/; Max-Age=${MAX_AGE}; SameSite=Lax`;

@@ -17,6 +17,8 @@ export type SiteInfo = {
   host: string;
   brandCode: string;
   storefrontCode: string | null;
+  /** The brand's root domain this address sits under (address table); null when under none. */
+  brandDomain?: string | null;
   /** The address's own market; null when the address serves no single market. */
   siteMarketCode: string | null;
   defaultMarketCode: string | null;
@@ -88,17 +90,6 @@ export async function lookupSite(storefrontHost: string): Promise<SiteLookup> {
 /** Test hook. */
 export function clearSiteCache() {
   cache.clear();
-}
-
-const COUNTRY_HEADERS = ["x-vercel-ip-country", "cf-ipcountry", "cloudfront-viewer-country"];
-
-/** The visitor's country from the hosting edge, when it sends one. */
-export function visitorCountry(headers: Headers): string | null {
-  for (const name of COUNTRY_HEADERS) {
-    const value = headers.get(name)?.trim().toUpperCase();
-    if (value && /^[A-Z]{2}$/.test(value) && value !== "XX") return value;
-  }
-  return null;
 }
 
 /**

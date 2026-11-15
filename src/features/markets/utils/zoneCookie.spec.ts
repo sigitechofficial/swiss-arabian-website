@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { readZoneCookie, storedZoneFor, writeZoneCookie, ZONE_COOKIE, zoneCookieName } from "./zoneCookie";
+import {
+  choiceCookieDomain,
+  MARKET_CHOICE_COOKIE,
+  marketChoiceCookie,
+  marketChoiceCookieName,
+  readZoneCookie,
+  storedZoneFor,
+  writeZoneCookie,
+  ZONE_COOKIE,
+  zoneCookieName,
+} from "./zoneCookie";
 
 describe("market cookie per brand", () => {
   beforeEach(() => {
@@ -25,5 +35,34 @@ describe("market cookie per brand", () => {
     expect(storedZoneFor("SAPIL_URD1", ["URD1", "QAR1"])).toBeNull();
     expect(storedZoneFor(" QAR1 ", ["URD1", "QAR1"])).toBe("QAR1");
     expect(storedZoneFor(null, ["URD1"])).toBeNull();
+  });
+});
+
+describe("market choice kept on the brand's domain (root domain sends the shopper back)", () => {
+  it("has its own name per brand, apart from the per-address cookie", () => {
+    expect(marketChoiceCookieName("SWISS_ARABIAN")).toBe("sa-market-choice");
+    expect(marketChoiceCookieName("SAPIL")).toBe("sapil-market-choice");
+  });
+
+  it("is kept on the brand domain only when this page is that domain or under it", () => {
+    expect(choiceCookieDomain("swissarabian.com", "ksa.swissarabian.com")).toBe("swissarabian.com");
+    expect(choiceCookieDomain("SwissArabian.com", "swissarabian.com")).toBe("swissarabian.com");
+    expect(choiceCookieDomain("staging.swissarabian.com", "ksa.staging.swissarabian.com")).toBe(
+      "staging.swissarabian.com",
+    );
+    // Never a domain the browser would refuse, or a look-alike, or local aliases.
+    expect(choiceCookieDomain("swissarabian.com", "uae.sapil.com")).toBeNull();
+    expect(choiceCookieDomain("swissarabian.com", "evilswissarabian.com")).toBeNull();
+    expect(choiceCookieDomain("localhost", "ksa.localhost")).toBeNull();
+    expect(choiceCookieDomain(null, "ksa.swissarabian.com")).toBeNull();
+  });
+
+  it("writes Domain and Secure on the live websites, host-only locally", () => {
+    expect(
+      marketChoiceCookie("KSA", { brandDomain: "swissarabian.com", pageHost: "uae.swissarabian.com", secure: true }),
+    ).toBe(`${MARKET_CHOICE_COOKIE}=KSA; Path=/; Max-Age=31536000; SameSite=Lax; Domain=swissarabian.com; Secure`);
+    expect(
+      marketChoiceCookie("KSA", { brandDomain: "swissarabian.com", pageHost: "ksa.localhost", secure: false }),
+    ).toBe(`${MARKET_CHOICE_COOKIE}=KSA; Path=/; Max-Age=31536000; SameSite=Lax`);
   });
 });
