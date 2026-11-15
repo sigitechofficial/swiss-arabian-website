@@ -11,6 +11,8 @@ import { cx } from "../../ui/shared";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { toBagGiftData, toBagLineData } from "../../components/bag/bagData";
 import { CheckoutEmptyCard, OrderSummary, type SummaryTotalRow } from "../../components/checkout/CheckoutParts";
+import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { SapilLink, SapilSkeleton, richText, useSapilMoney, useSapilMoneyParts } from "../../components/commerce/shared";
 
 /** `/cart`: the drawer's lines on a page, with the checkout summary column (design-system page). */
@@ -92,6 +94,31 @@ export function SapilCartPage() {
     }
   }
   const payable = bag.amountPayable ?? bag.total;
+  // Points and gift cards are tenders: show the total, what they cover, then what is left to pay.
+  const showPayable = !bag.quotePending && bag.amountPayable != null && bag.amountPayable !== bag.total;
+  if (showPayable) {
+    rows.push({ key: "total", label: t("checkout.total"), value: money(bag.total, bag.currency) });
+    const points = loyaltyLineFromQuote(bag.loyaltyRedemption);
+    if (points && points.amount > 0) {
+      rows.push({
+        key: "points",
+        label: t("checkout.rewardPoints", { points: points.points }),
+        value: `−${money(points.amount, points.currency || bag.currency)}`,
+        tone: "save",
+      });
+    }
+    for (const card of bag.giftCards) {
+      const amount = Number(card.amount);
+      if (amount > 0) {
+        rows.push({
+          key: `gc-${card.usageId ?? card.maskedCode}`,
+          label: t("checkout.giftCard", { code: card.maskedCode ?? "" }),
+          value: `−${money(amount, card.currencyCode || bag.currency)}`,
+          tone: "save",
+        });
+      }
+    }
+  }
 
   return (
     <Wrap className="w-full pt-[32px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px] min-h-[70vh]">
@@ -213,11 +240,12 @@ export function SapilCartPage() {
                   }
                 : null,
           }}
+          rewards={bag.quotePending ? null : <SapilPointsBox />}
           rows={rows}
           grand={
             bag.quotePending
               ? { label: t("bag.total"), currency: "", amount: t("bag.updating") }
-              : { label: t("bag.total"), ...moneyParts(payable, bag.currency) }
+              : { label: showPayable ? t("checkout.toPay") : t("bag.total"), ...moneyParts(payable, bag.currency) }
           }
           vatNote={
             totals && totals.tax > 0 && totals.taxIncluded

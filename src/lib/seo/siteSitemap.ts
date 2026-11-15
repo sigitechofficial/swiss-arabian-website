@@ -14,6 +14,7 @@ import {
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
 import { fixedPathForPage } from "@/features/site-pages/utils/pickMarketPage";
 import { fetchBlogSlugs } from "@/features/blog/api/blogApi";
+import { fetchStoreSlugs } from "@/features/stores/api/storesApi";
 import { brandFeatureEnabled } from "@/lib/brand/features";
 
 /** Public pages that are not catalog entities (search is noindex, so not listed). */
@@ -99,6 +100,23 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Pages cannot be read: the rest of the sitemap still publishes.
+  }
+
+  // Store locator: the list, each area page and each store page (every language),
+  // only for brands that have it and once stores are on the website.
+  if (brandFeatureEnabled("storeLocator")) try {
+    const stores = await fetchStoreSlugs({ zoneCode: resolved.zoneCode });
+    if (stores.stores.length) {
+      const latest = stores.stores.reduce((a, s) => (s.updatedAt > a ? s.updatedAt : a), "");
+      // The market's CMS store page (if any) is replaced by the locator at /stores.
+      const i = entries.findIndex((e) => e.path === "/stores");
+      if (i >= 0) entries.splice(i, 1);
+      entries.push({ path: "/stores", lastModified: latest || undefined });
+      for (const area of stores.areas) entries.push({ path: `/stores/${area.slug}`, lastModified: area.updatedAt });
+      for (const store of stores.stores) entries.push({ path: `/stores/${store.areaSlug}/${store.slug}`, lastModified: store.updatedAt });
+    }
+  } catch {
+    // Stores cannot be read: the rest of the sitemap still publishes.
   }
 
   // Journal posts exist in one language each: list them only at that language's address.

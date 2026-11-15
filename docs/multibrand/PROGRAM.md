@@ -45,6 +45,7 @@ Other rules:
 | I | Two reviewer agents | `review/platform`, `review/sapil` (website); backend `review/sapil-cms` (`9dff01a5`) | ✅ merged |
 | J | Final UI check of both sites + fixes | `review/ui` | ✅ see "Final UI check" below and `docs/ui-check/REPORT.md` |
 | K | Brand design coverage: every route in its own brand's design, brand feature switches enforced | `fix/brand-design-coverage` | ✅ see "Brand design coverage" below and `docs/ui-check/BRAND_COVERAGE.md` |
+| L | Store locator: `/stores`, area and store pages from the store API, Swiss Arabian + Sapil views (Sapil switched off until it has stores) | `feat/store-locator-site` | ✅ see `docs/storefront/STORE_LOCATOR.md` |
 
 ## Decisions still open, and the defaults used until answered
 

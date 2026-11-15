@@ -15,7 +15,7 @@ import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
 import { SapilLink, richText, useSapilDate, useSapilMoney } from "../../components/commerce/shared";
 import { StatusPill, statusText } from "../../components/account/AccountChrome";
 import { OrderSideCard, OrderStateCard, SapilOrderView } from "../../components/orders/SapilOrderView";
-import { AddressLines, itemCountOf, orderLines, orderSteps, orderTotals } from "../../components/orders/orderParts";
+import { AddressLines, itemCountOf, orderLines, orderSteps, orderTenders, orderTotals } from "../../components/orders/orderParts";
 import { TrackingDetails, stoppedText, trackingStep, useDeliveryHighlight } from "../../components/orders/TrackingDetails";
 
 function cancelErrorText(t: SapilTranslator, error: OrderCancelError): string {
@@ -106,6 +106,9 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
   const delivery = deliveryHighlight(tracking ?? { status: order.status, deliveredAt: null, estimatedDeliveryAt: null });
   const statusLabel = statusText(t, order.status);
   const total = money(Number(order.totals.total), currency);
+  const tenders = orderTenders(t, money, order.totals, currency, orderPaymentLabel(order.selectedPaymentMethod));
+  // What the payment method itself takes: less than the total when a gift card or points paid part.
+  const charged = tenders.charged != null ? money(tenders.charged, currency) : total;
   const feedback = detail.cancelResult
     ? detail.cancelResult.text
     : detail.cancelFailure
@@ -157,6 +160,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
       lines={orderLines(t, money, order.lines, currency)}
       totals={totals.rows}
       grandTotal={totals.grandTotal}
+      tenders={tenders.rows}
       vatNote={totals.vatNote}
       side={
         <>
@@ -169,7 +173,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
               {orderPaymentLabel(order.selectedPaymentMethod)}
               <br />
               <small className="text-[13px] text-sapil-ink-2">
-                {detail.payable ? t("account.odPayPending", { amount: total }) : t("account.odPaid", { amount: total })}
+                {detail.payable ? t("account.odPayPending", { amount: charged }) : t("account.odPaid", { amount: charged })}
               </small>
             </p>
             {detail.payable ? (

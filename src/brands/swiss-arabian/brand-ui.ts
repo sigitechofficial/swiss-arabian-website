@@ -42,6 +42,8 @@ export { AccountSubscriptionDetailPageView } from "@/features/subscriptions/comp
 export { AccountSubscriptionsPageView } from "@/features/subscriptions/components/AccountSubscriptionsPageView";
 export { SubscriptionCheckoutPageView } from "@/features/subscriptions/components/SubscriptionCheckoutPageView";
 export { SubscriptionsPageView } from "@/features/subscriptions/components/SubscriptionsPageView";
+export { StoresPageView as StoreLocatorPageView, StoreAreaPageView } from "@/features/stores/components/StoresPageView";
+export { StorePageView } from "@/features/stores/components/StorePageView";
 export { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
 export { TrackLookupView } from "@/features/tracking/components/TrackLookupView";
 export { AccountWishlistPageView } from "@/features/wishlist";

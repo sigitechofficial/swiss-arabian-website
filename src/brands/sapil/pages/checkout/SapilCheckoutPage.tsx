@@ -5,6 +5,7 @@ import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
 import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
+import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
 import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
@@ -15,6 +16,9 @@ import { appliedCoupon, useFreeShippingBar } from "@/features/promotions";
 import { useCouponForm } from "@/features/promotions/hooks/useCouponForm";
 import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
 import { getBrand } from "@/lib/brand";
+import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
+import { readLoyaltyRedemption } from "@/features/loyalty/types/loyalty";
+import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { Button, CardLogo, Checkbox, Fieldset, RadioCardGroup, Wrap, type RadioCardOption } from "../../ui";
 import { buttonClass } from "../../ui/Button";
@@ -153,6 +157,7 @@ export function SapilCheckoutPage() {
   const ship = useFreeShippingBar();
   const marketDelivery = useMarketDelivery();
   const setCartOpen = useUiStore((s) => s.setCartOpen);
+  const cartLoyalty = useCartStore((s) => s.loyaltyRedemption);
   const { checkout, session, currency } = f;
   const gifts = useGiftAwards(f.promoSnapshot, currency);
 
@@ -329,6 +334,8 @@ export function SapilCheckoutPage() {
   const taxLabel = taxDisplay?.taxLabel || "VAT";
   if (f.tax > 0 && !taxIncluded) rows.push({ key: "tax", label: taxLabel, value: money(f.tax, currency) });
   const payable = f.amountPayable ?? f.total;
+  // The checkout session's own quote wins over the cart's stored one.
+  const sessionPointsQuote = readLoyaltyRedemption(f.promoSnapshot, session?.promotionSnapshot, session?.promotions);
   const showPayable = f.amountPayable != null && f.amountPayable !== f.total;
   if (showPayable) {
     rows.push({ key: "total", label: t("checkout.total"), value: money(f.total, currency) });
@@ -342,6 +349,17 @@ export function SapilCheckoutPage() {
           tone: "save",
         });
       }
+    }
+    // Reward points are a tender too: without this row the gap between the
+    // total and what the payment method collects goes unexplained.
+    const points = loyaltyLineFromQuote(sessionPointsQuote ?? cartLoyalty);
+    if (points && points.amount > 0) {
+      rows.push({
+        key: "points",
+        label: t("checkout.rewardPoints", { points: points.points }),
+        value: `−${money(points.amount, points.currency || currency)}`,
+        tone: "save",
+      });
     }
   }
   const grandParts = moneyParts(payable, currency);
@@ -641,6 +659,7 @@ export function SapilCheckoutPage() {
                 : t("checkout.promoApply"),
             message: couponMessage,
           }}
+          rewards={<SapilPointsBox quoteOverride={sessionPointsQuote} />}
           rows={rows}
           grand={{ label: showPayable ? t("checkout.toPay") : t("checkout.total"), ...grandParts }}
           vatNote={f.tax > 0 && taxIncluded ? t("checkout.taxIncluded", { amount: money(f.tax, currency), label: taxLabel }) : undefined}

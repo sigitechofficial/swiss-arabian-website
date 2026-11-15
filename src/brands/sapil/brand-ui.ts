@@ -45,6 +45,11 @@ export { SapilSitePageRoute as SitePageRoute } from "./pages/content/SapilSitePa
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
 export { SapilReviewRequestPage as ReviewRequestPageView } from "./pages/content/SapilReviewRequestPage";
 export { SapilOfferPage as OfferPageView } from "./pages/content/SapilOfferPage";
+export {
+  SapilStoreLocatorPage as StoreLocatorPageView,
+  SapilStoreAreaPage as StoreAreaPageView,
+  SapilStorePage as StorePageView,
+} from "./pages/content/SapilStorePages";
 
 // --- catalog (listings, product page, search, collections) ---
 export {

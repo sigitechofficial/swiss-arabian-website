@@ -349,6 +349,7 @@ export function OrderSummary({
   lines,
   extra,
   promo,
+  rewards,
   rows,
   grand,
   vatNote,
@@ -362,6 +363,8 @@ export function OrderSummary({
   /** free gifts etc., after the lines */
   extra?: ReactNode;
   promo?: PromoFormProps;
+  /** reward points box, under the discount code */
+  rewards?: ReactNode;
   rows: SummaryTotalRow[];
   grand: { label: ReactNode; currency: string; amount: string };
   vatNote?: ReactNode;
@@ -434,6 +437,7 @@ export function OrderSummary({
       </ul>
       {extra}
       {promo ? <PromoForm {...promo} /> : null}
+      {rewards}
       <dl className="mt-[14px] border-t border-sapil-line pt-[12px]">
         {rows.map((row) => (
           <div

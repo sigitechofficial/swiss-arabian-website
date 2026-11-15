@@ -10,7 +10,9 @@ import {
 } from "@/features/cart/utils/insiderCartItem";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
+import { useConsentFor } from "@/lib/consent/useConsent";
 import {
+  activateInsiderAfterConsent,
   beginInsiderRouteFlush,
   insiderCheckoutPage,
   insiderHomePage,
@@ -37,12 +39,18 @@ export function InsiderScripts() {
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const cartHydrated = usePersistHydrated(useCartStore);
-  // On when Insider's website tag is on for this address's market (ADR-005 phase E).
-  const insiderOn = Boolean(useSiteIntegrations().insiderTag);
+  // On when Insider's website tag is on for this address's market (ADR-005 phase E)
+  // and the shopper allowed marketing in the cookie banner.
+  const tagOn = Boolean(useSiteIntegrations().insiderTag);
+  const marketing = useConsentFor("marketing");
+  const insiderOn = tagOn && marketing;
 
   useEffect(() => {
     if (!insiderOn) return;
-    startInsiderSdk();
+    // Consent stored before this page: the <head> script already loaded ins.js.
+    // Consent given just now: load it here, the same way, before this route's page type is sent.
+    if (window.__saInsiderBooted) startInsiderSdk();
+    else activateInsiderAfterConsent();
   }, [insiderOn]);
 
   useEffect(() => {

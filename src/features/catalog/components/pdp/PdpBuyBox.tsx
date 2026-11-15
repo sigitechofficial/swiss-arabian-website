@@ -28,6 +28,7 @@ import { PdpScentFamily } from "../PdpScentFamily";
 import { PdpBuyBar } from "./PdpBuyBar";
 import { PdpInstalments } from "./PdpInstalments";
 import { PdpShare } from "./PdpShare";
+import { SaInStoreAvailability } from "@/features/stores/components/SaInStoreAvailability";
 
 type PdpBuyBoxProps = {
   product: CatalogProduct;
@@ -145,6 +146,7 @@ export function PdpBuyBox({
       ) : null}
 
       <PdpBuyBar product={product} cartLine={cartLine} onQuantityChange={setQuantity} />
+      <SaInStoreAvailability sku={product.sku} zoneCode={zoneCode} />
       {share ? <PdpShare url={share.url} title={product.title} image={share.image} /> : null}
       <PdpScentFamily current={product} familyCode={familyCode} zoneCode={zoneCode} fallback={scentFallback} />
       <OffersForYou

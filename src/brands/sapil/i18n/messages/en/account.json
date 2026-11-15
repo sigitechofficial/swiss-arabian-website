@@ -305,6 +305,8 @@
   "odDeliveryCard": "Delivery",
   "odPaymentCard": "Payment",
   "odPaid": "Paid {amount}",
+  "odPaidGiftCard": "Paid by gift card",
+  "odPaidPoints": "Paid with reward points",
   "odPayCash": "Have {amount} ready for the courier, in cash or by card.",
   "odPayPending": "Payment of {amount} is processing.",
   "odPayFailed": "Payment of {amount} wasn’t completed.",

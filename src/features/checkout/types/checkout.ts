@@ -211,6 +211,11 @@ export interface OrderTotals {
   shipping: string;
   tax: string;
   total: string;
+  /** Tenders applied before the card/COD payment (API: totals.*). */
+  loyaltyApplied?: string | null;
+  giftCardApplied?: string | null;
+  /** What the selected payment method actually collects. */
+  amountPayable?: string | null;
 }
 
 export interface OrderTimelineEvent {

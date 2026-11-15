@@ -11,7 +11,7 @@ import { cx } from "../../ui/shared";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SapilLink, richText, useSapilDate, useSapilMoney } from "../../components/commerce/shared";
 import { OrderSideCard, OrderStateCard, SapilOrderView, type OrderTone } from "../../components/orders/SapilOrderView";
-import { AddressLines, orderLines, orderSteps, orderTotals } from "../../components/orders/orderParts";
+import { AddressLines, orderLines, orderSteps, orderTenders, orderTotals } from "../../components/orders/orderParts";
 
 function CopyNumber({ value }: { value: string }) {
   const t = useSapilCopy();
@@ -70,6 +70,9 @@ export function SapilOrderConfirmationPage({ orderId }: { orderId: string }) {
   const totals = orderTotals(t, money, order.totals, currency);
   const deliveryLabel = orderDeliveryLabel(order.selectedDeliveryMethod);
   const paymentLabel = orderPaymentLabel(order.selectedPaymentMethod);
+  const tenders = orderTenders(t, money, order.totals, currency, paymentLabel);
+  // What the payment method itself takes: less than the total when a gift card or points paid part.
+  const charged = tenders.charged != null ? money(tenders.charged, currency) : total;
 
   const headline =
     state === "failed" ? (
@@ -119,6 +122,7 @@ export function SapilOrderConfirmationPage({ orderId }: { orderId: string }) {
       lines={orderLines(t, money, order.lines, currency)}
       totals={totals.rows}
       grandTotal={totals.grandTotal}
+      tenders={tenders.rows}
       vatNote={totals.vatNote}
       side={
         <>
@@ -132,12 +136,12 @@ export function SapilOrderConfirmationPage({ orderId }: { orderId: string }) {
               <br />
               <small className="text-[13px] text-sapil-ink-2">
                 {state === "failed"
-                  ? t("account.odPayFailed", { amount: total })
+                  ? t("account.odPayFailed", { amount: charged })
                   : payOffline
-                    ? t("account.odPayCash", { amount: total })
+                    ? t("account.odPayCash", { amount: charged })
                     : state === "pending"
-                      ? t("account.odPayPending", { amount: total })
-                      : t("account.odPaid", { amount: total })}
+                      ? t("account.odPayPending", { amount: charged })
+                      : t("account.odPaid", { amount: charged })}
               </small>
             </p>
           </OrderSideCard>

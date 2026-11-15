@@ -60,6 +60,10 @@ export function orderConfirmationDetails(order: OrderResponse, state: OrderPayme
     itemCount: order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0),
     currentStep,
     showProgress: state !== "failed" && currentStep >= 0,
+    /** Part of the total was paid by gift card or reward points: show how the rest was paid. */
+    paidByOtherTenders:
+      order.totals?.amountPayable != null &&
+      (Number(order.totals?.giftCardApplied ?? 0) > 0 || Number(order.totals?.loyaltyApplied ?? 0) > 0),
   };
 }
 

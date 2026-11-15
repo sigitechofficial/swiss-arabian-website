@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 // Insider is on through Swiss Arabian's integration defaults (src/lib/brand).
 
 
+import { resetConsentCacheForTests, setConsent } from "@/lib/consent/consent";
 import {
+  activateInsiderAfterConsent,
   beginInsiderRouteFlush,
   insiderCartPage,
   insiderCheckoutPage,
@@ -32,6 +34,9 @@ describe("Insider page-view queues", () => {
     window.Insider = { initialized: true };
     resetInsiderRouteFlushForTests();
     localStorage.clear();
+    resetConsentCacheForTests();
+    // These cases describe a shopper who allowed marketing in the cookie banner.
+    setConsent({ analytics: false, marketing: true });
   });
 
   it("puts the product before the head init and does not push a second init", () => {
@@ -403,6 +408,8 @@ describe("cart shipping", () => {
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
     resetInsiderRouteFlushForTests();
+    resetConsentCacheForTests();
+    setConsent({ analytics: false, marketing: true });
   });
 
   it("adds AED 25 when the server quote is free, and keeps a real fee", () => {
@@ -464,12 +471,67 @@ describe("cart shipping", () => {
 });
 
 describe("Insider switched off for the address", () => {
-  it("queues nothing when the page did not render Insider's tag", () => {
+  it("queues nothing when the page did not render Insider's tag, even with marketing allowed", () => {
     window.__SA_INSIDER_ON__ = undefined;
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
     resetInsiderRouteFlushForTests();
+    localStorage.clear();
+    resetConsentCacheForTests();
+    setConsent({ analytics: false, marketing: true });
     insiderHomePage();
     expect(window.InsiderQueue).toEqual([]);
+  });
+});
+
+describe("Insider and the cookie banner", () => {
+  beforeEach(() => {
+    window.__SA_INSIDER_ON__ = true;
+    window.InsiderQueue = [];
+    window.Insider = { initialized: true };
+    window.__saInsiderBoot = undefined;
+    window.__saInsiderBooted = false;
+    resetInsiderRouteFlushForTests();
+    localStorage.clear();
+    resetConsentCacheForTests();
+  });
+
+  it("queues and stores nothing before the shopper allowed marketing", () => {
+    beginInsiderRouteFlush("/");
+    insiderHomePage();
+    insiderIdentify({ uuid: "u-1", email: "a@example.test" });
+    expect(window.InsiderQueue).toEqual([]);
+    expect(localStorage.getItem("sa_insider_uuid")).toBeNull();
+    expect(localStorage.getItem("sa_insider_user")).toBeNull();
+  });
+
+  it("stays off when the shopper allowed analytics only", () => {
+    setConsent({ analytics: true, marketing: false });
+    beginInsiderRouteFlush("/");
+    insiderHomePage();
+    expect(window.InsiderQueue).toEqual([]);
+  });
+
+  it("starts with the head boot script once marketing is allowed, without anything from before", () => {
+    window.InsiderQueue = [{ type: "stale" }];
+    let booted = 0;
+    window.__saInsiderBoot = () => {
+      booted += 1;
+      window.InsiderQueue?.push({ type: "init" });
+    };
+    activateInsiderAfterConsent();
+    expect(booted).toBe(0);
+    setConsent({ analytics: false, marketing: true });
+    activateInsiderAfterConsent();
+    expect(booted).toBe(1);
+    expect(window.InsiderQueue).toEqual([{ type: "init" }]);
+  });
+
+  it("removes Insider's stored ids when marketing is refused later", () => {
+    setConsent({ analytics: false, marketing: true });
+    insiderIdentify({ uuid: "u-1", email: "a@example.test" });
+    setConsent({ analytics: false, marketing: false });
+    expect(localStorage.getItem("sa_insider_uuid")).toBeNull();
+    expect(localStorage.getItem("sa_insider_user")).toBeNull();
   });
 });

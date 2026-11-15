@@ -1,258 +1,123 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
 import { Reveal } from "@/components/motion";
-import { toast } from "@/components/ui/Toaster";
-import {
-  STORE_LOCATIONS,
-  nearestStore,
-  type StoreLocation,
-} from "../data/storesContent";
-import { StoreMapPanel } from "./StoreMapPanel";
+import { brandDisplayName } from "@/lib/brand";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopLocale, useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
+import type { StoreAreaData, StoreLocatorData } from "../types";
+import { storeAreaPath, storesPath } from "../utils/storeLinks";
+import { SaStoreFinder } from "./SaStoreFinder";
 
-/**
- * Store locator — Figma 106:522 structure, Swiss Arabian theme
- * (gold eyebrow, terra CTAs, square borders, no pill chrome).
- */
-export function StoresPageView() {
-  const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+function SaBreadcrumbs({ items }: { items: Array<{ label: string; href?: string }> }) {
+  const t = useShopTranslator();
+  return (
+    <nav aria-label={t("stores.breadcrumb")} className="text-[12px] text-sa-muted">
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-center gap-1.5">
+            {i > 0 ? <span aria-hidden>/</span> : null}
+            {item.href ? (
+              <LocaleLink href={item.href} className="hover:text-terra">
+                {item.label}
+              </LocaleLink>
+            ) : (
+              <span aria-current="page" className="text-sa-secondary">
+                {item.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return STORE_LOCATIONS;
-    return STORE_LOCATIONS.filter(
-      (store) =>
-        store.name.toLowerCase().includes(q) ||
-        store.address.toLowerCase().includes(q),
-    );
-  }, [query]);
+export { SaBreadcrumbs };
 
-  function selectStore(store: StoreLocation) {
-    setActiveId(store.id);
-    setExpandedId((current) => (current === store.id ? null : store.id));
-  }
+/** Links to every area page ("Dubai (17)"). */
+function AreaLinks({ title, areas }: { title: string; areas: Array<{ slug: string; name: string; storeCount?: number }> }) {
+  if (!areas.length) return null;
+  return (
+    <section className="mt-16 border-t border-sa-border pt-10" aria-labelledby="store-areas-heading">
+      <h2 id="store-areas-heading" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+        {title}
+      </h2>
+      <ul className="mt-4 flex flex-wrap gap-2.5">
+        {areas.map((a) => (
+          <li key={a.slug}>
+            <LocaleLink
+              href={storeAreaPath(a.slug)}
+              className="inline-block border border-sa-border px-4 py-2 text-[13px] font-medium text-sa-primary transition-colors hover:border-terra hover:text-terra"
+            >
+              {a.name}
+              {a.storeCount != null ? <span className="ms-1.5 text-sa-muted">({a.storeCount})</span> : null}
+            </LocaleLink>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
-  function handleSearch(event: FormEvent) {
-    event.preventDefault();
-    if (filtered[0]) {
-      setActiveId(filtered[0].id);
-      setExpandedId(filtered[0].id);
-    }
-  }
+const PAGE = "mx-auto max-w-[1280px] px-4 pb-16 pt-10 sm:px-6 lg:px-10 lg:pb-20 lg:pt-12";
 
-  function useMyLocation() {
-    if (!navigator.geolocation) {
-      toast("Location is not available in this browser.", "info");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const nearest = nearestStore(
-          position.coords.latitude,
-          position.coords.longitude,
-          filtered.length ? filtered : STORE_LOCATIONS,
-        );
-        if (!nearest) return;
-        setActiveId(nearest.id);
-        setExpandedId(nearest.id);
-        toast(`Closest shop: ${nearest.name}`, "success");
-      },
-      () => {
-        toast("Couldn’t access your location. Search by city instead.", "error");
-      },
-      { timeout: 8000 },
-    );
-  }
-
+/** Swiss Arabian `StoreLocatorPageView` (/stores): every shop of the market. */
+export function StoresPageView({ data }: { data: StoreLocatorData }) {
+  const t = useShopTranslator();
+  const locale = useShopLocale();
+  const brand = brandDisplayName(locale);
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1280px] px-4 pb-16 pt-10 sm:px-6 lg:px-10 lg:pb-20 lg:pt-12">
+      <div className={PAGE}>
+        <SaBreadcrumbs items={[{ label: t("home"), href: "/" }, { label: t("pages.stores.title") }]} />
         <Reveal fade>
-          <header className="max-w-[720px]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
-              Visit us
-            </p>
+          <header className="mt-6 max-w-[720px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">{t("stores.eyebrow")}</p>
             <h1 className="mt-3 font-sans text-[clamp(2rem,4.5vw,3rem)] font-medium tracking-[-0.02em] text-sa-primary">
-              Find a Swiss Arabian shop
+              {t("stores.title", { brand })}
             </h1>
-            <p className="mt-4 text-[15px] leading-relaxed text-sa-secondary">
-              Discover our fragrances in person across the UAE — sample the
-              collections, meet our fragrance advisors, and take home something
-              wrapped by hand.
-            </p>
+            <p className="mt-4 text-[15px] leading-relaxed text-sa-secondary">{t("stores.lead")}</p>
           </header>
         </Reveal>
-
-        <Reveal>
-          <form
-            onSubmit={handleSearch}
-            className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch"
-          >
-            <label className="flex min-w-0 flex-1 items-center gap-3 border border-sa-input bg-page px-4 py-3 dark:bg-surface">
-              <SearchIcon />
-              <span className="sr-only">Search by city, mall or emirate</span>
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by city, mall or emirate"
-                className="w-full bg-transparent text-[14px] text-sa-primary outline-none placeholder:text-sa-muted"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="border border-sa-primary px-6 py-3 text-[13px] font-semibold text-sa-primary transition-colors hover:border-terra hover:text-terra"
-            >
-              Use my location
-            </button>
-            <button
-              type="submit"
-              className="bg-terra px-8 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--sa-action-primary-hover)]"
-            >
-              Search
-            </button>
-          </form>
-        </Reveal>
-
-        <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,560px)] lg:gap-12 lg:pt-2">
-          <Reveal className="order-2 min-w-0 lg:order-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sa-muted">
-              {filtered.length}{" "}
-              {filtered.length === 1 ? "shop" : "shops"}
-            </p>
-
-            <ul className="mt-4 max-h-[420px] overflow-y-auto border-t border-sa-border lg:max-h-[550px]">
-              {filtered.map((store, index) => {
-                const isActive = store.id === activeId;
-                const isExpanded = store.id === expandedId;
-                return (
-                  <li
-                    key={store.id}
-                    id={`store-${store.id}`}
-                    className={`border-b transition-colors ${
-                      isActive ? "border-terra/50" : "border-sa-border"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => selectStore(store)}
-                      className="group flex w-full items-baseline gap-4 py-3.5 text-left"
-                      aria-expanded={isExpanded}
-                    >
-                      <span
-                        className={`w-5 shrink-0 text-[11px] font-medium tabular-nums tracking-wide ${
-                          isActive ? "text-terra" : "text-sa-muted"
-                        }`}
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block text-[15px] tracking-[-0.01em] transition-colors group-hover:text-terra ${
-                            isActive
-                              ? "font-semibold text-sa-primary"
-                              : "font-medium text-sa-primary"
-                          }`}
-                        >
-                          {store.name}
-                        </span>
-                        <span className="mt-1 block text-[12.5px] leading-relaxed text-sa-muted">
-                          {store.address}
-                          {store.hours ? (
-                            <>
-                              <span className="text-sa-muted/50"> · </span>
-                              {store.hours}
-                            </>
-                          ) : null}
-                        </span>
-                        {isExpanded && store.phone ? (
-                          <span className="mt-2.5 block text-[12.5px] text-sa-secondary">
-                            <a
-                              href={`tel:${store.phone.replace(/\s/g, "")}`}
-                              className="font-medium text-terra hover:underline"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {store.phone}
-                            </a>
-                          </span>
-                        ) : null}
-                      </span>
-
-                      <span
-                        className={`shrink-0 self-center text-sa-muted/70 transition-transform duration-200 group-hover:text-sa-muted ${
-                          isExpanded ? "rotate-180" : ""
-                        }`}
-                        aria-hidden
-                      >
-                        <ChevronIcon />
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {filtered.length === 0 ? (
-              <p className="py-10 text-[13px] text-sa-muted">
-                No shops match that search. Try another city or mall.
-              </p>
-            ) : null}
-          </Reveal>
-
-          <Reveal className="order-1 lg:order-2">
-            <StoreMapPanel
-              stores={filtered}
-              activeId={activeId}
-              onSelect={(id) => {
-                setActiveId(id);
-                setExpandedId(id);
-                document
-                  .getElementById(`store-${id}`)
-                  ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-              }}
-            />
-          </Reveal>
+        <div className="mt-8">
+          <SaStoreFinder stores={data.stores} areas={data.areas} />
         </div>
+        <AreaLinks title={t("stores.byArea")} areas={data.areas} />
       </div>
     </div>
   );
 }
 
-function SearchIcon() {
+/** Swiss Arabian `StoreAreaPageView` (/stores/<area>): one emirate / city. */
+export function StoreAreaPageView({ data }: { data: StoreAreaData }) {
+  const t = useShopTranslator();
+  const locale = useShopLocale();
+  const brand = brandDisplayName(locale);
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      aria-hidden
-      className="shrink-0 text-sa-muted"
-    >
-      <circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="1.4" />
-      <path
-        d="M12.2 12.2 15.5 15.5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <path
-        d="M2.5 4.5 6 8l3.5-3.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className="bg-page">
+      <div className={PAGE}>
+        <SaBreadcrumbs
+          items={[{ label: t("home"), href: "/" }, { label: t("pages.stores.title"), href: storesPath() }, { label: data.area.name }]}
+        />
+        <header className="mt-6 max-w-[720px]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">{t("stores.eyebrow")}</p>
+          <h1 className="mt-3 font-sans text-[clamp(2rem,4.5vw,3rem)] font-medium tracking-[-0.02em] text-sa-primary">
+            {t("stores.storesIn", { area: data.area.name })}
+          </h1>
+          <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-sa-secondary">
+            {data.area.intro || t("stores.areaLead", { brand, area: data.area.name })}
+          </p>
+        </header>
+        <div className="mt-8">
+          <SaStoreFinder stores={data.stores} fixedArea />
+        </div>
+        <AreaLinks title={t("stores.otherAreas")} areas={data.otherAreas} />
+        <p className="mt-6">
+          <LocaleLink href={storesPath()} className="text-[13px] font-semibold text-terra hover:underline">
+            {t("stores.allStores")}
+          </LocaleLink>
+        </p>
+      </div>
+    </div>
   );
 }

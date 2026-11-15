@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { ServerInlineScript } from "@/components/layout/ServerInlineScript";
 import { InsiderScripts } from "@/components/layout/InsiderScripts";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
+import { ConsentBanner } from "@/components/layout/ConsentBanner";
+import { CONSENT_STORAGE_KEY, CONSENT_VERSION } from "@/lib/consent/consent";
+import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
+import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
+import { PlatformTracker } from "@/components/layout/PlatformTracker";
 import { getBrand } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
@@ -82,10 +87,21 @@ const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mo
 const insiderQueueBootScriptTemplate = `(function(){try{window.__SA_INSIDER_ON__=true;window.InsiderQueue=window.InsiderQueue||[];if(!window.InsiderQueue.__saLogged){var rawPush=window.InsiderQueue.push.bind(window.InsiderQueue);window.InsiderQueue.push=function(){for(var i=0;i<arguments.length;i++){var row=arguments[i]||{};console.log("[Insider]",row.type,row.value!==undefined?row.value:"");}return rawPush.apply(window.InsiderQueue,arguments);};window.InsiderQueue.__saLogged=true;}function uuid(){var id=null;try{id=localStorage.getItem("sa_insider_uuid");}catch(e){}if(id)return id;id=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():("anon-"+Date.now());try{localStorage.setItem("sa_insider_uuid",id);}catch(e){}return id;}function cart(){var items=[],total=0,currency="AED";try{var raw=localStorage.getItem("sa-cart-v2");if(raw){var parsed=JSON.parse(raw);var lines=(parsed&&parsed.state&&parsed.state.lines)||[];for(var i=0;i<lines.length;i++){var L=lines[i]||{};var q=Number(L.quantity);if(!isFinite(q)||q<1)q=1;var price=Number(L.unitPrice);if(!isFinite(price))price=0;total+=price*q;if(L.currency)currency=String(L.currency);var item={id:L.variantId||L.sku||String(i),name:L.title||"",taxonomy:L.category?[L.category]:["Shop"],unit_price:price,unit_sale_price:price,quantity:q,url:(location.origin||"")+"/products/"+encodeURIComponent(L.slug||""),product_image_url:L.imageUrl||"",stock:L.isSellable===false?0:1,color:""};if(L.sizeLabel)item.size=L.sizeLabel;if(L.productId||L.variantId)item.groupcode=L.productId||L.variantId;items.push(item);}}}catch(e){}return{total:total,items:items,currency:currency};}function ctx(skipCart){var c=cart();var items=c.items;var tot=c.total;var ship=items.length?25:0;var u={uuid:uuid(),language:"en_US",gdpr_optin:true};try{var ur=localStorage.getItem("sa_insider_user");if(ur){var parsed=JSON.parse(ur);if(parsed&&typeof parsed==="object"&&parsed.uuid){if(!parsed.language)parsed.language="en_US";if(typeof parsed.gdpr_optin!=="boolean")parsed.gdpr_optin=true;u=parsed;}}}catch(e){}window.InsiderQueue.push({type:"user",value:u});window.InsiderQueue.push({type:"currency",value:c.currency||"AED"});window.InsiderQueue.push({type:"language",value:(u&&u.language)||"en_US"});if(!skipCart)window.InsiderQueue.push({type:"cart",value:{total:tot+ship,shipping_cost:ship,items:items}});window.__SA_INSIDER_HEAD_CONTEXT__=true;}var p=location.pathname||"/";var s=p.split("/").filter(Boolean);if(__SA_LOCALE_PREFIXES__.indexOf(s[0])>=0)s.shift();function hasTok(){try{return !!(localStorage.getItem("sa_store_access_token")||localStorage.getItem("sa_store_refresh_token"));}catch(e){return false;}}function identified(){try{var ur=localStorage.getItem("sa_insider_user");if(!ur)return false;var parsed=JSON.parse(ur);return !!(parsed&&parsed.uuid&&(parsed.email||parsed.phone_number));}catch(e){return false;}}function endPage(){if(hasTok()&&!identified()){window.__SA_INSIDER_WAIT_AUTH__=true;return;}window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;}var pdp=s.length===2&&s[0]==="products";var listing=s[0]==="search"||s[0]==="collections"||(s[0]==="products"&&s.length===1);ctx(!(s.length===1&&s[0]==="cart"));if(pdp){if(hasTok())window.__SA_INSIDER_WAIT_AUTH__=true;window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;return;}if(p.indexOf("/order-confirmation")>=0||p.indexOf("/checkout/payment/success")>=0){window.InsiderQueue.push({type:"other",value:{name:"Order confirmation"}});endPage();return;}if(s.length===1&&s[0]==="cart"){endPage();return;}var t="other";if(p==="/"||p==="")t="home";else if(s[0]==="products"||s[0]==="search"||s[0]==="collections")t="category";if(t==="home")window.InsiderQueue.push({type:"home"});else if(t==="category"){var crumb=["Shop"];if(s[0]==="search")crumb=["Search"];else if(s[0]==="collections")crumb=s[1]?["Collections",decodeURIComponent(s[1])]:["Collections"];window.InsiderQueue.push({type:"category",value:{breadcrumb:crumb}});}else{var n=s[0]||"Page";if(n==="checkout")n="Checkout";window.InsiderQueue.push({type:"other",value:{name:n}});}endPage();}catch(e){}})();`;
 
 /** Language prefixes in addresses (`/ar/...`), stripped before reading the page type. */
-const insiderQueueBootScript = insiderQueueBootScriptTemplate.replace(
-  "__SA_LOCALE_PREFIXES__",
-  JSON.stringify(LOCALES.filter((code) => code !== DEFAULT_LOCALE)),
-);
+const insiderQueueBootBody = insiderQueueBootScriptTemplate
+  .replace("__SA_LOCALE_PREFIXES__", JSON.stringify(LOCALES.filter((code) => code !== DEFAULT_LOCALE)))
+  // The template is an immediately-run function; keep only its body to run on demand.
+  .replace(/^\(function\(\)\{/, "")
+  .replace(/\}\)\(\);$/, "");
+
+/**
+ * Insider is a marketing tool, so it starts only with marketing consent from the cookie banner.
+ * The head script defines `window.__saInsiderBoot` (load ins.js, then queue context, page type and
+ * init exactly as before) and runs it at once when consent is already stored. Otherwise nothing is
+ * queued, stored or loaded, and the banner calls the same function when the shopper accepts.
+ */
+function insiderHeadScript(scriptSrc: string): string {
+  return `(function(){window.__SA_INSIDER_ON__=true;window.__saInsiderBoot=function(){if(window.__saInsiderBooted)return;window.__saInsiderBooted=true;try{var js=document.createElement("script");js.async=true;js.src=${JSON.stringify(scriptSrc)};document.head.appendChild(js);}catch(e){}${insiderQueueBootBody}};try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)})||"null");if(c&&c.version===${CONSENT_VERSION}&&c.marketing===true)window.__saInsiderBoot();}catch(e){}})();`;
+}
 
 export default async function RootLayout({
   children,
@@ -136,13 +152,11 @@ export default async function RootLayout({
         <BrandHead />
         <ServerInlineScript html={themeInitScript} />
         {insiderTag ? (
-          <>
-            <ServerInlineScript html={insiderQueueBootScript} />
-            <script
-              async
-              src={`https://${insiderTag.scriptHost}/ins.js?id=${encodeURIComponent(insiderTag.accountId)}`}
-            />
-          </>
+          <ServerInlineScript
+            html={insiderHeadScript(
+              `https://${insiderTag.scriptHost}/ins.js?id=${encodeURIComponent(insiderTag.accountId)}`,
+            )}
+          />
         ) : null}
       </head>
       <body className="flex min-h-dvh flex-col">
@@ -153,7 +167,15 @@ export default async function RootLayout({
           locale={locale}
           messages={messages}
           integrations={integrations}
-        >{children}</AppProviders>
+        >
+          {/* Journeys, first-party tracking, on-site messages and the consent banner (inside the
+              providers so the banner speaks the page's language). */}
+          <JourneyEventsPoller />
+          <PlatformTracker />
+          <OnsiteMessageHost />
+          <ConsentBanner />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );
