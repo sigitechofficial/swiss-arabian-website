@@ -1,5 +1,6 @@
 "use client";
 
+import { useConsentFor } from "@/lib/consent/useConsent";
 import { useEffect, useRef } from "react";
 import { acknowledgeJourneyEvents, fetchJourneyEvents } from "@/features/journeys/api/journeyEvents.service";
 import {
@@ -25,13 +26,15 @@ export function JourneyEventsPoller() {
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const customerId = useAuthStore((s) => s.user?.id ?? null);
   const seen = useRef<Set<string>>(new Set());
+  // Journey events go to Insider, a marketing tool: only with marketing consent.
+  const marketing = useConsentFor("marketing");
   const running = useRef(false);
   // Insider's website tag is on for this address's market (switchboard, ADR-005 phase E).
   const insiderOn = Boolean(useSiteIntegrations().insiderTag);
 
   useEffect(() => {
     if (!insiderOn) return;
-    if (!bootstrapped || !customerId) return;
+    if (!bootstrapped || !customerId || !marketing) return;
 
     let cancelled = false;
     const run = async () => {
@@ -66,7 +69,7 @@ export function JourneyEventsPoller() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [bootstrapped, customerId, insiderOn]);
+  }, [bootstrapped, customerId, insiderOn, marketing]);
 
   return null;
 }

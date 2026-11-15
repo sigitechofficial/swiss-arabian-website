@@ -10,7 +10,7 @@ Mounted in `src/app/layout.tsx`:
 |---|---|---|
 | `JourneyEventsPoller` | `src/components/layout/JourneyEventsPoller.tsx` | Signed-in customers only. Every 60 s (`NEXT_PUBLIC_JOURNEY_POLL_MS`, min 2 s) pulls platform journey events and hands them to the Insider SDK, then acknowledges them. Unchanged by this work except that acks are now per channel on the backend. Off with `NEXT_PUBLIC_INSIDER_ENABLED=false`. |
 | `OnsiteMessageHost` | `src/components/layout/OnsiteMessageHost.tsx` | Shows pop-ups and banners the backend decides on (section 2). |
-| `ConsentBanner` | `src/components/layout/ConsentBanner.tsx` | Asks once whether we may measure shop usage (section 3). |
+| `ConsentBanner` | `src/components/layout/ConsentBanner.tsx` | Cookie banner: Accept all, Reject all, Manage choices (section 3). |
 
 ## 2. On-site pop-ups and banners (`OnsiteMessageHost`)
 
@@ -26,12 +26,34 @@ Guardrails (all enforced by the backend): never on checkout, payment, account or
 
 Content is managed in the admin ("On-site messages", trigger "journey step"). Link buttons use paths like `/cart`, which the locale link layer prefixes.
 
-## 3. Consent banner (`ConsentBanner`)
+## 3. Cookie banner (`ConsentBanner`)
 
-- Shown once, only when `NEXT_PUBLIC_TRACKING_ENABLED=true` and the shopper has not chosen. English and Arabic, link to `/privacy-policy`, z-230 (above the pop-up).
-- Accept stores `granted`, Decline stores `denied` under `sa_tracking_consent` in `localStorage`; the tracker (`src/lib/analytics/tracker.ts`) reads it: **Decline stops every first-party event from being queued or sent.**
-- Implementation uses `useSyncExternalStore` with a hidden server snapshot so server and first client render match.
-- Not covered: the Insider script is not gated by this choice, and the choice is not saved on the customer record. Copy keys: `consent*` in `src/lib/i18n/shopCopy.ts`.
+Rebuilt 14 Nov 2026 (branch `feat/cookie-consent`) as the cookie banner shoppers know from other shops. Store: `src/lib/consent/consent.ts`; React hook: `src/lib/consent/useConsent.ts`.
+
+**What the shopper sees.** A bar at the bottom (z-230, above pop-ups) with **Accept all** and **Reject all** at equal weight, and **Manage choices**, which shows one switch per category. **Cookie settings** in the footer (Swiss Arabian `SiteFooter`, Sapil `SapilFooter`; `CookieSettingsLink`) opens the choices again at any time. English and Arabic; links to the brand's privacy page.
+
+**Categories.**
+
+| Category | Controls | Without consent |
+|---|---|---|
+| Necessary | cart, sign-in, language, market | always on, not asked |
+| Analytics | first-party tracker (`tracker.ts`), Google Tag Manager / GA4 (`AnalyticsScripts`) | nothing queued or sent; no visitor or session id stored (an in-memory id per page is used instead) |
+| Marketing | Insider (head script, `lib/insider.ts`, `InsiderScripts`, `JourneyEventsPoller`), on-site pop-ups and banners (`OnsiteMessageHost`) | `ins.js` not loaded, nothing queued for Insider, no `sa_insider_uuid` / `sa_insider_user`; no pop-ups |
+
+Only categories this deployment uses are offered (`consentCategoriesInUse`: tracker flag or a GTM / GA4 id for analytics; Insider account or on-site messages for marketing). No banner at all when nothing optional is on.
+
+**How each part follows the choice.**
+- The choice is JSON under `sa_cookie_consent` (`{ analytics, marketing, version, decidedAt }`). `CONSENT_VERSION` asks again when categories change. The old `sa_tracking_consent` answer covered measurement only, so those shoppers are asked once more; it is removed on the new choice.
+- Insider: the `<head>` script now defines `window.__saInsiderBoot` (append `ins.js`, then the same context / page type / init as before) and runs it only when marketing consent is already stored. When a shopper accepts on the page, `InsiderScripts` calls `activateInsiderAfterConsent()`, which empties the queue first so nothing from before the choice is sent. `gdpr_optin: true` is therefore only ever sent after consent.
+- Google: GTM / GA4 load only with analytics consent. Google consent mode v2 is set before the tag (`analytics_storage` granted; `ad_storage`, `ad_user_data`, `ad_personalization` follow marketing) and updated on change, so advertising tags inside GTM respect the marketing choice.
+- Turning a category off after it ran removes its stored ids and reloads the page, because loaded scripts cannot be unloaded.
+
+**Decisions to confirm with the business.**
+- Pop-ups count as marketing because they need a stored visitor id for their frequency limits. If plain announcement banners should show to everyone, they need a cap that works on the session alone.
+- The choice lives in the browser only. It is not stored on the customer record, so a signed-in customer on a second device is asked again.
+- The privacy policy page should list these categories and tools.
+
+Tests: `ConsentBanner.spec.tsx` (accept, reject, manage, categories in use, reopen from footer, reload on withdrawal, Arabic), `tracker.spec.ts`, `insider.spec.ts`, `insiderCustomEvent.spec.ts`.
 
 ## 4. Unsubscribe page
 

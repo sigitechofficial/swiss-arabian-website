@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { insiderCustomEvent } from "@/lib/insider";
+import { resetConsentCacheForTests, setConsent } from "@/lib/consent/consent";
 
 describe("insiderCustomEvent", () => {
   beforeEach(() => {
@@ -8,6 +9,15 @@ describe("insiderCustomEvent", () => {
     window.__SA_INSIDER_ON__ = true;
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
+    localStorage.clear();
+    resetConsentCacheForTests();
+    setConsent({ analytics: false, marketing: true });
+  });
+
+  it("queues nothing without marketing consent", () => {
+    setConsent({ analytics: true, marketing: false });
+    expect(insiderCustomEvent("cart_abandonment_eligible", { step: 1 })).toBe(false);
+    expect(window.InsiderQueue).toEqual([]);
   });
   afterEach(() => {
     delete window.__SA_INSIDER_ON__;

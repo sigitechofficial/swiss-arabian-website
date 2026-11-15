@@ -17,6 +17,7 @@ vi.mock("@/lib/auth/token", () => ({ getAccessToken: () => "tok" }));
 vi.mock("@/lib/api/storefrontHost", () => ({ resolveStorefrontHost: async () => "sa.test" }));
 vi.mock("@/lib/storefront/context", () => ({ storefrontContextQuery: () => "zoneCode=KSA" }));
 
+import { resetConsentCacheForTests } from "@/lib/consent/consent";
 import {
   flushNow,
   getSessionId,
@@ -37,6 +38,9 @@ describe("tracker", () => {
     resetTrackerForTests();
     localStorage.clear();
     sessionStorage.clear();
+    resetConsentCacheForTests();
+    // Most cases describe a shopper who accepted analytics in the cookie banner.
+    setTrackingConsent("granted");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-12T10:00:00.000Z"));
   });
@@ -90,9 +94,31 @@ describe("tracker", () => {
   });
 
   it("treats a missing consent choice as unknown", () => {
+    localStorage.clear();
+    resetConsentCacheForTests();
     expect(getTrackingConsent()).toBe("UNKNOWN");
     setTrackingConsent("granted");
     expect(getTrackingConsent()).toBe("GRANTED");
+  });
+
+  it("sends nothing and stores no ids before the shopper has chosen", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    expect(track("page_viewed")).toBe(false);
+    expect(queuedEventsForTests()).toHaveLength(0);
+    const visitor = getVisitorId();
+    expect(getVisitorId()).toBe(visitor);
+    getSessionId();
+    expect(localStorage.getItem("sa_visitor_id")).toBeNull();
+    expect(sessionStorage.getItem("sa_session")).toBeNull();
+  });
+
+  it("removes the stored visitor id when analytics is refused later", () => {
+    getVisitorId();
+    expect(localStorage.getItem("sa_visitor_id")).not.toBeNull();
+    setTrackingConsent("denied");
+    expect(localStorage.getItem("sa_visitor_id")).toBeNull();
   });
 
   it("keeps one visitor id and rotates the session after 30 idle minutes", () => {
@@ -141,14 +167,14 @@ describe("tracker", () => {
     expect(queuedEventsForTests()).toHaveLength(0);
   });
 
-  it("omits the consent field when the shopper has not chosen, so the backend policy decides", async () => {
+  it("posts nothing while the shopper has not chosen", async () => {
+    localStorage.clear();
+    resetConsentCacheForTests();
     const fetchMock = vi.fn(async () => ({ status: 202 }));
     vi.stubGlobal("fetch", fetchMock);
     track("page_viewed");
     await flushNow();
-    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body));
-    expect(body).not.toHaveProperty("consentStatus");
-    expect(body.events).toHaveLength(1);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("splits large queues into batches of 20", async () => {
