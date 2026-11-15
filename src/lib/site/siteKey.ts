@@ -12,7 +12,8 @@ import { isLoopbackHost } from "@/lib/api/storefrontHost";
  * safe in a path segment.
  */
 const PORT_SEPARATOR = "__";
-const HOST_PATTERN = /^[a-z0-9.-]+(?::\d{1,5})?$/;
+/** Host-name labels start and end with a letter or digit (RFC 1123): `-`, `a-.b` are not hosts. */
+const HOST_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/;
 const KEY_PATTERN = /^[a-z0-9.-]+(?:__\d{1,5})?$/;
 
 /**

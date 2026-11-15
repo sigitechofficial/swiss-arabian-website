@@ -20,5 +20,9 @@ describe("page tree keys", () => {
     expect(parseSiteKey("swissarabian.com~")).toBeNull();
     expect(parseSiteKey("swiss arabian~KSA")).toBeNull();
     expect(parseSiteKey("")).toBeNull();
+    // Not host names (a build-time placeholder like "-" must never reach the backend).
+    expect(parseSiteKey("-")).toBeNull();
+    expect(parseSiteKey("a-.com")).toBeNull();
+    expect(parseSiteKey("-a.com~KSA")).toBeNull();
   });
 });
