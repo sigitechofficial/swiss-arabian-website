@@ -11,20 +11,35 @@ permissions:
   contents: read
 
 env:
-  IMAGE_REPOSITORY: commerce-website
   AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-swissarabian-dev' }}
   AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME || 'acrswissarabiandev' }}
   AZURE_ACR_LOGIN_SERVER: ${{ vars.AZURE_ACR_LOGIN_SERVER || 'acrswissarabiandev.azurecr.io' }}
-  AZURE_CONTAINER_APP_WEBSITE: ${{ vars.AZURE_CONTAINER_APP_WEBSITE || 'ca-swissarabian-website-dev' }}
   AZURE_CONTAINER_APPS_ENV: ${{ vars.AZURE_CONTAINER_APPS_ENV || 'cae-swissarabian-dev' }}
   DEV_API_BASE_URL: https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
   AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME || 'kv-swissarabian-dev' }}
 
 jobs:
   deploy:
-    name: Build and deploy website to Azure dev
+    # One build per brand from the same code (the brand is the only build
+    # setting); each brand has its own image, container app and identity.
+    name: Build and deploy ${{ matrix.brand }} website to Azure dev
     runs-on: ubuntu-latest
     environment: azure-dev
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - brand: SWISS_ARABIAN
+            image: commerce-website
+            app: ca-swissarabian-website-dev
+            identity: mi-swissarabian-website-dev
+          - brand: SAPIL
+            image: commerce-website-sapil
+            app: ca-sapil-website-dev
+            identity: mi-sapil-website-dev
+    env:
+      IMAGE_REPOSITORY: ${{ matrix.image }}
+      AZURE_CONTAINER_APP_WEBSITE: ${{ matrix.app }}
 
     steps:
       - name: Checkout deployment branch
@@ -73,7 +88,7 @@ jobs:
           # product switches and the commit. Environment settings are set on the
           # container below.
           docker build \
-            --build-arg NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SWISS_ARABIAN \
+            --build-arg "NEXT_PUBLIC_STOREFRONT_BRAND_CODE=${{ matrix.brand }}" \
             --build-arg NEXT_PUBLIC_ENABLE_MFA=false \
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
             --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
@@ -96,7 +111,7 @@ jobs:
           RG="${{ env.AZURE_RESOURCE_GROUP }}"
           CAE="${{ env.AZURE_CONTAINER_APPS_ENV }}"
           IMAGE="${{ steps.vars.outputs.image }}"
-          MI_NAME="${{ vars.AZURE_WEBSITE_UAMI || 'mi-swissarabian-website-dev' }}"
+          MI_NAME="${{ matrix.identity }}"
 
           if ! az identity show --name "$MI_NAME" --resource-group "$RG" >/dev/null 2>&1; then
             echo "Creating user-assigned identity: ${MI_NAME}"
@@ -236,7 +251,8 @@ jobs:
 
             if [ "$STATUS" = "200" ]; then
               SVC=$(jq -r '.service // .data.service // empty' /tmp/health.json)
-              if [ "$SVC" = "swiss-arabian-website" ] || [ "$SVC" = "swiss-arabian-v2" ]; then
+              BRAND=$(jq -r '.brand // empty' /tmp/health.json)
+              if { [ "$SVC" = "swiss-arabian-website" ] || [ "$SVC" = "swiss-arabian-v2" ]; } && [ "$BRAND" = "${{ matrix.brand }}" ]; then
                 echo "Health check passed"
                 exit 0
               fi
@@ -285,7 +301,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Azure Dev website deployment summary"
+            echo "### Azure Dev website deployment summary: ${{ matrix.brand }}"
             echo ""
             echo "| Field | Value |"
             echo "|---|---|"
