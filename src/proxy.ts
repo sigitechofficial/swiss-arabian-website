@@ -6,8 +6,9 @@ import {
   SHOP_LOCALE_HEADER,
   localeRouting,
 } from "@/lib/i18n/localeRouting";
-import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
+import { MARKET_CHOICE_COOKIE, ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { brandLinkEnabled } from "@/lib/brand/features";
+import { getBrandConfig } from "@/lib/brand";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
   matchRedirect,
@@ -18,7 +19,8 @@ import {
 } from "@/lib/seo/storedRedirects";
 import { storefrontHostFromHeaderValues } from "@/lib/api/storefrontHost";
 import { normalizeSiteHost, siteKeyFromHost } from "@/lib/site/siteKey";
-import { lookupSite, marketSiteForVisitor, visitorCountry } from "@/lib/site/siteRegistry";
+import { lookupSite, marketSiteForVisitor } from "@/lib/site/siteRegistry";
+import { edgeCheck, visitorCountry } from "@/lib/site/edge";
 
 /** An address no route matches: rewriting to it renders the global 404. */
 const FEATURE_OFF_SEGMENT = "_section-off";
@@ -43,8 +45,29 @@ function unknownSite(): NextResponse {
   });
 }
 
+/** The container's health probe reaches the app directly, not through the edge. */
+const HEALTH_PATH = "/api/health";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Served only through the hosting edge: its headers (shopper's address,
+  // country) are then the edge's own, never a client's (src/lib/site/edge.ts).
+  if (pathname !== HEALTH_PATH) {
+    const edge = edgeCheck(request.headers);
+    if (edge === "misconfigured") {
+      console.error("[proxy] TRUSTED_EDGE_IDS is not set: refusing requests");
+      return new NextResponse("Service unavailable", {
+        status: 503,
+        headers: { "cache-control": "no-store" },
+      });
+    }
+    if (edge === "untrusted") {
+      return new NextResponse("Forbidden", {
+        status: 403,
+        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
+  }
   if (PASS_THROUGH.test(pathname)) return NextResponse.next();
 
   // The address the shopper used decides the website (and its own cached pages).
@@ -86,6 +109,10 @@ export async function proxy(request: NextRequest) {
     });
   }
   const site = lookup.site;
+  // One build per brand: an address of another brand is not this website, even
+  // though the backend knows it (a misrouted DNS record or a forged Host must
+  // never render another brand's data in this brand's design, or cache it).
+  if (site.brandCode.trim().toUpperCase() !== getBrandConfig(liveHost).code) return unknownSite();
   const zoneCookie = redirectZone(request.cookies.get(ZONE_COOKIE)?.value);
 
   // robots.txt / sitemap.xml belong to each address, root domains included
@@ -99,8 +126,11 @@ export async function proxy(request: NextRequest) {
   // A brand's root domain (no market of its own) sends the visitor to a market
   // website: the market they chose before, else their country's, else the default.
   // Temporary (307, not cached): the choice depends on the visitor.
+  // The choice made with the picker on a market website (kept on the brand's
+  // domain), else a choice made on this address itself.
+  const marketChoice = redirectZone(request.cookies.get(MARKET_CHOICE_COOKIE)?.value);
   const marketSite = marketSiteForVisitor(site, {
-    zoneCode: zoneCookie,
+    zoneCode: marketChoice ?? zoneCookie,
     country: visitorCountry(request.headers),
   });
   if (marketSite) {

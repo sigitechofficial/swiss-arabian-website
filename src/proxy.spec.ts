@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SiteInfo, SiteLookup } from "@/lib/site/siteRegistry";
 
 const redirects = vi.hoisted(() => ({
@@ -105,6 +105,20 @@ describe("proxy: only the brand's own addresses", () => {
     expect(response.headers.get("x-middleware-rewrite")).toBeNull();
   });
 
+  it("answers 404 for another brand's address, even one the backend knows", async () => {
+    registry.lookup = site({ host: "uae.sapil.com", brandCode: "SAPIL" });
+    const response = await proxy(request("/products", { "x-forwarded-host": "uae.sapil.com" }));
+    expect(response.status).toBe(404);
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    // Its robots.txt and sitemap too: nothing of the other brand is served.
+    expect((await proxy(request("/sitemap.xml"))).status).toBe(404);
+  });
+
+  it("serves its own brand's address", async () => {
+    registry.lookup = site({ brandCode: "swiss_arabian" });
+    expect((await proxy(request("/products"))).status).toBe(200);
+  });
+
   it("answers 503 (not a guess) when the address cannot be checked", async () => {
     registry.lookup = { status: "unavailable" };
     const response = await proxy(request("/products"));
@@ -138,6 +152,34 @@ describe("proxy: only the brand's own addresses", () => {
   });
 });
 
+describe("proxy: served only through the hosting edge", () => {
+  const saved = process.env.TRUSTED_EDGE_IDS;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.TRUSTED_EDGE_IDS;
+    else process.env.TRUSTED_EDGE_IDS = saved;
+  });
+
+  it("refuses a request that did not come through Front Door (403), headers and all", async () => {
+    process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
+    const direct = await proxy(request("/products", { "x-forwarded-host": "uae.swissarabian.com" }));
+    expect(direct.status).toBe(403);
+    expect(direct.headers.get("x-middleware-rewrite")).toBeNull();
+    const forged = await proxy(request("/products", { "x-azure-fdid": "someone-elses-profile" }));
+    expect(forged.status).toBe(403);
+  });
+
+  it("serves requests from its Front Door profile", async () => {
+    process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
+    const response = await proxy(request("/products", { "x-azure-fdid": "fd-profile-1" }));
+    expect(response.headers.get("x-middleware-rewrite")).toBe(`http://localhost:3041/${SITE}/en/products`);
+  });
+
+  it("lets the container health probe through directly", async () => {
+    process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
+    expect((await proxy(request("/api/health"))).status).not.toBe(403);
+  });
+});
+
 describe("proxy: a brand's root domain sends visitors to a market website", () => {
   const root = () =>
     site({
@@ -153,11 +195,31 @@ describe("proxy: a brand's root domain sends visitors to a market website", () =
   it("by country, keeping page, language and query; not cached", async () => {
     registry.lookup = root();
     const response = await proxy(
-      request("/ar/products/oud?ref=x", { "x-vercel-ip-country": "SA" }, "https://swissarabian.com"),
+      request("/ar/products/oud?ref=x", { "x-client-country": "SA" }, "https://swissarabian.com"),
     );
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("https://ksa.swissarabian.com/ar/products/oud?ref=x");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("by the market chosen with the picker on a market website, over country", async () => {
+    registry.lookup = root();
+    const response = await proxy(
+      request(
+        "/products",
+        { "x-client-country": "AE", cookie: "sa-market-choice=KSA" },
+        "https://swissarabian.com",
+      ),
+    );
+    expect(response.headers.get("location")).toBe("https://ksa.swissarabian.com/products");
+  });
+
+  it("ignores a chosen market that has no live website", async () => {
+    registry.lookup = root();
+    const response = await proxy(
+      request("/", { cookie: "sa-market-choice=QAT" }, "https://swissarabian.com"),
+    );
+    expect(response.headers.get("location")).toBe("https://uae.swissarabian.com/");
   });
 
   it("else the brand's default market", async () => {
@@ -184,6 +246,7 @@ describe("proxy: brand feature switches", () => {
 
   it("sends a switched-off section to the server-rendered 404, in the address's language", async () => {
     process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = "SAPIL";
+    registry.lookup = site({ host: "uae.sapil.com", brandCode: "SAPIL", storefrontCode: "sapil_web" });
     try {
       const en = await proxy(request("/account/rewards?x=1"));
       expect(en.headers.get("x-middleware-rewrite")).toBe(`http://localhost:3041/${SITE}/en/_section-off`);
