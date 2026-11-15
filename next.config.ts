@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import os from "node:os";
+import path from "node:path";
 import { REMOTE_IMAGE_PATTERNS } from "./src/lib/images/remoteImagePatterns";
 import { brandForCode, DEFAULT_BRAND_CODE } from "./src/lib/brand/registry";
 
@@ -26,7 +27,7 @@ function lanDevOrigins(): string[] {
 }
 
 /**
- * Dev-only reference routes (`src/app/[locale]/(dev)/**\/page.dev.tsx`: the
+ * Dev-only reference routes (`src/app/[site]/[locale]/(dev)/**\/page.dev.tsx`: the
  * Sapil kit / preview for the visual diff) are routes only in `next dev`, in a
  * Sapil build, or with SAPIL_KIT=1. A Swiss Arabian build has no such route,
  * so it ships none of the Sapil kit code.
@@ -57,6 +58,14 @@ const nextConfig = (phase: string): NextConfig => ({
   // needed for self-hosted/Docker builds, so skip it on Vercel — Vercel
   // already produces its own optimized deployment output.
   output: process.env.VERCEL ? undefined : "standalone",
+  // Every replica of a brand's website shares one server cache (pages, data,
+  // optimized images) and one record of revalidated tags (cache-handler.cjs;
+  // deployment plan W1). No per-replica memory cache in front of it.
+  cacheHandler: path.resolve(process.cwd(), "cache-handler.cjs"),
+  cacheMaxMemorySize: 0,
+  // Version skew protection across replicas and rolling releases: the build's
+  // commit (set by the image build), so a browser on an older release reloads.
+  ...(process.env.NEXT_DEPLOYMENT_ID ? { deploymentId: process.env.NEXT_DEPLOYMENT_ID } : {}),
   experimental: { globalNotFound: true },
   allowedDevOrigins: [
     ...lanDevOrigins(),
@@ -68,24 +77,6 @@ const nextConfig = (phase: string): NextConfig => ({
     "barbra-beneficent-jannette.ngrok-free.dev",
     "unprolifically-unsuggestible-zackary.ngrok-free.dev",
   ],
-  async rewrites() {
-    // Same-origin /storefront on the ngrok HTTPS URL. The browser must not call
-    // http://localhost:3000 from an HTTPS page (Chrome blocks that as mixed content).
-    return [
-      {
-        source: "/storefront/:path*",
-        destination: "http://127.0.0.1:3000/storefront/:path*",
-      },
-      {
-        source: "/catalog/:path*",
-        destination: "http://127.0.0.1:3000/catalog/:path*",
-      },
-      {
-        source: "/webhooks/:path*",
-        destination: "http://127.0.0.1:3000/webhooks/:path*",
-      },
-    ];
-  },
   // Stripe Elements renders in a js.stripe.com iframe and fetches our brand
   // font cross-origin, which browsers only allow with a CORS header.
   async headers() {
@@ -97,6 +88,8 @@ const nextConfig = (phase: string): NextConfig => ({
     ];
   },
   images: {
+    // Optimized images go to the shared cache too.
+    customCacheHandler: true,
     qualities: [75, 90, 95],
     // Shared with <MediaImage>, which serves other hosts unoptimized.
     remotePatterns: REMOTE_IMAGE_PATTERNS,

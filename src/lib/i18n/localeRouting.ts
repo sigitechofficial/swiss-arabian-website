@@ -24,8 +24,8 @@ export type LocaleRouting =
   | { type: "redirect"; pathname: string; search?: string };
 
 /** Listing addresses whose page 2+ is served by a `/p/[page]` route. */
-const LISTING = /^\/(?:products|collections\/[^/]+|categories\/[^/]+)$/;
-const INTERNAL_PAGE = /^(\/(?:products|collections\/[^/]+|categories\/[^/]+))\/p\/(\d+)$/;
+const LISTING = /^\/(?:products|blog|collections\/[^/]+|categories\/[^/]+)$/;
+const INTERNAL_PAGE = /^(\/(?:products|blog|collections\/[^/]+|categories\/[^/]+))\/p\/(\d+)$/;
 
 export const LISTING_PAGE_SEGMENT = "p";
 

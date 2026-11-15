@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/root-params", () => ({ locale: async () => "ar" }));
 
-import { brandDisplayName, brandIntegrations } from "./index";
+import { brandDisplayName, getBrand } from "./index";
 import { fallbackBrandIdentity } from "@/lib/seo/brandIdentity";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
@@ -16,37 +16,22 @@ function deployAs(code: string, extra: Record<string, string> = {}) {
   for (const [key, value] of Object.entries(extra)) vi.stubEnv(key, value);
 }
 
-describe("brandIntegrations (getBrand adoption)", () => {
-  it("Swiss Arabian keeps its Insider UAT account when the settings are empty", () => {
-    deployAs("SWISS_ARABIAN");
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_ACCOUNT_ID", undefined);
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_SCRIPT_HOST", undefined);
-    expect(brandIntegrations().insider).toEqual({
-      enabled: true,
-      accountId: "10015366",
-      scriptHost: "swissarabianuatnew.api.useinsider.com",
-    });
-  });
-
-  it("Sapil never inherits Swiss Arabian's Insider account", () => {
+describe("getBrand: the build's brand, no environment in it (deployment plan W4)", () => {
+  it("keeps catalog images on the website's own address in every environment", () => {
     deployAs("SAPIL");
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_ACCOUNT_ID", undefined);
-    expect(brandIntegrations().insider.enabled).toBe(false);
-    expect(brandIntegrations().insider.accountId).toBe("");
+    expect(resolveCatalogImageUrl("/catalog/media/a.jpg")).toBe("/catalog/media/a.jpg");
+    expect(resolveCatalogImageUrl("catalog/media/a.jpg")).toBe("/catalog/media/a.jpg");
+    expect(resolveCatalogImageUrl("https://cdn.shopify.com/s/files/a.jpg")).toBe(
+      "https://cdn.shopify.com/s/files/a.jpg",
+    );
   });
 
-  it("reads analytics, payment switches, Maps and catalog media from the deployment", () => {
-    deployAs("SAPIL", {
-      NEXT_PUBLIC_GTM_ID: "GTM-ABC1234",
-      NEXT_PUBLIC_ENABLE_PAYMOB: "true",
-      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "maps-key",
-      NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL: "https://media.example.com/",
-    });
-    const integrations = brandIntegrations();
-    expect(integrations.analytics.gtmId).toBe("GTM-ABC1234");
-    expect(integrations.payments).toEqual({ paymob: true, tabby: false, tamara: false });
-    expect(integrations.googleMaps.apiKey).toBe("maps-key");
-    expect(resolveCatalogImageUrl("/catalog/a.jpg")).toBe("https://media.example.com/catalog/a.jpg");
+  it("carries no integration ids or environment settings", () => {
+    deployAs("SWISS_ARABIAN", { NEXT_PUBLIC_GTM_ID: "GTM-ABC1234" });
+    const brand = getBrand() as Record<string, unknown>;
+    for (const key of ["integrations", "analytics", "insider", "tabby", "googleMaps", "payments"]) {
+      expect(brand[key]).toBeUndefined();
+    }
   });
 });
 

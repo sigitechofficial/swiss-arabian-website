@@ -23,6 +23,11 @@ export function sitemapAlternates(
   origin: string,
   locales: readonly string[] = LOCALES,
   defaultLocale: string = DEFAULT_LOCALE,
+  /**
+   * hreflang for a page across market websites (absolute addresses), or null to
+   * list this website's languages only.
+   */
+  crossMarket?: (path: string) => Record<string, string> | null,
 ): MetadataRoute.Sitemap {
   const at = (url: string) => (origin ? absolute(origin, url) : url);
   const seen = new Set<string>();
@@ -31,12 +36,12 @@ export function sitemapAlternates(
     if (seen.has(path)) continue;
     seen.add(path);
     const urls = locales.map((code) => inLanguage(path, code, defaultLocale));
-    const languages = origin
+    const languages = crossMarket?.(path) ?? (origin
       ? {
           ...Object.fromEntries(locales.map((code, index) => [code, at(urls[index]!)])),
           "x-default": at(inLanguage(path, defaultLocale, defaultLocale)),
         }
-      : undefined;
+      : undefined);
     for (const url of urls) {
       out.push({
         url: at(url),

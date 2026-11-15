@@ -32,11 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return marketFixedPageMetadata("/faq", locale, page);
 }
 
-export default async function FaqPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ topic?: string }>;
-}) {
+export default async function FaqPage() {
   const { locale, page } = await loadMarketFaq();
   if (page) {
     // The same questions and answers the page shows (its cleaned HTML), as plain text.
@@ -49,7 +45,6 @@ export default async function FaqPage({
       </>
     );
   }
-  const { topic } = await searchParams;
   // The built-in FAQ shows an answer only once its question is opened, so it
   // carries no FAQPage data (Google requires the answers on the page).
   return (
@@ -57,7 +52,7 @@ export default async function FaqPage({
       <CatalogJsonLd
         data={await pageBreadcrumbJsonLd(locale, { name: (await getTranslator(locale))("faqs"), path: "/faq" })}
       />
-      <FaqPageView initialDrawer={topic} />
+      <FaqPageView />
     </>
   );
 }

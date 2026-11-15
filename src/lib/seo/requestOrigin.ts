@@ -1,4 +1,6 @@
 import { headers } from "next/headers";
+import { currentSiteHost } from "@/lib/site/currentSite";
+import { siteOriginFor } from "@/lib/site/siteKey";
 import {
   configuredStorefrontHost,
   isLoopbackHost,
@@ -24,9 +26,8 @@ export function originFromHeaders(
 }
 
 /**
- * The storefront's public origin from build-time settings
- * (`NEXT_PUBLIC_STOREFRONT_HOST`): one deployment per brand, so pages can be
- * prerendered without reading the request.
+ * Local only: the origin a plain `localhost` stands for (STOREFRONT_HOST, see
+ * src/lib/config/runtime.ts). Deployed websites always take the request's address.
  */
 export function siteOrigin(): string | null {
   const host = configuredStorefrontHost(null);
@@ -35,14 +36,21 @@ export function siteOrigin(): string | null {
 }
 
 /**
- * Origin for absolute SEO addresses. Production uses the configured storefront
- * (static rendering); `next dev` follows the address in use (local brand
- * aliases such as sp.localhost).
+ * Origin for absolute SEO addresses (canonical, hreflang, og:url, sitemap): the
+ * website address being rendered (`[site]` root param, or the address a route
+ * handler set), so every market website names itself. Outside the site tree:
+ * `next dev` follows the request, production the configured storefront.
  */
 export async function requestOrigin(): Promise<string | null> {
+  const site = await currentSiteHost();
+  if (site) return siteOriginFor(site);
   if (process.env.NODE_ENV === "development") {
-    const store = await headers();
-    return originFromHeaders((name) => store.get(name)) ?? siteOrigin();
+    try {
+      const store = await headers();
+      return originFromHeaders((name) => store.get(name)) ?? siteOrigin();
+    } catch {
+      return siteOrigin();
+    }
   }
   return siteOrigin();
 }

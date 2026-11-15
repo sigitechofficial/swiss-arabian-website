@@ -1,5 +1,6 @@
 import { resolveBrand } from "@/lib/brand/registry";
-import { envValue, readProcessPublicEnv } from "@/lib/brand/publicEnv";
+import { buildBrandCode } from "@/lib/brand/publicEnv";
+import { localStorefrontHost } from "@/lib/config/runtime";
 import { localStorefrontForHost } from "./localStorefront";
 
 export const STOREFRONT_HOST_HEADER = "X-Storefront-Host";
@@ -48,13 +49,9 @@ export function storefrontBrand(host?: string | null): {
 } {
   const live = liveHost(host);
   const local = localStorefrontForHost(live);
-  const publicEnv = readProcessPublicEnv();
-  const configuredHost =
-    local?.host ??
-    normalizeStorefrontHost(envValue(publicEnv, "NEXT_PUBLIC_STOREFRONT_HOST"));
-  const brandCode = (
-    local?.brandCode ?? envValue(publicEnv, "NEXT_PUBLIC_STOREFRONT_BRAND_CODE")
-  ).toUpperCase();
+  // Local only: a plain `localhost` stands for STOREFRONT_HOST (runtime.ts).
+  const configuredHost = local?.host ?? localStorefrontHost();
+  const brandCode = (local?.brandCode ?? buildBrandCode()).toUpperCase();
   return {
     host: live && !isLoopbackHost(live) ? live : configuredHost,
     configuredHost,

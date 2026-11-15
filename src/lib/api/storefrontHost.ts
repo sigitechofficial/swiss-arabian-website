@@ -3,7 +3,7 @@
  * The backend resolves Brand from this host. Never substitute a default domain.
  */
 
-import { envValue, readProcessPublicEnv } from "@/lib/brand/publicEnv";
+import { localStorefrontHost } from "@/lib/config/runtime";
 import { localStorefrontForHost } from "@/lib/storefront/localStorefront";
 
 /** First value when a proxy sends a comma-separated forwarded-host list. */
@@ -38,21 +38,14 @@ export function isLoopbackHost(host: string): boolean {
 }
 
 /**
- * Shop host to send from a local address: the `*.localhost` alias's shop
- * (`sp.localhost` → sapil.test), else `NEXT_PUBLIC_STOREFRONT_HOST`.
+ * Local only: the shop host a local address stands for — the `*.localhost`
+ * alias's shop (`sp.localhost` → sapil.test), else STOREFRONT_HOST. Deployed
+ * websites always know the shopper's address.
  */
 export function configuredStorefrontHost(liveHost?: string | null): string | null {
   const local = localStorefrontForHost(liveHost);
   if (local) return local.host;
-  const raw = envValue(readProcessPublicEnv(), "NEXT_PUBLIC_STOREFRONT_HOST");
-  if (!raw) return null;
-  return (
-    raw
-      .toLowerCase()
-      .replace(/^https?:\/\//, "")
-      .replace(/\/.*$/, "")
-      .replace(/:\d+$/, "") || null
-  );
+  return localStorefrontHost() || null;
 }
 
 type ServerHostResolver = () => Promise<string | null>;

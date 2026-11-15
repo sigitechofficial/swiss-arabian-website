@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/Toaster";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { refreshCustomerScopedCaches } from "@/lib/auth/sessionCache";
 import { env } from "@/lib/config/env";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { resolveStorefrontContext, toAuthZoneCode } from "@/lib/storefront/context";
@@ -139,6 +140,9 @@ export function useMarketDialCode(): string {
  * signed in) when verification is on. Unverified accounts go to /verify.
  */
 export function useLoginFlow(feedback?: AuthFeedback) {
+  // Social sign-in is offered where it is on for this website's market (ADR-005 phase G).
+  const siteSignIn = useSiteIntegrations().signIn;
+  const signInOn = Boolean(siteSignIn.google || siteSignIn.apple);
   const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const marketDialCode = useMarketDialCode();
@@ -248,7 +252,7 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   return {
     step,
     marketDialCode,
-    oauthEnabled: env.flags.oauth,
+    oauthEnabled: signInOn,
     codeSignInEnabled: env.flags.verification,
     form,
     emailForm,
@@ -267,6 +271,9 @@ export function useLoginFlow(feedback?: AuthFeedback) {
 
 /** Create an account in the selected market; with verification on, the emailed code finishes it. */
 export function useRegisterForm(feedback?: AuthFeedback) {
+  // Social sign-in is offered where it is on for this website's market (ADR-005 phase G).
+  const siteSignIn = useSiteIntegrations().signIn;
+  const signInOn = Boolean(siteSignIn.google || siteSignIn.apple);
   const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const returnTo = useReturnTo();
@@ -314,7 +321,7 @@ export function useRegisterForm(feedback?: AuthFeedback) {
     }
   }
 
-  return { form, oauthEnabled: env.flags.oauth, submit: form.handleSubmit(onSubmit) };
+  return { form, oauthEnabled: signInOn, submit: form.handleSubmit(onSubmit) };
 }
 
 const verifySchema = z.object({

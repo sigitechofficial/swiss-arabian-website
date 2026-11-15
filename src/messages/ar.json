@@ -1366,5 +1366,9 @@
   "unsubscribeAction": "إلغاء الاشتراك",
   "unsubscribeDone": "تم إلغاء اشتراكك. لن نرسل لك رسائل تسويقية.",
   "unsubscribeFailed": "هذا الرابط غير صالح أو منتهي الصلاحية. يمكنك أيضًا إدارة الرسائل من حسابك.",
-  "unsubscribeBack": "العودة إلى المتجر"
+  "unsubscribeBack": "العودة إلى المتجر",
+  "market.countryPrompt.title": "هل تتسوّق من {country}؟",
+  "market.countryPrompt.body": "أنت الآن في متجر {current}. انتقل لعرض الأسعار وخيارات التوصيل والدفع في {country}.",
+  "market.countryPrompt.switch": "الانتقال إلى {market}",
+  "market.countryPrompt.stay": "البقاء في {market}"
 }

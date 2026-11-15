@@ -2,21 +2,23 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { brandIntegrations } from "@/lib/brand";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import type { StoreMapProps } from "./storeMapTypes";
 
 const GoogleStoreMap = dynamic(() => import("./GoogleStoreMap"), { ssr: false });
 const LeafletStoreMap = dynamic(() => import("./LeafletStoreMap"), { ssr: false });
 
 /**
- * The store map, brand-neutral: Google Maps when the brand has a Maps key,
- * otherwise a free street map. Loaded only when it scrolls into view, so the
+ * The store map, brand-neutral: Google Maps when Google Maps is on for this
+ * address's market (switchboard, ADR-005 phase E), otherwise a free street map. Loaded only when it scrolls into view, so the
  * store list (server-rendered) never waits for it.
  */
 export function StoreMap(props: StoreMapProps & { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const { apiKey, mapId } = brandIntegrations().googleMaps;
+  const maps = useSiteIntegrations().googleMaps;
+  const apiKey = maps?.browserKey ?? "";
+  const mapId = maps?.mapId ?? undefined;
 
   useEffect(() => {
     const el = ref.current;

@@ -3,9 +3,14 @@ import { fetchCatalogSitemap } from "@/features/catalog/api/catalog.service";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 import { sitemapAlternates } from "@/lib/seo/sitemapEntries";
-import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
+import {
+  buildMarketHreflang,
+  catalogPathsOf,
+  marketSites,
+} from "@/lib/seo/marketAlternates";
 import { fetchSitePages } from "@/features/site-pages/api/sitePages.service";
 import { fixedPathForPage } from "@/features/site-pages/utils/pickMarketPage";
 import { fetchBlogSlugs } from "@/features/blog/api/blogApi";
@@ -21,23 +26,59 @@ function absolute(origin: string, path: string) {
   return `${origin}${path === "/" ? "" : path}`;
 }
 
-/** Rebuilt at most once an hour (no request data is read). */
-export const revalidate = 3600;
-
-const resolveServerCatalogMarket = () => resolveCatalogMarketFor(DEFAULT_LOCALE);
+/**
+ * hreflang across the brand's market websites for each page of this one (only
+ * markets where the page exists), or null when this address is not a market
+ * website or the brand has no other.
+ */
+async function crossMarketFor(origin: string) {
+  const list = await loadServerMarkets();
+  const ownZoneCode = list?.siteMarketCode;
+  const sites = marketSites(list ?? null);
+  if (!ownZoneCode || sites.length < 2 || !origin) return undefined;
+  const catalogPaths = new Map(
+    await Promise.all(
+      sites
+        .filter((site) => site.zoneCode !== ownZoneCode)
+        .map(async (site) => [site.zoneCode, await catalogPathsOf(site)] as const),
+    ),
+  );
+  return (path: string) => {
+    const languages = buildMarketHreflang({
+      path,
+      ownZoneCode,
+      defaultZoneCode: list?.brandDefaultMarketCode ?? null,
+      sites,
+      catalogPaths,
+    });
+    if (!languages) return null;
+    // Own website's addresses come back relative: the sitemap needs absolute ones.
+    return Object.fromEntries(
+      Object.entries(languages).map(([code, href]) => [
+        code,
+        href.startsWith("/") ? absolute(origin, href) : href,
+      ]),
+    );
+  };
+}
 
 /**
- * The storefront market's sitemap: fixed pages plus every product, collection
- * and category visible in the market (market product addresses), in every
- * configured language, with last-updated dates.
+ * The sitemap of the website being served (run inside `withSiteHost`): fixed
+ * pages plus every product, collection and category visible in its market, in
+ * every configured language, with last-updated dates and hreflang (languages,
+ * and other market websites where the page exists). A root domain without a
+ * market of its own lists nothing while market websites exist (it redirects).
  */
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = (await requestOrigin()) ?? "";
+  const list = await loadServerMarkets();
+  if (list && !list.siteMarketCode && marketSites(list).length > 0) return [];
+
   const entries: Array<{ path: string; lastModified?: string }> = STATIC_PATHS.map((path) => ({ path }));
+  const resolved = await resolveCatalogMarketFor(DEFAULT_LOCALE);
 
   try {
-    const { zoneCode, market } = await resolveServerCatalogMarket();
-    const catalog = await fetchCatalogSitemap(zoneCode, market);
+    const catalog = await fetchCatalogSitemap(resolved.zoneCode, resolved.market);
     for (const entry of catalog) {
       if (entry.noindex || !entry.path) continue;
       // An address that redirects (e.g. Shopify's /collections/all → /products) is not listed.
@@ -49,8 +90,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const { zoneCode } = await resolveServerCatalogMarket();
-    const pages = await fetchSitePages(zoneCode);
+    const pages = await fetchSitePages(resolved.zoneCode);
     for (const page of pages) {
       // Addresses that redirect to a platform page (e.g. /pages/faqs → /faq) are not listed.
       if (shopifyLegacyRedirect(page.path)) continue;
@@ -65,8 +105,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Store locator: the list, each area page and each store page (every language),
   // only for brands that have it and once stores are on the website.
   if (brandFeatureEnabled("storeLocator")) try {
-    const { zoneCode } = await resolveServerCatalogMarket();
-    const stores = await fetchStoreSlugs({ zoneCode });
+    const stores = await fetchStoreSlugs({ zoneCode: resolved.zoneCode });
     if (stores.stores.length) {
       const latest = stores.stores.reduce((a, s) => (s.updatedAt > a ? s.updatedAt : a), "");
       // The market's CMS store page (if any) is replaced by the locator at /stores.
@@ -83,9 +122,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Journal posts exist in one language each: list them only at that language's address.
   const blogEntries: MetadataRoute.Sitemap = [];
   if (brandFeatureEnabled("blog")) try {
-    const { zoneCode } = await resolveServerCatalogMarket();
     for (const language of LOCALES) {
-      const posts = await fetchBlogSlugs({ zoneCode, languageCode: language });
+      const posts = await fetchBlogSlugs({ zoneCode: resolved.zoneCode, languageCode: language });
       for (const post of posts) {
         const url = withLocalePrefix(`/blog/${post.slug}`, language);
         blogEntries.push({ url: origin ? absolute(origin, url) : url, lastModified: post.updatedAt });
@@ -96,5 +134,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The Journal cannot be read: the rest of the sitemap still publishes.
   }
 
-  return [...sitemapAlternates(entries, origin), ...blogEntries];
+  const crossMarket = await crossMarketFor(origin);
+  return [
+    ...sitemapAlternates(entries, origin, LOCALES, DEFAULT_LOCALE, crossMarket),
+    ...blogEntries,
+  ];
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/** sitemaps.org XML with xhtml:link hreflang alternates. */
+export function sitemapXml(entries: MetadataRoute.Sitemap): string {
+  const urls = entries.map((entry) => {
+    const lines = [`<url>`, `<loc>${escapeXml(entry.url)}</loc>`];
+    for (const [code, href] of Object.entries(entry.alternates?.languages ?? {})) {
+      if (typeof href !== "string") continue;
+      lines.push(
+        `<xhtml:link rel="alternate" hreflang="${escapeXml(code)}" href="${escapeXml(href)}" />`,
+      );
+    }
+    if (entry.lastModified) {
+      const date = new Date(entry.lastModified);
+      if (!Number.isNaN(date.getTime())) lines.push(`<lastmod>${date.toISOString()}</lastmod>`);
+    }
+    lines.push(`</url>`);
+    return lines.join("\n");
+  });
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">`,
+    ...urls,
+    `</urlset>`,
+    ``,
+  ].join("\n");
 }

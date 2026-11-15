@@ -109,7 +109,7 @@ All test data (identity, Qatar text, test variable) was removed afterwards. Bran
 - **Content in the first HTML:** the homepage (published CMS homepage of the market) and the collection, category and all-products listings (page N via `?page=N`, when no sort or price filter) render on the server. A plain "More products" link points to the next page; infinite scroll is unchanged.
 - **Old links:** `/uae/…`, `/ksa/…`, `/qatar/…` and short Shopify paths (`/return-policy`, `/track-order`) redirect 301 (see `URL_REDIRECTS.md`).
 - **No layout jump:** collection banners carry their pixel sizes from the API; fonts are WOFF2 with 400/500/700 preloaded and a width-matched Arial stand-in (`globals.css`, `app/layout.tsx`). The Stripe card form still loads the `.ttf` files (`stripeCheckoutAppearance.ts`), so they stay in `public/fonts/`.
-- **Analytics:** `NEXT_PUBLIC_GTM_ID` (GTM-…) or `NEXT_PUBLIC_GA4_ID` (G-…); GTM wins when both are set; nothing loads when empty (`components/layout/AnalyticsScripts.tsx`).
+- **Analytics:** GTM container (GTM-…) or GA4 id (G-…) per market on the integrations switchboard (ADR-005 phase E, `docs/multibrand/SITE_INTEGRATIONS.md`); GTM wins when both are set; nothing loads when off (`components/layout/AnalyticsScripts.tsx`).
 - **Checked (local production build, Lighthouse mobile):** layout shift 0 (was 0.4–0.6), performance ~60 (was ~20). All 890 UAE sitemap URLs answer 200, no broken internal links. 13 key pages fit 375 px.
 - **Homepage SEO:** English and Arabic published (11 Nov). KSA has none of its own and shows the brand (UAE) text; set KSA's own in SEO Management (market view).
 - **Open:** no published Arabic CMS homepage (the older homepage shows); desktop banners are 3840 px and served at full size.

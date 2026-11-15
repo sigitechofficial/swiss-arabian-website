@@ -9,6 +9,8 @@ import { getTranslator, loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
 import { NotFoundView, StorefrontShell } from "@brand-ui/client";
 import { AppProviders } from "./providers";
+import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
+import { loadSiteIntegrations } from "@/lib/site/siteIntegrations";
 import "./globals.css";
 
 /**
@@ -42,15 +44,24 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function GlobalNotFound() {
   const locale = toLocale((await headers()).get(SHOP_LOCALE_HEADER));
-  const messages = await loadMessages(locale);
+  const [messages, integrations] = await Promise.all([
+    loadMessages(locale),
+    // The address's analytics still count a missing page (ADR-005 phase E).
+    resolveStorefrontHost().then(loadSiteIntegrations),
+  ]);
   return (
     <html lang={locale} dir={dir(locale)} className="h-full antialiased" suppressHydrationWarning>
       <head>
         <BrandHead />
       </head>
       <body className="flex min-h-dvh flex-col">
-        <AnalyticsScripts />
-        <AppProviders storefrontHost={null} locale={locale} messages={messages}>
+        <AnalyticsScripts ids={integrations.analytics} />
+        <AppProviders
+          storefrontHost={null}
+          locale={locale}
+          messages={messages}
+          integrations={integrations}
+        >
           <StorefrontShell>
             <NotFoundView />
           </StorefrontShell>

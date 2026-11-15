@@ -1,5 +1,12 @@
 # Insider — what we have now (storefront)
 
+> **Superseded for configuration (2026-11-15, ADR-005 phase E):** the Insider website
+> tag is no longer set with `NEXT_PUBLIC_INSIDER_*` build settings. It loads when
+> Insider is on for the address's market on the integrations switchboard and the
+> market's Insider account has a website tag id (script host: the account's, else
+> `<partner>.api.useinsider.com`). See `docs/multibrand/SITE_INTEGRATIONS.md`.
+> The event behaviour below is unchanged.
+
 **Repo:** `swiss-arabian-website`  
 **As of:** 2026-08-28  
 **Scope:** Frontend only — this is an inventory of what is **implemented in this repo today**.  

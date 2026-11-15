@@ -74,7 +74,9 @@ describe("locale routing (proxy)", () => {
     });
     // Page 1 and other pages keep their own route.
     expect(route("/collections/oud?page=1")).toEqual({ type: "rewrite", pathname: "/en/collections/oud" });
-    expect(route("/blog?page=2")).toEqual({ type: "rewrite", pathname: "/en/blog" });
+    expect(route("/blog?page=2")).toEqual({ type: "rewrite", pathname: "/en/blog/p/2" });
+    expect(route("/ar/blog?page=3")).toEqual({ type: "rewrite", pathname: "/ar/blog/p/3" });
+    expect(route("/blog?page=1")).toEqual({ type: "rewrite", pathname: "/en/blog" });
     expect(route("/products/oud?page=2")).toEqual({ type: "rewrite", pathname: "/en/products/oud" });
   });
 
@@ -84,6 +86,7 @@ describe("locale routing (proxy)", () => {
       pathname: "/collections/oud",
       search: "?sort=new&page=2",
     });
+    expect(route("/blog/p/2")).toEqual({ type: "redirect", pathname: "/blog", search: "?page=2" });
     expect(route("/ar/products/p/4")).toEqual({
       type: "redirect",
       pathname: "/ar/products",

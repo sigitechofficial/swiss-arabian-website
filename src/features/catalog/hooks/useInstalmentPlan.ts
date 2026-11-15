@@ -3,8 +3,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import {
-  INSTALMENT_PROVIDERS,
+  instalmentProviders,
   payInFour,
   tabbyPopupUrl,
   type InstalmentProvider,
@@ -20,7 +21,9 @@ export function useInstalmentPlan(price: number, currency: string) {
   const openerRef = useRef<HTMLElement | null>(null);
   const locale = localeFromPathname(usePathname() || "/");
   const payments = useMemo(() => payInFour(price), [price]);
-  const tabbyUrl = tabbyPopupUrl(price, currency, locale);
+  const promos = useSiteIntegrations().paymentPromos;
+  const tabbyUrl = tabbyPopupUrl(price, currency, locale, promos.tabby);
+  const live = instalmentProviders(promos);
 
   const openProvider = useCallback((provider: InstalmentProvider, opener?: HTMLElement | null) => {
     openerRef.current = opener ?? null;
@@ -32,9 +35,9 @@ export function useInstalmentPlan(price: number, currency: string) {
     openerRef.current?.focus();
   }, []);
 
-  const providers = (Object.keys(INSTALMENT_PROVIDERS) as InstalmentProvider[]).map((id) => ({
+  const providers = (Object.keys(live) as InstalmentProvider[]).map((id) => ({
     id,
-    ...INSTALMENT_PROVIDERS[id],
+    ...live[id],
   }));
 
   return {

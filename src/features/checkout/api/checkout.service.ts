@@ -198,6 +198,8 @@ export type InlineFormResponse = {
   publicKey?: string;
   publishableKey?: string;
   providerReference?: string | null;
+  /** Integration account the session was opened with; sent back with the order. */
+  accountId?: string | null;
 };
 
 export async function openInlineForm(checkoutSessionId: string, returnUrl: string): Promise<InlineFormResponse> {

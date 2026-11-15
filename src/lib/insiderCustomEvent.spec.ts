@@ -1,15 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@/lib/config/env", () => ({
-  env: { insider: { enabled: true, accountId: "10015366", scriptHost: "x.useinsider.com" } },
-}));
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { insiderCustomEvent } from "@/lib/insider";
 
 describe("insiderCustomEvent", () => {
   beforeEach(() => {
+    // Insider's tag is on for this page's market (the layout's boot script sets this).
+    window.__SA_INSIDER_ON__ = true;
     window.InsiderQueue = [];
     window.Insider = { initialized: true };
+  });
+  afterEach(() => {
+    delete window.__SA_INSIDER_ON__;
+  });
+
+  it("reports no delivery when Insider is off for the page's market", () => {
+    window.__SA_INSIDER_ON__ = false;
+    expect(insiderCustomEvent("cart_abandonment_eligible", { step: 1 })).toBe(false);
+    expect(window.InsiderQueue).toEqual([]);
   });
 
   it("queues a custom_event row with typed custom parameters and no init", () => {

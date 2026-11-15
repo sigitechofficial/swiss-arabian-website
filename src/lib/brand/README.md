@@ -12,7 +12,7 @@ src/lib/brand/
     swiss-arabian.ts
     sapil.ts
   registry.ts       BRANDS keyed by code, resolveBrand(), brandOwningHost()
-  publicEnv.ts      reads + validates the per-brand NEXT_PUBLIC_* ids
+  publicEnv.ts      reads + validates the per-deployment NEXT_PUBLIC_* settings
   index.ts          getBrand() / getBrandConfig() / localized()
   validate.ts       rules behind `npm run check:brand`
 scripts/check-brand-config.mjs   the CLI
@@ -27,25 +27,29 @@ const brand = getBrand(host);          // host optional: server passes the reque
 brand.code;                            // "SWISS_ARABIAN" | "SAPIL" | …
 localized(brand.name, locale);         // "Swiss Arabian" / "سويس أرابيان"
 brand.logo.src;
-brand.integrations.analytics.gtmId;    // instead of process.env.NEXT_PUBLIC_GTM_ID
-brand.integrations.payments.tabby;
+brand.integrations.catalogMediaBaseUrl;
 
-brandIntegrations().insider;           // just the integration ids (parsed once per brand)
+brandIntegrations().seoIndexingEnabled; // deployment settings only (parsed once per brand)
 brandDisplayName(locale);              // "Swiss Arabian" / "سابيل" …
 ```
 
-Callers (all moved off `env.ts` / `process.env`, 2026-11-13 review):
+**Analytics (GTM / GA4), Insider's website tag, Tabby / Tamara promos and
+Google Maps are not brand or build settings** (ADR-005 phase E, 2026-11-15).
+They come from the backend per website address and market — the integrations
+switchboard in the admin (Settings → Integrations) — through
+`src/lib/site/siteIntegrations.ts` (server, cached per address) and
+`useSiteIntegrations()` (client). See `docs/multibrand/SITE_INTEGRATIONS.md`.
 
 | Integration | Read in |
 | --- | --- |
-| GTM / GA4 | `components/layout/AnalyticsScripts.tsx` |
-| Insider | `app/[locale]/layout.tsx` (head tag), `components/layout/InsiderScripts.tsx`, `lib/insider.ts` |
-| Tabby keys, Tabby / Tamara / Paymob switches | `features/catalog/utils/instalments.ts`, `features/cart/components/CartTabbyPromo.tsx`, `features/checkout/utils/paymentMethod.ts` |
+| GTM / GA4 | `components/layout/AnalyticsScripts.tsx` (ids from the root layout) |
+| Insider | `app/[site]/[locale]/layout.tsx` (head tag), `components/layout/InsiderScripts.tsx`, `lib/insider.ts` (`window.__SA_INSIDER_ON__`, set only when the tag rendered) |
+| Tabby / Tamara promos | `features/catalog/utils/instalments.ts`, `hooks/useInstalmentPlan.ts`, `features/cart/components/CartTabbyPromo.tsx` |
 | Google Maps | `lib/google/GooglePlacesProvider.tsx` |
 | Catalog media base | `features/catalog/utils/resolveCatalogImageUrl.ts` (`next.config` image patterns still read the env var at build time) |
 | Storefront host, brand code | `lib/storefront/brand.ts`, `lib/api/storefrontHost.ts` (via `readProcessPublicEnv`; `@/lib/brand` imports them) |
-| SEO indexing | `app/[locale]/layout.tsx`, `app/robots.ts` |
-| Site name, icons, default description | `app/[locale]/layout.tsx`, `lib/seo/brandIdentity.ts` (fallback when the API has no identity) |
+| SEO indexing | `app/[site]/[locale]/layout.tsx`, `lib/seo/siteRobots.ts` (`app/[site]/robots.txt`) |
+| Site name, icons, default description | `app/[site]/[locale]/layout.tsx`, `lib/seo/brandIdentity.ts` (fallback when the API has no identity) |
 | `{brand}` in page meta descriptions | `lib/i18n/routeLocale.ts` (`routeTranslator()` fills it) |
 
 Which brand: `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` → else the brand whose
@@ -70,13 +74,15 @@ compare `getBrandConfig(host).code` or, better, read the field you need.
    one brand only (a test enforces this).
 4. `themeKey`: reuse `swiss-arabian` / `sapil` or add a key to `THEME_KEYS` in
    `types.ts` (plus its design tokens).
-5. `ownedIds`: the brand's own public GTM / GA4 / Insider / Tabby / Maps map ids.
-   No API keys. These are what stops another brand from shipping them.
-6. `requiredInProduction`: settings that must be set for a production build.
-7. Register it in `registry.ts` (`BRANDS`).
-8. Optional local alias: `NEXT_PUBLIC_LOCAL_STOREFRONTS=sp=SAPIL@sapil.test,ac=ACME_PERFUMES@acme.test`.
-9. Deployment env: `NEXT_PUBLIC_STOREFRONT_BRAND_CODE=<CODE>`,
-   `NEXT_PUBLIC_STOREFRONT_HOST=<shop host>` and the brand's ids (below).
+5. `requiredInProduction`: settings that must be set for a production build.
+6. Register it in `registry.ts` (`BRANDS`).
+7. Optional local alias: `NEXT_PUBLIC_LOCAL_STOREFRONTS=sp=SAPIL@sapil.test,ac=ACME_PERFUMES@acme.test`.
+8. Deployment env: `NEXT_PUBLIC_STOREFRONT_BRAND_CODE=<CODE>`,
+   `NEXT_PUBLIC_STOREFRONT_HOST=<shop host>`, `SITE_REVALIDATE_SECRET` (server
+   only, shared with the backend).
+9. Analytics, Insider, Tabby and Maps: integration accounts and assignments in
+   the admin (Settings → Integrations), per market — nothing in the build.
+   Ownership is enforced there: an account belongs to one brand.
 10. `npm run check:brand` with that env, then `npx vitest run src/lib/brand`.
 
 ## Per-brand settings (`BRAND_ENV_KEYS` in `types.ts`)
@@ -86,11 +92,6 @@ compare `getBrandConfig(host).code` or, better, read the field you need.
 | `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` | (selects the brand) |
 | `NEXT_PUBLIC_STOREFRONT_HOST` | `storefrontHost` |
 | `NEXT_PUBLIC_STAGING_RETURN_URL`, `NEXT_PUBLIC_PRODUCTION_RETURN_URL` | `returnUrls` |
-| `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GA4_ID` | `analytics` |
-| `NEXT_PUBLIC_INSIDER_ENABLED`, `_ACCOUNT_ID`, `_SCRIPT_HOST` | `insider` |
-| `NEXT_PUBLIC_TABBY_PUBLIC_KEY`, `NEXT_PUBLIC_TABBY_MERCHANT_CODE` | `tabby` |
-| `NEXT_PUBLIC_ENABLE_PAYMOB`, `_TABBY`, `_TAMARA` | `payments` |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | `googleMaps` |
 | `NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL` | `catalogMediaBaseUrl` |
 | `NEXT_PUBLIC_SEO_INDEXING_ENABLED` | `seoIndexingEnabled` (production only) |
 
@@ -100,13 +101,14 @@ local return URLs, `NEXT_PUBLIC_LOCAL_STOREFRONTS`) stay in
 `src/lib/config/env.ts`. Stripe has no front-end switch: its publishable key
 comes from the backend per market.
 
-Malformed values are dropped at runtime (no broken or foreign tag loads).
-Insider: an empty account id uses the brand's `integrationDefaults` (Swiss
-Arabian's UAT account) or, for brands without one, leaves Insider off.
-`src/lib/config/env.ts` no longer holds any per-brand setting (and no Insider
-default). One difference from the old `env.ts`: an Insider account set to an
-empty string now also falls back to the brand default (before, only an unset
-one did); deployments always pass a value (Dockerfile / Key Vault defaults).
+Malformed values are dropped at runtime. Removed in phase E (`REMOVED_ENV_KEYS`):
+`NEXT_PUBLIC_GTM_ID`, `_GA4_ID`, `_INSIDER_ENABLED`, `_INSIDER_ACCOUNT_ID`,
+`_INSIDER_SCRIPT_HOST`, `_TABBY_PUBLIC_KEY`, `_TABBY_MERCHANT_CODE`,
+`_ENABLE_TABBY`, `_ENABLE_TAMARA`, `_ENABLE_PAYMOB`, `_GOOGLE_MAPS_API_KEY`,
+`_GOOGLE_MAPS_MAP_ID` — and with them the brand files' `ownedIds` and
+`integrationDefaults` (the hard-coded UAT Insider account). The Paymob switch
+only put Paymob first at checkout; the market's default method and order in
+the admin decide that now.
 
 ## Build-time check: `npm run check:brand`
 
@@ -116,25 +118,21 @@ brand and exits 1 on any error:
 
 - `NEXT_PUBLIC_STOREFRONT_BRAND_CODE` unknown (any env) or unset (production).
   Unset outside production is a warning and checks as Swiss Arabian.
-- A value is malformed (GTM / GA4 / Insider id format, hostname with a scheme,
-  return URL not http(s), booleans other than `true` / `false`).
-- Production: a setting in the brand's `requiredInProduction` is empty; Tabby
-  switched on without its public key + merchant code (warning on staging).
-- Any env: a GTM / GA4 / Insider / Tabby / Maps map id that is in another
-  brand's `ownedIds`, or an empty Insider account while Insider is on when the
-  brand's own `integrationDefaults` point at another brand's account.
+- A value is malformed (hostname with a scheme, return URL not http(s),
+  booleans other than `true` / `false`).
+- Production: a setting in the brand's `requiredInProduction` is empty.
+- Any env: a setting that moved to the integrations switchboard is still set
+  (it would do nothing; the value is never printed).
 - Any env: storefront host or return URL host listed under another brand.
 - Production: brand has no `hosts.production`; storefront host or production
   return URL host not in the brand's production hosts. Staging: storefront
   host must be a production or staging host. Dev / local: mismatch is a warning.
 
-Keys (`*_KEY`) are masked in the output.
-
-Example (Sapil production build with Swiss Arabian leftovers):
+Example (Sapil production build with leftovers):
 
 ```
 Brand config check: SAPIL / NEXT_PUBLIC_APP_ENV=production
-  ✖ NEXT_PUBLIC_INSIDER_ACCOUNT_ID="10015366" belongs to Swiss Arabian (SWISS_ARABIAN), not Sapil (SAPIL).
+  ✖ NEXT_PUBLIC_INSIDER_ACCOUNT_ID is no longer read: analytics, Insider's website tag, Tabby / Tamara promos and Google Maps are set per market in the admin (Settings → Integrations). Remove it from this deployment.
   ✖ NEXT_PUBLIC_STOREFRONT_HOST="uae.swissarabian.com" is a Swiss Arabian (SWISS_ARABIAN) host, not Sapil (SAPIL).
   ✖ Sapil (SAPIL) has no production hosts in src/lib/brand/brands/*.ts …
 ```

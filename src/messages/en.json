@@ -1335,5 +1335,9 @@
   "unsubscribeAction": "Unsubscribe",
   "unsubscribeDone": "You are unsubscribed. We will not send you marketing emails.",
   "unsubscribeFailed": "This link is not valid or has expired. You can also manage emails from your account.",
-  "unsubscribeBack": "Back to the shop"
+  "unsubscribeBack": "Back to the shop",
+  "market.countryPrompt.title": "Shopping from {country}?",
+  "market.countryPrompt.body": "You're in the {current} store. Switch to see prices, delivery and payment options for {country}.",
+  "market.countryPrompt.switch": "Switch to {market}",
+  "market.countryPrompt.stay": "Stay in {market}"
 }

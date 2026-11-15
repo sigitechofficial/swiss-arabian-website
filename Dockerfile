@@ -14,50 +14,29 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# NEXT_PUBLIC_* are inlined at build time for the client bundle.
-ARG NEXT_PUBLIC_APP_ENV=dev
-# One image per brand: the brand code picks the brand config + design system
-# (src/lib/brand, src/brands). Default: Swiss Arabian (as before).
-ARG NEXT_PUBLIC_STOREFRONT_BRAND_CODE=SWISS_ARABIAN
-ARG NEXT_PUBLIC_STOREFRONT_HOST=
-ARG NEXT_PUBLIC_DEV_API_BASE_URL=https://ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
-ARG NEXT_PUBLIC_DEV_RETURN_URL=https://ca-swissarabian-website-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io
+# One image per brand, with no environment in it (deployment plan W4): it is
+# built once and promoted unchanged from dev to staging to production.
+# Environment settings (APP_ENV, API_BASE_URL, SEO_INDEXING_ENABLED,
+# TRUSTED_EDGE_IDS, REDIS_*) are set on the container at runtime.
+#
+# The brand: its config and design system are compiled in. Required.
+ARG NEXT_PUBLIC_STOREFRONT_BRAND_CODE
+# Product switches: the same in every environment of the brand.
 ARG NEXT_PUBLIC_ENABLE_MFA=false
 ARG NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true
-ARG NEXT_PUBLIC_ENABLE_OAUTH=false
 ARG NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true
-ARG NEXT_PUBLIC_USE_DEV_SESSION=false
-ARG NEXT_PUBLIC_INSIDER_ENABLED=true
-ARG NEXT_PUBLIC_INSIDER_ACCOUNT_ID=10015366
-ARG NEXT_PUBLIC_INSIDER_SCRIPT_HOST=swissarabianuatnew.api.useinsider.com
-ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
-# Analytics: GTM wins when both are set; empty = no analytics script.
-ARG NEXT_PUBLIC_GTM_ID=
-ARG NEXT_PUBLIC_GA4_ID=
-# Search engines: "true" only on the live site at go-live (dev stays noindex).
-ARG NEXT_PUBLIC_SEO_INDEXING_ENABLED=false
+# The build's commit: version skew protection across replicas (next.config deploymentId).
+ARG NEXT_DEPLOYMENT_ID
 
-ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
-    NEXT_PUBLIC_STOREFRONT_BRAND_CODE=$NEXT_PUBLIC_STOREFRONT_BRAND_CODE \
-    NEXT_PUBLIC_STOREFRONT_HOST=$NEXT_PUBLIC_STOREFRONT_HOST \
-    NEXT_PUBLIC_DEV_API_BASE_URL=$NEXT_PUBLIC_DEV_API_BASE_URL \
-    NEXT_PUBLIC_DEV_RETURN_URL=$NEXT_PUBLIC_DEV_RETURN_URL \
+ENV NEXT_PUBLIC_STOREFRONT_BRAND_CODE=$NEXT_PUBLIC_STOREFRONT_BRAND_CODE \
     NEXT_PUBLIC_ENABLE_MFA=$NEXT_PUBLIC_ENABLE_MFA \
     NEXT_PUBLIC_ENABLE_PASSWORD_RESET=$NEXT_PUBLIC_ENABLE_PASSWORD_RESET \
-    NEXT_PUBLIC_ENABLE_OAUTH=$NEXT_PUBLIC_ENABLE_OAUTH \
     NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=$NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI \
-    NEXT_PUBLIC_USE_DEV_SESSION=$NEXT_PUBLIC_USE_DEV_SESSION \
-    NEXT_PUBLIC_INSIDER_ENABLED=$NEXT_PUBLIC_INSIDER_ENABLED \
-    NEXT_PUBLIC_INSIDER_ACCOUNT_ID=$NEXT_PUBLIC_INSIDER_ACCOUNT_ID \
-    NEXT_PUBLIC_INSIDER_SCRIPT_HOST=$NEXT_PUBLIC_INSIDER_SCRIPT_HOST \
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY \
-    NEXT_PUBLIC_GTM_ID=$NEXT_PUBLIC_GTM_ID \
-    NEXT_PUBLIC_GA4_ID=$NEXT_PUBLIC_GA4_ID \
-    NEXT_PUBLIC_SEO_INDEXING_ENABLED=$NEXT_PUBLIC_SEO_INDEXING_ENABLED \
+    NEXT_DEPLOYMENT_ID=$NEXT_DEPLOYMENT_ID \
     NEXT_TELEMETRY_DISABLED=1
 
-# Fails the image when a per-brand setting is malformed, missing for production
-# or belongs to another brand (src/lib/brand/validate.ts).
+# Fails the image when the brand is not named / known, or when a setting the
+# website no longer reads is set (src/lib/brand/validate.ts).
 RUN npm run check:brand && npm run build
 
 FROM node:22-bookworm-slim AS runner
@@ -74,6 +53,8 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# The shared page cache handler (next.config cacheHandler), loaded at runtime.
+COPY --from=builder --chown=nextjs:nodejs /app/cache-handler.cjs ./cache-handler.cjs
 
 USER nextjs
 

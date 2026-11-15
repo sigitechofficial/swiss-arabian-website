@@ -380,6 +380,7 @@ export function useCheckout() {
           publicKey: form.publicKey,
           publishableKey: form.publishableKey,
           providerReference: form.providerReference,
+          accountId: form.accountId,
         };
         setInlinePayment({
           provider: form.provider,
@@ -512,6 +513,15 @@ export function useCheckout() {
         if (started.kind === "inline" && started.inline) {
           setInlinePayment({ ...started.inline, orderId });
           setStatus("ready");
+          // The card form holds the prepared session. If the payment was opened
+          // with a different one (e.g. the market's payment account changed),
+          // confirming now would pay a session no payment points to: show the new
+          // form and let the shopper enter the card again.
+          if (preparedForMethod && started.inline.clientSecret !== preparedForMethod.clientSecret) {
+            preparedRef.current = null;
+            setErrorMsg("Please enter your card details again, then tap Pay now.");
+            return started;
+          }
           confirmInlinePay(orderId);
         }
         return started;

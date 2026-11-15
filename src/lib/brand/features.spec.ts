@@ -137,19 +137,19 @@ describe("brand features", () => {
 
 describe("gated routes", () => {
   const ROUTES: Array<[string, () => Promise<{ default: (props: never) => unknown }>]> = [
-    ["/gift-box", () => import("@/app/[locale]/(shop)/gift-box/page")],
-    ["/account/rewards", () => import("@/app/[locale]/(account)/account/rewards/page")],
-    ["/account/membership", () => import("@/app/[locale]/(account)/account/membership/page")],
-    ["/account/employee-benefits", () => import("@/app/[locale]/(account)/account/employee-benefits/page")],
-    ["/account/subscription", () => import("@/app/[locale]/(account)/account/subscription/page")],
-    ["/account/subscription/[id]", () => import("@/app/[locale]/(account)/account/subscription/[id]/page")],
-    ["/subscriptions", () => import("@/app/[locale]/(shop)/subscriptions/page")],
-    ["/subscriptions/[planCode]", () => import("@/app/[locale]/(shop)/subscriptions/[planCode]/page")],
+    ["/gift-box", () => import("@/app/[site]/[locale]/(shop)/gift-box/page")],
+    ["/account/rewards", () => import("@/app/[site]/[locale]/(account)/account/rewards/page")],
+    ["/account/membership", () => import("@/app/[site]/[locale]/(account)/account/membership/page")],
+    ["/account/employee-benefits", () => import("@/app/[site]/[locale]/(account)/account/employee-benefits/page")],
+    ["/account/subscription", () => import("@/app/[site]/[locale]/(account)/account/subscription/page")],
+    ["/account/subscription/[id]", () => import("@/app/[site]/[locale]/(account)/account/subscription/[id]/page")],
+    ["/subscriptions", () => import("@/app/[site]/[locale]/(shop)/subscriptions/page")],
+    ["/subscriptions/[planCode]", () => import("@/app/[site]/[locale]/(shop)/subscriptions/[planCode]/page")],
     [
       "/subscriptions/[planCode]/checkout",
-      () => import("@/app/[locale]/(checkout)/subscriptions/[planCode]/checkout/page"),
+      () => import("@/app/[site]/[locale]/(checkout)/subscriptions/[planCode]/checkout/page"),
     ],
-    ["/stores", () => import("@/app/[locale]/(shop)/stores/page")],
+    ["/stores", () => import("@/app/[site]/[locale]/(shop)/stores/page")],
   ];
 
   it.each(ROUTES)("%s answers not found on Sapil", async (_path, load) => {
@@ -161,7 +161,7 @@ describe("gated routes", () => {
 
   it("Swiss Arabian still renders the rewards page", async () => {
     process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = "SWISS_ARABIAN";
-    const page = (await import("@/app/[locale]/(account)/account/rewards/page")).default;
+    const page = (await import("@/app/[site]/[locale]/(account)/account/rewards/page")).default;
     expect(() => page()).not.toThrow();
   });
 });

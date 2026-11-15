@@ -18,9 +18,10 @@ vi.mock("@/lib/brand", async (orig) => {
   const { sapil } = await import("@/lib/brand/brands/sapil");
   return { ...actual, getBrand: () => ({ ...sapil, integrations: {} }) };
 });
-vi.mock("@/providers/MarketProvider", () => ({
-  useMarket: () => ({ marketId: "SAPIL_URD1", setMarketId: vi.fn(), regionOptions: [{ id: "SAPIL_URD1", label: "Sapil UAE" }], languageOptions: [], contentLanguage: "en-us", catalogContext: null }),
-}));
+vi.mock("@/providers/MarketProvider", () => {
+  const market = { marketId: "SAPIL_URD1", setMarketId: vi.fn(), regionOptions: [{ id: "SAPIL_URD1", label: "Sapil UAE" }], languageOptions: [], contentLanguage: "en-us", catalogContext: null };
+  return { useMarket: () => market, useOptionalMarket: () => market };
+});
 vi.mock("@/features/navigation", () => ({
   useNavigation: () => ({
     headerNav: [

@@ -1,12 +1,10 @@
 import { storefrontBrand } from "@/lib/storefront/brand";
-import { parseBrandIntegrations, readProcessPublicEnv } from "./publicEnv";
 import { resolveBrand } from "./registry";
-import type { ActiveBrand, BrandConfig, BrandIntegrations } from "./types";
+import type { ActiveBrand, BrandConfig } from "./types";
 
 export type {
   ActiveBrand,
   BrandConfig,
-  BrandIntegrations,
   LocalizedText,
   SocialNetwork,
   ThemeKey,
@@ -24,38 +22,9 @@ export function getBrandConfig(host?: string | null): BrandConfig {
   return resolveBrand({ brandCode, host: shopHost });
 }
 
-/**
- * NEXT_PUBLIC_* values are fixed per build, so a brand's integrations are
- * parsed once per brand (image URLs and analytics read them on every render).
- * Tests change env between cases, so they always re-read.
- */
-const integrationsByBrand = new Map<string, BrandIntegrations>();
-
-function integrationsFor(config: BrandConfig): BrandIntegrations {
-  if (process.env.NODE_ENV === "test") {
-    return parseBrandIntegrations(readProcessPublicEnv(), config);
-  }
-  let cached = integrationsByBrand.get(config.code);
-  if (!cached) {
-    cached = parseBrandIntegrations(readProcessPublicEnv(), config);
-    integrationsByBrand.set(config.code, cached);
-  }
-  return cached;
-}
-
-/** The active brand with this deployment's public integration ids. */
+/** The active brand (static config; environment settings: src/lib/config/runtime.ts). */
 export function getBrand(host?: string | null): ActiveBrand {
-  const config = getBrandConfig(host);
-  return { ...config, integrations: integrationsFor(config) };
-}
-
-/**
- * This deployment's integration ids (analytics, Insider, Tabby, Maps, payment
- * switches, catalog media, storefront host). Use instead of reading
- * `process.env.NEXT_PUBLIC_*` or `env.*` for anything per brand.
- */
-export function brandIntegrations(host?: string | null): BrandIntegrations {
-  return integrationsFor(getBrandConfig(host));
+  return getBrandConfig(host);
 }
 
 /** Text for a locale, falling back to the brand's default locale, then English. */

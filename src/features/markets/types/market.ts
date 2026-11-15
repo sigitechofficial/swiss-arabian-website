@@ -29,6 +29,11 @@ export type StorefrontMarketCatalogContext = {
 export type StorefrontMarket = {
   zoneId: string;
   zoneCode: string;
+  /**
+   * The market's own website (`https://ksa.swissarabian.com`); null when it has
+   * none yet. Older backends omit it.
+   */
+  storefrontUrl?: string | null;
   name: string;
   countryCode: string;
   defaultCurrencyCode: string | null;
@@ -78,4 +83,18 @@ export type StorefrontMarketDelivery = {
 export type StorefrontMarketListResponse = {
   markets: StorefrontMarket[];
   defaultMarket: StorefrontMarket | null;
+  /**
+   * The market of the address itself (`ksa.swissarabian.com` → KSA). It decides
+   * the market: no cookie or picker overrides it. Null when the address serves
+   * no single market. Older backends omit it.
+   */
+  siteMarketCode?: string | null;
+  /** The brand's default market (hreflang x-default). Older backends omit it. */
+  brandDefaultMarketCode?: string | null;
+  /**
+   * The brand's root domain this address sits under (`swissarabian.com`), from
+   * the backend address table: where the shopper's market choice is kept for the
+   * root domain. Null when under none (local aliases). Older backends omit it.
+   */
+  brandDomain?: string | null;
 };

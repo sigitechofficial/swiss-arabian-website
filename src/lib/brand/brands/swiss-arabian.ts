@@ -65,26 +65,4 @@ export const swissArabian = defineBrand({
     giftBox: true,
     employeeBenefits: true,
   },
-  ownedIds: {
-    // TODO(brand): add the live GTM / GA4 ids once they exist (Key Vault next-public-gtm-id / -ga4-id).
-    gtmIds: [],
-    ga4Ids: [],
-    insiderAccountIds: ["10015366"],
-    insiderScriptHosts: ["swissarabianuatnew.api.useinsider.com"],
-    // TODO(brand): Tabby merchant code / public key when the merchant account exists.
-    tabbyMerchantCodes: [],
-    tabbyPublicKeys: [],
-    googleMapsMapIds: [],
-  },
-  requiredInProduction: [
-    "NEXT_PUBLIC_STOREFRONT_BRAND_CODE",
-    "NEXT_PUBLIC_STOREFRONT_HOST",
-    "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
-    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
-  ],
-  integrationDefaults: {
-    // Same fallback as src/lib/config/env.ts and the Dockerfile.
-    insiderAccountId: "10015366",
-    insiderScriptHost: "swissarabianuatnew.api.useinsider.com",
-  },
 });

@@ -3,6 +3,12 @@ import type { CatalogSearchSort } from "@/features/catalog/api/catalog.service";
 import { SEARCH_SORT_OPTIONS } from "@/features/search/constants";
 import { SearchPageView } from "@brand-ui";
 
+/**
+ * Results depend on each search (`?q=`, `?sort=`): rendered per request, never
+ * cached (and kept out of search engines).
+ */
+export const dynamic = "force-dynamic";
+
 const SORT_VALUES = new Set(SEARCH_SORT_OPTIONS.map((option) => option.value));
 
 function one(value: string | string[] | undefined): string {

@@ -5,20 +5,18 @@ import {
 } from "../api/auth.service";
 
 /**
- * Local development only. The same six-digit code the shopper already typed
- * is offered to the existing phone confirmation when the local API is in use.
- * Production builds and non-local APIs skip this. A failure leaves the
- * customer signed in without an employee link.
+ * Local development only (APP_ENV=local, `next dev`). The same six-digit code
+ * the shopper already typed is offered to the existing phone confirmation.
+ * Every deployed environment skips this. A failure leaves the customer signed
+ * in without an employee link.
  */
 export function shouldConfirmStoredPhoneWithSameCode(input?: {
   appEnv?: string;
   nodeEnv?: string;
-  useLocalApi?: boolean;
 }): boolean {
   const appEnv = input?.appEnv ?? env.appEnv;
   const nodeEnv = input?.nodeEnv ?? process.env.NODE_ENV;
-  const useLocalApi = input?.useLocalApi ?? env.flags.useLocalApi;
-  return appEnv !== "production" && nodeEnv !== "production" && useLocalApi;
+  return appEnv === "local" && nodeEnv !== "production";
 }
 
 export async function confirmStoredPhoneWithSameCode(input: {

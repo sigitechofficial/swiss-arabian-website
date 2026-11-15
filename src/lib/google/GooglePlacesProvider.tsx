@@ -2,18 +2,20 @@
 
 import type { ReactNode } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { brandIntegrations } from "@/lib/brand";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 
-function mapsApiKey(): string {
-  return brandIntegrations().googleMaps.apiKey;
+/** The address's Google Maps browser key, when Maps is on for its market (ADR-005 phase E). */
+function useMapsApiKey(): string {
+  return useSiteIntegrations().googleMaps?.browserKey ?? "";
 }
 
-export function googlePlacesEnabled(): boolean {
-  return Boolean(mapsApiKey());
+/** Address autocomplete is available on this website. */
+export function useGooglePlacesEnabled(): boolean {
+  return Boolean(useMapsApiKey());
 }
 
 export function GooglePlacesProvider({ children }: { children: ReactNode }) {
-  const apiKey = mapsApiKey();
+  const apiKey = useMapsApiKey();
   if (!apiKey) return children;
   return (
     <APIProvider apiKey={apiKey} libraries={["places"]}>

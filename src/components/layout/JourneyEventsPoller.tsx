@@ -6,7 +6,7 @@ import {
   deliverJourneyEvents,
   toInsiderJourneyEvent,
 } from "@/features/journeys/lib/deliverJourneyEvents";
-import { brandIntegrations } from "@/lib/brand";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { insiderCustomEvent } from "@/lib/insider";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -26,10 +26,11 @@ export function JourneyEventsPoller() {
   const customerId = useAuthStore((s) => s.user?.id ?? null);
   const seen = useRef<Set<string>>(new Set());
   const running = useRef(false);
+  // Insider's website tag is on for this address's market (switchboard, ADR-005 phase E).
+  const insiderOn = Boolean(useSiteIntegrations().insiderTag);
 
   useEffect(() => {
-    const { insider } = brandIntegrations();
-    if (!insider.enabled || !insider.accountId) return;
+    if (!insiderOn) return;
     if (!bootstrapped || !customerId) return;
 
     let cancelled = false;
@@ -65,7 +66,7 @@ export function JourneyEventsPoller() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [bootstrapped, customerId]);
+  }, [bootstrapped, customerId, insiderOn]);
 
   return null;
 }

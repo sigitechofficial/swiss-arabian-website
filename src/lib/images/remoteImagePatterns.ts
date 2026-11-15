@@ -36,22 +36,8 @@ export function remotePatternFromBaseUrl(
   }
 }
 
-const CATALOG_MEDIA_PATH = "/catalog/media/**";
-
-// NEXT_PUBLIC_* values are read with static property access so Next.js can
-// inline them into the browser bundle.
-const catalogMediaPatterns = [
-  remotePatternFromBaseUrl(process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL, CATALOG_MEDIA_PATH),
-  remotePatternFromBaseUrl(process.env.NEXT_PUBLIC_DEV_API_BASE_URL, CATALOG_MEDIA_PATH),
-  remotePatternFromBaseUrl(process.env.NEXT_PUBLIC_LOCAL_API_BASE_URL, CATALOG_MEDIA_PATH),
-  remotePatternFromBaseUrl(process.env.NEXT_PUBLIC_STAGING_API_BASE_URL, CATALOG_MEDIA_PATH),
-  remotePatternFromBaseUrl(process.env.NEXT_PUBLIC_PRODUCTION_API_BASE_URL, CATALOG_MEDIA_PATH),
-  {
-    protocol: "https" as const,
-    hostname: "ca-swissarabian-backend-dev.greenbush-d5b07575.uaenorth.azurecontainerapps.io",
-    pathname: CATALOG_MEDIA_PATH,
-  },
-].filter((pattern): pattern is RemoteImagePattern => pattern != null);
+// Catalog media is served on the website's own address (/catalog/media/…,
+// forwarded to the backend), so no backend host is listed here.
 
 export const REMOTE_IMAGE_PATTERNS: RemoteImagePattern[] = [
   { protocol: "https", hostname: "cdn.shopify.com", pathname: "/s/files/**" },
@@ -66,7 +52,6 @@ export const REMOTE_IMAGE_PATTERNS: RemoteImagePattern[] = [
   // The UAE store's domain: most demo product images are here. Without it they were served
   // full size (≈300 KB PNG each) and the shop / collection LCP image waited for them.
   { protocol: "https", hostname: "uae.sapil.com", pathname: "/cdn/shop/files/**" },
-  ...catalogMediaPatterns,
 ];
 
 function pathMatches(pattern: string, pathname: string): boolean {

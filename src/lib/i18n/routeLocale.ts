@@ -1,4 +1,5 @@
 import { locale as localeParam } from "next/root-params";
+import "@/lib/site/siteParam";
 import { brandDisplayName } from "@/lib/brand";
 import { toLocale, type ShopLocale } from "./locales";
 import { getTranslator, type Translator } from "./messages";

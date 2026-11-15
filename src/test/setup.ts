@@ -1,6 +1,18 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
 
+/**
+ * Tests run as a local website (src/lib/config/runtime.ts): an explicit
+ * environment and a backend address that is never reached (fetch is blocked
+ * below). Without them the safe defaults apply: production, no backend.
+ */
+process.env.APP_ENV ??= "local";
+process.env.API_BASE_URL ??= "http://api.test";
+// Component tests run in a simulated browser: give it the page's settings.
+if (typeof window !== "undefined") {
+  window.__SITE_RUNTIME__ = { appEnv: "local", storefrontHost: "", localStorefronts: "" };
+}
+
 // jsdom does not implement layout APIs that every browser has. Stub them so
 // components that scroll elements into view can render in tests.
 if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
