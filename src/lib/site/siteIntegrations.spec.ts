@@ -80,6 +80,16 @@ describe("loadSiteIntegrations", () => {
     });
   });
 
+  it("asks for the page's market on an address that serves several, cached per market under the address's tag", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: full }), { status: 200 }));
+    await loadSiteIntegrations("swissarabian.com", "KSA");
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/storefront\/site\/integrations\?market=KSA$/);
+    const call = cacheCalls[cacheCalls.length - 1];
+    expect(call.keys).toEqual(["site-integrations", "swissarabian.com", "KSA"]);
+    expect(call.options.tags).toEqual([siteIntegrationsTag("swissarabian.com")]);
+  });
+
   it("is all off (not a default, not cached as off) when the backend is down", async () => {
     fetchMock.mockResolvedValue(new Response("", { status: 503 }));
     expect(await loadSiteIntegrations("uae.swissarabian.com")).toEqual(SITE_INTEGRATIONS_OFF);

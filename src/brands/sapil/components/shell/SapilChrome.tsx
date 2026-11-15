@@ -26,6 +26,7 @@ import { SapilPhoneMenu } from "./SapilPhoneMenu";
 import { SapilSearchDialog } from "./SapilSearchDialog";
 import { SapilShopBy, priceEditChip } from "./SapilShopBy";
 import { SapilToastHost } from "./SapilToastHost";
+import { SapilCountryPrompt } from "./SapilCountryPrompt";
 import { footerColumnsFromNav, menuItemsFromNav, shopByChipsFromNav } from "./shellData";
 import { useSapilPrice } from "../shared/useSapilPrice";
 
@@ -146,6 +147,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
       />
       <SapilSearchDialog />
       <SapilToastHost />
+      <SapilCountryPrompt />
       <SapilBagDrawer />
       <GiftChoiceHost Modal={SapilGiftChoiceDialog} />
     </div>

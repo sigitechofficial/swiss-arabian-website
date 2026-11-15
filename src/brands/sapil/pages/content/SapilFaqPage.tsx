@@ -10,7 +10,7 @@ import { SapilStatePanel } from "../../components/states/SapilStatePanel";
  * (Pages & policies). The built-in FAQ is another brand's text, so Sapil shows
  * help links instead of questions it hasn't written.
  */
-export function SapilFaqPage(_props: { initialDrawer?: string }) {
+export function SapilFaqPage() {
   const t = useSapilCopy();
   return (
     <SapilStatePanel

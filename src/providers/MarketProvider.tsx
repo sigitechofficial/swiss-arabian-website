@@ -35,6 +35,7 @@ import {
   isoForMarket,
 } from "@/features/markets/utils/flagForMarket";
 import {
+  answerCountrySuggestion,
   readZoneCookie,
   storedZoneFor,
   writeMarketChoice,
@@ -327,6 +328,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const setMarketId = useCallback(
     (id: string | null) => {
       if (!id || id === marketId) return;
+      // The shopper's own choice: the country suggestion is answered.
+      answerCountrySuggestion(id);
       const market = shoppable.find((item) => item.zoneCode === id);
       // A market with its own website: go there, same page and language. Its
       // bag, prices and sign-in belong to that website.

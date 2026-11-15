@@ -179,6 +179,23 @@ describe("proxy: served only through the hosting edge", () => {
     process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
     expect((await proxy(request("/api/health"))).status).not.toBe(403);
   });
+
+  it("serves its public files directly (the image optimizer fetches them itself), nothing else", async () => {
+    process.env.TRUSTED_EDGE_IDS = "fd-profile-1";
+    for (const file of ["/assets/storefront/banner.jpg", "/images/logo.png", "/favicon-32.png"]) {
+      expect((await proxy(request(file))).headers.get("x-middleware-next")).toBe("1");
+    }
+    for (const gated of [
+      "/robots.txt",
+      "/sitemap.xml",
+      "/products",
+      "/storefront/markets",
+      "/uae.swissarabian.com/en/x.png",
+      "/.well-known/apple-developer-merchantid-domain-association",
+    ]) {
+      expect((await proxy(request(gated))).status).toBe(403);
+    }
+  });
 });
 
 describe("proxy: the browser's API calls go to this environment's backend (W4)", () => {
@@ -249,6 +266,113 @@ describe("proxy: a brand's root domain sends visitors to a market website", () =
     expect(response.headers.get("x-middleware-rewrite")).toBe(
       "https://swissarabian.com/swissarabian.com/robots.txt",
     );
+  });
+});
+
+describe("proxy: one address for all of a brand's markets (first visit by country)", () => {
+  const brandSite = () =>
+    site({
+      host: "ca-swissarabian-website-dev.example.azurecontainerapps.io",
+      siteMarketCode: null,
+      defaultMarketCode: "URD1",
+      markets: [
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: null, languages: ["en", "ar"] },
+        { zoneCode: "KSA", countryCode: "SA", storefrontUrl: null, languages: ["en", "ar"] },
+      ],
+    });
+  const BASE = "https://ca-swissarabian-website-dev.example.azurecontainerapps.io";
+  const setCookies = (response: Response) => response.headers.getSetCookie();
+
+  it("starts a first visit in the country's market: the page is drawn for it and it is saved", async () => {
+    registry.lookup = brandSite();
+    const response = await proxy(request("/ar/collections", { "x-client-country": "SA" }, BASE));
+    expect(response.headers.get("x-middleware-rewrite")).toContain("/ar/collections");
+    expect(forwarded(response, "cookie")).toContain("sa-zone-code=KSA");
+    const cookies = setCookies(response);
+    expect(cookies.find((c) => c.startsWith("sa-zone-code=KSA"))).toMatch(/Max-Age=31536000/i);
+    expect(cookies.find((c) => c.startsWith("sa-zone-code="))).toMatch(/Secure/i);
+    expect(cookies.some((c) => c.startsWith("sa-country-market=KSA"))).toBe(true);
+  });
+
+  it("keeps the shopper's saved market over their country, and tells the page the country's market", async () => {
+    registry.lookup = brandSite();
+    const response = await proxy(
+      request("/", { "x-client-country": "SA", cookie: "sa-zone-code=URD1" }, BASE),
+    );
+    expect(forwarded(response, "cookie") ?? "").not.toContain("sa-zone-code=KSA");
+    const cookies = setCookies(response);
+    expect(cookies.some((c) => c.startsWith("sa-zone-code="))).toBe(false);
+    expect(cookies.some((c) => c.startsWith("sa-country-market=KSA"))).toBe(true);
+  });
+
+  it("writes nothing when nothing changed (repeat visits stay cacheable)", async () => {
+    registry.lookup = brandSite();
+    const response = await proxy(
+      request("/", { "x-client-country": "SA", cookie: "sa-zone-code=KSA; sa-country-market=KSA" }, BASE),
+    );
+    expect(setCookies(response)).toEqual([]);
+  });
+
+  it("leaves a country with no market (or no country) to the default market, and clears an old country market", async () => {
+    registry.lookup = brandSite();
+    const qatar = await proxy(request("/", { "x-client-country": "QA" }, BASE));
+    expect(setCookies(qatar)).toEqual([]);
+    expect(forwarded(qatar, "cookie") ?? "").not.toContain("sa-zone-code=");
+    const unknown = await proxy(
+      request("/", { "x-client-country": "ZZ", cookie: "sa-zone-code=URD1; sa-country-market=KSA" }, BASE),
+    );
+    const cleared = setCookies(unknown).find((c) => c.startsWith("sa-country-market="));
+    expect(cleared).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
+  });
+
+  it("uses the first visit's market for the admin's URL redirects", async () => {
+    registry.lookup = brandSite();
+    await proxy(request("/old-page", { "x-client-country": "SA" }, BASE));
+    expect(redirects.zones).toEqual(["KSA"]);
+  });
+
+  const HOST_KEY = "ca-swissarabian-website-dev.example.azurecontainerapps.io";
+  const tree = (response: Response) => new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname;
+
+  it("serves each market from its own page tree (cached per market, no cookie read by pages)", async () => {
+    registry.lookup = brandSite();
+    const first = await proxy(request("/ar/collections", { "x-client-country": "SA" }, BASE));
+    expect(tree(first)).toBe(`/${HOST_KEY}~KSA/ar/collections`);
+    const saved = await proxy(request("/collections", { cookie: "sa-zone-code=URD1", "x-client-country": "SA" }, BASE));
+    expect(tree(saved)).toBe(`/${HOST_KEY}~URD1/en/collections`);
+    const none = await proxy(request("/collections", {}, BASE));
+    expect(tree(none)).toBe(`/${HOST_KEY}~URD1/en/collections`);
+    const unknown = await proxy(request("/collections", { cookie: "sa-zone-code=NOPE" }, BASE));
+    expect(tree(unknown)).toBe(`/${HOST_KEY}~URD1/en/collections`);
+  });
+
+  it("serves its own market trees on the second pass, and refuses made-up markets", async () => {
+    registry.lookup = brandSite();
+    const own = await proxy(
+      request(`/${HOST_KEY}~KSA/en/collections`, { [INTERNAL_REWRITE_HEADER]: "1" }, BASE),
+    );
+    expect(own.headers.get("x-middleware-next")).toBe("1");
+    const madeUp = await proxy(
+      request(`/${HOST_KEY}~FAKE/en/collections`, { [INTERNAL_REWRITE_HEADER]: "1" }, BASE),
+    );
+    expect(madeUp.headers.get("x-middleware-next")).toBeNull();
+    expect(madeUp.status).toBe(404);
+    const typed = await proxy(request(`/${HOST_KEY}~KSA/en/collections`, {}, BASE));
+    expect(typed.status).toBe(404);
+  });
+
+  it("never sets a first-visit market on a market website (its address decides)", async () => {
+    registry.lookup = site({
+      markets: [
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: null, languages: ["en", "ar"] },
+        { zoneCode: "KSA", countryCode: "SA", storefrontUrl: "https://ksa.swissarabian.com", languages: ["en"] },
+      ],
+    });
+    const response = await proxy(request("/", { "x-client-country": "SA" }, "https://uae.swissarabian.com"));
+    const cookies = setCookies(response);
+    expect(cookies.some((c) => c.startsWith("sa-zone-code="))).toBe(false);
+    // The suggestion can still offer KSA (switching goes to its website).
+    expect(cookies.some((c) => c.startsWith("sa-country-market=KSA"))).toBe(true);
   });
 });
 

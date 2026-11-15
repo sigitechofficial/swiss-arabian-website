@@ -1,4 +1,4 @@
-import { hostFromSiteKey } from "./siteKey";
+import { parseSiteKey } from "./siteKey";
 import { scopedSiteHost } from "./siteScope";
 
 type SiteParamReader = () => Promise<string>;
@@ -27,10 +27,23 @@ export function setSiteParamReader(reader: SiteParamReader): void {
 export async function currentSiteHost(): Promise<string | null> {
   const scoped = scopedSiteHost();
   if (scoped) return scoped;
+  return (await currentSiteKey())?.host ?? null;
+}
+
+/**
+ * The market this page tree is for on an address that serves several markets
+ * (`swissarabian.com~KSA`); null on a market address (its address decides) and
+ * outside the page tree. A root param, so pages stay static per market.
+ */
+export async function currentSiteMarketCode(): Promise<string | null> {
+  return (await currentSiteKey())?.marketCode ?? null;
+}
+
+async function currentSiteKey() {
   const reader = (globalThis as ReaderGlobal)[READER];
   if (!reader) return null;
   try {
-    return hostFromSiteKey(await reader());
+    return parseSiteKey(await reader());
   } catch {
     // Not inside the `[site]` tree (or inside unstable_cache / a server action).
     return null;

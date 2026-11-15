@@ -9,6 +9,7 @@ import { MarketProvider } from "@/providers/MarketProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/Toaster";
+import { CountryMarketPrompt } from "@/features/markets/components/CountryMarketPrompt";
 import { StorefrontHostProvider } from "@/lib/storefront/StorefrontHostProvider";
 import { ShopLocaleProvider } from "@/lib/i18n/ShopLocaleProvider";
 import type { ShopLocale } from "@/lib/i18n/locales";
@@ -45,6 +46,7 @@ export function AppProviders({
                   <CartSessionProvider>
                     {children}
                     <Toaster />
+                    <CountryMarketPrompt />
                   </CartSessionProvider>
                 </AuthSessionProvider>
               </MarketProvider>

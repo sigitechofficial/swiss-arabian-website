@@ -1,19 +1,12 @@
-import { cookies } from "next/headers";
-import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { routeLocale } from "@/lib/i18n/routeLocale";
-import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 
 /**
- * The market the shopper chose (market cookie), else the default market.
- * Reading the cookie makes the page dynamic: use it only for content that
- * differs per market and is not refreshed by the browser (site pages,
- * policies, the Journal, offers). Catalog pages use
- * `resolveServerCatalogMarket()` and stay static.
+ * The market this page is drawn for: a market address's own market, else the
+ * market of the page tree the proxy chose for the shopper (their saved market,
+ * else their first-visit market, else the default). Read from the route, never
+ * from the request, so these pages are cached per address and market.
  */
 export async function resolveRequestCatalogMarket() {
-  const locale = await routeLocale();
-  // A market address decides the market: no cookie is read, so its pages stay static.
-  if ((await loadServerMarkets())?.siteMarketCode) return resolveCatalogMarketFor(locale);
-  const zoneCookie = (await cookies()).get(ZONE_COOKIE)?.value?.trim() || "";
-  return resolveCatalogMarketFor(locale, zoneCookie);
+  return resolveCatalogMarketFor(await routeLocale());
 }

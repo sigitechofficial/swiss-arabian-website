@@ -94,3 +94,64 @@ export function storedZoneFor(saved: string | null | undefined, zoneCodes: reado
   const zone = saved?.trim() ?? "";
   return zone && zoneCodes.includes(zone) ? zone : null;
 }
+
+/**
+ * The market of the visitor's current country (from the edge's country header),
+ * set by the proxy on every address that offers market switching. Read by the
+ * browser to suggest that market when it differs from the one in use. Session
+ * cookie, not a choice: the shopper's market is the zone cookie.
+ */
+export function countryMarketCookieName(brandCode: string): string {
+  return zoneCookieName(brandCode).replace(/-zone-code$/, "-country-market");
+}
+
+/** This deployment's country market cookie. */
+export const COUNTRY_MARKET_COOKIE = countryMarketCookieName(getBrand().code);
+
+/**
+ * The country market the shopper said no to ("stay in UAE" while in KSA): that
+ * suggestion is not shown again; a different country market is.
+ */
+export function countryPromptCookieName(brandCode: string): string {
+  return zoneCookieName(brandCode).replace(/-zone-code$/, "-country-prompt");
+}
+
+/** This deployment's declined-suggestion cookie. */
+export const COUNTRY_PROMPT_COOKIE = countryPromptCookieName(getBrand().code);
+
+/** A declined suggestion is remembered for 90 days. */
+export const COUNTRY_PROMPT_MAX_AGE = 60 * 60 * 24 * 90;
+
+/** This brand's market cookie lifetime (one year), for the proxy's first-visit cookie. */
+export const ZONE_COOKIE_MAX_AGE = MAX_AGE;
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  // Cookie names here are fixed `[a-z0-9-]` strings (see the name functions above).
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  const value = match?.[1] ? decodeURIComponent(match[1]).trim() : "";
+  return value || null;
+}
+
+export function readCountryMarket(): string | null {
+  return readCookie(COUNTRY_MARKET_COOKIE);
+}
+
+export function readDeclinedCountryMarket(): string | null {
+  return readCookie(COUNTRY_PROMPT_COOKIE);
+}
+
+/**
+ * A market the shopper chose with the picker answers the country suggestion:
+ * choosing UAE while in Saudi Arabia means "not KSA", so it is not suggested.
+ */
+export function answerCountrySuggestion(chosenZoneCode: string): void {
+  const country = readCountryMarket();
+  if (country && country !== chosenZoneCode) writeDeclinedCountryMarket(country);
+}
+
+export function writeDeclinedCountryMarket(zoneCode: string): void {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${COUNTRY_PROMPT_COOKIE}=${encodeURIComponent(zoneCode)}; Path=/; Max-Age=${COUNTRY_PROMPT_MAX_AGE}; SameSite=Lax${secure}`;
+}

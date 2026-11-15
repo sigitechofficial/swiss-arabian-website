@@ -40,12 +40,20 @@ shopper ── DNS (per brand zone) ── Azure Front Door Premium (WAF, TLS, C
 |---|---|---|
 | prod | `swissarabian.com` (root), `uae.`, `ksa.`, `qa.`, `kw.`, `om.swissarabian.com` | `sapil.com` (root), `uae.`, `ksa.`, `om.sapil.com` (final domain to confirm) |
 | staging | `uae.staging.swissarabian.com`, `ksa.staging.…` | `uae.staging.sapil.com`, … |
-| dev | current `ca-swissarabian-website-dev` URL + dev subdomains | dev subdomains |
+| dev / testing (decided 16 Nov) | one Azure address per brand (`ca-swissarabian-website-dev….azurecontainerapps.io`, or its Front Door `…azurefd.net` address), all markets on it | same, `ca-sapil-website-dev…` |
 
 Every address is a row in the backend address table (`StorefrontDomain`) of that
 environment: an unknown address is a 404 by design. Staging and dev addresses
-are always `noindex` (`NEXT_PUBLIC_SEO_INDEXING_ENABLED=false`) and behind Front
+are always `noindex` (`SEO_INDEXING_ENABLED=false`) and behind Front
 Door access rules (office IPs / basic sign-in) so they are never indexed or shopped.
+
+While testing on Azure's automatic addresses, each brand has **one address for
+all its markets**: the shopper switches market on the page, and with Front Door
+(Standard) a first visit starts in the visitor's country's market and a returning
+shopper abroad is offered a switch. How it works:
+[MARKET_WEBSITES.md](./MARKET_WEBSITES.md#one-address-for-all-of-a-brands-markets-eg-the-azure-address-no-market-subdomains).
+In the admin, register the Azure address (or the Front Door address) as the
+brand's address and give no market an address of its own.
 
 ## 3. Build and release
 

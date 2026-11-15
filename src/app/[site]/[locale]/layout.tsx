@@ -10,7 +10,7 @@ import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { currentSiteHost } from "@/lib/site/currentSite";
 import { loadSiteIntegrations } from "@/lib/site/siteIntegrations";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
-import { hostFromSiteKey } from "@/lib/site/siteKey";
+import { parseSiteKey } from "@/lib/site/siteKey";
 import { runtimeConfigScript, seoIndexingEnabled } from "@/lib/config/runtime";
 import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
 import { loadMessages } from "@/lib/i18n/messages";
@@ -97,7 +97,8 @@ export default async function RootLayout({
   const { site, locale } = await params;
   // The proxy only sends known addresses and configured languages here;
   // anything else (a hand-made internal path) is a 404.
-  if (!hostFromSiteKey(site) || !isLocale(locale)) notFound();
+  const siteKey = parseSiteKey(site);
+  if (!siteKey || !isLocale(locale)) notFound();
   const [messages, storefrontHost, catalogMarket, registeredHost] = await Promise.all([
     loadMessages(locale),
     siteHost(),
@@ -106,7 +107,11 @@ export default async function RootLayout({
   ]);
   // What this address may load (analytics, Insider tag, promos, Maps): the
   // switchboard's answer for its market (ADR-005 phase E), cached per address.
-  const integrations = await loadSiteIntegrations(registeredHost);
+  // A market page tree (`swissarabian.com~KSA`) only for one of the address's
+  // markets: anything else is a hand-made internal path (never a cached page).
+  if (siteKey.marketCode && catalogMarket.zoneCode !== siteKey.marketCode) notFound();
+  // On an address that serves several markets: that of this page tree.
+  const integrations = await loadSiteIntegrations(registeredHost, siteKey.marketCode);
   const { insiderTag } = integrations;
   // Which website / market this page is, for the brand's one tag setup.
   const marketContext = catalogMarket.market;

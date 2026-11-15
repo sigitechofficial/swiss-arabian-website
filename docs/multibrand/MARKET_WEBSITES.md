@@ -42,10 +42,39 @@ ksa.swissarabian.com/ar/products/oud
 
 An address in the address table with no market of its own. When the brand has
 market websites, the proxy sends visitors (307, `private, no-store`) to: the market
-they chose before (market cookie) → the market of their country (hosting edge
-header `x-vercel-ip-country` / `cf-ipcountry` / `cloudfront-viewer-country`) → the
-brand's default market. Page, language and query are kept. With no market
+they chose before (market cookie) → the market of their country (Front Door's
+`x-client-country`, see `src/lib/site/edge.ts`) → the brand's default market. Page, language and query are kept. With no market
 websites yet (e.g. locally) it serves pages itself as before.
+
+## One address for all of a brand's markets (e.g. the Azure address, no market subdomains)
+
+An address with no market of its own, where no market has a website of its own,
+serves every market itself; the shopper switches market on the page and the
+address never changes. Used while testing on Azure's automatic addresses.
+
+- **Page tree per market.** The proxy serves `/<address>~<market>/<locale>/…`
+  (`swissarabian.com~KSA`), the market being the shopper's saved market (cookie),
+  else their first-visit market, else the default. Pages read the market from the
+  route (`currentSiteMarketCode()`, used by `resolveCatalogMarketFor`), never from
+  the request, so every market's pages are cached on their own and the server
+  draws the right market's content and prices. A market segment that is not one of
+  the address's markets is refused (proxy second pass, root layout `notFound()`).
+- **First visit by country.** A visitor with no saved market starts in their
+  country's market (Front Door's `x-client-country`): the proxy saves it in the
+  market cookie and draws the first page for it. A country with no market, or no
+  country, gets the default market.
+- **Suggestion when the country changes.** The proxy keeps `<brand>-country-market`
+  (session cookie, written only when it changes) current. When it differs from the
+  market in use, the page shows "Shopping from Saudi Arabia? Switch to KSA"
+  (`CountryMarketPrompt`, Sapil: `SapilCountryPrompt`). It never switches by itself,
+  never shows on checkout, and is not shown again for that market once the shopper
+  says no or picks a market with the picker (`<brand>-country-prompt`, 90 days).
+- **Website settings per market.** Analytics ids, Insider tag, pay-later promos,
+  Maps and sign-in buttons come from the page's market
+  (`GET /storefront/site/integrations?market=KSA`), cached per address and market.
+- On a market website the same suggestion offers the markets that have a website
+  of their own (switching goes there); no first-visit market is set (the address
+  decides).
 
 ## Market picker
 

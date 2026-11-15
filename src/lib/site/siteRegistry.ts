@@ -112,3 +112,35 @@ export function marketSiteForVisitor(
     withSite[0];
   return pick?.storefrontUrl ?? null;
 }
+
+/**
+ * The market of the visitor's country among the markets this address offers:
+ * every brand market on an address that serves several (markets switch on the
+ * page), the address's own market and the markets with a website of their own on
+ * a market website (switching goes there). Null: no country, or no market for it
+ * (the country is not one of the brand's markets).
+ */
+export function marketForCountry(
+  site: Pick<SiteInfo, "siteMarketCode" | "markets">,
+  country: string | null,
+): string | null {
+  if (!country) return null;
+  const offered = site.siteMarketCode
+    ? site.markets.filter((m) => m.zoneCode === site.siteMarketCode || m.storefrontUrl)
+    : site.markets;
+  return offered.find((m) => m.countryCode.trim().toUpperCase() === country)?.zoneCode ?? null;
+}
+
+/**
+ * The market a first visit to an address that serves several markets starts in:
+ * the visitor's country's market, only when they have no market yet (a saved
+ * market, chosen or set by an earlier visit, always wins). Market websites and
+ * root domains that send visitors on never need one.
+ */
+export function firstVisitMarket(
+  site: Pick<SiteInfo, "siteMarketCode">,
+  visitor: { savedZone: string | null; countryMarket: string | null },
+): string | null {
+  if (site.siteMarketCode || visitor.savedZone) return null;
+  return visitor.countryMarket;
+}

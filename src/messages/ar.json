@@ -1249,5 +1249,9 @@
   "nav.openMenu": "فتح القائمة",
   "nav.closeMenu": "إغلاق القائمة",
   "footer.payments": "وسائل الدفع المقبولة",
-  "nav.searchFragrances": "ابحث عن العطور"
+  "nav.searchFragrances": "ابحث عن العطور",
+  "market.countryPrompt.title": "هل تتسوّق من {country}؟",
+  "market.countryPrompt.body": "أنت الآن في متجر {current}. انتقل لعرض الأسعار وخيارات التوصيل والدفع في {country}.",
+  "market.countryPrompt.switch": "الانتقال إلى {market}",
+  "market.countryPrompt.stay": "البقاء في {market}"
 }

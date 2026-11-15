@@ -89,8 +89,12 @@ export function parseSiteIntegrations(raw: unknown): SiteIntegrations {
   };
 }
 
-async function fetchSiteIntegrations(storefrontHost: string): Promise<SiteIntegrations> {
-  const res = await fetch(`${env.apiBaseUrl}/storefront/site/integrations`, {
+async function fetchSiteIntegrations(
+  storefrontHost: string,
+  marketCode: string | null,
+): Promise<SiteIntegrations> {
+  const query = marketCode ? `?market=${encodeURIComponent(marketCode)}` : "";
+  const res = await fetch(`${env.apiBaseUrl}/storefront/site/integrations${query}`, {
     headers: { "x-storefront-host": storefrontHost },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     cache: "no-store",
@@ -104,21 +108,29 @@ async function fetchSiteIntegrations(storefrontHost: string): Promise<SiteIntegr
 
 /**
  * The integration settings of a website address (the registered storefront
- * host the backend knows). Cached per address under its own tag, so the
- * backend's refresh call updates exactly the pages of the addresses it names.
+ * host the backend knows), for the market the page is drawn for on an address
+ * that serves several markets (`marketCode`; ignored by the backend on a
+ * market's own address). Cached per address and market under the address's tag,
+ * so the backend's refresh call updates every market's pages of that address.
  * Backend unreachable: everything off for this render (never a stale or default
  * tag); the next render asks again.
  */
 export async function loadSiteIntegrations(
   storefrontHost: string | null,
+  marketCode: string | null = null,
 ): Promise<SiteIntegrations> {
   const host = storefrontHost?.trim().toLowerCase();
   if (!host || !env.apiBaseUrl) return SITE_INTEGRATIONS_OFF;
+  const market = marketCode?.trim() || null;
   try {
-    return await unstable_cache(() => fetchSiteIntegrations(host), ["site-integrations", host], {
-      revalidate: SITE_INTEGRATIONS_REVALIDATE_SECONDS,
-      tags: [siteIntegrationsTag(host)],
-    })();
+    return await unstable_cache(
+      () => fetchSiteIntegrations(host, market),
+      ["site-integrations", host, market ?? ""],
+      {
+        revalidate: SITE_INTEGRATIONS_REVALIDATE_SECONDS,
+        tags: [siteIntegrationsTag(host)],
+      },
+    )();
   } catch {
     return SITE_INTEGRATIONS_OFF;
   }

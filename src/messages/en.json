@@ -1226,5 +1226,9 @@
   "nav.openMenu": "Open menu",
   "nav.closeMenu": "Close menu",
   "footer.payments": "Accepted payment methods",
-  "nav.searchFragrances": "Search fragrances"
+  "nav.searchFragrances": "Search fragrances",
+  "market.countryPrompt.title": "Shopping from {country}?",
+  "market.countryPrompt.body": "You're in the {current} store. Switch to see prices, delivery and payment options for {country}.",
+  "market.countryPrompt.switch": "Switch to {market}",
+  "market.countryPrompt.stay": "Stay in {market}"
 }
