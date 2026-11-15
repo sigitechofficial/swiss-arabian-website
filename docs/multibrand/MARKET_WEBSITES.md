@@ -53,10 +53,19 @@ On a market website the picker lists the markets with a website of their own;
 choosing one goes there, same page and language (checkout / order pages go to
 that market's bag: bags are per market). Sign-in is per website (D5).
 
+The choice is kept for the brand's root domain (`<brand>-market-choice`, set on
+the brand's domain from the backend address table, `brandDomain`), so
+`swissarabian.com` later sends the shopper back to the market they chose. The
+root redirect order is: that choice → a choice made on the root address itself →
+the visitor's country (Front Door's `x-client-country`) → the brand's default.
+
 ## Safety
 
 - Only addresses in the backend address table are served (`GET /storefront/site`
-  resolves `x-storefront-host` only: no fallback to another brand or signal).
+  resolves `x-storefront-host` only: no fallback to another brand or signal), and
+  only this build's brand's addresses (another brand's address is a 404).
+- Deployed websites serve only requests through Front Door (`TRUSTED_EDGE_IDS`,
+  `src/lib/site/edge.ts`): the address and country headers are Front Door's own.
 - A typed internal path (`/ksa.swissarabian.com/en/…`) is refused (404); the proxy's
   internal-rewrite header is honoured only for the address's own tree.
 - `/.well-known/…` (Apple Pay domain check) and static files pass through.
@@ -99,7 +108,9 @@ its market website. Old Shopify URL shapes are handled in code
 Aliases map `*.localhost` addresses to market addresses:
 
 ```bash
-NEXT_PUBLIC_LOCAL_STOREFRONTS="sa=SWISS_ARABIAN@uae.swissarabian.com,ksa=SWISS_ARABIAN@ksa.swissarabian.com,qa=SWISS_ARABIAN@qa.swissarabian.com,root=SWISS_ARABIAN@swissarabian.com,sp=SAPIL@sapil.test"
+APP_ENV=local
+API_BASE_URL=http://127.0.0.1:3000
+LOCAL_STOREFRONTS="sa=SWISS_ARABIAN@uae.swissarabian.com,ksa=SWISS_ARABIAN@ksa.swissarabian.com,qa=SWISS_ARABIAN@qa.swissarabian.com,root=SWISS_ARABIAN@swissarabian.com,sp=SAPIL@sapil.test"
 ```
 
 Backend with `STOREFRONT_MARKET_URLS=on` (market website addresses). Then
