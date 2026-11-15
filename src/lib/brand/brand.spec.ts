@@ -77,38 +77,21 @@ describe("brand registry", () => {
 });
 
 describe("brand integrations", () => {
-  it("groups and validates the public ids", () => {
+  it("groups and validates the deployment settings", () => {
     const integrations = parseBrandIntegrations(
       {
         NEXT_PUBLIC_APP_ENV: "production",
-        NEXT_PUBLIC_GTM_ID: "gtm-abc1234",
-        NEXT_PUBLIC_GA4_ID: "not-an-id",
-        NEXT_PUBLIC_ENABLE_TABBY: "true",
         NEXT_PUBLIC_STOREFRONT_HOST: "UAE.swissarabian.com",
         NEXT_PUBLIC_PRODUCTION_RETURN_URL: "https://uae.swissarabian.com/",
         NEXT_PUBLIC_SEO_INDEXING_ENABLED: "true",
       },
       swissArabian,
     );
-    expect(integrations.analytics).toEqual({ gtmId: "GTM-ABC1234", ga4Id: null });
-    expect(integrations.payments).toEqual({ paymob: false, tabby: true, tamara: false });
     expect(integrations.storefrontHost).toBe("uae.swissarabian.com");
     expect(integrations.returnUrls.production).toBe("https://uae.swissarabian.com");
     expect(integrations.seoIndexingEnabled).toBe(true);
   });
 
-  it("uses Swiss Arabian's Insider fallback but none for Sapil", () => {
-    expect(parseBrandIntegrations({}, swissArabian).insider).toEqual({
-      enabled: true,
-      accountId: "10015366",
-      scriptHost: "swissarabianuatnew.api.useinsider.com",
-    });
-    expect(parseBrandIntegrations({}, sapil).insider).toEqual({
-      enabled: false,
-      accountId: "",
-      scriptHost: "",
-    });
-  });
 });
 
 describe("localized", () => {

@@ -26,8 +26,11 @@ redirected to, then a return page that polls the platform.
 ## Settings
 
 Nothing Tabby-specific is needed for checkout: keys come from the backend per brand and market.
-The product-page "Pay in 4" card still reads `NEXT_PUBLIC_ENABLE_TABBY`,
-`NEXT_PUBLIC_TABBY_PUBLIC_KEY` and `NEXT_PUBLIC_TABBY_MERCHANT_CODE`.
+The product-page "Pay in 4" card and the cart promo show only where the market's
+checkout offers Tabby; the merchant code / public key come from the market's Tabby
+account on the integrations switchboard (ADR-005 phase E,
+`docs/multibrand/SITE_INTEGRATIONS.md`). The old `NEXT_PUBLIC_ENABLE_TABBY` /
+`NEXT_PUBLIC_TABBY_*` build settings are removed (the build check refuses them).
 
 ## Not done yet
 

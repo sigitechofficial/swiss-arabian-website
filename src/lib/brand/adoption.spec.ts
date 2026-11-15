@@ -17,36 +17,20 @@ function deployAs(code: string, extra: Record<string, string> = {}) {
 }
 
 describe("brandIntegrations (getBrand adoption)", () => {
-  it("Swiss Arabian keeps its Insider UAT account when the settings are empty", () => {
-    deployAs("SWISS_ARABIAN");
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_ACCOUNT_ID", undefined);
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_SCRIPT_HOST", undefined);
-    expect(brandIntegrations().insider).toEqual({
-      enabled: true,
-      accountId: "10015366",
-      scriptHost: "swissarabianuatnew.api.useinsider.com",
-    });
-  });
-
-  it("Sapil never inherits Swiss Arabian's Insider account", () => {
-    deployAs("SAPIL");
-    vi.stubEnv("NEXT_PUBLIC_INSIDER_ACCOUNT_ID", undefined);
-    expect(brandIntegrations().insider.enabled).toBe(false);
-    expect(brandIntegrations().insider.accountId).toBe("");
-  });
-
-  it("reads analytics, payment switches, Maps and catalog media from the deployment", () => {
+  it("reads catalog media from the deployment", () => {
     deployAs("SAPIL", {
-      NEXT_PUBLIC_GTM_ID: "GTM-ABC1234",
-      NEXT_PUBLIC_ENABLE_PAYMOB: "true",
-      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "maps-key",
       NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL: "https://media.example.com/",
     });
-    const integrations = brandIntegrations();
-    expect(integrations.analytics.gtmId).toBe("GTM-ABC1234");
-    expect(integrations.payments).toEqual({ paymob: true, tabby: false, tamara: false });
-    expect(integrations.googleMaps.apiKey).toBe("maps-key");
+    expect(brandIntegrations().catalogMediaBaseUrl).toBe("https://media.example.com");
     expect(resolveCatalogImageUrl("/catalog/a.jpg")).toBe("https://media.example.com/catalog/a.jpg");
+  });
+
+  it("carries no analytics, Insider, Tabby or Maps ids: those come per address from the backend (ADR-005 phase E)", () => {
+    deployAs("SWISS_ARABIAN", { NEXT_PUBLIC_GTM_ID: "GTM-ABC1234" });
+    const integrations = brandIntegrations() as Record<string, unknown>;
+    for (const key of ["analytics", "insider", "tabby", "googleMaps", "payments"]) {
+      expect(integrations[key]).toBeUndefined();
+    }
   });
 });
 

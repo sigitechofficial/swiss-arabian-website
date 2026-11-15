@@ -6,8 +6,10 @@ import { ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
 import { useInstalmentPlan } from "../../hooks/useInstalmentPlan";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import {
-  INSTALMENT_PROVIDERS,
+  INSTALMENT_PROVIDER_NAMES,
+  instalmentProviders,
   payInFour,
   type InstalmentProvider,
 } from "../../utils/instalments";
@@ -48,10 +50,15 @@ import {
 
 type Provider = InstalmentProvider;
 
-const PROVIDERS: Record<Provider, { name: string; mark: string; live: boolean }> = {
-  tamara: { ...INSTALMENT_PROVIDERS.tamara, mark: pdpPayMarkTamara },
-  tabby: { ...INSTALMENT_PROVIDERS.tabby, mark: pdpPayMarkTabby },
+const PROVIDERS: Record<Provider, { name: string; mark: string }> = {
+  tamara: { name: INSTALMENT_PROVIDER_NAMES.tamara, mark: pdpPayMarkTamara },
+  tabby: { name: INSTALMENT_PROVIDER_NAMES.tabby, mark: pdpPayMarkTabby },
 };
+
+/** Whether the market's checkout offers each provider now (ADR-005 phase E). */
+function useLiveProviders() {
+  return instalmentProviders(useSiteIntegrations().paymentPromos);
+}
 
 const WHEN = ["Today", "In 1 month", "In 2 months", "In 3 months"] as const;
 
@@ -80,6 +87,7 @@ function useDialogChrome(onClose: () => void) {
 
 export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
   const closeRef = useDialogChrome(onClose);
+  const live = useLiveProviders();
 
   return createPortal(
     <div className={giftChoiceRoot}>
@@ -95,7 +103,7 @@ export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void
           sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="strict-origin-when-cross-origin"
         />
-        {PROVIDERS.tabby.live ? null : <p className={pdpPayFrameSoon}>Tabby is coming soon to our checkout.</p>}
+        {live.tabby.live ? null : <p className={pdpPayFrameSoon}>Tabby is coming soon to our checkout.</p>}
       </section>
     </div>,
     document.body,
@@ -127,7 +135,8 @@ function PayDialog({
   currency: string;
   onClose: () => void;
 }) {
-  const { name, mark, live } = PROVIDERS[provider];
+  const { name, mark } = PROVIDERS[provider];
+  const { live } = useLiveProviders()[provider];
   const titleId = useId();
   const closeRef = useDialogChrome(onClose);
   const payments = payInFour(price);

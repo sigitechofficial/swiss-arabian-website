@@ -1,5 +1,5 @@
 import Script from "next/script";
-import { brandIntegrations } from "@/lib/brand";
+import type { SiteIntegrations } from "@/lib/site/siteIntegrations.types";
 
 /** The website a page belongs to: lets one tag setup per brand tell markets apart. */
 export type AnalyticsSiteContext = {
@@ -40,15 +40,22 @@ export function analyticsSiteFields(context: AnalyticsSiteContext | undefined) {
 
 /**
  * Google Tag Manager (preferred: GA4 and other tags are managed there) or GA4 directly.
- * Loads only when an ID is configured (NEXT_PUBLIC_GTM_ID / NEXT_PUBLIC_GA4_ID), one
- * per brand. Every market website of the brand shares it: the page first tells it
- * which website, market, country, currency and language it is (dataLayer, or GA4
- * page fields), so GTM can send each market to its own GA4 property or report by
- * market, and a new market website needs no new tag setup.
+ * Loads only when GA4 / GTM is on for the address's market on the integrations
+ * switchboard (ADR-005 phase E): a brand may share one container across its market
+ * websites or give a market its own. The page first tells it which website, market,
+ * country, currency and language it is (dataLayer, or GA4 page fields), so one
+ * shared container can still send each market to its own GA4 property.
  * GA4 records page changes in this single-page app through its history tracking.
  */
-export function AnalyticsScripts({ context }: { context?: AnalyticsSiteContext } = {}) {
-  const { gtmId, ga4Id } = brandIntegrations().analytics;
+export function AnalyticsScripts({
+  ids,
+  context,
+}: {
+  ids: SiteIntegrations["analytics"];
+  context?: AnalyticsSiteContext;
+}) {
+  const gtmId = ids?.gtmContainerId ?? null;
+  const ga4Id = ids?.ga4MeasurementId ?? null;
   const fields = analyticsSiteFields(context);
   const hasFields = Object.keys(fields).length > 0;
   if (gtmId) {

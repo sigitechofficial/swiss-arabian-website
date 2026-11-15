@@ -13,12 +13,15 @@ import { StorefrontHostProvider } from "@/lib/storefront/StorefrontHostProvider"
 import { ShopLocaleProvider } from "@/lib/i18n/ShopLocaleProvider";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import type { MessageDictionary } from "@/lib/i18n/messages";
+import { SiteIntegrationsProvider } from "@/lib/site/SiteIntegrationsProvider";
+import type { SiteIntegrations } from "@/lib/site/siteIntegrations.types";
 
 export function AppProviders({
   children,
   storefrontHost,
   locale,
   messages,
+  integrations,
 }: {
   children: ReactNode;
   /** Address the page was requested on (local brand aliases in development, e.g. sp.localhost). */
@@ -26,8 +29,11 @@ export function AppProviders({
   /** The `[locale]` route segment and its UI messages. */
   locale: ShopLocale;
   messages: MessageDictionary;
+  /** What this address may load (ADR-005 phase E), read by the root layout. */
+  integrations: SiteIntegrations;
 }) {
   return (
+    <SiteIntegrationsProvider value={integrations}>
     <ShopLocaleProvider locale={locale} messages={messages}>
     <StorefrontHostProvider host={storefrontHost}>
       <ThemeProvider>
@@ -48,5 +54,6 @@ export function AppProviders({
       </ThemeProvider>
     </StorefrontHostProvider>
     </ShopLocaleProvider>
+    </SiteIntegrationsProvider>
   );
 }

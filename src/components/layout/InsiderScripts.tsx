@@ -8,7 +8,7 @@ import {
   quotedCartShipping,
   quotedCartTotal,
 } from "@/features/cart/utils/insiderCartItem";
-import { brandIntegrations } from "@/lib/brand";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
 import {
   beginInsiderRouteFlush,
@@ -37,8 +37,8 @@ export function InsiderScripts() {
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const cartHydrated = usePersistHydrated(useCartStore);
-  const { insider } = brandIntegrations();
-  const insiderOn = insider.enabled && Boolean(insider.accountId);
+  // On when Insider's website tag is on for this address's market (ADR-005 phase E).
+  const insiderOn = Boolean(useSiteIntegrations().insiderTag);
 
   useEffect(() => {
     if (!insiderOn) return;

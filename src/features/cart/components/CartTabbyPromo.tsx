@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { TabbyDialog, payInFour, tabbyPopupUrl } from "@/features/catalog/components/pdp/PdpInstalments";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { brandIntegrations } from "@/lib/brand";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { pdpPayBtnMore, pdpPayMarkTabby } from "@/styles/pdpChrome";
 
@@ -22,9 +22,11 @@ export function CartTabbyPromo({ amount, currency }: { amount: number; currency:
     setOpen(false);
     openerRef.current?.focus();
   }, []);
+  // Shown only when the market's checkout offers Tabby (ADR-005 phase E).
+  const tabby = useSiteIntegrations().paymentPromos.tabby;
 
-  if (!brandIntegrations().payments.tabby || !(amount > 0)) return null;
-  const src = tabbyPopupUrl(amount, currency, locale);
+  if (!tabby || !(amount > 0)) return null;
+  const src = tabbyPopupUrl(amount, currency, locale, tabby);
   if (!src) return null;
 
   return (

@@ -57,21 +57,9 @@ export const sapil = defineBrand({
     giftBox: false,
     employeeBenefits: false,
   },
-  ownedIds: {
-    // TODO(brand): Sapil's own GTM / GA4 / Insider / Tabby / Maps ids.
-    gtmIds: [],
-    ga4Ids: [],
-    insiderAccountIds: [],
-    insiderScriptHosts: [],
-    tabbyMerchantCodes: [],
-    tabbyPublicKeys: [],
-    googleMapsMapIds: [],
-  },
   requiredInProduction: [
     "NEXT_PUBLIC_STOREFRONT_BRAND_CODE",
     "NEXT_PUBLIC_STOREFRONT_HOST",
     "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
   ],
-  // No fallbacks: an empty Insider account means Insider stays off for Sapil.
-  integrationDefaults: {},
 });

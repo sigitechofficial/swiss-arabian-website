@@ -63,7 +63,9 @@ that market's bag: bags are per market). Sign-in is per website (D5).
 
 ## Analytics and marketing per market
 
-- **GTM / GA4**: one container per brand (`NEXT_PUBLIC_GTM_ID`). Route markets
+- **GTM / GA4**: set per market on the integrations switchboard (admin → Settings →
+  Integrations, ADR-005 phase E; `docs/multibrand/SITE_INTEGRATIONS.md`) — usually
+  one container for the brand default. Route markets
   inside GTM with a lookup on the `market` (or `site_host`) dataLayer value: one
   GA4 property per market, or one per brand with a market dimension. No code change
   or rebuild for a new market. Direct GA4 (no GTM) gets the same fields as page

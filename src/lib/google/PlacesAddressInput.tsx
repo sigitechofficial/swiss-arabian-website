@@ -7,7 +7,7 @@ import {
   type InputHTMLAttributes,
 } from "react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
-import { googlePlacesEnabled } from "./GooglePlacesProvider";
+import { useGooglePlacesEnabled } from "./GooglePlacesProvider";
 import { normalizeCountryCode } from "@/features/account/data/regionsByCountry";
 import {
   parseGooglePlace,
@@ -89,6 +89,7 @@ function GoogleAddressInput({
 }
 
 export function PlacesAddressInput(props: PlacesAddressInputProps) {
-  if (!googlePlacesEnabled()) return <PlainAddressInput {...props} />;
+  const enabled = useGooglePlacesEnabled();
+  if (!enabled) return <PlainAddressInput {...props} />;
   return <GoogleAddressInput {...props} />;
 }

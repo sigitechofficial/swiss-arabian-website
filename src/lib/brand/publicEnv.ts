@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { cleanGa4Id, cleanGtmId } from "@/lib/analytics/analyticsIds";
 import type { BrandConfig, BrandEnvKey, BrandIntegrations, BrandPublicEnv } from "./types";
 
 /**
  * Per-brand settings from the build's env. Next.js only inlines NEXT_PUBLIC_*
  * written as static property paths, so every key is spelled out here.
+ * Analytics, Insider, Tabby / Tamara and Google Maps are not build settings any
+ * more (ADR-005 phase E): src/lib/site/siteIntegrations.ts.
  */
 export function readProcessPublicEnv(): BrandPublicEnv {
   return {
@@ -13,18 +14,6 @@ export function readProcessPublicEnv(): BrandPublicEnv {
     NEXT_PUBLIC_STOREFRONT_HOST: process.env.NEXT_PUBLIC_STOREFRONT_HOST,
     NEXT_PUBLIC_STAGING_RETURN_URL: process.env.NEXT_PUBLIC_STAGING_RETURN_URL,
     NEXT_PUBLIC_PRODUCTION_RETURN_URL: process.env.NEXT_PUBLIC_PRODUCTION_RETURN_URL,
-    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
-    NEXT_PUBLIC_GA4_ID: process.env.NEXT_PUBLIC_GA4_ID,
-    NEXT_PUBLIC_INSIDER_ENABLED: process.env.NEXT_PUBLIC_INSIDER_ENABLED,
-    NEXT_PUBLIC_INSIDER_ACCOUNT_ID: process.env.NEXT_PUBLIC_INSIDER_ACCOUNT_ID,
-    NEXT_PUBLIC_INSIDER_SCRIPT_HOST: process.env.NEXT_PUBLIC_INSIDER_SCRIPT_HOST,
-    NEXT_PUBLIC_TABBY_PUBLIC_KEY: process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY,
-    NEXT_PUBLIC_TABBY_MERCHANT_CODE: process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE,
-    NEXT_PUBLIC_ENABLE_TABBY: process.env.NEXT_PUBLIC_ENABLE_TABBY,
-    NEXT_PUBLIC_ENABLE_TAMARA: process.env.NEXT_PUBLIC_ENABLE_TAMARA,
-    NEXT_PUBLIC_ENABLE_PAYMOB: process.env.NEXT_PUBLIC_ENABLE_PAYMOB,
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-    NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
     NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL: process.env.NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL,
     NEXT_PUBLIC_SEO_INDEXING_ENABLED: process.env.NEXT_PUBLIC_SEO_INDEXING_ENABLED,
   };
@@ -42,14 +31,6 @@ export const BRAND_ENV_FORMATS: Partial<Record<BrandEnvKey, z.ZodType<string>>> 
   NEXT_PUBLIC_STOREFRONT_HOST: hostText,
   NEXT_PUBLIC_STAGING_RETURN_URL: urlText,
   NEXT_PUBLIC_PRODUCTION_RETURN_URL: urlText,
-  NEXT_PUBLIC_GTM_ID: z.string().regex(/^GTM-[A-Z0-9]{4,12}$/i, "a GTM container id like GTM-XXXXXXX"),
-  NEXT_PUBLIC_GA4_ID: z.string().regex(/^G-[A-Z0-9]{4,16}$/i, "a GA4 measurement id like G-XXXXXXXXXX"),
-  NEXT_PUBLIC_INSIDER_ENABLED: boolText,
-  NEXT_PUBLIC_INSIDER_ACCOUNT_ID: z.string().regex(/^\d+$/, "a numeric Insider account id"),
-  NEXT_PUBLIC_INSIDER_SCRIPT_HOST: hostText,
-  NEXT_PUBLIC_ENABLE_TABBY: boolText,
-  NEXT_PUBLIC_ENABLE_TAMARA: boolText,
-  NEXT_PUBLIC_ENABLE_PAYMOB: boolText,
   NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL: urlText,
   NEXT_PUBLIC_SEO_INDEXING_ENABLED: boolText,
 };
@@ -76,45 +57,16 @@ function hostOf(value: string): string {
 }
 
 /**
- * The brand's integration ids for this deployment. Malformed values are
- * dropped (never a broken or foreign tag); `npm run check:brand` reports them.
+ * This deployment's own settings (catalog media, storefront host, return
+ * addresses, SEO indexing). Malformed values are dropped; `npm run check:brand`
+ * reports them.
  */
 export function parseBrandIntegrations(
   raw: BrandPublicEnv,
-  brand: BrandConfig,
+  _brand: BrandConfig,
 ): BrandIntegrations {
   const appEnv = envValue(raw, "NEXT_PUBLIC_APP_ENV");
-  const accountId =
-    validValue(raw, "NEXT_PUBLIC_INSIDER_ACCOUNT_ID") ||
-    brand.integrationDefaults.insiderAccountId ||
-    "";
   return {
-    analytics: {
-      gtmId: cleanGtmId(envValue(raw, "NEXT_PUBLIC_GTM_ID")),
-      ga4Id: cleanGa4Id(envValue(raw, "NEXT_PUBLIC_GA4_ID")),
-    },
-    insider: {
-      enabled:
-        envValue(raw, "NEXT_PUBLIC_INSIDER_ENABLED") !== "false" && Boolean(accountId),
-      accountId,
-      scriptHost:
-        validValue(raw, "NEXT_PUBLIC_INSIDER_SCRIPT_HOST") ||
-        brand.integrationDefaults.insiderScriptHost ||
-        "",
-    },
-    tabby: {
-      publicKey: envValue(raw, "NEXT_PUBLIC_TABBY_PUBLIC_KEY"),
-      merchantCode: envValue(raw, "NEXT_PUBLIC_TABBY_MERCHANT_CODE"),
-    },
-    googleMaps: {
-      apiKey: envValue(raw, "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"),
-      mapId: envValue(raw, "NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID"),
-    },
-    payments: {
-      paymob: envValue(raw, "NEXT_PUBLIC_ENABLE_PAYMOB") === "true",
-      tabby: envValue(raw, "NEXT_PUBLIC_ENABLE_TABBY") === "true",
-      tamara: envValue(raw, "NEXT_PUBLIC_ENABLE_TAMARA") === "true",
-    },
     catalogMediaBaseUrl: validValue(raw, "NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL"),
     storefrontHost: hostOf(envValue(raw, "NEXT_PUBLIC_STOREFRONT_HOST")),
     returnUrls: {

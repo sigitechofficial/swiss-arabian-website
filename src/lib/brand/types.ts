@@ -29,6 +29,18 @@ export const BRAND_ENV_KEYS = [
   "NEXT_PUBLIC_STOREFRONT_HOST",
   "NEXT_PUBLIC_STAGING_RETURN_URL",
   "NEXT_PUBLIC_PRODUCTION_RETURN_URL",
+  "NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL",
+  "NEXT_PUBLIC_SEO_INDEXING_ENABLED",
+] as const;
+export type BrandEnvKey = (typeof BRAND_ENV_KEYS)[number];
+
+/**
+ * Website settings that moved to the integrations switchboard (ADR-005 phase E):
+ * analytics, Insider's website tag, pay-later promos and Google Maps now come
+ * from the backend per address and market. The build check refuses them so a
+ * deployment never believes it still sets them.
+ */
+export const REMOVED_ENV_KEYS = [
   "NEXT_PUBLIC_GTM_ID",
   "NEXT_PUBLIC_GA4_ID",
   "NEXT_PUBLIC_INSIDER_ENABLED",
@@ -41,13 +53,13 @@ export const BRAND_ENV_KEYS = [
   "NEXT_PUBLIC_ENABLE_PAYMOB",
   "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
   "NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID",
-  "NEXT_PUBLIC_CATALOG_MEDIA_BASE_URL",
-  "NEXT_PUBLIC_SEO_INDEXING_ENABLED",
 ] as const;
-export type BrandEnvKey = (typeof BRAND_ENV_KEYS)[number];
+export type RemovedEnvKey = (typeof REMOVED_ENV_KEYS)[number];
 
 /** Raw values of the per-brand settings (undefined = not set). */
-export type BrandPublicEnv = Partial<Record<BrandEnvKey | "NEXT_PUBLIC_APP_ENV", string>>;
+export type BrandPublicEnv = Partial<
+  Record<BrandEnvKey | RemovedEnvKey | "NEXT_PUBLIC_APP_ENV", string>
+>;
 
 /** Brand code: SWISS_ARABIAN, SAPIL, or any future upper-snake code. */
 const brandCode = z
@@ -72,7 +84,6 @@ const hostname = z
 /** Site-relative path (`/assets/x.png`, `/pages/privacy-policy`). */
 const sitePath = z.string().regex(/^\/[^\s]*$/, "must start with /");
 
-const idList = z.array(z.string().min(1));
 
 export const brandConfigSchema = z.object({
   code: brandCode,
@@ -138,40 +149,19 @@ export const brandConfigSchema = z.object({
     /** `/account/employee-benefits` (staff benefits from D365) */
     employeeBenefits: z.boolean(),
   }),
-  /**
-   * Public ids that BELONG to this brand. Not used at runtime — the build
-   * check uses them to stop another brand's deployment from shipping them.
-   * Only non-secret identifiers go here (no API keys).
-   */
-  ownedIds: z.object({
-    gtmIds: idList,
-    ga4Ids: idList,
-    insiderAccountIds: idList,
-    insiderScriptHosts: idList,
-    tabbyMerchantCodes: idList,
-    tabbyPublicKeys: idList,
-    googleMapsMapIds: idList,
-  }),
   /** Settings that must be set when NEXT_PUBLIC_APP_ENV=production. */
   requiredInProduction: z.array(z.enum(BRAND_ENV_KEYS)),
-  /** Values used when the setting is empty (e.g. Swiss Arabian's UAT Insider account). */
-  integrationDefaults: z.object({
-    insiderAccountId: z.string().optional(),
-    insiderScriptHost: z.string().optional(),
-  }),
 });
 
 export type BrandConfig = z.infer<typeof brandConfigSchema>;
 export type LocalizedText = BrandConfig["name"];
 
-/** Per-brand public integration ids, read from env and validated. */
+/**
+ * Per-deployment settings read from env and validated. Analytics, Insider,
+ * Tabby / Tamara promos and Google Maps are not here: they come from the backend
+ * per address (src/lib/site/siteIntegrations.ts, ADR-005 phase E).
+ */
 export type BrandIntegrations = {
-  analytics: { gtmId: string | null; ga4Id: string | null };
-  insider: { enabled: boolean; accountId: string; scriptHost: string };
-  tabby: { publicKey: string; merchantCode: string };
-  googleMaps: { apiKey: string; mapId: string };
-  /** Checkout providers switched on in this deployment. */
-  payments: { paymob: boolean; tabby: boolean; tamara: boolean };
   catalogMediaBaseUrl: string;
   storefrontHost: string;
   returnUrls: { staging: string; production: string };

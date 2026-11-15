@@ -8,6 +8,7 @@ import {
 } from "./registry";
 import {
   BRAND_ENV_KEYS,
+  REMOVED_ENV_KEYS,
   type BrandConfig,
   type BrandEnvKey,
   type BrandPublicEnv,
@@ -46,17 +47,6 @@ function shown(key: BrandEnvKey, value: string): string {
   if (!key.includes("KEY")) return `"${value}"`;
   return value.length <= 8 ? '"****"' : `"${value.slice(0, 4)}…${value.slice(-2)}"`;
 }
-
-/** Settings compared against the ids other brands own. */
-const OWNED_ID_FIELDS: Array<{ key: BrandEnvKey; field: keyof BrandConfig["ownedIds"] }> = [
-  { key: "NEXT_PUBLIC_GTM_ID", field: "gtmIds" },
-  { key: "NEXT_PUBLIC_GA4_ID", field: "ga4Ids" },
-  { key: "NEXT_PUBLIC_INSIDER_ACCOUNT_ID", field: "insiderAccountIds" },
-  { key: "NEXT_PUBLIC_INSIDER_SCRIPT_HOST", field: "insiderScriptHosts" },
-  { key: "NEXT_PUBLIC_TABBY_MERCHANT_CODE", field: "tabbyMerchantCodes" },
-  { key: "NEXT_PUBLIC_TABBY_PUBLIC_KEY", field: "tabbyPublicKeys" },
-  { key: "NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", field: "googleMapsMapIds" },
-];
 
 const HOST_SETTINGS: BrandEnvKey[] = [
   "NEXT_PUBLIC_STOREFRONT_HOST",
@@ -121,49 +111,17 @@ export function validateBrandEnv(
   for (const key of brand.requiredInProduction) {
     require(key, `required for a production ${label} build`);
   }
-  if (envValue(raw, "NEXT_PUBLIC_ENABLE_TABBY") === "true") {
-    require("NEXT_PUBLIC_TABBY_PUBLIC_KEY", "NEXT_PUBLIC_ENABLE_TABBY=true");
-    require("NEXT_PUBLIC_TABBY_MERCHANT_CODE", "NEXT_PUBLIC_ENABLE_TABBY=true");
-  }
-  if (
-    isProduction &&
-    !envValue(raw, "NEXT_PUBLIC_GTM_ID") &&
-    !envValue(raw, "NEXT_PUBLIC_GA4_ID")
-  ) {
-    warnings.push("Neither NEXT_PUBLIC_GTM_ID nor NEXT_PUBLIC_GA4_ID is set: no analytics on this production build.");
+
+  // 3b. Settings that moved to the integrations switchboard (ADR-005 phase E):
+  //     set here they would do nothing, so the build refuses them.
+  for (const key of REMOVED_ENV_KEYS) {
+    if (!envValue(raw, key)) continue;
+    errors.push(
+      `${key} is no longer read: analytics, Insider's website tag, Tabby / Tamara promos and Google Maps are set per market in the admin (Settings → Integrations). Remove it from this deployment.`,
+    );
   }
 
-  // 4. Nothing that belongs to another brand. Empty Insider settings count as
-  //    the brand's own `integrationDefaults`, because that is what the site
-  //    would load (src/lib/brand/publicEnv.ts); a brand without defaults
-  //    leaves Insider off.
-  const insiderOn = envValue(raw, "NEXT_PUBLIC_INSIDER_ENABLED") !== "false";
-  const effective = (key: BrandEnvKey): { value: string; fallback: boolean } => {
-    const value = envValue(raw, key);
-    if (value || !insiderOn) return { value, fallback: false };
-    if (key === "NEXT_PUBLIC_INSIDER_ACCOUNT_ID") {
-      const id = brand.integrationDefaults.insiderAccountId ?? "";
-      return { value: id, fallback: Boolean(id) };
-    }
-    if (key === "NEXT_PUBLIC_INSIDER_SCRIPT_HOST") {
-      const host = brand.integrationDefaults.insiderScriptHost ?? "";
-      return { value: host, fallback: Boolean(host) };
-    }
-    return { value, fallback: false };
-  };
-  for (const { key, field } of OWNED_ID_FIELDS) {
-    const { value, fallback } = effective(key);
-    if (!value) continue;
-    const owner = others.find((other) =>
-      other.ownedIds[field].some((id) => id.toLowerCase() === value.toLowerCase()),
-    );
-    if (!owner) continue;
-    errors.push(
-      fallback
-        ? `${key} is empty, so the site falls back to ${shown(key, value)}, which belongs to ${owner.name.en} (${owner.code}), not ${label}. Set ${brand.name.en}'s own value or NEXT_PUBLIC_INSIDER_ENABLED=false.`
-        : `${key}=${shown(key, value)} belongs to ${owner.name.en} (${owner.code}), not ${label}.`,
-    );
-  }
+  // 4. No host of another brand.
   for (const key of HOST_SETTINGS) {
     const value = envValue(raw, key);
     if (!value) continue;

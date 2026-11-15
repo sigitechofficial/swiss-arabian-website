@@ -68,59 +68,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Resolve Insider Web SDK config from Key Vault
-        id: insider
-        run: |
-          set -euo pipefail
-          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
-
-          ENABLED=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-enabled --query value -o tsv 2>/dev/null || true)
-          ACCOUNT_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-account-id --query value -o tsv 2>/dev/null || true)
-          SCRIPT_HOST=$(az keyvault secret show --vault-name "$KV" --name next-public-insider-script-host --query value -o tsv 2>/dev/null || true)
-
-          ENABLED="${ENABLED:-true}"
-          ACCOUNT_ID="${ACCOUNT_ID:-10015366}"
-          SCRIPT_HOST="${SCRIPT_HOST:-swissarabianuatnew.api.useinsider.com}"
-
-          if [ -z "$ACCOUNT_ID" ]; then
-            echo "ERROR: NEXT_PUBLIC_INSIDER_ACCOUNT_ID is empty"
-            exit 1
-          fi
-
-          echo "enabled=${ENABLED}" >> "$GITHUB_OUTPUT"
-          echo "account_id=${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
-          echo "script_host=${SCRIPT_HOST}" >> "$GITHUB_OUTPUT"
-          echo "Insider Web SDK: enabled=${ENABLED} account_id=${ACCOUNT_ID} host=${SCRIPT_HOST}"
-
-      - name: Resolve Google Maps API key from Key Vault
-        id: maps
-        run: |
-          set -euo pipefail
-          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
-
-          MAPS_KEY=$(az keyvault secret show --vault-name "$KV" --name next-public-google-maps-api-key --query value -o tsv 2>/dev/null || true)
-
-          if [ -z "$MAPS_KEY" ]; then
-            echo "ERROR: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is empty (Key Vault secret next-public-google-maps-api-key)"
-            exit 1
-          fi
-
-          echo "::add-mask::$MAPS_KEY"
-          echo "api_key=${MAPS_KEY}" >> "$GITHUB_OUTPUT"
-          echo "Google Maps API key resolved from Key Vault"
-
-      - name: Resolve analytics IDs from Key Vault (optional)
-        id: analytics
-        run: |
-          set -euo pipefail
-          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
-          # Optional: empty = no analytics script on the site.
-          GTM_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-gtm-id --query value -o tsv 2>/dev/null || true)
-          GA4_ID=$(az keyvault secret show --vault-name "$KV" --name next-public-ga4-id --query value -o tsv 2>/dev/null || true)
-          echo "gtm_id=${GTM_ID}" >> "$GITHUB_OUTPUT"
-          echo "ga4_id=${GA4_ID}" >> "$GITHUB_OUTPUT"
-          echo "Analytics: GTM=${GTM_ID:-none} GA4=${GA4_ID:-none}"
-
       - name: Build Docker image
         run: |
           docker build \
@@ -132,12 +79,6 @@ jobs:
             --build-arg NEXT_PUBLIC_ENABLE_OAUTH=false \
             --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
             --build-arg NEXT_PUBLIC_USE_DEV_SESSION=false \
-            --build-arg "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
-            --build-arg "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
-            --build-arg "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
-            --build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ steps.maps.outputs.api_key }}" \
-            --build-arg "NEXT_PUBLIC_GTM_ID=${{ steps.analytics.outputs.gtm_id }}" \
-            --build-arg "NEXT_PUBLIC_GA4_ID=${{ steps.analytics.outputs.ga4_id }}" \
             --build-arg NEXT_PUBLIC_SEO_INDEXING_ENABLED=false \
             -t "${{ steps.vars.outputs.image }}" \
             .
@@ -210,10 +151,6 @@ jobs:
               "NEXT_PUBLIC_APP_ENV=dev" \
               "NEXT_PUBLIC_DEV_API_BASE_URL=${{ env.DEV_API_BASE_URL }}" \
               "NEXT_PUBLIC_DEV_RETURN_URL=${{ env.DEV_RETURN_URL }}" \
-              "NEXT_PUBLIC_INSIDER_ENABLED=${{ steps.insider.outputs.enabled }}" \
-              "NEXT_PUBLIC_INSIDER_ACCOUNT_ID=${{ steps.insider.outputs.account_id }}" \
-              "NEXT_PUBLIC_INSIDER_SCRIPT_HOST=${{ steps.insider.outputs.script_host }}" \
-              "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ steps.maps.outputs.api_key }}" \
               "GIT_COMMIT_SHA=${{ github.sha }}" \
               "GIT_SHORT_SHA=${{ steps.vars.outputs.short_sha }}" \
               "GIT_BRANCH=${{ github.ref_name }}" \
@@ -222,6 +159,44 @@ jobs:
               "BUILD_TIME=${{ steps.vars.outputs.build_time }}" \
               "GITHUB_RUN_URL=${{ steps.vars.outputs.run_url }}" \
               "DEPLOYED_BY=github-actions"
+
+      # ADR-005 phase E: analytics, Insider's website tag, Tabby promos and Google Maps
+      # come from the backend per address (integrations switchboard), not from this build.
+      - name: Remove website settings that moved to the integrations switchboard
+        run: |
+          set -euo pipefail
+          az containerapp update \
+            --name "${{ env.AZURE_CONTAINER_APP_WEBSITE }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --remove-env-vars \
+              NEXT_PUBLIC_INSIDER_ENABLED NEXT_PUBLIC_INSIDER_ACCOUNT_ID NEXT_PUBLIC_INSIDER_SCRIPT_HOST \
+              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID \
+              NEXT_PUBLIC_GTM_ID NEXT_PUBLIC_GA4_ID \
+              NEXT_PUBLIC_TABBY_PUBLIC_KEY NEXT_PUBLIC_TABBY_MERCHANT_CODE \
+              NEXT_PUBLIC_ENABLE_TABBY NEXT_PUBLIC_ENABLE_TAMARA NEXT_PUBLIC_ENABLE_PAYMOB >/dev/null
+
+      # The backend signs its "refresh this address's settings" calls with this secret
+      # (same Key Vault secret as the backend's SITE_REVALIDATE_SECRET). Optional: without
+      # it the website refuses those calls and picks up changes within 5 minutes.
+      - name: Website refresh secret from Key Vault (optional)
+        run: |
+          set -euo pipefail
+          KV="${{ env.AZURE_KEY_VAULT_NAME }}"
+          SECRET=$(az keyvault secret show --vault-name "$KV" --name site-revalidate-secret --query value -o tsv 2>/dev/null || true)
+          if [ -z "$SECRET" ]; then
+            echo "No site-revalidate-secret in Key Vault: website refresh calls stay off (5-minute refresh applies)"
+            exit 0
+          fi
+          echo "::add-mask::$SECRET"
+          az containerapp secret set \
+            --name "${{ env.AZURE_CONTAINER_APP_WEBSITE }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --secrets "site-revalidate-secret=${SECRET}" >/dev/null
+          az containerapp update \
+            --name "${{ env.AZURE_CONTAINER_APP_WEBSITE }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --set-env-vars "SITE_REVALIDATE_SECRET=secretref:site-revalidate-secret" >/dev/null
+          echo "Website refresh secret set from Key Vault"
 
       - name: Get Container App URL and active revision
         id: appurl
