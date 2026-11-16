@@ -19,8 +19,8 @@ import { formatMoney } from "@/features/home/utils/formatMoney";
 import { InlineMethodPayment, type PaymentSurface } from "./InlineMethodPayment";
 import { TabbyCheckoutCard } from "./TabbyCheckoutCard";
 import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
-import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang } from "../../utils/tabby";
-import { pdpPayMarkTabby } from "@/styles/pdpChrome";
+import { isTabbyPaymentMethod, TABBY_METHOD_TITLE, tabbySnippetConfig, type TabbyLang } from "../../utils/tabby";
+import { TabbyLogo } from "@/components/payments/TabbyLogo";
 
 type CheckoutPaymentProps = {
   methods: PaymentMethodOption[];
@@ -161,7 +161,7 @@ export function CheckoutPayment({
                               aria-describedby={row.sub ? `pay-opt-note-${row.key}` : undefined}
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
-                            {row.tabby !== undefined ? <span className={pdpPayMarkTabby} aria-hidden="true">tabby</span> : null}
+                            {row.tabby !== undefined ? <TabbyLogo /> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
                               {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}
@@ -343,8 +343,11 @@ function paymentGroups(
           zoneId: method.zonePaymentMethodId,
         };
         if (!isTabbyPaymentMethod(method)) return row;
-        // Tabby: their mark, and their own wording when they can't approve this shopper.
+        // Tabby: their official logo and approved name in the shopper's language,
+        // and their own wording when they can't approve this shopper.
         row.tabby = tabbySnippetConfig(method) ?? false;
+        row.title = TABBY_METHOD_TITLE[tabbyLang];
+        row.sub = undefined;
         if (tabbyPrescore.state === "rejected") {
           row.disabled = true;
           row.sub = tabbyPrescore.message[tabbyLang];

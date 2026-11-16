@@ -1,49 +1,47 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const flags = vi.hoisted(() => ({ tabby: true }));
+const config = vi.hoisted(() => ({
+  value: null as null | Record<string, unknown>,
+}));
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/cart" }));
-vi.mock("@/lib/config/env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/config/env")>();
-  return {
-    env: {
-      ...actual.env,
-      flags: { ...actual.env.flags, ...flags },
-      tabby: { publicKey: "pk_test_x", merchantCode: "store_uae" },
-    },
-  };
+vi.mock("@/features/payments/tabby/tabbyPromo", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/features/payments/tabby/tabbyPromo")>();
+  return { ...actual, useTabbyPromoConfig: () => config.value };
 });
+vi.mock("@/hooks/useHydrated", () => ({ useHydrated: () => true }));
 
 import { CartTabbyPromo } from "./CartTabbyPromo";
 
+const uae = {
+  available: true,
+  publicKey: "pk_test_x",
+  merchantCode: "swissarabian_web_uae",
+  currency: "AED",
+  snippetScriptBase: "https://checkout.tabby.ai",
+};
+
 describe("CartTabbyPromo", () => {
   beforeEach(() => {
-    flags.tabby = true;
+    config.value = uae;
   });
 
-  it("splits the bag total in four and opens Tabby's own pop-up", () => {
-    render(<CartTabbyPromo amount={252} currency="AED" />);
-
-    const button = screen.getByRole("button", { name: /interest-free payments of/i });
-    expect(button.textContent).toContain("63");
-
-    fireEvent.click(button);
-    const frame = screen.getByTitle("Tabby payment plans") as HTMLIFrameElement;
-    const url = new URL(frame.src);
-    expect(url.origin).toBe("https://checkout.tabby.ai");
-    expect(url.searchParams.get("price")).toBe("252.00");
-    expect(url.searchParams.get("currency")).toBe("AED");
-    expect(url.searchParams.get("merchant_code")).toBe("store_uae");
+  it("mounts Tabby's official cart snippet, no home-made plan text", () => {
+    const { container } = render(<CartTabbyPromo amount={252} currency="AED" />);
+    const slot = container.querySelector('[data-tabby-promo="cart"]');
+    expect(slot).not.toBeNull();
+    expect(container.textContent).not.toMatch(/interest|pay in 4/i);
+    expect(document.head.querySelector('script[data-tabby-promo="https://checkout.tabby.ai/tabby-promo.js"]')).not.toBeNull();
   });
 
-  it("is hidden for a currency Tabby does not cover", () => {
-    const { container } = render(<CartTabbyPromo amount={252} currency="USD" />);
-    expect(container.textContent).toBe("");
+  it("is hidden in a market without Tabby (Qatar)", () => {
+    config.value = { available: false };
+    const { container } = render(<CartTabbyPromo amount={252} currency="QAR" />);
+    expect(container.innerHTML).toBe("");
   });
 
   it("is hidden for an empty total", () => {
     const { container } = render(<CartTabbyPromo amount={0} currency="AED" />);
-    expect(container.textContent).toBe("");
+    expect(container.innerHTML).toBe("");
   });
 });

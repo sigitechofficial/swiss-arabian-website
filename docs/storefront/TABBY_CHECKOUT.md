@@ -23,14 +23,30 @@ redirected to, then a return page that polls the platform.
 - Snippet container ids must not be `TabbyCard` / `TabbyPromo`.
 - Same price as every other method — no surcharge.
 
+## Tabby QA fixes (Nov 2026)
+
+Tabby's integration team re-tested the UAE dev site and asked for these before live keys:
+
+| Ask | Where |
+| --- | --- |
+| Cancel → back to checkout with the bag; failure → bag kept, Tabby not offered again | `TabbyReturnView` → `utils/returnToCheckout.ts` → `POST storefront/orders/:id/payment/release-to-cart` (backend re-checks Tabby, cancels the unpaid order, reopens its cart). Declined bag id kept in `sessionStorage` (`sa_tabby_declined_cart`); `offeredPaymentMethods` drops Tabby for it. |
+| Arabic return page and Arabic Tabby page (`lang=ar`) | Proxy saves the last shop language in the `sa_lang` cookie (`lib/i18n/shopperLocale.ts`). `startPayment` sends `locale` and adds `?lang=` to the Tabby return links; the backend saves it on the order and sends it as `lang`. |
+| Real `order.items[].category` | Backend (`tabby-category.util.ts`). |
+| Official logo, no "Pay in 4" caption, Arabic method name | `components/payments/TabbyLogo.tsx`, `TABBY_METHOD_TITLE`, `paymentMethodNote`. |
+| Official snippets on product, cart and mini cart; pop-up with merchant code + public key | `features/payments/tabby/TabbyPromoSnippet.tsx` (Tabby `tabby-promo.js`), used by `PdpInstalments`, `CartTabbyPromo`, `CartSideSheet`. |
+| No Tabby on Qatar | Snippets read `GET storefront/markets/:zone/tabby-promo`, which is `available` only where checkout offers Tabby. |
+
 ## Settings
 
-Nothing Tabby-specific is needed for checkout: keys come from the backend per brand and market.
-The product-page "Pay in 4" card still reads `NEXT_PUBLIC_ENABLE_TABBY`,
-`NEXT_PUBLIC_TABBY_PUBLIC_KEY` and `NEXT_PUBLIC_TABBY_MERCHANT_CODE`.
+Nothing Tabby-specific is set on the storefront: checkout and the product / cart snippets get
+the keys from the backend per brand and market. The old `NEXT_PUBLIC_ENABLE_TABBY`,
+`NEXT_PUBLIC_TABBY_PUBLIC_KEY` and `NEXT_PUBLIC_TABBY_MERCHANT_CODE` are no longer read.
+
+The official logo file goes at `public/assets/payments/tabby/tabby-logo.svg`, exactly as
+downloaded from Tabby's brand pack (https://docs.tabby.ai/marketing/toolkit). Until it is
+there, the checkout option shows no logo.
 
 ## Not done yet
 
-- Tabby promo on the cart page (the product page has the "Pay in 4" card).
-- Official Tabby logo asset — the option uses the same wordmark as the product page.
-- Arabic for the rest of checkout (only Tabby's own messages and the return page are bilingual).
+- Official Tabby logo file (see Settings).
+- Arabic for the rest of checkout (only Tabby's own wording, the method name and the return page are bilingual).

@@ -1,5 +1,6 @@
 "use client";
 
+import { currentShopperLocale } from "@/lib/i18n/shopperLocale";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
@@ -62,7 +63,8 @@ import {
   type InlinePaymentSession,
   type PreparedInlinePayment,
 } from "../utils/startPayment";
-import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
+import { isTabbyPaymentMethod, tabbyStartFailureMessage } from "../utils/tabby";
+import { clearTabbyDeclined, offeredPaymentMethods } from "../utils/returnToCheckout";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -310,7 +312,7 @@ export function useCheckout() {
           listPaymentMethods(sessionId),
         ]);
         setDeliveryMethods(delivery);
-        setPaymentMethods(payment);
+        setPaymentMethods(offeredPaymentMethods(payment, useCartStore.getState().cartId));
 
         const deliveryPick =
           delivery.find((d) => d.zoneDeliveryMethodId === deliveryChoiceRef.current) ??
@@ -466,6 +468,7 @@ export function useCheckout() {
       };
 
       const goToConfirmation = (orderId: string) => {
+        clearTabbyDeclined();
         window.location.replace(`/order-confirmation/${orderId}`);
         clearCart();
         setCartId(null);
@@ -491,7 +494,7 @@ export function useCheckout() {
       // The order is placed; only starting the payment failed.
       const paymentStartError = (e: unknown, gatewayFallback: string) => {
         if (e instanceof PaymentRejectedError) {
-          return e.messages[tabbyLang(document.documentElement.lang)];
+          return e.messages[currentShopperLocale()];
         }
         if (e instanceof PaymentGatewayError) {
           return payment && isTabbyPaymentMethod(payment)

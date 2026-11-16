@@ -105,13 +105,37 @@ describe("startPayment", () => {
     expect(initiatePayment).toHaveBeenCalledWith(
       "order-tabby",
       expect.objectContaining({
-        returnUrl: "http://localhost:3004/payments/tabby/return",
-        cancelUrl: "http://localhost:3004/payments/tabby/return",
+        returnUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        cancelUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        locale: "en",
         zonePaymentMethodId: "zpm-tabby",
       }),
     );
     expect(window.location.assign).toHaveBeenCalledWith("https://checkout.tabby.ai/?sessionId=abc");
     expect(result.kind).toBe("redirect");
+  });
+
+  it("sends Arabic to Tabby when the shopper last browsed the Arabic shop", async () => {
+    document.cookie = "sa_lang=ar; path=/";
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://checkout.tabby.ai/?sessionId=abc",
+      warnings: [],
+    } as never);
+    try {
+      await startPayment("order-tabby", vi.fn(), { providerCode: "tabby" });
+      expect(initiatePayment).toHaveBeenCalledWith(
+        "order-tabby",
+        expect.objectContaining({
+          returnUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+          cancelUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+          locale: "ar",
+        }),
+      );
+    } finally {
+      document.cookie = "sa_lang=; path=/; max-age=0";
+    }
   });
 
   it("raises Tabby's own message when Tabby rejects the purchase — never a redirect or confirmation", async () => {

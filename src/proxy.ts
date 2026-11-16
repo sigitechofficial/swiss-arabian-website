@@ -4,6 +4,10 @@ import {
   isLocaleSwitchablePath,
   withLocalePrefix,
 } from "@/lib/i18n/localePath";
+import {
+  SHOPPER_LOCALE_COOKIE,
+  SHOPPER_LOCALE_MAX_AGE,
+} from "@/lib/i18n/shopperLocale";
 import { ZONE_COOKIE } from "@/features/markets/utils/zoneCookie";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
@@ -66,10 +70,40 @@ export async function proxy(request: NextRequest) {
     url.pathname = stripped.startsWith("/") ? stripped : `/${stripped}`;
     const headers = new Headers(request.headers);
     headers.set("x-shop-locale", "ar");
-    return NextResponse.rewrite(url, { request: { headers } });
+    return rememberLocale(
+      request,
+      NextResponse.rewrite(url, { request: { headers } }),
+      "ar",
+    );
   }
 
-  return NextResponse.next();
+  return rememberLocale(
+    request,
+    NextResponse.next(),
+    isLocaleSwitchablePath(pathname) ? "en" : null,
+  );
+}
+
+/**
+ * Shop pages carry the language in the address; checkout and payment pages
+ * don't. Remember the language of the last shop page so those pages (and the
+ * payment providers they open) follow it. Unchanged values are not re-sent.
+ */
+function rememberLocale(
+  request: NextRequest,
+  response: NextResponse,
+  locale: "en" | "ar" | null,
+): NextResponse {
+  if (!locale || request.cookies.get(SHOPPER_LOCALE_COOKIE)?.value === locale) {
+    return response;
+  }
+  response.cookies.set(SHOPPER_LOCALE_COOKIE, locale, {
+    path: "/",
+    maxAge: SHOPPER_LOCALE_MAX_AGE,
+    sameSite: "lax",
+    secure: request.nextUrl.protocol === "https:",
+  });
+  return response;
 }
 
 export const config = {

@@ -1,3 +1,4 @@
+import { currentShopperLocale } from "@/lib/i18n/shopperLocale";
 import { initiatePayment } from "../api/orders.service";
 import {
   getPayAttempt,
@@ -88,21 +89,27 @@ export async function startPayment(
   // BE Tabby contract: `/payments/tabby/return` for success and cancel — the
   // backend adds `result=success|cancel` and builds the failure URL itself.
   // Shared Stripe/Paymob keep the existing confirmation return.
+  // The shopper's language rides on the Tabby return link (checkout has no
+  // `/ar` prefix), so cancel / declined messages come back in their language.
+  const locale = currentShopperLocale();
+  const tabbyReturn = `${origin}/payments/tabby/return?lang=${locale}`;
   const returnUrl = isTelrHint
     ? `${origin}/payments/telr/return`
     : isTabbyHint
-      ? `${origin}/payments/tabby/return`
+      ? tabbyReturn
       : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
   const cancelUrl = isTelrHint
     ? `${origin}/payments/telr/return?result=cancelled`
     : isTabbyHint
-      ? `${origin}/payments/tabby/return`
+      ? tabbyReturn
       : `${origin}/checkout/payment/cancel`;
 
   const payment = await initiatePayment(orderId, {
     idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
     returnUrl,
     cancelUrl,
+    // Saved on the order: Tabby opens its page in this language (`lang`).
+    locale,
     ...(method.zonePaymentMethodId ? { zonePaymentMethodId: method.zonePaymentMethodId } : {}),
     ...(method.paymentMethodId ? { paymentMethodId: method.paymentMethodId } : {}),
     ...(prepared

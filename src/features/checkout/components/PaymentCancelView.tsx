@@ -1,5 +1,6 @@
 "use client";
 
+import { currentShopperLocale } from "@/lib/i18n/shopperLocale";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,7 +16,6 @@ import {
   storeOrderId,
 } from "../utils/checkoutSession";
 import { PaymentGatewayError, PaymentRejectedError, startPayment } from "../utils/startPayment";
-import { tabbyLang } from "../utils/tabby";
 import { CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
@@ -75,7 +75,7 @@ export function PaymentCancelView() {
     } catch (e) {
       setError(
         e instanceof PaymentRejectedError
-          ? e.messages[tabbyLang(document.documentElement.lang)]
+          ? e.messages[currentShopperLocale()]
           : e instanceof PaymentGatewayError
             ? GATEWAY_ERROR
             : checkoutErrorMessage(e, "We couldn’t restart your payment. Please try again or contact us."),

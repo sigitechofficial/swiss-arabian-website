@@ -19,6 +19,12 @@ export const TABBY_CANCELLED_MESSAGE: TabbyMessage = {
   ar: "لقد ألغيت الدفعة. فضلاً حاول مجددًا أو اختر طريقة دفع أخرى.",
 };
 
+/** Tabby's approved name for the payment method at checkout (Tabby QA, Nov 2026). */
+export const TABBY_METHOD_TITLE: TabbyMessage = {
+  en: "Pay later with Tabby",
+  ar: "ادفع لاحقًا مع تابي",
+};
+
 export function tabbyLang(locale: string | null | undefined): TabbyLang {
   return (locale ?? "").trim().toLowerCase().startsWith("ar") ? "ar" : "en";
 }

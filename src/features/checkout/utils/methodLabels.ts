@@ -78,7 +78,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     return "Telr · secure hosted checkout";
   }
   if (isTabbyPaymentMethod(method)) {
-    return "Pay in 4, interest-free";
+    // Tabby QA: no plan caption. Tabby offers more plans than Pay in 4 (some
+    // with a fee); the Tabby snippet under the method shows the real ones.
+    return "";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
@@ -134,7 +136,7 @@ export function upcomingPaymentMethods(
   }
   if (paymob && (country === "AE" || country === "SA")) {
     if (!tabbyLive) {
-      rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
+      rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay later" });
     }
     rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
   }
