@@ -22,6 +22,7 @@ import { SapilAnnouncement } from "./SapilAnnouncement";
 import { SapilFooterView } from "./SapilFooter";
 import { SapilHeader, type SapilLogo } from "./SapilHeader";
 import { SapilLocaleSwitcher } from "./SapilLocaleSwitcher";
+import { SapilMarketMenu } from "./SapilMarketMenu";
 import { SapilPhoneMenu } from "./SapilPhoneMenu";
 import { SapilSearchDialog } from "./SapilSearchDialog";
 import { SapilShopBy, priceEditChip } from "./SapilShopBy";
@@ -109,6 +110,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
         onOpenMenu={() => setMenuOpen(true)}
         onOpenSearch={openSearch}
         onOpenBag={() => setCartOpen(true)}
+        localeMenu={<SapilMarketMenu />}
       />
       {shopByPending ? (
         <div aria-hidden="true" data-sapil-reserve="shop-by" className="bg-sapil-white border-b border-sapil-line h-[55px] max-760:h-[53px]" />

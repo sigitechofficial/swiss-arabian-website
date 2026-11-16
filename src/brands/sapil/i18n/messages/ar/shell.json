@@ -19,6 +19,8 @@
   "payOnDelivery": "الدفع عند الاستلام",
   "country": "الدولة",
   "language": "اللغة",
+  "shipTo": "الشحن إلى",
+  "countryAndLanguage": "الدولة واللغة: {current}",
   "searchPlaceholder": "ابحث باسم أو نوتة أو مجموعة",
   "searchHint": "اكتب اسمًا أو نوتة أو مجموعة. اضغط Enter لرؤية كل النتائج.",
   "searchLoading": "جارٍ البحث…",
