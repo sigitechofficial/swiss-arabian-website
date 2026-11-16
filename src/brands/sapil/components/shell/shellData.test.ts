@@ -6,6 +6,9 @@ import {
   footerColumnsFromNav,
   isCurrentHref,
   menuItemsFromNav,
+  MAX_SHOP_BY_CHIPS,
+  shopByChips,
+  shopByChipsFromMenu,
   shopByChipsFromNav,
 } from "./shellData";
 
@@ -50,6 +53,54 @@ describe("shopByChipsFromNav", () => {
     expect(chips.map((c) => c.color)).toEqual(["peach", "sky", "lilac"]);
     expect(shopByChipsFromNav(HEADER, 1)).toHaveLength(1);
     expect(shopByChipsFromNav([])).toEqual([]);
+  });
+});
+
+const SHOP_BY: NavItem[] = [
+  nav("For her", "COLLECTION", "/collections/for-her", [nav("Nested", "COLLECTION", "/collections/nested")]),
+  nav("Find your mood", "URL", "/#mood"),
+  nav("Group", "GROUP_HEADER", null),
+  nav("Gifts", "CATEGORY", "/categories/gifts"),
+  nav("Sarab EDP", "PRODUCT", "/products/sarab-edp"),
+  nav("Lookbook", "URL", "https://lookbook.example.com"),
+];
+
+describe("shopByChipsFromMenu", () => {
+  it("makes a chip of every top-level item with a link, any link type, in menu order", () => {
+    const chips = shopByChipsFromMenu(SHOP_BY);
+    expect(chips.map((c) => [c.label, c.href])).toEqual([
+      ["For her", "/collections/for-her"],
+      ["Find your mood", "/#mood"],
+      ["Gifts", "/categories/gifts"],
+      ["Sarab EDP", "/products/sarab-edp"],
+      ["Lookbook", "https://lookbook.example.com"],
+    ]);
+    // colours in v9 chip order, counted over chips (the link-less item takes none)
+    expect(chips.map((c) => c.color)).toEqual(["peach", "sky", "lilac", "butter", "mint"]);
+  });
+
+  it("keeps at most 8 chips", () => {
+    const many = Array.from({ length: 12 }, (_, i) => nav(`C${i}`, "COLLECTION", `/collections/c${i}`));
+    const chips = shopByChipsFromMenu(many);
+    expect(MAX_SHOP_BY_CHIPS).toBe(8);
+    expect(chips).toHaveLength(8);
+    expect(chips.at(-1)?.label).toBe("C7");
+    expect(chips.map((c) => c.color)).toEqual(["peach", "sky", "lilac", "butter", "mint", "sage", "sand", "lime"]);
+  });
+});
+
+describe("shopByChips", () => {
+  it("uses the Shop-by menu when it has items", () => {
+    expect(shopByChips(SHOP_BY, HEADER).map((c) => c.label)[0]).toBe("For her");
+  });
+
+  it("falls back to the header's collection links when the Shop-by menu is empty or missing", () => {
+    const fallback = shopByChipsFromNav(HEADER);
+    expect(shopByChips([], HEADER)).toEqual(fallback);
+    expect(shopByChips(undefined, HEADER)).toEqual(fallback);
+    expect(shopByChips(null, HEADER)).toEqual(fallback);
+    // a Shop-by menu with no linked item draws nothing of its own either
+    expect(shopByChips([nav("Heading", "GROUP_HEADER", null)], HEADER)).toEqual(fallback);
   });
 });
 

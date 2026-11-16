@@ -1,7 +1,7 @@
 "use client";
 
 import { MediaImage } from "@/components/ui/MediaImage";
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { IconButton, Wrap, cx, tintValue } from "../../ui";
 import { SapilLink } from "../shared/SapilLink";
@@ -22,8 +22,6 @@ export type SapilHeaderProps = {
   onOpenMenu: () => void;
   onOpenSearch: () => void;
   onOpenBag: () => void;
-  /** Country and language menu, shown with the tools on wide screens (the phone menu has its own). */
-  localeMenu?: ReactNode;
 };
 
 const NAV_ITEM =
@@ -114,7 +112,6 @@ export function SapilHeader({
   onOpenMenu,
   onOpenSearch,
   onOpenBag,
-  localeMenu,
 }: SapilHeaderProps) {
   const t = useSapilCopy();
   const baseId = useId();
@@ -259,7 +256,6 @@ export function SapilHeader({
               })}
         </nav>
         <div className="flex items-center gap-[2px] max-1280:min-w-[88px] max-1280:justify-end">
-          {localeMenu ? <span className="contents max-1280:hidden">{localeMenu}</span> : null}
           <IconButton label={t("shell.search")} onClick={onOpenSearch}>
             <SearchIcon />
           </IconButton>
