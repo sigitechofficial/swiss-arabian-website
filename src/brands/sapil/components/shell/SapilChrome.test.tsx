@@ -182,5 +182,17 @@ describe("SapilChrome", () => {
     expect(bar.querySelector("[data-sapil-topbar-message]")?.textContent).toBe("");
     expect(within(bar).getByRole("button", { name: "Ship to: Sapil UAE" })).toBeInTheDocument();
     expect(within(bar).getByRole("button", { name: "Language: English" })).toBeInTheDocument();
+    // Phones too: the bar never hides, and with no message it shows the dropdowns.
+    expect(bar.className).not.toMatch(/max-760:hidden/);
+    const tools = bar.querySelector("[data-sapil-topbar-tools]") as HTMLElement;
+    expect(tools.className).not.toMatch(/max-760:hidden/);
+  });
+
+  it("on phones a bar with a message shows the message and leaves the dropdowns to the phone menu", () => {
+    const { container } = render(<SapilChrome>page</SapilChrome>);
+    const bar = container.querySelector("[data-sapil-topbar]") as HTMLElement;
+    expect(bar.className).not.toMatch(/max-760:hidden/);
+    const tools = bar.querySelector("[data-sapil-topbar-tools]") as HTMLElement;
+    expect(tools.className).toMatch(/max-760:hidden/);
   });
 });
