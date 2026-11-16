@@ -14,6 +14,7 @@ vi.mock("./checkoutSession", () => ({
 }));
 
 import { initiatePayment } from "../api/orders.service";
+import { ApiClientError } from "@/lib/api/apiError";
 import { PaymentGatewayError, PaymentRejectedError, startPayment } from "./startPayment";
 
 describe("startPayment", () => {
@@ -188,5 +189,24 @@ describe("startPayment", () => {
       startPayment("order-tabby", vi.fn(), { providerCode: "tabby" }),
     ).rejects.toBeInstanceOf(PaymentGatewayError);
     expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("turns the backend's PAYMENT_FAILED answer into the retry step, not a raw error", async () => {
+    vi.mocked(initiatePayment).mockRejectedValue(
+      new ApiClientError(422, { code: "PAYMENT_FAILED", message: "This payment method couldn’t be started." } as never),
+    );
+
+    await expect(
+      startPayment("order-telr", vi.fn(), { providerCode: "telr" }),
+    ).rejects.toBeInstanceOf(PaymentGatewayError);
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("passes other errors through unchanged", async () => {
+    const other = new ApiClientError(404, { code: "ORDER_NOT_FOUND", message: "Not found" } as never);
+    vi.mocked(initiatePayment).mockRejectedValue(other);
+
+    await expect(startPayment("order-x", vi.fn(), { providerCode: "telr" })).rejects.toBe(other);
   });
 });

@@ -1,5 +1,6 @@
 import { checkoutHref, rememberCheckoutLocale } from "./checkoutLocale";
 import { initiatePayment } from "../api/orders.service";
+import { ApiClientError } from "@/lib/api/apiError";
 import {
   getPayAttempt,
   storePaymentTransactionId,
@@ -107,25 +108,35 @@ export async function startPayment(
       ? `${origin}/payments/tabby/return`
       : `${origin}${checkoutHref("/checkout/payment/cancel")}`;
 
-  const payment = await initiatePayment(orderId, {
-    idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
-    returnUrl,
-    cancelUrl,
-    ...(method.zonePaymentMethodId ? { zonePaymentMethodId: method.zonePaymentMethodId } : {}),
-    ...(method.paymentMethodId ? { paymentMethodId: method.paymentMethodId } : {}),
-    ...(prepared
-      ? {
-          metadata: {
-            preparedClientSecret: prepared.clientSecret,
-            preparedProvider: prepared.provider,
-            ...(prepared.publicKey ? { preparedPublicKey: prepared.publicKey } : {}),
-            ...(prepared.publishableKey ? { preparedPublishableKey: prepared.publishableKey } : {}),
-            ...(prepared.providerReference ? { preparedProviderReference: prepared.providerReference } : {}),
-            ...(prepared.accountId ? { preparedAccountId: prepared.accountId } : {}),
-          },
-        }
-      : {}),
-  });
+  let payment: Awaited<ReturnType<typeof initiatePayment>>;
+  try {
+    payment = await initiatePayment(orderId, {
+      idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
+      returnUrl,
+      cancelUrl,
+      ...(method.zonePaymentMethodId ? { zonePaymentMethodId: method.zonePaymentMethodId } : {}),
+      ...(method.paymentMethodId ? { paymentMethodId: method.paymentMethodId } : {}),
+      ...(prepared
+        ? {
+            metadata: {
+              preparedClientSecret: prepared.clientSecret,
+              preparedProvider: prepared.provider,
+              ...(prepared.publicKey ? { preparedPublicKey: prepared.publicKey } : {}),
+              ...(prepared.publishableKey ? { preparedPublishableKey: prepared.publishableKey } : {}),
+              ...(prepared.providerReference ? { preparedProviderReference: prepared.providerReference } : {}),
+              ...(prepared.accountId ? { preparedAccountId: prepared.accountId } : {}),
+            },
+          }
+        : {}),
+    });
+  } catch (e) {
+    // The backend answers PAYMENT_FAILED when the gateway step couldn't start (the
+    // order is saved). Same retry step as a gateway that returned no session.
+    if (e instanceof ApiClientError && e.code === "PAYMENT_FAILED") {
+      throw new PaymentGatewayError([]);
+    }
+    throw e;
+  }
 
   if (payment.paymentTransactionId) storePaymentTransactionId(payment.paymentTransactionId);
   if (payment.warnings?.length) {

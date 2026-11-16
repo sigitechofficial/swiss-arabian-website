@@ -6,8 +6,9 @@ import { Button, Dialog } from "../../ui";
 import { ChevronIcon } from "../../ui/shared";
 
 /**
- * Pay in 4 with Tabby / Tamara under the buy row (shared instalment logic;
- * Sapil look). Tabby opens Tabby's own pop-up; Tamara opens the schedule.
+ * Pay in 4 under the buy row (shared instalment logic; Sapil look), only with
+ * the providers this market's checkout offers; nothing when it offers none.
+ * Tabby opens Tabby's own pop-up; Tamara opens the schedule.
  */
 export function PdpInstalments({
   price,
@@ -27,6 +28,8 @@ export function PdpInstalments({
     t("product.payInMonths", { count: 2 }),
     t("product.payInMonths", { count: 3 }),
   ];
+
+  if (!plan.available) return null;
 
   return (
     <section

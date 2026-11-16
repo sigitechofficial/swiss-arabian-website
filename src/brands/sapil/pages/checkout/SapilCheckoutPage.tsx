@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
@@ -9,7 +9,7 @@ import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
 import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
-import { usesHostedRedirect } from "@/features/checkout/utils/methodLabels";
+import { paymentStepKinds, usesHostedRedirect } from "@/features/checkout/utils/methodLabels";
 import type { PayRow } from "@/features/checkout/utils/paymentOptions";
 import { isTabbyPaymentMethod } from "@/features/checkout/utils/tabby";
 import { appliedCoupon, useFreeShippingBar } from "@/features/promotions";
@@ -173,6 +173,7 @@ export function SapilCheckoutPage() {
   const regions = f.regionSet?.regions ?? [];
   const dialCode = dialCodeFor(f.countryCode);
 
+  const payKinds = useMemo(() => paymentStepKinds(checkout.paymentMethods), [checkout.paymentMethods]);
   const payment = usePaymentOptions({
     methods: checkout.paymentMethods,
     countryCode: f.countryCode,
@@ -491,6 +492,8 @@ export function SapilCheckoutPage() {
       <CheckoutHeader
         step={step}
         bagHint={t("checkout.stepBagHint", { count: bag.itemCount, amount: money(f.subtotal, currency) })}
+        payKinds={payKinds}
+        lang={f.payLang}
         onOpenBag={() => setCartOpen(true)}
       />
       <Wrap
