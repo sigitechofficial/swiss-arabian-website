@@ -20,7 +20,6 @@
   "country": "Country",
   "language": "Language",
   "shipTo": "Ship to",
-  "countryAndLanguage": "Country and language: {current}",
   "searchPlaceholder": "Search a name, note or collection",
   "searchHint": "Type a name, a note or a collection. Press Enter to see every result.",
   "searchLoading": "Searching…",
