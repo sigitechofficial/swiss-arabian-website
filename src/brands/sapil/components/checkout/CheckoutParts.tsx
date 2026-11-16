@@ -365,6 +365,8 @@ export type PromoFormProps = {
 };
 
 export function OrderSummary({
+  title,
+  sticky = true,
   open,
   lines,
   extra,
@@ -378,6 +380,10 @@ export function OrderSummary({
   onQuantity,
   LinkComponent = DefaultLink,
 }: {
+  /** heading; "Order summary" when left out */
+  title?: ReactNode;
+  /** stays in view while the page scrolls (desktop) */
+  sticky?: boolean;
   open: boolean;
   lines: SummaryLine[];
   /** free gifts etc., after the lines */
@@ -399,12 +405,13 @@ export function OrderSummary({
       id="checkout-summary"
       aria-label={t("checkout.summary")}
       className={cx(
-        "sticky top-[100px] bg-sapil-white rounded-[28px] p-[28px] shadow-[0_1px_2px_rgba(60,45,30,.04),0_24px_48px_-32px_rgba(60,45,30,.3)]",
+        sticky && "sticky top-[100px]",
+        "bg-sapil-white rounded-[28px] p-[28px] shadow-[0_1px_2px_rgba(60,45,30,.04),0_24px_48px_-32px_rgba(60,45,30,.3)]",
         "max-900:static max-900:order-[-1] max-900:p-[20px] max-900:rounded-[20px]",
         open ? "max-900:block" : "max-900:hidden",
       )}
     >
-      <h2 className="font-sapil-sans font-[700] text-[20px] leading-[normal] tracking-[-.02em] mb-[12px] max-900:hidden">{t("checkout.summary")}</h2>
+      <h2 className="font-sapil-sans font-[700] text-[20px] leading-[normal] tracking-[-.02em] mb-[12px] max-900:hidden">{title ?? t("checkout.summary")}</h2>
       <ul className="list-none max-h-[360px] overflow-y-auto mx-[-8px] px-[8px]">
         {lines.map((line) => (
           <li

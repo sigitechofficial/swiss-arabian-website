@@ -59,6 +59,16 @@ type FieldShell = {
   className?: string;
 };
 
+/** v9 `.fld` input look for a control built elsewhere (e.g. an address autocomplete). */
+export function fieldControlClass(invalid?: boolean): string {
+  return cx(CONTROL, "rounded-[14px]", invalid ? "border-sapil-sale" : "border-sapil-line-2");
+}
+
+/** v9 `.fld` shell (label, optional mark, error line) around any control whose id is `id`. */
+export function FieldFrame(props: FieldShell & { id: string; errorId: string; children: ReactNode }) {
+  return <Shell {...props} />;
+}
+
 function Shell({
   id,
   label,
