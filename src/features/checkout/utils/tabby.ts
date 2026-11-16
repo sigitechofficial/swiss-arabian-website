@@ -1,4 +1,5 @@
 import type { PaymentMethodOption } from "../types/checkout";
+import { baseLanguage } from "@/lib/i18n/locales";
 
 /**
  * Tabby (pay in 4) helpers. Backend contract: `docs/storefront/TABBY_CHECKOUT.md`.
@@ -19,8 +20,12 @@ export const TABBY_CANCELLED_MESSAGE: TabbyMessage = {
   ar: "لقد ألغيت الدفعة. فضلاً حاول مجددًا أو اختر طريقة دفع أخرى.",
 };
 
+/** Languages Tabby's snippets and wording come in; any other page language uses English. */
+const TABBY_LANGUAGES: readonly TabbyLang[] = ["en", "ar"];
+
 export function tabbyLang(locale: string | null | undefined): TabbyLang {
-  return (locale ?? "").trim().toLowerCase().startsWith("ar") ? "ar" : "en";
+  const base = baseLanguage(locale);
+  return TABBY_LANGUAGES.find((lang) => lang === base) ?? "en";
 }
 
 export function isTabbyPaymentMethod(
@@ -115,9 +120,11 @@ export function canPrescoreTabby(email: string, phone: string): boolean {
 export function tabbyFallbackText(total: number, currency: string, lang: TabbyLang): string {
   const decimals = currency.toUpperCase() === "KWD" ? 3 : 2;
   const each = ((total * 1.015) / 4).toFixed(decimals);
-  return lang === "ar"
-    ? `4 دفعات بقيمة ${each} ${currency} شهريًا أو حتى 12 شهرًا.`
-    : `4 payments of ${currency} ${each}/mo or up to 12 months.`;
+  const text: TabbyMessage = {
+    en: `4 payments of ${currency} ${each}/mo or up to 12 months.`,
+    ar: `4 دفعات بقيمة ${each} ${currency} شهريًا أو حتى 12 شهرًا.`,
+  };
+  return text[lang];
 }
 
 /** Tabby price format: decimal string in major units. */

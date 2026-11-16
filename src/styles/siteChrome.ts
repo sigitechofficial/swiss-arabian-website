@@ -278,7 +278,7 @@ export const footerColTitle =
 export const footerColTitleCaps = "tracking-[0.12em] uppercase";
 
 export const footerColLinks =
-  "[&_a]:inline-block [&_a]:py-[0.28rem] [&_a]:text-[0.875rem] [&_a]:text-white/82 [&_a]:no-underline [&_a]:hover:text-white [&_a]:hover:no-underline max-[1023px]:[&_a]:py-[0.22rem] max-[1023px]:[&_a]:text-[0.8125rem] max-[1023px]:[&_a]:leading-[1.35] max-[767px]:[&_a]:text-[0.78rem]";
+  "[&_a]:inline-block [&_a]:py-[0.28rem] [&_a]:text-[0.875rem] [&_a]:text-white/82 [&_a]:no-underline [&_a]:hover:text-white [&_a]:hover:no-underline max-[1023px]:[&_a]:py-[0.3rem] max-[1023px]:[&_a]:text-[0.8125rem] max-[1023px]:[&_a]:leading-[1.35] max-[767px]:[&_a]:text-[0.78rem]";
 
 export const footerSocial =
   "m-0 flex list-none flex-wrap items-center gap-[0.65rem] p-0";

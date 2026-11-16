@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SkipLink } from "./SkipLink";
 import { CartSideSheet } from "@/features/cart/components/CartSideSheet";
 import { GiftChoiceHost } from "@/features/promotions/components/GiftChoiceHost";
 import type { NavbarVariant } from "./navbar";
@@ -25,9 +26,7 @@ export function StorefrontShell({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--cream)] font-sans text-[var(--ink)]">
-      <a className={skipLink} href="#main">
-        Skip to content
-      </a>
+      <SkipLink className={skipLink} />
       <SiteHeader key="site-header" variant={navbarVariant} />
       <div className={siteHeaderSpacer} aria-hidden="true" />
       <main id="main" className="flex flex-1 flex-col">

@@ -1,9 +1,14 @@
 import { headers } from "next/headers";
+import { currentSiteHost } from "@/lib/site/currentSite";
+import { siteOriginFor } from "@/lib/site/siteKey";
+import {
+  configuredStorefrontHost,
+  isLoopbackHost,
+} from "@/lib/api/storefrontHost";
 
 /**
  * The public origin of this request (scheme + host), e.g.
- * https://qa.swissarabian.com. Each market has its own domain, so SEO addresses
- * (canonical, hreflang, og:url, structured data) are built per request.
+ * https://qa.swissarabian.com (development and tests).
  */
 export function originFromHeaders(
   get: (name: string) => string | null,
@@ -20,9 +25,34 @@ export function originFromHeaders(
   return `${proto}://${host}`;
 }
 
+/**
+ * Local only: the origin a plain `localhost` stands for (STOREFRONT_HOST, see
+ * src/lib/config/runtime.ts). Deployed websites always take the request's address.
+ */
+export function siteOrigin(): string | null {
+  const host = configuredStorefrontHost(null);
+  if (!host) return null;
+  return `${isLoopbackHost(host) ? "http" : "https"}://${host}`;
+}
+
+/**
+ * Origin for absolute SEO addresses (canonical, hreflang, og:url, sitemap): the
+ * website address being rendered (`[site]` root param, or the address a route
+ * handler set), so every market website names itself. Outside the site tree:
+ * `next dev` follows the request, production the configured storefront.
+ */
 export async function requestOrigin(): Promise<string | null> {
-  const store = await headers();
-  return originFromHeaders((name) => store.get(name));
+  const site = await currentSiteHost();
+  if (site) return siteOriginFor(site);
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const store = await headers();
+      return originFromHeaders((name) => store.get(name)) ?? siteOrigin();
+    } catch {
+      return siteOrigin();
+    }
+  }
+  return siteOrigin();
 }
 
 /** `/products/x` → `https://host/products/x`; absolute or empty values pass through. */

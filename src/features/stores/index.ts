@@ -1,1 +1,2 @@
-export { StoresPageView } from "./components/StoresPageView";
+export { StoresPageView, StoreAreaPageView } from "./components/StoresPageView";
+export { StorePageView } from "./components/StorePageView";

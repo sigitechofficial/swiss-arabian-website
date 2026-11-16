@@ -59,6 +59,46 @@ describe("startPayment", () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
+  it("sends the prepared session's account so the backend reuses the session the shopper pays", async () => {
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "stripe",
+      paymentAction: "INLINE_CARD",
+      clientSecret: "cs_prepared_secret",
+      metadata: { publishableKey: "pk_test" },
+      warnings: [],
+    } as never);
+
+    await startPayment(
+      "order-3",
+      vi.fn(),
+      {},
+      {
+        inline: true,
+        prepared: {
+          provider: "stripe",
+          correlationId: "inline-cs-1-stripe-3000",
+          clientSecret: "cs_prepared_secret",
+          publishableKey: "pk_test",
+          providerReference: "cs_test_prepared",
+          accountId: "acct-stripe-uae",
+        },
+      },
+    );
+
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-3",
+      expect.objectContaining({
+        idempotencyKey: "inline-cs-1-stripe-3000",
+        metadata: expect.objectContaining({
+          preparedClientSecret: "cs_prepared_secret",
+          preparedProvider: "stripe",
+          preparedProviderReference: "cs_test_prepared",
+          preparedAccountId: "acct-stripe-uae",
+        }),
+      }),
+    );
+  });
+
   it("redirects Telr HPP with /payments/telr/return URLs and REDIRECT_REQUIRED", async () => {
     vi.mocked(initiatePayment).mockResolvedValue({
       providerCode: "telr",

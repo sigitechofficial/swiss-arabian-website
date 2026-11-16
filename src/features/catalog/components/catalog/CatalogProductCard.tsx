@@ -33,6 +33,14 @@ import { useLoadedImages } from "../../hooks/useLoadedImages";
 import { ProductCardTags } from "../ProductCardTags";
 import { StockAlertButton } from "../pdp/StockAlertButton";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { optimizedImageUrl } from "@/lib/images/optimizedImageUrl";
+
+export type CardImagePriority = "high" | "eager" | "lazy";
+
+/** Grid cards are at most 268px wide (3 columns), half the screen at 2 columns. */
+const CARD_IMAGE_SIZES = "(max-width: 1080px) 50vw, 268px";
+/** CSS width the hover image is fetched for (2x of this on retina). */
+const CARD_IMAGE_WIDTH = 320;
 
 export function CatalogProductCard({
   product,
@@ -44,7 +52,13 @@ export function CatalogProductCard({
   promotionBadge,
   promotionLabel,
   dense = true,
+  imagePriority = "lazy",
 }: {
+  /**
+   * Cards in the first visible row: `"high"` for the likely LCP image,
+   * `"eager"` for the rest of the row. Everything below stays lazy.
+   */
+  imagePriority?: CardImagePriority;
   product: CatalogProduct;
   /** Top-right control above the card link (e.g. the wishlist heart). */
   action?: ReactNode;
@@ -66,10 +80,14 @@ export function CatalogProductCard({
   const showImage = Boolean(product.imageUrl) && !imageFailed;
 
   // Only swap to the hover image once it has really loaded — a broken hover
-  // URL would otherwise fade the bottle out onto a blank card.
+  // URL would otherwise fade the bottle out onto a blank card. It is fetched
+  // card-sized through the image optimiser, and only on hover-capable screens.
   const hoverCandidate = product.imageUrls?.[1];
-  const hover = hoverCandidate && hoverCandidate !== product.imageUrl ? hoverCandidate : null;
-  const loadedImages = useLoadedImages([hover]);
+  const hover =
+    hoverCandidate && hoverCandidate !== product.imageUrl
+      ? optimizedImageUrl(hoverCandidate, CARD_IMAGE_WIDTH)
+      : null;
+  const loadedImages = useLoadedImages([hover], { hoverOnly: true });
   const hasIngredientsHover = !imageFailed && Boolean(hover && loadedImages.has(hover));
   const waiting = product.price == null || product.isSellable === false || product.inStock === false;
 
@@ -106,7 +124,9 @@ export function CatalogProductCard({
               alt={product.title}
               width={600}
               height={600}
-              loading="lazy"
+              sizes={CARD_IMAGE_SIZES}
+              loading={imagePriority === "lazy" ? "lazy" : "eager"}
+              fetchPriority={imagePriority === "high" ? "high" : undefined}
               onError={() => setImageFailed(true)}
             />
           ) : (

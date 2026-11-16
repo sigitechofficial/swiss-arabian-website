@@ -1,0 +1,22 @@
+import type { Metadata } from "next";
+import { routeTranslator } from "@/lib/i18n/routeLocale";
+import { AccountPlaceholderPageView } from "@brand-ui";
+import { requireBrandFeature } from "@/lib/brand/featureGate";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await routeTranslator();
+  return {
+    title: t("pages.title.membership"),
+  };
+}
+
+export default async function AccountMembershipPage() {
+  requireBrandFeature("loyalty");
+  const { t } = await routeTranslator();
+  return (
+    <AccountPlaceholderPageView
+      title={t("pages.title.membership")}
+      description={t("account.membershipText")}
+    />
+  );
+}

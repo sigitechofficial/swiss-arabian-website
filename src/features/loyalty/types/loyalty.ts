@@ -599,6 +599,9 @@ export function coerceLoyaltyActivityPage(
   return data;
 }
 
+/** Activity keys that always take points away from the customer. */
+const OUTFLOW_ACTIVITY = new Set(["POINTS_REDEEMED", "REDEEM", "POINTS_EXPIRED", "EXPIRE", "EXPIRED"]);
+
 export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] {
   return transactionList(raw).flatMap((item, index) => {
     const row = asRecord(item);
@@ -608,8 +611,12 @@ export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] 
     if (TRANSIENT_ACTIVITY.has(presentationKey) && row.customerVisible !== true && row.visible !== true) {
       return [];
     }
-    const points =
+    const rawPoints =
       readNumber(row.points) ?? readNumber(row.pointsDelta) ?? readNumber(row.pointDelta);
+    // The API sends POINTS_REDEEMED / EXPIRED as a positive magnitude, which
+    // rendered "Points redeemed +500 points". Outflows always read negative.
+    const points =
+      rawPoints != null && OUTFLOW_ACTIVITY.has(presentationKey) ? -Math.abs(rawPoints) : rawPoints;
     const label =
       readText(row, ["label", "displayLabel", "title", "description"]) ??
       activityCopy(presentationKey, points) ??

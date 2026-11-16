@@ -1,81 +1,51 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/Toaster";
-import { toastApiError } from "@/lib/api/toastApiError";
-import { resetPassword, toLoginIdentifier } from "../api/auth.service";
-import {
-  resetPasswordSchema,
-  type ResetPasswordFormValues,
-} from "../schemas/auth.schema";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useResetPasswordForm } from "../hooks/useAuthForms";
 import { AuthShell } from "./AuthShell";
 import { AuthField, AuthPasswordField, AuthSubmitButton } from "./AuthFormControls";
 import { AuthOtpField } from "./AuthOtpField";
 
 export function ResetPasswordPageView() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const form = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      identifier: searchParams.get("identifier") ?? "",
-      code: "",
-      newPassword: "",
-    },
-  });
-  const codeValue = useWatch({ control: form.control, name: "code" });
-
-  async function onSubmit(values: ResetPasswordFormValues) {
-    try {
-      await resetPassword({
-        identifier: toLoginIdentifier(values.identifier),
-        code: values.code,
-        newPassword: values.newPassword,
-      });
-      toast("Password updated. Please sign in.", "success");
-      router.push("/login");
-    } catch (error) {
-      toastApiError(error);
-    }
-  }
+  const { form, codeValue, setCode, submit } = useResetPasswordForm();
+  const t = useShopCopy();
 
   return (
-    <AuthShell heading="Reset password" subtitle="Enter the code we sent you and choose a new password.">
-      <form className="flex w-full flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+    <AuthShell heading={t("auth.reset.heading")} subtitle={t("auth.reset.subtitle")}>
+      <form className="flex w-full flex-col gap-4" onSubmit={submit}>
         <AuthField
           id="identifier"
-          label="Email or phone"
-          placeholder="you@email.com"
+          label={t("auth.emailOrPhone")}
+          placeholder={t("auth.emailPlaceholder")}
           autoComplete="username"
           {...form.register("identifier")}
-          error={form.formState.errors.identifier?.message}
+          error={formErrorText(t, form.formState.errors.identifier?.message)}
         />
         <AuthOtpField
           id="code"
-          label="Reset code"
+          label={t("auth.reset.code")}
           value={codeValue}
-          onChange={(code) => form.setValue("code", code, { shouldValidate: true, shouldDirty: true })}
-          error={form.formState.errors.code?.message}
+          onChange={setCode}
+          error={formErrorText(t, form.formState.errors.code?.message)}
         />
         <AuthPasswordField
           id="newPassword"
-          label="New password"
+          label={t("account.security.new")}
           autoComplete="new-password"
-          placeholder="Your new password"
+          placeholder={t("auth.reset.newPlaceholder")}
           {...form.register("newPassword")}
-          error={form.formState.errors.newPassword?.message}
+          error={formErrorText(t, form.formState.errors.newPassword?.message)}
         />
         <div className="pt-1">
           <AuthSubmitButton disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Updating…" : "Update password"}
+            {form.formState.isSubmitting ? t("account.security.updating") : t("account.security.update")}
           </AuthSubmitButton>
         </div>
         <p className="text-center text-[12.5px] font-normal text-sa-secondary">
           <LocaleLink className="font-medium text-[var(--sa-action-primary)]" href="/login">
-            Back to sign in
+            {t("auth.backToSignIn")}
           </LocaleLink>
         </p>
       </form>

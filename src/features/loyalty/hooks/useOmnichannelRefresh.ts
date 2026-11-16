@@ -6,12 +6,12 @@ import { requestOmnichannelRefresh, type LoyaltyMarketQuery } from "../api/loyal
 import type { LoyaltyActivityPageView, LoyaltyWalletView } from "../types/loyalty";
 import {
   captureOmnichannelRefreshSnapshot,
-  OMNICHANNEL_COPY,
   OMNICHANNEL_REFRESH_POLL_AT_MS,
   omnichannelRefreshObserved,
   omnichannelRefreshUi,
   type OmnichannelLoyaltyView,
 } from "../types/omnichannel";
+import { useOmnichannelCopy } from "../components/useOmnichannelCopy";
 
 export type OmnichannelRefreshPhase =
   | "idle"
@@ -78,15 +78,16 @@ export function useOmnichannelRefresh(input: {
     phase !== "not_ready" &&
     (phase === "throttled" || postCooling || server.reason === "COOLDOWN");
 
+  const omni = useOmnichannelCopy();
   const displayMessage =
     phase === "failed"
-      ? OMNICHANNEL_COPY.refreshFailed
+      ? omni.refreshFailed
       : phase === "updated"
-        ? OMNICHANNEL_COPY.updated
+        ? omni.updated
         : phase === "not_ready"
-          ? OMNICHANNEL_COPY.notReady
+          ? omni.notReady
           : showCooldownCopy
-            ? OMNICHANNEL_COPY.throttled
+            ? omni.throttled
             : null;
 
   const poll = useCallback(

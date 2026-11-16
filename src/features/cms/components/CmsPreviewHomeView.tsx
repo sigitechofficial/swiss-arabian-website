@@ -1,24 +1,11 @@
-import { headers } from "next/headers";
-import { cookies } from "next/headers";
 import Link from "next/link";
-import { configuredStorefrontHost } from "@/lib/api/storefrontHost";
-import { fetchPreviewHome } from "../api/cmsContent.service";
-import {
-  CMS_PREVIEW_COOKIE,
-  decodePreviewSession,
-} from "../preview/previewCookie";
+import { loadCmsPreviewHome } from "../preview/loadPreviewHome";
 import { CmsSectionList } from "./CmsSectionList";
 
 export async function CmsPreviewHomeView() {
-  const jar = await cookies();
-  const session = decodePreviewSession(jar.get(CMS_PREVIEW_COOKIE)?.value);
-  const headerStore = await headers();
-  const hostHeader =
-    headerStore.get("x-forwarded-host") || headerStore.get("host") || "";
-  const storefrontHost =
-    configuredStorefrontHost(hostHeader) || hostHeader.split(":")[0] || null;
+  const preview = await loadCmsPreviewHome();
 
-  if (!session) {
+  if (preview.status === "expired") {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-xl font-semibold text-[var(--ink,#241f1b)]">
@@ -35,29 +22,17 @@ export async function CmsPreviewHomeView() {
     );
   }
 
-  const result = await fetchPreviewHome({
-    zoneCode: session.zoneCode,
-    languageCode: session.languageCode,
-    previewToken: session.token,
-    storefrontHost,
-  });
-
-  const hasSections =
-    Boolean(result.page) &&
-    Array.isArray(result.sections) &&
-    result.sections.length > 0;
-
   return (
-    <div data-cms-home="preview" data-zone={session.zoneCode} data-locale={session.languageCode}>
+    <div data-cms-home="preview" data-zone={preview.zoneCode} data-locale={preview.languageCode}>
       <div className="sticky top-0 z-50 border-b border-[var(--line,#E7DDCB)] bg-[#2C241D] px-4 py-2 text-center text-sm text-white">
-        Draft preview · {session.zoneCode} · {session.languageCode}
+        Draft preview · {preview.zoneCode} · {preview.languageCode}
         {" · "}
         <Link className="underline" href="/">
           Exit preview
         </Link>
       </div>
-      {hasSections ? (
-        <CmsSectionList sections={result.sections} logUnknown />
+      {preview.status === "ready" ? (
+        <CmsSectionList sections={preview.result.sections} logUnknown />
       ) : (
         <div className="mx-auto max-w-xl px-4 py-16 text-center">
           <h1 className="text-xl font-semibold">Empty Draft</h1>

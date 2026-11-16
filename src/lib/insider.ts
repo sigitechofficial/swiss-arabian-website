@@ -1,7 +1,21 @@
-import { env } from "@/lib/config/env";
+import { hasConsent } from "@/lib/consent/consent";
+import {
+  trackCartItemAdded,
+  trackCartItemRemoved,
+  trackCartViewed,
+  trackCheckoutViewed,
+  trackHomeViewed,
+  trackListingViewed,
+  trackProductViewed,
+} from "@/lib/analytics/siteEvents";
 
 declare global {
   interface Window {
+    /**
+     * Set by the root layout's Insider boot script, which is only rendered when
+     * Insider's website tag is on for this address's market (ADR-005 phase E).
+     */
+    __SA_INSIDER_ON__?: boolean;
     InsiderQueue?: Array<Record<string, unknown>>;
     /** Pathname already flushed with type+init in <head> (before ins.js). */
     __SA_INSIDER_HEAD_PATH__?: string;
@@ -37,8 +51,14 @@ const INSIDER_USER_KEY = "sa_insider_user";
 const INSIDER_LANGUAGE = "en_US";
 const INSIDER_CURRENCY = "AED";
 
+/** Insider's tag is on for this page (the server rendered its boot script). */
 function envAllows(): boolean {
-  return env.insider.enabled && Boolean(env.insider.accountId);
+  // The switchboard turned Insider's tag on for this address's market (the head script sets the
+  // flag), and Insider is a marketing tool: nothing is queued, stored or sent until the shopper
+  // allowed marketing in the cookie banner. ins.js itself is only loaded after that.
+  return (
+    typeof window !== "undefined" && window.__SA_INSIDER_ON__ === true && hasConsent("marketing")
+  );
 }
 
 function hasRealSdk(): boolean {
@@ -46,6 +66,8 @@ function hasRealSdk(): boolean {
 }
 
 function queue(): NonNullable<Window["InsiderQueue"]> {
+  // Without marketing consent, calls land in a throwaway array: never read, never sent.
+  if (!envAllows()) return [];
   window.InsiderQueue = window.InsiderQueue || [];
   return window.InsiderQueue;
 }
@@ -120,6 +142,7 @@ export function resetInsiderRouteFlushForTests(): void {
 
 export function getOrCreateInsiderUuid(): string {
   if (typeof window === "undefined") return "anon";
+  if (!envAllows()) return "anon";
   try {
     const existing = localStorage.getItem(INSIDER_UUID_KEY);
     if (existing) return existing;
@@ -133,7 +156,7 @@ export function getOrCreateInsiderUuid(): string {
 }
 
 function persistInsiderUserValue(value: Record<string, unknown>): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !envAllows()) return;
   try {
     localStorage.setItem(INSIDER_USER_KEY, JSON.stringify(value));
     if (typeof value.uuid === "string" && value.uuid) {
@@ -164,6 +187,27 @@ function clearStoredInsiderUser(): void {
   } catch {
     // ignore
   }
+}
+
+declare global {
+  interface Window {
+    /** Defined by the <head> boot script: queues context + page type and loads ins.js. */
+    __saInsiderBoot?: () => void;
+    /** Set once the boot script ran on this page. */
+    __saInsiderBooted?: boolean;
+  }
+}
+
+/**
+ * The shopper just allowed marketing: start Insider on this page the same way the <head> script
+ * does on a page load (context, page type, init, then ins.js), then replay anything queued.
+ * Nothing from before the choice is sent: the queue is emptied first.
+ */
+export function activateInsiderAfterConsent(): void {
+  if (typeof window === "undefined" || !envAllows()) return;
+  resetInsiderQueueInPlace();
+  window.__saInsiderBoot?.();
+  startInsiderSdk();
 }
 
 /** After ins.js loads, replay identify/track calls that fired first. */
@@ -501,16 +545,19 @@ export function insiderInit(): void {
 
 /** Home — `home_page_view`. */
 export function insiderHomePage(): void {
+  trackHomeViewed();
   pushPage("home");
 }
 
 /** Listing / collection / search PLP — `listing_page_view`. Partner schema: breadcrumb[]. */
 export function insiderListingPage(page?: InsiderListingPage): void {
+  trackListingViewed();
   pushPage("category", { breadcrumb: listingBreadcrumb(page) });
 }
 
 /** Cart page — `cart_page_view`. Must include the current line items. */
 export function insiderCartPage(cart: InsiderCartSnapshot): void {
+  trackCartViewed();
   pushPage("cart", cartQueueValue(cart));
 }
 
@@ -520,6 +567,7 @@ export function insiderCartPage(cart: InsiderCartSnapshot): void {
  * confirms this partner accepts it. Funnel start stays backend `checkout_started`.
  */
 export function insiderCheckoutPage(): void {
+  trackCheckoutViewed();
   pushPage("other", { name: "Checkout" });
 }
 
@@ -592,6 +640,11 @@ export function ensureInsiderProductPage(product: InsiderProductPayload): void {
 }
 
 export function insiderProductViewed(product: InsiderProductPayload): void {
+  trackProductViewed({
+    productId: product.id,
+    sku: product.sku,
+    currencyCode: product.currency,
+  });
   ensureInsiderProductPage(product);
 }
 
@@ -601,6 +654,12 @@ export function insiderProductViewed(product: InsiderProductPayload): void {
  * Does not need a following `init` (Insider Web SDK).
  */
 export function insiderAddToCart(item: InsiderCartItemPayload): void {
+  trackCartItemAdded({
+    productId: item.id,
+    sku: item.sku,
+    currencyCode: item.currency,
+    quantity: item.quantity,
+  });
   runWhenReady(() => {
     queue().push({
       type: "add_to_cart",
@@ -615,10 +674,35 @@ export function insiderAddToCart(item: InsiderCartItemPayload): void {
  * Does not need a following `init`.
  */
 export function insiderRemoveFromCart(item: InsiderCartItemPayload): void {
+  trackCartItemRemoved({
+    productId: item.id,
+    sku: item.sku,
+    currencyCode: item.currency,
+    quantity: item.quantity,
+  });
   runWhenReady(() => {
     queue().push({
       type: "remove_from_cart",
       value: productQueueValue(item, item.quantity),
     });
   });
+}
+
+/**
+ * Web SDK custom event. `eventName` must exist in Insider Attributes & Events and every parameter
+ * type must match its configuration. Fire AFTER ins.js is loaded; never followed by `init`.
+ * Returns false when Insider is disabled so callers do not report a delivery that never happened.
+ */
+export function insiderCustomEvent(
+  eventName: string,
+  custom: Record<string, string | number | boolean>,
+): boolean {
+  if (typeof window === "undefined" || !envAllows()) return false;
+  runWhenReady(() => {
+    queue().push({
+      type: "custom_event",
+      value: [{ event_name: eventName, event_parameters: { custom } }],
+    });
+  });
+  return true;
 }

@@ -1,12 +1,17 @@
+import { Suspense } from "react";
 import { FaqCabinet } from "./FaqCabinet";
+import { FaqCabinetFromUrl } from "./FaqCabinetFromUrl";
 import { FaqHelp } from "./FaqHelp";
 import { FaqHero } from "./FaqHero";
 
-export function FaqPageView({ initialDrawer }: { initialDrawer?: string }) {
+export function FaqPageView() {
   return (
     <div className="bg-page">
       <FaqHero />
-      <FaqCabinet initialDrawer={initialDrawer} />
+      {/* The cached page shows the first drawer; the browser opens `?topic=`. */}
+      <Suspense fallback={<FaqCabinet />}>
+        <FaqCabinetFromUrl />
+      </Suspense>
       <FaqHelp />
     </div>
   );

@@ -1,3 +1,4 @@
+import { checkoutHref, rememberCheckoutLocale } from "./checkoutLocale";
 import { initiatePayment } from "../api/orders.service";
 import {
   getPayAttempt,
@@ -69,6 +70,11 @@ export type PreparedInlinePayment = {
   publicKey?: string;
   publishableKey?: string;
   providerReference?: string | null;
+  /**
+   * Integration account the session was opened with. The backend reuses the
+   * prepared session only when the payment runs under this same account.
+   */
+  accountId?: string | null;
 };
 
 export async function startPayment(
@@ -83,6 +89,8 @@ export async function startPayment(
   options: { inline?: boolean; prepared?: PreparedInlinePayment | null } = {},
 ): Promise<PaymentStartResult> {
   const origin = window.location.origin;
+  // The confirmation / cancel pages open in the language checkout is in.
+  rememberCheckoutLocale(window.location.pathname);
   const prepared = options.prepared;
   const hintProvider = (method.providerCode ?? "").toLowerCase();
   const isTelrHint = hintProvider.includes("telr");
@@ -100,14 +108,14 @@ export async function startPayment(
       ? `${origin}/payments/tabby/return`
       : isTamaraHint
         ? `${origin}/payments/tamara/return`
-        : `${origin}/order-confirmation/${encodeURIComponent(orderId)}`;
+        : `${origin}${checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`)}`;
   const cancelUrl = isTelrHint
     ? `${origin}/payments/telr/return?result=cancelled`
     : isTabbyHint
       ? `${origin}/payments/tabby/return`
       : isTamaraHint
         ? `${origin}/payments/tamara/return`
-        : `${origin}/checkout/payment/cancel`;
+        : `${origin}${checkoutHref("/checkout/payment/cancel")}`;
 
   const payment = await initiatePayment(orderId, {
     idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
@@ -123,6 +131,7 @@ export async function startPayment(
             ...(prepared.publicKey ? { preparedPublicKey: prepared.publicKey } : {}),
             ...(prepared.publishableKey ? { preparedPublishableKey: prepared.publishableKey } : {}),
             ...(prepared.providerReference ? { preparedProviderReference: prepared.providerReference } : {}),
+            ...(prepared.accountId ? { preparedAccountId: prepared.accountId } : {}),
           },
         }
       : {}),
@@ -150,7 +159,7 @@ export async function startPayment(
     if (rejection) throw new PaymentRejectedError("tamara", rejection);
   }
   if (provider.includes("smoke")) {
-    window.location.replace(`/order-confirmation/${orderId}`);
+    window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
     return { kind: "confirmation" };
   }
   const meta = payment.metadata ?? {};

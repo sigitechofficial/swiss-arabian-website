@@ -1,11 +1,12 @@
 "use client";
 
+import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
-import { pollUntilPaymentSettles } from "../api/orders.service";
-import { clearPaymentState, getStoredOrderId, storeOrderId } from "../utils/checkoutSession";
+import { useSettlePayment } from "../hooks/usePaymentReturn";
+import { getStoredOrderId, storeOrderId } from "../utils/checkoutSession";
 import { useTamaraLang } from "../hooks/useTamaraLang";
 import {
   TAMARA_CANCELLED_MESSAGE,
@@ -22,7 +23,7 @@ import {
   checkoutLink,
 } from "@/styles/checkoutChrome";
 
-type TamaraResultHint = "success" | "cancel" | "failure" | "unknown";
+export type TamaraResultHint = "success" | "cancel" | "failure" | "unknown";
 
 type SettleOutcome =
   | { kind: "paid" }
@@ -43,7 +44,7 @@ export function pickOrderId(values: readonly string[], stored: string | null): s
   return ids[0] ?? stored;
 }
 
-function parseResultHint(raw: string | null): TamaraResultHint {
+export function parseResultHint(raw: string | null): TamaraResultHint {
   const value = (raw ?? "").trim().toLowerCase();
   if (value === "success") return "success";
   if (value === "cancel" || value === "cancelled" || value === "canceled") return "cancel";
@@ -121,7 +122,6 @@ const COPY: Record<
  * confirms the payment with Tamara (authorise + capture) before it reads paid.
  */
 export function TamaraReturnView() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const lang = useTamaraLang();
@@ -133,24 +133,9 @@ export function TamaraReturnView() {
   // payment was for another order, such as an exchange replacement.
   const orderId = hydrated ? pickOrderId(searchParams.getAll("orderId"), getStoredOrderId()) : null;
 
-  const [polled, setPolled] = useState<SettleOutcome | null>(null);
-  const started = useRef(false);
-  const outcome: SettleOutcome | null = hydrated && !orderId ? { kind: "no-order" } : polled;
-
-  useEffect(() => {
-    if (!hydrated || !orderId || started.current) return;
-    started.current = true;
-    void (async () => {
-      const result = await pollUntilPaymentSettles(orderId);
-      if (result.success) {
-        clearPaymentState();
-        setPolled({ kind: "paid" });
-        router.replace(`/order-confirmation/${orderId}`);
-        return;
-      }
-      setPolled({ kind: result.status === "TIMEOUT" ? "timeout" : "failed" });
-    })();
-  }, [hydrated, orderId, router]);
+  const settlement = useSettlePayment(orderId);
+  const outcome: SettleOutcome | null =
+    hydrated && !orderId ? { kind: "no-order" } : settlement ? { kind: settlement.kind } : null;
 
   const retryHref = orderId
     ? `/checkout/payment/cancel?orderId=${encodeURIComponent(orderId)}`
@@ -188,7 +173,7 @@ export function TamaraReturnView() {
     const message = cancelled ? TAMARA_CANCELLED_MESSAGE[lang] : TAMARA_REJECTED_MESSAGE[lang];
     return (
       <CheckoutStateShell current="Payment">
-        <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+        <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
           <p className={stateEyebrow}>{cancelled ? copy.cancelEyebrow : copy.failureEyebrow}</p>
           <h1 className={doneTitle} role="alert">
             {message}
@@ -217,7 +202,7 @@ export function TamaraReturnView() {
   // or a success link we can't match to an order in this browser.
   return (
     <CheckoutStateShell current="Payment">
-      <section className={checkoutDone} dir={lang === "ar" ? "rtl" : undefined}>
+      <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
         <p className={stateEyebrow}>{copy.pendingEyebrow}</p>
         <h1 className={doneTitle}>
           {outcome.kind === "no-order" ? (

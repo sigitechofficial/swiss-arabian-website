@@ -1,13 +1,16 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { intlLocale } from "@/lib/i18n/locales";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatPoints, type LoyaltyOrderRewardView } from "../types/loyalty";
 
-function vestingDate(value: string | null): string | null {
+function vestingDate(value: string | null, locale = "en"): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
     day: "numeric",
     month: "long",
   }).format(date);
@@ -39,10 +42,12 @@ export function OrderRewardNote({
   reward: LoyaltyOrderRewardView | null | undefined;
   showHeading?: boolean;
 }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   if (!hasOrderLoyaltySection(reward) || !reward) return null;
 
   const earned = Boolean(reward.earned && reward.state !== "CANCELLED");
-  const vestsOn = reward.earned ? vestingDate(reward.vestedAt) : null;
+  const vestsOn = reward.earned ? vestingDate(reward.vestedAt, locale) : null;
   const redemption = reward.redemption.redeemed ? reward.redemption : null;
   const adjustment = reward.earnAdjustment;
 
@@ -56,20 +61,20 @@ export function OrderRewardNote({
           id="order-rewards-heading"
           className="loyalty-order-reward__title text-[16px] font-semibold text-sa-primary"
         >
-          Rewards
+          {t("account.tab.rewards")}
         </h2>
       ) : (
         <h2 id="order-rewards-heading" className="sr-only">
-          Rewards
+          {t("account.tab.rewards")}
         </h2>
       )}
       {redemption ? (
         <>
           <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">
-            You used
+            {t("loyalty.order.used")}
           </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-            {`${formatPoints(redemption.points)} points`}
+            {t("loyalty.points", { points: formatPoints(redemption.points) })}
           </p>
           {redemption.amount > 0 ? (
             <p
@@ -82,10 +87,10 @@ export function OrderRewardNote({
           {redemption.returnedPoints != null ? (
             <>
               <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-                Returned after refund
+                {t("loyalty.order.returned")}
               </p>
               <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-                {`${formatPoints(redemption.returnedPoints)} points`}
+                {t("loyalty.points", { points: formatPoints(redemption.returnedPoints) })}
               </p>
               {redemption.returnedAmount != null &&
               redemption.returnedAmount > 0 ? (
@@ -104,7 +109,7 @@ export function OrderRewardNote({
           {redemption.netPoints != null ? (
             <>
               <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-                Net points used
+                {t("loyalty.order.net")}
               </p>
               <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
                 {formatPoints(redemption.netPoints)}
@@ -116,51 +121,51 @@ export function OrderRewardNote({
       {adjustment ? (
         <>
           <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-            You earned
+            {t("loyalty.order.earned")}
           </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-            {`${formatPoints(adjustment.originalPoints)} points`}
+            {t("loyalty.points", { points: formatPoints(adjustment.originalPoints) })}
           </p>
           <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-            Adjusted after refund
+            {t("loyalty.order.adjusted")}
           </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-            {`−${formatPoints(adjustment.adjustedPoints)} points`}
+            {t("loyalty.points", { points: `−${formatPoints(adjustment.adjustedPoints)}` })}
           </p>
           <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-            Current reward from this order
+            {t("loyalty.order.current")}
           </p>
           <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-            {`${formatPoints(adjustment.currentPoints)} points`}
+            {t("loyalty.points", { points: formatPoints(adjustment.currentPoints) })}
           </p>
         </>
       ) : earned && reward.earned ? (
         reward.state === "AVAILABLE" ? (
           <>
             <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-              You earned
+              {t("loyalty.order.earned")}
             </p>
             <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-              {`${formatPoints(reward.points)} points available`}
+              {t("loyalty.order.pointsAvailable", { points: formatPoints(reward.points) })}
             </p>
             <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">
-              These points are ready to use.
+              {t("loyalty.order.ready")}
             </p>
           </>
         ) : (
           <>
             <p className="loyalty-order-reward__note pt-2 text-[13px] text-sa-secondary">
-              You earned
+              {t("loyalty.order.earned")}
             </p>
             <p className="loyalty-order-reward__points break-words text-[15px] font-semibold text-sa-primary tabular-nums">
-              {`${formatPoints(reward.points)} points pending`}
+              {t("loyalty.order.pointsPending", { points: formatPoints(reward.points) })}
             </p>
             <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">
-              Your points will become available after this order qualifies.
+              {t("loyalty.order.qualifies")}
             </p>
             {vestsOn ? (
               <p className="loyalty-order-reward__note text-[13px] text-sa-secondary">
-                {`Available from approximately ${vestsOn}`}
+                {t("loyalty.order.availableFrom", { date: vestsOn })}
               </p>
             ) : null}
           </>

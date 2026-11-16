@@ -1,4 +1,5 @@
 import type { PaymentMethodOption } from "../types/checkout";
+import { baseLanguage } from "@/lib/i18n/locales";
 
 /**
  * Tamara (BNPL) helpers. Backend contract: provider `tamara`, method
@@ -30,8 +31,12 @@ export const TAMARA_CANCELLED_MESSAGE: TamaraMessage = {
 /** Countries / currencies Tamara serves for this storefront. */
 const TAMARA_COUNTRY_BY_CURRENCY: Record<string, "AE" | "SA"> = { AED: "AE", SAR: "SA" };
 
+/** Languages Tamara's widget and wording come in; any other page language uses English. */
+const TAMARA_LANGUAGES: readonly TamaraLang[] = ["en", "ar"];
+
 export function tamaraLang(locale: string | null | undefined): TamaraLang {
-  return (locale ?? "").trim().toLowerCase().startsWith("ar") ? "ar" : "en";
+  const base = baseLanguage(locale);
+  return TAMARA_LANGUAGES.find((lang) => lang === base) ?? "en";
 }
 
 /** `AE` / `SA` for a currency Tamara covers here, otherwise `null`. */

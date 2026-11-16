@@ -16,7 +16,9 @@ import {
   isEmptyRewardsWallet,
   type LoyaltyWalletView,
 } from "../types/loyalty";
-import { OMNICHANNEL_COPY } from "../types/omnichannel";
+import { useOmnichannelCopy } from "./useOmnichannelCopy";
+import { knownText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { OmnichannelRewardsCard } from "./OmnichannelRewardsCard";
 import { RewardsActivitySections } from "./RewardsActivitySections";
 import {
@@ -27,12 +29,14 @@ import {
 
 function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
   const marketCurrency = useMarketCurrency();
+  const omni = useOmnichannelCopy();
+  const t = useShopCopy();
   const currency = wallet.currencyCode ?? marketCurrency;
   if (isEmptyRewardsWallet(wallet) && !wallet.tier?.current) {
     return (
       <section aria-labelledby="rewards-balance-heading">
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-          {OMNICHANNEL_COPY.onlineEyebrow}
+          {omni.onlineEyebrow}
         </p>
         <p className="mt-3 font-sans text-[40px] font-medium leading-none tracking-[-0.03em] text-sa-primary tabular-nums sm:text-[48px]">
           0
@@ -41,10 +45,10 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
           id="rewards-balance-heading"
           className="mt-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-sa-muted"
         >
-          Available points
+          {t("loyalty.availablePoints")}
         </h2>
         <p className="mt-4 max-w-[420px] text-[13px] leading-relaxed text-sa-secondary">
-          Start earning rewards with eligible purchases.
+          {t("loyalty.startEarning")}
         </p>
       </section>
     );
@@ -53,7 +57,7 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
   return (
     <section aria-labelledby="rewards-balance-heading">
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-        {OMNICHANNEL_COPY.onlineEyebrow}
+        {omni.onlineEyebrow}
       </p>
       <p className="mt-3 font-sans text-[40px] font-medium leading-none tracking-[-0.03em] text-sa-primary tabular-nums sm:text-[48px]">
         {formatPoints(wallet.availablePoints)}
@@ -62,11 +66,11 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
         id="rewards-balance-heading"
         className="mt-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-sa-muted"
       >
-        Available points
+        {t("loyalty.availablePoints")}
       </h2>
       {wallet.availableValue != null ? (
         <p className="mt-3 text-[14px] text-sa-primary">
-          Worth{" "}
+          {t("loyalty.worth")}{" "}
           <span dir="ltr">{formatMoney(wallet.availableValue, currency)}</span>
         </p>
       ) : null}
@@ -76,31 +80,31 @@ function RewardsSummary({ wallet }: { wallet: LoyaltyWalletView }) {
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-            Pending
+            {t("loyalty.pending")}
           </dt>
           <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
-            {formatPoints(wallet.pendingPoints)} points
+            {t("loyalty.points", { points: formatPoints(wallet.pendingPoints) })}
           </dd>
         </div>
         <div className="min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-            Reserved
+            {t("loyalty.reserved")}
           </dt>
           <dd className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
-            {formatPoints(wallet.reservedPoints)} points
+            {t("loyalty.points", { points: formatPoints(wallet.reservedPoints) })}
           </dd>
         </div>
       </dl>
       {wallet.debtPoints > 0 ? (
         <div className="mt-4 min-w-0 rounded-lg border border-sa-border px-4 py-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">
-            Rewards adjustment
+            {t("loyalty.adjustment")}
           </p>
           <p className="mt-1 break-words text-[14px] font-semibold text-sa-primary tabular-nums">
-            {formatPoints(wallet.debtPoints)} points
+            {t("loyalty.points", { points: formatPoints(wallet.debtPoints) })}
           </p>
           <p className="mt-2 text-[13px] leading-relaxed text-sa-secondary">
-            {wallet.debtLabel ?? DEFAULT_DEBT_COPY}
+            {knownText(t, "loyalty.text.", wallet.debtLabel ?? DEFAULT_DEBT_COPY)}
           </p>
         </div>
       ) : null}
@@ -120,6 +124,7 @@ export function RewardsAccountView() {
     isAuthenticated,
     zoneCode,
   } = useLoyaltyAccount();
+  const t = useShopCopy();
 
   const omnichannel = wallet.data?.omnichannel ?? null;
   const refresh = useOmnichannelRefresh({
@@ -156,23 +161,23 @@ export function RewardsAccountView() {
   if (!bootstrapped || !isAuthenticated) {
     body = (
       <PageLoading
-        label={!bootstrapped ? "Checking session…" : "Redirecting…"}
+        label={!bootstrapped ? t("loadingLabel.session") : t("loadingLabel.redirecting")}
       />
     );
   } else if (!zoneCode || wallet.isPending) {
-    body = <PageLoading label="Loading your rewards…" />;
+    body = <PageLoading label={t("loyalty.loading")} />;
   } else if (wallet.isError || !wallet.data) {
     body = (
       <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
         <p className="text-[14px] text-sa-primary">
-          We couldn&apos;t load your rewards right now.
+          {t("loyalty.loadFailed")}
         </p>
         <button
           type="button"
           onClick={() => void wallet.refetch()}
           className="mt-4 text-[12.5px] font-semibold text-terra hover:underline"
         >
-          Try again
+          {t("tryAgain")}
         </button>
       </div>
     );
@@ -193,14 +198,14 @@ export function RewardsAccountView() {
               <RewardsSummary wallet={wallet.data} />
               {wallet.data.unavailableMessage ? (
                 <p className="mt-5 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
-                  {wallet.data.unavailableMessage}
+                  {knownText(t, "loyalty.text.", wallet.data.unavailableMessage)}
                 </p>
               ) : null}
             </div>
           </div>
         ) : wallet.data.unavailableMessage ? (
           <p className="max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">
-            {wallet.data.unavailableMessage}
+            {knownText(t, "loyalty.text.", wallet.data.unavailableMessage)}
           </p>
         ) : null}
         <OmnichannelRewardsCard
@@ -219,7 +224,7 @@ export function RewardsAccountView() {
       <div className="flex flex-col gap-10">
         <div className="rounded-lg border border-sa-border bg-section-soft px-6 py-10">
           <p className="max-w-[520px] text-[14px] leading-relaxed text-sa-primary">
-            {wallet.data.unavailableMessage}
+            {knownText(t, "loyalty.text.", wallet.data.unavailableMessage)}
           </p>
         </div>
         <OmnichannelRewardsCard
@@ -254,10 +259,10 @@ export function RewardsAccountView() {
 
   return (
     <AccountPageShell>
-      <AccountBreadcrumb label="Rewards" />
+      <AccountBreadcrumb label={t("account.tab.rewards")} />
       <div className={`${accountContainer} pb-2 pt-7 sm:pt-8`}>
         <h1 className="text-[22px] font-bold leading-tight text-sa-primary sm:text-[26px] lg:text-[30px]">
-          My rewards
+          {t("pages.title.rewards")}
         </h1>
       </div>
       <div className={`${accountContainer} pb-16 pt-4`}>{body}</div>

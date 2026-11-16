@@ -23,7 +23,8 @@ export function trackingSummaryFromDetail(
     createdAt: order.createdAt,
     currency: order.currency,
     total: order.totals.total,
-    itemCount: order.lines.length,
+    // Units (2 bottles = 2 items), as the emails count them.
+    itemCount: order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0),
     isGuestOrder: order.customer.isGuest,
     shipments: shipments.map((shipment) => ({
       shipmentId: shipment.shipmentId,

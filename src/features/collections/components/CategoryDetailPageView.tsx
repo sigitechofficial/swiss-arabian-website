@@ -7,11 +7,13 @@ import type {
 } from "@/features/catalog/api/catalog.service";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
 import type { CatalogListingQuery } from "@/features/catalog/types/catalogFacets";
+import { useMarketDocument } from "@/features/catalog/hooks/useMarketDocument";
+import { catalogKeys, fetchCategoryBySlug } from "@/features/catalog/api/catalog.service";
 
 export function CategoryDetailPageView({
   slug,
   listingQuery,
-  category,
+  category: serverCategory,
   initialListing,
   initialZoneCode,
 }: {
@@ -22,7 +24,15 @@ export function CategoryDetailPageView({
   initialListing?: ProductListResult | null;
   initialZoneCode?: string | null;
 }) {
-  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCatalogPlp(
+  // Prerendered for the default market: another market shows its own banner and text.
+  const { data: category } = useMarketDocument({
+    server: serverCategory,
+    serverZoneCode: initialZoneCode,
+    queryKey: (zone) => catalogKeys.category(slug, zone),
+    fetch: (market) => fetchCategoryBySlug(slug, market.zoneCode, market),
+    fetchWhenMissing: false,
+  });
+  const { products, facets, pagination, serverFiltered, loading, hasNextPage, isFetchingNextPage, fetchNextPage, loadFailed, retry } = useCatalogPlp(
     { kind: "category", slug },
     listingQuery,
     initialListing,
@@ -51,6 +61,8 @@ export function CategoryDetailPageView({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={fetchNextPage}
+      loadFailed={loadFailed}
+      onRetry={retry}
     />
   );
 }

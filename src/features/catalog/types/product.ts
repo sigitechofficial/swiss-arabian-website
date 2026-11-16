@@ -27,6 +27,14 @@ export type ProductSummary = {
   featuredNote?: string | null;
   /** Server-side fragrance_family_text codes (not PDP pyramid notes). */
   fragranceFamilyCodes?: string[];
+  /**
+   * Pastel behind the product photo (design token key: pink, peach, butter,
+   * mint, sky, lilac, sand, sage, lime), set in admin or derived from the
+   * bottle colour. Null/absent: the brand's default tile.
+   */
+  tileColor?: string | null;
+  /** Full price before a markdown (struck out next to `price`), when the API sends one. */
+  compareAtPrice?: number | null;
 };
 
 export type ProductCollectionRef = {

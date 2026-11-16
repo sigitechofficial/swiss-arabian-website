@@ -1,8 +1,10 @@
 "use client";
 
+import { intlLocale } from "@/lib/i18n/locales";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SideSheet } from "@/components/ui/SideSheet";
@@ -14,10 +16,10 @@ import { useReviewsCopy } from "../i18n/reviewsCopy";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   createCustomerReview,
-  fetchProductReviews,
   markReviewHelpful,
   reportReview,
 } from "../api/reviews.service";
+import { usePdpReviewList } from "../hooks/usePdpReviewList";
 import { writeReviewSchema, type WriteReviewValues } from "../schemas/review.schema";
 import type {
   ReviewSort,
@@ -71,7 +73,7 @@ function Who({ review, showBadge }: { review: StorefrontPublicReview; showBadge:
  * guests are sent to sign in and come back to the reviews.
  */
 function ReviewActions({ review }: { review: StorefrontPublicReview }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const t = useReviewsCopy();
@@ -170,55 +172,10 @@ export function PdpReviews({
   const display = reviews?.display ?? DEFAULT_REVIEW_DISPLAY;
   const reviewCount = summary?.reviewCount ?? 0;
 
-  const [sort, setSort] = useState<ReviewSort>(reviews?.sort ?? "useful");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [starFilter, setStarFilter] = useState<number | null>(null);
-  const [items, setItems] = useState<StorefrontPublicReview[]>(reviews?.items ?? []);
-  const [total, setTotal] = useState(reviews?.total ?? 0);
-  const [shown, setShown] = useState(FIRST_ROW);
-  const [loading, setLoading] = useState(false);
+  const list = usePdpReviewList(productId, reviews, { firstRow: FIRST_ROW, nextRow: NEXT_ROW });
+  const { sort, verifiedOnly, starFilter, total, shown, loading, applyFilters, viewMore, visible } = list;
   const [reading, setReading] = useState<StorefrontPublicReview | null>(null);
   const [writing, setWriting] = useState(false);
-
-  async function load(next: { sort: ReviewSort; verified: boolean; rating: number | null }, offset = 0) {
-    setLoading(true);
-    try {
-      const page = await fetchProductReviews(
-        productId,
-        { sort: next.sort, verified: next.verified, rating: next.rating, offset, limit: 24 },
-        market,
-      );
-      setItems((prev) => (offset === 0 ? page.items : [...prev, ...page.items]));
-      setTotal(page.total);
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function applyFilters(next: { sort?: ReviewSort; verified?: boolean; rating?: number | null }) {
-    const value = {
-      sort: next.sort ?? sort,
-      verified: next.verified ?? verifiedOnly,
-      rating: next.rating === undefined ? starFilter : next.rating,
-    };
-    setSort(value.sort);
-    setVerifiedOnly(value.verified);
-    setStarFilter(value.rating);
-    setShown(FIRST_ROW);
-    void load(value);
-  }
-
-  async function viewMore() {
-    const nextShown = shown + NEXT_ROW;
-    if (nextShown > items.length && items.length < total) {
-      await load({ sort, verified: verifiedOnly, rating: starFilter }, items.length);
-    }
-    setShown(nextShown);
-  }
-
-  const visible = items.slice(0, shown);
   const breakdown = summary?.ratingBreakdown;
 
   return (
@@ -337,10 +294,13 @@ export function PdpReviews({
                 <article key={review.reviewId} className={c.rvCard}>
                   <div className={c.rvCardTop}>
                     <Stars rating={review.rating} />
-                    <span className={c.rvDate}>{reviewDate(review.createdAt, t.locale === "ar" ? "ar" : "en-GB")}</span>
+                    <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
                   </div>
                   {review.title ? <h3 className={c.rvTitle}>{review.title}</h3> : null}
                   {review.body ? <p className={c.rvBody}>{review.body}</p> : null}
+                  {review.photos.length ? (
+                    <ReviewPhotoThumbs review={review} onOpen={() => setReading(review)} />
+                  ) : null}
                   {hasReply ? (
                     <div className={c.rvReply}>
                       <span className={c.rvReplyLabel}>{t.replied}</span>
@@ -395,6 +355,41 @@ export function PdpReviews({
   );
 }
 
+/** Up to 3 customer photos on a review card; the third shows "+N" when there are more. */
+function ReviewPhotoThumbs({
+  review,
+  onOpen,
+}: {
+  review: StorefrontPublicReview;
+  onOpen: () => void;
+}) {
+  const t = useReviewsCopy();
+  const photos = review.photos;
+  const shown = photos.slice(0, 3);
+  const extra = photos.length - shown.length;
+  return (
+    <div className={c.rvPhotos} role="group" aria-label={t.openPhotos(photos.length)}>
+      {shown.map((p, i) => (
+        <button
+          key={p.id}
+          type="button"
+          className={c.rvPhoto}
+          onClick={onOpen}
+          aria-label={t.photoOf(i + 1, photos.length)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- customer photos come from the review host as-is */}
+          <img src={p.url} alt="" className={c.rvPhotoImg} loading="lazy" />
+          {i === shown.length - 1 && extra > 0 ? (
+            <span className={c.rvPhotoMore} aria-hidden>
+              {t.morePhotos(extra)}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ReadReview({
   review,
   productTitle,
@@ -433,10 +428,24 @@ function ReadReview({
         </p>
         <div className="mb-2.5 flex items-center gap-3">
           <Stars rating={review.rating} size="0.85rem" />
-          <span className={c.rvDate}>{reviewDate(review.createdAt, t.locale === "ar" ? "ar" : "en-GB")}</span>
+          <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
         </div>
         {review.title ? <h3 className="m-0 mb-2 text-[1.05rem] font-semibold">{review.title}</h3> : null}
         {review.body ? <p className={c.rvDialogBody}>{review.body}</p> : null}
+        {review.photos.length ? (
+          <div className={c.rvDialogPhotos}>
+            {review.photos.map((p, i) => (
+              // eslint-disable-next-line @next/next/no-img-element -- customer photos come from the review host as-is
+              <img
+                key={p.id}
+                src={p.url}
+                alt={p.alt ?? t.photoOf(i + 1, review.photos.length)}
+                className={c.rvDialogPhoto}
+                loading="lazy"
+              />
+            ))}
+          </div>
+        ) : null}
         {showReply && review.reply ? (
           <div className={`${c.rvReply} mt-4 text-[0.82rem]`}>
             <span className={c.rvReplyLabel}>{t.replied}</span>
@@ -472,7 +481,7 @@ function WriteReviewPanel({
   variantId?: string;
   zoneCode: string | null;
 }) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);

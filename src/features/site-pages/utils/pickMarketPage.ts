@@ -1,3 +1,4 @@
+import { brandLinkEnabled } from "@/lib/brand/features";
 import type { SitePageListItem } from "../api/sitePages.service";
 
 /**
@@ -61,6 +62,8 @@ export function fixedPathForPage(
     ["/stores", pickStoresPage],
   ];
   for (const [path, pick] of pickers) {
+    // A section the brand has switched off (e.g. no store locator) keeps the page at /pages/….
+    if (!brandLinkEnabled(path)) continue;
     if (pick(pages)?.handle === handle) return path;
   }
   return null;

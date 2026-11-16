@@ -7,6 +7,8 @@ import type {
   UseFormWatch,
 } from "react-hook-form";
 import { accountInputClass } from "@/features/account/constants/accountForm";
+import { formErrorText } from "@/lib/i18n/formErrors";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { AfterSalesOrderLine } from "../types/afterSales";
 
 type AfterSalesLinePickerProps<T extends FieldValues> = {
@@ -24,6 +26,7 @@ export function AfterSalesLinePicker<T extends FieldValues>({
   errors,
   showReplacement = false,
 }: AfterSalesLinePickerProps<T>) {
+  const t = useShopCopy();
   const lines = watch("lines" as never) as unknown as
     | { selected?: boolean }[]
     | undefined;
@@ -31,16 +34,18 @@ export function AfterSalesLinePicker<T extends FieldValues>({
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-        Items
+        {t("afterSales.items")}
       </legend>
       {typeof (errors.lines as { message?: string; root?: { message?: string } } | undefined)
         ?.message === "string" ||
       typeof (errors.lines as { root?: { message?: string } } | undefined)?.root
         ?.message === "string" ? (
         <p className="text-[12px] text-red-600">
-          {(errors.lines as { message?: string; root?: { message?: string } })
-            .message ??
-            (errors.lines as { root?: { message?: string } }).root?.message}
+          {formErrorText(
+            t,
+            (errors.lines as { message?: string; root?: { message?: string } }).message ??
+              (errors.lines as { root?: { message?: string } }).root?.message,
+          )}
         </p>
       ) : null}
       {catalog.map((line, index) => {
@@ -69,7 +74,7 @@ export function AfterSalesLinePicker<T extends FieldValues>({
                   {line.productName ?? line.sku}
                 </p>
                 <p className="mt-0.5 text-[12px] text-sa-muted">
-                  {[line.variantName, line.sku, `Ordered ${line.quantity}`]
+                  {[line.variantName, line.sku, t("afterSales.ordered", { count: line.quantity })]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
@@ -88,13 +93,13 @@ export function AfterSalesLinePicker<T extends FieldValues>({
               </div>
             </div>
             {qtyError ? (
-              <p className="text-[12px] text-red-600">{String(qtyError)}</p>
+              <p className="text-[12px] text-red-600">{formErrorText(t, String(qtyError))}</p>
             ) : null}
             {showReplacement && selected ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-                    Replacement SKU
+                    {t("afterSales.replacementSku")}
                   </p>
                   <input
                     className={accountInputClass}
@@ -103,17 +108,17 @@ export function AfterSalesLinePicker<T extends FieldValues>({
                   />
                   {skuError ? (
                     <p className="mt-1 text-[12px] text-red-600">
-                      {String(skuError)}
+                      {formErrorText(t, String(skuError))}
                     </p>
                   ) : null}
                 </div>
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
-                    Size / variant (optional)
+                    {t("afterSales.sizeVariant")}
                   </p>
                   <input
                     className={accountInputClass}
-                    placeholder="e.g. 100ml"
+                    placeholder={t("afterSales.sizePlaceholder")}
                     {...register(`lines.${index}.replacementSize` as never)}
                   />
                 </div>

@@ -64,6 +64,7 @@ import {
 } from "../utils/startPayment";
 import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
 import { isTamaraPaymentMethod, tamaraStartFailureMessage } from "../utils/tamara";
+import { checkoutHref } from "../utils/checkoutLocale";
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -380,6 +381,7 @@ export function useCheckout() {
           publicKey: form.publicKey,
           publishableKey: form.publishableKey,
           providerReference: form.providerReference,
+          accountId: form.accountId,
         };
         setInlinePayment({
           provider: form.provider,
@@ -467,7 +469,7 @@ export function useCheckout() {
       };
 
       const goToConfirmation = (orderId: string) => {
-        window.location.replace(`/order-confirmation/${orderId}`);
+        window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
         clearCart();
         setCartId(null);
         clearCartId();
@@ -506,13 +508,22 @@ export function useCheckout() {
       const payPlacedOrder = async (orderId: string) => {
         const started = await startPayment(
           orderId,
-          (href) => window.location.assign(href),
+          (href) => window.location.assign(checkoutHref(href)),
           paymentMethodArg,
           { inline: true, prepared: preparedForMethod },
         );
         if (started.kind === "inline" && started.inline) {
           setInlinePayment({ ...started.inline, orderId });
           setStatus("ready");
+          // The card form holds the prepared session. If the payment was opened
+          // with a different one (e.g. the market's payment account changed),
+          // confirming now would pay a session no payment points to: show the new
+          // form and let the shopper enter the card again.
+          if (preparedForMethod && started.inline.clientSecret !== preparedForMethod.clientSecret) {
+            preparedRef.current = null;
+            setErrorMsg("Please enter your card details again, then tap Pay now.");
+            return started;
+          }
           confirmInlinePay(orderId);
         }
         return started;
@@ -529,7 +540,7 @@ export function useCheckout() {
           try {
             await startPayment(
               placedOrderIdRef.current,
-              (href) => window.location.assign(href),
+              (href) => window.location.assign(checkoutHref(href)),
               paymentMethodArg,
             );
           } catch (e) {
@@ -626,7 +637,7 @@ export function useCheckout() {
           // Do not land on confirmation first — that looked like a paid order.
           const started = await startPayment(
             order.orderId,
-            (href) => window.location.assign(href),
+            (href) => window.location.assign(checkoutHref(href)),
             paymentMethodArg,
           );
           if (started.kind !== "redirect") {
@@ -641,7 +652,7 @@ export function useCheckout() {
           goToConfirmation(order.orderId);
           void startPayment(
             order.orderId,
-            (href) => window.location.assign(href),
+            (href) => window.location.assign(checkoutHref(href)),
             paymentMethodArg,
           ).catch(() => {
             // Order is already placed (e.g. Test Payment).

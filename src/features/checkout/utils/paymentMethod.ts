@@ -1,4 +1,3 @@
-import { env } from "@/lib/config/env";
 import type { PaymentMethodOption } from "../types/checkout";
 
 export function isPaymobPaymentMethod(method: PaymentMethodOption): boolean {
@@ -13,30 +12,22 @@ function isSelectable(method: PaymentMethodOption): boolean {
   return method.isEnabled !== false;
 }
 
-/** Paymob first when the FE flag is on and the zone offers it; otherwise backend default. */
+/**
+ * The market's default method (admin Market → Payments), else the first. Which
+ * methods a market offers, and in which order, is decided in the admin and on
+ * the integrations switchboard (ADR-005), never by a website build setting.
+ */
 export function pickPreferredPaymentMethod(
   methods: PaymentMethodOption[],
 ): PaymentMethodOption | undefined {
   const list = methods.filter(isSelectable);
   const pool = list.length > 0 ? list : methods;
-  if (env.flags.paymob) {
-    return (
-      pool.find((method) => isPaymobPaymentMethod(method) && method.isDefault) ??
-      pool.find(isPaymobPaymentMethod) ??
-      pool.find((method) => method.isDefault) ??
-      pool[0]
-    );
-  }
   return pool.find((method) => method.isDefault) ?? pool[0];
 }
 
+/** The backend's order (the market's sort order). */
 export function sortPaymentMethodsForDisplay(
   methods: PaymentMethodOption[],
 ): PaymentMethodOption[] {
-  if (!env.flags.paymob) return [...methods];
-  return [...methods].sort((a, b) => {
-    const aPaymob = isPaymobPaymentMethod(a) ? 0 : 1;
-    const bPaymob = isPaymobPaymentMethod(b) ? 0 : 1;
-    return aPaymob - bPaymob;
-  });
+  return [...methods];
 }

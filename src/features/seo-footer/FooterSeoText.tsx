@@ -1,4 +1,5 @@
 import { resolveServerCatalogMarket } from "@/lib/seo/catalogPage";
+import { dir } from "@/lib/i18n/locales";
 import { sectionTitle } from "@/styles/landingChrome";
 import { SeoTextBody } from "./SeoTextBody";
 import { loadFooterSeoText } from "./footerSeoText.service";
@@ -17,7 +18,7 @@ export async function FooterSeoText() {
     <section
       aria-label={text.heading || undefined}
       lang={lang}
-      dir={lang === "ar" ? "rtl" : "ltr"}
+      dir={dir(lang)}
       data-footer-seo-text
       className="border-t border-[var(--line,rgba(0,0,0,0.08))] bg-[var(--cream)]"
     >

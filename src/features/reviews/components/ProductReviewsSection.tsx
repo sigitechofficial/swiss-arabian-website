@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { ThumbsUp } from "lucide-react";
 import { toast } from "@/components/ui/Toaster";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -60,7 +60,7 @@ export function ProductReviewsSection({
   productId,
   variantId,
 }: ProductReviewsSectionProps) {
-  const router = useRouter();
+  const router = useLocaleRouter();
   const isAuthenticated = useIsAuthenticated();
   const bootstrapped = useAuthBootstrapped();
   const { markHelpful, unmarkHelpful } = useReviewMutations();

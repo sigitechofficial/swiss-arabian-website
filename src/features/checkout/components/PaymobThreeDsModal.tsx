@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type ComponentType,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { pollUntilPaymentSettles } from "../api/orders.service";
 import {
@@ -11,9 +18,36 @@ import {
 } from "../utils/paymobThreeDs";
 import { useHydrated } from "@/hooks/useHydrated";
 
-export function usePaymobThreeDsModal(orderId: string | null) {
+/** Why the 3-D Secure step did not finish (each brand words it). */
+export type PaymobThreeDsError = "cancelled" | "declined" | "unconfirmed";
+
+/** Swiss Arabian's sentences (also the default for any brand without its own). */
+export function paymobThreeDsErrorText(error: PaymobThreeDsError): string {
+  if (error === "cancelled") return "Payment was cancelled. You can try again with the same card.";
+  if (error === "declined") return "Your card was declined. Please try another card.";
+  return "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.";
+}
+
+/** What a brand's 3-D Secure overlay receives: the bank's page and its frame. */
+export type PaymobThreeDsModalProps = {
+  src: string;
+  frameRef: RefObject<HTMLIFrameElement | null>;
+  onFrameLoad: () => void;
+};
+
+/**
+ * Paymob's 3-D Secure step: opens the bank's page in an overlay when Pixel
+ * asks for it, watches the frame and the order, then opens the confirmation
+ * or reports why it did not finish. `Modal`: the brand's overlay (default:
+ * Swiss Arabian's). `challengeErrorCode` is for brands that word it
+ * themselves; `challengeError` is the default sentence.
+ */
+export function usePaymobThreeDsModal(
+  orderId: string | null,
+  { Modal = PaymobThreeDsModal }: { Modal?: ComponentType<PaymobThreeDsModalProps> } = {},
+) {
   const [challengeUrl, setChallengeUrl] = useState<string | null>(null);
-  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [challengeErrorCode, setChallengeErrorCode] = useState<PaymobThreeDsError | null>(null);
   const finishing = useRef(false);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -21,7 +55,7 @@ export function usePaymobThreeDsModal(orderId: string | null) {
     finishing.current = false;
     return installPaymobThreeDsCapture((url) => {
       finishing.current = false;
-      setChallengeError(null);
+      setChallengeErrorCode(null);
       setChallengeUrl(url);
     });
   }, []);
@@ -39,7 +73,7 @@ export function usePaymobThreeDsModal(orderId: string | null) {
 
   function onCancel() {
     closeModal();
-    setChallengeError("Payment was cancelled. You can try again with the same card.");
+    setChallengeErrorCode("cancelled");
   }
 
   function handleFrameLocation(frame: HTMLIFrameElement | null) {
@@ -70,11 +104,7 @@ export function usePaymobThreeDsModal(orderId: string | null) {
       }
       if (result.status === "TIMEOUT") return;
       closeModal();
-      setChallengeError(
-        result.status === "DECLINED"
-          ? "Your card was declined. Please try another card."
-          : "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.",
-      );
+      setChallengeErrorCode(result.status === "DECLINED" ? "declined" : "unconfirmed");
     });
     return () => {
       cancelled = true;
@@ -89,9 +119,10 @@ export function usePaymobThreeDsModal(orderId: string | null) {
   }, [challengeUrl, orderId]);
 
   return {
-    challengeError,
+    challengeErrorCode,
+    challengeError: challengeErrorCode ? paymobThreeDsErrorText(challengeErrorCode) : null,
     overlay: challengeUrl ? (
-      <PaymobThreeDsModal
+      <Modal
         src={challengeUrl}
         frameRef={frameRef}
         onFrameLoad={() => handleFrameLocation(frameRef.current)}
@@ -100,18 +131,8 @@ export function usePaymobThreeDsModal(orderId: string | null) {
   };
 }
 
-function PaymobThreeDsModal({
-  src,
-  frameRef,
-  onFrameLoad,
-}: {
-  src: string;
-  frameRef: RefObject<HTMLIFrameElement | null>;
-  onFrameLoad: () => void;
-}) {
-  // Portal target (document.body) exists only after hydration.
-  const mounted = useHydrated();
-
+/** While the overlay is open the page behind it does not scroll. */
+export function useLockPageScroll() {
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -119,6 +140,12 @@ function PaymobThreeDsModal({
       document.body.style.overflow = previous;
     };
   }, []);
+}
+
+function PaymobThreeDsModal({ src, frameRef, onFrameLoad }: PaymobThreeDsModalProps) {
+  // Portal target (document.body) exists only after hydration.
+  const mounted = useHydrated();
+  useLockPageScroll();
 
   if (!mounted) return null;
 

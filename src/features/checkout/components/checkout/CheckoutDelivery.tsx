@@ -107,7 +107,7 @@ export function CheckoutDelivery({
         </label>
         <label className={fld}>
           <span>City</span>
-          <input type="text" name="delCity" required autoComplete="address-level2" {...bind("city")} />
+          <input type="text" name="delCity" aria-label="City" required autoComplete="address-level2" {...bind("city")} />
         </label>
         <label className={fld}>
           <span>{regionSet?.label ?? "Region"}</span>
@@ -130,6 +130,7 @@ export function CheckoutDelivery({
           <input
             type="text"
             name="delPostal"
+            aria-label="Postal code (optional)"
             autoComplete="postal-code"
             inputMode="numeric"
             {...bind("postalCode")}

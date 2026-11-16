@@ -1,18 +1,13 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { CookieSettingsLink } from "@/components/layout/CookieSettingsLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useNavigation } from "@/features/navigation";
 import type { NavItem } from "@/features/navigation/types/navigation";
 import { useMarket } from "@/providers/MarketProvider";
-import { useQuery } from "@tanstack/react-query";
 import type { FormEvent, ReactNode } from "react";
-import {
-  cmsGlobalKeys,
-  fetchCmsGlobalRegion,
-  firstSectionOfType,
-} from "@/features/cms/api/cmsGlobalRegion.service";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import { useFooterContent } from "@/features/cms/hooks/useCmsGlobalRegion";
 import {
   footerColLinks,
   footerColTitle,
@@ -150,35 +145,11 @@ function onNewsletterSubmit(event: FormEvent<HTMLFormElement>) {
 
 export function SiteFooter() {
   const copy = useShopCopy();
-  const { marketId, contentLanguage } = useMarket();
-  const catalogMarket = useSelectedCatalogMarket();
-  const zoneCode = catalogMarket?.zoneCode ?? "";
-  // Content is published under the market's own language code, not the one in the address.
-  const languageCode = contentLanguage ?? "";
+  const { marketId } = useMarket();
   const { footerItems, isLoading } = useNavigation(marketId || undefined);
   const columns = footerColumns(footerItems);
-
-  const cmsQuery = useQuery({
-    queryKey: cmsGlobalKeys.region("footer", zoneCode, languageCode),
-    queryFn: () =>
-      fetchCmsGlobalRegion({
-        slug: "footer",
-        zoneCode,
-        languageCode,
-      }),
-    enabled: Boolean(zoneCode && languageCode),
-    staleTime: 60_000,
-  });
-  const cmsSection = firstSectionOfType(cmsQuery.data?.sections ?? [], "FOOTER");
-  const cms = (cmsSection?.data ?? {}) as {
-    newsletterHeading?: string | null;
-    newsletterPlaceholder?: string | null;
-    newsletterButtonLabel?: string | null;
-    copyrightText?: string | null;
-    showPaymentBadges?: boolean;
-    socialLinks?: Array<{ id: string; label: string; href: string }> | null;
-  };
-  const socialLinks = (cms.socialLinks ?? []).flatMap((link) => {
+  const cms = useFooterContent();
+  const socialLinks = cms.socialLinks.flatMap((link) => {
     const network = socialNetwork(link);
     return network ? [{ ...link, network }] : [];
   });
@@ -192,7 +163,7 @@ export function SiteFooter() {
           </p>
           <div className={footerNewsletterRow}>
             <label className={visuallyHidden} htmlFor="footer-email">
-              Email address
+              {copy("email")}
             </label>
             <input
               className={footerNewsletterInput}
@@ -263,10 +234,11 @@ export function SiteFooter() {
 
         <div className={footerLegal}>
           <p>
-            {cms.copyrightText?.trim() || "Copyright © 2026 Swiss Arabian Global"}
+            {cms.copyrightText?.trim() || copy("footer.copyright")}
+            <CookieSettingsLink className="ms-2 before:me-2 before:content-['·'] before:no-underline before:inline-block" />
           </p>
           {cms.showPaymentBadges === false ? null : (
-          <ul className={footerPayments} aria-label="Accepted payment methods">
+          <ul className={footerPayments} aria-label={copy("footer.payments")}>
             <li>
               <span className={`${payMark} ${payMarkAmex}`} role="img" aria-label="American Express">
                 AMEX

@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { usePathname, useRouter } from "next/navigation";
-import { localizeHref } from "@/lib/i18n/localePath";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { SEARCH_MIN_QUERY_LENGTH, useCatalogSearch } from "@/features/search";
-import { rememberSearchQuery } from "@/features/search/utils/recentSearches";
+import { useHeaderSearch } from "@/features/search/hooks/useHeaderSearch";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { useUiStore } from "@/stores/useUiStore";
 import { visuallyHidden } from "@/styles/siteChrome";
 import { MediaImage } from "@/components/ui/MediaImage";
 
@@ -50,20 +46,20 @@ const OVERLAY_LIMIT = 8;
  *  translucent scrim. Submit opens `/search?q=` so the same matcher runs on
  *  a dedicated results URL. */
 export function SearchOverlay() {
-  const open = useUiStore((s) => s.searchOpen);
-  const setOpen = useUiStore((s) => s.setSearchOpen);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Open state, query, live hits and navigation live in the shared hook.
+  const {
+    open,
+    setOpen,
+    query,
+    setQuery,
+    activeIndex,
+    setActiveIndex,
+    hits,
+    hasQuery,
+    goToResults,
+    goToHit,
+  } = useHeaderSearch({ limit: OVERLAY_LIMIT });
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
-  const pathname = usePathname() || "/";
-
-  // Live catalog search, debounced and gated by the shared hook. An empty box
-  // previews the products list instead of firing a blank-`q` search.
-  const { products: hits } = useCatalogSearch(query, {
-    limit: OVERLAY_LIMIT,
-  });
-  const hasQuery = query.trim().length > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -80,35 +76,6 @@ export function SearchOverlay() {
     };
   }, [open, setOpen]);
 
-  // Clear the search when the overlay closes (it can be closed from the store
-  // elsewhere), adjusting state during render instead of in an effect.
-  const [lastOpen, setLastOpen] = useState(open);
-  if (lastOpen !== open) {
-    setLastOpen(open);
-    if (!open) {
-      setQuery("");
-      setActiveIndex(0);
-    }
-  }
-
-  function goToResults() {
-    const q = query.trim();
-    if (q.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(q);
-    setOpen(false);
-    router.push(localizeHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", pathname));
-  }
-
-  function goToHit(index: number) {
-    const hit = hits[index];
-    const q = query.trim();
-    if (q.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(q);
-    if (!hit) {
-      goToResults();
-      return;
-    }
-    setOpen(false);
-    router.push(localizeHref(`/products/${hit.slug}`, pathname));
-  }
 
   return (
     <AnimatePresence>

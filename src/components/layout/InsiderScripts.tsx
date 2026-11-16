@@ -2,14 +2,17 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import {
   cartSnapshotFromLines,
   quotedCartShipping,
   quotedCartTotal,
 } from "@/features/cart/utils/insiderCartItem";
-import { env } from "@/lib/config/env";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { DEFAULT_LANGUAGE_CODE } from "@/lib/storefront/context";
+import { useConsentFor } from "@/lib/consent/useConsent";
 import {
+  activateInsiderAfterConsent,
   beginInsiderRouteFlush,
   insiderCheckoutPage,
   insiderHomePage,
@@ -30,23 +33,32 @@ import { usePersistHydrated } from "@/hooks/usePersistHydrated";
  * ProductDetailPageView — skip here.
  */
 export function InsiderScripts() {
-  const pathname = usePathname();
+  // Page types are read from the bare path: `/ar/checkout` is the checkout too.
+  const pathname = stripLocalePrefix(usePathname() || "/");
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
   const lines = useCartStore((s) => s.lines);
   const totals = useCartStore((s) => s.totals);
   const cartHydrated = usePersistHydrated(useCartStore);
+  // On when Insider's website tag is on for this address's market (ADR-005 phase E)
+  // and the shopper allowed marketing in the cookie banner.
+  const tagOn = Boolean(useSiteIntegrations().insiderTag);
+  const marketing = useConsentFor("marketing");
+  const insiderOn = tagOn && marketing;
 
   useEffect(() => {
-    if (!env.insider.enabled || !env.insider.accountId) return;
-    startInsiderSdk();
-  }, []);
+    if (!insiderOn) return;
+    // Consent stored before this page: the <head> script already loaded ins.js.
+    // Consent given just now: load it here, the same way, before this route's page type is sent.
+    if (window.__saInsiderBooted) startInsiderSdk();
+    else activateInsiderAfterConsent();
+  }, [insiderOn]);
 
   useEffect(() => {
-    if (!env.insider.enabled || !env.insider.accountId) return;
+    if (!insiderOn) return;
     if (!bootstrapped) return;
     if (isProductDetail(pathname)) return;
     if (isCart(pathname) && !cartHydrated) return;
-    const routePath = window.location.pathname || pathname;
+    const routePath = stripLocalePrefix(window.location.pathname || pathname);
     const merchandise =
       totals?.subtotal ??
       lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
@@ -103,7 +115,7 @@ export function InsiderScripts() {
       return;
     }
     insiderOtherPage(otherPageName(routePath));
-  }, [pathname, cartHydrated, bootstrapped, lines, totals]);
+  }, [insiderOn, pathname, cartHydrated, bootstrapped, lines, totals]);
 
   return null;
 }

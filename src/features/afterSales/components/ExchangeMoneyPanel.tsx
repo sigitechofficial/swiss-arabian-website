@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useHydrated } from "@/hooks/useHydrated";
 import { ApiClientError } from "@/lib/api/apiError";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { afterSalesKeys } from "../api/afterSales.keys";
 import {
   requestCustomerDifferencePayment,
@@ -53,6 +54,7 @@ export function ExchangeMoneyPanel({
   guest?: GuestProof;
 }) {
   const queryClient = useQueryClient();
+  const t = useShopCopy();
   const hydrated = useHydrated();
   const [fresh, setFresh] = useState<ExchangeMoneyView | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -108,7 +110,7 @@ export function ExchangeMoneyPanel({
   }, [returning, exchangeRequestId, guestOrderNumber, guestToken, queryClient]);
 
   if (!view) return null;
-  const copy = exchangeMoneyCopy(view);
+  const copy = exchangeMoneyCopy(view, t);
   if (!copy) return null;
 
   async function pay() {
@@ -137,7 +139,7 @@ export function ExchangeMoneyPanel({
       }
       setPhase({
         kind: "error",
-        message: "The payment page isn’t ready yet. Please try again in a moment.",
+        message: t("exchangeMoney.notReady"),
       });
     } catch (e) {
       setPhase({
@@ -145,7 +147,7 @@ export function ExchangeMoneyPanel({
         message:
           e instanceof ApiClientError && e.message
             ? e.message
-            : "We couldn’t open the payment page. Please try again or contact us.",
+            : t("exchangeMoney.openFailed"),
       });
     }
   }
@@ -160,14 +162,14 @@ export function ExchangeMoneyPanel({
       </p>
       {phase.kind === "confirming" ? (
         <p className="mt-1 text-sa-muted" role="status">
-          Confirming your payment… Don’t close this page.
+          {t("exchangeMoney.confirming")}
         </p>
       ) : (
         <p className="mt-1 leading-relaxed text-sa-muted">{copy.body}</p>
       )}
       {phase.kind === "unconfirmed" && copy.canPay ? (
         <p className="mt-1 leading-relaxed text-sa-muted" role="status">
-          We couldn’t confirm a payment. If you paid, it will show here shortly — otherwise you can try again.
+          {t("exchangeMoney.unconfirmed")}
         </p>
       ) : null}
       {phase.kind === "error" ? (
@@ -182,7 +184,7 @@ export function ExchangeMoneyPanel({
           onClick={() => void pay()}
           disabled={phase.kind === "opening"}
         >
-          {phase.kind === "opening" ? "Opening payment…" : amount ? `Pay ${amount}` : "Pay the difference"}
+          {phase.kind === "opening" ? t("exchangeMoney.opening") : amount ? t("exchangeMoney.payAmount", { amount }) : t("exchangeMoney.payDifference")}
         </button>
       ) : null}
     </div>

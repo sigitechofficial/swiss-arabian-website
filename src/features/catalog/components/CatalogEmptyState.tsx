@@ -4,11 +4,14 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 type CatalogEmptyStateProps = {
   title?: string;
   description?: string;
+  /** The home link's wording (pages in another language pass theirs). */
+  backLabel?: string;
 };
 
 export function CatalogEmptyState({
   title = "No products found",
   description = "We couldn’t find fragrances for this market right now. Check back soon or browse the home page.",
+  backLabel = "Back to home",
 }: CatalogEmptyStateProps) {
   return (
     <div
@@ -33,7 +36,7 @@ export function CatalogEmptyState({
         href="/"
         className="mt-6 inline-flex h-[42px] cursor-pointer items-center justify-center bg-terra px-8 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#a25e48]"
       >
-        Back to home
+        {backLabel}
       </LocaleLink>
     </div>
   );

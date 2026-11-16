@@ -10,7 +10,19 @@ export type StorefrontCatalogFacets = {
   houseCollection: StorefrontFacetOption[];
   featuredNote: StorefrontFacetOption[];
   fragranceFamily: StorefrontFacetOption[];
+  /** Products under each market price-edit tier (all filters except price); empty on older APIs. */
+  priceTiers?: { maxPrice: number; count: number }[];
 };
+
+function parsePriceTiers(raw: unknown): { maxPrice: number; count: number }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      const row = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+      return { maxPrice: Number(row.maxPrice), count: Math.max(0, Number(row.count) || 0) };
+    })
+    .filter((tier) => Number.isFinite(tier.maxPrice) && tier.maxPrice > 0);
+}
 
 export type CatalogListingSort = "newest" | "price_asc" | "price_desc" | "bestselling";
 
@@ -86,6 +98,7 @@ export function parseCatalogFacets(raw: unknown): StorefrontCatalogFacets | null
     houseCollection: parseOptions(row.houseCollection),
     featuredNote: parseOptions(row.featuredNote),
     fragranceFamily: parseOptions(row.fragranceFamily),
+    priceTiers: parsePriceTiers(row.priceTiers),
   };
 }
 

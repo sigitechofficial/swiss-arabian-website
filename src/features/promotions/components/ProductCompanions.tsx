@@ -286,6 +286,7 @@ export function ProductCompanions({
                         <LocaleLink
                           href={`/products/${product.slug}`}
                           className="mx-1 block overflow-hidden rounded-xl bg-[linear-gradient(180deg,#ffffff_0%,#f1e7d4_100%)]"
+                          aria-label={product.title}
                         >
                           {media}
                         </LocaleLink>

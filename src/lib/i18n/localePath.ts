@@ -1,34 +1,55 @@
-export type ShopLocale = "en" | "ar";
+import {
+  DEFAULT_LOCALE,
+  isDefaultLocale,
+  isLocale,
+  LOCALES,
+  type ShopLocale,
+} from "./locales";
 
-/** Transactional addresses stay unprefixed. Every other shop path keeps the language. */
-const UNSWITCHABLE = [
-  /^\/checkout(\/|$)/,
-  /^\/login(\/|$)/,
-  /^\/register(\/|$)/,
-  /^\/forgot-password(\/|$)/,
-  /^\/reset-password(\/|$)/,
-  /^\/verify(\/|$)/,
-  /^\/order-confirmation(\/|$)/,
-  /^\/track(\/|$)/,
-];
+export type { ShopLocale } from "./locales";
 
+/**
+ * Addresses that stay unprefixed: the payment providers' browser returns, whose
+ * paths are fixed with the backend (`/payments/tabby/return`, `/payments/telr/return`).
+ * Every other shop path keeps the language, checkout and sign-in included
+ * (their `[locale]` routes exist), so an Arabic shopper stays in Arabic.
+ */
+const UNSWITCHABLE = [/^\/payments(\/|$)/];
+
+/** The configured locale a path starts with ("/ar/x" → "ar"), else null. */
+export function localePrefixOf(pathname: string): ShopLocale | null {
+  const first = (pathname || "/").split("/")[1] ?? "";
+  return isLocale(first) ? first : null;
+}
+
+/**
+ * The language of an address. The default locale has no prefix; a path that
+ * still carries it (the internal `/en/...` route) is the default locale too.
+ */
 export function localeFromPathname(pathname: string): ShopLocale {
-  return pathname === "/ar" || pathname.startsWith("/ar/") ? "ar" : "en";
+  return localePrefixOf(pathname) ?? DEFAULT_LOCALE;
 }
 
+/** "/ar/products" → "/products"; "/ar" → "/". */
 export function stripLocalePrefix(pathname: string): string {
-  if (pathname === "/ar") return "/";
-  if (pathname.startsWith("/ar/")) {
-    const rest = pathname.slice(3);
-    return rest.startsWith("/") ? rest : `/${rest}`;
-  }
-  return pathname || "/";
+  const prefix = localePrefixOf(pathname);
+  if (!prefix) return pathname || "/";
+  const rest = pathname.slice(prefix.length + 1);
+  if (!rest) return "/";
+  return rest.startsWith("/") ? rest : `/${rest}`;
 }
 
+/** The public address of a path in a language (default locale: no prefix). */
 export function withLocalePrefix(pathname: string, locale: ShopLocale): string {
   const bare = stripLocalePrefix(pathname);
-  if (locale === "en") return bare || "/";
-  return bare === "/" ? "/ar" : `/ar${bare}`;
+  if (isDefaultLocale(locale) || !isLocale(locale)) return bare || "/";
+  return bare === "/" ? `/${locale}` : `/${locale}${bare}`;
+}
+
+/** The internal route path (always prefixed, also for the default locale). */
+export function internalLocalePath(pathname: string, locale: ShopLocale): string {
+  const bare = stripLocalePrefix(pathname);
+  return bare === "/" ? `/${locale}` : `/${locale}${bare}`;
 }
 
 export function isLocaleSwitchablePath(pathname: string): boolean {
@@ -36,28 +57,29 @@ export function isLocaleSwitchablePath(pathname: string): boolean {
   return !UNSWITCHABLE.some((pattern) => pattern.test(bare));
 }
 
-/** Bare shop paths stay in constants. This adds `/ar` only while the customer is in Arabic. */
+/** Bare shop paths stay in constants. This adds the language prefix the customer is reading in. */
 export function localizeHref(href: string, pathname: string): string {
   if (!href.startsWith("/") || href.startsWith("//")) return href;
   const hash = href.includes("#") ? href.slice(href.indexOf("#")) : "";
   const withoutHash = hash ? href.slice(0, href.indexOf("#")) : href;
   const query = withoutHash.includes("?") ? withoutHash.slice(withoutHash.indexOf("?")) : "";
   const path = withoutHash.split("?")[0] || "/";
-  if (path === "/ar" || path.startsWith("/ar/")) return href;
+  if (localePrefixOf(path)) return href;
   if (!isLocaleSwitchablePath(path)) return href;
   return `${withLocalePrefix(path, localeFromPathname(pathname))}${query}${hash}`;
 }
 
+/**
+ * Canonical and hreflang alternates for a page: one entry per configured
+ * locale plus x-default (the default locale's address).
+ */
 export function catalogAlternates(pathname: string, locale: ShopLocale) {
-  const bare = stripLocalePrefix(pathname);
-  const english = bare || "/";
-  const arabic = withLocalePrefix(bare, "ar");
+  const bare = stripLocalePrefix(pathname) || "/";
+  const languages: Record<string, string> = {};
+  for (const code of LOCALES) languages[code] = withLocalePrefix(bare, code);
+  languages["x-default"] = withLocalePrefix(bare, DEFAULT_LOCALE);
   return {
-    canonical: locale === "ar" ? arabic : english,
-    languages: {
-      en: english,
-      ar: arabic,
-      "x-default": english,
-    },
+    canonical: withLocalePrefix(bare, locale),
+    languages,
   };
 }

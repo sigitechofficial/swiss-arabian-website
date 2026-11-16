@@ -1,12 +1,11 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
-import { pollUntilPaymentSettles } from "../api/orders.service";
+import { useSettlePayment } from "../hooks/usePaymentReturn";
 import {
-  clearPaymentState,
   getStoredOrderId,
   getStoredPaymentTransactionId,
 } from "../utils/checkoutSession";
@@ -22,7 +21,7 @@ import {
   checkoutNote,
 } from "@/styles/checkoutChrome";
 
-type TelrResultHint = "authorised" | "declined" | "cancelled" | "unknown";
+export type TelrResultHint = "authorised" | "declined" | "cancelled" | "unknown";
 
 type SettleOutcome =
   | { kind: "paid"; orderId: string }
@@ -35,7 +34,7 @@ type SettleOutcome =
  * Query `result` is a UX hint only (`settlementAuthoritative = false`).
  * Never show Paid / Success from the query string; poll platform status.
  */
-function parseResultHint(raw: string | null): TelrResultHint {
+export function parseResultHint(raw: string | null): TelrResultHint {
   const value = (raw ?? "").trim().toLowerCase();
   if (value === "authorised" || value === "authorized") return "authorised";
   if (value === "declined") return "declined";
@@ -89,7 +88,6 @@ function hintCopy(hint: TelrResultHint): { eyebrow: string; title: ReactNode; bo
 }
 
 export function TelrReturnView() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
 
@@ -105,36 +103,23 @@ export function TelrReturnView() {
   const orderId = hydrated ? getStoredOrderId() : null;
   const storedTxnId = hydrated ? getStoredPaymentTransactionId() : null;
 
-  const [polled, setPolled] = useState<SettleOutcome | null>(null);
-  const started = useRef(false);
+  // The platform status is authoritative for every hint (incl. declined/cancelled):
+  // poll ~30s while PENDING/UNKNOWN; success only on PAID, failure only on a
+  // terminal failure status. Still unsettled → "confirming" (BE settles it in
+  // the background), never an error.
+  const settlement = useSettlePayment(orderId);
 
   // No local order to check — all we have is Telr's `result=` hint.
   const outcome: SettleOutcome | null =
-    hydrated && !orderId ? { kind: "hint-only", hint } : polled;
-
-  useEffect(() => {
-    if (!hydrated || !orderId || started.current) return;
-    started.current = true;
-
-    // Platform status is authoritative for every hint (incl. declined/cancelled):
-    // poll ~30s while PENDING/UNKNOWN; success only on PAID, failure only on a
-    // terminal failure status. Still unsettled → "confirming" (BE settles it in
-    // the background), never an error.
-    void (async () => {
-      const result = await pollUntilPaymentSettles(orderId);
-      if (result.success) {
-        clearPaymentState();
-        setPolled({ kind: "paid", orderId });
-        router.replace(`/order-confirmation/${orderId}`);
-        return;
-      }
-      if (result.status === "TIMEOUT") {
-        setPolled({ kind: "timeout", orderId });
-        return;
-      }
-      setPolled({ kind: "failed", status: result.status, orderId });
-    })();
-  }, [hydrated, hint, orderId, router]);
+    hydrated && !orderId
+      ? { kind: "hint-only", hint }
+      : !settlement || !orderId
+        ? null
+        : settlement.kind === "paid"
+          ? { kind: "paid", orderId }
+          : settlement.kind === "timeout"
+            ? { kind: "timeout", orderId }
+            : { kind: "failed", status: settlement.status, orderId };
 
   if (!hydrated || !outcome) {
     const pending = hintCopy(hint === "unknown" ? "authorised" : hint);

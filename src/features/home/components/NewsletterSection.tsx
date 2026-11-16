@@ -1,7 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useState } from "react";
+import { useNewsletterSignup } from "@/features/newsletter/hooks/useNewsletterSignup";
 
 export type NewsletterSectionProps = {
   eyebrow?: string | null;
@@ -20,15 +19,8 @@ export function NewsletterSection({
   buttonLabel = "Sign up",
   successMessage = "Thanks — we'll be in touch.",
 }: NewsletterSectionProps = {}) {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!email.trim()) return;
-    // Consent/provider integration remains outside CMS.
-    setSubmitted(true);
-  }
+  // Consent/provider integration lives in the shared hook (not connected yet).
+  const { email, setEmail, submitted, onSubmit } = useNewsletterSignup();
 
   return (
     <section

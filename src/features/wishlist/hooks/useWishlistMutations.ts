@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useUiStore } from "@/stores/useUiStore";
 import { useApiMutation } from "@/lib/api/queryHooks";
@@ -36,6 +37,7 @@ function patchStatusCaches(
 
 export function useWishlistMutations() {
   const queryClient = useQueryClient();
+  const t = useShopCopy();
   const zoneCode =
     useUiStore((s) => s.selectedMarketId)?.trim() || "";
 
@@ -52,7 +54,7 @@ export function useWishlistMutations() {
       },
       onSuccess: async (data) => {
         if (!data.alreadyPresent) {
-          toast("Saved to wishlist", "success");
+          toast(t("wishlist.saved"), "success");
         }
         await queryClient.invalidateQueries({ queryKey: wishlistKeys.lists() });
       },
@@ -81,8 +83,8 @@ export function useWishlistMutations() {
       await queryClient.invalidateQueries({ queryKey: wishlistKeys.all });
       toast(
         data.itemCount > 0
-          ? `Removed ${data.itemCount} saved ${data.itemCount === 1 ? "item" : "items"}`
-          : "Wishlist is empty",
+          ? t("wishlist.removed", { count: data.itemCount })
+          : t("wishlist.isEmpty"),
         "success",
       );
     },

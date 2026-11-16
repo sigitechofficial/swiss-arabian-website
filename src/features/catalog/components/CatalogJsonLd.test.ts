@@ -14,8 +14,8 @@ const ORIGIN = "https://uae.swissarabian.com";
 const plain = (value: unknown) => JSON.parse(JSON.stringify(value));
 
 describe("page structured data builders", () => {
-  it("breadcrumb: Home › page, with the language prefix, absolute on the market domain", () => {
-    const data = pageBreadcrumbJsonLd("ar", { name: "الأسئلة الشائعة", path: "/faq" });
+  it("breadcrumb: Home › page, with the language prefix, absolute on the market domain", async () => {
+    const data = await pageBreadcrumbJsonLd("ar", { name: "الأسئلة الشائعة", path: "/faq" });
     expect(absolutizeJsonLd(data, ORIGIN)).toEqual({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -24,7 +24,7 @@ describe("page structured data builders", () => {
         { "@type": "ListItem", position: 2, name: "الأسئلة الشائعة", item: `${ORIGIN}/ar/faq` },
       ],
     });
-    expect(pageBreadcrumbJsonLd("en", { name: "FAQs", path: "/faq" }).itemListElement[1]?.item).toBe("/faq");
+    expect((await pageBreadcrumbJsonLd("en", { name: "FAQs", path: "/faq" })).itemListElement[1]?.item).toBe("/faq");
   });
 
   it("FAQPage: one Question with an accepted Answer per entry", () => {

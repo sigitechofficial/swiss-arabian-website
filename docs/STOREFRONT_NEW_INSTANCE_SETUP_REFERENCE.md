@@ -126,9 +126,11 @@ NEXT_PUBLIC_USE_DEV_SESSION=false
 # Master OTP for dev — never set against production build
 NEXT_PUBLIC_CUSTOMER_MASTER_OTP=
 
-# ─── Google Maps (store locator page) ─────────────────────────────────────────
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
-NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=
+# ─── Google Maps, GTM / GA4, Insider tag, Tabby promos ───────────────────────
+# Not build settings (ADR-005 phase E): set per market in the admin
+# (Settings → Integrations). See docs/multibrand/SITE_INTEGRATIONS.md.
+# Server only: shared with the backend so it can refresh an address's settings.
+SITE_REVALIDATE_SECRET=
 
 # ─── Catalog media ────────────────────────────────────────────────────────────
 # Override base URL for relative /catalog/media/... image paths.

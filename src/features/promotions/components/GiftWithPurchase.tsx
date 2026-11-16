@@ -1,9 +1,8 @@
 "use client";
 
-import { useCartStore } from "@/stores/useCartStore";
-import { useGiftCatalogMap } from "../hooks/useGiftCatalog";
+import { useGiftAwards } from "../hooks/useGiftAwards";
 import { useGiftChoiceStore } from "../giftChoiceStore";
-import { readGiftAwards, type PromotionSnapshotV1 } from "../types/promotions";
+import type { PromotionSnapshotV1 } from "../types/promotions";
 import {
   awaitingGiftChoice,
   canChangeGift,
@@ -35,14 +34,7 @@ export function GiftWithPurchase({
   /** The bag drawer gets compact gift rows. */
   surface?: "page" | "drawer";
 }) {
-  const fromStore = useCartStore((s) => s.promotions);
-  const data = snapshot ?? fromStore;
-  const awards = readGiftAwards(data);
-  const catalog = useGiftCatalogMap(
-    awards.flatMap((award) =>
-      [...award.giftItems, ...award.choices].map((gift) => gift.sku),
-    ),
-  );
+  const { awards, catalog } = useGiftAwards(snapshot, currency);
 
   if (!awards.length) return null;
 

@@ -1,15 +1,17 @@
 import type { DiscoveryOffer } from "../types/discovery";
 import type { OfferContext, OfferIcon, OfferValue, PdpOffer } from "../types/offerVoucher";
+import type { MessageKey, Translator } from "@/lib/i18n/messages";
 
-const TAGS: Record<OfferIcon, { en: string; ar: string }> = {
-  bundle: { en: "Bundle", ar: "باقة" },
-  delivery: { en: "Delivery", ar: "التوصيل" },
-  card: { en: "Prepaid", ar: "الدفع المسبق" },
-  star: { en: "Rewards", ar: "نقاط" },
-  tag: { en: "Offer", ar: "عرض" },
-  gift: { en: "Gift", ar: "هدية" },
-  bank: { en: "Bank", ar: "البنك" },
-  clock: { en: "Pay later", ar: "ادفع لاحقاً" },
+/** Voucher tag per offer icon (`promo.tag.*` messages). */
+const TAGS: Record<OfferIcon, MessageKey> = {
+  bundle: "promo.tag.bundle",
+  delivery: "promo.tag.delivery",
+  card: "promo.tag.card",
+  star: "promo.tag.star",
+  tag: "promo.tag.tag",
+  gift: "promo.tag.gift",
+  bank: "promo.tag.bank",
+  clock: "promo.tag.clock",
 };
 
 function words(value: string) {
@@ -73,7 +75,7 @@ export function bundlePercent(offers: PdpOffer[]): string | null {
   return match ? match[1] : null;
 }
 
-export function voucherSubline(offers: PdpOffer[], arabic: boolean): string {
+export function voucherSubline(offers: PdpOffer[], t: Translator): string {
   const labels = offers
     .slice(1)
     .map((offer) => offer.short?.trim())
@@ -81,20 +83,15 @@ export function voucherSubline(offers: PdpOffer[], arabic: boolean): string {
     .slice(0, 2);
   const more = Math.max(0, offers.length - 1 - labels.length);
   if (!labels.length && more === 0) return "";
-  if (arabic) {
-    const listed = labels.join("، ");
-    if (listed && more > 0) return `بالإضافة إلى ${listed} و${more} عروض أخرى.`;
-    if (more > 0) return `${more} عروض أخرى.`;
-    return `بالإضافة إلى ${listed}.`;
-  }
-  if (labels.length === 2 && more > 0) return `Plus ${labels[0]}, ${labels[1]} and ${more} more.`;
-  if (labels.length === 2) return `Plus ${labels[0]} and ${labels[1]}.`;
-  if (labels.length === 1 && more > 0) return `Plus ${labels[0]} and ${more} more.`;
-  if (labels.length === 1) return `Plus ${labels[0]}.`;
-  return `Plus ${more} more.`;
+  const [first = "", second = ""] = labels;
+  if (labels.length === 2 && more > 0) return t("promo.plusTwoMore", { first, second, more });
+  if (labels.length === 2) return t("promo.plusTwo", { first, second });
+  if (labels.length === 1 && more > 0) return t("promo.plusOneMore", { first, more });
+  if (labels.length === 1) return t("promo.plusOne", { first });
+  return t("promo.plusMore", { more });
 }
 
-export function mapDiscoveryOffers(offers: DiscoveryOffer[], arabic: boolean): PdpOffer[] {
+export function mapDiscoveryOffers(offers: DiscoveryOffer[], t: Translator): PdpOffer[] {
   return offers.map((offer, index) => {
     const icon = offerIcon(offer);
     const badge = offer.badge.trim();
@@ -105,11 +102,11 @@ export function mapDiscoveryOffers(offers: DiscoveryOffer[], arabic: boolean): P
       .find((line) => line && !sameOfferCopy(line, title) && !sameOfferCopy(line, headline));
     const goal = spendGoal(offer);
     const action = offer.shopOfferAvailable && offer.shopOfferPath
-      ? { label: offer.details.ctaLabel || (arabic ? "اختَر القطع" : "Build a set"), href: offer.shopOfferPath }
+      ? { label: offer.details.ctaLabel || t("promo.buildSet"), href: offer.shopOfferPath }
       : undefined;
     return {
       id: offer.campaignCode,
-      tag: arabic ? TAGS[icon].ar : TAGS[icon].en,
+      tag: t(TAGS[icon]),
       icon,
       featured: index === 0,
       short: badge || undefined,
@@ -123,7 +120,7 @@ export function mapDiscoveryOffers(offers: DiscoveryOffer[], arabic: boolean): P
             return {
               value,
               max: goal,
-              label: left > 0 ? `${ctx.fmt(left)} to go` : arabic ? "تم فتح العرض" : "Offer unlocked",
+              label: left > 0 ? t("promo.toGo", { amount: ctx.fmt(left) }) : t("promo.unlocked"),
             };
           }
         : undefined,

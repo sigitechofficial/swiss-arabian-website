@@ -1,22 +1,12 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { useHydrated } from "@/hooks/useHydrated";
-import { getOrder, pollUntilPaymentSettles } from "../api/orders.service";
-import {
-  clearPaymentState,
-  getStoredOrderId,
-  getStoredPaymobClientSecret,
-  getStoredPaymobPublicKey,
-} from "../utils/checkoutSession";
+import { useCardPaymentSession } from "../hooks/useCardPaymentSession";
+import { usePaymobCardForm, type PaymobPayError } from "../hooks/usePaymobCardForm";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 import { usePaymobThreeDsModal } from "./PaymobThreeDsModal";
-import { finishPaidCheckout } from "../utils/paymobThreeDs";
 import { OrderSummary } from "./StripePaymentFormView";
 import { collectionTitle, pageTitle, stateEyebrow } from "@/styles/shopChrome";
 import {
@@ -46,8 +36,6 @@ import {
   stripePayTrust,
 } from "@/styles/checkoutChrome";
 
-/** Pinned so a floating @latest release cannot change checkout under us. */
-const PIXEL_SRC = "https://cdn.jsdelivr.net/npm/paymob-pixel@1.2.10/main.js";
 const ELEMENT_ID = "paymob-elements";
 
 const BRAND = {
@@ -58,25 +46,38 @@ const BRAND = {
   danger: "#b4483f",
 };
 
-interface PaymobPixelOptions {
-  publicKey: string;
-  clientSecret: string;
-  paymentMethods: string[];
-  elementId: string;
-  disablePay?: boolean;
-  showSaveCard?: boolean;
-  forceSaveCard?: boolean;
-  cardValidationChanged?: (isValid: boolean) => void;
-  beforePaymentComplete?: () => Promise<boolean>;
-  afterPaymentComplete?: (response: unknown) => Promise<void> | void;
-  customStyle?: Record<string, unknown>;
-}
+const PIXEL_STYLE = {
+  Font_Family: "Arial",
+  Font_Size_Label: "16",
+  Font_Size_Input_Fields: "16",
+  Font_Size_Payment_Button: "16",
+  Font_Weight_Label: 500,
+  Font_Weight_Input_Fields: 400,
+  Font_Weight_Payment_Button: 500,
+  Color_Container: "#ffffff",
+  Color_Border_Input_Fields: BRAND.line,
+  Color_Border_Payment_Button: BRAND.copper,
+  Radius_Border: "8",
+  Color_Disabled: "#a3978a",
+  Color_Error: BRAND.danger,
+  Color_Primary: BRAND.copper,
+  Color_Input_Fields: "#ffffff",
+  Text_Color_For_Label: BRAND.ink,
+  Text_Color_For_Payment_Button: "#ffffff",
+  Text_Color_For_Input_Fields: BRAND.ink,
+  Color_For_Text_Placeholder: "#a3978a",
+  Width_of_Container: "100%",
+  // Pixel treats this as the input height in pixels. The SDK default is 40.
+  Vertical_Padding: "48",
+  Vertical_Spacing_between_components: "14",
+  Container_Padding: "0",
+};
 
-declare global {
-  interface Window {
-    Pixel?: new (options: PaymobPixelOptions) => unknown;
-  }
-}
+const ERROR_TEXT: Record<PaymobPayError, string> = {
+  timeout: "Your payment is taking longer than expected to confirm. Please check your email before trying again.",
+  declined: "Your card was declined. Please start a new payment attempt with another card.",
+  unconfirmed: "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.",
+};
 
 function LockIcon() {
   return (
@@ -87,186 +88,21 @@ function LockIcon() {
   );
 }
 
-function loadPixelScript(): { promise: Promise<void>; cancel: () => void } {
-  if (typeof window === "undefined" || window.Pixel) {
-    return { promise: Promise.resolve(), cancel: () => undefined };
-  }
-
-  let existing = document.querySelector<HTMLScriptElement>("script[data-paymob-pixel]");
-  if (!existing) {
-    const script = document.createElement("script");
-    script.src = PIXEL_SRC;
-    script.type = "module";
-    script.async = true;
-    script.dataset.paymobPixel = "true";
-    document.head.appendChild(script);
-    existing = script;
-  }
-
-  let timer = 0;
-  const cancel = () => window.clearInterval(timer);
-  const promise = new Promise<void>((resolve, reject) => {
-    const started = Date.now();
-    existing?.addEventListener("error", () => {
-      cancel();
-      reject(new Error("Paymob Pixel did not load"));
-    }, { once: true });
-    timer = window.setInterval(() => {
-      if (window.Pixel) {
-        cancel();
-        resolve();
-        return;
-      }
-      if (Date.now() - started > 15_000) {
-        cancel();
-        reject(new Error("Paymob Pixel did not load"));
-      }
-    }, 50);
-  });
-  return { promise, cancel };
-}
-
 export function PaymobPaymentFormView() {
-  const hydrated = useHydrated();
-  const router = useRouter();
-  const [sdkFailed, setSdkFailed] = useState(false);
-  const [cardValid, setCardValid] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "confirming" | "polling">("idle");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [needsRetry, setNeedsRetry] = useState(false);
-  const mounted = useRef(false);
-
-  const ctx = useMemo(
-    () =>
-      hydrated
-        ? {
-            clientSecret: getStoredPaymobClientSecret(),
-            publicKey: getStoredPaymobPublicKey(),
-            orderId: getStoredOrderId(),
-          }
-        : null,
-    [hydrated],
-  );
-  const orderId = ctx?.orderId ?? null;
-  const clientSecret = ctx?.clientSecret ?? null;
-  const publicKey = ctx?.publicKey ?? null;
+  const session = useCardPaymentSession("paymob");
+  const { hydrated, orderId, clientSecret, alreadyPaid } = session;
+  const publicKey = session.providerKey;
   const threeDs = usePaymobThreeDsModal(orderId);
-
-  const orderQuery = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: () => getOrder(orderId as string),
-    enabled: Boolean(orderId && clientSecret),
-    retry: 1,
-    staleTime: 60_000,
+  const card = usePaymobCardForm({
+    orderId,
+    clientSecret,
+    publicKey,
+    enabled: !alreadyPaid,
+    elementId: ELEMENT_ID,
+    customStyle: PIXEL_STYLE,
   });
-
-  const paymentStatus = orderQuery.data?.paymentStatus?.toUpperCase();
-  const alreadyPaid =
-    paymentStatus === "PAID" ||
-    paymentStatus === "AUTHORIZED" ||
-    paymentStatus === "PARTIALLY_REFUNDED" ||
-    paymentStatus === "REFUNDED";
-  useEffect(() => {
-    if (!alreadyPaid || !orderId) return;
-    clearPaymentState();
-    router.replace(`/order-confirmation/${orderId}`);
-  }, [alreadyPaid, orderId, router]);
-
-  // SDK callbacks registered in the effect below read the latest order id.
-  const currentOrderId = useEffectEvent(() => orderId);
-
-  useEffect(() => {
-    if (!clientSecret || !publicKey || alreadyPaid) return;
-    let cancelled = false;
-    mounted.current = false;
-    const pixelScript = loadPixelScript();
-
-    pixelScript.promise
-      .then(() => {
-        if (cancelled || !window.Pixel || mounted.current) return;
-        const host = document.getElementById(ELEMENT_ID);
-        if (!host) return;
-        host.replaceChildren();
-        mounted.current = true;
-        try {
-        new window.Pixel({
-          publicKey,
-          clientSecret,
-          paymentMethods: ["card"],
-          elementId: ELEMENT_ID,
-          disablePay: true,
-          showSaveCard: false,
-          forceSaveCard: false,
-          cardValidationChanged: (isValid) => {
-            if (!cancelled) setCardValid(isValid);
-          },
-          beforePaymentComplete: async () => true,
-          afterPaymentComplete: async () => {
-            const id = currentOrderId();
-            if (!id) return;
-            setPhase("polling");
-            setErrorMsg(null);
-            const result = await pollUntilPaymentSettles(id);
-            if (result.success) {
-              finishPaidCheckout(id);
-              return;
-            }
-            setPhase("idle");
-            if (result.status === "TIMEOUT") {
-              setErrorMsg(
-                "Your payment is taking longer than expected to confirm. Please check your email before trying again.",
-              );
-              return;
-            }
-            setNeedsRetry(true);
-            setErrorMsg(
-              result.status === "DECLINED"
-                ? "Your card was declined. Please start a new payment attempt with another card."
-                : "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.",
-            );
-          },
-          customStyle: {
-            Font_Family: "Arial",
-            Font_Size_Label: "16",
-            Font_Size_Input_Fields: "16",
-            Font_Size_Payment_Button: "16",
-            Font_Weight_Label: 500,
-            Font_Weight_Input_Fields: 400,
-            Font_Weight_Payment_Button: 500,
-            Color_Container: "#ffffff",
-            Color_Border_Input_Fields: BRAND.line,
-            Color_Border_Payment_Button: BRAND.copper,
-            Radius_Border: "8",
-            Color_Disabled: "#a3978a",
-            Color_Error: BRAND.danger,
-            Color_Primary: BRAND.copper,
-            Color_Input_Fields: "#ffffff",
-            Text_Color_For_Label: BRAND.ink,
-            Text_Color_For_Payment_Button: "#ffffff",
-            Text_Color_For_Input_Fields: BRAND.ink,
-            Color_For_Text_Placeholder: "#a3978a",
-            Width_of_Container: "100%",
-            // Pixel treats this as the input height in pixels. The SDK default is 40.
-            Vertical_Padding: "48",
-            Vertical_Spacing_between_components: "14",
-            Container_Padding: "0",
-          },
-        });
-        } catch {
-          if (!cancelled) setSdkFailed(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setSdkFailed(true);
-      });
-
-    return () => {
-      cancelled = true;
-      mounted.current = false;
-      pixelScript.cancel();
-      document.getElementById(ELEMENT_ID)?.replaceChildren();
-    };
-  }, [alreadyPaid, clientSecret, publicKey]);
+  const { sdkFailed, phase, needsRetry } = card;
+  const errorMsg = card.error ? ERROR_TEXT[card.error] : null;
 
   if (!hydrated || alreadyPaid) {
     return (
@@ -292,8 +128,8 @@ export function PaymobPaymentFormView() {
     );
   }
 
-  const total = orderQuery.data
-    ? formatMoney(Number(orderQuery.data.totals.total), orderQuery.data.currency)
+  const total = session.order
+    ? formatMoney(Number(session.order.totals.total), session.order.currency)
     : null;
 
   return (
@@ -363,12 +199,8 @@ export function PaymobPaymentFormView() {
                   <button
                     type="button"
                     className={`${checkoutCta} ${stripePayCta}`}
-                    disabled={!cardValid || phase !== "idle" || needsRetry || sdkFailed}
-                    onClick={() => {
-                      setPhase("confirming");
-                      setErrorMsg(null);
-                      window.dispatchEvent(new Event("payFromOutside"));
-                    }}
+                    disabled={!card.canPay}
+                    onClick={card.pay}
                   >
                     <span>
                       {phase === "confirming" ? "Processing…" : total ? `Pay ${total}` : "Pay now"}
@@ -388,7 +220,7 @@ export function PaymobPaymentFormView() {
           </p>
         </div>
 
-        <OrderSummary order={orderQuery.data} loading={orderQuery.isPending} />
+        <OrderSummary order={session.order} loading={session.orderLoading} />
       </div>
       {threeDs.overlay}
     </CheckoutStateShell>

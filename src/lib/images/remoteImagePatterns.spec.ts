@@ -25,6 +25,11 @@ describe("isOptimizableImageSrc", () => {
     expect(isOptimizableImageSrc("https://api.example.com/catalog/media/x.webp", patterns)).toBe(true);
   });
 
+  it("optimizes Sapil's Shopify files with the default patterns (only that path)", () => {
+    expect(isOptimizableImageSrc("https://sapil.com/cdn/shop/files/Straight-angle.webp?v=1")).toBe(true);
+    expect(isOptimizableImageSrc("https://sapil.com/products/berry-crush.jpg")).toBe(false);
+  });
+
   it("does not optimize an unknown host, path, protocol or port", () => {
     expect(isOptimizableImageSrc("https://images.sapil.com/p.jpg", patterns)).toBe(false);
     expect(isOptimizableImageSrc("https://cdn.shopify.com/other/p.jpg", patterns)).toBe(false);

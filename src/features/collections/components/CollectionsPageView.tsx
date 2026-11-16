@@ -1,15 +1,10 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useQuery } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui";
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
-import {
-  catalogKeys,
-  fetchCollections,
-  type CatalogCollection,
-} from "@/features/catalog/api/catalog.service";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
+import type { CatalogCollection } from "@/features/catalog/api/catalog.service";
+import { useCatalogCollections } from "../hooks/useCatalogCollections";
 
 /**
  * `initial` is the server-rendered list for the request market, so the page
@@ -22,17 +17,9 @@ export function CollectionsPageView({
   initial?: { zoneCode: string; collections: CatalogCollection[] } | null;
   title?: string;
 }) {
-  const market = useSelectedCatalogMarket();
-  const zoneCode = market?.zoneCode ?? initial?.zoneCode ?? "";
-  const serverList = initial && initial.zoneCode === zoneCode ? initial.collections : undefined;
-  const { data, isLoading } = useQuery({
-    queryKey: [...catalogKeys.collections(zoneCode), market?.salesChannelCode ?? ""],
-    queryFn: () => fetchCollections(zoneCode, market),
-    enabled: Boolean(market),
-    initialData: serverList,
-  });
+  const { collections: data, loading } = useCatalogCollections(initial);
 
-  if (!data && (!market || isLoading)) return <PageLoading label="Loading collections…" fill />;
+  if (loading) return <PageLoading label="Loading collections…" fill />;
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-12">
