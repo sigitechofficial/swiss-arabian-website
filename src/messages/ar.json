@@ -1380,5 +1380,8 @@
   "market.countryPrompt.title": "هل تتسوّق من {country}؟",
   "market.countryPrompt.body": "أنت الآن في متجر {current}. انتقل لعرض الأسعار وخيارات التوصيل والدفع في {country}.",
   "market.countryPrompt.switch": "الانتقال إلى {market}",
-  "market.countryPrompt.stay": "البقاء في {market}"
+  "market.countryPrompt.stay": "البقاء في {market}",
+  "emailLinkOpening": "جارٍ نقلك…",
+  "emailLinkFailed": "هذا الرابط غير صالح أو منتهي الصلاحية.",
+  "emailLinkHome": "الذهاب إلى المتجر"
 }
