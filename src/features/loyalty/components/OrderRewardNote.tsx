@@ -1,20 +1,11 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatPoints, type LoyaltyOrderRewardView } from "../types/loyalty";
-
-function vestingDate(value: string | null, locale = "en"): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
-    day: "numeric",
-    month: "long",
-  }).format(date);
-}
+import { rewardsVestingDate } from "../utils/loyaltyDates";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 /** True when confirmation or order history should show the Rewards card. */
 export function hasOrderLoyaltySection(
@@ -44,10 +35,11 @@ export function OrderRewardNote({
 }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   if (!hasOrderLoyaltySection(reward) || !reward) return null;
 
   const earned = Boolean(reward.earned && reward.state !== "CANCELLED");
-  const vestsOn = reward.earned ? vestingDate(reward.vestedAt, locale) : null;
+  const vestsOn = reward.earned ? rewardsVestingDate(reward.vestedAt, locale, timeZone) : null;
   const redemption = reward.redemption.redeemed ? reward.redemption : null;
   const adjustment = reward.earnAdjustment;
 

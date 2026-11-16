@@ -27,6 +27,7 @@ import { GuestAfterSalesSection } from "@/features/afterSales";
 import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
 import { useGuestTracking } from "../hooks/useOrderTrackingLookup";
 import { OrderTrackingPanel } from "./OrderTrackingPanel";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 /**
  * Public order tracking. Proof is the customer's own JWT when signed in, or the
@@ -51,6 +52,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
   } = useGuestTracking(orderNumber);
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const formError =
     formErrorKind === "empty"
       ? t("track.errToken")
@@ -76,7 +78,7 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
             <p className={checkoutEyebrow}>{t("track.eyebrow")}</p>
             <h1 className={pageTitle}>{summary.orderNumber}</h1>
             <p className={checkoutNote}>
-              {t("orders.placedOn", { date: formatOrderDate(summary.createdAt, { long: true, locale }) })} ·{" "}
+              {t("orders.placedOn", { date: formatOrderDate(summary.createdAt, { long: true, locale, timeZone }) })} ·{" "}
               {t("account.itemCount", { count: units })} ·{" "}
               {formatMoney(Number(summary.total), summary.currency)}
             </p>

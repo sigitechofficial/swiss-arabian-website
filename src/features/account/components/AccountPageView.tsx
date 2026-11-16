@@ -44,6 +44,7 @@ import { useEmployeeBenefitsAccount } from "@/features/employeeBenefits/hooks/us
 import { accountQuickLinks, accountSupportLinks } from "../data/accountDashboardContent";
 import { brandLinkEnabled } from "@/lib/brand/features";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 import { countryLabel, regionLabel } from "../utils/addressDisplay";
 import { AccountBreadcrumb } from "./AccountBreadcrumb";
 import { AccountPageShell } from "./AccountPageShell";
@@ -54,7 +55,9 @@ type Dashboard = ReturnType<typeof useAccountDashboard>;
 function RecentOrderPanel({ recentQuery }: { recentQuery: Dashboard["recentQuery"] }) {
   const recent = recentQuery.data?.items?.[0];
   const t = useShopCopy();
-  const order = recent ? toOrderSummaryView(recent, t) : null;
+  const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
+  const order = recent ? toOrderSummaryView(recent, t, { locale, timeZone }) : null;
 
   return (
     <section className={accountPanel} aria-labelledby="account-recent-order">
