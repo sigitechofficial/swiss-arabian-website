@@ -42,11 +42,10 @@ Nothing Tabby-specific is set on the storefront: checkout and the product / cart
 the keys from the backend per brand and market. The old `NEXT_PUBLIC_ENABLE_TABBY`,
 `NEXT_PUBLIC_TABBY_PUBLIC_KEY` and `NEXT_PUBLIC_TABBY_MERCHANT_CODE` are no longer read.
 
-The official logo file goes at `public/assets/payments/tabby/tabby-logo.svg`, exactly as
-downloaded from Tabby's brand pack (https://docs.tabby.ai/marketing/toolkit). Until it is
-there, the checkout option shows no logo.
+The official logo is `public/assets/payments/tabby/tabby-logo.svg`: `TabbyBadge.svg` from
+Tabby's official logo pack (tabby.ai press media kit), unchanged. The "Tabby badge" is the primary
+logo in Tabby's merchant guidelines. It is stored as binary so git never changes its bytes.
 
 ## Not done yet
 
-- Official Tabby logo file (see Settings).
 - Arabic for the rest of checkout (only Tabby's own wording, the method name and the return page are bilingual).
