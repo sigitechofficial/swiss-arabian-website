@@ -18,6 +18,7 @@ import {
 } from "@/styles/checkoutChrome";
 import { ocEm, ocEyebrow, ocTitle } from "@/styles/shopChrome";
 import { subscriptionCheckoutOrderPresentation } from "../utils/subscriptionMonthlyTracker";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 type Props = {
   planName: string;
@@ -46,6 +47,7 @@ export function SubscriptionCheckoutSuccess({
   fulfillmentStatus,
   shipmentStatus,
 }: Props) {
+  const timeZone = useMarketTimeZone();
   const order = subscriptionCheckoutOrderPresentation({
     orderState,
     orderId,
@@ -54,7 +56,7 @@ export function SubscriptionCheckoutSuccess({
     fulfillmentStatus,
     shipmentStatus,
   });
-  const billingLabel = nextBillingAt ? formatOrderDate(nextBillingAt, { long: true }) : "Not scheduled on this page";
+  const billingLabel = nextBillingAt ? formatOrderDate(nextBillingAt, { long: true, timeZone }) : "Not scheduled on this page";
 
   return (
     <section className={ocHero} aria-labelledby="subscription-success-heading">

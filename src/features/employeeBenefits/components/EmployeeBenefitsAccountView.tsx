@@ -11,7 +11,6 @@ import { isPositiveServerMoney, websiteHoldLabel } from "../types/employeeChecko
 import { useCartStore } from "@/stores/useCartStore";
 import { formatPoints } from "@/features/loyalty/types/loyalty";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEmployeeBenefitsCopy } from "./useEmployeeBenefitsCopy";
@@ -23,24 +22,13 @@ import {
   type EmployeeBenefitsView,
   type EmployeeContextView,
 } from "../types/employeeBenefits";
+import { rewardsSyncedAt } from "@/features/loyalty/utils/loyaltyDates";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 function Card({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-lg border border-sa-border bg-page px-5 py-6 sm:px-7 sm:py-7">{children}</div>
   );
-}
-
-function syncedLabel(value: string | null, locale = "en"): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }
 
 function quantity(value: string | null): string {
@@ -52,8 +40,9 @@ function BenefitCard({ row }: { row: EmployeeBenefitRowView }) {
   const copy = useEmployeeBenefitsCopy();
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const unverified = !row.unitStatus || row.unitStatus.toUpperCase() === "NOT_VERIFIED";
-  const synced = syncedLabel(row.lastSyncedAt, locale);
+  const synced = rewardsSyncedAt(row.lastSyncedAt, locale, timeZone);
   return (
     <article className="rounded-lg border border-sa-border px-4 py-4 sm:px-5">
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{copy.affiliation}</p>

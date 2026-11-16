@@ -62,6 +62,7 @@ import { refundCustomerStatus } from "../utils/orderAftercare";
 import { useCancellationCountdown, useCustomerOrderDetail, type OrderCancelError } from "../hooks/useCustomerOrders";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 type Feedback = { tone: keyof typeof orderNoticeTone; text: string };
 
@@ -185,6 +186,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   } = useCustomerOrderDetail(orderId);
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const orderReward = useOrderReward(orderId);
   const feedback: Feedback | null = cancelResult
     ? cancelResult
@@ -266,7 +268,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             <p className={orderHeadMeta}>
               <AccountStatusPill label={label} tone={tone} />
               <span className={`${accountLede} mt-0!`}>
-                {t("orders.placedOn", { date: formatOrderDate(order.createdAt, { long: true, locale }) })} ·{" "}
+                {t("orders.placedOn", { date: formatOrderDate(order.createdAt, { long: true, locale, timeZone }) })} ·{" "}
                 {t("account.itemCount", { count: itemCount })}
               </span>
             </p>

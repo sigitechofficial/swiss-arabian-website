@@ -4,7 +4,7 @@ import { Fragment, useCallback, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
-import { useMarketTimeZone } from "@/lib/storefront/marketTimeZone";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 import { formatAED, type SapilLinkProps } from "../../ui/shared";
 
 /** The kit's link slot, rendered as a locale-aware Next link. */

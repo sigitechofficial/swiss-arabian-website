@@ -17,6 +17,7 @@ import {
   shipmentStatusLabel,
 } from "../utils/orderStatus";
 import { useCustomerOrders } from "../hooks/useCustomerOrders";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 const ACTION_CLASS =
   "flex h-8 items-center gap-1.5 rounded border px-3 text-[11px] font-semibold transition-colors";
@@ -24,6 +25,7 @@ const ACTION_CLASS =
 function OrderRow({ order }: { order: OrderSummaryApi }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const { label, tone } = orderStatusDisplay(order.status, t);
   const action = orderPrimaryAction(order.status, order.paymentStatus);
   const detailHref = `/account/orders/${order.orderId}`;
@@ -40,7 +42,7 @@ function OrderRow({ order }: { order: OrderSummaryApi }) {
         ) : null}
         <p className="flex items-center gap-1.5 sm:ms-auto">
           <span className="text-[10px] font-bold uppercase tracking-wide text-sa-muted">{t("orders.date")}</span>
-          <span className="text-[12px] font-semibold text-sa-primary">{formatOrderDate(order.createdAt, { locale })}</span>
+          <span className="text-[12px] font-semibold text-sa-primary">{formatOrderDate(order.createdAt, { locale, timeZone })}</span>
         </p>
         <LocaleLink
           href={detailHref}

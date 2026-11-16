@@ -54,10 +54,13 @@ import {
   subscriptionPriceLines,
 } from "../utils/subscriptionRules";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 type Props = { id: string };
 
 export function AccountSubscriptionDetailPageView({ id }: Props) {
+  const timeZone = useMarketTimeZone();
   const queryClient = useQueryClient();
   const t = useShopCopy();
   const locale = useShopLocale();
@@ -216,13 +219,13 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                 label={t("subs.detail.nextBillingCaps")}
                 value={
                   detail.data.nextBillingAt
-                    ? new Date(detail.data.nextBillingAt).toLocaleDateString(dateTag, { day: "numeric", month: "short", year: "numeric" })
+                    ? formatMarketDate(detail.data.nextBillingAt, dateTag, timeZone, { day: "numeric", month: "short", year: "numeric" })
                     : t("subs.detail.notScheduled")
                 }
                 hint={
                   detail.data.nextBillingAt
                     ? t("subs.note.next", {
-                        date: new Date(detail.data.nextBillingAt).toLocaleDateString(longTag, { year: "numeric", month: "long", day: "numeric" }),
+                        date: formatMarketDate(detail.data.nextBillingAt, longTag, timeZone, { year: "numeric", month: "long", day: "numeric" }),
                       })
                     : detail.data.status === "PENDING_ACTIVATION"
                       ? t("subs.detail.noPayment")
@@ -266,7 +269,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                       nextChargeLabel={
                         detail.data.nextBillingAt
                           ? t("subs.detail.nextCharge", {
-                              date: new Date(detail.data.nextBillingAt).toLocaleDateString(dateTag, { day: "numeric", month: "short", year: "numeric" }),
+                              date: formatMarketDate(detail.data.nextBillingAt, dateTag, timeZone, { day: "numeric", month: "short", year: "numeric" }),
                             })
                           : null
                       }
@@ -418,6 +421,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
 function MonthHero({ month }: { month: SubscriptionMonthRow }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const paid = month.payment === "PAID" || month.delivery === "SHIPPED" || month.delivery === "DELIVERED";
   const processing = month.payment === "PROCESSING" || month.delivery === "PROCESSING" || month.delivery === "ORDER_PENDING";
   const shipped = month.delivery === "SHIPPED" || month.delivery === "DELIVERED";
@@ -429,9 +433,10 @@ function MonthHero({ month }: { month: SubscriptionMonthRow }) {
     { label: t("subs.step.delivered"), on: delivered },
   ];
   const when = month.billingDate
-    ? new Date(month.billingDate)
-        .toLocaleDateString(locale === "en" ? "en-GB" : intlLocale(locale), { month: "short", year: "numeric" })
-        .toUpperCase()
+    ? formatMarketDate(month.billingDate, locale === "en" ? "en-GB" : intlLocale(locale), timeZone, {
+        month: "short",
+        year: "numeric",
+      }).toUpperCase()
     : null;
   return (
     <section className="flex flex-wrap gap-6 rounded-[20px] border border-[#E6DCCB] bg-white p-6">

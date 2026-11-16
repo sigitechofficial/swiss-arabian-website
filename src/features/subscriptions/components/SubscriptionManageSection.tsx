@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 
 import { accountPrimaryCta, orderCancelConfirm, orderNotice, orderNoticeTone } from "@/styles/accountChrome";
 import type { SubscriptionManagementActions } from "../types/subscription.types";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 export const RENEWAL_CHARGE_PENDING_WARNING =
   "A renewal payment is already in progress. This action will not reverse a charge that has already been submitted.";
@@ -45,8 +47,9 @@ export function SubscriptionManageSection({
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [skipKey, setSkipKey] = useState<string | null>(null);
   const submitting = useRef(false);
+  const timeZone = useMarketTimeZone();
   const pausedDate = pausedAt
-    ? new Date(pausedAt).toLocaleDateString("en-AE", { year: "numeric", month: "long", day: "numeric" })
+    ? formatMarketDate(pausedAt, "en-AE", timeZone, { year: "numeric", month: "long", day: "numeric" }) || null
     : null;
 
   function ask(action: PendingAction) {

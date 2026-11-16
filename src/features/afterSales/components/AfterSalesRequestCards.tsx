@@ -19,6 +19,8 @@ import type {
 import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
 import { afterSalesOptionLabel, afterSalesStatusLabel } from "../utils/eligibility";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 function statusTone(status: string): AccountStatusTone {
   switch (status?.toUpperCase()) {
@@ -37,13 +39,11 @@ function statusTone(status: string): AccountStatusTone {
 /** "en-AE" short date in English (as before); the page's language otherwise. */
 function useRequestDate() {
   const locale = useShopLocale();
-  return (iso: string) => {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "";
-    return locale === "en"
-      ? date.toLocaleDateString("en-AE", { year: "numeric", month: "short", day: "numeric" })
-      : formatOrderDate(iso, { locale });
-  };
+  const timeZone = useMarketTimeZone();
+  return (iso: string) =>
+    locale === "en"
+      ? formatMarketDate(iso, "en-AE", timeZone, { year: "numeric", month: "short", day: "numeric" })
+      : formatOrderDate(iso, { locale, timeZone });
 }
 
 export function ReturnRequestCard({

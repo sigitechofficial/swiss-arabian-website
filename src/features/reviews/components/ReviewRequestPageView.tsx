@@ -11,6 +11,8 @@ import { compositionEyebrow } from "@/styles/pdpChrome";
 import * as c from "@/styles/pdpReviewsChrome";
 import { pageContainer } from "@/styles/siteChrome";
 import { useReviewsCopy } from "@/features/catalog/i18n/reviewsCopy";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 
 /**
@@ -22,6 +24,7 @@ import { useReviewsCopy } from "@/features/catalog/i18n/reviewsCopy";
 export function ReviewRequestPageView({ token }: { token: string }) {
   const t = useReviewsCopy();
   const dateLocale = intlLocale(t.locale);
+  const timeZone = useMarketTimeZone();
   const request = useReviewRequest(token, {
     onUnsubscribeFailed: () => toast(t.unsubscribeFailed, "error"),
   });
@@ -68,7 +71,7 @@ export function ReviewRequestPageView({ token }: { token: string }) {
               ))}
             </div>
             <p className="mt-8 text-center text-[0.72rem] text-[var(--ink-2,#5b5148)]">
-              {t.linkUntil(new Date(data.expiresAt).toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" }))}{" "}
+              {t.linkUntil(formatMarketDate(data.expiresAt, dateLocale, timeZone, { day: "numeric", month: "short", year: "numeric" }))}{" "}
               {!data.unsubscribed && !unsubscribed ? (
                 <button
                   type="button"

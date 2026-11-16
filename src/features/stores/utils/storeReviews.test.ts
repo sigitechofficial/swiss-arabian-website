@@ -11,9 +11,15 @@ describe("store reviews", () => {
   });
 
   it("month and year in the page language", () => {
-    expect(reviewMonth("2026-11-10T09:00:00Z", "en-AE")).toBe("November 2026");
-    expect(reviewMonth("2026-11-10T09:00:00Z", "ar-AE")).toMatch(/نوفمبر/);
-    expect(reviewMonth(null, "en")).toBe("");
-    expect(reviewMonth("not a date", "en")).toBe("");
+    expect(reviewMonth("2026-11-10T09:00:00Z", "en-AE", "Asia/Dubai")).toBe("November 2026");
+    expect(reviewMonth("2026-11-10T09:00:00Z", "ar-AE", "Asia/Dubai")).toMatch(/نوفمبر/);
+    expect(reviewMonth(null, "en", "Asia/Dubai")).toBe("");
+    expect(reviewMonth("not a date", "en", "Asia/Dubai")).toBe("");
+  });
+
+  it("uses the store's time zone, so a late-evening review keeps its local month", () => {
+    // 31 Oct 21:00 UTC is 1 Nov 01:00 in Dubai.
+    expect(reviewMonth("2026-10-31T21:00:00Z", "en-AE", "Asia/Dubai")).toBe("November 2026");
+    expect(reviewMonth("2026-10-31T21:00:00Z", "en-AE", "UTC")).toBe("October 2026");
   });
 });

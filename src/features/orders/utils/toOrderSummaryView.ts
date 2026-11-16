@@ -36,13 +36,13 @@ function headlineKey(status: string): MessageKey {
 export function toOrderSummaryView(
   order: OrderSummaryApi,
   t: Translator = englishTranslator,
-  locale = "en",
+  { locale = "en", timeZone }: { locale?: string; timeZone: string },
 ): OrderSummaryView {
   const { label, tone } = orderStatusDisplay(order.status, t);
   return {
     id: order.orderId,
     reference: order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase(),
-    dateLabel: formatOrderDate(order.createdAt, { locale }),
+    dateLabel: formatOrderDate(order.createdAt, { locale, timeZone }),
     channel: "ONLINE",
     fulfilmentLabel: order.shipment ? shipmentStatusLabel(order.shipment.status, t) : t("orders.fulfilment.ship"),
     itemCount: order.itemCount,

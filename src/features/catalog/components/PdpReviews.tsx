@@ -39,6 +39,7 @@ import * as c from "@/styles/pdpReviewsChrome";
 import { fld, fldFull } from "@/styles/checkoutChrome";
 import { stars } from "@/styles/landingChrome";
 import { pageContainer } from "@/styles/siteChrome";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 const FIRST_ROW = 3;
 const NEXT_ROW = 4;
@@ -168,6 +169,7 @@ export function PdpReviews({
 }) {
   const market = useSelectedCatalogMarket();
   const t = useReviewsCopy();
+  const timeZone = useMarketTimeZone();
   const summary = reviews?.summary;
   const display = reviews?.display ?? DEFAULT_REVIEW_DISPLAY;
   const reviewCount = summary?.reviewCount ?? 0;
@@ -294,7 +296,7 @@ export function PdpReviews({
                 <article key={review.reviewId} className={c.rvCard}>
                   <div className={c.rvCardTop}>
                     <Stars rating={review.rating} />
-                    <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
+                    <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale), timeZone)}</span>
                   </div>
                   {review.title ? <h3 className={c.rvTitle}>{review.title}</h3> : null}
                   {review.body ? <p className={c.rvBody}>{review.body}</p> : null}
@@ -404,6 +406,7 @@ function ReadReview({
   onClose: () => void;
 }) {
   const t = useReviewsCopy();
+  const timeZone = useMarketTimeZone();
   const close = useEffectEvent(onClose);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -428,7 +431,7 @@ function ReadReview({
         </p>
         <div className="mb-2.5 flex items-center gap-3">
           <Stars rating={review.rating} size="0.85rem" />
-          <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale))}</span>
+          <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale), timeZone)}</span>
         </div>
         {review.title ? <h3 className="m-0 mb-2 text-[1.05rem] font-semibold">{review.title}</h3> : null}
         {review.body ? <p className={c.rvDialogBody}>{review.body}</p> : null}

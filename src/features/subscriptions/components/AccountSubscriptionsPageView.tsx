@@ -18,6 +18,8 @@ import { subscriptionKeys } from "../api/subscription.keys";
 import { audienceLabel, statusLabel, subscriptionPriceLines } from "../utils/subscriptionRules";
 import type { SubscriptionSummary } from "../types/subscription.types";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 type ListFilter = "all" | "active" | "pending";
 
@@ -44,12 +46,12 @@ function money(currency: string, amount: string) {
   return `${currency} ${amount}`;
 }
 
-function billingNote(item: SubscriptionSummary, t: Translator, locale: string) {
+function billingNote(item: SubscriptionSummary, t: Translator, locale: string, timeZone: string) {
   if (item.status === "PENDING_ACTIVATION") return t("subs.note.pending");
   if (item.status === "PAUSED") return t("subs.note.paused");
   if (item.status === "CANCELLED") return t("subs.note.cancelled");
   if (item.nextBillingAt) {
-    const date = new Date(item.nextBillingAt).toLocaleDateString(locale === "en" ? "en-GB" : intlLocale(locale), {
+    const date = formatMarketDate(item.nextBillingAt, locale === "en" ? "en-GB" : intlLocale(locale), timeZone, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -62,6 +64,7 @@ function billingNote(item: SubscriptionSummary, t: Translator, locale: string) {
 export function AccountSubscriptionsPageView() {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const zoneCode = useUiStore((s) => s.catalogContext?.zoneCode || s.selectedMarketId || "");
   const list = useApiQuery(subscriptionKeys.mine(zoneCode), () => listMySubscriptions(zoneCode), {
     enabled: Boolean(zoneCode),
@@ -146,7 +149,7 @@ export function AccountSubscriptionsPageView() {
                           <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("orders.shipping")}</dt><dd className={`m-0 font-medium ${item.shippingMode === "EXTRA_FIXED" ? "text-[#2B1D17]" : "text-[#1F5B30]"}`}>{item.shippingMode === "EXTRA_FIXED" ? `${item.currencyCode} ${item.shippingAmount}` : t("subs.included")}</dd></div>
                           <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("subs.picksFrom")}</dt><dd className="m-0 font-medium">{item.audience ? audienceLabel(item.audience, t) : t("subs.thisPlan")}</dd></div>
                         </dl>
-                        <p className={`m-0 text-[13px] ${pendingCard ? "text-[#7A4B0B]" : "text-[#5A463C]"}`}>{billingNote(item, t, locale)}</p>
+                        <p className={`m-0 text-[13px] ${pendingCard ? "text-[#7A4B0B]" : "text-[#5A463C]"}`}>{billingNote(item, t, locale, timeZone)}</p>
                         <LocaleLink href={`/account/subscription/${item.id}`} className={`mt-auto inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold no-underline ${pendingCard ? "border border-[#C9B49C] bg-white text-[#2B1D17]" : "bg-[#8E4636] text-white"}`}>
                           {t("subs.viewAgreement")}
                         </LocaleLink>

@@ -167,7 +167,7 @@ export function StorePageView({ store }: { store: StoreDetail }) {
                           <span className="text-sa-border">{"★".repeat(5 - r.rating)}</span>
                         </span>
                         <span className="font-semibold text-sa-primary">{r.author ?? t("stores.anonymousReviewer")}</span>
-                        <span className="text-sa-muted">{reviewMonth(r.createdAt, intlLocale(locale))}</span>
+                        <span className="text-sa-muted">{reviewMonth(r.createdAt, intlLocale(locale), store.timeZone)}</span>
                       </p>
                       <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-[14px] leading-relaxed text-sa-secondary">{r.text}</p>
                       {r.reply ? (

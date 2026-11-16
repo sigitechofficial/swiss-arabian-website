@@ -56,6 +56,7 @@ import type { OrderAddressSummary } from "../types/checkout";
 import { useOrderConfirmation, type OrderPaymentState } from "../hooks/useOrderConfirmation";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 type PaymentState = OrderPaymentState;
 
@@ -134,6 +135,7 @@ function AddressBlock({ title, address }: { title: string; address: OrderAddress
 }
 
 export function OrderConfirmationView({ orderId }: { orderId: string }) {
+  const timeZone = useMarketTimeZone();
   const { orderQuery, polling, state, details, checking, checkAgain } = useOrderConfirmation(orderId);
   // Frozen order snapshot — never the last cart estimate.
   const orderReward = useOrderReward(orderId);
@@ -241,7 +243,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           ) : null}
           <div>
             <dt>Date</dt>
-            <dd>{formatOrderDate(order.createdAt)}</dd>
+            <dd>{formatOrderDate(order.createdAt, { timeZone })}</dd>
           </div>
           <div>
             <dt>Total</dt>
