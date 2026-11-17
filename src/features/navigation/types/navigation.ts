@@ -22,6 +22,8 @@ export type NavigationMetadata = {
   cmsAvailable: boolean;
   headerMenuHandle?: string | null;
   footerMenuHandle?: string | null;
+  /** The market's "Shop by" menu (Sapil's chip row); absent on older backends. */
+  shopByMenuHandle?: string | null;
   note?: string;
 };
 
@@ -33,5 +35,8 @@ export type NavigationPayload = {
   };
   header: NavItem[];
   footer: NavItem[];
+  /** "Shop by" menu, same item shape as `header`. Empty when the market has none;
+   *  older backends omit it, which means the same. */
+  shopBy?: NavItem[];
   metadata: NavigationMetadata;
 };

@@ -10,7 +10,7 @@ import { fetchNavigation } from "../api/navigation.service";
 import { apiNavToChromeNav } from "../utils/toChromeNav";
 import { withDirectNavHrefs } from "../utils/directNavHrefs";
 import { withoutDisabledSections } from "../utils/brandSections";
-import type { NavItem } from "../types/navigation";
+import type { NavItem, NavigationPayload } from "../types/navigation";
 
 type MobileNavHeading = { label: string; kind: "heading" };
 
@@ -65,9 +65,20 @@ type UseNavigationReturn = {
   footerItems: NavItem[];
   /** The header menu as the API sends it (with direct links), for brand chromes. */
   headerNav: NavItem[];
+  /** The market's "Shop by" menu (direct links, switched-off sections removed);
+   *  empty when the market has none or the backend doesn't send it. */
+  shopByNav: NavItem[];
   isLoading: boolean;
   isCatalogFallback: boolean;
 };
+
+/** The payload's "Shop by" menu, prepared like the header and footer (direct
+ *  hrefs, no links into switched-off sections). Missing or malformed → empty. */
+export function shopByNavFrom(data: Pick<NavigationPayload, "shopBy"> | null | undefined): NavItem[] {
+  const items = data?.shopBy;
+  if (!Array.isArray(items) || !items.length) return [];
+  return withoutDisabledSections(withDirectNavHrefs(items));
+}
 
 /** 4xx (e.g. 422 "context could not be resolved" for a zone the backend
  *  hasn't configured) won't succeed on retry — only retry server errors. */
@@ -111,11 +122,14 @@ export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
     [data],
   );
 
+  const shopBy = useMemo(() => shopByNavFrom(data), [data]);
+
   return {
     headerItems: apiNavToMobileNav(header),
     chromeItems: apiNavToChromeNav(header),
     footerItems: footer,
     headerNav: header,
+    shopByNav: shopBy,
     isLoading,
     isCatalogFallback: data?.metadata.source === "catalog_categories",
   };

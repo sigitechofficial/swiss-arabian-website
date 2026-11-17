@@ -23,21 +23,13 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("SapilAnnouncement", () => {
-  it("rotates, is not a live region, and the pause button stops the rotation (WCAG 2.2.2)", () => {
+  it("rotates, is not a live region, and has no play / pause button", () => {
     const { container } = render(<SapilAnnouncement items={items} intervalMs={3000} />);
     expect(container.querySelector("[aria-live]")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
     expect(screen.getByText("message")).toBeTruthy();
     act(() => vi.advanceTimersByTime(3000));
     expect(screen.getByText("Second message")).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pause announcements" }));
-    // The pointer/focus is still on the bar after the click: leave it, then wait.
-    fireEvent.blur(screen.getByRole("button", { name: "Play announcements" }));
-    act(() => vi.advanceTimersByTime(10000));
-    expect(screen.getByText("Second message")).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Play announcements" }));
-    fireEvent.blur(screen.getByRole("button", { name: "Pause announcements" }));
     act(() => vi.advanceTimersByTime(3000));
     expect(screen.getByText("message")).toBeTruthy();
   });
@@ -52,12 +44,19 @@ describe("SapilAnnouncement", () => {
     expect(screen.getByText("Second message")).toBeTruthy();
   });
 
-  it("does not rotate with reduced motion until the shopper presses play", () => {
+  it("waits while keyboard focus is in the bar", () => {
+    const { container } = render(<SapilAnnouncement items={items} intervalMs={3000} />);
+    fireEvent.focus(container.firstElementChild!);
+    act(() => vi.advanceTimersByTime(9000));
+    expect(screen.getByText("message")).toBeTruthy();
+  });
+
+  it("does not rotate with reduced motion", () => {
     reduced.value = true;
     render(<SapilAnnouncement items={items} intervalMs={3000} />);
     act(() => vi.advanceTimersByTime(9000));
     expect(screen.getByText("message")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Play announcements" })).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("a single message has no control", () => {

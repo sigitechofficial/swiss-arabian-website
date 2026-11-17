@@ -5,6 +5,7 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, Wrap } from "../../ui";
 import { SapilHomeSections } from "../../components/home/SapilHomeSections";
 import { SapilLink } from "../../components/shared/SapilLink";
+import { useScrollToLocationHash } from "../../components/shared/useScrollToLocationHash";
 import { SapilStatePanel } from "../../components/states/SapilStatePanel";
 
 function HomeSkeleton() {
@@ -25,6 +26,8 @@ function HomeSkeleton() {
 export function SapilHomePage({ initial }: { initial?: CmsHomeInitial | null }) {
   const t = useSapilCopy();
   const home = usePublishedHome(initial);
+  // "Shop by" chips such as "/#mood" open the home page at a section.
+  useScrollToLocationHash(home.status === "ready");
 
   if (home.status === "loading") return <HomeSkeleton />;
   if (home.status === "error") {
