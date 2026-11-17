@@ -1,4 +1,4 @@
-import { checkoutHref, rememberCheckoutLocale } from "./checkoutLocale";
+import { checkoutHref, currentCheckoutLocale, rememberCheckoutLocale } from "./checkoutLocale";
 import { initiatePayment } from "../api/orders.service";
 import { ApiClientError } from "@/lib/api/apiError";
 import {
@@ -88,6 +88,7 @@ export async function startPayment(
 ): Promise<PaymentStartResult> {
   const origin = window.location.origin;
   // The confirmation / cancel pages open in the language checkout is in.
+  const locale = currentCheckoutLocale();
   rememberCheckoutLocale(window.location.pathname);
   const prepared = options.prepared;
   const hintProvider = (method.providerCode ?? "").toLowerCase();
@@ -97,15 +98,20 @@ export async function startPayment(
   // BE Tabby contract: `/payments/tabby/return` for success and cancel — the
   // backend adds `result=success|cancel` and builds the failure URL itself.
   // Shared Stripe/Paymob keep the existing confirmation return.
+  // Tabby's return address is fixed and unprefixed: `?lang=` carries the
+  // checkout language so the return page (and Tabby's cancel / not-approved
+  // wording) opens in it (Tabby QA, Nov 2026). The backend keeps the query on
+  // the success, cancel and failure links.
+  const tabbyReturn = `${origin}/payments/tabby/return?lang=${encodeURIComponent(locale)}`;
   const returnUrl = isTelrHint
     ? `${origin}/payments/telr/return`
     : isTabbyHint
-      ? `${origin}/payments/tabby/return`
+      ? tabbyReturn
       : `${origin}${checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`)}`;
   const cancelUrl = isTelrHint
     ? `${origin}/payments/telr/return?result=cancelled`
     : isTabbyHint
-      ? `${origin}/payments/tabby/return`
+      ? tabbyReturn
       : `${origin}${checkoutHref("/checkout/payment/cancel")}`;
 
   let payment: Awaited<ReturnType<typeof initiatePayment>>;
@@ -114,6 +120,8 @@ export async function startPayment(
       idempotencyKey: prepared?.correlationId ?? `pay-${orderId}-${getPayAttempt()}`,
       returnUrl,
       cancelUrl,
+      // Saved on the order: Tabby's page opens in it (`lang`), emails follow it.
+      locale,
       ...(method.zonePaymentMethodId ? { zonePaymentMethodId: method.zonePaymentMethodId } : {}),
       ...(method.paymentMethodId ? { paymentMethodId: method.paymentMethodId } : {}),
       ...(prepared
