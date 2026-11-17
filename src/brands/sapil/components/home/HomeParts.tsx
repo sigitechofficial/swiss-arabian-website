@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Serif, cx } from "../../ui";
 import type { TextPart } from "./cmsSections";
 
@@ -17,6 +17,26 @@ export function PartsText({ parts, serifClassName }: { parts: TextPart[]; serifC
       )}
     </>
   );
+}
+
+/**
+ * A CMS heading: plain parts as bare text (as SectionHead writes its title), the
+ * emphasised part in the serif accent.
+ */
+export function TitleParts({ parts }: { parts: TextPart[] }) {
+  return (
+    <>
+      {parts.map((p, i) => (p.emphasis ? <Serif key={i}>{p.text}</Serif> : <Fragment key={i}>{p.text}</Fragment>))}
+    </>
+  );
+}
+
+/**
+ * SectionHead `title` + `accent` for a CMS title (its emphasis in the serif accent),
+ * else the built-in title and accent, so with no CMS title the markup is unchanged.
+ */
+export function sectionTitleProps(parts: TextPart[] | undefined, title: ReactNode, accent: ReactNode): { title: ReactNode; accent?: ReactNode } {
+  return parts?.length ? { title: <TitleParts parts={parts} /> } : { title, accent };
 }
 
 /** A home section (v9 rhythm: 64px top and bottom, 48px at ≤900px). */

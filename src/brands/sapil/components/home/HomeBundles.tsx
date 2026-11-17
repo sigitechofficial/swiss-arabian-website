@@ -11,7 +11,7 @@ import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
 import { featuredPriceTier, pastelAt } from "../shell/shellData";
 import type { Bundle, HomeProduct } from "./cmsSections";
-import { HomeSection } from "./HomeParts";
+import { HomeSection, sectionTitleProps } from "./HomeParts";
 
 /** Adds every bottle of a bundle (shared cart hook); the saving is applied in the bag by promotions. */
 export function useAddBundle() {
@@ -58,10 +58,9 @@ export function HomeBundles({ bundles }: { bundles: Bundle[] }) {
       <Wrap>
         <SectionHead
           id={headingId}
-          eyebrow={t("home.bundlesEyebrow")}
-          title={t("home.bundlesTitle")}
-          accent={t("home.bundlesAccent")}
-          actions={<p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{first?.description ?? t("home.bundlesText")}</p>}
+          eyebrow={first?.row.heading ?? t("home.bundlesEyebrow")}
+          {...sectionTitleProps(first?.row.title, t("home.bundlesTitle"), t("home.bundlesAccent"))}
+          actions={<p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{first?.row.subtitle ?? first?.description ?? t("home.bundlesText")}</p>}
         />
         <div className="grid grid-cols-4 gap-[24px] max-900:grid-cols-none max-900:grid-flow-col max-900:auto-cols-[78%] max-900:gap-[14px] max-900:overflow-x-auto max-900:snap-x max-900:snap-mandatory max-900:scroll-px-sapil-gut max-900:[scrollbar-width:none] max-900:-mx-sapil-gut max-900:px-sapil-gut">
           {bundles.map((b, bi) => {

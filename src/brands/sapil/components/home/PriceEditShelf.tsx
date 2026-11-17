@@ -12,7 +12,8 @@ import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
 import { parseAmount } from "../shared/money";
 import { featuredPriceTier } from "../shell/shellData";
-import { HomeSection } from "./HomeParts";
+import type { PriceEditCopy } from "./cmsSections";
+import { HomeSection, TitleParts } from "./HomeParts";
 
 export type PriceBand = { key: string; min: number | null; max: number; count: number };
 
@@ -58,7 +59,7 @@ const SHELF_HEIGHTS = ["h-[62%]", "h-[70%] z-[2]", "h-[80%] z-[3]", "h-[70%] z-[
  * its products from the listing (`maxPrice`), price chips with counts, a price-tag
  * shelf. Hidden until the market has price edits and products under the ceiling.
  */
-export function PriceEditShelf() {
+export function PriceEditShelf({ copy }: { copy?: PriceEditCopy } = {}) {
   const t = useSapilCopy();
   const price = useSapilPrice();
   const settings = useMarketSettings();
@@ -95,9 +96,15 @@ export function PriceEditShelf() {
             </span>
           ) : null}
           <div>
-            <p className={cx(EYEBROW, "!text-sapil-rose")}>{t("home.priceEyebrow", { amount: ceiling })}</p>
+            <p className={cx(EYEBROW, "!text-sapil-rose")}>{copy?.eyebrow ?? t("home.priceEyebrow", { amount: ceiling })}</p>
             <h2 className="font-sapil-display !font-[400] text-[clamp(48px,5vw,80px)] !leading-[.95] !tracking-[-.01em] mt-[16px] mb-[18px] max-900:text-[46px]">
-              {t("home.priceTitle")} <Serif>{t("home.priceAccent")}</Serif>
+              {copy?.title.length ? (
+                <TitleParts parts={copy.title} />
+              ) : (
+                <>
+                  {t("home.priceTitle")} <Serif>{t("home.priceAccent")}</Serif>
+                </>
+              )}
             </h2>
             <p className="text-[17px] text-sapil-ink-2 max-w-[34ch] mb-[26px]">
               {t("home.priceLine", { count: total, from: price(from, currency), ceiling })}

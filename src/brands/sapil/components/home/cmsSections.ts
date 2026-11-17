@@ -80,6 +80,28 @@ export function homeProducts(raw: unknown): HomeProduct[] {
 
 export type Cta = { label: string; href: string };
 
+/**
+ * A home section's editable head: `heading` is the small label above, `title` the big
+ * heading (its `titleEmphasis` part set in the serif accent), `subtitle` the line under it.
+ * Empty fields keep the built-in copy (see `SectionTitle` / `sectionTitleProps`).
+ */
+export type SectionCopy = { heading: string | null; title: TextPart[]; subtitle: string | null };
+
+export function sectionCopy(data: Rec, keys = { heading: "heading", title: "title", emphasis: "titleEmphasis", subtitle: "subtitle" }): SectionCopy {
+  return {
+    heading: str(data[keys.heading]),
+    title: textParts(str(data[keys.title]), str(data[keys.emphasis])),
+    subtitle: str(data[keys.subtitle]),
+  };
+}
+
+/** The "Under AED 99" price-edit shelf's head, from the first new-arrivals rail. */
+export type PriceEditCopy = { eyebrow: string | null; title: TextPart[] };
+
+export function priceEditCopy(data: Rec): PriceEditCopy {
+  return { eyebrow: str(data.priceEditEyebrow), title: textParts(str(data.priceEditTitle), str(data.priceEditTitleEmphasis)) };
+}
+
 function cta(label: unknown, l: unknown, ctx?: CmsLinkContext): Cta | null {
   const text = str(label);
   const href = resolveCmsLink(link(l), ctx);
@@ -206,6 +228,8 @@ export type Bundle = {
   currency: string | null;
   primary: Cta | null;
   secondary: Cta | null;
+  /** the "Shop by bundle" row head (read from the row's first bundle) */
+  row: SectionCopy;
 };
 
 export function parseBundle(id: string, data: Rec, ctx?: CmsLinkContext): Bundle | null {
@@ -224,14 +248,15 @@ export function parseBundle(id: string, data: Rec, ctx?: CmsLinkContext): Bundle
     currency: products[0]?.product.currency ?? null,
     primary: cta(data.primaryCtaLabel, data.primaryLink, ctx),
     secondary: cta(data.secondaryCtaLabel, data.secondaryLink, ctx),
+    row: sectionCopy(data, { heading: "rowEyebrow", title: "rowTitle", emphasis: "rowTitleEmphasis", subtitle: "rowSubtitle" }),
   };
 }
 
-export type ProductRailSection = {
-  heading: string | null;
+export type ProductRailSection = SectionCopy & {
   products: HomeProduct[];
   viewAll: Cta | null;
   viewAllHref: string | null;
+  priceEdit: PriceEditCopy;
 };
 
 export function parseProductRail(data: Rec, ctx?: CmsLinkContext): ProductRailSection | null {
@@ -239,10 +264,11 @@ export function parseProductRail(data: Rec, ctx?: CmsLinkContext): ProductRailSe
   if (!products.length) return null;
   const href = resolveCmsLink(link(data.link), ctx);
   return {
-    heading: str(data.heading),
+    ...sectionCopy(data),
     products,
     viewAll: href && str(data.viewAllLabel) ? { label: str(data.viewAllLabel)!, href } : null,
     viewAllHref: href,
+    priceEdit: priceEditCopy(data),
   };
 }
 
@@ -258,7 +284,10 @@ export type CollectionCard = {
   images: Array<{ url: string; name: string }>;
 };
 
-export function parseCollectionShowcase(data: Rec, ctx?: CmsLinkContext): { heading: string | null; text: string | null; cards: CollectionCard[] } | null {
+export function parseCollectionShowcase(
+  data: Rec,
+  ctx?: CmsLinkContext,
+): { heading: string | null; title: TextPart[]; text: string | null; cards: CollectionCard[] } | null {
   const cards = arr(data.tiles)
     .map(rec)
     .flatMap((t, i): CollectionCard[] => {
@@ -285,7 +314,8 @@ export function parseCollectionShowcase(data: Rec, ctx?: CmsLinkContext): { head
       ];
     });
   if (!cards.length) return null;
-  return { heading: str(data.heading), text: str(data.subtitle), cards };
+  const { heading, title, subtitle } = sectionCopy(data);
+  return { heading, title, text: subtitle, cards };
 }
 
 export type Mood = {
@@ -377,17 +407,17 @@ export const HERO_TYPES = new Set(["HERO_GALLERY", "SHOPABLE_VIDEO_SHOWCASE", "H
 
 export type HomeBlock =
   | { kind: "heroGallery"; id: string; hero: HeroGallery }
-  | { kind: "heroVideo"; id: string; heading: string | null }
+  | ({ kind: "heroVideo"; id: string } & SectionCopy)
   | { kind: "heroCampaign"; id: string; hero: HeroCampaign }
   | { kind: "heroPromo"; id: string; bundle: Bundle }
   | { kind: "newArrivals"; id: string; rail: ProductRailSection }
-  | { kind: "priceEdit"; id: string }
+  | { kind: "priceEdit"; id: string; copy: PriceEditCopy }
   | { kind: "collections"; id: string; showcase: NonNullable<ReturnType<typeof parseCollectionShowcase>> }
   | { kind: "topSellers"; id: string; rail: ProductRailSection }
   | { kind: "mood"; id: string; picker: NonNullable<ReturnType<typeof parseMoodPicker>> }
-  | { kind: "notes"; id: string; heading: string | null }
+  | ({ kind: "notes"; id: string } & SectionCopy)
   | { kind: "bundles"; id: string; bundles: Bundle[] }
-  | { kind: "reels"; id: string; heading: string | null }
+  | ({ kind: "reels"; id: string } & SectionCopy)
   | { kind: "about"; id: string; story: BrandStory }
   | { kind: "newsletter"; id: string; newsletter: Newsletter };
 
@@ -419,7 +449,7 @@ export function planHome(sections: CmsSection[], ctx?: CmsLinkContext): HomeBloc
           return;
         }
         case "SHOPABLE_VIDEO_SHOWCASE":
-          blocks.push(asHero ? { kind: "heroVideo", id, heading: str(data.heading) } : { kind: "reels", id, heading: str(data.heading) });
+          blocks.push({ kind: asHero ? "heroVideo" : "reels", id, ...sectionCopy(data) });
           return;
         case "BUNDLE_PROMOTION_SHOWCASE": {
           const bundle = parseBundle(id, data, ctx);
@@ -440,7 +470,7 @@ export function planHome(sections: CmsSection[], ctx?: CmsLinkContext): HomeBloc
           blocks.push({ kind: "newArrivals", id, rail });
           if (!priceEditPlaced) {
             priceEditPlaced = true;
-            blocks.push({ kind: "priceEdit", id: `${id}-price-edit` });
+            blocks.push({ kind: "priceEdit", id: `${id}-price-edit`, copy: rail.priceEdit });
           }
           return;
         }
@@ -460,7 +490,7 @@ export function planHome(sections: CmsSection[], ctx?: CmsLinkContext): HomeBloc
           return;
         }
         case "FRAGRANCE_NOTES_SHOWCASE":
-          blocks.push({ kind: "notes", id, heading: str(data.heading) });
+          blocks.push({ kind: "notes", id, ...sectionCopy(data) });
           return;
         case "BRAND_STORY": {
           const story = parseBrandStory(data, ctx);
