@@ -7,8 +7,8 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SectionHead, Wrap, cx, tintValue } from "../../ui";
 import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
-import type { CollectionCard } from "./cmsSections";
-import { HomeSection } from "./HomeParts";
+import type { CollectionCard, TextPart } from "./cmsSections";
+import { HomeSection, sectionTitleProps } from "./HomeParts";
 import { RailControls, useRail } from "./useRail";
 
 const IMG = [
@@ -18,7 +18,18 @@ const IMG = [
 ];
 
 /** v9 collection "scroll story" cards: count, from-price, three bottles, name and line. */
-export function CollectionsStory({ heading, text, cards }: { heading: string | null; text: string | null; cards: CollectionCard[] }) {
+export function CollectionsStory({
+  heading,
+  title,
+  text,
+  cards,
+}: {
+  heading: string | null;
+  /** CMS title (emphasis in the serif); empty keeps the built-in title */
+  title?: TextPart[];
+  text: string | null;
+  cards: CollectionCard[];
+}) {
   const t = useSapilCopy();
   const price = useSapilPrice();
   const headingId = useId();
@@ -29,8 +40,7 @@ export function CollectionsStory({ heading, text, cards }: { heading: string | n
         <SectionHead
           id={headingId}
           eyebrow={heading ?? t("home.collectionsEyebrow")}
-          title={t("home.collectionsTitle")}
-          accent={t("home.collectionsAccent")}
+          {...sectionTitleProps(title, t("home.collectionsTitle"), t("home.collectionsAccent"))}
           actions={
             <div className="flex gap-[24px] items-end flex-wrap">
               <p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{text ?? t("home.collectionsText")}</p>

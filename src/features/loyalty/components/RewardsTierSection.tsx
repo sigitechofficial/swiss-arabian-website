@@ -4,7 +4,7 @@ import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { knownText } from "@/lib/i18n/formErrors";
 import type { Translator } from "@/lib/i18n/messages";
-import { intlLocale, isRtl } from "@/lib/i18n/locales";
+import { isRtl } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
@@ -16,6 +16,8 @@ import {
 import { MediaImage } from "@/components/ui/MediaImage";
 
 import { useStorefrontLogo } from "@/lib/storefront/StorefrontHostProvider";
+import { rewardsDate } from "../utils/loyaltyDates";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 function windowCopy(days: number, t: Translator): string {
   return t("loyalty.window", { count: days });
@@ -193,17 +195,6 @@ function MembershipTiers({ wallet }: { wallet: LoyaltyWalletView }) {
   );
 }
 
-function historyDate(value: string | null, locale = "en"): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
 function TierProgress({
   tier,
   currency,
@@ -344,6 +335,7 @@ export function RewardsTierHistory({
 }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   if (pending) {
     return (
       <section aria-labelledby="tier-history-heading">
@@ -405,9 +397,9 @@ export function RewardsTierHistory({
             <p className="mt-0.5 break-words text-[12px] text-sa-secondary">
               {knownText(t, "loyalty.text.", row.label)}
             </p>
-            {historyDate(row.occurredAt, locale) ? (
+            {rewardsDate(row.occurredAt, locale, timeZone) ? (
               <p className="mt-1 text-[12px] text-sa-muted">
-                {historyDate(row.occurredAt, locale)}
+                {rewardsDate(row.occurredAt, locale, timeZone)}
               </p>
             ) : null}
           </li>

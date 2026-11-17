@@ -5,7 +5,9 @@ import {
   parseHeroCampaign,
   parseHeroGallery,
   parseMoodPicker,
+  parseProductRail,
   planHome,
+  sectionCopy,
   textParts,
 } from "./cmsSections";
 import { FIXTURE_HOME_SECTIONS, FIXTURE_PRODUCTS } from "./fixtures";
@@ -136,5 +138,73 @@ describe("spinTarget", () => {
     const r = spinTarget(-30, 2, 6, 1);
     expect(((r % 360) + 360) % 360).toBe(((-(2 * 60 + 30) % 360) + 360) % 360);
     expect(r).toBeGreaterThan(-30 + 360 - 1);
+  });
+});
+
+describe("section heading copy", () => {
+  it("reads a rail's title, emphasis, subtitle and the price shelf's copy", () => {
+    const rail = parseProductRail({
+      products: FIXTURE_PRODUCTS,
+      heading: " New in ",
+      title: "Just landed, still fizzing.",
+      titleEmphasis: "still fizzing.",
+      subtitle: "Fresh this week.",
+      priceEditEyebrow: "Small treats",
+      priceEditTitle: "Big scent, small price.",
+      priceEditTitleEmphasis: "small price.",
+    });
+    expect(rail).toMatchObject({
+      heading: "New in",
+      title: [
+        { text: "Just landed, ", emphasis: false },
+        { text: "still fizzing.", emphasis: true },
+      ],
+      subtitle: "Fresh this week.",
+      priceEdit: { eyebrow: "Small treats", title: [{ text: "Big scent, ", emphasis: false }, { text: "small price.", emphasis: true }] },
+    });
+  });
+
+  it("leaves empty fields empty, so the built-in copy stays", () => {
+    const rail = parseProductRail({ products: FIXTURE_PRODUCTS, title: "  ", titleEmphasis: "x", subtitle: "" });
+    expect(rail).toMatchObject({ heading: null, title: [], subtitle: null, priceEdit: { eyebrow: null, title: [] } });
+    // a title without (or with a missing) emphasis is all plain
+    expect(sectionCopy({ title: "Loved by all" }).title).toEqual([{ text: "Loved by all", emphasis: false }]);
+    expect(sectionCopy({ title: "Loved by all", titleEmphasis: "nope" }).title).toEqual([{ text: "Loved by all", emphasis: false }]);
+  });
+
+  it("puts the copy on the collections, notes, reels, video hero and bundle row blocks", () => {
+    const head = { heading: "Label", title: "Big heading", titleEmphasis: "heading", subtitle: "Line" };
+    const parts = [
+      { text: "Big ", emphasis: false },
+      { text: "heading", emphasis: true },
+    ];
+    const blocks = planHome(
+      FIXTURE_HOME_SECTIONS.map((s) => {
+        const data = s.data as Record<string, unknown>;
+        if (["collections", "notes", "reels"].includes(s.id)) return { ...s, data: { ...data, ...head } };
+        if (s.id === "new") return { ...s, data: { ...data, priceEditTitle: "Under a hundred" } };
+        if (s.id === "b1") return { ...s, data: { ...data, rowEyebrow: "Sets", rowTitle: "Better together", rowTitleEmphasis: "together", rowSubtitle: "One tap." } };
+        return s;
+      }),
+    );
+    const by = <K extends string>(kind: K) => blocks.find((b) => b.kind === kind);
+    expect(by("collections")).toMatchObject({ showcase: { heading: "Label", title: parts, text: "Line" } });
+    expect(by("notes")).toMatchObject({ heading: "Label", title: parts, subtitle: "Line" });
+    expect(by("reels")).toMatchObject({ heading: "Label", title: parts, subtitle: "Line" });
+    expect(by("priceEdit")).toMatchObject({ copy: { eyebrow: null, title: [{ text: "Under a hundred", emphasis: false }] } });
+    const bundles = by("bundles");
+    expect(bundles?.kind === "bundles" && bundles.bundles[0].row).toEqual({
+      heading: "Sets",
+      title: [
+        { text: "Better ", emphasis: false },
+        { text: "together", emphasis: true },
+      ],
+      subtitle: "One tap.",
+    });
+    expect(bundles?.kind === "bundles" && bundles.bundles[1].row).toEqual({ heading: null, title: [], subtitle: null });
+
+    const hero = planHome([{ id: "v", type: "SHOPABLE_VIDEO_SHOWCASE", position: 0, data: head }]);
+    expect(hero[0]).toMatchObject({ kind: "heroVideo", heading: "Label", title: parts, subtitle: "Line" });
+    expect(planHome([{ id: "v", type: "SHOPABLE_VIDEO_SHOWCASE", position: 0, data: {} }])[0]).toMatchObject({ heading: null, title: [], subtitle: null });
   });
 });

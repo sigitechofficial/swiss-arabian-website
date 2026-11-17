@@ -112,9 +112,9 @@ describe("stopped order wording", () => {
 });
 
 describe("formatOrderDate", () => {
-  it("formats in the market's time zone (Dubai by default)", () => {
-    expect(formatOrderDate("2026-11-13T08:00:00Z", { time: true })).toMatch(/12:00/);
-    expect(formatOrderDate("2026-11-13T21:00:00Z")).toMatch(/14/);
+  it("formats in the market time zone it is given", () => {
+    expect(formatOrderDate("2026-11-13T08:00:00Z", { time: true, timeZone: "Asia/Dubai" })).toMatch(/12:00/);
+    expect(formatOrderDate("2026-11-13T21:00:00Z", { timeZone: "Asia/Dubai" })).toMatch(/14/);
     expect(formatOrderDate("2026-11-13T08:00:00Z", { time: true, timeZone: "Asia/Riyadh" })).toMatch(/11:00/);
   });
 });

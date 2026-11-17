@@ -59,6 +59,8 @@ export type SapilBagDrawerViewProps = {
   promoNote?: ReactNode;
   /** reward points: using them, or a link to use them on the bag page */
   pointsNote?: ReactNode;
+  /** Tabby's official snippet for the total (only where checkout offers Tabby) */
+  payLater?: ReactNode;
   checkoutHref: string;
   checkoutBlocked?: boolean;
   syncing?: boolean;
@@ -82,6 +84,7 @@ export function SapilBagDrawerView({
   total,
   promoNote,
   pointsNote,
+  payLater,
   checkoutHref,
   checkoutBlocked = false,
   syncing = false,
@@ -144,6 +147,7 @@ export function SapilBagDrawerView({
       <SummaryRow label={t("bag.delivery")} value={delivery} />
       {pointsNote ? <p className="text-[13px] text-sapil-ink-2 mb-[6px]">{pointsNote}</p> : null}
       <SummaryRow label={t("bag.total")} value={total} variant="total" />
+      {payLater ? <div className="mb-[10px]">{payLater}</div> : null}
       <Link
         href={checkoutHref}
         aria-disabled={checkoutBlocked || undefined}

@@ -18,16 +18,17 @@ import { useMarket } from "@/providers/MarketProvider";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { useSapilCopy } from "../../i18n/SapilCopy";
-import { SapilAnnouncement } from "./SapilAnnouncement";
 import { SapilFooterView } from "./SapilFooter";
 import { SapilHeader, type SapilLogo } from "./SapilHeader";
 import { SapilLocaleSwitcher } from "./SapilLocaleSwitcher";
+import { SapilMarketMenu } from "./SapilMarketMenu";
 import { SapilPhoneMenu } from "./SapilPhoneMenu";
 import { SapilSearchDialog } from "./SapilSearchDialog";
 import { SapilShopBy, priceEditChip } from "./SapilShopBy";
 import { SapilToastHost } from "./SapilToastHost";
+import { SapilTopBar } from "./SapilTopBar";
 import { SapilCountryPrompt } from "./SapilCountryPrompt";
-import { footerColumnsFromNav, menuItemsFromNav, shopByChipsFromNav } from "./shellData";
+import { footerColumnsFromNav, menuItemsFromNav, shopByChips } from "./shellData";
 import { useSapilPrice } from "../shared/useSapilPrice";
 
 function useSapilLogo(): SapilLogo {
@@ -42,7 +43,7 @@ function useSapilLogo(): SapilLogo {
 }
 
 /**
- * The Sapil chrome around every page: announcement, header, "Shop by" row, phone
+ * The Sapil chrome around every page: top bar (announcement, market and language), header, "Shop by" row, phone
  * menu, search, footer, toasts and the bag. Data comes from the shared hooks and stores.
  */
 export function SapilChrome({ children, beforeFooter }: { children: ReactNode; beforeFooter?: ReactNode }) {
@@ -53,7 +54,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
   const locale = useShopLocale();
   const pathname = stripLocalePrefix(usePathname() || "/");
   const { marketId } = useMarket();
-  const { headerNav, footerItems, isLoading } = useNavigation(marketId || undefined);
+  const { headerNav, shopByNav, footerItems, isLoading } = useNavigation(marketId || undefined);
   const settings = useMarketSettings();
   const announcement = useAnnouncementBar();
   // Both rows load in the browser once the market is known. Until their data
@@ -79,7 +80,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
   }
 
   const menu = useMemo(() => menuItemsFromNav(headerNav), [headerNav]);
-  const chips = useMemo(() => shopByChipsFromNav(headerNav), [headerNav]);
+  const chips = useMemo(() => shopByChips(shopByNav, headerNav), [shopByNav, headerNav]);
   const columns = useMemo(() => footerColumnsFromNav(footerItems), [footerItems]);
   const sale = priceEditChip(settings.priceEditTiers, settings.currencyCode, (amount) => t("shell.underPrice", { amount }), price);
   const accountHref = isAuthenticated ? "/account" : "/login";
@@ -94,11 +95,12 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
       >
         {t("common.skipToContent")}
       </a>
-      {announcementPending ? (
-        <div aria-hidden="true" data-sapil-reserve="announce" className="bg-sapil-p-mint h-[41px]" />
-      ) : (
-        <SapilAnnouncement items={announcement.items} intervalMs={announcement.rotationIntervalMs} />
-      )}
+      <SapilTopBar
+        items={announcementPending ? [] : announcement.items}
+        intervalMs={announcement.rotationIntervalMs}
+        pending={announcementPending}
+        tools={<SapilMarketMenu compact />}
+      />
       <SapilHeader
         logo={logo}
         menu={menu}

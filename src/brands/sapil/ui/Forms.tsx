@@ -1,5 +1,6 @@
 "use client";
 
+import { TabbyLogo } from "@/components/payments/TabbyLogo";
 import {
   useId,
   useState,
@@ -58,6 +59,16 @@ type FieldShell = {
   wide?: boolean;
   className?: string;
 };
+
+/** v9 `.fld` input look for a control built elsewhere (e.g. an address autocomplete). */
+export function fieldControlClass(invalid?: boolean): string {
+  return cx(CONTROL, "rounded-[14px]", invalid ? "border-sapil-sale" : "border-sapil-line-2");
+}
+
+/** v9 `.fld` shell (label, optional mark, error line) around any control whose id is `id`. */
+export function FieldFrame(props: FieldShell & { id: string; errorId: string; children: ReactNode }) {
+  return <Shell {...props} />;
+}
 
 function Shell({
   id,
@@ -296,8 +307,8 @@ export function CardLogo({ kind }: { kind: "visa" | "mastercard" | "tabby" }) {
     "grid place-items-center h-[26px] min-w-[40px] px-[6px] rounded-[6px] border not-italic text-[11px]";
   if (kind === "visa")
     return <i className={cx(base, "bg-sapil-white border-sapil-line font-[800] text-sapil-accent tracking-[.04em]")}>VISA</i>;
-  if (kind === "tabby")
-    return <i className={cx(base, "bg-sapil-p-mint border-sapil-p-mint font-[700]")}>tabby</i>;
+  // Tabby's official logo file, never redrawn (Tabby QA, Nov 2026).
+  if (kind === "tabby") return <TabbyLogo className="h-[26px] w-auto" />;
   return (
     <i className={cx(base, "relative bg-sapil-white border-sapil-line font-[800]")}>
       <s className="absolute w-[14px] h-[14px] rounded-full top-[5px] left-[9px] bg-sapil-sale opacity-[.85]" />

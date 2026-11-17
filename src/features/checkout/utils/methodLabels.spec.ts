@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deliveryFeeLabel, orderDeliveryLabel, orderPaymentLabel } from "./methodLabels";
-import type { DeliveryMethodOption } from "../types/checkout";
+import { deliveryFeeLabel, orderDeliveryLabel, orderPaymentLabel, paymentStepKinds } from "./methodLabels";
+import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
 
 describe("orderPaymentLabel", () => {
   it("shows the backend display name instead of the provider code", () => {
@@ -58,5 +58,41 @@ describe("orderDeliveryLabel", () => {
 
   it("falls back when there is no method code", () => {
     expect(orderDeliveryLabel(null)).toBe("Standard delivery");
+  });
+});
+
+describe("paymentStepKinds (SE-8)", () => {
+  const m = (providerCode: string, methodCode: string, displayName: string, extra: Partial<PaymentMethodOption> = {}) =>
+    ({ zonePaymentMethodId: methodCode, paymentMethodId: methodCode, providerCode, methodCode, displayName, ...extra }) as PaymentMethodOption;
+
+  it("lists only what the market offers, in a fixed order", () => {
+    expect(
+      paymentStepKinds([
+        m("cash_on_delivery", "cod", "Cash on Delivery"),
+        m("telr", "telr_card", "Card (Telr)"),
+        m("paymob", "paymob_card", "Card"),
+        m("smoke_payment", "test_pay", "Test Payment (dev only)"),
+      ]),
+    ).toEqual(["card", "cash"]);
+  });
+
+  it("includes Tabby only when Tabby is a live method", () => {
+    expect(paymentStepKinds([m("tabby", "tabby_installments", "Pay later with Tabby"), m("stripe", "stripe_card", "Card")])).toEqual([
+      "card",
+      "tabby",
+    ]);
+    expect(paymentStepKinds([m("tabby", "tabby_installments", "Tabby", { isEnabled: false })])).toEqual([]);
+  });
+
+  it("includes Tamara only when Tamara is a live method", () => {
+    expect(
+      paymentStepKinds([
+        m("cash_on_delivery", "cod", "Cash on Delivery"),
+        m("tamara", "tamara_installments", "Tamara"),
+        m("tabby", "tabby_installments", "Pay later with Tabby"),
+        m("stripe", "stripe_card", "Card"),
+      ]),
+    ).toEqual(["card", "tabby", "tamara", "cash"]);
+    expect(paymentStepKinds([m("tamara", "tamara_installments", "Tamara", { isEnabled: false })])).toEqual([]);
   });
 });

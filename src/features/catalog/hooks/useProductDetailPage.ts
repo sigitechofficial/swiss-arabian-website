@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { trackProductViewed } from "@/lib/analytics/siteEvents";
 import { ensureInsiderProductPage } from "@/lib/insider";
 import { useMarket } from "@/providers/MarketProvider";
 import { MERCH_RAIL_SLUGS, pickMoreFromCollection, useMerchRail } from "@/features/merchandising";
@@ -96,6 +97,13 @@ export function useProductDetailPage({ product: serverDetail, serverZoneCode = n
       apiProduct?.collections?.[0]?.name ||
       product.houseCollection ||
       null;
+    // Our own product view, independent of Insider (which may be off or not consented to).
+    trackProductViewed({
+      productId: product.id,
+      variantId: product.variantId,
+      sku: product.sku || product.variantId || product.id,
+      currencyCode: product.currency || "AED",
+    });
     ensureInsiderProductPage({
       id: product.variantId || product.id,
       sku: product.sku || product.variantId || product.id,

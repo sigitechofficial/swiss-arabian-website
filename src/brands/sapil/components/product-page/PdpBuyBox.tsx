@@ -145,9 +145,10 @@ export function PdpBuyBox({
       </div>
       {description ? <p className="text-[17px] leading-[1.6] text-sapil-ink-2 max-w-[56ch] whitespace-pre-line">{description}</p> : null}
 
-      <div ref={addRowRef} data-sapil="buy-row" className={cx("flex gap-[12px] items-center", description && "mt-[24px]")}>
+      {/* The button keeps its label on one line: below ~200px of room it moves to its own row (SE-7). */}
+      <div ref={addRowRef} data-sapil="buy-row" className={cx("flex flex-wrap gap-[12px] items-center", description && "mt-[24px]")}>
         {purchase.needsAlert ? (
-          <button type="button" disabled className={cx(buttonClass("dark"), "flex-1 !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}>
+          <button type="button" disabled className={cx(buttonClass("dark"), "flex-[1_1_200px] whitespace-nowrap !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}>
             {purchase.unavailable ? t("product.unavailable") : t("product.outOfStock")}
           </button>
         ) : (
@@ -164,11 +165,11 @@ export function PdpBuyBox({
               onClick={add}
               className={cx(
                 buttonClass("dark"),
-                "flex-1 !h-[58px] !text-[17px] !rounded-[18px] gap-[10px] !bg-sapil-accent [&_svg]:w-[20px] [&_svg]:h-[20px] max-900:!text-[15px]",
+                "flex-[1_1_200px] !h-[58px] !text-[17px] !rounded-[18px] gap-[10px] !bg-sapil-accent [&_svg]:w-[20px] [&_svg]:h-[20px] [&_svg]:shrink-0 max-900:!text-[15px]",
               )}
             >
               <BagIcon />
-              <span>{t("product.addToBag")}</span>
+              <span className="whitespace-nowrap">{t("product.addToBag")}</span>
             </button>
           </>
         )}

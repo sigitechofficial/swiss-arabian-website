@@ -1,7 +1,6 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useOmnichannelCopy } from "./useOmnichannelCopy";
@@ -10,17 +9,8 @@ import {
   formatPointQuantity,
   type OmnichannelLoyaltyView,
 } from "../types/omnichannel";
-
-function activityDate(value: string | null, locale = "en"): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
+import { rewardsDate } from "../utils/loyaltyDates";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 export type OmnichannelRefreshControl = {
   visible: boolean;
@@ -88,13 +78,11 @@ function LinkedBalance({
   const omni = useOmnichannelCopy();
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const active = omnichannel.balance?.activePoints ?? "";
   const known = lastKnownBalance(omnichannel);
   const stale = omnichannel.sync.isFresh === false;
-  const syncedAt = activityDate(
-    omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt,
-    locale,
-  );
+  const syncedAt = rewardsDate(omnichannel.sync.lastSuccessfulSyncAt ?? omnichannel.sync.fetchedAt, locale, timeZone);
 
   return (
     <section aria-labelledby="store-rewards-heading">

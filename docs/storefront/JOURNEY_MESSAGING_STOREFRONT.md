@@ -57,12 +57,22 @@ Tests: `ConsentBanner.spec.tsx` (accept, reject, manage, categories in use, reop
 
 ## 4. Unsubscribe page
 
-Route `src/app/(shop)/unsubscribe/page.tsx` (noindex) renders `src/features/journeys/components/UnsubscribeView.tsx`. It is opened from the link in every journey email: `/<locale>/unsubscribe?token=<customerId>.<signature>`.
+Route `src/app/[site]/[locale]/(shop)/unsubscribe/page.tsx` (noindex) renders `src/features/journeys/components/UnsubscribeView.tsx`. It is opened from the link in every journey email: `/<locale>/unsubscribe?token=<customerId>.<signature>`.
 
 - The page does nothing on load. The customer presses **Unsubscribe**, then the page posts `POST /storefront/email-preferences/unsubscribe { token }`. (A button, not the page load, so mail scanners that prefetch links cannot unsubscribe anyone.)
 - Results: confirmation (`role="status"`), or an invalid/expired message (`role="alert"`), also when there is no token or the request fails.
 - No sign-in needed; the signed token is the credential. The backend sets the customer's email consent to opted out, which the email sender checks before every email.
 - Copy keys: `unsubscribe*` (English and Arabic) in `shopCopy.ts`.
+
+## 4b. Tracked email button page (`/r`)
+
+Route `src/app/[site]/[locale]/(shop)/r/page.tsx` (noindex) renders `src/features/journeys/components/EmailLinkRedirect.tsx`. The main button of a journey email links to `/<locale>/r?t=<token>`.
+
+- On load the page (in the browser, so a mail scanner that only fetches the address does nothing) posts `POST /storefront/email-links/open { token }`. The backend records the click and answers with a destination path.
+- The page forwards with `router.replace`, adding the reader's language (`/ar/r` goes to `/ar/cart`). It only forwards to a path on this site (starts with `/`, not `//`, no backslash), a second lock after the backend's check.
+- It never signs anyone in. A customer who is signed out lands on the destination page, which asks for a sign-in itself.
+- An invalid, expired or missing token, or a failed request, shows a short message and a link to the shop. Copy keys: `emailLinkOpening`, `emailLinkFailed`, `emailLinkHome` in `src/messages/en.json` and `ar.json`.
+- Tests: `EmailLinkRedirect.spec.tsx` (forwards, Arabic prefix, single request, invalid link, off-site destinations refused, request failure, no token).
 
 ## 5. Files added or changed
 
@@ -70,7 +80,8 @@ Route `src/app/(shop)/unsubscribe/page.tsx` (noindex) renders `src/features/jour
 |---|---|
 | `src/components/layout/ConsentBanner.tsx` (+ `.spec.tsx`) | new |
 | `src/features/journeys/components/UnsubscribeView.tsx` (+ `.spec.tsx`) | new |
-| `src/app/(shop)/unsubscribe/page.tsx` | new |
+| `src/app/[site]/[locale]/(shop)/unsubscribe/page.tsx` | new |
+| `src/features/journeys/components/EmailLinkRedirect.tsx` (+ `.spec.tsx`), `src/app/[site]/[locale]/(shop)/r/page.tsx` | new (tracked email button) |
 | `src/app/layout.tsx` | renders `ConsentBanner` |
 | `src/features/journeys/types.ts` | entity type `customer_cycle` |
 | `src/lib/i18n/shopCopy.ts` | consent and unsubscribe copy (EN, AR) |

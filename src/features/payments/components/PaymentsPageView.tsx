@@ -12,6 +12,7 @@ import { AccountStatusLabel, type AccountStatusTone } from "@/features/account/c
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 
 const FILTERS: { value: PaymentFilter; label: MessageKey }[] = [
@@ -47,6 +48,7 @@ function PaymentHistory() {
   const { query, filter, setFilter, rows } = usePaymentHistory();
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
 
   if (query.isPending) return <PageLoading label={t("payments.loading")} />;
 
@@ -108,7 +110,7 @@ function PaymentHistory() {
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-b border-sa-border px-5 py-4 last:border-b-0 lg:grid-cols-[120px_minmax(0,1fr)_130px_150px_120px]"
             >
               <span className="order-3 text-[12px] text-sa-secondary lg:order-none lg:text-[13px]">
-                {formatOrderDate(order.createdAt, { locale })}
+                {formatOrderDate(order.createdAt, { locale, timeZone })}
               </span>
               <div className="order-1 min-w-0 lg:order-none">
                 <LocaleLink href={detailHref} className="font-mono text-[12.5px] font-semibold text-sa-primary hover:text-terra">

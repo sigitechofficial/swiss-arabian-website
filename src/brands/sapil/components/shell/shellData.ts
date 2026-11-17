@@ -58,10 +58,39 @@ export function pastelAt(index: number, palette: readonly SapilPastel[] = SAPIL_
   return palette[((index % palette.length) + palette.length) % palette.length];
 }
 
+/** At most this many menu chips in the "Shop by" row (the price-edit chip comes on top). */
+export const MAX_SHOP_BY_CHIPS = 8;
+
 /**
- * "Shop by" chips: the collection links of the header menu (its dropdown options
- * that open a collection), first seen first, at most `max`. There is no dedicated
- * CMS menu for this row yet (see docs/sapil/pages/shell.md).
+ * "Shop by" chips from the market's dedicated Shop-by menu: its top-level items
+ * in menu order. Every item with a link becomes a chip, whatever it opens (a
+ * collection, a category, a product, a URL such as "/#mood"); colours follow the
+ * v9 chip order. At most `max`.
+ */
+export function shopByChipsFromMenu(items: readonly NavItem[], max = MAX_SHOP_BY_CHIPS): ShopByChip[] {
+  const chips: ShopByChip[] = [];
+  for (const item of items) {
+    if (chips.length >= max) break;
+    const href = item.href?.trim();
+    if (!href) continue;
+    chips.push({ id: item.id, label: item.label, href, color: pastelAt(chips.length, CHIP_COLOURS) });
+  }
+  return chips;
+}
+
+/**
+ * The row's chips: the Shop-by menu when the market has one, otherwise the
+ * collection links of the header menu (`shopByChipsFromNav`).
+ */
+export function shopByChips(shopByNav: readonly NavItem[] | null | undefined, headerNav: readonly NavItem[]): ShopByChip[] {
+  const fromMenu = shopByNav?.length ? shopByChipsFromMenu(shopByNav) : [];
+  return fromMenu.length ? fromMenu : shopByChipsFromNav(headerNav);
+}
+
+/**
+ * Fallback "Shop by" chips for a market without a Shop-by menu: the collection
+ * links of the header menu (its dropdown options that open a collection), first
+ * seen first, at most `max`.
  */
 export function shopByChipsFromNav(items: readonly NavItem[], max = 7): ShopByChip[] {
   const seen = new Set<string>();

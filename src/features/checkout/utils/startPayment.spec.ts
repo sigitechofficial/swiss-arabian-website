@@ -11,9 +11,12 @@ vi.mock("./checkoutSession", () => ({
   storePaymobPublicKey: vi.fn(),
   storeStripeClientSecret: vi.fn(),
   storeStripePublishableKey: vi.fn(),
+  storeHostedPaymentOpen: vi.fn(),
 }));
 
 import { initiatePayment } from "../api/orders.service";
+import { ApiClientError } from "@/lib/api/apiError";
+import { storeHostedPaymentOpen } from "./checkoutSession";
 import { PaymentGatewayError, PaymentRejectedError, startPayment } from "./startPayment";
 
 describe("startPayment", () => {
@@ -127,6 +130,30 @@ describe("startPayment", () => {
     expect(result.kind).toBe("redirect");
   });
 
+  it("Arabic checkout: Tabby return links and the order carry ar (Tabby QA)", async () => {
+    vi.stubGlobal("location", {
+      assign: vi.fn(),
+      replace: vi.fn(),
+      origin: "http://localhost:3004",
+      pathname: "/ar/checkout",
+    });
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://checkout.tabby.ai/?sessionId=abc",
+      warnings: [],
+    } as never);
+    await startPayment("order-tabby", vi.fn(), { providerCode: "tabby" });
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-tabby",
+      expect.objectContaining({
+        returnUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+        cancelUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+        locale: "ar",
+      }),
+    );
+  });
+
   it("redirects Tabby with /payments/tabby/return for both return and cancel", async () => {
     vi.mocked(initiatePayment).mockResolvedValue({
       providerCode: "tabby",
@@ -145,8 +172,9 @@ describe("startPayment", () => {
     expect(initiatePayment).toHaveBeenCalledWith(
       "order-tabby",
       expect.objectContaining({
-        returnUrl: "http://localhost:3004/payments/tabby/return",
-        cancelUrl: "http://localhost:3004/payments/tabby/return",
+        returnUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        cancelUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        locale: "en",
         zonePaymentMethodId: "zpm-tabby",
       }),
     );
@@ -193,12 +221,15 @@ describe("startPayment", () => {
     expect(initiatePayment).toHaveBeenCalledWith(
       "order-tamara",
       expect.objectContaining({
-        returnUrl: "http://localhost:3004/payments/tamara/return",
-        cancelUrl: "http://localhost:3004/payments/tamara/return",
+        returnUrl: "http://localhost:3004/payments/tamara/return?lang=en",
+        cancelUrl: "http://localhost:3004/payments/tamara/return?lang=en",
+        locale: "en",
         zonePaymentMethodId: "zpm-tamara",
       }),
     );
     expect(window.location.assign).toHaveBeenCalledWith("https://checkout-sandbox.tamara.co/checkout/abc");
+    // Browser Back from Tamara’s page gives the bag back, as for Tabby.
+    expect(storeHostedPaymentOpen).toHaveBeenCalledWith("order-tamara");
     expect(result.kind).toBe("redirect");
   });
 
@@ -265,5 +296,24 @@ describe("startPayment", () => {
       startPayment("order-tabby", vi.fn(), { providerCode: "tabby" }),
     ).rejects.toBeInstanceOf(PaymentGatewayError);
     expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("turns the backend's PAYMENT_FAILED answer into the retry step, not a raw error", async () => {
+    vi.mocked(initiatePayment).mockRejectedValue(
+      new ApiClientError(422, { code: "PAYMENT_FAILED", message: "This payment method couldn’t be started." } as never),
+    );
+
+    await expect(
+      startPayment("order-telr", vi.fn(), { providerCode: "telr" }),
+    ).rejects.toBeInstanceOf(PaymentGatewayError);
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("passes other errors through unchanged", async () => {
+    const other = new ApiClientError(404, { code: "ORDER_NOT_FOUND", message: "Not found" } as never);
+    vi.mocked(initiatePayment).mockRejectedValue(other);
+
+    await expect(startPayment("order-x", vi.fn(), { providerCode: "telr" })).rejects.toBe(other);
   });
 });

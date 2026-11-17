@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/Toaster";
 import { CountryMarketPrompt } from "@/features/markets/components/CountryMarketPrompt";
 import { StorefrontHostProvider } from "@/lib/storefront/StorefrontHostProvider";
+import { MarketTimeZoneProvider } from "@/lib/storefront/MarketTimeZoneProvider";
 import { ShopLocaleProvider } from "@/lib/i18n/ShopLocaleProvider";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import type { MessageDictionary } from "@/lib/i18n/messages";
@@ -23,6 +24,7 @@ export function AppProviders({
   locale,
   messages,
   integrations,
+  marketTimeZone,
 }: {
   children: ReactNode;
   /** Address the page was requested on (local brand aliases in development, e.g. sp.localhost). */
@@ -32,11 +34,14 @@ export function AppProviders({
   messages: MessageDictionary;
   /** What this address may load (ADR-005 phase E), read by the root layout. */
   integrations: SiteIntegrations;
+  /** The page market's time zone, decided by the server: dates read the same on both renders. */
+  marketTimeZone: string;
 }) {
   return (
     <SiteIntegrationsProvider value={integrations}>
     <ShopLocaleProvider locale={locale} messages={messages}>
     <StorefrontHostProvider host={storefrontHost}>
+    <MarketTimeZoneProvider timeZone={marketTimeZone}>
       <ThemeProvider>
         <MotionConfig reducedMotion="user">
           <QueryProvider>
@@ -54,6 +59,7 @@ export function AppProviders({
           </QueryProvider>
         </MotionConfig>
       </ThemeProvider>
+    </MarketTimeZoneProvider>
     </StorefrontHostProvider>
     </ShopLocaleProvider>
     </SiteIntegrationsProvider>

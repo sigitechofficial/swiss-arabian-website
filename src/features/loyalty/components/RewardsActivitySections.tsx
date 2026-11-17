@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { knownText } from "@/lib/i18n/formErrors";
 import type { Translator } from "@/lib/i18n/messages";
-import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
@@ -23,17 +22,8 @@ import {
   type ExternalLoyaltyActivityView,
 } from "../types/omnichannel";
 import { useOmnichannelCopy } from "./useOmnichannelCopy";
-
-function activityDate(value: string | null, locale = "en"): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : intlLocale(locale), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
+import { rewardsDate } from "../utils/loyaltyDates";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 function pointsLabel(points: number, t: Translator): string {
   const formatted = formatPoints(Math.abs(points));
@@ -62,6 +52,7 @@ function OnlineActivity({
   const omni = useOmnichannelCopy();
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   return (
     <section aria-labelledby="online-activity-heading">
       <h2
@@ -113,9 +104,9 @@ function OnlineActivity({
                       {knownText(t, "loyalty.text.", row.state)}
                     </p>
                   ) : null}
-                  {activityDate(row.occurredAt, locale) ? (
+                  {rewardsDate(row.occurredAt, locale, timeZone) ? (
                     <p className="mt-1 text-[12px] text-sa-muted">
-                      {activityDate(row.occurredAt, locale)}
+                      {rewardsDate(row.occurredAt, locale, timeZone)}
                     </p>
                   ) : null}
                 </div>
@@ -165,6 +156,7 @@ function StoreActivity({
   const omni = useOmnichannelCopy();
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   return (
     <section aria-labelledby="store-activity-heading">
       <h2
@@ -205,7 +197,7 @@ function StoreActivity({
             {rows.map((row, index) => {
               const originLabel = row.origin === "STORE" ? t("loyalty.store") : null;
               const receipt = row.receiptId ? t("loyalty.receipt", { id: row.receiptId }) : null;
-              const expires = activityDate(row.expirationDate, locale);
+              const expires = rewardsDate(row.expirationDate, locale, timeZone);
               return (
                 <li
                   key={`${row.entryDate ?? "row"}-${row.receiptId ?? index}-${row.points}`}
@@ -230,9 +222,9 @@ function StoreActivity({
                         {t("loyalty.expires", { date: expires })}
                       </p>
                     ) : null}
-                    {activityDate(row.entryDate, locale) ? (
+                    {rewardsDate(row.entryDate, locale, timeZone) ? (
                       <p className="mt-1 text-[12px] text-sa-muted">
-                        {activityDate(row.entryDate, locale)}
+                        {rewardsDate(row.entryDate, locale, timeZone)}
                       </p>
                     ) : null}
                   </div>

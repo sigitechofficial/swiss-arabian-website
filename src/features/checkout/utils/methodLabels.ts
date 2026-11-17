@@ -60,6 +60,27 @@ export function usesHostedRedirect(
   );
 }
 
+export type PaymentStepKind = "card" | "tabby" | "tamara" | "cash";
+
+/**
+ * The ways to pay this checkout really offers, in a fixed order, for the step
+ * hint ("Card, Tabby, Tamara or cash"). Built from the market's live methods: nothing
+ * the shopper can't pick (SE-8). Test Payment is not a way to pay.
+ */
+export function paymentStepKinds(methods: PaymentMethodOption[]): PaymentStepKind[] {
+  const live = methods.filter((m) => m.isEnabled !== false && !isSmokePaymentMethod(m));
+  const kinds = new Set<PaymentStepKind>();
+  for (const method of live) {
+    if (isTabbyPaymentMethod(method)) kinds.add("tabby");
+    else if (isTamaraPaymentMethod(method)) kinds.add("tamara");
+    else if (/cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`)) kinds.add("cash");
+    else if (usesInlineCardForm(method) || isTelrPaymentMethod(method) || /card/i.test(`${method.methodCode} ${method.displayName}`)) {
+      kinds.add("card");
+    }
+  }
+  return (["card", "tabby", "tamara", "cash"] as const).filter((kind) => kinds.has(kind));
+}
+
 /** Backend default first, skipping anything explicitly disabled. */
 export function pickDefaultPaymentMethod(
   methods: PaymentMethodOption[],
@@ -80,7 +101,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     return "Telr · secure hosted checkout";
   }
   if (isTabbyPaymentMethod(method)) {
-    return "Pay in 4, interest-free";
+    // Tabby QA: no plan caption. Tabby offers more plans than Pay in 4 (some
+    // with a fee); the Tabby snippet under the method shows the real ones.
+    return "";
   }
   if (isTamaraPaymentMethod(method)) {
     return "Split in 4, interest-free";
@@ -107,8 +130,6 @@ export function upcomingPaymentMethods(
   const country = (countryCode || "AE").toUpperCase();
   const paymob = methods.some((method) => method.providerCode?.toLowerCase() === "paymob");
   const stripe = methods.some((method) => isStripePaymentMethod(method));
-  // A live Tabby method is listed as a real option, not as "coming soon".
-  const tabbyLive = methods.some((method) => isTabbyPaymentMethod(method));
   const rows: UpcomingPaymentMethod[] = [];
 
   if (paymob && (country === "AE" || country === "SA" || country === "OM")) {
@@ -137,11 +158,9 @@ export function upcomingPaymentMethods(
     rows.push({ id: "mada", title: "mada", note: "Paymob" });
     rows.push({ id: "stc-pay", title: "STC Pay", note: "Paymob" });
   }
-  if (paymob && (country === "AE" || country === "SA")) {
-    if (!tabbyLive) {
-      rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
-    }
-  }
+  // No "coming soon" Tabby or Tamara rows: both are direct integrations, listed
+  // only where the market's checkout offers them (and not for a bag the provider
+  // declined), never advertised elsewhere (Tabby QA, Nov 2026).
   if (country === "KW") {
     rows.push({ id: "knet", title: "KNET", note: "Kuwait debit cards" });
   }
@@ -219,4 +238,34 @@ export function orderDeliveryLabel(
   const trimmed = shared > 0 ? parts.slice(shared).join(" ") : code;
   const label = titleCase(trimmed);
   return /delivery|shipping|collect/i.test(label) ? label : `${label} delivery`;
+}
+
+/** "iq_fulfillment" -> "Iq Fulfillment"; used only to tell same-named options apart. */
+function partnerLabel(code: string | null | undefined): string {
+  return String(code ?? "")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/**
+ * Several partners can expose an option with the same name (URD1 had three
+ * "Standard delivery" rows). When names collide, add the partner so the
+ * shopper can tell which one they pick. Keyed by zoneDeliveryMethodId.
+ */
+export function deliveryOptionTitles(methods: DeliveryMethodOption[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const method of methods) {
+    counts.set(method.displayName, (counts.get(method.displayName) ?? 0) + 1);
+  }
+  return new Map(
+    methods.map((method) => {
+      const partner = partnerLabel(method.partnerCode);
+      const title =
+        (counts.get(method.displayName) ?? 0) > 1 && partner
+          ? `${method.displayName} · ${partner}`
+          : method.displayName;
+      return [method.zoneDeliveryMethodId, title];
+    }),
+  );
 }

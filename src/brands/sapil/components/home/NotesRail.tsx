@@ -9,14 +9,15 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SectionHead, Wrap, tintValue, type SapilPastel } from "../../ui";
 import { ArrowIcon } from "../shared/icons";
 import { SapilLink } from "../shared/SapilLink";
-import { HomeSection } from "./HomeParts";
+import type { TextPart } from "./cmsSections";
+import { HomeSection, sectionTitleProps } from "./HomeParts";
 import { RailControls, useRail } from "./useRail";
 
 /** v9 note tile colours, in its order. */
 const NOTE_TINTS: SapilPastel[] = ["pink", "sky", "lime", "butter", "lilac", "peach", "mint", "pink", "sky", "lime", "butter", "lilac"];
 
 /** v9 "Shop by note": note cards (Fragrance notes merchandising); each opens the shop filtered to it. */
-export function NotesRail({ heading }: { heading: string | null }) {
+export function NotesRail({ heading, title, subtitle }: { heading: string | null; title?: TextPart[]; subtitle?: string | null }) {
   const t = useSapilCopy();
   const headingId = useId();
   const { tiles, isReady } = useFragranceNotes();
@@ -28,11 +29,10 @@ export function NotesRail({ heading }: { heading: string | null }) {
         <SectionHead
           id={headingId}
           eyebrow={heading ?? t("home.notesEyebrow")}
-          title={t("home.notesTitle")}
-          accent={t("home.notesAccent")}
+          {...sectionTitleProps(title, t("home.notesTitle"), t("home.notesAccent"))}
           actions={
             <div className="flex gap-[24px] items-end flex-wrap">
-              <p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{t("home.notesText")}</p>
+              <p className="text-sapil-ink-2 max-w-[46ch] mt-[12px]">{subtitle ?? t("home.notesText")}</p>
               <RailControls atStart={rail.atStart} atEnd={rail.atEnd} prev={rail.prev} next={rail.next} prevLabel={t("home.notesPrev")} nextLabel={t("home.notesNext")} />
             </div>
           }

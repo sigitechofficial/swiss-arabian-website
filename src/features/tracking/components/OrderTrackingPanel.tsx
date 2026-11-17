@@ -47,6 +47,7 @@ import type {
   OrderTrackingTimeline,
   TrackingEvent,
 } from "../api/orderTracking.service";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 function TrackingCard({
   title,
@@ -101,12 +102,13 @@ function ProgressStepper({ step }: { step: number }) {
 function DeliveryEstimate({ summary }: { summary: OrderTrackingSummary }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const fact = deliveryDateFact(summary);
   if (fact?.kind === "delivered") {
-    return <p className={orderFactValue}>{formatOrderDate(fact.at, { long: true, locale })}</p>;
+    return <p className={orderFactValue}>{formatOrderDate(fact.at, { long: true, locale, timeZone })}</p>;
   }
   if (fact?.kind === "estimate") {
-    return <p className={orderFactValue}>{t("track.byDate", { date: formatOrderDate(fact.at, { long: true, locale }) })}</p>;
+    return <p className={orderFactValue}>{t("track.byDate", { date: formatOrderDate(fact.at, { long: true, locale, timeZone }) })}</p>;
   }
   if (summary.status === "DELIVERED") {
     return <p className={orderFactValue}>{t("orders.tracking.delivered")}</p>;
@@ -127,6 +129,7 @@ export function OrderTrackingPanel({
 }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const step = orderProgressStep(summary.status);
   const eventsByShipment = new Map<string, TrackingEvent[]>(
     (timeline?.shipments ?? []).map((s) => [s.shipmentId, s.events]),
@@ -158,7 +161,7 @@ export function OrderTrackingPanel({
                     <p className={orderFactValue}>{shipmentStatusLabel(summary.latestTrackingStatus, t)}</p>
                     {summary.latestTrackingEventTime ? (
                       <p className={orderFactNote}>
-                        {formatOrderDate(summary.latestTrackingEventTime, { time: true, locale })}
+                        {formatOrderDate(summary.latestTrackingEventTime, { time: true, locale, timeZone })}
                       </p>
                     ) : null}
                   </>
@@ -210,7 +213,7 @@ export function OrderTrackingPanel({
                     shipment.status !== "DELIVERED" &&
                     summary.status !== "DELIVERED" ? (
                       <p className={orderLineMeta}>
-                        {t("track.arrivingBy", { date: formatOrderDate(shipment.estimatedDeliveryAt, { long: true, locale }) })}
+                        {t("track.arrivingBy", { date: formatOrderDate(shipment.estimatedDeliveryAt, { long: true, locale, timeZone }) })}
                       </p>
                     ) : null}
                   </div>
@@ -250,7 +253,7 @@ export function OrderTrackingPanel({
                             {entry.detail ? <span> · {entry.detail}</span> : null}
                           </p>
                           <p className={orderEventTime}>
-                            {[formatOrderDate(entry.occurredAt, { time: true, locale }), entry.location]
+                            {[formatOrderDate(entry.occurredAt, { time: true, locale, timeZone }), entry.location]
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
@@ -276,7 +279,7 @@ export function OrderTrackingPanel({
                 </div>
                 <div className="min-w-0">
                   <p className={orderEventTitle}>{event.label}</p>
-                  <p className={orderEventTime}>{formatOrderDate(event.occurredAt, { time: true, locale })}</p>
+                  <p className={orderEventTime}>{formatOrderDate(event.occurredAt, { time: true, locale, timeZone })}</p>
                 </div>
               </li>
             ))}

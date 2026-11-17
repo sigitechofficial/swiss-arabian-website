@@ -20,7 +20,7 @@ Area: `shell`. Code in `src/brands/sapil/components/shell/` and `components/stat
 |---|---|---|
 | `.announce` | `SapilAnnouncement` + ui `AnnouncementBar` | `useAnnouncementBar()` (CMS `announcement-bar` region; message + link; several messages rotate, not with reduced motion). Nothing published → no bar |
 | `.hdr` | `SapilHeader` | logo from `getBrand().logo` (localized alt); main menu from `useNavigation(marketId).headerNav` → `menuItemsFromNav` (dropdowns from children, group headers as columns, collection pictures as mega tiles); search → `useUiStore.setSearchOpen`; account → `/account` or `/login`; bag count from `useCartStore.itemCount()` after hydration, bumps when it goes up |
-| `.subnav` "Shop by" | `SapilShopBy` + ui `Subnav` | chips = collection links nested in the header menu (`shopByChipsFromNav`, v9 chip colours) + the market's featured price edit (`priceEditTiers`, middle tier → "Under AED 99", sale style). Info text = `useMarketSettings()` → `delivery.freeDeliveryThreshold` ("Free delivery over AED 100") and `delivery.cashOnDelivery.available` ("Pay on delivery"); **hidden when the API sends neither** — never hard-coded. No chips → no row |
+| `.subnav` "Shop by" | `SapilShopBy` + ui `Subnav` | chips = the market's Shop-by menu (navigation `shopBy`, top-level linked items in order, any link type incl. "/#mood", max 8: `shopByChipsFromMenu`); when that menu is empty or the backend omits it, the collection links nested in the header menu (`shopByChipsFromNav`); v9 chip colours + the market's featured price edit (`priceEditTiers`, middle tier → "Under AED 99", sale style). Info text = `useMarketSettings()` → `delivery.freeDeliveryThreshold` ("Free delivery over AED 100") and `delivery.cashOnDelivery.available` ("Pay on delivery"); **hidden when the API sends neither** — never hard-coded. No chips → no row |
 | `.mnav` | `SapilPhoneMenu` | same menu (dropdowns as folding sections + "Shop all …"), quick links = the chips, account + search, market / language pickers. Modal dialog from the reading start (RTL aware), focus to close, Escape, scrim, focus return, `inert` when closed |
 | search dialog | `SapilSearchDialog` + ui `Dialog` (wide) | `useHeaderSearch()` (extracted from Swiss Arabian's `SearchOverlay`): live hits (`useCatalogSearch`), Enter → `/search?q=`, hits as `SapilProductCard` (no heart or quick view inside the dialog); hint / loading / error / count states |
 | bag drawer | `SapilBagDrawer` (commerce area, `bag-checkout.md`) | `useBag()`, `useUiStore().cartOpen` |
@@ -74,11 +74,11 @@ Data-driven parts (rails, doors, collection cards, mood, bundles, shelf, footer 
 - The announcement and "Shop by" rows are client-rendered once the market is known (same as Swiss Arabian's ticker), so they appear a moment after the header (layout shift at the top). Server-rendering them needs the market on the server (open question).
 - Mega-menu tiles show the collection picture from the menu API (v9: a bottle and "N scents"); there is no per-option count in the menu API.
 - Footer legal row: copyright + market/language pickers (v9: concept note and "All concepts" link).
-- "Shop by" chips come from the header menu's collection links: there is no dedicated CMS menu for this row yet. With the local seed (menus not bound) the row shows only the price-edit chip.
+- "Shop by" chips come from the market's Shop-by menu (`shopBy` in the navigation payload, `metadata.shopByMenuHandle`); without one they fall back to the header menu's collection links. Section links ("/#mood") are in-page anchors on the home page and open the home page at the section elsewhere (the home page scrolls there once its sections load).
+- The top bar (announcement + "Ship to" and language dropdowns, `SapilTopBar`) always shows from 760px up, with or without messages; below 760px only the announcement shows. The header no longer carries the switchers.
 
 ## Open questions
 
-- A dedicated CMS menu (or menu handle) for the "Shop by" row.
 - Newsletter → Sapil's CRM / Insider consent (no provider wired for any brand yet).
 - Shared route metadata still uses Swiss Arabian wording from `src/messages` (e.g. `pages.blog.description`, serialized page messages) — outside this area, needs per-brand page metadata.
 

@@ -20,6 +20,26 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
 import { regionLabel as regionName } from "@/features/account/utils/addressDisplay";
 import { SapilPhoneField } from "../commerce/SapilPhoneField";
+import type { PaymentStepKind } from "@/features/checkout/utils/methodLabels";
+
+const PAY_KIND_KEY = {
+  card: "checkout.payKindCard",
+  tabby: "checkout.payKindTabby",
+  tamara: "checkout.payKindTamara",
+  cash: "checkout.payKindCash",
+} as const;
+
+/** "Card, Tabby or cash" from what the market offers; a neutral hint until it is known. */
+function paymentHint(
+  kinds: readonly PaymentStepKind[],
+  lang: "en" | "ar",
+  t: ReturnType<typeof useSapilCopy>,
+): string {
+  if (!kinds.length) return t("checkout.stepPaymentHint");
+  const words = kinds.map((kind) => t(PAY_KIND_KEY[kind]));
+  const list = new Intl.ListFormat(lang, { type: "disjunction" }).format(words);
+  return list.charAt(0).toLocaleUpperCase(lang) + list.slice(1);
+}
 
 /* ——— heading + progress (v9 `.co-head`) ——— */
 
@@ -28,11 +48,16 @@ export type CheckoutStepKey = "delivery" | "payment";
 export function CheckoutHeader({
   step,
   bagHint,
+  payKinds,
+  lang = "en",
   onOpenBag,
   hidden,
 }: {
   step: CheckoutStepKey;
   bagHint: string;
+  /** The ways to pay this market offers (paymentStepKinds); empty until known. */
+  payKinds?: readonly PaymentStepKind[];
+  lang?: "en" | "ar";
   onOpenBag: () => void;
   hidden?: boolean;
 }) {
@@ -46,7 +71,7 @@ export function CheckoutHeader({
     },
     {
       label: t("checkout.stepPayment"),
-      hint: t("checkout.stepPaymentHint"),
+      hint: paymentHint(payKinds ?? [], lang, t),
       state: step === "payment" ? "current" : "upcoming",
     },
     { label: t("checkout.stepConfirmation"), hint: t("checkout.stepConfirmationHint"), state: "upcoming" },
@@ -345,6 +370,8 @@ export type PromoFormProps = {
 };
 
 export function OrderSummary({
+  title,
+  sticky = true,
   open,
   lines,
   extra,
@@ -358,6 +385,10 @@ export function OrderSummary({
   onQuantity,
   LinkComponent = DefaultLink,
 }: {
+  /** heading; "Order summary" when left out */
+  title?: ReactNode;
+  /** stays in view while the page scrolls (desktop) */
+  sticky?: boolean;
   open: boolean;
   lines: SummaryLine[];
   /** free gifts etc., after the lines */
@@ -379,12 +410,13 @@ export function OrderSummary({
       id="checkout-summary"
       aria-label={t("checkout.summary")}
       className={cx(
-        "sticky top-[100px] bg-sapil-white rounded-[28px] p-[28px] shadow-[0_1px_2px_rgba(60,45,30,.04),0_24px_48px_-32px_rgba(60,45,30,.3)]",
+        sticky && "sticky top-[100px]",
+        "bg-sapil-white rounded-[28px] p-[28px] shadow-[0_1px_2px_rgba(60,45,30,.04),0_24px_48px_-32px_rgba(60,45,30,.3)]",
         "max-900:static max-900:order-[-1] max-900:p-[20px] max-900:rounded-[20px]",
         open ? "max-900:block" : "max-900:hidden",
       )}
     >
-      <h2 className="font-sapil-sans font-[700] text-[20px] leading-[normal] tracking-[-.02em] mb-[12px] max-900:hidden">{t("checkout.summary")}</h2>
+      <h2 className="font-sapil-sans font-[700] text-[20px] leading-[normal] tracking-[-.02em] mb-[12px] max-900:hidden">{title ?? t("checkout.summary")}</h2>
       <ul className="list-none max-h-[360px] overflow-y-auto mx-[-8px] px-[8px]">
         {lines.map((line) => (
           <li

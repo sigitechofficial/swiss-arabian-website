@@ -114,7 +114,13 @@ export function localeRouting(input: {
   }
 
   if (!prefix) {
-    return { type: "rewrite", pathname: internalLocalePath(bare, DEFAULT_LOCALE) };
+    // Payment providers send the shopper back to fixed, unprefixed addresses
+    // (`/payments/tabby/return`). Our return links carry the checkout language
+    // as `?lang=`, so the page is served in that language while the address
+    // stays the one agreed with the backend (Tabby QA, Nov 2026: Arabic shoppers
+    // must read Tabby's Arabic messages).
+    const returnLocale = input.switchable ? null : matchLocale(searchParams.get("lang"));
+    return { type: "rewrite", pathname: internalLocalePath(bare, returnLocale ?? DEFAULT_LOCALE) };
   }
   return { type: "next", pathname };
 }

@@ -1,7 +1,6 @@
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
 import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import { intlLocale } from "@/lib/i18n/locales";
-import { currentMarketTimeZone } from "@/lib/storefront/marketTimeZone";
 
 /**
  * Shared order vocabulary for Purchase History, order detail and tracking.
@@ -189,9 +188,15 @@ export function formatOrderDate(
   {
     time = false,
     long = false,
-    timeZone = currentMarketTimeZone(),
+    timeZone,
     locale = "en",
-  }: { time?: boolean; long?: boolean; timeZone?: string; locale?: string } = {},
+  }: {
+    time?: boolean;
+    long?: boolean;
+    /** The page market's time zone (`useMarketTimeZone()`): required, so server and browser agree. */
+    timeZone: string;
+    locale?: string;
+  },
 ): string {
   if (!iso) return "";
   const date = new Date(iso);

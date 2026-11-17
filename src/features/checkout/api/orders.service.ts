@@ -49,6 +49,8 @@ export type InitiatePaymentDto = {
   returnUrl?: string;
   /** Where the gateway sends the browser when the shopper cancels. */
   cancelUrl?: string;
+  /** Shopper's language (checkout's); saved on the order, sent to Tabby as `lang`. */
+  locale?: string;
   /**
    * Both ids are whitelisted by the DTO (verified against the live API): the
    * Paymob/Stripe guides require `zonePaymentMethodId`, the reference sends
@@ -66,6 +68,21 @@ export async function initiatePayment(
   return apiPost<PaymentInitiationResponse>(
     `/storefront/orders/${encodeURIComponent(orderId)}/payment/initiate?${buildGuestParam().toString()}`,
     dto,
+  );
+}
+
+export type ReleaseOrderToCartResponse = {
+  orderId: string;
+  /** released: bag reopened (`cartId`) · paid: it was paid after all · not_released: order kept */
+  outcome: "released" | "paid" | "not_released";
+  cartId: string | null;
+};
+
+/** Shopper left payment unpaid: cancel the unpaid order and reopen its bag (Tabby QA). */
+export async function releaseOrderToCart(orderId: string): Promise<ReleaseOrderToCartResponse> {
+  return apiPost<ReleaseOrderToCartResponse>(
+    `/storefront/orders/${encodeURIComponent(orderId)}/payment/release-to-cart?${buildGuestParam().toString()}`,
+    {},
   );
 }
 

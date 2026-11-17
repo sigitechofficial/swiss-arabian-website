@@ -64,6 +64,7 @@ import {
 } from "../utils/startPayment";
 import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
 import { isTamaraPaymentMethod, tamaraStartFailureMessage } from "../utils/tamara";
+import { clearDeclinedPayments, offeredPaymentMethods } from "../utils/returnToCheckout";
 import { checkoutHref } from "../utils/checkoutLocale";
 
 /**
@@ -312,7 +313,8 @@ export function useCheckout() {
           listPaymentMethods(sessionId),
         ]);
         setDeliveryMethods(delivery);
-        setPaymentMethods(payment);
+        // A bag Tabby or Tamara declined is not offered that provider again (Tabby QA, Nov 2026).
+        setPaymentMethods(offeredPaymentMethods(payment, useCartStore.getState().cartId));
 
         const deliveryPick =
           delivery.find((d) => d.zoneDeliveryMethodId === deliveryChoiceRef.current) ??
@@ -469,6 +471,7 @@ export function useCheckout() {
       };
 
       const goToConfirmation = (orderId: string) => {
+        clearDeclinedPayments();
         window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
         clearCart();
         setCartId(null);

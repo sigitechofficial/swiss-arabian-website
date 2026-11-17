@@ -38,6 +38,15 @@ describe("paymentGroups", () => {
     expect(row.tabbyMessage).toBe("لا");
   });
 
+  it("names Tabby with Tabby's approved wording, no plan caption (Tabby QA)", () => {
+    const tabby = method({ zonePaymentMethodId: "z-tabby", providerCode: "tabby", methodCode: "tabby_installments", displayName: "Tabby" });
+    const row = (lang: "en" | "ar") =>
+      paymentGroups([tabby], "AE", { state: "idle" }, lang).flatMap((g) => g.rows).find((r) => r.key === "z-tabby")!;
+    expect(row("en").title).toBe("Pay later with Tabby");
+    expect(row("ar").title).toBe("ادفع لاحقًا مع تابي");
+    expect(row("en").sub).toBeUndefined();
+  });
+
   it("opens the card row by default for card providers", () => {
     expect(defaultRowKey(stripe)).toBe("card@stripe");
     expect(defaultRowKey(cod)).toBe("z-cod");

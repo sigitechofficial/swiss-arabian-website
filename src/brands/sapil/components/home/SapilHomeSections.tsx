@@ -10,6 +10,7 @@ import { CollectionsStory } from "./CollectionsStory";
 import { HeroCampaign } from "./HeroCampaign";
 import { HeroGallery } from "./HeroGallery";
 import { HeroPromo, HomeBundles } from "./HomeBundles";
+import { sectionTitleProps } from "./HomeParts";
 import { HeroVideo, HomeReels } from "./HomeVideo";
 import { MoodWheel } from "./MoodWheel";
 import { NotesRail } from "./NotesRail";
@@ -22,7 +23,7 @@ function Block({ block }: { block: HomeBlock }) {
     case "heroGallery":
       return <HeroGallery hero={block.hero} />;
     case "heroVideo":
-      return <HeroVideo heading={block.heading} />;
+      return <HeroVideo heading={block.heading} title={block.title} subtitle={block.subtitle} />;
     case "heroCampaign":
       return <HeroCampaign hero={block.hero} />;
     case "heroPromo":
@@ -33,14 +34,14 @@ function Block({ block }: { block: HomeBlock }) {
           sectionId="new"
           band
           eyebrow={block.rail.heading ?? t("home.newEyebrow")}
-          title={t("home.newTitle")}
-          accent={t("home.newAccent")}
+          {...sectionTitleProps(block.rail.title, t("home.newTitle"), t("home.newAccent"))}
+          description={block.rail.subtitle ?? undefined}
           products={block.rail.products}
           viewAll={block.rail.viewAll}
         />
       );
     case "priceEdit":
-      return <PriceEditShelf />;
+      return <PriceEditShelf copy={block.copy} />;
     case "collections":
       return <CollectionsStory {...block.showcase} />;
     case "topSellers":
@@ -48,8 +49,8 @@ function Block({ block }: { block: HomeBlock }) {
         <ProductRail
           sectionId="bestsellers"
           eyebrow={block.rail.heading ?? t("home.bestEyebrow")}
-          title={t("home.bestTitle")}
-          accent={t("home.bestAccent")}
+          {...sectionTitleProps(block.rail.title, t("home.bestTitle"), t("home.bestAccent"))}
+          description={block.rail.subtitle ?? undefined}
           products={block.rail.products}
           viewAll={{
             label: block.rail.viewAll?.label ?? t("home.bestShopAll"),
@@ -60,11 +61,11 @@ function Block({ block }: { block: HomeBlock }) {
     case "mood":
       return <MoodWheel {...block.picker} />;
     case "notes":
-      return <NotesRail heading={block.heading} />;
+      return <NotesRail heading={block.heading} title={block.title} subtitle={block.subtitle} />;
     case "bundles":
       return <HomeBundles bundles={block.bundles} />;
     case "reels":
-      return <HomeReels heading={block.heading} />;
+      return <HomeReels heading={block.heading} title={block.title} subtitle={block.subtitle} />;
     case "about":
       return <AboutBlock story={block.story} />;
     case "newsletter":

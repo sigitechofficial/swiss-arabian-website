@@ -1,8 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { useUiStore } from "@/stores/useUiStore";
-import { currentMarketTimeZone, marketTimeZone } from "./marketTimeZone";
-
-afterEach(() => useUiStore.setState({ catalogContext: null }));
+import { describe, expect, it } from "vitest";
+import { marketTimeZone } from "./marketTimeZone";
 
 describe("marketTimeZone", () => {
   it("uses the market country's zone, Dubai when unknown", () => {
@@ -13,9 +10,4 @@ describe("marketTimeZone", () => {
     expect(marketTimeZone("ZZ")).toBe("Asia/Dubai");
   });
 
-  it("follows the selected market", () => {
-    expect(currentMarketTimeZone()).toBe("Asia/Dubai");
-    useUiStore.setState({ catalogContext: { zoneCode: "KSA", countryCode: "SA" } });
-    expect(currentMarketTimeZone()).toBe("Asia/Riyadh");
-  });
 });

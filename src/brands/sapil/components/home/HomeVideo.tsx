@@ -11,6 +11,8 @@ import { Button, EYEBROW, SectionHead, Wrap, cx } from "../../ui";
 import { ArrowIcon, ChatIcon, HeartIcon, InstagramIcon, MutedIcon, PlayIcon, SendIcon, SoundIcon } from "../shared/icons";
 import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
+import type { TextPart } from "./cmsSections";
+import { TitleParts, sectionTitleProps } from "./HomeParts";
 import { RailControls } from "./useRail";
 
 function prefersReducedMotion() {
@@ -44,7 +46,7 @@ function videoOf(slide: ShopableVideoSlide) {
  * Hero layout 2, video (v9 `.hv`): copy on the start side, three films playing
  * on the end side. Films play muted only while the hero is in view and motion is allowed.
  */
-export function HeroVideo({ heading }: { heading: string | null }) {
+export function HeroVideo({ heading, title, subtitle }: { heading: string | null; title?: TextPart[]; subtitle?: string | null }) {
   const t = useSapilCopy();
   const price = useSapilPrice();
   const { slides, isReady } = useShopableVideo();
@@ -71,15 +73,17 @@ export function HeroVideo({ heading }: { heading: string | null }) {
           className="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-[48px] items-center bg-[linear-gradient(135deg,var(--sapil-p-lilac)_0%,var(--sapil-p-pink)_60%,var(--sapil-p-peach)_100%)] rounded-[32px] py-[48px] pe-[48px] ps-[56px] min-h-[min(680px,calc(100svh-190px))] overflow-hidden max-900:grid-cols-1 max-900:pt-[28px] max-900:px-[20px] max-900:pb-[24px] max-900:gap-[24px] max-900:rounded-[24px] max-900:min-h-0"
         >
           <div>
-            <p className={EYEBROW}>{t("home.heroVideoEyebrow")}</p>
+            <p className={EYEBROW}>{heading ?? t("home.heroVideoEyebrow")}</p>
             <p className="font-sapil-display text-[clamp(48px,5.6vw,92px)] leading-[.98] tracking-[-.01em] mt-[16px] mb-[18px] [text-wrap:balance] max-900:text-[46px]">
-              {heading ?? (
+              {title?.length ? (
+                <TitleParts parts={title} />
+              ) : (
                 <>
                   {t("home.heroVideoTitle")} <span className="font-sapil-serif italic">{t("home.heroVideoAccent")}</span>
                 </>
               )}
             </p>
-            <p className="text-[17px] text-sapil-ink-2 max-w-[40ch] mb-[28px]">{t("home.heroVideoText")}</p>
+            <p className="text-[17px] text-sapil-ink-2 max-w-[40ch] mb-[28px]">{subtitle ?? t("home.heroVideoText")}</p>
             <div className="flex gap-[10px] flex-wrap">
               <Button href="/products" LinkComponent={SapilLink}>
                 {t("home.heroVideoCta")}
@@ -137,7 +141,7 @@ export function HeroVideo({ heading }: { heading: string | null }) {
  * Instagram reels (v9 `.social`): phone-style reels; the focused one plays (muted,
  * only while the row is in view and motion is allowed), then hands over to the next.
  */
-export function HomeReels({ heading }: { heading: string | null }) {
+export function HomeReels({ heading, title, subtitle }: { heading: string | null; title?: TextPart[]; subtitle?: string | null }) {
   const t = useSapilCopy();
   const headingId = useId();
   const { slides, isReady } = useShopableVideo();
@@ -225,8 +229,8 @@ export function HomeReels({ heading }: { heading: string | null }) {
         <SectionHead
           id={headingId}
           eyebrow={heading ?? t("home.reelsEyebrow")}
-          title={t("home.reelsTitle")}
-          accent={t("home.reelsAccent")}
+          {...sectionTitleProps(title, t("home.reelsTitle"), t("home.reelsAccent"))}
+          description={subtitle ?? undefined}
           actions={
             <div className="flex gap-[16px] items-center flex-wrap">
               {instagram ? (

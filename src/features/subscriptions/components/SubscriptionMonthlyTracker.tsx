@@ -11,6 +11,7 @@ import {
   type SubscriptionMonthRow,
 } from "../utils/subscriptionMonthlyTracker";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 function monthStatusChip(row: SubscriptionMonthRow): { label: string; className: string } {
   if (row.payment === "SKIPPED") return { label: "Skipped", className: "bg-[#F3EEE6] text-[#6E5A50]" };
@@ -37,6 +38,7 @@ export function SubscriptionMonthlyTracker({
   >;
   cycles?: SubscriptionCycleSnapshot[];
 }) {
+  const timeZone = useMarketTimeZone();
   const months = monthsFromAgreement({
     ...detail,
     billingCycles: cycles ?? detail.billingCycles,
@@ -88,7 +90,7 @@ export function SubscriptionMonthlyTracker({
               <div className="flex flex-col gap-1 px-0.5">
                 <strong className="text-[15px] font-bold text-[#2B1D17]">{row.label}</strong>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${chip.className}`}>{chip.label}</span>
-                <span className="text-xs text-[#6E5A50]">{row.billingDate ? formatOrderDate(row.billingDate) : ""}</span>
+                <span className="text-xs text-[#6E5A50]">{row.billingDate ? formatOrderDate(row.billingDate, { timeZone }) : ""}</span>
                 <span className={`flex min-w-0 items-baseline gap-1 text-[13px] ${chosen ? "font-semibold text-[#2B1D17]" : "text-[#6E5A50]"}`}>
                   <span className="min-w-0 truncate" title={row.fragrance ?? undefined}>
                     {row.fragrance ?? "Fragrance not planned yet"}

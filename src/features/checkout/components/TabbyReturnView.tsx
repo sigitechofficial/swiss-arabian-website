@@ -6,7 +6,8 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSettlePayment } from "../hooks/usePaymentReturn";
-import { getStoredOrderId, storeOrderId } from "../utils/checkoutSession";
+import { getStoredOrderId } from "../utils/checkoutSession";
+import { useReturnToCheckout } from "../hooks/useReturnToCheckout";
 import { useTabbyLang } from "../hooks/useTabbyLang";
 import {
   TABBY_CANCELLED_MESSAGE,
@@ -20,6 +21,7 @@ import {
   checkoutCtaInline,
   checkoutDone,
   checkoutDoneActions,
+  checkoutError,
   checkoutLink,
 } from "@/styles/checkoutChrome";
 
@@ -56,6 +58,9 @@ const COPY: Record<
     pendingTitle: string;
     pendingBody: string;
     retry: string;
+    backToCheckout: string;
+    returning: string;
+    keptError: string;
     orderStatus: string;
     home: string;
     noOrderTitle: string;
@@ -75,6 +80,10 @@ const COPY: Record<
     pendingTitle: "We’re confirming your payment",
     pendingBody: "You’ll get an email shortly. There’s no need to pay again.",
     retry: "Choose another payment method",
+    backToCheckout: "Back to checkout",
+    returning: "Opening checkout…",
+    keptError:
+      "We couldn’t reopen your bag because a payment for this order is still being processed. Please check your order status in a few minutes.",
     orderStatus: "Check order status",
     home: "Return home",
     noOrderTitle: "We couldn’t match this return to an order.",
@@ -93,6 +102,10 @@ const COPY: Record<
     pendingTitle: "نقوم بتأكيد دفعتك",
     pendingBody: "ستصلك رسالة بريد إلكتروني قريبًا. لا حاجة للدفع مرة أخرى.",
     retry: "اختر طريقة دفع أخرى",
+    backToCheckout: "العودة إلى صفحة الدفع",
+    returning: "جارٍ فتح صفحة الدفع…",
+    keptError:
+      "تعذّر إعادة فتح سلة التسوق لأن دفعة لهذا الطلب ما زالت قيد المعالجة. يرجى التحقق من حالة الطلب بعد بضع دقائق.",
     orderStatus: "تحقق من حالة الطلب",
     home: "العودة إلى الرئيسية",
     noOrderTitle: "تعذّر ربط هذه العودة بطلب.",
@@ -128,9 +141,8 @@ export function TabbyReturnView() {
   const outcome: SettleOutcome | null =
     hydrated && !orderId ? { kind: "no-order" } : settlement ? { kind: settlement.kind } : null;
 
-  const retryHref = orderId
-    ? `/checkout/payment/cancel?orderId=${encodeURIComponent(orderId)}`
-    : "/checkout/payment/cancel";
+  // Tabby QA: cancelled → checkout with the bag; declined → the bag, without Tabby.
+  const back = useReturnToCheckout(orderId);
 
   if (!hydrated || !outcome) {
     return (
@@ -169,17 +181,21 @@ export function TabbyReturnView() {
           <h1 className={doneTitle} role="alert">
             {message}
           </h1>
+          {back.failed ? (
+            <p className={checkoutError} role="alert">
+              {copy.keptError}
+            </p>
+          ) : null}
           <div className={checkoutDoneActions}>
-            <LocaleLink
+            <button
+              type="button"
               className={`${checkoutCta} ${checkoutCtaInline}`}
-              href={retryHref}
-              onClick={() => {
-                if (orderId) storeOrderId(orderId);
-              }}
+              onClick={() => void back.go(!cancelled)}
+              disabled={back.returning}
             >
-              <span>{copy.retry}</span>
+              <span>{back.returning ? copy.returning : cancelled ? copy.backToCheckout : copy.retry}</span>
               <b aria-hidden="true">↗</b>
-            </LocaleLink>
+            </button>
             <LocaleLink className={checkoutLink} href="/">
               {copy.home}
             </LocaleLink>
