@@ -8,6 +8,7 @@ import {
   storePaymobPublicKey,
   storeStripeClientSecret,
   storeStripePublishableKey,
+  storeHostedPaymentOpen,
 } from "./checkoutSession";
 import { tabbyRejectionFrom, type TabbyMessage } from "./tabby";
 
@@ -219,7 +220,10 @@ export async function startPayment(
       throw new PaymentGatewayError(payment.warnings ?? []);
     }
     // Hosted gateway on another origin — a hard navigation, not a client route.
-    // The order id is already in storage for the return trip.
+    // The order id is already in storage for the return trip. Tabby and Telr
+    // come back to our return pages, which clear this; if the shopper uses the
+    // browser's Back instead, checkout finds it and gives the bag back.
+    if (isTabby || isTelr) storeHostedPaymentOpen(orderId);
     window.location.assign(payment.redirectUrl);
     return { kind: "redirect" };
   }

@@ -13,8 +13,7 @@ import {
   getStoredPaymentProviderCode,
   getStoredZonePaymentMethodId,
   incrementPayAttempt,
-  storeOrderId,
-} from "../utils/checkoutSession";
+  storeOrderId, clearHostedPaymentOpen } from "../utils/checkoutSession";
 import { PaymentGatewayError, PaymentRejectedError, startPayment } from "../utils/startPayment";
 import { tabbyLang } from "../utils/tabby";
 
@@ -37,6 +36,8 @@ export function useSettlePayment(orderId: string | null): PaymentSettlement | nu
   useEffect(() => {
     if (!orderId || started.current) return;
     started.current = true;
+    // The provider sent the shopper back to us: nothing for checkout to resume.
+    clearHostedPaymentOpen();
     void (async () => {
       const result = await pollUntilPaymentSettles(orderId);
       if (result.success) {
