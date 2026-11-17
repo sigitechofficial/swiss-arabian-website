@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
@@ -37,6 +39,15 @@ export function useBagPage() {
   const { validate } = useCartMutations();
   const router = useLocaleRouter();
   const mounted = useHydrated();
+
+  // Check the bag when the page opens: an item that went out of stock shows
+  // as "Not available right now", and one back in stock rejoins the bag.
+  const checkedCartRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mounted || !cartId || checkedCartRef.current === cartId) return;
+    checkedCartRef.current = cartId;
+    validate.mutate(cartId);
+  }, [mounted, cartId, validate]);
 
   const lines = mounted ? persistedLines : [];
   const subtotal = mounted ? persistedSubtotal : 0;

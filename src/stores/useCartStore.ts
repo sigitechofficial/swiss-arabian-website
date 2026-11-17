@@ -34,6 +34,8 @@ export type CartLine = {
   isSellable?: boolean;
   /** Backed by the server cart (real sku/variantId) — edits sync to the API. */
   remote?: boolean;
+  /** Set on a held line: OUT_OF_STOCK or UNAVAILABLE. */
+  heldStatus?: string;
 };
 
 type CartTotals = {
@@ -56,6 +58,11 @@ type CartTotals = {
 
 type CartState = {
   lines: CartLine[];
+  /**
+   * Out of stock / unavailable right now: shown in the bag, left out of the
+   * order and the totals. Never persisted: only the server knows.
+   */
+  unavailableLines: CartLine[];
   cartId: string | null;
   totals: CartTotals | null;
   promotions: PromotionSnapshotV1 | null;
@@ -91,6 +98,7 @@ export const useCartStore = create<CartState>()(
   persist<CartState, [], [], PersistedCartState>(
     (set, get) => ({
       lines: [],
+      unavailableLines: [],
       cartId: null,
       totals: null,
       promotions: null,
@@ -158,6 +166,7 @@ export const useCartStore = create<CartState>()(
       clear: () =>
         set({
           lines: [],
+          unavailableLines: [],
           totals: null,
           promotions: null,
           loyaltyRedemption: null,
@@ -183,7 +192,7 @@ export const useCartStore = create<CartState>()(
             state.lines.map((l) => [l.variantId, l]),
           );
 
-          const lines: CartLine[] = cart.items.map((item) => {
+          const toLine = (item: ApiCart["items"][number]): CartLine => {
             const vid = item.variantId ?? item.sku;
             const local = vid ? localByVariant.get(vid) : undefined;
             const unitPrice = Number(item.unitPriceEstimate ?? "0");
@@ -208,7 +217,11 @@ export const useCartStore = create<CartState>()(
               isSellable: item.sellabilitySummary?.isSellable !== false && priced,
               remote: true,
             };
-          });
+          };
+          const lines: CartLine[] = cart.items.map(toLine);
+          const unavailableLines: CartLine[] = (cart.unavailableItems ?? []).map(
+            (item) => ({ ...toLine(item), isSellable: false, heldStatus: item.status }),
+          );
 
           const totals: CartTotals = {
             subtotal: Number(cart.subtotalEstimate ?? "0"),
@@ -244,6 +257,7 @@ export const useCartStore = create<CartState>()(
 
           return {
             lines,
+            unavailableLines,
             totals,
             promotions: readPromotionSnapshot(cart.promotions),
             employeeCheckout: readEmployeeCheckout(cart.staffPurchase ?? cart.employeeCheckout),

@@ -81,6 +81,11 @@ export type CartPendingPayment = {
   paymentDueAt: string | null;
 };
 
+export type ApiCartUnavailableItem = ApiCartItem & {
+  /** OUT_OF_STOCK or UNAVAILABLE. */
+  status: string;
+};
+
 export type ApiCart = {
   cartId: string;
   status: string;
@@ -88,6 +93,12 @@ export type ApiCart = {
   pendingPayment?: CartPendingPayment | null;
   context: CartContext;
   items: ApiCartItem[];
+  /**
+   * Lines held because the item is out of stock or unavailable right now: not
+   * in the totals and not ordered. They return to `items` by themselves when the
+   * item can be sold again. Absent on older backends.
+   */
+  unavailableItems?: ApiCartUnavailableItem[];
   itemCount: number;
   totalQuantity: string;
   subtotalEstimate: string;
