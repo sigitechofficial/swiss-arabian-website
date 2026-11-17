@@ -302,7 +302,6 @@ export const pdpPayBtnMore =
 const pdpPayMark =
   "inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2.5 text-[0.86rem] leading-none font-extrabold tracking-[-0.02em] lowercase select-none";
 
-export const pdpPayMarkTabby = `${pdpPayMark} bg-[#3bffc1] text-[#161616]`;
 
 export const pdpPayMarkTamara = `${pdpPayMark} bg-[linear-gradient(100deg,#f8c7a1_0%,#f5a9c6_38%,#b9a9f3_70%,#9fd9f6_100%)] text-[#161616]`;
 

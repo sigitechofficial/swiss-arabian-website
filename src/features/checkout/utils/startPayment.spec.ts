@@ -11,6 +11,7 @@ vi.mock("./checkoutSession", () => ({
   storePaymobPublicKey: vi.fn(),
   storeStripeClientSecret: vi.fn(),
   storeStripePublishableKey: vi.fn(),
+  storeHostedPaymentOpen: vi.fn(),
 }));
 
 import { initiatePayment } from "../api/orders.service";
@@ -128,6 +129,30 @@ describe("startPayment", () => {
     expect(result.kind).toBe("redirect");
   });
 
+  it("Arabic checkout: Tabby return links and the order carry ar (Tabby QA)", async () => {
+    vi.stubGlobal("location", {
+      assign: vi.fn(),
+      replace: vi.fn(),
+      origin: "http://localhost:3004",
+      pathname: "/ar/checkout",
+    });
+    vi.mocked(initiatePayment).mockResolvedValue({
+      providerCode: "tabby",
+      paymentAction: "REDIRECT",
+      redirectUrl: "https://checkout.tabby.ai/?sessionId=abc",
+      warnings: [],
+    } as never);
+    await startPayment("order-tabby", vi.fn(), { providerCode: "tabby" });
+    expect(initiatePayment).toHaveBeenCalledWith(
+      "order-tabby",
+      expect.objectContaining({
+        returnUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+        cancelUrl: "http://localhost:3004/payments/tabby/return?lang=ar",
+        locale: "ar",
+      }),
+    );
+  });
+
   it("redirects Tabby with /payments/tabby/return for both return and cancel", async () => {
     vi.mocked(initiatePayment).mockResolvedValue({
       providerCode: "tabby",
@@ -146,8 +171,9 @@ describe("startPayment", () => {
     expect(initiatePayment).toHaveBeenCalledWith(
       "order-tabby",
       expect.objectContaining({
-        returnUrl: "http://localhost:3004/payments/tabby/return",
-        cancelUrl: "http://localhost:3004/payments/tabby/return",
+        returnUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        cancelUrl: "http://localhost:3004/payments/tabby/return?lang=en",
+        locale: "en",
         zonePaymentMethodId: "zpm-tabby",
       }),
     );

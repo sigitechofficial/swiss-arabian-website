@@ -1,5 +1,6 @@
 "use client";
 
+import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
 import { useCallback } from "react";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { freeDeliveryProgress, useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
@@ -121,6 +122,11 @@ export function SapilBagDrawer() {
       }
       promoNote={progress?.primary?.message ?? progress?.unlockedSummary ?? undefined}
       pointsNote={pointsNote}
+      payLater={
+        bag.quotePending || bag.allUnavailable || bag.amountDue == null ? undefined : (
+          <TabbyPromoSnippet amount={bag.amountDue} currency={bag.currency} source="cart" />
+        )
+      }
       checkoutHref="/checkout"
       checkoutBlocked={bag.checkoutBlocked}
       syncing={bag.syncing}

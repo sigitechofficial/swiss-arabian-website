@@ -9,6 +9,7 @@ const PAYMENT_METHOD_ID_KEY = "sa_payment_method_id";
 const PAYMENT_PROVIDER_CODE_KEY = "sa_payment_provider_code";
 const PAYMENT_TRANSACTION_ID_KEY = "sa_payment_transaction_id";
 const PAY_ATTEMPT_KEY = "sa_pay_attempt";
+const HOSTED_PAYMENT_OPEN_KEY = "sa_hosted_payment_open";
 const STRIPE_CLIENT_SECRET_KEY = "sa_stripe_client_secret";
 const STRIPE_PUBLISHABLE_KEY_KEY = "sa_stripe_publishable_key";
 const PAYMOB_CLIENT_SECRET_KEY = "sa_paymob_client_secret";
@@ -185,3 +186,16 @@ export const getStoredPaymobClientSecret = () => read("session", PAYMOB_CLIENT_S
 export const storePaymobPublicKey = (key: string) =>
   write("session", PAYMOB_PUBLIC_KEY_KEY, key);
 export const getStoredPaymobPublicKey = () => read("session", PAYMOB_PUBLIC_KEY_KEY);
+
+// ─── Hosted payment page opened (sessionStorage — this tab) ─────────────────
+
+/**
+ * Set just before the shopper is sent to a hosted payment page (Tabby, Telr),
+ * cleared by our return pages. Still set when checkout opens again means the
+ * shopper came back without the provider's return link (browser Back): the
+ * order is unpaid and its bag is not in the browser any more (Tabby QA).
+ */
+export const storeHostedPaymentOpen = (orderId: string) =>
+  write("session", HOSTED_PAYMENT_OPEN_KEY, orderId);
+export const getHostedPaymentOpen = () => read("session", HOSTED_PAYMENT_OPEN_KEY);
+export const clearHostedPaymentOpen = () => remove("session", HOSTED_PAYMENT_OPEN_KEY);

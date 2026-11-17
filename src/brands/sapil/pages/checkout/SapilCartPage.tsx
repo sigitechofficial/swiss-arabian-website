@@ -1,5 +1,6 @@
 "use client";
 
+import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
 import { useBagPage } from "@/features/cart/hooks/useBagPage";
 import { cartErrorMessage } from "@/features/cart/constants/validationMessages";
 import { appliedCoupon } from "@/features/promotions";
@@ -254,6 +255,8 @@ export function SapilCartPage() {
           }
           notes={
             <div className="mt-[18px] flex flex-col gap-[10px]">
+              {/* Tabby's official snippet for the amount to pay (Tabby QA); only where checkout offers Tabby. */}
+              {bag.quotePending ? null : <TabbyPromoSnippet amount={payable} currency={bag.currency} source="cart" />}
               {bag.priceChanged ? (
                 <p className="text-[13px] text-sapil-ink-2" role="status">
                   {t("bag.pagePriceChanged")}

@@ -23,6 +23,16 @@ export const TABBY_CANCELLED_MESSAGE: TabbyMessage = {
 /** Languages Tabby's snippets and wording come in; any other page language uses English. */
 const TABBY_LANGUAGES: readonly TabbyLang[] = ["en", "ar"];
 
+/**
+ * Tabby's approved name for the payment method at checkout, as in Tabby's
+ * checkout-flow docs (Tabby QA, Nov 2026). No plan caption goes with it: the
+ * Tabby snippet under the method shows the plans and any fees.
+ */
+export const TABBY_METHOD_TITLE: TabbyMessage = {
+  en: "Pay later with Tabby",
+  ar: "ادفع لاحقًا مع تابي",
+};
+
 export function tabbyLang(locale: string | null | undefined): TabbyLang {
   const base = baseLanguage(locale);
   return TABBY_LANGUAGES.find((lang) => lang === base) ?? "en";

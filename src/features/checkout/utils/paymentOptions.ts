@@ -1,7 +1,7 @@
 import type { TabbyPrescore } from "../hooks/useTabbyPrescore";
 import type { PaymentMethodOption } from "../types/checkout";
 import { isStripePaymentMethod, paymentMethodNote, upcomingPaymentMethods } from "./methodLabels";
-import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang } from "./tabby";
+import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang, TABBY_METHOD_TITLE } from "./tabby";
 
 /** Where the card / wallet form for an option opens inside checkout. */
 export type PaymentSurface = "card" | "apple_pay" | "google_pay";
@@ -128,8 +128,10 @@ export function paymentGroups(
           method,
         };
         if (!isTabbyPaymentMethod(method)) return row;
-        // Tabby: their mark, and their own wording when they can't approve this shopper.
+        // Tabby: their official logo and approved name in the shopper's language,
+        // and their own wording when they can't approve this shopper.
         row.tabby = tabbySnippetConfig(method) ?? false;
+        row.title = TABBY_METHOD_TITLE[tabbyLang];
         row.tabbyState = tabbyPrescore.state;
         if (tabbyPrescore.state === "rejected") {
           row.disabled = true;

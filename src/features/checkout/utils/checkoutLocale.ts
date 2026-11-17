@@ -4,7 +4,7 @@ import {
   localizeHref,
   withLocalePrefix,
 } from "@/lib/i18n/localePath";
-import { isLocale, type ShopLocale } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, isLocale, type ShopLocale } from "@/lib/i18n/locales";
 
 /**
  * The language checkout was started in, kept for the payment round-trip.
@@ -43,4 +43,16 @@ export function checkoutHref(href: string, here?: string): string {
   if (isLocaleSwitchablePath(current)) return localizeHref(href, current);
   const stored = storedCheckoutLocale();
   return stored ? localizeHref(href, withLocalePrefix("/", stored)) : href;
+}
+
+/**
+ * The language checkout runs in right now: the page's own language on a
+ * checkout address, or the one checkout started in when this is a provider's
+ * fixed return address.
+ */
+export function currentCheckoutLocale(): ShopLocale {
+  if (typeof window === "undefined") return DEFAULT_LOCALE;
+  const path = window.location.pathname || "/";
+  if (isLocaleSwitchablePath(path)) return localeFromPathname(path);
+  return storedCheckoutLocale() ?? DEFAULT_LOCALE;
 }

@@ -98,7 +98,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     return "Telr · secure hosted checkout";
   }
   if (isTabbyPaymentMethod(method)) {
-    return "Pay in 4, interest-free";
+    // Tabby QA: no plan caption. Tabby offers more plans than Pay in 4 (some
+    // with a fee); the Tabby snippet under the method shows the real ones.
+    return "";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
@@ -122,8 +124,6 @@ export function upcomingPaymentMethods(
   const country = (countryCode || "AE").toUpperCase();
   const paymob = methods.some((method) => method.providerCode?.toLowerCase() === "paymob");
   const stripe = methods.some((method) => isStripePaymentMethod(method));
-  // A live Tabby method is listed as a real option, not as "coming soon".
-  const tabbyLive = methods.some((method) => isTabbyPaymentMethod(method));
   const rows: UpcomingPaymentMethod[] = [];
 
   if (paymob && (country === "AE" || country === "SA" || country === "OM")) {
@@ -152,10 +152,10 @@ export function upcomingPaymentMethods(
     rows.push({ id: "mada", title: "mada", note: "Paymob" });
     rows.push({ id: "stc-pay", title: "STC Pay", note: "Paymob" });
   }
+  // No "coming soon" Tabby row: Tabby is a direct integration, listed only where
+  // the market's checkout offers it (and not for a bag Tabby declined), never
+  // advertised elsewhere (Tabby QA, Nov 2026).
   if (paymob && (country === "AE" || country === "SA")) {
-    if (!tabbyLive) {
-      rows.push({ id: "tabby", title: "Tabby", note: "Paymob · pay in 4, interest-free" });
-    }
     rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
   }
   if (country === "KW") {

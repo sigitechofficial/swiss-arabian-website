@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadSapilMessages } from "../../i18n/load";
 import { SapilCopyProvider } from "../../i18n/SapilCopy";
 
 const state = vi.hoisted(() => ({
+  push: null as null | ((href: string) => void),
+  returnToCheckout: null as null | ((orderId: string, opts: { declined?: boolean }) => Promise<{ kind: string }>),
   params: new URLSearchParams(),
   path: "/checkout/payment/cancel",
   stored: null as string | null,
@@ -13,7 +15,11 @@ const state = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   useSearchParams: () => state.params,
   usePathname: () => state.path,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: (href: string) => state.push?.(href), replace: vi.fn() }),
+}));
+vi.mock("@/features/checkout/utils/returnToCheckout", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/checkout/utils/returnToCheckout")>()),
+  returnToCheckout: (orderId: string, opts: { declined?: boolean }) => state.returnToCheckout!(orderId, opts),
 }));
 vi.mock("@/hooks/useHydrated", () => ({ useHydrated: () => true }));
 vi.mock("@/features/checkout/hooks/usePaymentReturn", async (importOriginal) => ({
@@ -72,6 +78,38 @@ describe("Sapil payment screens", () => {
     state.settlement = { kind: "failed", status: "CANCELLED" };
     await renderIn("en", <SapilTabbyReturn />);
     expect(screen.getByRole("alert").textContent).toMatch(/You aborted the payment/);
-    expect(screen.getByRole("link", { name: "Choose another payment method" }).getAttribute("href")).toContain("/checkout/payment/cancel?orderId=order-1");
+  });
+
+  it("tabby cancelled: back to checkout with the bag, Tabby still offered (Tabby QA)", async () => {
+    state.params = new URLSearchParams("result=cancel");
+    state.stored = "order-1";
+    state.settlement = { kind: "failed", status: "CANCELLED" };
+    const pushed: string[] = [];
+    state.push = (href) => pushed.push(href);
+    const calls: Array<[string, { declined?: boolean }]> = [];
+    state.returnToCheckout = async (orderId, opts) => {
+      calls.push([orderId, opts]);
+      return { kind: "checkout" };
+    };
+    await renderIn("en", <SapilTabbyReturn />);
+    fireEvent.click(screen.getByRole("button", { name: "Back to checkout" }));
+    await waitFor(() => expect(pushed).toEqual(["/checkout"]));
+    expect(calls).toEqual([["order-1", { declined: false }]]);
+  });
+
+  it("tabby declined: the bag comes back without Tabby; an open payment keeps the order", async () => {
+    state.params = new URLSearchParams("result=failure");
+    state.stored = "order-1";
+    state.settlement = { kind: "failed", status: "FAILED" };
+    const calls: Array<[string, { declined?: boolean }]> = [];
+    state.returnToCheckout = async (orderId, opts) => {
+      calls.push([orderId, opts]);
+      return { kind: "kept" };
+    };
+    await renderIn("en", <SapilTabbyReturn />);
+    expect(screen.getAllByRole("alert")[0]!.textContent).toMatch(/Tabby is unable to approve/);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another payment method" }));
+    await waitFor(() => expect(screen.getByText(/still being processed/)).toBeTruthy());
+    expect(calls).toEqual([["order-1", { declined: true }]]);
   });
 });

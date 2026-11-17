@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ORDER_UUID, parseResultHint as tabbyResultHint } from "@/features/checkout/components/TabbyReturnView";
 import { parseResultHint as telrResultHint } from "@/features/checkout/components/TelrReturnView";
 import { storedOrderIdIf, usePaymentRetry, useSettlePayment } from "@/features/checkout/hooks/usePaymentReturn";
-import { storeOrderId } from "@/features/checkout/utils/checkoutSession";
+import { useReturnToCheckout } from "@/features/checkout/hooks/useReturnToCheckout";
 import { TABBY_CANCELLED_MESSAGE, TABBY_REJECTED_MESSAGE, tabbyLang } from "@/features/checkout/utils/tabby";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
@@ -214,6 +214,8 @@ export function SapilTabbyReturn() {
   const queryOrderId = searchParams.get("orderId");
   const orderId = hydrated ? (queryOrderId && ORDER_UUID.test(queryOrderId) ? queryOrderId : storedOrderIdIf(true)) : null;
   const settlement = useSettlePayment(orderId);
+  // Tabby QA: cancelled → checkout with the bag; declined → the bag, without Tabby.
+  const back = useReturnToCheckout(orderId);
   const home = { label: t("checkout.payHome"), href: "/" };
   const refused = hint === "cancel" || hint === "failure";
 
@@ -229,12 +231,13 @@ export function SapilTabbyReturn() {
         alert
         eyebrow={t(cancelled ? "checkout.payCancelledEyebrow" : "checkout.payDeclinedEyebrow")}
         title={(cancelled ? TABBY_CANCELLED_MESSAGE : TABBY_REJECTED_MESSAGE)[lang]}
+        error={back.failed ? t("checkout.payKeptError") : null}
         primary={{
-          label: t("checkout.payOtherMethod"),
-          href: retryHref(orderId),
-          onClick: () => {
-            if (orderId) storeOrderId(orderId);
-          },
+          label: back.returning
+            ? t("checkout.payReturning")
+            : t(cancelled ? "checkout.payBackToCheckout" : "checkout.payOtherMethod"),
+          onClick: () => void back.go(!cancelled),
+          disabled: back.returning,
         }}
         secondary={home}
       />

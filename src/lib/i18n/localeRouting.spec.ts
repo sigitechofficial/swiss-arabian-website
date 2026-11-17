@@ -47,6 +47,19 @@ describe("locale routing (proxy)", () => {
     expect(route("/en")).toEqual({ type: "redirect", pathname: "/" });
   });
 
+  it("serves a payment return in the checkout language from ?lang=, keeping the fixed address", () => {
+    expect(route("/payments/tabby/return?lang=ar&orderId=o-1&result=cancel")).toEqual({
+      type: "rewrite",
+      pathname: "/ar/payments/tabby/return",
+    });
+    expect(route("/payments/tabby/return?lang=en")).toEqual({ type: "rewrite", pathname: "/en/payments/tabby/return" });
+    // No or unknown language: the default one.
+    expect(route("/payments/tabby/return")).toEqual({ type: "rewrite", pathname: "/en/payments/tabby/return" });
+    expect(route("/payments/tabby/return?lang=xx")).toEqual({ type: "rewrite", pathname: "/en/payments/tabby/return" });
+    // Shop pages never switch language from ?lang= (their address carries it).
+    expect(route("/products?lang=ar")).toEqual({ type: "rewrite", pathname: "/en/products" });
+  });
+
   it("redirects ?languageCode= links to the language's address", () => {
     expect(route("/products/oud?languageCode=AR-sa&utm=x")).toEqual({
       type: "redirect",

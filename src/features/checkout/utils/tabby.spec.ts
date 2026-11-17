@@ -38,7 +38,7 @@ describe("tabby helpers", () => {
     expect(isTabbyPaymentMethod(tabbyMethod)).toBe(true);
     expect(isTabbyPaymentMethod(paymob)).toBe(false);
     expect(usesHostedRedirect({ ...tabbyMethod, requiresRedirect: false })).toBe(true);
-    expect(paymentMethodNote(tabbyMethod)).toBe("Pay in 4, interest-free");
+    expect(paymentMethodNote(tabbyMethod)).toBe("");
   });
 
   it("reads snippet settings from metadata.tabby", () => {
@@ -89,12 +89,13 @@ describe("tabby helpers", () => {
     expect(tabbyLang(null)).toBe("en");
   });
 
-  it("drops the 'coming soon' Tabby row once Tabby is a live method", () => {
-    const soon = upcomingPaymentMethods("AE", [paymob]).map((row) => row.id);
-    expect(soon).toContain("tabby");
+  it("never lists a 'coming soon' Tabby row: Tabby shows only where it is offered (Tabby QA)", () => {
+    // A market without Tabby, or a bag Tabby declined (its method is filtered out).
+    const without = upcomingPaymentMethods("AE", [paymob]).map((row) => row.id);
+    expect(without).not.toContain("tabby");
+    expect(without).toContain("tamara");
     const live = upcomingPaymentMethods("AE", [paymob, tabbyMethod]).map((row) => row.id);
     expect(live).not.toContain("tabby");
-    expect(live).toContain("tamara");
   });
 });
 
