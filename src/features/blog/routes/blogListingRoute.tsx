@@ -5,7 +5,8 @@ import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogPosts } from "@/features/blog/api/blogApi";
 import { requireBrandFeature } from "@/lib/brand/featureGate";
-import { BlogPageView } from "@brand-ui";
+import { breadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
+import { BlogPageView, CatalogJsonLd } from "@brand-ui";
 
 /**
  * The Journal's post list. Page 1 is `/blog`; page N is `/blog?page=N`, served
@@ -38,8 +39,24 @@ export async function blogListingMetadata(page: number): Promise<Metadata> {
   return result.total > 0 ? metadata : { ...metadata, robots: { index: false, follow: true } };
 }
 
+/** Home › Journal, for search engines (SEO audit p16: breadcrumbs on every page). */
+export async function blogBreadcrumbs(article?: { title: string; slug: string }) {
+  const { locale, t } = await routeTranslator();
+  const items = [
+    { name: t("home"), url: withLocalePrefix("/", locale) },
+    { name: t("pages.blog.title"), url: withLocalePrefix("/blog", locale) },
+  ];
+  if (article) items.push({ name: article.title, url: withLocalePrefix(`/blog/${article.slug}`, locale) });
+  return breadcrumbJsonLd(items);
+}
+
 export async function BlogListing({ page }: { page: number }) {
   requireBrandFeature("blog");
   const result = await load(page);
-  return <BlogPageView posts={result.posts} page={page} totalPages={result.totalPages} total={result.total} />;
+  return (
+    <>
+      <CatalogJsonLd data={await blogBreadcrumbs()} />
+      <BlogPageView posts={result.posts} page={page} totalPages={result.totalPages} total={result.total} />
+    </>
+  );
 }
