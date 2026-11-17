@@ -1,14 +1,16 @@
 "use client";
 
 import { useInstalmentPlan } from "@/features/catalog/hooks/useInstalmentPlan";
+import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, Dialog } from "../../ui";
 import { ChevronIcon } from "../../ui/shared";
 
 /**
- * Pay in 4 under the buy row (shared instalment logic; Sapil look), only with
- * the providers this market's checkout offers; nothing when it offers none.
- * Tabby opens Tabby's own pop-up; Tamara opens the schedule.
+ * Instalments under the buy row: Tabby's official snippet (only where this
+ * market's checkout offers Tabby; Tabby QA, Nov 2026), then our pay-in-4 card
+ * (shared instalment logic, Sapil look) for the other providers the market
+ * offers (Tamara), with the schedule.
  */
 export function PdpInstalments({
   price,
@@ -20,7 +22,7 @@ export function PdpInstalments({
   money: (n: number) => string;
 }) {
   const t = useSapilCopy();
-  const plan = useInstalmentPlan(price, currency);
+  const plan = useInstalmentPlan(price);
   const provider = plan.providers.find((p) => p.id === plan.open);
   const when = [
     t("product.payToday"),
@@ -29,9 +31,12 @@ export function PdpInstalments({
     t("product.payInMonths", { count: 3 }),
   ];
 
-  if (!plan.available) return null;
+  const tabby = <TabbyPromoSnippet amount={price} currency={currency} source="product" className="mt-[14px]" />;
+  if (!plan.available) return tabby;
 
   return (
+    <>
+    {tabby}
     <section
       aria-label={t("product.payInFour")}
       className="mt-[14px] bg-sapil-white rounded-[16px] p-[14px] flex items-center gap-[12px] flex-wrap"
@@ -59,20 +64,7 @@ export function PdpInstalments({
           </button>
         ))}
       </div>
-      {plan.openTabbyPopup && plan.tabbyUrl ? (
-        <Dialog open onClose={plan.close} label={t("product.tabbyPlans")} closeLabel={t("product.close")}>
-          <iframe
-            src={plan.tabbyUrl}
-            title={t("product.tabbyPlans")}
-            className="block w-full h-[min(640px,calc(100vh-96px))] border-0 rounded-[24px]"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
-          {provider && !provider.live ? (
-            <p className="px-[24px] pb-[20px] text-[14px] text-sapil-ink-2">{t("product.paySoon", { name: provider.name })}</p>
-          ) : null}
-        </Dialog>
-      ) : provider ? (
+      {provider ? (
         <Dialog open onClose={plan.close} label={t("product.payTitle")} closeLabel={t("product.close")}>
           <div className="p-[40px] max-600:p-[24px]">
             <p className="text-[12px] font-[600] tracking-[.14em] uppercase text-sapil-muted">{provider.name}</p>
@@ -95,5 +87,6 @@ export function PdpInstalments({
         </Dialog>
       ) : null}
     </section>
+    </>
   );
 }

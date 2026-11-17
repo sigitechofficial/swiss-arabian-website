@@ -1,5 +1,6 @@
 "use client";
 
+import { CartTabbyPromo } from "./CartTabbyPromo";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
@@ -439,6 +440,10 @@ export function CartSideSheet() {
                     : formatMoney(amountDue, currency)}
               </strong>
             </div>
+            {/* Tabby's official snippet for the bag total (Tabby QA); only where checkout offers Tabby. */}
+            {quotePending || allUnavailable || amountDue == null ? null : (
+              <CartTabbyPromo amount={amountDue} currency={currency} className="mb-3" />
+            )}
             {quotePending ? null : <LoyaltyDrawerNote />}
             {quotePending || !earnPreview.preview?.enabled ? null : (
               <div className="mb-3 flex items-center gap-1.5 font-sans text-[0.8rem] text-[#8a7d72] [&_.loyalty-earn-note]:m-0 [&_.loyalty-earn-note]:font-sans [&_.loyalty-earn-note]:text-[0.8rem] [&_.loyalty-earn-note]:text-[#8a7d72]">

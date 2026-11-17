@@ -5,13 +5,13 @@ import { createPortal } from "react-dom";
 import { ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
-import { useInstalmentPlan } from "../../hooks/useInstalmentPlan";
+import { useInstalmentPlan, type CustomInstalmentProvider } from "../../hooks/useInstalmentPlan";
+import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import {
   INSTALMENT_PROVIDER_NAMES,
   instalmentProviders,
   payInFour,
-  type InstalmentProvider,
 } from "../../utils/instalments";
 import {
   pdpPay,
@@ -24,14 +24,9 @@ import {
   pdpPayDone,
   pdpPayEyebrow,
   pdpPayFoot,
-  pdpPayFrame,
-  pdpPayFrameClose,
-  pdpPayFrameDialog,
-  pdpPayFrameSoon,
   pdpPayHead,
   pdpPayHeading,
   pdpPayLede,
-  pdpPayMarkTabby,
   pdpPayMarkTamara,
   pdpPayNote,
   pdpPayOffer,
@@ -48,11 +43,11 @@ import {
   pdpPayWhen,
 } from "@/styles/pdpChrome";
 
-type Provider = InstalmentProvider;
+type Provider = CustomInstalmentProvider;
 
+/** Our own block lists Tamara only; Tabby has its official snippet above it. */
 const PROVIDERS: Record<Provider, { name: string; mark: string }> = {
   tamara: { name: INSTALMENT_PROVIDER_NAMES.tamara, mark: pdpPayMarkTamara },
-  tabby: { name: INSTALMENT_PROVIDER_NAMES.tabby, mark: pdpPayMarkTabby },
 };
 
 /** Whether the market's checkout offers each provider now (ADR-005 phase E). */
@@ -62,7 +57,7 @@ function useLiveProviders() {
 
 const WHEN = ["Today", "In 1 month", "In 2 months", "In 3 months"] as const;
 
-export { payInFour, tabbyPopupUrl } from "../../utils/instalments";
+export { payInFour } from "../../utils/instalments";
 
 /** Escape closes, the page behind stops scrolling, and focus starts on the close button. */
 function useDialogChrome(onClose: () => void) {
@@ -83,31 +78,6 @@ function useDialogChrome(onClose: () => void) {
   }, [onClose]);
 
   return closeRef;
-}
-
-export function TabbyDialog({ src, onClose }: { src: string; onClose: () => void }) {
-  const closeRef = useDialogChrome(onClose);
-  const live = useLiveProviders();
-
-  return createPortal(
-    <div className={giftChoiceRoot}>
-      <button type="button" className={giftChoiceBackdrop} aria-label="Close" onClick={onClose} />
-      <section role="dialog" aria-modal="true" aria-label="Tabby payment plans" className={pdpPayFrameDialog}>
-        <button type="button" className={pdpPayFrameClose} aria-label="Close" onClick={onClose} ref={closeRef}>
-          <X size={18} />
-        </button>
-        <iframe
-          className={pdpPayFrame}
-          src={src}
-          title="Tabby payment plans"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
-        {live.tabby.live ? null : <p className={pdpPayFrameSoon}>Tabby is coming soon to our checkout.</p>}
-      </section>
-    </div>,
-    document.body,
-  );
 }
 
 function PayRing({ quarters, className = pdpPayRing }: { quarters: number; className?: string }) {
@@ -192,12 +162,22 @@ function PayDialog({
 }
 
 /**
- * Pay-in-4 card under the price: the offer and its schedule once, then a button per provider.
- * Tabby opens Tabby's own pop-up; Tamara opens our schedule dialog.
+ * Instalments under the price: Tabby's official snippet (only where this
+ * market's checkout offers Tabby), then our pay-in-4 card for the other
+ * providers the market offers (Tamara), with our schedule dialog.
  */
 export function PdpInstalments({ price, currency }: { price: number; currency: string }) {
-  const plan = useInstalmentPlan(price, currency);
-  const { open, tabbyUrl, close } = plan;
+  return (
+    <>
+      <TabbyPromoSnippet amount={price} currency={currency} source="product" className="mb-3" />
+      <CustomInstalments price={price} currency={currency} />
+    </>
+  );
+}
+
+function CustomInstalments({ price, currency }: { price: number; currency: string }) {
+  const plan = useInstalmentPlan(price);
+  const { open, close } = plan;
   const each = formatMoney(plan.each, currency);
 
   // Only providers this market's checkout offers; no row when there are none.
@@ -252,11 +232,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
           })}
         </div>
       </section>
-      {open === "tabby" && tabbyUrl ? (
-        <TabbyDialog src={tabbyUrl} onClose={close} />
-      ) : open ? (
-        <PayDialog provider={open} price={price} currency={currency} onClose={close} />
-      ) : null}
+      {open ? <PayDialog provider={open} price={price} currency={currency} onClose={close} /> : null}
     </>
   );
 }
