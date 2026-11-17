@@ -21,6 +21,7 @@ import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
 import { loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
 import { AppProviders } from "@/app/providers";
+import { marketTimeZone } from "@/lib/storefront/marketTimeZone";
 import "@/lib/site/siteParam";
 import "@/app/globals.css";
 
@@ -167,6 +168,7 @@ export default async function RootLayout({
           locale={locale}
           messages={messages}
           integrations={integrations}
+          marketTimeZone={marketTimeZone(analyticsContext.country)}
         >
           {/* Journeys, first-party tracking, on-site messages and the consent banner (inside the
               providers so the banner speaks the page's language). */}

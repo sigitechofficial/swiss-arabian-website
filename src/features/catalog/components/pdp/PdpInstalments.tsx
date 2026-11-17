@@ -200,6 +200,9 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
   const { open, tabbyUrl, close } = plan;
   const each = formatMoney(plan.each, currency);
 
+  // Only providers this market's checkout offers; no row when there are none.
+  if (!plan.available) return null;
+
   return (
     <>
       <section className={pdpPay} aria-label="Pay in instalments">
@@ -227,7 +230,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
           </ol>
         </div>
         <div className={pdpPayFoot}>
-          {(Object.keys(PROVIDERS) as Provider[]).map((provider) => {
+          {plan.providers.map(({ id: provider }) => {
             const { name, mark } = PROVIDERS[provider];
             return (
               <button

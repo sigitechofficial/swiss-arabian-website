@@ -24,6 +24,8 @@ import { useReviewMutations } from "../hooks/useReviewMutations";
 import type { StorefrontCustomerReviewView } from "../types/reviews";
 import { ReviewWriteForm } from "./ReviewWriteForm";
 import { StarRating } from "./StarRating";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 const FILTERS: { value: string | null; label: MessageKey }[] = [
   { value: null, label: "payments.filter.all" },
@@ -54,10 +56,9 @@ const STATUS_LABEL: Record<string, MessageKey> = {
   DELETED: "myReviews.status.DELETED",
 };
 
-function formatReviewDate(iso: string, locale: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString(locale === "en" ? undefined : intlLocale(locale), {
+function formatReviewDate(iso: string, locale: string, timeZone: string): string {
+  // English: the page's British format, never the device's locale (server and browser agree).
+  return formatMarketDate(iso, locale === "en" ? "en-GB" : intlLocale(locale), timeZone, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -192,10 +193,11 @@ function AccountReviewCard({
 }) {
   const t = useShopCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const name = review.product?.name || t("myReviews.product");
   const slug = review.product?.slug;
   const image = resolveCatalogImageUrl(review.product?.image);
-  const date = formatReviewDate(review.updatedAt || review.createdAt, locale);
+  const date = formatReviewDate(review.updatedAt || review.createdAt, locale, timeZone);
 
   return (
     <article>

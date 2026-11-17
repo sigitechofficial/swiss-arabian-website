@@ -11,6 +11,7 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, Stars, Wrap } from "../../ui";
 import { cx, SAPIL_PASTELS } from "../../ui/shared";
 import { SapilLocaleLink } from "../product/SapilLocaleLink";
+import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 const AVATARS = ["pink", "sky", "lilac", "butter"] as const;
 
@@ -28,6 +29,7 @@ export function PdpReviews({
 }) {
   const t = useSapilCopy();
   const locale = useShopLocale();
+  const timeZone = useMarketTimeZone();
   const signedIn = useIsAuthenticated();
   const [failed, setFailed] = useState(false);
   const list = usePdpReviewList(productId, reviews, { firstRow: 4, nextRow: 4, onError: () => setFailed(true) });
@@ -126,7 +128,7 @@ export function PdpReviews({
                         ) : (
                           <span />
                         )}
-                        <span>{reviewDate(review.createdAt, intlLocale(locale))}</span>
+                        <span>{reviewDate(review.createdAt, intlLocale(locale), timeZone)}</span>
                       </div>
                     </article>
                   );

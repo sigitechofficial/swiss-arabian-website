@@ -233,7 +233,7 @@ export function SapilStorePage({ store }: { store: StoreDetail }) {
                         <span className="text-sapil-line-2">{"★".repeat(5 - r.rating)}</span>
                       </span>
                       <b className="font-[600]">{r.author ?? t("stores.anonymousReviewer")}</b>
-                      <span className="text-sapil-muted">{reviewMonth(r.createdAt, intl)}</span>
+                      <span className="text-sapil-muted">{reviewMonth(r.createdAt, intl, store.timeZone)}</span>
                     </p>
                     <p className="mt-[6px] text-[15px] text-sapil-ink-2 whitespace-pre-line line-clamp-4">{r.text}</p>
                     {r.reply ? (

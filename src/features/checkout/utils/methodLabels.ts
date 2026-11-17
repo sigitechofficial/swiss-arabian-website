@@ -58,6 +58,26 @@ export function usesHostedRedirect(
   );
 }
 
+export type PaymentStepKind = "card" | "tabby" | "cash";
+
+/**
+ * The ways to pay this checkout really offers, in a fixed order, for the step
+ * hint ("Card, Tabby or cash"). Built from the market's live methods: nothing
+ * the shopper can't pick (SE-8). Test Payment is not a way to pay.
+ */
+export function paymentStepKinds(methods: PaymentMethodOption[]): PaymentStepKind[] {
+  const live = methods.filter((m) => m.isEnabled !== false && !isSmokePaymentMethod(m));
+  const kinds = new Set<PaymentStepKind>();
+  for (const method of live) {
+    if (isTabbyPaymentMethod(method)) kinds.add("tabby");
+    else if (/cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`)) kinds.add("cash");
+    else if (usesInlineCardForm(method) || isTelrPaymentMethod(method) || /card/i.test(`${method.methodCode} ${method.displayName}`)) {
+      kinds.add("card");
+    }
+  }
+  return (["card", "tabby", "cash"] as const).filter((kind) => kinds.has(kind));
+}
+
 /** Backend default first, skipping anything explicitly disabled. */
 export function pickDefaultPaymentMethod(
   methods: PaymentMethodOption[],

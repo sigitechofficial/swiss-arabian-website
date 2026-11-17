@@ -6,6 +6,7 @@ import type {
   StorefrontReviewPage,
   StorefrontReviewSummary,
 } from "../types/pdpReviews";
+import { formatMarketDate } from "@/lib/format/marketDate";
 
 function asText(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -130,9 +131,7 @@ export function reviewStarsLabel(rating: number): string {
   return "★".repeat(filled) + "☆".repeat(5 - filled);
 }
 
-/** "12 Oct 2026" in the shopper's language. */
-export function reviewDate(iso: string, locale = "en-GB"): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+/** "12 Oct 2026" in the page's language and the market's time zone (same on server and browser). */
+export function reviewDate(iso: string, locale: string, timeZone: string): string {
+  return formatMarketDate(iso, locale, timeZone, { day: "numeric", month: "short", year: "numeric" });
 }

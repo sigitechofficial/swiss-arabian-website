@@ -35,16 +35,19 @@ export function useInstalmentPlan(price: number, currency: string) {
     openerRef.current?.focus();
   }, []);
 
-  const providers = (Object.keys(live) as InstalmentProvider[]).map((id) => ({
-    id,
-    ...live[id],
-  }));
+  // Only what this market's checkout offers (ADR-005 phase E): the page never
+  // advertises a way to pay the shopper can't pick at checkout (SE-8).
+  const providers = (Object.keys(live) as InstalmentProvider[])
+    .filter((id) => live[id].live)
+    .map((id) => ({ id, ...live[id] }));
 
   return {
     payments,
     /** The first (and typical) payment. */
     each: payments[0],
     providers,
+    /** False when the market offers no pay-in-4: hide the whole row. */
+    available: providers.length > 0,
     tabbyUrl,
     open,
     /** Tabby's own pop-up applies (its currency is covered). */

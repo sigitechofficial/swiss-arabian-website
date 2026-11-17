@@ -11,6 +11,7 @@ import { NotFoundView, StorefrontShell } from "@brand-ui/client";
 import { AppProviders } from "./providers";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { loadSiteIntegrations } from "@/lib/site/siteIntegrations";
+import { DEFAULT_MARKET_TIME_ZONE } from "@/lib/storefront/marketTimeZone";
 import "./globals.css";
 
 /**
@@ -61,6 +62,8 @@ export default async function GlobalNotFound() {
           locale={locale}
           messages={messages}
           integrations={integrations}
+          // No market on a 404: the home market's zone (the page shows no dates).
+          marketTimeZone={DEFAULT_MARKET_TIME_ZONE}
         >
           <StorefrontShell>
             <NotFoundView />
