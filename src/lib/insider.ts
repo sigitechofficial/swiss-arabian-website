@@ -1,13 +1,5 @@
 import { hasConsent } from "@/lib/consent/consent";
-import {
-  trackCartItemAdded,
-  trackCartItemRemoved,
-  trackCartViewed,
-  trackCheckoutViewed,
-  trackHomeViewed,
-  trackListingViewed,
-  trackProductViewed,
-} from "@/lib/analytics/siteEvents";
+import { trackCartItemAdded, trackCartItemRemoved } from "@/lib/analytics/siteEvents";
 
 declare global {
   interface Window {
@@ -545,19 +537,16 @@ export function insiderInit(): void {
 
 /** Home — `home_page_view`. */
 export function insiderHomePage(): void {
-  trackHomeViewed();
   pushPage("home");
 }
 
 /** Listing / collection / search PLP — `listing_page_view`. Partner schema: breadcrumb[]. */
 export function insiderListingPage(page?: InsiderListingPage): void {
-  trackListingViewed();
   pushPage("category", { breadcrumb: listingBreadcrumb(page) });
 }
 
 /** Cart page — `cart_page_view`. Must include the current line items. */
 export function insiderCartPage(cart: InsiderCartSnapshot): void {
-  trackCartViewed();
   pushPage("cart", cartQueueValue(cart));
 }
 
@@ -567,7 +556,6 @@ export function insiderCartPage(cart: InsiderCartSnapshot): void {
  * confirms this partner accepts it. Funnel start stays backend `checkout_started`.
  */
 export function insiderCheckoutPage(): void {
-  trackCheckoutViewed();
   pushPage("other", { name: "Checkout" });
 }
 
@@ -640,11 +628,6 @@ export function ensureInsiderProductPage(product: InsiderProductPayload): void {
 }
 
 export function insiderProductViewed(product: InsiderProductPayload): void {
-  trackProductViewed({
-    productId: product.id,
-    sku: product.sku,
-    currencyCode: product.currency,
-  });
   ensureInsiderProductPage(product);
 }
 

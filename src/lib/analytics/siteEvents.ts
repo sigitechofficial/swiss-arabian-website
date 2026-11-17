@@ -18,6 +18,32 @@ export function trackPageViewed(pathname: string): void {
   track("page_viewed", {}, { dedupeKey: pathname });
 }
 
+/**
+ * Which "view" event a route is, if any. Product pages are not here: they report the product itself
+ * (`trackProductViewed`) once its data has loaded. `path` is the route without a language prefix.
+ */
+export function viewEventForPath(path: string): "home" | "list" | "cart" | "checkout" | null {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length === 0) return "home";
+  if (parts[0] === "products" && parts.length === 1) return "list";
+  if (parts[0] === "search" || parts[0] === "collections") return "list";
+  if (parts[0] === "cart" && parts.length === 1) return "cart";
+  if (parts[0] === "checkout") {
+    if (parts[1] === "payment" && (parts[2] === "success" || parts[2] === "cancel")) return null;
+    return "checkout";
+  }
+  return null;
+}
+
+/** Sends the home, list, cart or checkout view for a route. Does nothing for other routes. */
+export function trackRouteView(path: string): void {
+  const view = viewEventForPath(path);
+  if (view === "home") trackHomeViewed();
+  else if (view === "list") trackListingViewed();
+  else if (view === "cart") trackCartViewed();
+  else if (view === "checkout") trackCheckoutViewed();
+}
+
 export function trackHomeViewed(): void {
   track("homepage_viewed", {}, { dedupeKey: "home" });
 }
