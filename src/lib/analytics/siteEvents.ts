@@ -1,3 +1,4 @@
+import { getStoredCartId } from "@/features/cart/utils/guestToken";
 import { track } from "./tracker";
 
 /**
@@ -44,7 +45,7 @@ export function trackCartItemAdded(item: CartLineRef): void {
     variantId: item.variantId,
     sku: item.sku,
     currencyCode: item.currencyCode,
-    cartId: item.cartId,
+    cartId: item.cartId ?? getStoredCartId(),
     quantity: item.quantity,
   });
 }
@@ -55,7 +56,7 @@ export function trackCartItemRemoved(item: CartLineRef): void {
     variantId: item.variantId,
     sku: item.sku,
     currencyCode: item.currencyCode,
-    cartId: item.cartId,
+    cartId: item.cartId ?? getStoredCartId(),
     quantity: item.quantity,
   });
 }
