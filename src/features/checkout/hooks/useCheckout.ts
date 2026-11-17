@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trackCheckoutStarted } from "@/lib/analytics/siteEvents";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { getActiveCart } from "@/features/cart/api/cart.service";
@@ -301,6 +302,12 @@ export function useCheckout() {
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
+
+  // Our own checkout-start event, once per session (it is how an abandoned checkout is found).
+  useEffect(() => {
+    if (sessionId) trackCheckoutStarted(sessionId, session?.cartId ?? cartId);
+  }, [sessionId, session?.cartId, cartId]);
+
   useEffect(() => {
     if (!sessionId || methodsSessionRef.current === sessionId) return;
     methodsSessionRef.current = sessionId;
