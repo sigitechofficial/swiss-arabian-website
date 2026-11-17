@@ -236,3 +236,33 @@ export function orderDeliveryLabel(
   const label = titleCase(trimmed);
   return /delivery|shipping|collect/i.test(label) ? label : `${label} delivery`;
 }
+
+/** "iq_fulfillment" -> "Iq Fulfillment"; used only to tell same-named options apart. */
+function partnerLabel(code: string | null | undefined): string {
+  return String(code ?? "")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/**
+ * Several partners can expose an option with the same name (URD1 had three
+ * "Standard delivery" rows). When names collide, add the partner so the
+ * shopper can tell which one they pick. Keyed by zoneDeliveryMethodId.
+ */
+export function deliveryOptionTitles(methods: DeliveryMethodOption[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const method of methods) {
+    counts.set(method.displayName, (counts.get(method.displayName) ?? 0) + 1);
+  }
+  return new Map(
+    methods.map((method) => {
+      const partner = partnerLabel(method.partnerCode);
+      const title =
+        (counts.get(method.displayName) ?? 0) > 1 && partner
+          ? `${method.displayName} · ${partner}`
+          : method.displayName;
+      return [method.zoneDeliveryMethodId, title];
+    }),
+  );
+}

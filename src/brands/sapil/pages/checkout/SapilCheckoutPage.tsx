@@ -1,46 +1,50 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
 import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
 import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
-import { useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
+import { applyGooglePlace, useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
-import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
-import { paymentStepKinds, usesHostedRedirect } from "@/features/checkout/utils/methodLabels";
+import { deliveryOptionTitles, paymentStepKinds } from "@/features/checkout/utils/methodLabels";
 import type { PayRow } from "@/features/checkout/utils/paymentOptions";
-import { isTabbyPaymentMethod } from "@/features/checkout/utils/tabby";
 import { appliedCoupon, useFreeShippingBar } from "@/features/promotions";
 import { useCouponForm } from "@/features/promotions/hooks/useCouponForm";
 import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
 import { getBrand } from "@/lib/brand";
+import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
 import { readLoyaltyRedemption } from "@/features/loyalty/types/loyalty";
 import { useCartStore } from "@/stores/useCartStore";
-import { useUiStore } from "@/stores/useUiStore";
-import { Button, CardLogo, Checkbox, Fieldset, RadioCardGroup, Wrap, type RadioCardOption } from "../../ui";
+import { Button, Wrap, type RadioCardOption } from "../../ui";
 import { buttonClass } from "../../ui/Button";
 import { cx } from "../../ui/shared";
 import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
 import { linePriceParts, lineHref } from "../../components/bag/bagData";
 import {
-  AddressFieldset,
   CheckoutEmptyCard,
-  CheckoutHeader,
-  ContactFieldset,
-  DeliveryMethodFieldset,
-  NextButton,
   OrderSummary,
-  ReviewBlock,
   SummaryToggle,
   type AddressErrors,
-  type AddressValue,
-  type CheckoutStepKey,
   type SummaryLine,
   type SummaryTotalRow,
 } from "../../components/checkout/CheckoutParts";
+import {
+  BillingSection,
+  CheckoutCta,
+  CheckoutTop,
+  DeliverySection,
+  PaymentSection,
+  ShippingMethodSection,
+  etaText,
+  feeText,
+  isCashMethod,
+  paymentKindsText,
+  type CheckoutAddress,
+} from "../../components/checkout/CheckoutSections";
+import { EarnNote, GiftCardBox, MissThisRow } from "../../components/checkout/CheckoutExtras";
 import { isValidMobile } from "../../components/commerce/SapilPhoneField";
 import {
   DEFAULT_TILE,
@@ -49,10 +53,7 @@ import {
   richText,
   useSapilMoney,
   useSapilMoneyParts,
-  type SapilMoney,
 } from "../../components/commerce/shared";
-import { useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
-import { regionLabel as regionName } from "@/features/account/utils/addressDisplay";
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -64,91 +65,55 @@ function dialCodeFor(country: string): string {
   }
 }
 
-/** Client checks before the API sees the address (v9: inline message under each field). */
-function validateDelivery(
+/** Client checks before the API sees the address (inline message under each field). */
+function validateAddress(
   email: string,
-  address: AddressValue,
+  address: CheckoutAddress,
   t: SapilTranslator,
   regionKey: "emirate" | "region",
   withContact = true,
 ): AddressErrors {
   const errors: AddressErrors = {};
   if (withContact && !EMAIL.test(email.trim())) errors.email = t("checkout.emailError");
-  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError");
   if (!address.fullName.trim()) errors.fullName = t("checkout.fullNameError");
+  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError");
+  if (address.address1.trim().length < 3) errors.address1 = t("checkout.streetError");
+  if (!address.city.trim()) errors.city = t("checkout.cityError");
   if (!address.emirate) errors.emirate = regionKey === "emirate" ? t("checkout.emirateError") : t("checkout.regionError");
-  if (!address.city.trim()) errors.city = t("checkout.areaError");
-  if (!address.address1.trim()) errors.address1 = t("checkout.streetError");
   return errors;
 }
 
-const FIELD_ORDER: Array<keyof AddressErrors> = ["email", "phone", "fullName", "emirate", "city", "address1"];
-const FIELD_IDS: Record<keyof AddressErrors, string> = {
-  email: "co-email",
-  phone: "co-phone",
-  fullName: "ship-name",
-  emirate: "ship-region",
-  city: "ship-area",
-  address1: "ship-street",
-};
+/** Form order: the first field with an error gets focus. */
+const SHIP_FIELDS: Array<[keyof AddressErrors, string]> = [
+  ["email", "co-email"],
+  ["fullName", "ship-name"],
+  ["phone", "co-phone"],
+  ["address1", "ship-street"],
+  ["city", "ship-area"],
+  ["emirate", "ship-region"],
+];
+const BILL_FIELDS: Array<[keyof AddressErrors, string]> = [
+  ["fullName", "bill-name"],
+  ["address1", "bill-street"],
+  ["city", "bill-area"],
+  ["emirate", "bill-region"],
+];
 
 function focusField(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.focus();
+  el.focus({ preventScroll: true });
   el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
-function etaText(method: DeliveryMethodOption, t: SapilTranslator): string | undefined {
-  const min = method.metadata?.estimatedMinDays;
-  const max = method.metadata?.estimatedMaxDays;
-  if (typeof min === "number" && typeof max === "number" && min !== max) return t("checkout.etaRange", { min, max });
-  const days = typeof max === "number" ? max : min;
-  return typeof days === "number" ? t("checkout.etaDays", { count: days }) : undefined;
-}
-
-/** A missing fee means "not priced yet" (backend guide: free / TBD), so no price is shown; only an explicit 0 is "Free". */
-function feeText(method: DeliveryMethodOption, currency: string, money: SapilMoney, t: SapilTranslator): string | undefined {
-  if (method.estimatedFee == null || method.estimatedFee.trim() === "") return undefined;
-  const fee = Number(method.estimatedFee);
-  if (!Number.isFinite(fee)) return undefined;
-  return fee > 0 ? money(fee, currency) : t("checkout.methodFree");
-}
-
-const CARD_PROVIDER_NAMES: Record<NonNullable<PayRow["provider"]>, string> = { stripe: "Stripe", paymob: "Paymob" };
-
-/** `nameProvider`: more than one card option is on offer, so each one says whose it is. */
-function payTitle(row: PayRow, t: SapilTranslator, nameProvider = false): string {
-  if (row.kind === "card") {
-    return nameProvider && row.provider
-      ? t("checkout.payCardVia", { provider: CARD_PROVIDER_NAMES[row.provider] })
-      : t("checkout.payCard");
-  }
-  if (row.kind === "apple_pay") return t("checkout.payApple");
-  if (row.kind === "google_pay") return t("checkout.payGoogle");
-  return row.method?.displayName ?? row.title;
-}
-
-function payNote(row: PayRow, t: SapilTranslator): string | undefined {
-  if (row.kind === "card") return row.marks?.includes("amex") ? t("checkout.payCardBrands") : t("checkout.payCardBrandsShort");
-  if (row.kind === "apple_pay") return t("checkout.payAppleNote");
-  if (row.kind === "google_pay") return t("checkout.payGoogleNote");
-  const method = row.method;
-  if (!method) return row.sub;
-  if (isTabbyPaymentMethod(method)) {
-    if (row.tabbyState === "checking") return t("checkout.payTabbyChecking");
-    if (row.tabbyState === "rejected") return row.tabbyMessage;
-    return t("checkout.payTabbyNote");
-  }
-  if (/\bcod\b|cash/i.test(`${method.providerCode} ${method.methodCode} ${method.displayName}`)) return t("checkout.payCashNote");
-  if (usesHostedRedirect(method)) return t("checkout.payRedirectNote");
-  return undefined;
-}
-
-/** v9 checkout: delivery (contact, address, method) → payment, with the order summary beside it. */
+/**
+ * Sapil checkout in Swiss Arabian's layout (`CheckoutPageView`): one page with
+ * Delivery, Shipping method, Billing information and Payment, then Place
+ * order; the order summary beside it (a toggle above the form on phones).
+ * Sapil styling and copy; every rule lives in the shared checkout hooks.
+ */
 export function SapilCheckoutPage() {
   const t = useSapilCopy();
-  const shopT = useShopTranslator();
   const money = useSapilMoney();
   const moneyParts = useSapilMoneyParts();
   const f = useCheckoutForm();
@@ -156,21 +121,20 @@ export function SapilCheckoutPage() {
   const coupon = useCouponForm();
   const ship = useFreeShippingBar();
   const marketDelivery = useMarketDelivery();
-  const setCartOpen = useUiStore((s) => s.setCartOpen);
   const cartLoyalty = useCartStore((s) => s.loyaltyRedemption);
   const { checkout, session, currency } = f;
   const gifts = useGiftAwards(f.promoSnapshot, currency);
 
-  const [step, setStep] = useState<CheckoutStepKey>("delivery");
   const [errors, setErrors] = useState<AddressErrors>({});
   const [billingErrors, setBillingErrors] = useState<AddressErrors>({});
-  const deliveryHeading = useRef<HTMLHeadingElement>(null);
-  const paymentHeading = useRef<HTMLHeadingElement>(null);
 
   const regionKey = f.countryCode === "AE" ? "emirate" : "region";
-  const regionLabel = regionKey === "emirate" ? t("checkout.emirate") : t("checkout.region");
-  const regionPlaceholder = regionKey === "emirate" ? t("checkout.emiratePlaceholder") : t("checkout.regionPlaceholder");
-  const regions = f.regionSet?.regions ?? [];
+  const region = {
+    regionLabel: regionKey === "emirate" ? t("checkout.emirate") : t("checkout.region"),
+    regionPlaceholder: regionKey === "emirate" ? t("checkout.emiratePlaceholder") : t("checkout.regionPlaceholder"),
+    regions: f.regionSet?.regions ?? [],
+    countryCode: f.countryCode,
+  };
   const dialCode = dialCodeFor(f.countryCode);
 
   const payKinds = useMemo(() => paymentStepKinds(checkout.paymentMethods), [checkout.paymentMethods]);
@@ -190,56 +154,36 @@ export function SapilCheckoutPage() {
     tabbyLang: f.payLang,
   });
 
-  function go(next: CheckoutStepKey) {
-    setStep(next);
-    window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    // Move focus to the new step's heading so screen readers hear where they are.
-    window.requestAnimationFrame(() => (next === "payment" ? paymentHeading : deliveryHeading).current?.focus({ preventScroll: true }));
-  }
-
-  function checkDelivery(): boolean {
-    const found = validateDelivery(f.email, f.shipping, t, regionKey);
-    setErrors(found);
-    const first = FIELD_ORDER.find((key) => found[key]);
+  /** Delivery and (when separate) billing; focuses the first field to fix. */
+  function checkFields(): boolean {
+    const shipFound = validateAddress(f.email, f.shipping, t, regionKey);
+    const billFound = f.billingSame
+      ? {}
+      : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, false);
+    setErrors(shipFound);
+    setBillingErrors(billFound);
+    const first =
+      SHIP_FIELDS.find(([key]) => shipFound[key])?.[1] ?? BILL_FIELDS.find(([key]) => billFound[key])?.[1];
     if (first) {
-      if (step !== "delivery") setStep("delivery");
-      window.requestAnimationFrame(() => focusField(FIELD_IDS[first]));
-      return false;
-    }
-    return true;
-  }
-
-  function checkBilling(): boolean {
-    if (f.billingSame) return true;
-    const found = validateDelivery(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, false);
-    setBillingErrors(found);
-    const first = (["fullName", "emirate", "city", "address1"] as const).find((key) => found[key]);
-    if (first) {
-      const ids = { fullName: "bill-name", emirate: "bill-region", city: "bill-area", address1: "bill-street" };
-      window.requestAnimationFrame(() => focusField(ids[first]));
+      window.requestAnimationFrame(() => focusField(first));
       return false;
     }
     return true;
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
-    if (step === "delivery") {
-      event.preventDefault();
-      if (checkDelivery()) go("payment");
-      return;
-    }
-    if (!checkDelivery() || !checkBilling()) {
+    if (!checkFields()) {
       event.preventDefault();
       return;
     }
     f.handleSubmit(event);
   }
 
-  const setShippingField = (field: keyof AddressValue, value: string) => {
+  const setShippingField = (field: keyof CheckoutAddress, value: string) => {
     f.setShipping((prev) => ({ ...prev, [field]: value }));
     if (errors[field as keyof AddressErrors]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
-  const setBillingField = (field: keyof AddressValue, value: string) => {
+  const setBillingField = (field: keyof CheckoutAddress, value: string) => {
     f.setBilling((prev) => ({ ...prev, [field]: value }));
     if (billingErrors[field as keyof AddressErrors]) setBillingErrors((prev) => ({ ...prev, [field]: undefined }));
   };
@@ -251,10 +195,10 @@ export function SapilCheckoutPage() {
         <p className="sr-only" role="status">
           {t("checkout.loading")}
         </p>
-        <SapilSkeleton className="h-[52px] w-[260px] mb-[20px]" />
-        <SapilSkeleton className="h-[72px] mb-[24px] !rounded-[20px]" />
-        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
-          <SapilSkeleton className="h-[420px] !rounded-[24px] max-900:h-[300px]" />
+        <SapilSkeleton className="h-[18px] w-[180px] mb-[18px]" />
+        <SapilSkeleton className="h-[52px] w-[260px] mb-[28px]" />
+        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[48px] max-900:grid-cols-[1fr]">
+          <SapilSkeleton className="h-[480px] !rounded-[24px] max-900:h-[320px]" />
           <SapilSkeleton className="h-[420px] !rounded-[28px] max-900:hidden" />
         </div>
       </Wrap>
@@ -268,9 +212,12 @@ export function SapilCheckoutPage() {
         ? [t("checkout.unavailableTitle"), t("checkout.unavailableBody"), t("checkout.backToBag"), "/cart"]
         : [t("checkout.notOrderableTitle"), t("checkout.notOrderableBody"), t("checkout.backToBag"), "/cart"];
     return (
-      <Wrap className="w-full pt-[24px] pb-[88px] max-900:pt-[16px] max-900:pb-[56px] min-h-[70vh]">
-        <CheckoutEmptyCard title={title} body={body} actions={<Button href={href} LinkComponent={SapilLink}>{cta}</Button>} />
-      </Wrap>
+      <>
+        <CheckoutTop />
+        <Wrap className="w-full pb-[88px] max-900:pb-[56px] min-h-[50vh]">
+          <CheckoutEmptyCard title={title} body={body} actions={<Button href={href} LinkComponent={SapilLink}>{cta}</Button>} />
+        </Wrap>
+      </>
     );
   }
 
@@ -293,7 +240,7 @@ export function SapilCheckoutPage() {
       was: prices.sale != null ? money(prices.list, line.currency) : undefined,
     };
   });
-  const giftLines: ReactNode = gifts.views.flatMap((view) =>
+  const giftLines: ReactNode[] = gifts.views.flatMap((view) =>
     view.kind === "awarded"
       ? view.gifts.map((gift) => (
           <div key={gift.key} className="flex items-center justify-between gap-[12px] py-[10px] border-b border-sapil-line text-[14px]">
@@ -370,105 +317,63 @@ export function SapilCheckoutPage() {
     trust.push(t("checkout.trustFreeOver", { amount: money(freeOver, marketDelivery.currency ?? ship.currency) }));
   }
 
-  /* ——— delivery + payment data ——— */
+  /* ——— shipping + payment data ——— */
+  const deliveryTitles = deliveryOptionTitles(checkout.deliveryMethods);
   const deliveryOptions: RadioCardOption[] = checkout.deliveryMethods.map((method) => ({
     value: method.zoneDeliveryMethodId,
-    title: method.displayName,
+    title: deliveryTitles.get(method.zoneDeliveryMethodId) ?? method.displayName,
     description: etaText(method, t),
     fee: feeText(method, currency, money, t),
     disabled: f.submitting,
   }));
-  const selectedDelivery = checkout.deliveryMethods.find((m) => m.zoneDeliveryMethodId === checkout.selectedDeliveryId);
 
-  const payRows = payment.groups.filter((group) => group.id !== "more").flatMap((group) => group.rows);
-  const severalCards = payRows.filter((row) => row.kind === "card").length > 1;
-  const payOptions: RadioCardOption[] = payRows.map((row) => {
-    const active = row.key === payment.activeKey;
-    let panel: ReactNode = undefined;
-    if (active && row.surface) {
-      panel =
-        payment.formReady(row) && checkout.inlinePayment ? (
-          <SapilInlinePayment
-            session={checkout.inlinePayment}
-            surface={row.surface}
-            email={f.email}
-            name={f.shipping.fullName}
-            phone={f.shipping.phone}
-            country={f.countryCode}
-            payLabel={t("checkout.payAmount", { amount: money(payable, currency) })}
-          />
-        ) : (
-          <p className="text-[14px] text-sapil-ink-2" role="status">
-            {t("checkout.cardFormLoading")}
-          </p>
-        );
-    } else if (active && row.tabby !== undefined && !row.disabled && payable > 0) {
-      panel = <SapilTabbyCard config={row.tabby || null} total={payable} currency={currency} lang={f.payLang} />;
-    }
-    const isTabby = Boolean(row.method && isTabbyPaymentMethod(row.method));
-    return {
-      value: row.key,
-      title: payTitle(row, t, severalCards),
-      description: payNote(row, t),
-      logos:
-        row.kind === "card" ? (
-          <>
-            <CardLogo kind="visa" />
-            <CardLogo kind="mastercard" />
-          </>
-        ) : isTabby ? (
-          <CardLogo kind="tabby" />
-        ) : undefined,
-      panel,
-      disabled: f.submitting || row.disabled,
-    };
-  });
-  const activeRow = payment.activeRow;
+  // Only what this market offers: "coming soon" methods are not listed.
+  const payGroups = payment.groups.filter((group) => group.id !== "more" && group.rows.length > 0);
   const payableText = money(payable, currency);
+
+  function panelFor(row: PayRow): ReactNode {
+    if (row.surface) {
+      return payment.formReady(row) && checkout.inlinePayment ? (
+        <SapilInlinePayment
+          session={checkout.inlinePayment}
+          surface={row.surface}
+          email={f.email}
+          name={f.shipping.fullName}
+          phone={f.shipping.phone}
+          country={f.countryCode}
+          payLabel={t("checkout.payAmount", { amount: payableText })}
+        />
+      ) : (
+        <p className="text-[14px] text-sapil-ink-2" role="status">
+          {t("checkout.cardFormLoading")}
+        </p>
+      );
+    }
+    if (row.tabby !== undefined && !row.disabled && payable > 0) {
+      return <SapilTabbyCard config={row.tabby || null} total={payable} currency={currency} lang={f.payLang} />;
+    }
+    return undefined;
+  }
+
+  const activeRow = payment.activeRow;
   const submitLabel = f.submitting
     ? t("checkout.placing")
     : payment.covered
       ? t("checkout.placeOrder", { amount: payableText })
       : f.ctaKind === "continue"
         ? t("checkout.continueToPay", { amount: payableText })
-        : activeRow?.method && /\bcod\b|cash/i.test(`${activeRow.method.providerCode} ${activeRow.method.methodCode}`)
+        : activeRow?.method && isCashMethod(activeRow.method)
           ? t("checkout.placeOrder", { amount: payableText })
           : t("checkout.payAmount", { amount: payableText });
+  const payNowLabel = f.submitting
+    ? t("checkout.placing")
+    : activeRow?.surface === "apple_pay"
+      ? t("checkout.payWithApple")
+      : activeRow?.surface === "google_pay"
+        ? t("checkout.payWithGoogle")
+        : t("checkout.payAmount", { amount: payableText });
 
   const brand = getBrand();
-  const address = f.shipping;
-  const reviewRows = [
-    {
-      label: t("checkout.reviewContact"),
-      value: (
-        <>
-          {f.email} · <span dir="ltr">{address.phone}</span>
-        </>
-      ),
-      onChange: () => go("delivery"),
-    },
-    {
-      label: t("checkout.reviewDeliverTo"),
-      value: `${address.fullName}, ${[
-        address.address2,
-        address.address1,
-        address.city,
-        address.emirate ? regionName(f.countryCode, address.emirate, shopT) : "",
-      ]
-        .filter(Boolean)
-        .join(", ")}`,
-      onChange: () => go("delivery"),
-    },
-    ...(selectedDelivery
-      ? [
-          {
-            label: t("checkout.reviewMethod"),
-            value: [selectedDelivery.displayName, etaText(selectedDelivery, t)].filter(Boolean).join(" · "),
-            onChange: () => go("delivery"),
-          },
-        ]
-      : []),
-  ];
 
   const couponMessage = coupon.fieldError
     ? { tone: "bad" as const, content: coupon.fieldError }
@@ -489,113 +394,69 @@ export function SapilCheckoutPage() {
 
   return (
     <>
-      <CheckoutHeader
-        step={step}
-        bagHint={t("checkout.stepBagHint", { count: bag.itemCount, amount: money(f.subtotal, currency) })}
-        payKinds={payKinds}
-        lang={f.payLang}
-        onOpenBag={() => setCartOpen(true)}
-      />
-      <Wrap
-        className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start pt-[24px] pb-[88px] max-900:grid-cols-[1fr] max-900:gap-[16px] max-900:pt-[16px] max-900:pb-[56px]"
-      >
-        <SummaryToggle
-          open={f.summaryOpen}
-          onToggle={() => f.setSummaryOpen((open) => !open)}
-          total={money(payable, currency)}
-        />
-        <div className="min-w-0">
-          <form id="checkout-form" noValidate onSubmit={onSubmit}>
-            <div hidden={step !== "delivery"} className="flex flex-col gap-[20px]">
-              <h2 ref={deliveryHeading} tabIndex={-1} className="sr-only">
-                {t("checkout.stepDelivery")}
-              </h2>
-              <ContactFieldset
+      <CheckoutTop />
+      <Wrap className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[clamp(28px,4vw,48px)] items-start pb-[88px] max-900:flex max-900:flex-col max-900:items-stretch max-900:gap-[16px] max-900:pb-[56px]">
+        <SummaryToggle open={f.summaryOpen} onToggle={() => f.setSummaryOpen((open) => !open)} total={payableText} />
+        <div className="min-w-0 max-900:order-3">
+          <GooglePlacesProvider>
+            <form id="checkout-form" noValidate onSubmit={onSubmit} className="flex flex-col gap-[20px]">
+              <MissThisRow products={f.missThis} canAdd={f.canAddToOrder} onAdd={(product) => f.addFromCheckout(product)} />
+              <DeliverySection
                 email={f.email}
                 onEmail={(value) => {
                   f.setEmail(value);
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                phone={address.phone}
-                onPhone={(value) => setShippingField("phone", value)}
+                address={f.shipping}
+                onField={setShippingField}
+                onPlace={(parsed) => applyGooglePlace(f.setShipping, parsed, f.countryCode)}
                 dialCode={dialCode}
                 errors={errors}
                 before={
                   f.testData ? (
-                    <p className="clear-both flex items-center justify-between gap-[12px] mb-[14px] py-[8px] px-[12px] rounded-[12px] border border-dashed border-sapil-line-2 text-[13px] text-sapil-ink-2">
+                    <p className="flex items-center justify-between gap-[12px] mb-[16px] py-[8px] px-[12px] rounded-[12px] border border-dashed border-sapil-line-2 text-[13px] text-sapil-ink-2">
                       <span>{t("checkout.testData")}</span>
-                      <button type="button" onClick={f.fillTestData} className={cx(buttonClass("link"), "!text-[13px]")}>
+                      <button type="button" onClick={f.fillTestData} className={cx(buttonClass("link"), "!text-[13px] shrink-0")}>
                         {t("checkout.testDataFill")}
                       </button>
                     </p>
                   ) : null
                 }
+                {...region}
               />
-              <AddressFieldset
-                legend={t("checkout.address")}
-                idPrefix="ship"
-                value={address}
-                onChange={setShippingField}
-                regionLabel={regionLabel}
-                regionPlaceholder={regionPlaceholder}
-                regions={regions}
-                countryCode={f.countryCode}
-                errors={errors}
-              />
-              <DeliveryMethodFieldset
+              <ShippingMethodSection
                 options={deliveryOptions}
                 value={checkout.selectedDeliveryId}
                 onChange={(id) => void checkout.chooseDelivery(id)}
                 message={checkout.status === "loading" ? t("checkout.methodLoading") : t("checkout.methodNone")}
               />
-              <NextButton>{t("checkout.continue")}</NextButton>
-              <SapilLink href="/products" className={cx(buttonClass("link"), "self-center !text-[14px]")}>
-                {t("checkout.keepShopping")}
-              </SapilLink>
-            </div>
+              <BillingSection
+                same={f.billingSame}
+                onSame={f.setBillingSame}
+                address={{ ...f.billing, phone: f.shipping.phone }}
+                onField={setBillingField}
+                onPlace={(parsed) => applyGooglePlace(f.setBilling, parsed, f.countryCode)}
+                errors={billingErrors}
+                {...region}
+              />
+              <PaymentSection
+                groups={payGroups}
+                activeKey={payment.activeKey}
+                onPick={payment.pick}
+                panelFor={panelFor}
+                disabled={f.submitting}
+                covered={payment.covered}
+                emptyMessage={checkout.status === "loading" ? t("checkout.paymentLoading") : t("checkout.paymentNone")}
+                kindsText={paymentKindsText(payKinds, f.payLang, t)}
+                payNow={
+                  payment.selectedOpensHere ? (
+                    <CheckoutCta type="button" disabled={!f.canSubmit || f.submitting} onClick={payment.payNow}>
+                      {payNowLabel}
+                    </CheckoutCta>
+                  ) : null
+                }
+              />
 
-            <div hidden={step !== "payment"} className="flex flex-col gap-[20px]">
-              <h2 ref={paymentHeading} tabIndex={-1} className="sr-only">
-                {t("checkout.stepPayment")}
-              </h2>
-              <ReviewBlock rows={reviewRows} />
-              <Fieldset legend={t("checkout.payment")}>
-                <p className="clear-both text-[14px] text-sapil-ink-2 mt-[-6px] mb-[16px]">{t("checkout.paymentNote")}</p>
-                {payment.covered ? (
-                  <p className="text-[15px] text-sapil-ok">{t("checkout.paymentCovered")}</p>
-                ) : payOptions.length ? (
-                  <RadioCardGroup
-                    name="payMethod"
-                    aria-label={t("checkout.payment")}
-                    options={payOptions}
-                    value={payment.activeKey ?? undefined}
-                    onValueChange={(key) => {
-                      const row = payRows.find((r) => r.key === key);
-                      if (row) payment.pick(row);
-                    }}
-                  />
-                ) : (
-                  <p className="text-[14px] text-sapil-ink-2" role="status">
-                    {checkout.status === "loading" ? t("checkout.paymentLoading") : t("checkout.paymentNone")}
-                  </p>
-                )}
-                <Checkbox checked={f.billingSame} onChange={(event) => f.setBillingSame(event.target.checked)}>
-                  {t("checkout.billingSame")}
-                </Checkbox>
-              </Fieldset>
-              {!f.billingSame ? (
-                <AddressFieldset
-                  legend={t("checkout.billing")}
-                  idPrefix="bill"
-                  value={{ ...f.billing, phone: address.phone }}
-                  onChange={setBillingField}
-                  regionLabel={regionLabel}
-                  regionPlaceholder={regionPlaceholder}
-                  regions={regions}
-                  countryCode={f.countryCode}
-                  errors={billingErrors}
-                />
-              ) : null}
               {checkout.errorMsg ? (
                 <p className="rounded-[14px] bg-sapil-p-peach py-[12px] px-[16px] text-[14px] text-sapil-sale" role="alert">
                   {checkout.errorMsg}
@@ -609,15 +470,10 @@ export function SapilCheckoutPage() {
                   ) : null}
                 </p>
               ) : null}
-              {payment.covered || !payment.hideSubmit ? (
-                <NextButton disabled={!f.canSubmit} arrow={false}>
-                  {submitLabel}
-                </NextButton>
-              ) : payment.selectedOpensHere ? (
-                <NextButton type="button" disabled={!f.canSubmit || f.submitting} onClick={payment.payNow} arrow={false}>
-                  {f.submitting ? t("checkout.placing") : t("checkout.payAmount", { amount: payableText })}
-                </NextButton>
-              ) : null}
+
+              <CheckoutCta id="place-order" disabled={!f.canSubmit} hidden={payment.hideSubmit}>
+                {submitLabel}
+              </CheckoutCta>
               <p className="text-center text-[13px] text-sapil-muted">
                 {richText(t("checkout.legal"), {
                   terms: (
@@ -632,55 +488,63 @@ export function SapilCheckoutPage() {
                   ),
                 })}
               </p>
-              <button type="button" onClick={() => go("delivery")} className={cx(buttonClass("link"), "self-center !text-[14px]")}>
-                {t("checkout.backToDelivery")}
-              </button>
-            </div>
-          </form>
+            </form>
+          </GooglePlacesProvider>
         </div>
 
         <OrderSummary
-          open={f.summaryOpen}
-          lines={summaryLines}
-          onQuantity={(key, quantity) => {
-            const line = f.summaryLines.find((l) => (l.cartItemId ?? l.variantId) === key);
-            if (!line) return;
-            if (quantity < 1) bag.removeLine(line);
-            else bag.setLineQuantity(line, quantity);
-          }}
-          extra={giftLines}
-          promo={{
-            value: coupon.value,
-            onChange: coupon.setCode,
-            onSubmit: (event) => void coupon.onApply(event),
-            disabled: coupon.busy || !coupon.cartId,
-            busy: coupon.busy,
-            submitLabel: coupon.applying
-              ? t("checkout.promoApplying")
-              : coupon.applied?.code
-                ? t("checkout.promoReplace")
-                : t("checkout.promoApply"),
-            message: couponMessage,
-          }}
-          rewards={<SapilPointsBox quoteOverride={sessionPointsQuote} />}
-          rows={rows}
-          grand={{ label: showPayable ? t("checkout.toPay") : t("checkout.total"), ...grandParts }}
-          vatNote={f.tax > 0 && taxIncluded ? t("checkout.taxIncluded", { amount: money(f.tax, currency), label: taxLabel }) : undefined}
-          notes={
-            <>
-              {f.leftOutCount > 0 ? (
-                <p className="mt-[10px] text-[13px] text-sapil-ink-2">{t("checkout.leftOut", { count: f.leftOutCount })}</p>
-              ) : null}
-              {f.warnings.map((warning) => (
-                <p key={warning} className="mt-[10px] text-[13px] text-sapil-ink-2" role="status">
-                  {warning}
-                </p>
-              ))}
-            </>
-          }
-          trust={trust}
-          LinkComponent={SapilLink}
-        />
+            title={t("checkout.yourOrder")}
+            sticky={false}
+            open={f.summaryOpen}
+            lines={summaryLines}
+            extra={
+              <>
+                {giftLines}
+                {f.leftOutCount > 0 ? (
+                  <p className="mt-[10px] text-[13px] text-sapil-ink-2">{t("checkout.leftOut", { count: f.leftOutCount })}</p>
+                ) : null}
+              </>
+            }
+            promo={{
+              value: coupon.value,
+              onChange: coupon.setCode,
+              onSubmit: (event) => void coupon.onApply(event),
+              disabled: coupon.busy || !coupon.cartId,
+              busy: coupon.busy,
+              submitLabel: coupon.applying
+                ? t("checkout.promoApplying")
+                : coupon.applied?.code
+                  ? t("checkout.promoReplace")
+                  : t("checkout.promoApply"),
+              message: couponMessage,
+            }}
+            rewards={
+              <>
+                <SapilPointsBox quoteOverride={sessionPointsQuote} />
+                <GiftCardBox
+                  cards={f.giftCards}
+                  currency={currency}
+                  checkoutSessionId={session?.checkoutSessionId}
+                  onCheckoutSession={checkout.adoptSession}
+                />
+              </>
+            }
+            rows={rows}
+            grand={{ label: showPayable ? t("checkout.toPay") : t("checkout.total"), ...grandParts }}
+            vatNote={f.tax > 0 && taxIncluded ? t("checkout.taxIncluded", { amount: money(f.tax, currency), label: taxLabel }) : undefined}
+            notes={
+              <>
+                <EarnNote preview={f.earnPreview.preview} />
+                {f.warnings.map((warning) => (
+                  <p key={warning} className="mt-[10px] text-[13px] text-sapil-ink-2" role="status">
+                    {warning}
+                  </p>
+                ))}
+              </>
+            }
+            trust={trust}
+            LinkComponent={SapilLink}
+          />
       </Wrap>
     </>
   );

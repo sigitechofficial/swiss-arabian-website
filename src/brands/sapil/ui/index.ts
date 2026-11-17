@@ -27,6 +27,8 @@ export {
   Checkbox,
   RadioCardGroup,
   CardLogo,
+  FieldFrame,
+  fieldControlClass,
   type FieldProps,
   type SelectFieldProps,
   type CheckboxProps,
