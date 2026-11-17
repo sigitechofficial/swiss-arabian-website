@@ -20,7 +20,7 @@ import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
 import type { TabbyLang } from "../../utils/tabby";
 import { usePaymentOptions } from "../../hooks/usePaymentOptions";
 import type { PayMark } from "../../utils/paymentOptions";
-import { pdpPayMarkTabby } from "@/styles/pdpChrome";
+import { TabbyLogo } from "@/components/payments/TabbyLogo";
 
 type CheckoutPaymentProps = {
   methods: PaymentMethodOption[];
@@ -128,7 +128,7 @@ export function CheckoutPayment({
                               aria-describedby={row.sub ? `pay-opt-note-${row.key}` : undefined}
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
-                            {row.tabby !== undefined ? <span className={pdpPayMarkTabby} aria-hidden="true">tabby</span> : null}
+                            {row.tabby !== undefined ? <TabbyLogo /> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
                               {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}

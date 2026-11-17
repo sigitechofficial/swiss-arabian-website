@@ -38,7 +38,7 @@ describe("tabby helpers", () => {
     expect(isTabbyPaymentMethod(tabbyMethod)).toBe(true);
     expect(isTabbyPaymentMethod(paymob)).toBe(false);
     expect(usesHostedRedirect({ ...tabbyMethod, requiresRedirect: false })).toBe(true);
-    expect(paymentMethodNote(tabbyMethod)).toBe("Pay in 4, interest-free");
+    expect(paymentMethodNote(tabbyMethod)).toBe("");
   });
 
   it("reads snippet settings from metadata.tabby", () => {

@@ -484,6 +484,8 @@ export function payTitle(row: PayRow, t: SapilTranslator, nameProvider = false):
   }
   if (row.kind === "apple_pay") return t("checkout.payApple");
   if (row.kind === "google_pay") return t("checkout.payGoogle");
+  // Tabby: the approved name, already in the shopper's language (paymentGroups).
+  if (row.method && isTabbyPaymentMethod(row.method)) return row.title;
   return row.method?.displayName ?? row.title;
 }
 
@@ -500,7 +502,8 @@ export function payNote(row: PayRow, t: SapilTranslator): string | undefined {
   if (isTabbyPaymentMethod(method)) {
     if (row.tabbyState === "checking") return t("checkout.payTabbyChecking");
     if (row.tabbyState === "rejected") return row.tabbyMessage;
-    return t("checkout.payTabbyNote");
+    // Tabby QA: no plan caption; the Tabby snippet below shows the plans.
+    return undefined;
   }
   if (isCashMethod(method)) return t("checkout.payCashNote");
   if (usesHostedRedirect(method)) return t("checkout.payRedirectNote");

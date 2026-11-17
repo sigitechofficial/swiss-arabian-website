@@ -280,8 +280,8 @@ export function SapilKit({ only }: { only?: string }) {
               { value: "apple", title: "Apple Pay", description: "Pay with Face ID or Touch ID" },
               {
                 value: "tabby",
-                title: "Tabby: 4 interest-free payments",
-                description: "AED 19.75 today, then every 2 weeks. No interest, no fees.",
+                // Tabby's approved name, no plan caption (Tabby QA, Nov 2026).
+                title: "Pay later with Tabby",
                 logos: <CardLogo kind="tabby" />,
               },
               { value: "cod", title: "Cash on delivery", description: "Pay the courier in cash or by card. AED 10 handling fee." },
