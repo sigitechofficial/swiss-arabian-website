@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { toast } from "@/components/ui/Toaster";
 import {
   createContext,
@@ -9,8 +10,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { localeFromPathname } from "@/lib/i18n/localePath";
+import { useRouter } from "next/navigation";
 import { dir as textDirection } from "@/lib/i18n/locales";
 import {
   marketLanguageOptions,
@@ -96,8 +96,10 @@ function contextFromMarket(
 
 export function MarketProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const pathname = usePathname();
-  const pathLanguage = localeFromPathname(pathname || "/");
+  // The route's language: on a provider's fixed return address
+  // (`/payments/tabby/return?lang=ar`) the address has no prefix, but the page
+  // is served in the shopper's language and must stay in it.
+  const pathLanguage = useShopLocale();
   const marketId = useUiStore((s) => s.selectedMarketId);
   const router = useRouter();
   /**

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
-import { localeFromPathname } from "@/lib/i18n/localePath";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useUiStore } from "@/stores/useUiStore";
 import type { MobileNavItem, MobileNavLink } from "@/features/home/constants/homeAssets";
@@ -95,7 +94,7 @@ export function useNavigation(zoneCode?: string | null): UseNavigationReturn {
     s.catalogContext?.zoneCode === zone ? s.catalogContext.salesChannelCode : "",
   );
   // The menu is translated, so a language change is a different menu.
-  const language = localeFromPathname(usePathname() || "/");
+  const language = useShopLocale();
   const zoneQuery = useQuery({
     queryKey: ["storefront", "navigation", zone, salesChannelCode ?? "", language],
     queryFn: () => fetchNavigation(zone),

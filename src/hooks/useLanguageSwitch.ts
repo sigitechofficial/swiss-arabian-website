@@ -1,7 +1,8 @@
 "use client";
 
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { usePathname } from "next/navigation";
-import { localeFromPathname, withLocalePrefix } from "@/lib/i18n/localePath";
+import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { isLocale } from "@/lib/i18n/locales";
 
 /** Where switching to `id` goes from `pathname` (same page, other language); null when it stays put. */
@@ -15,7 +16,8 @@ export function languageSwitchPath(pathname: string, id: string): string | null 
 /** The page's language and a switch to another one (same page). */
 export function useLanguageSwitch() {
   const pathname = usePathname();
-  const languageId = localeFromPathname(pathname || "/");
+  // The page's language (route), also on unprefixed payment return addresses.
+  const languageId = useShopLocale();
   const setLanguageId = (id: string) => {
     const nextPath = languageSwitchPath(pathname || "/", id);
     if (!nextPath) return;
