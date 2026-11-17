@@ -6,8 +6,10 @@ import { startEngagementWatch } from "@/lib/analytics/engagement";
 import {
   trackEngagementThreshold,
   trackPageViewed,
+  trackRouteView,
   trackScrollDepth,
 } from "@/lib/analytics/siteEvents";
+import { stripLocalePrefix } from "@/lib/i18n/localePath";
 import { env } from "@/lib/config/env";
 import { useConsentFor } from "@/lib/consent/useConsent";
 
@@ -23,6 +25,8 @@ export function PlatformTracker() {
   useEffect(() => {
     if (!env.tracking.enabled || !allowed) return;
     trackPageViewed(pathname);
+    // Home, list, cart and checkout views are ours, not Insider's: they must not wait for its tag.
+    trackRouteView(stripLocalePrefix(pathname || "/"));
     return startEngagementWatch({
       seconds: env.tracking.engagementSeconds,
       onThreshold: trackEngagementThreshold,
