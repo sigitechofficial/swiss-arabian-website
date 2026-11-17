@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
+import type { ApiCart, CartPendingPayment, CartValidation } from "@/features/cart/types/cart";
 import {
   readEmployeeCheckout,
   type EmployeeCheckoutView,
@@ -64,6 +64,11 @@ type CartState = {
   /** True when the server reduced an existing reservation after a bag change. */
   loyaltyAdjusted: boolean;
   validation: CartValidation | null;
+  /**
+   * The server says an unpaid order holds this bag (checkout QA-006). Never
+   * persisted: only the server knows whether it is still true.
+   */
+  pendingPayment: CartPendingPayment | null;
   /** Optimistic edits are still being written to the API in the background. */
   syncing: boolean;
   setSyncing: (syncing: boolean) => void;
@@ -93,6 +98,7 @@ export const useCartStore = create<CartState>()(
       employeeCheckout: null,
       loyaltyAdjusted: false,
       validation: null,
+      pendingPayment: null,
       syncing: false,
 
       setSyncing: (syncing) => set({ syncing }),
@@ -158,6 +164,7 @@ export const useCartStore = create<CartState>()(
           employeeCheckout: null,
           loyaltyAdjusted: false,
           validation: null,
+          pendingPayment: null,
         }),
 
       /** Drop the previous market quote. Lines stay until the next server cart. */
@@ -244,6 +251,7 @@ export const useCartStore = create<CartState>()(
             loyaltyAdjusted,
             cartId: cart.cartId,
             validation: cart.validation ?? null,
+            pendingPayment: cart.pendingPayment ?? null,
           };
         }),
 

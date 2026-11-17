@@ -68,9 +68,24 @@ export type ApiCartItem = {
   warnings: CartValidationIssue[];
 };
 
+/**
+ * The bag is held by an order waiting for payment (any payment method). The
+ * server shows it on every device; changing the bag releases that order.
+ */
+export type CartPendingPayment = {
+  orderId: string;
+  orderNumber: string;
+  totalAmount: string;
+  currencyCode: string;
+  /** After this the order is released automatically. */
+  paymentDueAt: string | null;
+};
+
 export type ApiCart = {
   cartId: string;
   status: string;
+  /** Set only while status is AWAITING_PAYMENT. */
+  pendingPayment?: CartPendingPayment | null;
   context: CartContext;
   items: ApiCartItem[];
   itemCount: number;

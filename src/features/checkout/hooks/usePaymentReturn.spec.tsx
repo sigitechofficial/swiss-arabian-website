@@ -13,7 +13,6 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace, 
 vi.mock("../api/orders.service", () => ({ pollUntilPaymentSettles: mocks.poll }));
 vi.mock("../utils/checkoutSession", () => ({
   clearPaymentState: mocks.clear,
-  clearHostedPaymentOpen: vi.fn(),
   getStoredOrderId: () => "stored-order",
   getStoredOrderNumber: () => "SP-1001",
   getStoredPaymentMethodId: () => "pm",

@@ -11,7 +11,6 @@ vi.mock("./checkoutSession", () => ({
   storePaymobPublicKey: vi.fn(),
   storeStripeClientSecret: vi.fn(),
   storeStripePublishableKey: vi.fn(),
-  storeHostedPaymentOpen: vi.fn(),
 }));
 
 import { initiatePayment } from "../api/orders.service";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useResumeHostedPayment } from "./useResumeHostedPayment";
+import { useResumeHeldBag } from "./useResumeHeldBag";
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import {
   useEffect,
@@ -92,8 +92,9 @@ export function useCheckoutForm() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkout = useCheckout();
-  // Back from a hosted payment page without its return link: bag comes back first.
-  const resumingPayment = useResumeHostedPayment();
+  // An unpaid order holds the bag (shopper came back without paying): the
+  // platform releases it and the bag comes back first.
+  const resumingPayment = useResumeHeldBag();
   const dontMissRail = useMerchRail(MERCH_RAIL_SLUGS.checkoutDontMiss);
   const { catalogContext } = useMarket();
   const countryCode =

@@ -1,5 +1,6 @@
 "use client";
 
+import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -240,6 +241,7 @@ export function CartSideSheet() {
             <X size={18} />
           </button>
         </header>
+        <CartPendingPaymentNotice compact />
 
         <div className={drawerBody}>
           {lines.length > 0 ? null : (

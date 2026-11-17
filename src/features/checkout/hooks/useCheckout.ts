@@ -170,6 +170,8 @@ export function useCheckout() {
   const lines = useCartStore((s) => s.lines);
   /** True while the bag is being reloaded (market switch): its id and lines are in flux. */
   const cartSyncing = useCartStore((s) => s.syncing);
+  /** An unpaid order holds the bag: checkout waits for useResumeHeldBag. */
+  const bagHeld = useCartStore((s) => s.pendingPayment !== null);
   const zoneCode = useOptionalMarket()?.catalogContext?.zoneCode ?? null;
   const scopeKey = checkoutScopeKey(zoneCode, cartId);
   const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
@@ -262,13 +264,13 @@ export function useCheckout() {
   // C.1 — create or resume the session, once per market + cart. Waits while the bag
   // is switching markets, and an empty bag has nothing to check out.
   useEffect(() => {
-    if (cartSyncing || !cartId || !scopeKey || lines.length === 0) return;
+    if (cartSyncing || bagHeld || !cartId || !scopeKey || lines.length === 0) return;
     if (lines.some((line) => line.isSellable === false)) return;
     if (scopeRef.current !== scopeKey) return;
     if (initCartRef.current === scopeKey) return;
     initCartRef.current = scopeKey;
     void start(cartId, lines);
-  }, [cartId, cartSyncing, lines, scopeKey, start]);
+  }, [bagHeld, cartId, cartSyncing, lines, scopeKey, start]);
 
   // Bag changed after the session was built (an add-on, a quantity change in
   // another tab…). Rebuild it so the placed order matches what's on screen.
