@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { checkoutHref } from "../utils/checkoutLocale";
 import { clearHostedPaymentOpen, getHostedPaymentOpen } from "../utils/checkoutSession";
@@ -22,6 +22,10 @@ import { returnToCheckout } from "../utils/returnToCheckout";
  */
 export function useResumeHostedPayment(): boolean {
   const router = useRouter();
+  // Runs once per page: never restarted because the router object changes.
+  const openConfirmation = useEffectEvent((orderId: string) => {
+    router.replace(checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`));
+  });
   const [resuming, setResuming] = useState(false);
 
   useEffect(() => {
@@ -35,7 +39,7 @@ export function useResumeHostedPayment(): boolean {
         .then((result) => {
           if (cancelled) return;
           if (result.kind === "paid") {
-            router.replace(checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`));
+            openConfirmation(orderId);
             return;
           }
           setResuming(false);
@@ -53,7 +57,7 @@ export function useResumeHostedPayment(): boolean {
       cancelled = true;
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [router]);
+  }, []);
 
   return resuming;
 }
