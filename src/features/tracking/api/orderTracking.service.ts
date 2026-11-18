@@ -1,3 +1,4 @@
+import type { CancellationBlockedCode } from "@/features/account/api/customerOrders.service";
 import { apiGet } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 
@@ -48,6 +49,9 @@ export interface TrackingCancellationWindow {
   canCancel: boolean;
   remainingSeconds: number | null;
   endsAt: string | null;
+  /** Why online cancel is unavailable; older backends omit it. */
+  blockedCode?: CancellationBlockedCode | null;
+  reason?: string | null;
 }
 
 export interface OrderTrackingSummary {

@@ -12,7 +12,8 @@ import {
 import { getOrderTracking, getOrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { cancelOutcome, readOrderRefunds } from "../utils/orderAftercare";
+import { cancelOutcome } from "../utils/orderAftercare";
+import { readCustomerRefunds, toOrderRefundView } from "../utils/orderRefunds";
 import { isActiveOrder, needsPayment } from "../utils/orderStatus";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 
@@ -50,9 +51,27 @@ export function useCustomerOrders(pageSize = ORDERS_PAGE_SIZE) {
 export type OrderCancelFeedback = ReturnType<typeof cancelOutcome>;
 export type OrderCancelError = "closed" | "notFound" | "failed" | { message: string };
 
-function cancelError(error: unknown): OrderCancelError {
+/**
+ * Backend refusal codes for an online cancel (the order's after-sales policy).
+ * Store-policy refusals carry their own copy; timing refusals are "closed".
+ */
+const CANCEL_REFUSALS: Record<string, "closed" | "orders.cancel.disabled" | "orders.cancel.preparing"> = {
+  CUSTOMER_CANCELLATION_DISABLED: "orders.cancel.disabled",
+  CUSTOMER_CANCELLATION_FULFILLMENT_STARTED: "orders.cancel.preparing",
+  CUSTOMER_CANCELLATION_SHIPMENT_EXISTS: "orders.cancel.preparing",
+  CUSTOMER_CANCELLATION_WINDOW_CLOSED: "closed",
+  CUSTOMER_CANCELLATION_WINDOW_NOT_STARTED: "closed",
+  CUSTOMER_CANCELLATION_ALREADY_CANCELLED: "closed",
+  CUSTOMER_CANCELLATION_NOT_ELIGIBLE: "closed",
+  ORDER_CANCELLATION_DURING_WINDOW_NOT_ALLOWED: "closed",
+  BUSINESS_RULE_FAILED: "closed",
+};
+
+function cancelError(error: unknown, copy: ReturnType<typeof useShopCopy>): OrderCancelError {
   if (error instanceof ApiClientError) {
-    if (error.code === "BUSINESS_RULE_FAILED") return "closed";
+    const refusal = error.code ? CANCEL_REFUSALS[error.code] : undefined;
+    if (refusal === "closed") return "closed";
+    if (refusal) return { message: copy(refusal) };
     if (error.status === 404) return "notFound";
     return { message: error.message };
   }
@@ -109,7 +128,7 @@ export function useCustomerOrderDetail(orderId: string) {
     },
     onError: (error) => {
       setCancelResult(null);
-      setCancelFailure(cancelError(error));
+      setCancelFailure(cancelError(error, copy));
     },
     onSettled: refreshOrder,
   });
@@ -117,6 +136,7 @@ export function useCustomerOrderDetail(orderId: string) {
   const data = detailQuery.data;
   const order = data?.order;
   const cancellationWindow = data?.cancellationWindow ?? null;
+  const customerRefunds = data ? readCustomerRefunds(data.refunds ?? order?.refunds) : [];
   return {
     detailQuery,
     data,
@@ -143,7 +163,10 @@ export function useCustomerOrderDetail(orderId: string) {
     cancelFailure,
     needsSupport: order?.status === "FAILED" || order?.status === "MANUAL_REVIEW",
     itemCount: order?.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0) ?? 0,
-    refunds: order ? readOrderRefunds(order.refunds) : [],
+    /** Each refund with its state and the parts it goes back to. */
+    customerRefunds,
+    /** Older one-line shape (amount + status words). */
+    refunds: customerRefunds.map(toOrderRefundView),
     refreshOrder,
   };
 }

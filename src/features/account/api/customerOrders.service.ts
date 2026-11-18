@@ -59,11 +59,62 @@ export interface ShipmentDetail {
   events: ShipmentDetailEvent[];
 }
 
+/** Why online cancel is unavailable (the order's after-sales policy or the clock). */
+export type CancellationBlockedCode =
+  | "ALREADY_CANCELLED"
+  | "NOT_ELIGIBLE"
+  | "SHIPMENT_EXISTS"
+  | "CUSTOMER_CANCEL_DISABLED"
+  | "FULFILLMENT_STARTED"
+  | "WINDOW_NOT_STARTED"
+  | "WINDOW_CLOSED";
+
 export interface CancellationWindow {
   isInsideWindow: boolean;
+  /** The customer may cancel online now. */
   canCancel: boolean;
   remainingSeconds: number | null;
   endsAt: string | null;
+  /** Older backends omit these. */
+  blockedCode?: CancellationBlockedCode | null;
+  reason?: string | null;
+}
+
+/** Customer state of one refund (backend maps its internal statuses). */
+export type CustomerRefundState =
+  | "processing"
+  | "waiting_for_review"
+  | "completed"
+  | "not_approved"
+  | "cancelled";
+
+/** `card` is the original online payment; label it by `cardLast4` when present. */
+export type CustomerRefundPartType = "card" | "gift_card" | "points" | "cash_on_delivery";
+export type CustomerRefundPartState = "pending" | "done";
+
+/** One tender leg of a refund: where that share of the money goes back. */
+export interface CustomerRefundPartApi {
+  type: CustomerRefundPartType;
+  /** Backend label in the order's language. The page builds its own from the fields. */
+  label: string;
+  amount: string;
+  currency: string;
+  points: string | null;
+  cardLast4: string | null;
+  giftCardMaskedCode: string | null;
+  state: CustomerRefundPartState;
+}
+
+export interface CustomerRefundApi {
+  refundId: string;
+  refundNumber: string;
+  state: CustomerRefundState;
+  requestedAmount: string;
+  refundedAmount: string;
+  currency: string;
+  requestedAt: string;
+  completedAt: string | null;
+  parts: CustomerRefundPartApi[];
 }
 
 export interface CustomerOrderDetailResponse {
@@ -104,7 +155,7 @@ export interface CustomerOrderDetailResponse {
     totals: { subtotal: string; discount: string; shipping: string; tax: string; total: string };
     /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
     promotionSnapshot?: OrderLinePromotionSnapshot | null;
-    /** Backend refund records. Older payloads omit this. */
+    /** Legacy location of refund records; current backends send top-level `refunds`. */
     refunds?: unknown;
     selectedPaymentMethod: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
@@ -112,6 +163,8 @@ export interface CustomerOrderDetailResponse {
     shipments: ShipmentDetail[];
   };
   cancellationWindow: CancellationWindow | null;
+  /** The order's refunds, newest first. Older backends omit this. */
+  refunds?: CustomerRefundApi[];
 }
 
 export interface CancelOrderResponse {

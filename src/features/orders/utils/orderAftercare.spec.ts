@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancelOutcome, readExchangeSettlement, readOrderRefunds, refundCustomerStatus } from "./orderAftercare";
+import { cancelOutcome, readExchangeSettlement, refundCustomerStatus } from "./orderAftercare";
 
 const cancelled = {
   orderId: "ord-1",
@@ -59,11 +59,10 @@ describe("order aftercare", () => {
     ).toBe("This refund could not be completed.");
   });
 
-  it("reads refund history without requiring every field", () => {
-    expect(readOrderRefunds([{ refundId: "rf-9", amount: "25.00", status: "PROCESSING" }])).toEqual([
-      expect.objectContaining({ refundId: "rf-9", amount: "25.00", requiresManualReview: false }),
-    ]);
-    expect(readOrderRefunds(undefined)).toEqual([]);
+  it("names a rejected and a cancelled refund for what they are", () => {
+    const base = { refundId: "rf-1", amount: "10", currency: "AED", resultState: null, requiresManualReview: false, blocked: false };
+    expect(refundCustomerStatus({ ...base, status: "REJECTED" })).toMatch(/not approved/i);
+    expect(refundCustomerStatus({ ...base, status: "CANCELLED" })).toBe("This refund was cancelled.");
   });
 
   it("reads an exchange difference and replacement order without pricing it", () => {

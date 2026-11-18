@@ -38,7 +38,9 @@ export function refundCustomerStatus(refund: OrderRefundView, t: Translator = en
   if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
     return t("orders.refund.completed");
   }
-  if (/(FAILED|BLOCKED|REJECTED)/.test(state)) return t("orders.refund.failed");
+  if (/REJECTED/.test(state)) return t("orders.refund.notApproved");
+  if (/(FAILED|BLOCKED)/.test(state)) return t("orders.refund.failed");
+  if (/CANCELLED/.test(state)) return t("orders.refund.cancelled");
   if (refund.status || refund.resultState) return t("orders.refund.processing");
   return t("orders.refund.recorded");
 }
@@ -59,14 +61,6 @@ export function readOrderRefund(raw: unknown): OrderRefundView | null {
     requiresManualReview: row.requiresManualReview === true || upper(status) === "MANUAL_REVIEW",
     blocked: Boolean(blockedCode) || /(FAILED|BLOCKED)/.test(upper(status)) || /(FAILED|BLOCKED)/.test(upper(resultState)),
   };
-}
-
-export function readOrderRefunds(raw: unknown): OrderRefundView[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((item) => {
-    const refund = readOrderRefund(item);
-    return refund ? [refund] : [];
-  });
 }
 
 function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
