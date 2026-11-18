@@ -195,7 +195,7 @@ Problems found while rebuilding, and what was changed:
 | Aramex, DHL | **No** | — | none | none | — (README only) |
 | D365 | Yes | Yes | UAT app | same | Yes — one app for the group; brands/markets separated by D365 company |
 | Trendyol | Yes | Simulated | one token | same | Yes — confirm whether Sapil sells separately |
-| Google Merchant | Yes | **Submission on** | one account | same | Yes — usually one per brand; turn submission off locally until ready |
+| Google Merchant | Yes | **Submission on** (env switch; each market also has its own switch since 2026-11-14) | per market since 2026-11-14 (was one account) — set in admin → Google Merchant | same | Yes — one Merchant Center + key per brand; Sapil not set up yet. Live Swiss Arabian Merchant Center (found 2026-11-14): advanced account `5829139184` with a sub-account per country, currently fed by the Shopify shops — switch that feed off per market at cut-over. See backend `docs/integrations/google-merchant/GOOGLE_MERCHANT_SERVICES.md` §0b, §11 |
 | Shopify (migration) | Yes | Not linked | app keys | same app | Yes for the app; each market links its own store |
 | Email (SMTP) | Yes | Yes | Mailpit locally | same | Production needs per-brand sender addresses |
 | Google sign-in | Yes | Yes | yes | same | Yes — one login app |
