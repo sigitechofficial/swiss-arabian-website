@@ -98,9 +98,20 @@ describe("refund points label", () => {
   it("groups thousands", () => {
     expect(
       refundPartText(
-        { type: "points", label: "", amount: "10.00", currency: "AED", points: "1000.0000", cardLast4: null, giftCardMaskedCode: null, state: "done" },
+        { type: "points", amount: "10.00", currency: "AED", points: "1000.0000", cardLast4: null, giftCardMaskedCode: null, state: "done" },
         "AED",
       ),
     ).toBe("1,000 points");
+  });
+});
+
+describe("exchange credit refund part", () => {
+  it("names the original order's payment", () => {
+    expect(
+      refundPartText(
+        { type: "original_order", amount: "80.00", currency: "AED", points: null, cardLast4: null, giftCardMaskedCode: null, state: "pending" },
+        "AED",
+      ),
+    ).toMatch(/to how you paid for your original order$/);
   });
 });

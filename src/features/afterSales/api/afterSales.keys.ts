@@ -24,4 +24,9 @@ export const afterSalesKeys = {
     [...afterSalesKeys.guest(orderNumber), "options"] as const,
   customerOptions: (orderId: string) =>
     [...afterSalesKeys.all, "options", orderId] as const,
+  /** Refund estimate: per order and the exact lines + reason asked. */
+  returnEstimate: (orderRef: string, payloadKey: string) =>
+    [...afterSalesKeys.all, "return-estimate", orderRef, payloadKey] as const,
+  returnsPolicy: (scope: "order" | "guest" | "market", ref: string) =>
+    [...afterSalesKeys.all, "returns-policy", scope, ref] as const,
 };

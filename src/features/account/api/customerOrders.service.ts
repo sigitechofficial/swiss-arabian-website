@@ -89,7 +89,13 @@ export type CustomerRefundState =
   | "cancelled";
 
 /** `card` is the original online payment; label it by `cardLast4` when present. */
-export type CustomerRefundPartType = "card" | "gift_card" | "points" | "cash_on_delivery";
+/** `original_order`: exchange credit, refunded to how the original order was paid. */
+export type CustomerRefundPartType =
+  | "card"
+  | "gift_card"
+  | "points"
+  | "cash_on_delivery"
+  | "original_order";
 export type CustomerRefundPartState = "pending" | "done";
 
 /** One tender leg of a refund: where that share of the money goes back. */

@@ -42,7 +42,13 @@ const STATES: readonly CustomerRefundState[] = [
   "not_approved",
   "cancelled",
 ];
-const PART_TYPES: readonly CustomerRefundPartType[] = ["card", "gift_card", "points", "cash_on_delivery"];
+const PART_TYPES: readonly CustomerRefundPartType[] = [
+  "card",
+  "gift_card",
+  "points",
+  "cash_on_delivery",
+  "original_order",
+];
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -162,6 +168,8 @@ export function refundPartText(
         : t("orders.refund.part.pointsValue", { amount });
     case "cash_on_delivery":
       return t("orders.refund.part.cod", { amount });
+    case "original_order":
+      return t("orders.refund.part.originalOrder", { amount });
     default:
       return part.cardLast4
         ? t("orders.refund.part.card", { amount, last4: part.cardLast4 })

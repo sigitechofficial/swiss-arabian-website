@@ -5,6 +5,9 @@ import type {
   CreateReturnDto,
   ExchangeDifferencePaymentResult,
   GuestProofDto,
+  ReturnEstimate,
+  ReturnEstimateDto,
+  ReturnsPolicySummary,
   StorefrontExchangeDetailView,
   StorefrontExchangeListView,
   StorefrontReturnDetailView,
@@ -200,6 +203,58 @@ export async function syncGuestDifferencePayment(
   return apiPost<ExchangeDifferencePaymentResult>(
     `/storefront/exchanges/order/${encodeURIComponent(orderNumber)}/${encodeURIComponent(exchangeRequestId)}/sync-difference-payment`,
     { orderAccessToken },
+    { skipAuth: true },
+  );
+}
+
+/** Refund estimate for the lines + reason picked on the return form (nothing is saved). */
+export async function estimateCustomerReturn(
+  orderId: string,
+  dto: ReturnEstimateDto,
+): Promise<ReturnEstimate> {
+  return apiPost<ReturnEstimate>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/returns/estimate`,
+    dto,
+  );
+}
+
+/** Same for a guest order (proof as when creating the return). */
+export async function estimateGuestReturn(
+  orderNumber: string,
+  dto: ReturnEstimateDto & GuestProofDto,
+): Promise<ReturnEstimate> {
+  return apiPost<ReturnEstimate>(
+    `/storefront/returns/order/${encodeURIComponent(orderNumber)}/estimate`,
+    dto,
+    { skipAuth: true },
+  );
+}
+
+/** The return terms frozen on the customer's order when it was placed. */
+export async function getCustomerOrderReturnsPolicy(
+  orderId: string,
+): Promise<ReturnsPolicySummary> {
+  return apiGet<ReturnsPolicySummary>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/returns/policy`,
+  );
+}
+
+export async function getGuestOrderReturnsPolicy(
+  orderNumber: string,
+  orderAccessToken: string,
+): Promise<ReturnsPolicySummary> {
+  return apiGet<ReturnsPolicySummary>(
+    `/storefront/returns/order/${encodeURIComponent(orderNumber)}/policy?${guestQuery(orderAccessToken)}`,
+    { skipAuth: true },
+  );
+}
+
+/** A market's return terms today (for a returns policy page). */
+export async function getMarketReturnsPolicy(
+  zoneCode: string,
+): Promise<ReturnsPolicySummary> {
+  return apiGet<ReturnsPolicySummary>(
+    `/storefront/returns/policy/${encodeURIComponent(zoneCode)}`,
     { skipAuth: true },
   );
 }
