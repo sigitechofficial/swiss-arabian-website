@@ -30,3 +30,8 @@ export const afterSalesKeys = {
   returnsPolicy: (scope: "order" | "guest" | "market", ref: string) =>
     [...afterSalesKeys.all, "returns-policy", scope, ref] as const,
 };
+
+/** True for refund-estimate queries (see afterSalesKeys.returnEstimate). */
+export function isReturnEstimateKey(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === afterSalesKeys.all[0] && queryKey[1] === "return-estimate";
+}

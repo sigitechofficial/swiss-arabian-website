@@ -8,7 +8,7 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useApiMutation, useApiQuery } from "@/lib/api/queryHooks";
-import { afterSalesKeys } from "../api/afterSales.keys";
+import { afterSalesKeys, isReturnEstimateKey } from "../api/afterSales.keys";
 import {
   AFTER_SALES_PAGE_SIZE,
   createCustomerExchange,
@@ -158,8 +158,14 @@ export function useGuestAfterSalesOptions(
 export function useAfterSalesMutations() {
   const queryClient = useQueryClient();
 
+  // Refresh requests, options and summaries after a change. Estimates are
+  // left alone: they describe a draft, and re-running one for lines that were
+  // just submitted would only be refused as no longer eligible.
   const invalidateAll = () =>
-    queryClient.invalidateQueries({ queryKey: afterSalesKeys.all });
+    queryClient.invalidateQueries({
+      queryKey: afterSalesKeys.all,
+      predicate: (query) => !isReturnEstimateKey(query.queryKey),
+    });
 
   const createReturn = useApiMutation(
     (vars: { orderId: string; dto: CreateReturnDto }) =>
