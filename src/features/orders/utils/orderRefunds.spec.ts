@@ -93,3 +93,14 @@ describe("order refunds", () => {
     });
   });
 });
+
+describe("refund points label", () => {
+  it("groups thousands", () => {
+    expect(
+      refundPartText(
+        { type: "points", label: "", amount: "10.00", currency: "AED", points: "1000.0000", cardLast4: null, giftCardMaskedCode: null, state: "done" },
+        "AED",
+      ),
+    ).toBe("1,000 points");
+  });
+});

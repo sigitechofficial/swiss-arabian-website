@@ -155,8 +155,10 @@ export function refundPartText(
         ? t("orders.refund.part.giftCard", { amount, code: part.giftCardMaskedCode })
         : t("orders.refund.part.giftCardUnnamed", { amount });
     case "points":
-      return part.points
-        ? t("orders.refund.part.points", { points: part.points })
+      return part.points && Number.isFinite(Number(part.points))
+        ? t("orders.refund.part.points", {
+            points: Math.round(Number(part.points)).toLocaleString("en-US"),
+          })
         : t("orders.refund.part.pointsValue", { amount });
     case "cash_on_delivery":
       return t("orders.refund.part.cod", { amount });
