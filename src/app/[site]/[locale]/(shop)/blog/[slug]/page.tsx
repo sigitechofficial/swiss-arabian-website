@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { fetchBlogArticle } from "@/features/blog/api/blogApi";
-import { BlogArticlePageView } from "@brand-ui";
+import { BlogArticlePageView, CatalogJsonLd } from "@brand-ui";
+import { blogBreadcrumbs } from "@/features/blog/routes/blogListingRoute";
 import { requireBrandFeature } from "@/lib/brand/featureGate";
 
 async function load(slug: string) {
@@ -36,5 +37,10 @@ export default async function BlogArticlePage({
   const { slug } = await params;
   const article = await load(slug);
   if (!article) notFound();
-  return <BlogArticlePageView article={article} />;
+  return (
+    <>
+      <CatalogJsonLd data={await blogBreadcrumbs({ title: article.heroTitle, slug: article.slug })} />
+      <BlogArticlePageView article={article} />
+    </>
+  );
 }
