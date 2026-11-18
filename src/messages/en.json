@@ -962,8 +962,11 @@
     "other": "You can cancel online within {count} minutes of ordering for a full refund, delivery included. Any coupon, gift card or points you used are given back."
   },
   "returnsPolicy.CANCELLATION.CONTACT": "To cancel an order before it ships, please contact customer service. Any coupon, gift card or points you used are given back.",
-  "returnsPolicy.OFFERS_ON_RETURN.KEEP_PRICE_PAID": "If your order had an offer and you return part of it, you get back what you paid for the returned items; the discount on what you keep stays.",
-  "returnsPolicy.OFFERS_ON_RETURN.RECALCULATE_KEPT": "If you return part of a 'buy X get Y' or set offer, your refund is what you paid less the full price of any items you keep that no longer qualify. Other discounts stay on what you keep.",
+  "returnsPolicy.OFFERS_ON_RETURN.KEEP_PRICE_PAID": "If you return part of a 'buy X get Y' or set offer, you get back what you paid for the returned items; the offer stays on what you keep.",
+  "returnsPolicy.OFFERS_ON_RETURN.RECALCULATE_KEPT": "If you return part of a 'buy X get Y' or set offer, your refund is what you paid less the full price of any items you keep that no longer qualify.",
+  "returnsPolicy.SPEND_THRESHOLD_ON_RETURN.KEEP_DISCOUNT": "If your order reached an offer's spend minimum (for example a discount over a set amount), the discount on what you keep stays, even if what you keep is below the minimum.",
+  "returnsPolicy.SPEND_THRESHOLD_ON_RETURN.RECALCULATE_KEPT": "If a return takes what you keep below an offer's spend minimum, or to a lower tier, the discount the kept items no longer earn is kept from your refund.",
+  "returnsPolicy.SPEND_THRESHOLD_ON_RETURN.RECALCULATE_ABOVE_AMOUNT": "If a return takes what you keep below an offer's spend minimum, or to a lower tier, the discount the kept items no longer earn is kept from your refund when it is {money} or more.",
   "returnsPolicy.FREE_DELIVERY_ON_RETURN.KEEP_FREE": "If your order had free delivery, it stays free even if you return some items.",
   "returnsPolicy.COUPON_ON_RETURN.RELEASE_ON_RTO_AND_OUR_FAULT": "A coupon can be used once. It is given back if your order is cancelled or can't be delivered, or if every paid item comes back because of our mistake; after other returns it stays used.",
   "returnsPolicy.COUPON_ON_RETURN.RELEASE_ON_RTO": "A coupon can be used once. It is given back if your order is cancelled or can't be delivered; after a return it stays used.",
