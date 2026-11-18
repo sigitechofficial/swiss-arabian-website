@@ -58,7 +58,12 @@ import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
-import { refundCustomerStatus } from "../utils/orderAftercare";
+import {
+  refundHeadlineAmount,
+  refundPartText,
+  refundStateDisplay,
+  type CustomerRefund,
+} from "../utils/orderRefunds";
 import { useCancellationCountdown, useCustomerOrderDetail, type OrderCancelError } from "../hooks/useCustomerOrders";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
@@ -109,6 +114,68 @@ function AddressBlock({
         <span className="block">{[address.city, address.countryCode].filter(Boolean).join(", ")}</span>
       </address>
     </div>
+  );
+}
+
+/** One refund: amount, state, where each share goes back, and its reference. */
+function RefundEntry({
+  refund,
+  currency,
+  t,
+  locale,
+  timeZone,
+}: {
+  refund: CustomerRefund;
+  currency: string;
+  t: Translator;
+  locale: string;
+  timeZone: string;
+}) {
+  const { label, note, tone } = refundStateDisplay(refund.state, t);
+  const amount = refundHeadlineAmount(refund);
+  const refundCurrency = refund.currency ?? currency;
+  const date =
+    refund.state === "completed" && refund.completedAt
+      ? t("orders.refund.completedOn", { date: formatOrderDate(refund.completedAt, { timeZone, locale }) })
+      : refund.requestedAt
+        ? t("orders.refund.requestedOn", { date: formatOrderDate(refund.requestedAt, { timeZone, locale }) })
+        : null;
+  return (
+    <li className="grid gap-2 border-b border-[var(--line)] pb-4 last:border-b-0 last:pb-0 text-[13px] leading-relaxed text-sa-primary">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {amount ? (
+          <p className="m-0 font-semibold" dir="ltr">
+            {formatMoney(Number(amount), refundCurrency)}
+          </p>
+        ) : null}
+        <AccountStatusPill label={label} tone={tone} />
+      </div>
+      {refund.parts.length > 0 ? (
+        <div>
+          <p className={`${orderFactLabel} m-0`}>{t("orders.refund.goesTo")}</p>
+          <ul className="m-0 mt-1 grid list-none gap-1.5 p-0">
+            {refund.parts.map((part, index) => (
+              <li key={`${part.type}-${index}`} className="flex items-start justify-between gap-3">
+                <span className="min-w-0 break-words">{refundPartText(part, refundCurrency, t)}</span>
+                <span
+                  className={`shrink-0 text-[12px] ${part.state === "done" ? "font-semibold text-[#1a7338]" : "text-sa-muted"}`}
+                >
+                  {part.state === "done" ? t("orders.refund.part.done") : t("orders.refund.part.pending")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <p className="m-0 text-sa-secondary">{note}</p>
+      {refund.refundNumber || date ? (
+        <p className="m-0 text-[12px] text-sa-muted">
+          {[refund.refundNumber ? t("orders.reference", { id: refund.refundNumber }) : null, date]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      ) : null}
+    </li>
   );
 }
 
@@ -182,7 +249,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     cancelResult,
     cancelFailure,
     refreshOrder,
-    refunds: refundsFromHook,
+    customerRefunds: refundsFromHook,
   } = useCustomerOrderDetail(orderId);
   const t = useShopCopy();
   const locale = useShopLocale();
@@ -433,20 +500,16 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {refunds.length > 0 ? (
               <Panel title={t("orders.refunds")}>
-                <ul className="m-0 grid list-none gap-3 p-0">
+                <ul className="m-0 grid list-none gap-4 p-0">
                   {refunds.map((refund, index) => (
-                    <li key={refund.refundId ?? `refund-${index}`} className="text-[13px] leading-relaxed text-sa-primary">
-                      {refund.amount ? (
-                        <p className="m-0 font-semibold">
-                          {refund.currency ? `${refund.currency} ` : ""}
-                          {refund.amount}
-                        </p>
-                      ) : null}
-                      <p className="m-0 mt-1 text-sa-secondary">{refundCustomerStatus(refund, t)}</p>
-                      {refund.refundId ? (
-                        <p className="m-0 mt-1 text-[12px] text-sa-muted">{t("orders.reference", { id: refund.refundId })}</p>
-                      ) : null}
-                    </li>
+                    <RefundEntry
+                      key={refund.refundId ?? `refund-${index}`}
+                      refund={refund}
+                      currency={currency}
+                      t={t}
+                      locale={locale}
+                      timeZone={timeZone}
+                    />
                   ))}
                 </ul>
               </Panel>

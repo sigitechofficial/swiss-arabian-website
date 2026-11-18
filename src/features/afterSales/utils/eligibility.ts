@@ -111,6 +111,18 @@ const STATUS_KEY: Record<string, MessageKey> = {
   REPLACEMENT_CREATED: "afterSales.status.replacementCreated",
   REPLACEMENT_ORDER_CREATED: "afterSales.status.replacementCreated",
   ADDITIONAL_PAYMENT_DUE: "afterSales.status.paymentDue",
+  // Return request statuses as the backend sends them.
+  DRAFT: "afterSales.status.requested",
+  RETURN_SHIPMENT_PENDING: "afterSales.status.shipmentArranged",
+  RETURN_SHIPMENT_CREATED: "afterSales.status.shipmentArranged",
+  IN_TRANSIT: "afterSales.status.inTransit",
+  INSPECTION_PENDING: "afterSales.status.inspecting",
+  REFUND_PENDING: "afterSales.status.refundProcessing",
+  REFUNDED: "afterSales.status.refundCompleted",
+  EXCHANGE_PENDING: "afterSales.status.exchangePending",
+  EXCHANGED: "afterSales.status.completed",
+  MANUAL_REVIEW: "afterSales.status.pendingReview",
+  FAILED: "afterSales.status.pendingReview",
 };
 
 export function afterSalesStatusLabel(status: string, t: Translator = englishTranslator): string {

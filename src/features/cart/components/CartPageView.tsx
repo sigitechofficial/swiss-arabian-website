@@ -78,6 +78,8 @@ import {
 } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
+import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
+import { CartUnavailableItems } from "./CartUnavailableItems";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
 function itemsLabel(n: number) {
@@ -189,6 +191,9 @@ export function CartPageView() {
               <span className={cartPageCount}>{itemsLabel(itemCount)}</span>
             ) : null}
           </header>
+
+          <CartPendingPaymentNotice />
+          <CartUnavailableItems />
 
           {!isEmpty ? (
             <div className={cartLayout} id="cart-page-layout">

@@ -24,4 +24,14 @@ export const afterSalesKeys = {
     [...afterSalesKeys.guest(orderNumber), "options"] as const,
   customerOptions: (orderId: string) =>
     [...afterSalesKeys.all, "options", orderId] as const,
+  /** Refund estimate: per order and the exact lines + reason asked. */
+  returnEstimate: (orderRef: string, payloadKey: string) =>
+    [...afterSalesKeys.all, "return-estimate", orderRef, payloadKey] as const,
+  returnsPolicy: (scope: "order" | "guest" | "market", ref: string) =>
+    [...afterSalesKeys.all, "returns-policy", scope, ref] as const,
 };
+
+/** True for refund-estimate queries (see afterSalesKeys.returnEstimate). */
+export function isReturnEstimateKey(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === afterSalesKeys.all[0] && queryKey[1] === "return-estimate";
+}

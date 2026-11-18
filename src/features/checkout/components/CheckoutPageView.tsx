@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
@@ -29,11 +30,13 @@ import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import { CheckoutBilling } from "./checkout/CheckoutBilling";
 import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
 import { CheckoutPayment } from "./checkout/CheckoutPayment";
+import { OrderChangedModal } from "./OrderChangedModal";
 import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
 import { useCheckoutForm } from "../hooks/useCheckoutForm";
 
 export function CheckoutPageView() {
+  const router = useLocaleRouter();
   const {
     checkout,
     session,
@@ -302,6 +305,17 @@ export function CheckoutPageView() {
           ) : null}
         </div>
       </section>
+      {checkout.orderChanges ? (
+        <OrderChangedModal
+          changes={checkout.orderChanges}
+          onConfirm={checkout.confirmOrderChanges}
+          onReview={checkout.dismissOrderChanges}
+          onBackToBag={() => {
+            checkout.dismissOrderChanges();
+            router.push("/cart");
+          }}
+        />
+      ) : null}
     </div>
   );
 }
