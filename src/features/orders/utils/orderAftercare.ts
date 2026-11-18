@@ -63,6 +63,17 @@ export function readOrderRefund(raw: unknown): OrderRefundView | null {
   };
 }
 
+/**
+ * Refund statuses that mean the money went back (the backend's monetary-success
+ * set, plus older wording). `resultState: SUCCEEDED` only says the refund request
+ * was accepted, so it never counts as completed on its own.
+ */
+const REFUND_MONEY_BACK = /^(REFUNDED|PARTIALLY_REFUNDED|PROVIDER_SUCCESS|D365_POSTED|COMPLETED|SUCCEEDED|SETTLED)$/;
+
+function refundMoneyBack(refund: OrderRefundView | null): boolean {
+  return REFUND_MONEY_BACK.test(upper(refund?.status));
+}
+
 function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
   return readOrderRefund(result.refund);
 }
@@ -96,9 +107,7 @@ export function cancelItemsOutcome(
   if (refund?.requiresManualReview || /(PENDING_APPROVAL|MANUAL_REVIEW|REVIEW)/.test(state)) {
     return { tone: "info", text: t("orders.cancel.itemsRefundReview") };
   }
-  // resultState SUCCEEDED only means the refund was accepted; the refund's
-  // own status says whether the money went back.
-  if (/^(COMPLETED|SUCCEEDED|SETTLED)$/.test((refund?.status ?? "").toUpperCase())) {
+  if (refundMoneyBack(refund)) {
     return { tone: "success", text: t("orders.cancel.itemsRefundDone", { amount }) };
   }
   return { tone: "info", text: t("orders.cancel.itemsRefundProcessing", { amount }) };
@@ -126,7 +135,7 @@ export function cancelOutcome(result: CancelOrderResponse, t: Translator = engli
   if (refund.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
     return { tone: "error", text: t("orders.cancel.refundFailed") };
   }
-  if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
+  if (refundMoneyBack(refund)) {
     if (!refund.amount) return { tone: "success", text: t("orders.cancel.refundDone") };
     const amount = `${refund.amount}${refund.currency ? ` ${refund.currency}` : ""}`;
     return { tone: "success", text: t("orders.cancel.refundDoneAmount", { amount }) };

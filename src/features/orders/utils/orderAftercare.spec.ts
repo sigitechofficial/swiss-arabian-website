@@ -85,6 +85,30 @@ describe("order aftercare", () => {
   });
 });
 
+describe("whole-order cancel: completed only when the money went back", () => {
+  const paid = { orderId: "ord-1", cancellationAccepted: true, orderCancelled: true, requiresRefund: true };
+
+  it("an accepted refund request (resultState SUCCEEDED) is still being processed", () => {
+    const text = cancelOutcome({
+      ...paid,
+      refund: { refundId: "rf-1", status: "PROCESSING", resultState: "SUCCEEDED", amount: "186.00", currency: "AED" },
+    }).text;
+    expect(text).toMatch(/being processed/i);
+    expect(text).not.toMatch(/has been completed/i);
+  });
+
+  it.each(["REFUNDED", "PARTIALLY_REFUNDED", "PROVIDER_SUCCESS", "D365_POSTED"])(
+    "refund status %s → completed",
+    (status) => {
+      const text = cancelOutcome({
+        ...paid,
+        refund: { refundId: "rf-1", status, resultState: "SUCCEEDED", amount: "186.00", currency: "AED" },
+      }).text;
+      expect(text).toMatch(/refund of 186.00 AED has been completed/i);
+    },
+  );
+});
+
 describe("cancel some items", () => {
   const partial = {
     orderId: "ord-1",
@@ -105,6 +129,14 @@ describe("cancel some items", () => {
     expect(text).toMatch(/selected items have been cancelled/i);
     expect(text).toContain("80.00 AED");
     expect(text).toMatch(/being processed/i);
+  });
+
+  it("completed once the refund itself says the money went back", () => {
+    const text = cancelItemsOutcome(
+      { ...partial, refund: { refundId: "rf-1", status: "PARTIALLY_REFUNDED", resultState: "SUCCEEDED" } },
+      "AED",
+    ).text;
+    expect(text).toMatch(/refund of 80.00 AED has been completed/i);
   });
 
   it("says why nothing comes back when the kept items lost their offer", () => {
