@@ -20,8 +20,8 @@ describe("order aftercare", () => {
       requiresRefund: true,
       refund: { refundId: "rf-1", status: "PROCESSING", resultState: "PENDING" },
     }).text;
-    expect(text).toMatch(/being processed/i);
-    expect(text).toMatch(/does not mean the money has reached your bank/i);
+    expect(text).toMatch(/sending your refund/i);
+    expect(text).toMatch(/isn't in your account yet/i);
   });
 
   it("confirms a completed refund only from the refund record", () => {
@@ -30,9 +30,9 @@ describe("order aftercare", () => {
       requiresRefund: true,
       refund: { refundId: "rf-1", status: "COMPLETED", resultState: "SUCCEEDED", amount: "100.00", currency: "AED" },
     }).text;
-    expect(text).toMatch(/has been completed/);
+    expect(text).toMatch(/we've sent your refund/i);
     expect(text).toMatch(/100.00 AED/);
-    expect(text).toMatch(/more time to appear with your bank/);
+    expect(text).toMatch(/5–10 business days/);
   });
 
   it("separates a refund being checked from one our team sends, never as an error", () => {
@@ -44,7 +44,7 @@ describe("order aftercare", () => {
     });
     expect(held).toMatchObject({ tone: "info" });
     expect(held.text).toMatch(/checking your refund before sending it/i);
-    expect(held.text).toMatch(/email you when it has been paid/i);
+    expect(held.text).toMatch(/email you once it has been sent/i);
     for (const refund of [
       { status: "MANUAL_REVIEW", blockedCode: "REFUND_EXECUTION_DISABLED" },
       { status: "MANUAL_REVIEW", blockedCode: "UNSUPPORTED_REFUND_TENDER" },
@@ -106,8 +106,8 @@ describe("whole-order cancel: completed only when the money went back", () => {
       ...paid,
       refund: { refundId: "rf-1", status: "PROCESSING", resultState: "SUCCEEDED", amount: "186.00", currency: "AED" },
     }).text;
-    expect(text).toMatch(/being processed/i);
-    expect(text).not.toMatch(/has been completed/i);
+    expect(text).toMatch(/sending your refund/i);
+    expect(text).not.toMatch(/we've sent your refund/i);
   });
 
   it.each(["REFUNDED", "PARTIALLY_REFUNDED", "PROVIDER_SUCCESS", "D365_POSTED"])(
@@ -117,7 +117,7 @@ describe("whole-order cancel: completed only when the money went back", () => {
         ...paid,
         refund: { refundId: "rf-1", status, resultState: "SUCCEEDED", amount: "186.00", currency: "AED" },
       }).text;
-      expect(text).toMatch(/refund of 186.00 AED has been completed/i);
+      expect(text).toMatch(/sent your refund of 186\.00 AED/i);
     },
   );
 });
@@ -141,7 +141,7 @@ describe("cancel some items", () => {
     ).text;
     expect(text).toMatch(/selected items have been cancelled/i);
     expect(text).toContain("80.00 AED");
-    expect(text).toMatch(/being processed/i);
+    expect(text).toMatch(/sending your refund/i);
   });
 
   it("completed once the refund itself says the money went back", () => {
@@ -149,7 +149,7 @@ describe("cancel some items", () => {
       { ...partial, refund: { refundId: "rf-1", status: "PARTIALLY_REFUNDED", resultState: "SUCCEEDED" } },
       "AED",
     ).text;
-    expect(text).toMatch(/refund of 80.00 AED has been completed/i);
+    expect(text).toMatch(/sent your refund of 80\.00 AED/i);
   });
 
   it("says why nothing comes back when the kept items lost their offer", () => {
