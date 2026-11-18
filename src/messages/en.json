@@ -923,6 +923,8 @@
   "returnsPolicy.FREE_GIFT.DEDUCT_UNLESS_RETURNED": "If you return every paid item, please return the free gift too; otherwise its value is deducted from your refund.",
   "returnsPolicy.FREE_GIFT.MUST_RETURN": "If you return every paid item, the free gift must be returned with them.",
   "returnsPolicy.FREE_GIFT.KEEP_FREE": "You can keep a free gift, even if you return the paid items.",
+  "returnsPolicy.FREE_GIFT.DEDUCT_WHEN_NOT_MET": "If the items you keep no longer qualify for a free gift's offer, please return the gift too; otherwise its value is deducted from your refund.",
+  "returnsPolicy.FREE_GIFT.MUST_RETURN_WHEN_NOT_MET": "If the items you keep no longer qualify for a free gift's offer, the gift must be returned with them.",
   "returnsPolicy.EXCHANGES.AVAILABLE": {
     "one": "You can request an exchange within {count} day of delivery.",
     "other": "You can request an exchange within {count} days of delivery."
@@ -942,6 +944,7 @@
   "returnsPolicy.ESTIMATE_OPENED_ITEMS.NOT_REFUNDED": "The estimate assumes the items arrive unopened. Opened or used items aren't refunded.",
   "returnsPolicy.ESTIMATE_FEES.WAIVED_OUR_FAULT": "No return fees apply because the return is our fault.",
   "returnsPolicy.ESTIMATE_FREE_GIFT.DEDUCTED": "You're returning every paid item but keeping the free gift, so its value ({money}) is deducted.",
+  "returnsPolicy.ESTIMATE_FREE_GIFT.DEDUCTED_NOT_MET": "The items you keep no longer qualify for the free gift, so its value ({money}) is deducted unless you return it too.",
   "returnsPolicy.ESTIMATE_SPENT_POINTS.DEDUCTED": "You've already spent {points} points earned on this order, so their value ({money}) is deducted.",
   "returnsPolicy.ESTIMATE_DELIVERY.REFUNDED": "Your delivery fee is refunded because every paid item is coming back.",
   "returnsPolicy.ESTIMATE_DELIVERY.NO_FEE": "There was no delivery fee on this order.",

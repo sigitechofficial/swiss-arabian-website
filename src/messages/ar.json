@@ -947,6 +947,8 @@
   "returnsPolicy.FREE_GIFT.DEDUCT_UNLESS_RETURNED": "إذا أرجعت جميع المنتجات المدفوعة، يُرجى إرجاع الهدية المجانية أيضًا؛ وإلا تُخصم قيمتها من المبلغ المسترد.",
   "returnsPolicy.FREE_GIFT.MUST_RETURN": "إذا أرجعت جميع المنتجات المدفوعة، يجب إرجاع الهدية المجانية معها.",
   "returnsPolicy.FREE_GIFT.KEEP_FREE": "يمكنك الاحتفاظ بالهدية المجانية حتى إذا أرجعت المنتجات المدفوعة.",
+  "returnsPolicy.FREE_GIFT.DEDUCT_WHEN_NOT_MET": "إذا لم تعد المنتجات التي تحتفظ بها مؤهلة لعرض الهدية المجانية، يُرجى إرجاع الهدية أيضًا؛ وإلا تُخصم قيمتها من المبلغ المسترد.",
+  "returnsPolicy.FREE_GIFT.MUST_RETURN_WHEN_NOT_MET": "إذا لم تعد المنتجات التي تحتفظ بها مؤهلة لعرض الهدية المجانية، يجب إرجاع الهدية معها.",
   "returnsPolicy.EXCHANGES.AVAILABLE": {
     "zero": "يمكنك طلب الاستبدال خلال {count} يوم من التسليم.",
     "one": "يمكنك طلب الاستبدال خلال يوم واحد من التسليم.",
@@ -970,6 +972,7 @@
   "returnsPolicy.ESTIMATE_OPENED_ITEMS.NOT_REFUNDED": "يفترض التقدير وصول المنتجات غير مفتوحة. لا يُسترد مبلغ المنتجات المفتوحة أو المستخدمة.",
   "returnsPolicy.ESTIMATE_FEES.WAIVED_OUR_FAULT": "لا تُطبَّق رسوم إرجاع لأن سبب الإرجاع خطأ من جهتنا.",
   "returnsPolicy.ESTIMATE_FREE_GIFT.DEDUCTED": "أنت ترجع جميع المنتجات المدفوعة مع الاحتفاظ بالهدية المجانية، لذا تُخصم قيمتها ({money}).",
+  "returnsPolicy.ESTIMATE_FREE_GIFT.DEDUCTED_NOT_MET": "لم تعد المنتجات التي تحتفظ بها مؤهلة للهدية المجانية، لذا تُخصم قيمتها ({money}) ما لم تُرجعها أيضًا.",
   "returnsPolicy.ESTIMATE_SPENT_POINTS.DEDUCTED": "لقد استخدمت {points} نقطة ربحتها من هذا الطلب، لذا تُخصم قيمتها ({money}).",
   "returnsPolicy.ESTIMATE_DELIVERY.REFUNDED": "تُسترد رسوم التوصيل لأن جميع المنتجات المدفوعة ستُرجع.",
   "returnsPolicy.ESTIMATE_DELIVERY.NO_FEE": "لم تكن هناك رسوم توصيل على هذا الطلب.",
