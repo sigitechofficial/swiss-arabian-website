@@ -153,6 +153,9 @@ export function ExchangeMoneyPanel({
   }
 
   const amount = copy.amount ? formatMoney(Number(copy.amount), view.currencyCode) : null;
+  const offerAdjustment = Number(view.offerAdjustmentAmount ?? 0);
+  const offerMoney =
+    offerAdjustment !== 0 ? formatMoney(Math.abs(offerAdjustment), view.currencyCode) : null;
 
   return (
     <div className="mt-3 border-t border-sa-border pt-3 text-[13px]" data-exchange-money={view.action}>
@@ -167,6 +170,13 @@ export function ExchangeMoneyPanel({
       ) : (
         <p className="mt-1 leading-relaxed text-sa-muted">{copy.body}</p>
       )}
+      {offerMoney ? (
+        <p className="mt-1 leading-relaxed text-sa-muted">
+          {t(offerAdjustment > 0 ? "exchangeMoney.offerAdjusted" : "exchangeMoney.offerCredited", {
+            money: offerMoney,
+          })}
+        </p>
+      ) : null}
       {phase.kind === "unconfirmed" && copy.canPay ? (
         <p className="mt-1 leading-relaxed text-sa-muted" role="status">
           {t("exchangeMoney.unconfirmed")}

@@ -118,6 +118,8 @@ export type ExchangeMoneyView = {
   refundDifferenceRequired: boolean;
   customerPayableAmount: string;
   refundableDifferenceAmount: string;
+  /** Offer the kept items no longer earn, inside the money above (signed; older APIs: absent). */
+  offerAdjustmentAmount?: string;
   action: ExchangeMoneyAction;
   /** Hosted payment page, when a live session exists (detail responses only). */
   customerPayUrl?: string | null;
