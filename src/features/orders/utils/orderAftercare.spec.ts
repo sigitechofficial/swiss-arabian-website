@@ -35,17 +35,30 @@ describe("order aftercare", () => {
     expect(text).toMatch(/more time to appear with your bank/);
   });
 
-  it("separates manual review and a blocked refund", () => {
-    expect(
-      cancelOutcome({ ...cancelled, requiresRefund: true, requiresManualReview: true }).text,
-    ).toMatch(/needs a review/i);
-    expect(
-      cancelOutcome({
-        ...cancelled,
-        requiresRefund: true,
-        refund: { status: "FAILED", blockedCode: "REFUND_EXECUTION_DISABLED" },
-      }).text,
-    ).toMatch(/could not be completed/i);
+  it("separates a refund being checked from one our team sends, never as an error", () => {
+    const held = cancelOutcome({
+      ...cancelled,
+      requiresRefund: true,
+      requiresManualReview: true,
+      refund: { refundId: "rf-1", status: "REQUESTED", resultState: "BLOCKED", blockedCode: "REFUND_APPROVAL_REQUIRED" },
+    });
+    expect(held).toMatchObject({ tone: "info" });
+    expect(held.text).toMatch(/checking your refund before sending it/i);
+    expect(held.text).toMatch(/email you when it has been paid/i);
+    for (const refund of [
+      { status: "MANUAL_REVIEW", blockedCode: "REFUND_EXECUTION_DISABLED" },
+      { status: "MANUAL_REVIEW", blockedCode: "UNSUPPORTED_REFUND_TENDER" },
+      { status: "FAILED", blockedCode: "PROVIDER_REFUND_FAILED" },
+    ]) {
+      const outcome = cancelOutcome({ ...cancelled, requiresRefund: true, requiresManualReview: true, refund });
+      expect(outcome.tone).toBe("info");
+      expect(outcome.text).toMatch(/our team will send your refund/i);
+      expect(outcome.text).toMatch(/don't need to do anything/i);
+    }
+    // No refund record at all: still our team, still calm.
+    expect(cancelOutcome({ ...cancelled, requiresRefund: true, requiresManualReview: true }).text).toMatch(
+      /our team will send your refund/i,
+    );
     expect(
       refundCustomerStatus({
         refundId: "rf-1",
@@ -162,14 +175,17 @@ describe("cancel some items", () => {
       "AED",
     );
     expect(outcome.tone).toBe("info");
-    expect(outcome.text).toMatch(/needs a review/i);
+    expect(outcome.text).toMatch(/checking your refund of 80.00 AED before sending it/i);
   });
 
-  it("a refund that could not start is reported, not hidden", () => {
-    const outcome = cancelItemsOutcome(
-      { ...partial, refund: { refundId: null, status: null, resultState: "FAILED", blockedCode: "X" } },
-      "AED",
-    );
-    expect(outcome.tone).toBe("error");
+  it("a refund our team pays by hand (or that could not start) says so, calmly, with the amount", () => {
+    for (const refund of [
+      { refundId: null, status: null, resultState: "FAILED", blockedCode: "CANCELLATION_REFUND_START_FAILED" },
+      { refundId: "rf-1", status: "MANUAL_REVIEW", resultState: "BLOCKED", blockedCode: "REFUND_EXECUTION_DISABLED" },
+    ]) {
+      const outcome = cancelItemsOutcome({ ...partial, requiresManualReview: true, refund }, "AED");
+      expect(outcome.tone).toBe("info");
+      expect(outcome.text).toMatch(/our team will send your refund of 80.00 AED/i);
+    }
   });
 });

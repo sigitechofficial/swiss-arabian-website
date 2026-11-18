@@ -38,6 +38,7 @@ export type CustomerRefund = {
 const STATES: readonly CustomerRefundState[] = [
   "processing",
   "waiting_for_review",
+  "manual_payout",
   "completed",
   "not_approved",
   "cancelled",
@@ -132,6 +133,7 @@ export function refundHeadlineAmount(refund: CustomerRefund): string | null {
 const STATE_COPY: Record<CustomerRefundState, { label: MessageKey; note: MessageKey; tone: AccountStatusTone }> = {
   processing: { label: "orders.refund.state.processing", note: "orders.refund.processing", tone: "accent" },
   waiting_for_review: { label: "orders.refund.state.waitingForReview", note: "orders.refund.review", tone: "warning" },
+  manual_payout: { label: "orders.refund.state.manualPayout", note: "orders.refund.manualPayout", tone: "accent" },
   completed: { label: "orders.refund.state.completed", note: "orders.refund.completed", tone: "success" },
   not_approved: { label: "orders.refund.state.notApproved", note: "orders.refund.notApproved", tone: "danger" },
   cancelled: { label: "orders.refund.state.cancelled", note: "orders.refund.cancelled", tone: "muted" },
@@ -140,9 +142,15 @@ const STATE_COPY: Record<CustomerRefundState, { label: MessageKey; note: Message
 export function refundStateDisplay(
   state: CustomerRefundState,
   t: Translator = englishTranslator,
+  parts: readonly Pick<CustomerRefundPart, "type">[] = [],
 ): { label: string; note: string; tone: AccountStatusTone } {
   const copy = STATE_COPY[state];
-  return { label: t(copy.label), note: t(copy.note), tone: copy.tone };
+  // Cash on delivery paid by hand: our team gets in touch to arrange it.
+  const note =
+    state === "manual_payout" && parts.some((part) => part.type === "cash_on_delivery")
+      ? "orders.refund.manualPayoutCod"
+      : copy.note;
+  return { label: t(copy.label), note: t(note), tone: copy.tone };
 }
 
 /** "AED 96.00 to your card ending 4242", "500 points", ... */
@@ -182,6 +190,7 @@ export function toOrderRefundView(refund: CustomerRefund): OrderRefundView {
   const status: Record<CustomerRefundState, string> = {
     processing: "PROCESSING",
     waiting_for_review: "MANUAL_REVIEW",
+    manual_payout: "MANUAL_PAYOUT",
     completed: "COMPLETED",
     not_approved: "REJECTED",
     cancelled: "CANCELLED",
@@ -192,7 +201,7 @@ export function toOrderRefundView(refund: CustomerRefund): OrderRefundView {
     currency: refund.currency,
     status: status[refund.state],
     resultState: null,
-    requiresManualReview: refund.state === "waiting_for_review",
+    requiresManualReview: refund.state === "waiting_for_review" || refund.state === "manual_payout",
     blocked: false,
   };
 }

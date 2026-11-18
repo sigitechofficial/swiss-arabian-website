@@ -133,7 +133,7 @@ function RefundEntry({
   locale: string;
   timeZone: string;
 }) {
-  const { label, note, tone } = refundStateDisplay(refund.state, t);
+  const { label, note, tone } = refundStateDisplay(refund.state, t, refund.parts);
   const amount = refundHeadlineAmount(refund);
   const refundCurrency = refund.currency ?? currency;
   const date =

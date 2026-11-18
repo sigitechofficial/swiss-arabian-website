@@ -86,6 +86,8 @@ export interface CancellationWindow {
 export type CustomerRefundState =
   | "processing"
   | "waiting_for_review"
+  /** Our team sends it by hand; the customer has nothing to do. Older backends never send it. */
+  | "manual_payout"
   | "completed"
   | "not_approved"
   | "cancelled";

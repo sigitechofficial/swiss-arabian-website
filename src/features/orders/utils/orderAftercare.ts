@@ -32,6 +32,7 @@ function upper(value: unknown): string {
 }
 
 export function refundCustomerStatus(refund: OrderRefundView, t: Translator = englishTranslator): string {
+  if (upper(refund.status) === "MANUAL_PAYOUT") return t("orders.refund.manualPayout");
   if (refund.requiresManualReview) return t("orders.refund.review");
   if (refund.blocked) return t("orders.refund.failed");
   const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
@@ -74,6 +75,22 @@ function refundMoneyBack(refund: OrderRefundView | null): boolean {
   return REFUND_MONEY_BACK.test(upper(refund?.status));
 }
 
+/** Held for approval: being checked before it is sent. */
+function heldForApproval(result: CancelOrderResponse): boolean {
+  return result.refund?.blockedCode === "REFUND_APPROVAL_REQUIRED";
+}
+
+/**
+ * Not sent automatically (payment without automatic refunds, refunds switched
+ * off, a provider that declined, or no refund record yet): our team sends it.
+ * The customer has nothing to do, so this is never shown as an error.
+ */
+function paidByOurTeam(result: CancelOrderResponse, refund: OrderRefundView | null): boolean {
+  if (!refund) return result.requiresManualReview === true;
+  const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
+  return refund.blocked || refund.requiresManualReview || /(FAILED|BLOCKED|MANUAL_REVIEW)/.test(state);
+}
+
 function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
   return readOrderRefund(result.refund);
 }
@@ -96,19 +113,14 @@ export function cancelItemsOutcome(
   }
   const amount = `${result.refundAmount}${currency ? ` ${currency}` : ""}`;
   const refund = refundFromCancel(result);
-  // Held for approval (amount, risk, policy) or no refund record yet: a review, not a failure.
-  if ((result.requiresManualReview && !refund) || result.refund?.blockedCode === "REFUND_APPROVAL_REQUIRED") {
-    return { tone: "info", text: t("orders.cancel.itemsRefundReview") };
-  }
-  const state = `${refund?.resultState ?? ""} ${refund?.status ?? ""}`.toUpperCase();
-  if (refund?.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
-    return { tone: "error", text: t("orders.cancel.itemsRefundFailed") };
-  }
-  if (refund?.requiresManualReview || /(PENDING_APPROVAL|MANUAL_REVIEW|REVIEW)/.test(state)) {
-    return { tone: "info", text: t("orders.cancel.itemsRefundReview") };
-  }
   if (refundMoneyBack(refund)) {
     return { tone: "success", text: t("orders.cancel.itemsRefundDone", { amount }) };
+  }
+  if (heldForApproval(result)) {
+    return { tone: "info", text: t("orders.cancel.itemsRefundReview", { amount }) };
+  }
+  if (paidByOurTeam(result, refund)) {
+    return { tone: "info", text: t("orders.cancel.itemsRefundManual", { amount }) };
   }
   return { tone: "info", text: t("orders.cancel.itemsRefundProcessing", { amount }) };
 }
@@ -125,20 +137,16 @@ export function cancelOutcome(result: CancelOrderResponse, t: Translator = engli
     return { tone: "success", text: t("orders.cancel.cancelled") };
   }
   const refund = refundFromCancel(result);
-  if (result.requiresManualReview || refund?.requiresManualReview) {
-    return { tone: "info", text: t("orders.cancel.refundReview") };
-  }
-  if (!refund) {
-    return { tone: "info", text: t("orders.cancel.refundProcessing") };
-  }
-  const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
-  if (refund.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
-    return { tone: "error", text: t("orders.cancel.refundFailed") };
-  }
-  if (refundMoneyBack(refund)) {
+  if (refund && refundMoneyBack(refund)) {
     if (!refund.amount) return { tone: "success", text: t("orders.cancel.refundDone") };
     const amount = `${refund.amount}${refund.currency ? ` ${refund.currency}` : ""}`;
     return { tone: "success", text: t("orders.cancel.refundDoneAmount", { amount }) };
+  }
+  if (heldForApproval(result)) {
+    return { tone: "info", text: t("orders.cancel.refundReview") };
+  }
+  if (paidByOurTeam(result, refund)) {
+    return { tone: "info", text: t("orders.cancel.refundManual") };
   }
   return { tone: "info", text: t("orders.cancel.refundProcessing") };
 }

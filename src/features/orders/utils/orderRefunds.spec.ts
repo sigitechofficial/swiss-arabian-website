@@ -62,6 +62,11 @@ describe("order refunds", () => {
     expect(refundStateDisplay("processing")).toMatchObject({ label: "Processing", tone: "accent" });
     expect(refundStateDisplay("waiting_for_review")).toMatchObject({ label: "Waiting for review", tone: "warning" });
     expect(refundStateDisplay("completed")).toMatchObject({ label: "Completed", tone: "success" });
+    expect(refundStateDisplay("manual_payout")).toMatchObject({ label: "Being sent by our team", tone: "accent" });
+    expect(refundStateDisplay("manual_payout").note).toMatch(/our team will send this refund/i);
+    expect(refundStateDisplay("manual_payout", undefined, [{ type: "cash_on_delivery" }]).note).toMatch(
+      /contact you to arrange this refund by bank transfer or cash/i,
+    );
     expect(refundStateDisplay("not_approved")).toMatchObject({ label: "Not approved", tone: "danger" });
     expect(refundStateDisplay("cancelled")).toMatchObject({ label: "Cancelled", tone: "muted" });
   });
