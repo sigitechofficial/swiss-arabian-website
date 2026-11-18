@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancelOutcome, readExchangeSettlement, refundCustomerStatus } from "./orderAftercare";
+import { cancelItemsOutcome, cancelOutcome, readExchangeSettlement, refundCustomerStatus } from "./orderAftercare";
 
 const cancelled = {
   orderId: "ord-1",
@@ -82,5 +82,62 @@ describe("order aftercare", () => {
     ).toBe("15.00");
     expect(readExchangeSettlement({ settlement: { equalValue: true } })?.equal).toBe(true);
     expect(readExchangeSettlement({ status: "APPROVED" })).toBeNull();
+  });
+});
+
+describe("cancel some items", () => {
+  const partial = {
+    orderId: "ord-1",
+    cancellationAccepted: true,
+    orderCancelled: false,
+    partial: true,
+    requiresRefund: true,
+    refundAmount: "80.00",
+    offerAdjustmentAmount: "33.33",
+    deliveryChargeAmount: "0.00",
+  };
+
+  it("names the refund amount while it is processed", () => {
+    const text = cancelItemsOutcome(
+      { ...partial, refund: { refundId: "rf-1", status: "PROCESSING", resultState: "SUCCEEDED" } },
+      "AED",
+    ).text;
+    expect(text).toMatch(/selected items have been cancelled/i);
+    expect(text).toContain("80.00 AED");
+    expect(text).toMatch(/being processed/i);
+  });
+
+  it("says why nothing comes back when the kept items lost their offer", () => {
+    const outcome = cancelItemsOutcome(
+      { ...partial, requiresRefund: false, refundAmount: "0.00", offerAdjustmentAmount: "56.67" },
+      "AED",
+    );
+    expect(outcome.tone).toBe("success");
+    expect(outcome.text).toMatch(/no longer qualify/i);
+  });
+
+  it("cash on delivery: the lower total is paid on delivery", () => {
+    expect(cancelItemsOutcome({ ...partial, requiresRefund: false }, "AED").text).toMatch(/on delivery/i);
+  });
+
+  it("a refund held for approval is a review, not a failure", () => {
+    const outcome = cancelItemsOutcome(
+      {
+        ...partial,
+        requiresManualReview: true,
+        refund: { refundId: "rf-1", status: "REQUESTED", resultState: "BLOCKED", blockedCode: "REFUND_APPROVAL_REQUIRED" },
+      },
+      "AED",
+    );
+    expect(outcome.tone).toBe("info");
+    expect(outcome.text).toMatch(/needs a review/i);
+  });
+
+  it("a refund that could not start is reported, not hidden", () => {
+    const outcome = cancelItemsOutcome(
+      { ...partial, refund: { refundId: null, status: null, resultState: "FAILED", blockedCode: "X" } },
+      "AED",
+    );
+    expect(outcome.tone).toBe("error");
   });
 });

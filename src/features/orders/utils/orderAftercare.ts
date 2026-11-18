@@ -67,6 +67,43 @@ function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
   return readOrderRefund(result.refund);
 }
 
+/** Some items cancelled: what happened to the money. */
+export function cancelItemsOutcome(
+  result: CancelOrderResponse,
+  currency: string | null,
+  t: Translator = englishTranslator,
+): CancelFeedback {
+  const drop = Number(result.refundAmount ?? 0);
+  if (!result.requiresRefund) {
+    if (drop > 0) return { tone: "success", text: t("orders.cancel.itemsCod") };
+    return {
+      tone: "success",
+      text: Number(result.offerAdjustmentAmount ?? 0) > 0 || Number(result.deliveryChargeAmount ?? 0) > 0
+        ? t("orders.cancel.itemsNoRefund")
+        : t("orders.cancel.itemsCancelled"),
+    };
+  }
+  const amount = `${result.refundAmount}${currency ? ` ${currency}` : ""}`;
+  const refund = refundFromCancel(result);
+  // Held for approval (amount, risk, policy) or no refund record yet: a review, not a failure.
+  if ((result.requiresManualReview && !refund) || result.refund?.blockedCode === "REFUND_APPROVAL_REQUIRED") {
+    return { tone: "info", text: t("orders.cancel.itemsRefundReview") };
+  }
+  const state = `${refund?.resultState ?? ""} ${refund?.status ?? ""}`.toUpperCase();
+  if (refund?.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
+    return { tone: "error", text: t("orders.cancel.itemsRefundFailed") };
+  }
+  if (refund?.requiresManualReview || /(PENDING_APPROVAL|MANUAL_REVIEW|REVIEW)/.test(state)) {
+    return { tone: "info", text: t("orders.cancel.itemsRefundReview") };
+  }
+  // resultState SUCCEEDED only means the refund was accepted; the refund's
+  // own status says whether the money went back.
+  if (/^(COMPLETED|SUCCEEDED|SETTLED)$/.test((refund?.status ?? "").toUpperCase())) {
+    return { tone: "success", text: t("orders.cancel.itemsRefundDone", { amount }) };
+  }
+  return { tone: "info", text: t("orders.cancel.itemsRefundProcessing", { amount }) };
+}
+
 /** Customer copy. A cancelled payment status alone is not a completed refund. */
 export function cancelOutcome(result: CancelOrderResponse, t: Translator = englishTranslator): CancelFeedback {
   if (!result.orderCancelled && result.cancellationAccepted) {
