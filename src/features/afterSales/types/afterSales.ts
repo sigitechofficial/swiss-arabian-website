@@ -314,11 +314,15 @@ export type ReturnEstimate = {
     freeGift: { amount: string; gifts: ReturnEstimateGift[] };
     /** Buy-X-get-Y / set offer the kept items no longer earn (older APIs: absent). */
     offerAdjustment?: { amount: string };
+    /** Delivery fee waived at checkout that what is kept no longer earns (older APIs: absent). */
+    deliveryCharge?: { amount: string };
     spentPoints: { amount: string; points: string };
   };
   totalDeductions: string;
   /** Offer amount an earlier return kept, added back with this one (older APIs: absent). */
   offerCredit?: { amount: string };
+  /** Delivery charge an earlier return kept, added back with this one (older APIs: absent). */
+  deliveryCredit?: { amount: string };
   estimatedRefund: string;
   refundDestination: AfterSalesCopyItem;
   /** The free gift must be in the return (giftOnReturn = MUST_RETURN): submitting without it fails. */

@@ -79,8 +79,14 @@ export function ReturnEstimatePanel({
     const e = estimate;
     const money = (amount: string) => formatMoney(Number(amount), e.currencyCode);
     const minus = (amount: string) => `− ${money(amount)}`;
-    const { returnShippingFee, restockingFee, freeGift, spentPoints, offerAdjustment } =
-      e.deductions;
+    const {
+      returnShippingFee,
+      restockingFee,
+      freeGift,
+      spentPoints,
+      offerAdjustment,
+      deliveryCharge,
+    } = e.deductions;
     const giftNames = freeGift.gifts
       .map((gift) => gift.productName || gift.sku)
       .filter(Boolean)
@@ -134,6 +140,18 @@ export function ReturnEstimatePanel({
             <Row
               label={t("returnEstimate.offerAdjustment")}
               value={minus(offerAdjustment.amount)}
+            />
+          ) : null}
+          {deliveryCharge && Number(deliveryCharge.amount) > 0 ? (
+            <Row
+              label={t("returnEstimate.deliveryCharge")}
+              value={minus(deliveryCharge.amount)}
+            />
+          ) : null}
+          {e.deliveryCredit && Number(e.deliveryCredit.amount) > 0 ? (
+            <Row
+              label={t("returnEstimate.deliveryCredit")}
+              value={`+ ${money(e.deliveryCredit.amount)}`}
             />
           ) : null}
           {e.offerCredit && Number(e.offerCredit.amount) > 0 ? (
