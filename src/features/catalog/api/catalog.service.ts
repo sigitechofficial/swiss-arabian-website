@@ -1,4 +1,5 @@
 import type { ProductSeoPackage } from "@/lib/seo/productSeo";
+import type { SeoFaqContent } from "@/features/seo-faq/seoFaq";
 import type { CollectionSeoContent } from "@/features/seo-footer/collectionSeoTextView";
 import { apiGet } from "@/lib/api/apiClient";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -684,6 +685,8 @@ export type CatalogCollection = {
   seoDescription?: string | null;
   /** SEO text block above the footer (market + language); null when none. */
   seoContent?: CollectionSeoContent | null;
+  /** Questions and answers on the collection page (FAQ section + schema); null when none. */
+  faq?: SeoFaqContent | null;
   customMetafields?: Record<string, unknown> | null;
 };
 
@@ -715,6 +718,7 @@ function mapCollectionDetail(
     seoTitle: item.seoTitle ?? raw?.seoTitle,
     seoDescription: item.seoDescription ?? raw?.seoDescription,
     seoContent: item.seoContent ?? raw?.seoContent ?? null,
+    faq: item.faq ?? raw?.faq ?? null,
     customMetafields: item.customMetafields ?? raw?.customMetafields ?? null,
   };
 }

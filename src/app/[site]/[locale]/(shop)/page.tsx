@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { ORGANIZATION_ID, WEBSITE_ID } from "@/features/catalog/components/CatalogJsonLd";
+import { faqPageJsonLd, ORGANIZATION_ID, WEBSITE_ID } from "@/features/catalog/components/CatalogJsonLd";
+import { loadHomeFaq, seoFaqView } from "@/features/seo-faq/seoFaq";
+import { SeoFaqSection } from "@/features/seo-faq/SeoFaqSection";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
@@ -43,10 +45,13 @@ export default async function HomePage() {
   // One H1 per page: the market's SEO text heading (above the footer) when there is
   // one, else this one. The hero title is not a heading (SEO audit).
   const market = await resolveServerCatalogMarket();
-  const [footerText, initialHome] = await Promise.all([
+  const [footerText, initialHome, homeFaq] = await Promise.all([
     loadFooterSeoText(market.locale, market.zoneCode),
     loadServerHome(),
+    loadHomeFaq(market.locale, market.zoneCode),
   ]);
+  // Questions shown on the page, and the same questions as FAQPage schema (SEO audit p19).
+  const faq = seoFaqView(homeFaq, locale);
   // Search engines get Organization + WebSite unless the admin publishes their own.
   const types = new Set(adminJsonLd.map((entry) => String(entry["@type"] ?? "")));
   const defaults = [
@@ -98,6 +103,12 @@ export default async function HomePage() {
         <h1 className="sr-only">{seo?.title || homeTitle(t, brand.name)}</h1>
       )}
       <HomePageView initial={initialHome} />
+      {faq ? (
+        <>
+          <CatalogJsonLd data={faqPageJsonLd(faq.entries)} />
+          <SeoFaqSection faq={faq} />
+        </>
+      ) : null}
     </>
   );
 }
