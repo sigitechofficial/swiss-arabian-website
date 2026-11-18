@@ -79,7 +79,8 @@ export function ReturnEstimatePanel({
     const e = estimate;
     const money = (amount: string) => formatMoney(Number(amount), e.currencyCode);
     const minus = (amount: string) => `− ${money(amount)}`;
-    const { returnShippingFee, restockingFee, freeGift, spentPoints } = e.deductions;
+    const { returnShippingFee, restockingFee, freeGift, spentPoints, offerAdjustment } =
+      e.deductions;
     const giftNames = freeGift.gifts
       .map((gift) => gift.productName || gift.sku)
       .filter(Boolean)
@@ -127,6 +128,18 @@ export function ReturnEstimatePanel({
               label={t("returnEstimate.freeGift")}
               value={minus(freeGift.amount)}
               hint={giftNames || undefined}
+            />
+          ) : null}
+          {offerAdjustment && Number(offerAdjustment.amount) > 0 ? (
+            <Row
+              label={t("returnEstimate.offerAdjustment")}
+              value={minus(offerAdjustment.amount)}
+            />
+          ) : null}
+          {e.offerCredit && Number(e.offerCredit.amount) > 0 ? (
+            <Row
+              label={t("returnEstimate.offerCredit")}
+              value={`+ ${money(e.offerCredit.amount)}`}
             />
           ) : null}
           {Number(spentPoints.amount) > 0 ? (
