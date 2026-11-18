@@ -967,6 +967,7 @@
   "returnsPolicy.RTO.KEEPS_DELIVERY_AND_CHARGE": "If you refuse the delivery, or we can't deliver because of the address or your availability, we refund what you paid less the delivery fee and a return charge of {money}.",
   "returnsPolicy.RTO.CHARGE_ONLY": "If you refuse the delivery, or we can't deliver because of the address or your availability, we refund what you paid less a return charge of {money}.",
   "returnsPolicy.RTO.FULL_REFUND": "If a parcel comes back to us undelivered, you get back everything you paid.",
+  "returnsPolicy.RTO_FREE_DELIVERY.KEPT": "If your order had free delivery, the delivery fee we waived is also deducted in these cases.",
   "returnsPolicy.termsPage.title": "Return terms",
   "returnsPolicy.termsPage.intro": "These are the return, exchange and cancellation terms for {market} today. Your order keeps the terms that applied when you placed it; you can see them on your order page.",
   "returnsPolicy.termsPage.description": "Our return, exchange and cancellation terms: time limits, fees, refunds, offers and delivery.",
