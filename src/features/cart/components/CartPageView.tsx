@@ -79,6 +79,9 @@ import {
 import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { CartTamaraPromo } from "./CartTamaraPromo";
+import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
+import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
+import { CartUnavailableItems } from "./CartUnavailableItems";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
 function itemsLabel(n: number) {
@@ -190,6 +193,9 @@ export function CartPageView() {
               <span className={cartPageCount}>{itemsLabel(itemCount)}</span>
             ) : null}
           </header>
+
+          <CartPendingPaymentNotice />
+          <CartUnavailableItems />
 
           {!isEmpty ? (
             <div className={cartLayout} id="cart-page-layout">
@@ -411,8 +417,9 @@ export function CartPageView() {
                 <LocaleLink className={cartContinue} href="/products">
                   Continue shopping
                 </LocaleLink>
-                {/* Returns and shipping terms are the market's own policies,
-                    linked from the footer: no fixed promises here. */}
+                {/* The market's return terms, generated from its settings (not a
+                    fixed promise): how offers, gifts and delivery work on a return. */}
+                <ReturnTermsNote className="mt-3 text-center text-[12px] leading-relaxed text-sa-muted" />
                 <div className={cartBadges}>
                   <span>SSL Secured</span>
                 </div>

@@ -162,7 +162,6 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-dvh flex-col">
         <AnalyticsScripts ids={integrations.analytics} context={analyticsContext} />
-        <InsiderScripts />
         <AppProviders
           storefrontHost={storefrontHost}
           locale={locale}
@@ -170,6 +169,9 @@ export default async function RootLayout({
           integrations={integrations}
           marketTimeZone={marketTimeZone(analyticsContext.country)}
         >
+          {/* Inside the providers: it reads the address's Insider tag setting from them. Outside,
+              it saw "tag off", so ins.js only loaded on the next page load after consent. */}
+          <InsiderScripts />
           {/* Journeys, first-party tracking, on-site messages and the consent banner (inside the
               providers so the banner speaks the page's language). */}
           <JourneyEventsPoller />

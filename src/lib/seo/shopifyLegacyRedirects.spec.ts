@@ -73,3 +73,23 @@ describe("shopifyLegacyRedirect per brand", () => {
     expect(shopifyLegacyRedirect("/ar/account/login", "SAPIL")).toBe("/ar/login");
   });
 });
+
+/** SEO audit p22–23: the usual store-locator addresses open the store pages. */
+describe("store-locator addresses", () => {
+  it.each([
+    ["/store-locator", "/stores"],
+    ["/store-locator/", "/stores"],
+    ["/store-locator/dubai", "/stores/dubai"],
+    ["/store-locator/Abu-Dhabi/", "/stores/abu-dhabi"],
+    ["/store-locator/dubai/dubai-mall", "/stores/dubai/dubai-mall"],
+    ["/ar/store-locator/sharjah", "/ar/stores/sharjah"],
+  ])("sends %s to %s", (path, target) => {
+    expect(shopifyLegacyRedirect(path, "SWISS_ARABIAN")).toBe(target);
+    expect(shopifyLegacyRedirect(path, "SAPIL")).toBe(target);
+  });
+
+  it("leaves deeper or look-alike addresses alone", () => {
+    expect(shopifyLegacyRedirect("/store-locator/a/b/c")).toBeNull();
+    expect(shopifyLegacyRedirect("/store-locators")).toBeNull();
+  });
+});

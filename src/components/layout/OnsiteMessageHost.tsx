@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   decideOnsiteMessage,
+  fetchOnsitePreview,
   fetchOnsiteTriggers,
+  submitOnsiteLead,
   recordOnsiteEvent,
   type OnsiteContext,
 } from "@/features/onsite/api/onsite.service";
@@ -16,6 +18,15 @@ import { getSessionId, getVisitorId } from "@/lib/analytics/tracker";
 import { env } from "@/lib/config/env";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useUiStore } from "@/stores/useUiStore";
+
+/** `?onsite_preview=<token>`: an admin testing a campaign from the playground. */
+const PREVIEW_PARAM = "onsite_preview";
+
+function previewTokenFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const token = new URLSearchParams(window.location.search).get(PREVIEW_PARAM);
+  return token && token.length <= 300 ? token : null;
+}
 
 /**
  * Shows the popup or banner the backend decides on. On each page it asks which triggers matter
@@ -32,9 +43,32 @@ export function OnsiteMessageHost() {
   const marketing = useConsentFor("marketing");
   const contextRef = useRef<OnsiteContext | null>(null);
   const showing = useRef(false);
+  // An admin preview shows that one saved campaign straight away, whatever its status, rules or the
+  // cookie choice (it is the admin's own test). Nothing is recorded and normal rules are not asked.
 
   useEffect(() => {
-    if (!env.onsite.enabled || !marketing) return;
+    const token = previewTokenFromUrl();
+    if (!token) return;
+    let cancelled = false;
+    const path = window.location.pathname;
+    void fetchOnsitePreview({ path, locale: localeFromPathname(path), zoneCode }, token)
+      .then((found) => {
+        if (cancelled) return;
+        if (!found) {
+          console.warn("[onsite] The preview link is invalid or has expired. Open a fresh one from the admin.");
+          return;
+        }
+        showing.current = true;
+        setMessage(found);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, zoneCode]);
+
+  useEffect(() => {
+    if (!env.onsite.enabled || !marketing || previewTokenFromUrl()) return;
     if (typeof window === "undefined") return;
     let cancelled = false;
     let stop: () => void = () => undefined;
@@ -81,6 +115,7 @@ export function OnsiteMessageHost() {
   }, [pathname, zoneCode, marketing]);
 
   const report = useCallback((type: "CLICKED" | "DISMISSED", ruleId: string) => {
+    if (previewTokenFromUrl()) return;
     const context = contextRef.current;
     if (context) void recordOnsiteEvent(context, ruleId, type).catch(() => undefined);
   }, []);
@@ -94,6 +129,17 @@ export function OnsiteMessageHost() {
         setMessage(null);
       }}
       onCta={() => report("CLICKED", message.ruleId)}
+      onLead={(payload) => {
+        const path = window.location.pathname;
+        const context = contextRef.current ?? {
+          path,
+          locale: localeFromPathname(path),
+          zoneCode,
+          visitorId: getVisitorId(),
+          sessionId: getSessionId(),
+        };
+        return submitOnsiteLead(context, message.ruleId, payload, previewTokenFromUrl());
+      }}
     />
   );
 }

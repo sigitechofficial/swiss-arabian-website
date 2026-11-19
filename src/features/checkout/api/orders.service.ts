@@ -30,6 +30,13 @@ function buildGuestParam(): URLSearchParams {
 export async function placeOrder(dto: {
   checkoutSessionId: string;
   idempotencyKey?: string;
+  /**
+   * The total and amount to pay the shopper saw when clicking Place order.
+   * If the backend's fresh quote differs (an offer ended, a price changed) it
+   * answers 409 PRICING_CHANGED before creating the order (checkout QA-048).
+   */
+  expectedTotal?: string;
+  expectedAmountPayable?: string;
 }): Promise<OrderResponse> {
   return apiPost<OrderResponse>(
     `/storefront/orders/from-checkout?${buildContextParams().toString()}`,

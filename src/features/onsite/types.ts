@@ -5,6 +5,8 @@ export type OnsiteTrigger = {
   scrollPercent?: number;
 };
 
+import type { ResolvedDesign } from "./design/onsiteDesign";
+
 /** The one message the backend decided to show. */
 export type OnsiteMessage = {
   ruleId: string;
@@ -13,6 +15,8 @@ export type OnsiteMessage = {
   body: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Designed in the admin playground: drawn instead of the plain title and text. */
+  design?: ResolvedDesign;
 };
 
 export type OnsiteEventType = "SHOWN" | "CLICKED" | "DISMISSED";

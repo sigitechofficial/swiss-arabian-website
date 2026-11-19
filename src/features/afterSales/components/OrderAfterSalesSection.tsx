@@ -18,6 +18,7 @@ import {
 } from "./AfterSalesRequestCards";
 import { ExchangeRequestForm } from "./ExchangeRequestForm";
 import { ReturnRequestForm } from "./ReturnRequestForm";
+import { ReturnsPolicySummary } from "./ReturnsPolicySummary";
 
 type OrderAfterSalesSectionProps = {
   orderId: string;
@@ -91,6 +92,9 @@ export function OrderAfterSalesSection({
             {note}
           </p>
         ))}
+        {eligible ? (
+          <ReturnsPolicySummary source={{ mode: "customer", orderId }} />
+        ) : null}
 
         {form === "return" ? (
           <ReturnRequestForm

@@ -59,11 +59,72 @@ export interface ShipmentDetail {
   events: ShipmentDetailEvent[];
 }
 
+/** Why online cancel is unavailable (the order's after-sales policy or the clock). */
+export type CancellationBlockedCode =
+  | "ALREADY_CANCELLED"
+  | "NOT_ELIGIBLE"
+  | "SHIPMENT_EXISTS"
+  | "CUSTOMER_CANCEL_DISABLED"
+  | "FULFILLMENT_STARTED"
+  | "WINDOW_NOT_STARTED"
+  | "WINDOW_CLOSED";
+
 export interface CancellationWindow {
   isInsideWindow: boolean;
+  /** The customer may cancel online now. */
   canCancel: boolean;
+  /** …and may cancel some items only. Older backends omit it. */
+  canCancelItems?: boolean;
   remainingSeconds: number | null;
   endsAt: string | null;
+  /** Older backends omit these. */
+  blockedCode?: CancellationBlockedCode | null;
+  reason?: string | null;
+}
+
+/** Customer state of one refund (backend maps its internal statuses). */
+export type CustomerRefundState =
+  | "processing"
+  | "waiting_for_review"
+  /** Our team sends it by hand; the customer has nothing to do. Older backends never send it. */
+  | "manual_payout"
+  | "completed"
+  | "not_approved"
+  | "cancelled";
+
+/** `card` is the original online payment; label it by `cardLast4` when present. */
+/** `original_order`: exchange credit, refunded to how the original order was paid. */
+export type CustomerRefundPartType =
+  | "card"
+  | "gift_card"
+  | "points"
+  | "cash_on_delivery"
+  | "original_order";
+export type CustomerRefundPartState = "pending" | "done";
+
+/** One tender leg of a refund: where that share of the money goes back. */
+export interface CustomerRefundPartApi {
+  type: CustomerRefundPartType;
+  /** Backend label in the order's language. The page builds its own from the fields. */
+  label: string;
+  amount: string;
+  currency: string;
+  points: string | null;
+  cardLast4: string | null;
+  giftCardMaskedCode: string | null;
+  state: CustomerRefundPartState;
+}
+
+export interface CustomerRefundApi {
+  refundId: string;
+  refundNumber: string;
+  state: CustomerRefundState;
+  requestedAmount: string;
+  refundedAmount: string;
+  currency: string;
+  requestedAt: string;
+  completedAt: string | null;
+  parts: CustomerRefundPartApi[];
 }
 
 export interface CustomerOrderDetailResponse {
@@ -92,6 +153,8 @@ export interface CustomerOrderDetailResponse {
       /** A free gift (gift with purchase). Older backends omit it. */
       isGift?: boolean;
       giftOfferLabel?: string | null;
+      /** Units the customer cancelled before shipping. Older backends omit it. */
+      cancelled?: boolean;
     }[];
     addresses: {
       addressType: string;
@@ -104,7 +167,7 @@ export interface CustomerOrderDetailResponse {
     totals: { subtotal: string; discount: string; shipping: string; tax: string; total: string };
     /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
     promotionSnapshot?: OrderLinePromotionSnapshot | null;
-    /** Backend refund records. Older payloads omit this. */
+    /** Legacy location of refund records; current backends send top-level `refunds`. */
     refunds?: unknown;
     selectedPaymentMethod: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null;
     selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
@@ -112,6 +175,8 @@ export interface CustomerOrderDetailResponse {
     shipments: ShipmentDetail[];
   };
   cancellationWindow: CancellationWindow | null;
+  /** The order's refunds, newest first. Older backends omit this. */
+  refunds?: CustomerRefundApi[];
 }
 
 export interface CancelOrderResponse {
@@ -120,6 +185,12 @@ export interface CancelOrderResponse {
   orderCancelled: boolean;
   requiresRefund: boolean;
   requiresManualReview?: boolean;
+  /** Some items were cancelled; the order goes on with the rest. */
+  partial?: boolean;
+  /** Partial cancel: the drop in the order total (refunded unless cash on delivery). */
+  refundAmount?: string;
+  offerAdjustmentAmount?: string;
+  deliveryChargeAmount?: string;
   /** Present when the Backend registered a refund. Absent for unpaid cancellations. */
   refund?: {
     refundId?: string | null;
@@ -188,6 +259,52 @@ export async function listOrders(params: ListOrdersParams = {}): Promise<Paginat
 export async function getCustomerOrderDetail(orderId: string): Promise<CustomerOrderDetailResponse> {
   return apiGet<CustomerOrderDetailResponse>(
     `/storefront/customer/orders/${orderId}?${withMarket(new URLSearchParams()).toString()}`,
+  );
+}
+
+export interface CancelItemInput {
+  orderLineId: string;
+  quantity: number;
+}
+
+/** What cancelling some items would do. Nothing is changed. */
+export interface CancelItemsPreview {
+  /** Every item chosen: the whole order would be cancelled. */
+  wholeOrder: boolean;
+  /** Cash on delivery: nothing to refund, the courier collects less. */
+  cashOnDelivery: boolean;
+  cancelledAmount: string;
+  offerAdjustmentAmount: string;
+  deliveryChargeAmount: string;
+  refundAmount: string;
+  totalBefore: string;
+  totalAfter: string;
+  giftsRemoved: { orderLineId: string; sku: string | null; productName: string | null }[];
+}
+
+/**
+ * POST /storefront/customer/orders/:orderId/cancel/preview
+ * JWT required. Only when cancellationWindow.canCancelItems === true.
+ */
+export async function previewCancelItems(orderId: string, items: CancelItemInput[]): Promise<CancelItemsPreview> {
+  return apiPost<CancelItemsPreview>(
+    `/storefront/customer/orders/${orderId}/cancel/preview?${withMarket(new URLSearchParams()).toString()}`,
+    { items },
+  );
+}
+
+/**
+ * POST /storefront/customer/orders/:orderId/cancel with items.
+ * One idempotency key per confirmation, so a repeated tap returns the first result.
+ */
+export async function cancelOrderItems(
+  orderId: string,
+  items: CancelItemInput[],
+  idempotencyKey: string,
+): Promise<CancelOrderResponse> {
+  return apiPost<CancelOrderResponse>(
+    `/storefront/customer/orders/${orderId}/cancel?${withMarket(new URLSearchParams()).toString()}`,
+    { reason: "Customer cancelled some items", items, idempotencyKey },
   );
 }
 

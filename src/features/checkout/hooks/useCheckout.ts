@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trackCheckoutStarted } from "@/lib/analytics/siteEvents";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearCartId } from "@/features/cart/utils/guestToken";
 import { getActiveCart } from "@/features/cart/api/cart.service";
@@ -66,6 +67,14 @@ import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../ut
 import { isTamaraPaymentMethod, tamaraStartFailureMessage } from "../utils/tamara";
 import { clearDeclinedPayments, offeredPaymentMethods } from "../utils/returnToCheckout";
 import { checkoutHref } from "../utils/checkoutLocale";
+import { describeOrderChanges, type OrderChanges } from "../utils/orderChanges";
+
+/** Placement refused because the order changed while checking out (QA-048). */
+const ORDER_CHANGED_CODES: ReadonlySet<string> = new Set([
+  "PRICING_CHANGED",
+  "REDEMPTION_EXPIRED",
+  "CHECKOUT_CART_UNAVAILABLE",
+]);
 
 /**
  * Statuses a session can't come back from. The live backend reports usable
@@ -171,6 +180,8 @@ export function useCheckout() {
   const lines = useCartStore((s) => s.lines);
   /** True while the bag is being reloaded (market switch): its id and lines are in flux. */
   const cartSyncing = useCartStore((s) => s.syncing);
+  /** An unpaid order holds the bag: checkout waits for useResumeHeldBag. */
+  const bagHeld = useCartStore((s) => s.pendingPayment !== null);
   const zoneCode = useOptionalMarket()?.catalogContext?.zoneCode ?? null;
   const scopeKey = checkoutScopeKey(zoneCode, cartId);
   const couponCode = useCartStore((s) => appliedCoupon(s.promotions)?.code ?? "");
@@ -192,6 +203,9 @@ export function useCheckout() {
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [status, setStatus] = useState<CheckoutStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [orderChanges, setOrderChanges] = useState<OrderChanges | null>(null);
+  /** The details last submitted, reused when the shopper accepts the changed order. */
+  const lastSubmitRef = useRef<CheckoutSubmitValues | null>(null);
 
   const initCartRef = useRef<string | null>(null);
   const methodsSessionRef = useRef<string | null>(null);
@@ -263,13 +277,13 @@ export function useCheckout() {
   // C.1 — create or resume the session, once per market + cart. Waits while the bag
   // is switching markets, and an empty bag has nothing to check out.
   useEffect(() => {
-    if (cartSyncing || !cartId || !scopeKey || lines.length === 0) return;
+    if (cartSyncing || bagHeld || !cartId || !scopeKey || lines.length === 0) return;
     if (lines.some((line) => line.isSellable === false)) return;
     if (scopeRef.current !== scopeKey) return;
     if (initCartRef.current === scopeKey) return;
     initCartRef.current = scopeKey;
     void start(cartId, lines);
-  }, [cartId, cartSyncing, lines, scopeKey, start]);
+  }, [bagHeld, cartId, cartSyncing, lines, scopeKey, start]);
 
   // Bag changed after the session was built (an add-on, a quantity change in
   // another tab…). Rebuild it so the placed order matches what's on screen.
@@ -302,6 +316,12 @@ export function useCheckout() {
 
   // C.2 + C.3 — load both method lists; keep the shopper's choice, else the default.
   const sessionId = session?.checkoutSessionId ?? null;
+
+  // Our own checkout-start event, once per session (it is how an abandoned checkout is found).
+  useEffect(() => {
+    if (sessionId) trackCheckoutStarted(sessionId, session?.cartId ?? cartId);
+  }, [sessionId, session?.cartId, cartId]);
+
   useEffect(() => {
     if (!sessionId || methodsSessionRef.current === sessionId) return;
     methodsSessionRef.current = sessionId;
@@ -561,6 +581,10 @@ export function useCheckout() {
       setStatus("submitting");
       setErrorMsg(null);
       let placedOrderId: string | null = null;
+      // What the shopper is agreeing to: the amounts on screen at this click.
+      // The steps below re-quote the checkout, so the backend compares its
+      // fresh quote with these and stops if they differ (QA-048).
+      const shownTotals = session.totalsEstimate;
 
       try {
         const countryCode = session.context?.countryCode;
@@ -600,7 +624,12 @@ export function useCheckout() {
 
         // Keyed by session: a retry can't double-place, but a session rebuilt
         // after a bag change gets its own order.
-        const order = await placeOrder({ checkoutSessionId: id, idempotencyKey: `order-${id}` });
+        const order = await placeOrder({
+          checkoutSessionId: id,
+          idempotencyKey: `order-${id}`,
+          expectedTotal: shownTotals?.total ?? undefined,
+          expectedAmountPayable: shownTotals?.amountPayable ?? undefined,
+        });
         placedOrderId = order.orderId;
         placedOrderIdRef.current = order.orderId;
         storeOrderId(order.orderId);
@@ -682,17 +711,32 @@ export function useCheckout() {
         setStatus("ready");
         if (
           e instanceof ApiClientError &&
-          (e.code === "PRICING_CHANGED" || e.code === "REDEMPTION_EXPIRED") &&
+          ORDER_CHANGED_CODES.has(e.code ?? "") &&
           cartId
         ) {
+          // The order changed while the shopper was checking out (offer ended,
+          // price changed, item out of stock): reload, then show exactly what
+          // changed before anything is placed or charged (QA-048).
+          let cart: Awaited<ReturnType<typeof getActiveCart>> | null = null;
+          let next: CheckoutSessionResponse | null = null;
           try {
-            setCartFromApi(await getActiveCart(cartId));
-            const next = await rebuildSession(cartId, session);
+            cart = await getActiveCart(cartId);
+            setCartFromApi(cart);
+            next = await rebuildSession(cartId, session);
             sessionSigRef.current = commerceSignature(useCartStore.getState().lines);
             adopt(next);
           } catch {
-            // Copy from checkoutErrorMessage is enough.
+            // No orderable item left: `next` stays null.
           }
+          const names = new Map(
+            [...(cart?.items ?? []), ...(cart?.unavailableItems ?? [])].map(
+              (item) => [item.sku, item.productName ?? item.sku] as const,
+            ),
+          );
+          setOrderChanges(
+            describeOrderChanges(session, next, (sku) => names.get(sku) ?? sku),
+          );
+          lastSubmitRef.current = values;
         }
       }
     },
@@ -719,6 +763,19 @@ export function useCheckout() {
     void start(cartId, lines);
   }, [cartId, lines, start]);
 
+
+  const dismissOrderChanges = useCallback(() => {
+    setOrderChanges(null);
+    setErrorMsg(null);
+  }, []);
+
+  const confirmOrderChanges = useCallback(() => {
+    const values = lastSubmitRef.current;
+    setOrderChanges(null);
+    setErrorMsg(null);
+    if (values) void submitCheckout(values);
+  }, [submitCheckout]);
+
   return {
     session,
     deliveryMethods,
@@ -729,6 +786,12 @@ export function useCheckout() {
     // and consumed it, in which case we're mid-redirect to payment.
     status: cartId || status === "submitting" || inlinePayment ? status : ("idle" as CheckoutStatus),
     errorMsg,
+    /** What changed when the order was placed; shown in the order-changed step. */
+    orderChanges,
+    /** Agree to the changed order and place it with the same details. */
+    confirmOrderChanges,
+    /** Close the order-changed step to review the bag or checkout first. */
+    dismissOrderChanges,
     chooseDelivery,
     choosePayment,
     submitCheckout,

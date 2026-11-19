@@ -32,13 +32,16 @@ function upper(value: unknown): string {
 }
 
 export function refundCustomerStatus(refund: OrderRefundView, t: Translator = englishTranslator): string {
+  if (upper(refund.status) === "MANUAL_PAYOUT") return t("orders.refund.manualPayout");
   if (refund.requiresManualReview) return t("orders.refund.review");
   if (refund.blocked) return t("orders.refund.failed");
   const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
   if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
     return t("orders.refund.completed");
   }
-  if (/(FAILED|BLOCKED|REJECTED)/.test(state)) return t("orders.refund.failed");
+  if (/REJECTED/.test(state)) return t("orders.refund.notApproved");
+  if (/(FAILED|BLOCKED)/.test(state)) return t("orders.refund.failed");
+  if (/CANCELLED/.test(state)) return t("orders.refund.cancelled");
   if (refund.status || refund.resultState) return t("orders.refund.processing");
   return t("orders.refund.recorded");
 }
@@ -61,16 +64,65 @@ export function readOrderRefund(raw: unknown): OrderRefundView | null {
   };
 }
 
-export function readOrderRefunds(raw: unknown): OrderRefundView[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((item) => {
-    const refund = readOrderRefund(item);
-    return refund ? [refund] : [];
-  });
+/**
+ * Refund statuses that mean the money went back (the backend's monetary-success
+ * set, plus older wording). `resultState: SUCCEEDED` only says the refund request
+ * was accepted, so it never counts as completed on its own.
+ */
+const REFUND_MONEY_BACK = /^(REFUNDED|PARTIALLY_REFUNDED|PROVIDER_SUCCESS|D365_POSTED|COMPLETED|SUCCEEDED|SETTLED)$/;
+
+function refundMoneyBack(refund: OrderRefundView | null): boolean {
+  return REFUND_MONEY_BACK.test(upper(refund?.status));
+}
+
+/** Held for approval: being checked before it is sent. */
+function heldForApproval(result: CancelOrderResponse): boolean {
+  return result.refund?.blockedCode === "REFUND_APPROVAL_REQUIRED";
+}
+
+/**
+ * Not sent automatically (payment without automatic refunds, refunds switched
+ * off, a provider that declined, or no refund record yet): our team sends it.
+ * The customer has nothing to do, so this is never shown as an error.
+ */
+function paidByOurTeam(result: CancelOrderResponse, refund: OrderRefundView | null): boolean {
+  if (!refund) return result.requiresManualReview === true;
+  const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
+  return refund.blocked || refund.requiresManualReview || /(FAILED|BLOCKED|MANUAL_REVIEW)/.test(state);
 }
 
 function refundFromCancel(result: CancelOrderResponse): OrderRefundView | null {
   return readOrderRefund(result.refund);
+}
+
+/** Some items cancelled: what happened to the money. */
+export function cancelItemsOutcome(
+  result: CancelOrderResponse,
+  currency: string | null,
+  t: Translator = englishTranslator,
+): CancelFeedback {
+  const drop = Number(result.refundAmount ?? 0);
+  if (!result.requiresRefund) {
+    if (drop > 0) return { tone: "success", text: t("orders.cancel.itemsCod") };
+    return {
+      tone: "success",
+      text: Number(result.offerAdjustmentAmount ?? 0) > 0 || Number(result.deliveryChargeAmount ?? 0) > 0
+        ? t("orders.cancel.itemsNoRefund")
+        : t("orders.cancel.itemsCancelled"),
+    };
+  }
+  const amount = `${result.refundAmount}${currency ? ` ${currency}` : ""}`;
+  const refund = refundFromCancel(result);
+  if (refundMoneyBack(refund)) {
+    return { tone: "success", text: t("orders.cancel.itemsRefundDone", { amount }) };
+  }
+  if (heldForApproval(result)) {
+    return { tone: "info", text: t("orders.cancel.itemsRefundReview", { amount }) };
+  }
+  if (paidByOurTeam(result, refund)) {
+    return { tone: "info", text: t("orders.cancel.itemsRefundManual", { amount }) };
+  }
+  return { tone: "info", text: t("orders.cancel.itemsRefundProcessing", { amount }) };
 }
 
 /** Customer copy. A cancelled payment status alone is not a completed refund. */
@@ -85,20 +137,16 @@ export function cancelOutcome(result: CancelOrderResponse, t: Translator = engli
     return { tone: "success", text: t("orders.cancel.cancelled") };
   }
   const refund = refundFromCancel(result);
-  if (result.requiresManualReview || refund?.requiresManualReview) {
-    return { tone: "info", text: t("orders.cancel.refundReview") };
-  }
-  if (!refund) {
-    return { tone: "info", text: t("orders.cancel.refundProcessing") };
-  }
-  const state = `${refund.resultState ?? ""} ${refund.status ?? ""}`.toUpperCase();
-  if (refund.blocked || /(FAILED|BLOCKED|REJECTED)/.test(state)) {
-    return { tone: "error", text: t("orders.cancel.refundFailed") };
-  }
-  if (/(COMPLETED|SUCCEEDED|SUCCESS|SETTLED)/.test(state)) {
+  if (refund && refundMoneyBack(refund)) {
     if (!refund.amount) return { tone: "success", text: t("orders.cancel.refundDone") };
     const amount = `${refund.amount}${refund.currency ? ` ${refund.currency}` : ""}`;
     return { tone: "success", text: t("orders.cancel.refundDoneAmount", { amount }) };
+  }
+  if (heldForApproval(result)) {
+    return { tone: "info", text: t("orders.cancel.refundReview") };
+  }
+  if (paidByOurTeam(result, refund)) {
+    return { tone: "info", text: t("orders.cancel.refundManual") };
   }
   return { tone: "info", text: t("orders.cancel.refundProcessing") };
 }

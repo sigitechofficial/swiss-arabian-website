@@ -8,8 +8,10 @@ import { useState, type ReactNode } from "react";
 import { Package } from "lucide-react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import {
+  type CancelItemInput,
   type CancellationWindow,
 } from "@/features/account/api/customerOrders.service";
+import { CancelItemsPicker, type CancellableLine } from "./CancelItemsPicker";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -58,7 +60,12 @@ import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
-import { refundCustomerStatus } from "../utils/orderAftercare";
+import {
+  refundHeadlineAmount,
+  refundPartText,
+  refundStateDisplay,
+  type CustomerRefund,
+} from "../utils/orderRefunds";
 import { useCancellationCountdown, useCustomerOrderDetail, type OrderCancelError } from "../hooks/useCustomerOrders";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout } from "@/features/employeeBenefits/types/employeeCheckout";
@@ -112,40 +119,150 @@ function AddressBlock({
   );
 }
 
+/** One refund: amount, state, where each share goes back, and its reference. */
+function RefundEntry({
+  refund,
+  currency,
+  t,
+  locale,
+  timeZone,
+}: {
+  refund: CustomerRefund;
+  currency: string;
+  t: Translator;
+  locale: string;
+  timeZone: string;
+}) {
+  const { label, note, tone } = refundStateDisplay(refund.state, t, refund.parts);
+  const amount = refundHeadlineAmount(refund);
+  const refundCurrency = refund.currency ?? currency;
+  const date =
+    refund.state === "completed" && refund.completedAt
+      ? t("orders.refund.completedOn", { date: formatOrderDate(refund.completedAt, { timeZone, locale }) })
+      : refund.requestedAt
+        ? t("orders.refund.requestedOn", { date: formatOrderDate(refund.requestedAt, { timeZone, locale }) })
+        : null;
+  return (
+    <li className="grid gap-2 border-b border-[var(--line)] pb-4 last:border-b-0 last:pb-0 text-[13px] leading-relaxed text-sa-primary">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {amount ? (
+          <p className="m-0 font-semibold" dir="ltr">
+            {formatMoney(Number(amount), refundCurrency)}
+          </p>
+        ) : null}
+        <AccountStatusPill label={label} tone={tone} />
+      </div>
+      {refund.parts.length > 0 ? (
+        <div>
+          <p className={`${orderFactLabel} m-0`}>{t("orders.refund.goesTo")}</p>
+          <ul className="m-0 mt-1 grid list-none gap-1.5 p-0">
+            {refund.parts.map((part, index) => (
+              <li key={`${part.type}-${index}`} className="flex items-start justify-between gap-3">
+                <span className="min-w-0 break-words">{refundPartText(part, refundCurrency, t)}</span>
+                <span
+                  className={`shrink-0 text-[12px] ${part.state === "done" ? "font-semibold text-[#1a7338]" : "text-sa-muted"}`}
+                >
+                  {part.state === "done" ? t("orders.refund.part.done") : t("orders.refund.part.pending")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <p className="m-0 text-sa-secondary">{note}</p>
+      {refund.refundNumber || date ? (
+        <p className="m-0 text-[12px] text-sa-muted">
+          {[refund.refundNumber ? t("orders.reference", { id: refund.refundNumber }) : null, date]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
 /**
  * Countdown for the cancellation window. Counts from the server's
  * `remainingSeconds` at fetch time rather than `endsAt`, so a skewed device
  * clock can't show a window that's already closed.
  */
 function CancelOrderPanel({
+  orderId,
   window: cw,
   fetchedAt,
   pending,
   onConfirm,
   onExpired,
+  cancellableLines,
+  hasGifts,
+  currency,
+  pendingItems,
+  itemsCancelledAt,
+  onConfirmItems,
 }: {
+  orderId: string;
   window: CancellationWindow;
   fetchedAt: number;
   pending: boolean;
   onConfirm: () => void;
   onExpired: () => void;
+  /** Paid items the customer may cancel one by one (empty: whole order only). */
+  cancellableLines: CancellableLine[];
+  hasGifts: boolean;
+  currency: string;
+  pendingItems: boolean;
+  itemsCancelledAt: number;
+  onConfirmItems: (items: CancelItemInput[]) => void;
 }) {
   const t = useShopCopy();
   const [confirming, setConfirming] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [closedAt, setClosedAt] = useState(0);
   const { remaining, mmss } = useCancellationCountdown(cw, fetchedAt, onExpired);
+  // Close the picker once a cancel of some items went through.
+  if (itemsCancelledAt > closedAt) {
+    setClosedAt(itemsCancelledAt);
+    setPicking(false);
+  }
 
   if (remaining <= 0) return null;
+
+  const units = cancellableLines.reduce((sum, line) => sum + line.quantity, 0);
+  const canPick = cw.canCancelItems === true && units > 1;
+
+  const countdown = (
+    <p className="m-0 mt-0.5 text-[0.76rem]">
+      {t("orders.cancel.closesIn")}{" "}
+      <span className="font-semibold tabular-nums" aria-live="off">
+        {mmss}
+      </span>
+    </p>
+  );
+
+  if (picking && canPick) {
+    return (
+      <div className={orderCancel}>
+        <div className="grid w-full gap-3">
+          {countdown}
+          <CancelItemsPicker
+            orderId={orderId}
+            lines={cancellableLines}
+            hasGifts={hasGifts}
+            currency={currency}
+            pending={pendingItems}
+            onConfirm={onConfirmItems}
+            onBack={() => setPicking(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={orderCancel}>
       <div>
         <p className="m-0 text-[0.86rem] font-semibold">{t("orders.cancel.stillCan")}</p>
-        <p className="m-0 mt-0.5 text-[0.76rem]">
-          {t("orders.cancel.closesIn")}{" "}
-          <span className="font-semibold tabular-nums" aria-live="off">
-            {mmss}
-          </span>
-        </p>
+        {countdown}
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -163,9 +280,21 @@ function CancelOrderPanel({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
-          {t("orders.cancel.button")}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canPick ? (
+            <button
+              type="button"
+              disabled={pendingItems}
+              onClick={() => setPicking(true)}
+              className={orderCancelBtn}
+            >
+              {t("orders.cancel.someItems")}
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
+            {t("orders.cancel.button")}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -179,10 +308,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     showCancel,
     cancel,
     cancelling,
+    cancelItems,
+    cancellingItems,
+    itemsCancelledAt,
     cancelResult,
     cancelFailure,
     refreshOrder,
-    refunds: refundsFromHook,
+    customerRefunds: refundsFromHook,
   } = useCustomerOrderDetail(orderId);
   const t = useShopCopy();
   const locale = useShopLocale();
@@ -228,7 +360,16 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const trackingSummary = trackingFromHook ?? trackingSummaryFromDetail(data);
   const payable = needsPayment(order.status, order.paymentStatus);
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
-  const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+  const activeLines = order.lines.filter((line) => !line.cancelled);
+  const itemCount = activeLines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+  const cancellableLines: CancellableLine[] = activeLines
+    .filter((line) => !line.isGift)
+    .map((line) => ({
+      orderLineId: line.orderLineId,
+      name: line.productName ?? line.sku,
+      quantity: Number.parseInt(line.quantity, 10) || 1,
+      unitPrice: Number(line.unitPrice),
+    }));
   const refunds = refundsFromHook;
   const staffQuote = readEmployeeCheckout(
     (order as { staffPurchase?: unknown }).staffPurchase ??
@@ -293,6 +434,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {showCancel && cancellationWindow ? (
               <CancelOrderPanel
+                orderId={order.orderId}
+                cancellableLines={cancellableLines}
+                hasGifts={activeLines.some((line) => line.isGift)}
+                currency={currency}
+                pendingItems={cancellingItems}
+                itemsCancelledAt={itemsCancelledAt}
+                onConfirmItems={cancelItems}
                 window={cancellationWindow}
                 fetchedAt={detailQuery.dataUpdatedAt}
                 pending={cancelling}
@@ -314,7 +462,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
         <div className={accountLayout}>
           {/* Progress first, then what was ordered, then the shipment history. */}
           <OrderTrackingPanel summary={trackingSummary} timeline={timeline}>
-            <Panel title={t("orders.items", { count: order.lines.length })} flush>
+            <Panel title={t("orders.items", { count: activeLines.length })} flush>
               <ul className={orderLines} role="list">
                 {order.lines.map((line) => {
                   const quantity = Number.parseInt(line.quantity, 10) || 1;
@@ -339,6 +487,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                             line.variantName.trim().toLowerCase() !== "default title"
                               ? line.variantName
                               : null,
+                            line.cancelled ? t("orders.line.cancelled") : null,
                             line.isGift ? t("orders.freeGift") : null,
                             t("orders.qty", { count: quantity }),
                             quantity > 1 && !line.isGift
@@ -355,7 +504,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                           className={orderLineMeta}
                         />
                       </div>
-                      <p className={orderLinePrice}>
+                      <p className={`${orderLinePrice} ${line.cancelled ? "text-sa-muted line-through" : ""}`}>
                         {line.isGift ? t("orders.free") : formatMoney(Number(line.lineTotal), lineCurrency)}
                       </p>
                     </li>
@@ -369,7 +518,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             orderId={order.orderId}
             status={order.status}
             fulfillmentStatus={order.fulfillmentStatus}
-            lines={mapOrderLinesForAfterSales(order.lines)}
+            lines={mapOrderLinesForAfterSales(activeLines)}
           />
 
           <aside className={accountCol} aria-label={t("orders.summaryAndDelivery")}>
@@ -433,20 +582,16 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {refunds.length > 0 ? (
               <Panel title={t("orders.refunds")}>
-                <ul className="m-0 grid list-none gap-3 p-0">
+                <ul className="m-0 grid list-none gap-4 p-0">
                   {refunds.map((refund, index) => (
-                    <li key={refund.refundId ?? `refund-${index}`} className="text-[13px] leading-relaxed text-sa-primary">
-                      {refund.amount ? (
-                        <p className="m-0 font-semibold">
-                          {refund.currency ? `${refund.currency} ` : ""}
-                          {refund.amount}
-                        </p>
-                      ) : null}
-                      <p className="m-0 mt-1 text-sa-secondary">{refundCustomerStatus(refund, t)}</p>
-                      {refund.refundId ? (
-                        <p className="m-0 mt-1 text-[12px] text-sa-muted">{t("orders.reference", { id: refund.refundId })}</p>
-                      ) : null}
-                    </li>
+                    <RefundEntry
+                      key={refund.refundId ?? `refund-${index}`}
+                      refund={refund}
+                      currency={currency}
+                      t={t}
+                      locale={locale}
+                      timeZone={timeZone}
+                    />
                   ))}
                 </ul>
               </Panel>

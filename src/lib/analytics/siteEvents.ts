@@ -95,6 +95,15 @@ export function trackCheckoutViewed(): void {
   track("checkout_viewed", {}, { dedupeKey: "checkout" });
 }
 
+/**
+ * A checkout exists for this bag. Carries the checkout and cart ids, which is how the checkout
+ * recovery journey finds an abandoned checkout. Sent from the browser, not the server, so it is
+ * only recorded when the shopper allowed analytics.
+ */
+export function trackCheckoutStarted(checkoutId: string, cartId: string | null | undefined): void {
+  track("checkout_started", { checkoutId, cartId: cartId ?? getStoredCartId() }, { dedupeKey: checkoutId });
+}
+
 export function trackEngagementThreshold(seconds: number): void {
   track("engagement_threshold_reached", { dwellSeconds: seconds });
 }

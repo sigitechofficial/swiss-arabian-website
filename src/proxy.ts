@@ -16,6 +16,7 @@ import { brandLinkEnabled } from "@/lib/brand/features";
 import { getBrandConfig } from "@/lib/brand";
 import { apiBaseUrl } from "@/lib/config/runtime";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
+import { productAddressRedirect } from "@/lib/seo/productAddress";
 import {
   matchRedirect,
   redirectHost,
@@ -230,6 +231,22 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = legacyTarget;
     return NextResponse.redirect(url, 301);
+  }
+
+  // A product reached by an old address (its SKU, a former handle): one 308 to its
+  // own address, before the page renders (the page's own redirect sends Location
+  // twice when it is not cached yet). Same market as the page tree below.
+  if (storefrontHost) {
+    const productTarget = await productAddressRedirect({
+      pathname,
+      storefrontHost,
+      zoneCode: site.siteMarketCode ?? offered(zoneCookie) ?? offered(site.defaultMarketCode),
+    });
+    if (productTarget) {
+      const url = request.nextUrl.clone();
+      url.pathname = productTarget;
+      return NextResponse.redirect(url, 308);
+    }
   }
 
   // Languages: the default one has no prefix (served from its `[locale]`

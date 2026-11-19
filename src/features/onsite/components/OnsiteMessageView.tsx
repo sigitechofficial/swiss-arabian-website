@@ -1,20 +1,65 @@
 "use client";
 
 import { getBrandConfig } from "@/lib/brand";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { OnsiteDesignView, type OnsiteLeadPayload, type OnsiteLeadResult } from "../design/OnsiteDesignView";
+import type { OnsiteDevice } from "../design/onsiteDesign";
 import type { OnsiteMessage } from "../types";
+
+const PHONE_QUERY = "(max-width: 640px)";
+
+function phoneQuery(): MediaQueryList | null {
+  return typeof window.matchMedia === "function" ? window.matchMedia(PHONE_QUERY) : null;
+}
+
+function subscribePhone(onChange: () => void): () => void {
+  const query = phoneQuery();
+  query?.addEventListener("change", onChange);
+  return () => query?.removeEventListener("change", onChange);
+}
+
+/** Phone or desktop, for blocks a design hides on one of them. */
+function useDevice(): OnsiteDevice {
+  return useSyncExternalStore(
+    subscribePhone,
+    () => (phoneQuery()?.matches ? "mobile" : "desktop"),
+    () => "desktop",
+  );
+}
+
+/** A campaign designed in the admin playground. */
+function DesignedMessage({ message, onDismiss, onCta, onLead }: Props) {
+  const device = useDevice();
+  return (
+    <OnsiteDesignView
+      design={message.design!}
+      device={device}
+      frame="viewport"
+      onClose={onDismiss}
+      onCta={onCta}
+      onLead={onLead}
+    />
+  );
+}
 
 type Props = {
   message: OnsiteMessage;
   onDismiss: () => void;
   onCta: () => void;
+  /** Sends a designed campaign's email form. */
+  onLead?: (payload: OnsiteLeadPayload) => Promise<OnsiteLeadResult>;
 };
 
 /**
  * Renders the message the backend chose. A popup is a dialog (focus moves to Close, Escape and a
  * click outside dismiss it); a banner is a bar under the header. No rule logic lives here.
  */
-export function OnsiteMessageView({ message, onDismiss, onCta }: Props) {
+export function OnsiteMessageView(props: Props) {
+  if (props.message.design) return <DesignedMessage {...props} />;
+  return <PlainMessage {...props} />;
+}
+
+function PlainMessage({ message, onDismiss, onCta }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const isPopup = message.slot === "POPUP";
 

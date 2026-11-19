@@ -11,12 +11,10 @@ vi.mock("./checkoutSession", () => ({
   storePaymobPublicKey: vi.fn(),
   storeStripeClientSecret: vi.fn(),
   storeStripePublishableKey: vi.fn(),
-  storeHostedPaymentOpen: vi.fn(),
 }));
 
 import { initiatePayment } from "../api/orders.service";
 import { ApiClientError } from "@/lib/api/apiError";
-import { storeHostedPaymentOpen } from "./checkoutSession";
 import { PaymentGatewayError, PaymentRejectedError, startPayment } from "./startPayment";
 
 describe("startPayment", () => {
@@ -228,8 +226,6 @@ describe("startPayment", () => {
       }),
     );
     expect(window.location.assign).toHaveBeenCalledWith("https://checkout-sandbox.tamara.co/checkout/abc");
-    // Browser Back from Tamara’s page gives the bag back, as for Tabby.
-    expect(storeHostedPaymentOpen).toHaveBeenCalledWith("order-tamara");
     expect(result.kind).toBe("redirect");
   });
 

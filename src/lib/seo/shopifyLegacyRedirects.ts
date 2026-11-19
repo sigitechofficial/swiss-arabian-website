@@ -129,7 +129,17 @@ function storeRedirectsFor(brandCode: string): StoreRedirects {
   return STORE_REDIRECTS[brandCode.toUpperCase()] ?? NO_STORE_REDIRECTS;
 }
 
+/**
+ * The usual store-locator addresses (`/store-locator`, `/store-locator/dubai`,
+ * `/store-locator/dubai/{shop}`) open the store pages, which live at `/stores`.
+ * For every brand: links and search results commonly use this shape (SEO audit p22–23).
+ */
+const STORE_LOCATOR = /^\/store-locator(\/[^/]+(?:\/[^/]+)?)?\/?$/i;
+
 function rewriteBare(path: string, store: StoreRedirects): string | null {
+  const locator = STORE_LOCATOR.exec(path);
+  if (locator) return `/stores${(locator[1] ?? "").toLowerCase()}`;
+
   const folder = store.marketFolder?.exec(path);
   if (folder) {
     const rest = folder[2] && folder[2] !== "/" ? folder[2] : "/";

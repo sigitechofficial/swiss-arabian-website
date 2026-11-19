@@ -1,5 +1,6 @@
 "use client";
 
+import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -79,6 +80,7 @@ import {
   drawerTotalRow,
   drawerViewLink,
 } from "@/styles/cartChrome";
+import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 
 export function CartSideSheet() {
   const open = useUiStore((s) => s.cartOpen);
@@ -240,6 +242,7 @@ export function CartSideSheet() {
             <X size={18} />
           </button>
         </header>
+        <CartPendingPaymentNotice compact />
 
         <div className={drawerBody}>
           {lines.length > 0 ? null : (
@@ -499,6 +502,7 @@ export function CartSideSheet() {
                 {syncing ? "Updating bag…" : "Checkout"}
               </LocaleLink>
             </div>
+            <ReturnTermsNote className="mt-2 text-center text-[11px] leading-snug text-sa-muted" />
           </footer>
         ) : null}
       </div>

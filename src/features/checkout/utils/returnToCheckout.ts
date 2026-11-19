@@ -3,7 +3,7 @@ import { storeCartId } from "@/features/cart/utils/guestToken";
 import { useCartStore } from "@/stores/useCartStore";
 import { releaseOrderToCart } from "../api/orders.service";
 import type { PaymentMethodOption } from "../types/checkout";
-import { clearCheckoutSessionId, clearHostedPaymentOpen, clearPaymentState } from "./checkoutSession";
+import { clearCheckoutSessionId, clearPaymentState } from "./checkoutSession";
 import { isTabbyPaymentMethod } from "./tabby";
 import { isTamaraPaymentMethod } from "./tamara";
 
@@ -89,7 +89,6 @@ export async function returnToCheckout(
   orderId: string,
   opts: { declined?: boolean; provider?: DecliningProvider } = {},
 ): Promise<ReturnToCheckoutResult> {
-  clearHostedPaymentOpen();
   const released = await releaseOrderToCart(orderId);
   if (released.outcome === "paid") return { kind: "paid" };
   if (released.outcome !== "released" || !released.cartId) return { kind: "kept" };

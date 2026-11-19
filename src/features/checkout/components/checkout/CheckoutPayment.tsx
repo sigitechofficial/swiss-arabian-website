@@ -25,6 +25,9 @@ import { TamaraCheckoutCard } from "./TamaraCheckoutCard";
 import type { TamaraPrecheck } from "../../hooks/useTamaraPrecheck";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { pdpPayMarkTamara } from "@/styles/pdpChrome";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { TextWithLinks, linkSlots } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type CheckoutPaymentProps = {
   methods: PaymentMethodOption[];
@@ -228,11 +231,37 @@ export function CheckoutPayment({
         <span>{ctaLabel}</span>
         <b aria-hidden="true">↗</b>
       </button>
-      <p className={checkoutLegal}>
-        By placing this order you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>. Payment is
-        encrypted.
-      </p>
+      <CheckoutLegal />
     </>
+  );
+}
+
+/** What the customer accepts by placing the order, with the pages it refers to. */
+function CheckoutLegal() {
+  const t = useShopCopy();
+  return (
+    <p className={checkoutLegal}>
+      <TextWithLinks
+        text={t("checkout.legal", linkSlots(["terms", "privacy", "returns"]))}
+        links={{
+          terms: (
+            <LocaleLink href="/pages/terms-and-conditions" className={checkoutLink}>
+              {t("checkout.legalTerms")}
+            </LocaleLink>
+          ),
+          privacy: (
+            <LocaleLink href="/pages/privacy-policy" className={checkoutLink}>
+              {t("checkout.legalPrivacy")}
+            </LocaleLink>
+          ),
+          returns: (
+            <LocaleLink href="/return-terms" className={checkoutLink}>
+              {t("returnsPolicy.termsLink")}
+            </LocaleLink>
+          ),
+        }}
+      />
+    </p>
   );
 }
 

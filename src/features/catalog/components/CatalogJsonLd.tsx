@@ -63,6 +63,8 @@ export function productJsonLd(input: {
     minDays?: number | null;
     maxDays?: number | null;
   } | null;
+  /** The market's returns policy today (Settings → After-sales); left out when unknown. */
+  returnPolicy?: MarketReturnTerms | null;
   /** Shown facts such as fragrance notes and size (schema.org PropertyValue). */
   properties?: Array<{ name: string; value: string | null | undefined }>;
   /** Approved customer reviews shown on the page (newest first). */
@@ -115,6 +117,7 @@ export function productJsonLd(input: {
             ? { seller: { "@type": "Organization", "@id": ORGANIZATION_ID, name: input.seller.trim() } }
             : {}),
           shippingDetails: offerShippingDetails(input.shipping, input.price!, input.currency!),
+          hasMerchantReturnPolicy: merchantReturnPolicy(input.returnPolicy, input.shipping?.country),
         }
       : undefined,
     aggregateRating:
@@ -169,6 +172,59 @@ export function offerShippingDetails(
           },
         }
       : {}),
+  };
+}
+
+/** What the product schema needs from a market's returns policy (`GET /storefront/returns/policy/:zone`). */
+export type MarketReturnTerms = {
+  returnsEnabled: boolean;
+  returnWindowDays: number;
+  currencyCode: string | null;
+  items: Array<{ key: string; variant: string; values: Record<string, string | number> }>;
+};
+
+/**
+ * schema.org MerchantReturnPolicy from the market's after-sales settings: the
+ * same rules the returns policy page and the return form use. Left out when the
+ * country or the policy is unknown (nothing is guessed).
+ */
+export function merchantReturnPolicy(
+  policy: MarketReturnTerms | null | undefined,
+  countryCode: string | null | undefined,
+) {
+  const country = countryCode?.trim().toUpperCase();
+  if (!policy || !country) return undefined;
+  if (!policy.returnsEnabled) {
+    return {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: country,
+      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+    };
+  }
+  const days = Number(policy.returnWindowDays);
+  if (!Number.isFinite(days) || days <= 0) return undefined;
+  const item = (key: string) => policy.items.find((i) => i.key === key);
+  const shippingFee = item("RETURN_SHIPPING_FEE");
+  const feeAmount = Number(shippingFee?.values.amount);
+  // A fee charged on every return; one waived only when it is our fault is still charged to most returns.
+  const charged = shippingFee && shippingFee.variant !== "FREE" && Number.isFinite(feeAmount) && feeAmount > 0;
+  const currency = String(shippingFee?.values.currencyCode || policy.currencyCode || "");
+  const restockingPercent = Number(item("RESTOCKING_FEE")?.values.percent);
+  return {
+    "@type": "MerchantReturnPolicy",
+    applicableCountry: country,
+    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+    merchantReturnDays: days,
+    returnMethod: "https://schema.org/ReturnByMail",
+    ...(charged && currency
+      ? {
+          returnFees: "https://schema.org/ReturnShippingFees",
+          returnShippingFeesAmount: { "@type": "MonetaryAmount", value: feeAmount.toFixed(2), currency },
+        }
+      : shippingFee?.variant === "FREE"
+        ? { returnFees: "https://schema.org/FreeReturn" }
+        : {}),
+    ...(Number.isFinite(restockingPercent) && restockingPercent > 0 ? { restockingFee: restockingPercent } : {}),
   };
 }
 

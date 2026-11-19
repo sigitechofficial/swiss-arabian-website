@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/Toaster";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -10,15 +10,24 @@ import {
   accountInputClass,
   accountSelectClass,
 } from "@/features/account/constants/accountForm";
-import { useAfterSalesMutations } from "../hooks/useAfterSales";
+import {
+  useAfterSalesMutations,
+  useReturnEstimate,
+  type ReturnOrderTarget,
+} from "../hooks/useAfterSales";
 import {
   returnRequestSchema,
   type ReturnRequestFormValues,
 } from "../schemas/afterSales.schema";
-import type { AfterSalesOrderLine, CreateReturnDto } from "../types/afterSales";
+import type {
+  AfterSalesOrderLine,
+  CreateReturnDto,
+  ReturnEstimateDto,
+} from "../types/afterSales";
 import { afterSalesErrorMessage } from "../utils/afterSalesErrors";
 import { afterSalesOptionCodes, afterSalesOptionLabel } from "../utils/eligibility";
 import { AfterSalesLinePicker } from "./AfterSalesLinePicker";
+import { ReturnEstimatePanel } from "./ReturnEstimatePanel";
 
 type ReturnRequestFormProps = {
   lines: AfterSalesOrderLine[];
@@ -49,6 +58,24 @@ function toReturnDto(values: ReturnRequestFormValues): CreateReturnDto {
   return dto;
 }
 
+/** What the estimate is asked for: the selected lines and the reason (refunds only). */
+export function toReturnEstimateDto(
+  values: Pick<ReturnRequestFormValues, "lines" | "reasonCode" | "requestedResolution">,
+): ReturnEstimateDto | null {
+  if (values.requestedResolution !== "REFUND") return null;
+  const items = (values.lines ?? [])
+    .filter(
+      (line) =>
+        line?.selected &&
+        Number.isInteger(line.quantity) &&
+        line.quantity >= 1 &&
+        line.quantity <= line.maxQty,
+    )
+    .map((line) => ({ orderLineId: line.orderLineId, quantity: line.quantity }));
+  if (items.length === 0) return null;
+  return { items, reasonCode: values.reasonCode };
+}
+
 export function ReturnRequestForm(props: ReturnRequestFormProps) {
   const { lines, onCancel, onSubmitted } = props;
   const t = useShopCopy();
@@ -57,6 +84,8 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
+    control,
     formState: { errors },
   } = useForm<ReturnRequestFormValues>({
     resolver: zodResolver(returnRequestSchema),
@@ -76,6 +105,42 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
   });
 
   const pending = createReturn.isPending || createGuestReturn.isPending;
+
+  const target: ReturnOrderTarget =
+    props.mode === "customer"
+      ? { mode: "customer", orderId: props.orderId }
+      : {
+          mode: "guest",
+          orderNumber: props.orderNumber,
+          orderAccessToken: props.orderAccessToken,
+        };
+  const [watchedLines, reasonCode, requestedResolution] = useWatch({
+    control,
+    name: ["lines", "reasonCode", "requestedResolution"],
+  });
+  const estimateDto = toReturnEstimateDto({
+    lines: watchedLines,
+    reasonCode,
+    requestedResolution,
+  });
+  const estimate = useReturnEstimate(target, estimateDto);
+  const showEstimate = requestedResolution === "REFUND";
+
+  /** Selects the free gift line(s) the market needs back, when they are on this form. */
+  const giftLineIndexes = (orderLineIds: string[]) =>
+    lines
+      .map((line, index) => (orderLineIds.includes(line.orderLineId) ? index : -1))
+      .filter((index) => index >= 0);
+  const addGift = (orderLineIds: string[]) => {
+    for (const index of giftLineIndexes(orderLineIds)) {
+      setValue(`lines.${index}.selected`, true, { shouldDirty: true });
+      setValue(`lines.${index}.quantity`, lines[index].quantity, { shouldDirty: true });
+    }
+  };
+  const giftOnForm =
+    giftLineIndexes(
+      estimate.data?.giftRequirement.gifts.map((gift) => gift.orderLineId) ?? [],
+    ).length > 0;
 
   return (
     <form
@@ -164,6 +229,17 @@ export function ReturnRequestForm(props: ReturnRequestFormProps) {
           {...register("customerNote")}
         />
       </label>
+
+      {showEstimate ? (
+        <ReturnEstimatePanel
+          estimate={estimate.empty ? undefined : estimate.data}
+          empty={estimate.empty}
+          loading={estimate.isLoading || (estimate.updating && !estimate.data)}
+          updating={estimate.updating}
+          error={estimate.error}
+          onAddGift={giftOnForm ? addGift : undefined}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={pending} className={accountBtnPrimary}>

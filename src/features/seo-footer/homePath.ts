@@ -5,3 +5,9 @@ export function isHomePath(pathname: string): boolean {
   const path = pathname.replace(/\/+$/, "") || "/";
   return stripLocalePrefix(path) === "/";
 }
+
+/** A product page ("/products/x", "/ar/products/x"), where the SEO text is not a heading. */
+export function isProductPath(pathname: string): boolean {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  return /^\/products\/[^/]+$/.test(stripLocalePrefix(path));
+}

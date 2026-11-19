@@ -10,9 +10,12 @@ import {
 import { CollectionDetailPageView } from "@/features/collections/components/CollectionDetailPageView";
 import { CategoryDetailPageView } from "@/features/collections/components/CategoryDetailPageView";
 import { CollectionSeoText } from "@/features/seo-footer/CollectionSeoText";
+import { seoFaqView } from "@/features/seo-faq/seoFaq";
+import { SeoFaqSection } from "@/features/seo-faq/SeoFaqSection";
 import {
   breadcrumbJsonLd,
   CatalogJsonLd,
+  faqPageJsonLd,
   itemListJsonLd,
 } from "@/features/catalog/components/CatalogJsonLd";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
@@ -184,6 +187,7 @@ export async function CollectionListing({
   const handle = collection?.slug || slug;
   const path = canonicalCatalogPath(`/collections/${handle}`, locale);
   const name = collection?.name || slug;
+  const faq = page > 1 ? null : seoFaqView(collection?.faq, locale);
   const props = {
     slug: handle,
     collection,
@@ -214,6 +218,13 @@ export async function CollectionListing({
       <Suspense fallback={<View {...props} listingQuery={{ page }} />}>
         <FromUrl {...props} serverPage={page} />
       </Suspense>
+      {/* The collection's questions, shown and as FAQPage schema (SEO audit p19); first page only. */}
+      {faq ? (
+        <>
+          <CatalogJsonLd data={faqPageJsonLd(faq.entries)} />
+          <SeoFaqSection faq={faq} />
+        </>
+      ) : null}
       {/* Above the footer: this collection's SEO text, else the market's (one block only). */}
       <SeoText
         content={collection?.seoContent}

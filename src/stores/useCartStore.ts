@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { ApiCart, CartValidation } from "@/features/cart/types/cart";
+import type { ApiCart, CartPendingPayment, CartValidation } from "@/features/cart/types/cart";
 import {
   readEmployeeCheckout,
   type EmployeeCheckoutView,
@@ -34,6 +34,8 @@ export type CartLine = {
   isSellable?: boolean;
   /** Backed by the server cart (real sku/variantId) — edits sync to the API. */
   remote?: boolean;
+  /** Set on a held line: OUT_OF_STOCK or UNAVAILABLE. */
+  heldStatus?: string;
 };
 
 type CartTotals = {
@@ -56,6 +58,11 @@ type CartTotals = {
 
 type CartState = {
   lines: CartLine[];
+  /**
+   * Out of stock / unavailable right now: shown in the bag, left out of the
+   * order and the totals. Never persisted: only the server knows.
+   */
+  unavailableLines: CartLine[];
   cartId: string | null;
   totals: CartTotals | null;
   promotions: PromotionSnapshotV1 | null;
@@ -64,6 +71,11 @@ type CartState = {
   /** True when the server reduced an existing reservation after a bag change. */
   loyaltyAdjusted: boolean;
   validation: CartValidation | null;
+  /**
+   * The server says an unpaid order holds this bag (checkout QA-006). Never
+   * persisted: only the server knows whether it is still true.
+   */
+  pendingPayment: CartPendingPayment | null;
   /** Optimistic edits are still being written to the API in the background. */
   syncing: boolean;
   setSyncing: (syncing: boolean) => void;
@@ -86,6 +98,7 @@ export const useCartStore = create<CartState>()(
   persist<CartState, [], [], PersistedCartState>(
     (set, get) => ({
       lines: [],
+      unavailableLines: [],
       cartId: null,
       totals: null,
       promotions: null,
@@ -93,6 +106,7 @@ export const useCartStore = create<CartState>()(
       employeeCheckout: null,
       loyaltyAdjusted: false,
       validation: null,
+      pendingPayment: null,
       syncing: false,
 
       setSyncing: (syncing) => set({ syncing }),
@@ -152,12 +166,14 @@ export const useCartStore = create<CartState>()(
       clear: () =>
         set({
           lines: [],
+          unavailableLines: [],
           totals: null,
           promotions: null,
           loyaltyRedemption: null,
           employeeCheckout: null,
           loyaltyAdjusted: false,
           validation: null,
+          pendingPayment: null,
         }),
 
       /** Drop the previous market quote. Lines stay until the next server cart. */
@@ -176,7 +192,7 @@ export const useCartStore = create<CartState>()(
             state.lines.map((l) => [l.variantId, l]),
           );
 
-          const lines: CartLine[] = cart.items.map((item) => {
+          const toLine = (item: ApiCart["items"][number]): CartLine => {
             const vid = item.variantId ?? item.sku;
             const local = vid ? localByVariant.get(vid) : undefined;
             const unitPrice = Number(item.unitPriceEstimate ?? "0");
@@ -201,7 +217,11 @@ export const useCartStore = create<CartState>()(
               isSellable: item.sellabilitySummary?.isSellable !== false && priced,
               remote: true,
             };
-          });
+          };
+          const lines: CartLine[] = cart.items.map(toLine);
+          const unavailableLines: CartLine[] = (cart.unavailableItems ?? []).map(
+            (item) => ({ ...toLine(item), isSellable: false, heldStatus: item.status }),
+          );
 
           const totals: CartTotals = {
             subtotal: Number(cart.subtotalEstimate ?? "0"),
@@ -237,6 +257,7 @@ export const useCartStore = create<CartState>()(
 
           return {
             lines,
+            unavailableLines,
             totals,
             promotions: readPromotionSnapshot(cart.promotions),
             employeeCheckout: readEmployeeCheckout(cart.staffPurchase ?? cart.employeeCheckout),
@@ -244,6 +265,7 @@ export const useCartStore = create<CartState>()(
             loyaltyAdjusted,
             cartId: cart.cartId,
             validation: cart.validation ?? null,
+            pendingPayment: cart.pendingPayment ?? null,
           };
         }),
 

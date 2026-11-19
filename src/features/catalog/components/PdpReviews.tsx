@@ -186,9 +186,10 @@ export function PdpReviews({
         <header className={reviewsHead}>
           <div className={reviewsCopy}>
             <p className={compositionEyebrow}>{t.eyebrow}</p>
-            <h2 className={reviewsTitle} id="pdp-reviews-heading">
+            {/* Not a heading: SEO keeps headings to the product's own content (audit p12). */}
+            <p className={reviewsTitle} id="pdp-reviews-heading">
               {t.titleA}<em className={compositionEm}>{t.titleB}</em>
-            </h2>
+            </p>
           </div>
         </header>
 
@@ -298,7 +299,7 @@ export function PdpReviews({
                     <Stars rating={review.rating} />
                     <span className={c.rvDate}>{reviewDate(review.createdAt, intlLocale(t.locale), timeZone)}</span>
                   </div>
-                  {review.title ? <h3 className={c.rvTitle}>{review.title}</h3> : null}
+                  {review.title ? <p className={c.rvTitle}>{review.title}</p> : null}
                   {review.body ? <p className={c.rvBody}>{review.body}</p> : null}
                   {review.photos.length ? (
                     <ReviewPhotoThumbs review={review} onOpen={() => setReading(review)} />
