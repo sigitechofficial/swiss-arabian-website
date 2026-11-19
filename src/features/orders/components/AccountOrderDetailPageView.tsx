@@ -8,8 +8,10 @@ import { useState, type ReactNode } from "react";
 import { Package } from "lucide-react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import {
+  type CancelItemInput,
   type CancellationWindow,
 } from "@/features/account/api/customerOrders.service";
+import { CancelItemsPicker, type CancellableLine } from "./CancelItemsPicker";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -131,7 +133,7 @@ function RefundEntry({
   locale: string;
   timeZone: string;
 }) {
-  const { label, note, tone } = refundStateDisplay(refund.state, t);
+  const { label, note, tone } = refundStateDisplay(refund.state, t, refund.parts);
   const amount = refundHeadlineAmount(refund);
   const refundCurrency = refund.currency ?? currency;
   const date =
@@ -185,34 +187,82 @@ function RefundEntry({
  * clock can't show a window that's already closed.
  */
 function CancelOrderPanel({
+  orderId,
   window: cw,
   fetchedAt,
   pending,
   onConfirm,
   onExpired,
+  cancellableLines,
+  hasGifts,
+  currency,
+  pendingItems,
+  itemsCancelledAt,
+  onConfirmItems,
 }: {
+  orderId: string;
   window: CancellationWindow;
   fetchedAt: number;
   pending: boolean;
   onConfirm: () => void;
   onExpired: () => void;
+  /** Paid items the customer may cancel one by one (empty: whole order only). */
+  cancellableLines: CancellableLine[];
+  hasGifts: boolean;
+  currency: string;
+  pendingItems: boolean;
+  itemsCancelledAt: number;
+  onConfirmItems: (items: CancelItemInput[]) => void;
 }) {
   const t = useShopCopy();
   const [confirming, setConfirming] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [closedAt, setClosedAt] = useState(0);
   const { remaining, mmss } = useCancellationCountdown(cw, fetchedAt, onExpired);
+  // Close the picker once a cancel of some items went through.
+  if (itemsCancelledAt > closedAt) {
+    setClosedAt(itemsCancelledAt);
+    setPicking(false);
+  }
 
   if (remaining <= 0) return null;
+
+  const units = cancellableLines.reduce((sum, line) => sum + line.quantity, 0);
+  const canPick = cw.canCancelItems === true && units > 1;
+
+  const countdown = (
+    <p className="m-0 mt-0.5 text-[0.76rem]">
+      {t("orders.cancel.closesIn")}{" "}
+      <span className="font-semibold tabular-nums" aria-live="off">
+        {mmss}
+      </span>
+    </p>
+  );
+
+  if (picking && canPick) {
+    return (
+      <div className={orderCancel}>
+        <div className="grid w-full gap-3">
+          {countdown}
+          <CancelItemsPicker
+            orderId={orderId}
+            lines={cancellableLines}
+            hasGifts={hasGifts}
+            currency={currency}
+            pending={pendingItems}
+            onConfirm={onConfirmItems}
+            onBack={() => setPicking(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={orderCancel}>
       <div>
         <p className="m-0 text-[0.86rem] font-semibold">{t("orders.cancel.stillCan")}</p>
-        <p className="m-0 mt-0.5 text-[0.76rem]">
-          {t("orders.cancel.closesIn")}{" "}
-          <span className="font-semibold tabular-nums" aria-live="off">
-            {mmss}
-          </span>
-        </p>
+        {countdown}
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -230,9 +280,21 @@ function CancelOrderPanel({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
-          {t("orders.cancel.button")}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canPick ? (
+            <button
+              type="button"
+              disabled={pendingItems}
+              onClick={() => setPicking(true)}
+              className={orderCancelBtn}
+            >
+              {t("orders.cancel.someItems")}
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setConfirming(true)} className={orderCancelBtn}>
+            {t("orders.cancel.button")}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -246,6 +308,9 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
     showCancel,
     cancel,
     cancelling,
+    cancelItems,
+    cancellingItems,
+    itemsCancelledAt,
     cancelResult,
     cancelFailure,
     refreshOrder,
@@ -295,7 +360,16 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const trackingSummary = trackingFromHook ?? trackingSummaryFromDetail(data);
   const payable = needsPayment(order.status, order.paymentStatus);
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
-  const itemCount = order.lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+  const activeLines = order.lines.filter((line) => !line.cancelled);
+  const itemCount = activeLines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+  const cancellableLines: CancellableLine[] = activeLines
+    .filter((line) => !line.isGift)
+    .map((line) => ({
+      orderLineId: line.orderLineId,
+      name: line.productName ?? line.sku,
+      quantity: Number.parseInt(line.quantity, 10) || 1,
+      unitPrice: Number(line.unitPrice),
+    }));
   const refunds = refundsFromHook;
   const staffQuote = readEmployeeCheckout(
     (order as { staffPurchase?: unknown }).staffPurchase ??
@@ -360,6 +434,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
 
             {showCancel && cancellationWindow ? (
               <CancelOrderPanel
+                orderId={order.orderId}
+                cancellableLines={cancellableLines}
+                hasGifts={activeLines.some((line) => line.isGift)}
+                currency={currency}
+                pendingItems={cancellingItems}
+                itemsCancelledAt={itemsCancelledAt}
+                onConfirmItems={cancelItems}
                 window={cancellationWindow}
                 fetchedAt={detailQuery.dataUpdatedAt}
                 pending={cancelling}
@@ -381,7 +462,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
         <div className={accountLayout}>
           {/* Progress first, then what was ordered, then the shipment history. */}
           <OrderTrackingPanel summary={trackingSummary} timeline={timeline}>
-            <Panel title={t("orders.items", { count: order.lines.length })} flush>
+            <Panel title={t("orders.items", { count: activeLines.length })} flush>
               <ul className={orderLines} role="list">
                 {order.lines.map((line) => {
                   const quantity = Number.parseInt(line.quantity, 10) || 1;
@@ -406,6 +487,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                             line.variantName.trim().toLowerCase() !== "default title"
                               ? line.variantName
                               : null,
+                            line.cancelled ? t("orders.line.cancelled") : null,
                             line.isGift ? t("orders.freeGift") : null,
                             t("orders.qty", { count: quantity }),
                             quantity > 1 && !line.isGift
@@ -422,7 +504,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                           className={orderLineMeta}
                         />
                       </div>
-                      <p className={orderLinePrice}>
+                      <p className={`${orderLinePrice} ${line.cancelled ? "text-sa-muted line-through" : ""}`}>
                         {line.isGift ? t("orders.free") : formatMoney(Number(line.lineTotal), lineCurrency)}
                       </p>
                     </li>
@@ -436,7 +518,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             orderId={order.orderId}
             status={order.status}
             fulfillmentStatus={order.fulfillmentStatus}
-            lines={mapOrderLinesForAfterSales(order.lines)}
+            lines={mapOrderLinesForAfterSales(activeLines)}
           />
 
           <aside className={accountCol} aria-label={t("orders.summaryAndDelivery")}>

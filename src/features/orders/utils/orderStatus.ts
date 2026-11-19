@@ -250,6 +250,8 @@ function orderEventKey(eventType: string, title: string | null): MessageKey | nu
       if (t.includes("transit")) return "orders.event.onTheWay";
       return "orders.event.shipmentCreated";
     case "CANCELLED":
+      // Some items cancelled: the order itself goes on.
+      if (t.includes("items cancelled")) return "orders.event.itemsCancelled";
       return "orders.event.cancelled";
     case "REFUND_REQUESTED":
       return "orders.event.refundRequested";

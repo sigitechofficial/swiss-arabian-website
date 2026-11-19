@@ -27,7 +27,7 @@ export function joinAlternatives(parts: string[], locale: string): string {
   }
 }
 
-/** Placeholders a copy sentence can use: {count} (days), {money}, {percent}, {points}, {reasons}. */
+/** Placeholders a copy sentence can use: {count} (days or minutes), {money}, {percent}, {points}, {reasons}. */
 export function afterSalesCopyValues(
   item: AfterSalesCopyItem,
   t: Translator,
@@ -36,6 +36,7 @@ export function afterSalesCopyValues(
   const values: MessageValues = {};
   const raw = item.values ?? {};
   if (raw.days != null) values.count = Number(raw.days);
+  if (raw.minutes != null) values.count = Number(raw.minutes);
   if (raw.amount != null) {
     values.money = formatMoney(Number(raw.amount), String(raw.currencyCode || "AED"));
   }

@@ -73,6 +73,8 @@ export interface CancellationWindow {
   isInsideWindow: boolean;
   /** The customer may cancel online now. */
   canCancel: boolean;
+  /** …and may cancel some items only. Older backends omit it. */
+  canCancelItems?: boolean;
   remainingSeconds: number | null;
   endsAt: string | null;
   /** Older backends omit these. */
@@ -84,6 +86,8 @@ export interface CancellationWindow {
 export type CustomerRefundState =
   | "processing"
   | "waiting_for_review"
+  /** Our team sends it by hand; the customer has nothing to do. Older backends never send it. */
+  | "manual_payout"
   | "completed"
   | "not_approved"
   | "cancelled";
@@ -149,6 +153,8 @@ export interface CustomerOrderDetailResponse {
       /** A free gift (gift with purchase). Older backends omit it. */
       isGift?: boolean;
       giftOfferLabel?: string | null;
+      /** Units the customer cancelled before shipping. Older backends omit it. */
+      cancelled?: boolean;
     }[];
     addresses: {
       addressType: string;
@@ -179,6 +185,12 @@ export interface CancelOrderResponse {
   orderCancelled: boolean;
   requiresRefund: boolean;
   requiresManualReview?: boolean;
+  /** Some items were cancelled; the order goes on with the rest. */
+  partial?: boolean;
+  /** Partial cancel: the drop in the order total (refunded unless cash on delivery). */
+  refundAmount?: string;
+  offerAdjustmentAmount?: string;
+  deliveryChargeAmount?: string;
   /** Present when the Backend registered a refund. Absent for unpaid cancellations. */
   refund?: {
     refundId?: string | null;
@@ -247,6 +259,52 @@ export async function listOrders(params: ListOrdersParams = {}): Promise<Paginat
 export async function getCustomerOrderDetail(orderId: string): Promise<CustomerOrderDetailResponse> {
   return apiGet<CustomerOrderDetailResponse>(
     `/storefront/customer/orders/${orderId}?${withMarket(new URLSearchParams()).toString()}`,
+  );
+}
+
+export interface CancelItemInput {
+  orderLineId: string;
+  quantity: number;
+}
+
+/** What cancelling some items would do. Nothing is changed. */
+export interface CancelItemsPreview {
+  /** Every item chosen: the whole order would be cancelled. */
+  wholeOrder: boolean;
+  /** Cash on delivery: nothing to refund, the courier collects less. */
+  cashOnDelivery: boolean;
+  cancelledAmount: string;
+  offerAdjustmentAmount: string;
+  deliveryChargeAmount: string;
+  refundAmount: string;
+  totalBefore: string;
+  totalAfter: string;
+  giftsRemoved: { orderLineId: string; sku: string | null; productName: string | null }[];
+}
+
+/**
+ * POST /storefront/customer/orders/:orderId/cancel/preview
+ * JWT required. Only when cancellationWindow.canCancelItems === true.
+ */
+export async function previewCancelItems(orderId: string, items: CancelItemInput[]): Promise<CancelItemsPreview> {
+  return apiPost<CancelItemsPreview>(
+    `/storefront/customer/orders/${orderId}/cancel/preview?${withMarket(new URLSearchParams()).toString()}`,
+    { items },
+  );
+}
+
+/**
+ * POST /storefront/customer/orders/:orderId/cancel with items.
+ * One idempotency key per confirmation, so a repeated tap returns the first result.
+ */
+export async function cancelOrderItems(
+  orderId: string,
+  items: CancelItemInput[],
+  idempotencyKey: string,
+): Promise<CancelOrderResponse> {
+  return apiPost<CancelOrderResponse>(
+    `/storefront/customer/orders/${orderId}/cancel?${withMarket(new URLSearchParams()).toString()}`,
+    { reason: "Customer cancelled some items", items, idempotencyKey },
   );
 }
 

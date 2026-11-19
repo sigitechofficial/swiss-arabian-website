@@ -4,20 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelOrder,
+  cancelOrderItems,
   getCustomerOrderDetail,
   listOrders,
+  type CancelItemInput,
   type CancelOrderResponse,
   type CancellationWindow,
 } from "@/features/account/api/customerOrders.service";
 import { getOrderTracking, getOrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { cancelOutcome } from "../utils/orderAftercare";
+import { cancelItemsOutcome, cancelOutcome } from "../utils/orderAftercare";
 import { readCustomerRefunds, toOrderRefundView } from "../utils/orderRefunds";
 import { isActiveOrder, needsPayment } from "../utils/orderStatus";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
 
 export const ORDERS_PAGE_SIZE = 20;
+
+function newRequestId(): string {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /** The signed-in shopper's orders, a page at a time, split into active and past. */
 export function useCustomerOrders(pageSize = ORDERS_PAGE_SIZE) {
@@ -55,7 +63,12 @@ export type OrderCancelError = "closed" | "notFound" | "failed" | { message: str
  * Backend refusal codes for an online cancel (the order's after-sales policy).
  * Store-policy refusals carry their own copy; timing refusals are "closed".
  */
-const CANCEL_REFUSALS: Record<string, "closed" | "orders.cancel.disabled" | "orders.cancel.preparing"> = {
+const CANCEL_REFUSALS: Record<
+  string,
+  "closed" | "orders.cancel.disabled" | "orders.cancel.preparing" | "orders.cancel.partialDisabled" | "orders.cancel.notPaid"
+> = {
+  ORDER_PARTIAL_CANCEL_DISABLED: "orders.cancel.partialDisabled",
+  ORDER_PARTIAL_CANCEL_NOT_PAID: "orders.cancel.notPaid",
   CUSTOMER_CANCELLATION_DISABLED: "orders.cancel.disabled",
   CUSTOMER_CANCELLATION_FULFILLMENT_STARTED: "orders.cancel.preparing",
   CUSTOMER_CANCELLATION_SHIPMENT_EXISTS: "orders.cancel.preparing",
@@ -133,6 +146,30 @@ export function useCustomerOrderDetail(orderId: string) {
     onSettled: refreshOrder,
   });
 
+  // One key per confirmed selection: a repeated tap or a retry after a lost
+  // response gets the first result back instead of cancelling more units.
+  const cancelItemsKey = useRef<string | null>(null);
+  const cancelItemsMutation = useMutation({
+    mutationFn: (items: CancelItemInput[]) => {
+      cancelItemsKey.current ??= `cancel-items-${orderId}-${newRequestId()}`;
+      return cancelOrderItems(orderId, items, cancelItemsKey.current);
+    },
+    onSuccess: (result: CancelOrderResponse) => {
+      cancelItemsKey.current = null;
+      setCancelFailure(null);
+      setCancelResult(
+        result.partial === false
+          ? cancelOutcome(result, copy)
+          : cancelItemsOutcome(result, detailQuery.data?.order.currency ?? null, copy),
+      );
+    },
+    onError: (error) => {
+      setCancelResult(null);
+      setCancelFailure(cancelError(error, copy));
+    },
+    onSettled: refreshOrder,
+  });
+
   const data = detailQuery.data;
   const order = data?.order;
   const cancellationWindow = data?.cancellationWindow ?? null;
@@ -158,6 +195,15 @@ export function useCustomerOrderDetail(orderId: string) {
       setCancelFailure(null);
       cancelMutation.mutate();
     },
+    /** Some items only (cancellationWindow.canCancelItems). */
+    cancelItems: (items: CancelItemInput[]) => {
+      setCancelResult(null);
+      setCancelFailure(null);
+      cancelItemsMutation.mutate(items);
+    },
+    cancellingItems: cancelItemsMutation.isPending,
+    /** Bumps after each successful cancel of some items (closes the picker). */
+    itemsCancelledAt: cancelItemsMutation.isSuccess ? cancelItemsMutation.submittedAt : 0,
     cancelling: cancelMutation.isPending,
     cancelResult,
     cancelFailure,
