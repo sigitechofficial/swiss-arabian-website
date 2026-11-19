@@ -2,7 +2,12 @@ import type { SitePage } from "@/features/site-pages/api/sitePages.service";
 import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import { Accordion, EYEBROW, Wrap, cx } from "../../ui";
-import { groupQuestionSections, isQuestionList, splitHtmlSections } from "../../components/content/htmlSections";
+import {
+  dropRepeatedTitle,
+  groupQuestionSections,
+  isQuestionList,
+  splitHtmlSections,
+} from "../../components/content/htmlSections";
 import { SAPIL_PROSE } from "../../components/content/prose";
 import { SapilContentCrumbs } from "../../components/content/SapilContentCrumbs";
 
@@ -21,8 +26,8 @@ export function SapilSitePage({
   locale: ShopLocale;
   contactDetailsLabel?: string;
 }) {
-  // The page title below is the page's one H1.
-  const body = sanitizePageHtml(page.bodyHtml, { demoteH1: true });
+  // The page title below is the page's one H1; a first heading that repeats it is dropped.
+  const body = dropRepeatedTitle(sanitizePageHtml(page.bodyHtml, { demoteH1: true }), page.title);
   const contact = contactDetails ? sanitizePageHtml(contactDetails.bodyHtml, { demoteH1: true }) : "";
   const split = splitHtmlSections(body);
   const folded = isQuestionList(split);

@@ -14,6 +14,19 @@ function text(html: string): string {
     .trim();
 }
 
+/**
+ * Imported pages often start with their own title ("Refund Policy") right under
+ * the page's H1 ("Refund policy"). That first heading is dropped when it says
+ * the same thing (case and spacing ignored); any other first heading stays.
+ */
+export function dropRepeatedTitle(html: string, title: string): string {
+  // The heading may sit inside wrapper elements (<div><h2>…); those are kept.
+  const first = /^(\s*(?:<(?:div|section|article)\b[^>]*>\s*)*)<(h[2-4])\b[^>]*>([\s\S]*?)<\/\2>/i.exec(html);
+  if (!first) return html;
+  const same = (s: string) => text(s).toLocaleLowerCase();
+  return same(first[3]) === same(title) ? first[1] + html.slice(first[0].length) : html;
+}
+
 export function splitHtmlSections(html: string): HtmlSections {
   const matches = [...html.matchAll(HEADING)];
   if (!matches.length) return { intro: html, sections: [] };

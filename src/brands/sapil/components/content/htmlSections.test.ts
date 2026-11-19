@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { groupQuestionSections, isQuestionList, splitHtmlSections } from "./htmlSections";
+import { dropRepeatedTitle, groupQuestionSections, isQuestionList, splitHtmlSections } from "./htmlSections";
+
+describe("dropRepeatedTitle", () => {
+  it("drops a first heading that repeats the page title (case and spacing ignored)", () => {
+    expect(dropRepeatedTitle("\n<h2>Refund  Policy</h2><ul><li>14 days</li></ul>", "Refund policy")).toBe(
+      "\n<ul><li>14 days</li></ul>",
+    );
+  });
+
+  it("finds the first heading inside wrapper elements and keeps the wrappers", () => {
+    expect(dropRepeatedTitle('<div class="x"><h2>Refund Policy</h2><h3>Eligibility</h3></div>', "Refund Policy")).toBe(
+      '<div class="x"><h3>Eligibility</h3></div>',
+    );
+  });
+
+  it("keeps a different first heading, and a matching heading that is not first", () => {
+    expect(dropRepeatedTitle("<h2>Returns</h2><p>x</p>", "Refund policy")).toBe("<h2>Returns</h2><p>x</p>");
+    expect(dropRepeatedTitle("<p>Intro</p><h2>Refund policy</h2>", "Refund policy")).toBe(
+      "<p>Intro</p><h2>Refund policy</h2>",
+    );
+  });
+});
 
 describe("splitHtmlSections", () => {
   it("returns the whole body as intro without headings", () => {
