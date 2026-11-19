@@ -56,7 +56,8 @@ const noIds = (html = "") => html.replace(/_r_\w+_/g, "_r_");
 /** Each section's head markup (eyebrow, heading, line under it), for the no-CMS-copy snapshot. */
 function heads(container: HTMLElement) {
   return Array.from(container.querySelectorAll("section")).map((sec) => {
-    const h = sec.querySelector("h2");
+    // Section titles are <p role="heading" aria-level="2"> (SEO audit p5: no h2/h3 on the home page).
+    const h = sec.querySelector('[role="heading"], h2');
     return `${sec.id || sec.getAttribute("aria-label")}: ${noIds((h?.parentElement?.parentElement ?? sec).outerHTML)}`;
   });
 }
