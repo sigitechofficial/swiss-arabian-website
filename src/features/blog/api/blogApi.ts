@@ -1,3 +1,4 @@
+import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import { apiGet } from "@/lib/api/apiClient";
 import type { ArticleBlock, BlogArticleDetail, BlogPost } from "../data/blogContent";
 
@@ -80,7 +81,7 @@ export async function fetchBlogArticle(input: {
       heroEyebrow: data.heroEyebrow,
       heroTitle: data.heroTitle,
       heroSubtitle: data.heroSubtitle,
-      body: Array.isArray(data.body) ? data.body : [],
+      body: Array.isArray(data.body) ? cleanArticleBody(data.body) : [],
       tags: data.tags ?? [],
       related: data.related ?? [],
       seoTitle: data.seoTitle,
@@ -108,4 +109,13 @@ export async function fetchBlogSlugs(input: {
   } catch {
     return [];
   }
+}
+
+/** Rich-text blocks are cleaned like website pages (allow-list); an empty result is dropped. */
+export function cleanArticleBody(body: ArticleBlock[]): ArticleBlock[] {
+  return body.flatMap((block): ArticleBlock[] => {
+    if (block.type !== "rich") return [block];
+    const html = sanitizePageHtml(block.html, { demoteH1: true });
+    return html ? [{ type: "rich" as const, html }] : [];
+  });
 }
