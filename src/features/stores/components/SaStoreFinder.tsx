@@ -5,9 +5,10 @@ import { brandDisplayName } from "@/lib/brand";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopLocale, useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
 import { intlLocale } from "@/lib/i18n/locales";
+import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useStoreLocator, type LocatorStore } from "../hooks/useStoreLocator";
 import type { StoreAreaSummary, StoreCard } from "../types";
-import { directionsUrl, storePath, telUrl } from "../utils/storeLinks";
+import { directionsUrl, storeAreaPath, storePath, telUrl } from "../utils/storeLinks";
 import { storeStatusText, type StatusTone } from "../utils/storeText";
 import { StoreMap } from "./map/StoreMap";
 
@@ -96,8 +97,8 @@ function StoreRow({
 
 /**
  * Swiss Arabian store finder: search, "use my location", area / type /
- * open-now filters, numbered list and a map. Used by the locator (all areas)
- * and the area pages (one area, no area filter).
+ * open-now filters, numbered list and a map. Used by the locator (all areas;
+ * picking an area opens that area's page) and the area pages (one area, no area filter).
  */
 export function SaStoreFinder({
   stores,
@@ -112,6 +113,7 @@ export function SaStoreFinder({
   const locale = useShopLocale();
   const brand = brandDisplayName(locale);
   const f = useStoreLocator(stores);
+  const router = useLocaleRouter();
   const pins = useMemo(
     () => f.results.map((s, i) => ({ id: s.slug, latitude: s.latitude, longitude: s.longitude, title: s.name, label: String(i + 1) })),
     [f.results],
@@ -171,7 +173,14 @@ export function SaStoreFinder({
         {!fixedArea && areas && areas.length > 1 ? (
           <label className="flex items-center gap-2 text-[12px] text-sa-muted">
             {t("stores.filterArea")}
-            <select value={f.area} onChange={(e) => f.setArea(e.target.value)} className={select}>
+            {/* An emirate opens its own page (own address, text and schema), SEO audit p22. */}
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) router.push(storeAreaPath(e.target.value));
+              }}
+              className={select}
+            >
               <option value="">{t("stores.allAreas")}</option>
               {areas.map((a) => (
                 <option key={a.slug} value={a.slug}>

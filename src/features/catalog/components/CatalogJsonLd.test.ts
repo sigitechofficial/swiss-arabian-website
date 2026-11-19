@@ -5,7 +5,10 @@ vi.mock("next/headers", () => ({ headers: vi.fn() }));
 import {
   absolutizeJsonLd,
   faqPageJsonLd,
+  merchantReturnPolicy,
   pageBreadcrumbJsonLd,
+  productJsonLd,
+  type MarketReturnTerms,
   storeJsonLd,
   storesJsonLd,
 } from "./CatalogJsonLd";
@@ -78,5 +81,72 @@ describe("page structured data builders", () => {
     );
     expect(data["@context"]).toBe("https://schema.org");
     expect(data["@graph"].map((store) => store.name)).toEqual(["A", "B"]);
+  });
+});
+
+/** SEO audit p17: the product offer names the market's return policy. */
+describe("merchantReturnPolicy", () => {
+  const terms = (over: Partial<MarketReturnTerms> = {}, items: MarketReturnTerms["items"] = []): MarketReturnTerms => ({
+    returnsEnabled: true,
+    returnWindowDays: 14,
+    currencyCode: "AED",
+    items,
+    ...over,
+  });
+
+  it("free returns within the market's window", () => {
+    expect(
+      merchantReturnPolicy(terms({}, [{ key: "RETURN_SHIPPING_FEE", variant: "FREE", values: {} }]), "ae"),
+    ).toEqual({
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "AE",
+      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: 14,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/FreeReturn",
+    });
+  });
+
+  it("a return shipping fee and a restocking fee", () => {
+    const policy = merchantReturnPolicy(
+      terms({ returnWindowDays: 7 }, [
+        { key: "RETURN_SHIPPING_FEE", variant: "FLAT", values: { amount: "25.00", currencyCode: "AED" } },
+        { key: "RESTOCKING_FEE", variant: "PERCENT_ALWAYS", values: { percent: "10" } },
+      ]),
+      "AE",
+    );
+    expect(policy).toMatchObject({
+      merchantReturnDays: 7,
+      returnFees: "https://schema.org/ReturnShippingFees",
+      returnShippingFeesAmount: { "@type": "MonetaryAmount", value: "25.00", currency: "AED" },
+      restockingFee: 10,
+    });
+  });
+
+  it("returns switched off: not permitted", () => {
+    expect(merchantReturnPolicy(terms({ returnsEnabled: false }), "QA")).toEqual({
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "QA",
+      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+    });
+  });
+
+  it("nothing is guessed without the policy or the country", () => {
+    expect(merchantReturnPolicy(null, "AE")).toBeUndefined();
+    expect(merchantReturnPolicy(terms(), null)).toBeUndefined();
+    expect(merchantReturnPolicy(terms({ returnWindowDays: 0 }), "AE")).toBeUndefined();
+  });
+
+  it("is part of the product offer", () => {
+    const product = productJsonLd({
+      name: "Shaghaf Oud",
+      url: "/products/shaghaf-oud",
+      price: 100,
+      currency: "AED",
+      shipping: { country: "AE" },
+      returnPolicy: terms({}, [{ key: "RETURN_SHIPPING_FEE", variant: "FREE", values: {} }]),
+    });
+    expect(plain(product).offers.hasMerchantReturnPolicy.merchantReturnDays).toBe(14);
+    expect(plain(product).offers.shippingDetails).toBeUndefined();
   });
 });

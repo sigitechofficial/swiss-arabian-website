@@ -5,14 +5,14 @@ import { useCollapsibleText } from "./useCollapsibleText";
 
 /**
  * SEO text body above the footer: a fixed height with a fade; when the text is
- * longer, "View all" opens it and "Show less" closes it again. The full text is
+ * longer, "Show more" opens it and "Show less" closes it again. The full text is
  * always in the page (search engines read all of it), only its height changes.
  */
 export function SeoTextBody({ html, lang: _lang }: { html: string; lang: string }) {
   const { id, ref, open, toggle, overflows, closed, maxHeight } = useCollapsibleText(html);
   // Buttons in the page's language (the text itself may be another language).
   const t = useShopCopy();
-  const labels = { more: t("seoText.more"), less: t("seoText.less") };
+  const labels = { more: t("seoText.showMore"), less: t("seoText.less") };
 
   return (
     <div>

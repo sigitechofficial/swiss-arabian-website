@@ -12,6 +12,7 @@ import {
   loadCatalogDocument,
 } from "@/lib/seo/catalogPage";
 import { loadBrandIdentityFor } from "@/lib/seo/brandIdentity";
+import { loadMarketReturnTerms } from "@/lib/seo/marketReturnTerms";
 import { applySeoOverrides } from "@/lib/seo/pageSeo";
 import { effectiveProductSeo, parseSchemaOverride } from "@/lib/seo/productSeo";
 import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
@@ -129,7 +130,10 @@ export default async function ProductDetailPage({
   const name = product?.title || slug;
   const seo = effectiveProductSeo(product?.seo, market.zoneId);
   const schemaOverride = parseSchemaOverride(seo?.schemaOverride);
-  const brand = await loadBrandIdentityFor(locale, market.zoneCode ?? "");
+  const [brand, returnPolicy] = await Promise.all([
+    loadBrandIdentityFor(locale, market.zoneCode ?? ""),
+    loadMarketReturnTerms(market.zoneCode),
+  ]);
   // Share buttons point at the same canonical address as the page head.
   const origin = await requestOrigin();
   const share = {
@@ -171,15 +175,15 @@ export default async function ProductDetailPage({
             currency: product?.currency,
             inStock: product ? inStock : null,
             seller: brand.name,
-            shipping: delivery
-              ? {
-                  country: "countryCode" in market ? market.countryCode : null,
-                  fee: delivery.baseDeliveryFee,
-                  freeFrom: delivery.freeDeliveryThreshold,
-                  minDays: delivery.estimatedMinDays,
-                  maxDays: delivery.estimatedMaxDays,
-                }
-              : null,
+            // The market's country also scopes the return policy, with or without a delivery promise.
+            shipping: {
+              country: "countryCode" in market ? market.countryCode : null,
+              fee: delivery?.baseDeliveryFee ?? null,
+              freeFrom: delivery?.freeDeliveryThreshold ?? null,
+              minDays: delivery?.estimatedMinDays ?? null,
+              maxDays: delivery?.estimatedMaxDays ?? null,
+            },
+            returnPolicy,
             properties: [
               { name: t("product.topNotes"), value: notes?.top_note },
               { name: t("product.heartNotes"), value: notes?.middle_note },
