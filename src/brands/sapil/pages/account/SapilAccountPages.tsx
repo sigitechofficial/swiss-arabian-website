@@ -83,7 +83,7 @@ export function SapilAccountPage() {
         </Button>
       }
     >
-      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[1fr]">
+      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[minmax(0,1fr)]">
         <div className="flex flex-col gap-[20px]">
           <Card title={t("account.dashRecent")} id="acc-recent">
             {recentQuery.isPending ? (
@@ -114,7 +114,7 @@ export function SapilAccountPage() {
             </SapilLink>
           </Card>
           <Card title={t("account.dashShortcuts")} id="acc-tiles">
-            <ul className="list-none grid grid-cols-2 gap-[10px] mt-[10px] max-600:grid-cols-[1fr]">
+            <ul className="list-none grid grid-cols-2 gap-[10px] mt-[10px] max-600:grid-cols-[minmax(0,1fr)]">
               {SAPIL_ACCOUNT_NAV.map((item) => (
                 <li key={item.href}>
                   <SapilLink
@@ -432,7 +432,7 @@ export function SapilAccountAddressesPage() {
       ) : list.isError ? (
         <LoadError onRetry={() => void list.refetch()} />
       ) : (
-        <div className="grid grid-cols-2 gap-[20px] items-start max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-2 gap-[20px] items-start max-900:grid-cols-[minmax(0,1fr)]">
           {mode === "create" ? (
             <AddressForm
               isFirst={addresses.length === 0}
@@ -898,7 +898,7 @@ export function SapilPaymentsPage() {
             const payLabel = t(payKey) === payKey ? statusText(t, order.paymentStatus) : t(payKey);
             const kind = paymentFilterOf(order.paymentStatus);
             return (
-              <li key={order.orderId} className="grid grid-cols-[1fr_1fr_auto_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[1fr_auto]">
+              <li key={order.orderId} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[minmax(0,1fr)_auto]">
                 <SapilLink href={`/account/orders/${encodeURIComponent(order.orderId)}`} className="font-[700] hover:underline" dir="ltr">
                   {order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase()}
                 </SapilLink>

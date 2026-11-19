@@ -1,26 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Minus, Plus } from "lucide-react";
-import {
-  previewCancelItems,
-  type CancelItemInput,
-  type CancelItemsPreview,
-} from "@/features/account/api/customerOrders.service";
+import type { CancelItemInput } from "@/features/account/api/customerOrders.service";
 import { formatMoney } from "@/features/home/utils/formatMoney";
-import { useDebounce } from "@/hooks/useDebounce";
-import { ApiClientError } from "@/lib/api/apiError";
-import type { Translator } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { orderCancelBtn, orderCancelConfirm, orderLineMeta } from "@/styles/accountChrome";
-
-export type CancellableLine = {
-  orderLineId: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-};
+import { useCancelItemsSelection } from "../hooks/useCancelItemsSelection";
+import { cancelPreviewLines, type CancellableLine } from "../utils/cancelItems";
 
 const stepBtn =
   "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#c9a45c] bg-white text-[#6d5320] transition-colors hover:bg-[#fbf5e8] disabled:cursor-default disabled:opacity-40";
@@ -49,28 +35,8 @@ export function CancelItemsPicker({
   onBack: () => void;
 }) {
   const t = useShopCopy();
-  const [qty, setQty] = useState<Record<string, number>>({});
-  const items = useMemo(
-    () =>
-      lines
-        .filter((line) => (qty[line.orderLineId] ?? 0) > 0)
-        .map((line) => ({ orderLineId: line.orderLineId, quantity: qty[line.orderLineId] })),
-    [lines, qty],
-  );
-  const debouncedItems = useDebounce(items, 350);
-  const settled = debouncedItems === items;
-  const previewQuery = useQuery({
-    queryKey: ["cancel-items-preview", orderId, debouncedItems],
-    queryFn: () => previewCancelItems(orderId, debouncedItems),
-    enabled: debouncedItems.length > 0,
-    retry: false,
-    staleTime: 15_000,
-  });
-  const preview = settled && items.length > 0 ? previewQuery.data : undefined;
-  const loading = items.length > 0 && (!settled || previewQuery.isFetching);
-
-  const change = (id: string, max: number, delta: number) =>
-    setQty((current) => ({ ...current, [id]: Math.min(max, Math.max(0, (current[id] ?? 0) + delta)) }));
+  const pick = useCancelItemsSelection(orderId, lines);
+  const money = (value: string) => formatMoney(Number(value), currency);
 
   return (
     <div className="grid w-full gap-3">
@@ -80,7 +46,7 @@ export function CancelItemsPicker({
       </div>
       <ul className="m-0 grid list-none gap-2 p-0" role="list">
         {lines.map((line) => {
-          const selected = qty[line.orderLineId] ?? 0;
+          const selected = pick.selected(line.orderLineId);
           return (
             <li
               key={line.orderLineId}
@@ -97,7 +63,7 @@ export function CancelItemsPicker({
                   type="button"
                   className={stepBtn}
                   disabled={pending || selected === 0}
-                  onClick={() => change(line.orderLineId, line.quantity, -1)}
+                  onClick={() => pick.change(line.orderLineId, line.quantity, -1)}
                   aria-label={t("orders.cancel.fewer", { name: line.name })}
                 >
                   <Minus size={14} aria-hidden="true" />
@@ -109,7 +75,7 @@ export function CancelItemsPicker({
                   type="button"
                   className={stepBtn}
                   disabled={pending || selected >= line.quantity}
-                  onClick={() => change(line.orderLineId, line.quantity, 1)}
+                  onClick={() => pick.change(line.orderLineId, line.quantity, 1)}
                   aria-label={t("orders.cancel.more", { name: line.name })}
                 >
                   <Plus size={14} aria-hidden="true" />
@@ -121,18 +87,20 @@ export function CancelItemsPicker({
       </ul>
       {hasGifts ? <p className="m-0 text-[0.74rem]">{t("orders.cancel.giftHint")}</p> : null}
 
-      {items.length > 0 ? (
+      {pick.items.length > 0 ? (
         <div className="rounded-[var(--radius-lg,4px)] bg-white/70 px-3 py-2 text-[0.8rem]" aria-live="polite">
-          {loading ? (
+          {pick.loading ? (
             <p className="m-0">{t("orders.cancel.preview.loading")}</p>
-          ) : preview ? (
-            <PreviewText preview={preview} currency={currency} t={t} />
-          ) : previewQuery.isError ? (
-            <p className="m-0 text-[#8c3a2b]">
-              {previewQuery.error instanceof ApiClientError && previewQuery.error.status === 422
-                ? previewQuery.error.message
-                : t("orders.cancel.preview.failed")}
-            </p>
+          ) : pick.preview ? (
+            <div className="grid gap-0.5">
+              {cancelPreviewLines(pick.preview, money, t).map((line) => (
+                <p key={line.key} className={`m-0${line.tone === "strong" ? " font-semibold" : line.tone === "small" ? " text-[0.74rem]" : ""}`}>
+                  {line.text}
+                </p>
+              ))}
+            </div>
+          ) : pick.error ? (
+            <p className="m-0 text-[#8c3a2b]">{pick.error}</p>
           ) : null}
         </div>
       ) : null}
@@ -141,8 +109,8 @@ export function CancelItemsPicker({
         <button
           type="button"
           className={orderCancelConfirm}
-          disabled={pending || items.length === 0 || loading || !preview}
-          onClick={() => onConfirm(items)}
+          disabled={pending || !pick.canConfirm}
+          onClick={() => onConfirm(pick.items)}
         >
           {pending ? t("orders.cancel.cancelling") : t("orders.cancel.confirmItems")}
         </button>
@@ -150,37 +118,6 @@ export function CancelItemsPicker({
           {t("orders.cancel.back")}
         </button>
       </div>
-    </div>
-  );
-}
-
-function PreviewText({ preview, currency, t }: { preview: CancelItemsPreview; currency: string; t: Translator }) {
-  const money = (value: string) => formatMoney(Number(value), currency);
-  if (preview.wholeOrder) return <p className="m-0 font-semibold">{t("orders.cancel.preview.whole")}</p>;
-  const offer = Number(preview.offerAdjustmentAmount);
-  const delivery = Number(preview.deliveryChargeAmount);
-  const refund = Number(preview.refundAmount);
-  const gifts = preview.giftsRemoved.map((gift) => gift.productName ?? gift.sku).filter(Boolean);
-  return (
-    <div className="grid gap-0.5">
-      <p className="m-0">{t("orders.cancel.preview.items", { amount: money(preview.cancelledAmount) })}</p>
-      {offer > 0 ? <p className="m-0">{t("orders.cancel.preview.offer", { amount: money(preview.offerAdjustmentAmount) })}</p> : null}
-      {delivery > 0 ? (
-        <p className="m-0">{t("orders.cancel.preview.delivery", { amount: money(preview.deliveryChargeAmount) })}</p>
-      ) : null}
-      {gifts.length > 0 ? <p className="m-0">{t("orders.cancel.preview.gifts", { names: gifts.join(", ") })}</p> : null}
-      {preview.cashOnDelivery ? (
-        <p className="m-0 font-semibold">
-          {t("orders.cancel.preview.cod", { amount: money(preview.totalAfter), before: money(preview.totalBefore) })}
-        </p>
-      ) : refund > 0 ? (
-        <p className="m-0 font-semibold">{t("orders.cancel.preview.refund", { amount: money(preview.refundAmount) })}</p>
-      ) : (
-        <p className="m-0 font-semibold">{t("orders.cancel.preview.noRefund")}</p>
-      )}
-      {!preview.cashOnDelivery ? (
-        <p className="m-0 text-[0.74rem]">{t("orders.cancel.preview.newTotal", { amount: money(preview.totalAfter) })}</p>
-      ) : null}
     </div>
   );
 }

@@ -55,7 +55,7 @@ export type SapilBagDrawerViewProps = {
   subtotalWas?: ReactNode;
   delivery: ReactNode;
   total: ReactNode;
-  /** promotion progress: the tiered rail (SapilPromoProgress), or a plain message */
+  /** promotion progress: the tiered rail (SapilPromoProgress) */
   promoNote?: ReactNode;
   /** reward points: using them, or a link to use them on the bag page */
   pointsNote?: ReactNode;
@@ -140,16 +140,8 @@ export function SapilBagDrawerView({
 
   const footer = empty ? undefined : (
     <>
-      {promoNote ? (
-        typeof promoNote === "string" ? (
-          <p className="text-[13px] text-sapil-ok mb-[6px]" aria-live="polite">
-            {promoNote}
-          </p>
-        ) : (
-          // The tiered progress (steps, rewards, meter): it announces its own changes.
-          <div className="mb-[10px] empty:hidden">{promoNote}</div>
-        )
-      ) : null}
+      {/* The tiered progress (steps, rewards, meter): it announces its own changes. */}
+      {promoNote ? <div className="mb-[10px] empty:hidden">{promoNote}</div> : null}
       {applied}
       <SummaryRow
         label={t("bag.subtotal")}
@@ -313,7 +305,7 @@ function GiftRow({ gift }: { gift: SapilBagGiftData }) {
           key={item.key}
           aria-label={t("bag.giftItem", { name: item.name })}
           role="group"
-          className="grid grid-cols-[72px_1fr_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
+          className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
         >
           <span className="aspect-square rounded-sapil-sm bg-sapil-p-mint grid place-items-center">
             {item.imageSrc ? (

@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useState } from "react";
 import { addCartItem } from "@/features/cart/api/cart.service";
 import { useApiQuery } from "@/lib/api/queryHooks";
@@ -21,6 +23,7 @@ export function railHeading(heading: string): string {
  * as the server groups them; one-tap add (opens the bag) and analytics.
  */
 export function useEmptyBagRecovery(surface = "empty-cart") {
+  const t = useShopCopy();
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const cartId = useCartStore((state) => state.cartId);
   const setCartFromApi = useCartStore((state) => state.setCartFromApi);
@@ -42,6 +45,7 @@ export function useEmptyBagRecovery(surface = "empty-cart") {
         setCartOpen(true);
         trackPromotion("promotion_recommendation_added", { campaignCode: group.campaignCode, market: zoneCode, surface });
       })
+      .catch(() => toast(t("promotions.addFailed"), "error"))
       .finally(() => setBusy(null));
   };
 

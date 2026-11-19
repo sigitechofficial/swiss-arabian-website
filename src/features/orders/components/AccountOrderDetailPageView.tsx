@@ -11,7 +11,8 @@ import {
   type CancelItemInput,
   type CancellationWindow,
 } from "@/features/account/api/customerOrders.service";
-import { CancelItemsPicker, type CancellableLine } from "./CancelItemsPicker";
+import { CancelItemsPicker } from "./CancelItemsPicker";
+import { cancellableOrderLines, cancellableUnits, type CancellableLine } from "../utils/cancelItems";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
@@ -227,7 +228,7 @@ function CancelOrderPanel({
 
   if (remaining <= 0) return null;
 
-  const units = cancellableLines.reduce((sum, line) => sum + line.quantity, 0);
+  const units = cancellableUnits(cancellableLines);
   const canPick = cw.canCancelItems === true && units > 1;
 
   const countdown = (
@@ -362,14 +363,7 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const needsSupport = order.status === "FAILED" || order.status === "MANUAL_REVIEW";
   const activeLines = order.lines.filter((line) => !line.cancelled);
   const itemCount = activeLines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
-  const cancellableLines: CancellableLine[] = activeLines
-    .filter((line) => !line.isGift)
-    .map((line) => ({
-      orderLineId: line.orderLineId,
-      name: line.productName ?? line.sku,
-      quantity: Number.parseInt(line.quantity, 10) || 1,
-      unitPrice: Number(line.unitPrice),
-    }));
+  const cancellableLines = cancellableOrderLines(activeLines);
   const refunds = refundsFromHook;
   const staffQuote = readEmployeeCheckout(
     (order as { staffPurchase?: unknown }).staffPurchase ??

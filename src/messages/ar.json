@@ -1635,5 +1635,13 @@
   "pdpVideo.label": "فيديو {title}",
   "pdpVideo.close": "إغلاق الفيديو",
   "pdpVideo.expand": "تكبير الفيديو",
-  "pdpVideo.shrink": "تصغير الفيديو"
+  "pdpVideo.shrink": "تصغير الفيديو",
+  "promotions.applied.list": "العروض المطبّقة",
+  "promotions.applied.status": "مُطبّق",
+  "promotions.applied.amount": "مُطبّق · {amount}",
+  "promotions.applied.percentOff": "خصم {percent}%",
+  "promotions.applied.freeShipping": "توصيل مجاني",
+  "promotions.applied.offer": "عرض",
+  "promotions.addFailed": "تعذّرت الإضافة إلى حقيبتك. يُرجى المحاولة مرة أخرى.",
+  "promotions.previewFailed": "تعذّر احتساب هذا السعر. يُرجى المحاولة مرة أخرى."
 }

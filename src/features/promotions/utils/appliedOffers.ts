@@ -1,3 +1,4 @@
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 import {
   appliedPromotionView,
   isFixedAmountBxgy,
@@ -37,12 +38,12 @@ export type AppliedOfferRow = {
 /** The applied offers to list (coupons have their own line; checkout lists gifts as lines). */
 export function appliedOfferRows(
   data: PromotionSnapshotV1 | null | undefined,
-  { hideGifts = false }: { hideGifts?: boolean } = {},
+  { hideGifts = false, t = englishTranslator }: { hideGifts?: boolean; t?: Translator } = {},
 ): AppliedOfferRow[] {
   return visibleApplied(data)
     .filter((item) => item.kind !== "COUPON" && !(hideGifts && isGiftApplied(item)))
     .map((item, index) => {
-      const view = appliedPromotionView(item, data);
+      const view = appliedPromotionView(item, data, t);
       const quoted = view.amount != null && view.amount > 0;
       const partialShipping = item.level === "SHIPPING" && !isFreeShippingBenefit(item) && quoted;
       const fixedBxgy = isFixedAmountBxgy(item) && quoted;

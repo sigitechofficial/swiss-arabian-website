@@ -1,6 +1,7 @@
 "use client";
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { PromotionSnapshotV1 } from "@/features/promotions/types/promotions";
 import { appliedOfferRows } from "@/features/promotions/utils/appliedOffers";
 import { useCartStore } from "@/stores/useCartStore";
@@ -23,11 +24,12 @@ export function SapilAppliedOffers({
   className?: string;
 }) {
   const t = useSapilCopy();
+  const shop = useShopCopy();
   const money = useSapilMoney();
   const marketCurrency = useMarketCurrency();
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
-  const rows = appliedOfferRows(data, { hideGifts });
+  const rows = appliedOfferRows(data, { hideGifts, t: shop });
   if (!rows.length) return null;
   const currency = data?.context?.currencyCode ?? marketCurrency;
 

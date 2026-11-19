@@ -12,7 +12,9 @@ const req = (host: string, forwarded?: string) =>
 
 /** SE-10: the 404 page's API calls send the shop only for this brand's own websites. */
 describe("verifiedRequestSiteHost", () => {
-  beforeEach(() => vi.mocked(lookupSite).mockReset());
+  beforeEach(() => {
+    vi.mocked(lookupSite).mockReset();
+  });
 
   it("uses the address the shopper came to (Front Door forwards it)", async () => {
     vi.mocked(lookupSite).mockResolvedValue(site("SAPIL"));

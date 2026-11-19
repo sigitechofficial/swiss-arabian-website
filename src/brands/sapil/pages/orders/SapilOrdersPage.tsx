@@ -23,7 +23,7 @@ function OrderList({ title, orders }: { title: string; orders: OrderSummaryApi[]
           const number = order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase();
           return (
             <li key={order.orderId} className="border-b border-sapil-line last:border-b-0">
-              <div className="grid grid-cols-[1.2fr_1fr_1fr_auto] gap-[16px] items-center py-[14px] text-[15px] max-900:grid-cols-[1fr_1fr] max-900:gap-y-[6px] max-900:gap-x-[12px]">
+              <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-[16px] items-center py-[14px] text-[15px] max-900:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] max-900:gap-y-[6px] max-900:gap-x-[12px]">
                 <SapilLink
                   href={`/account/orders/${encodeURIComponent(order.orderId)}`}
                   className="font-[700] hover:underline"

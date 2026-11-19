@@ -118,7 +118,7 @@ export function TrackingDetails({
       {events.length ? (
         <ol className="list-none mt-[12px]">
           {events.map((entry) => (
-            <li key={entry.key} className="grid grid-cols-[140px_1fr] gap-[12px] py-[8px] text-[14px] max-900:grid-cols-[1fr] max-900:gap-[2px]">
+            <li key={entry.key} className="grid grid-cols-[140px_minmax(0,1fr)] gap-[12px] py-[8px] text-[14px] max-900:grid-cols-[minmax(0,1fr)] max-900:gap-[2px]">
               <span className="text-sapil-muted">{date(entry.occurredAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
               <span>
                 <b className="font-[600]">{t(SHIP_KEY[entry.status])}</b>

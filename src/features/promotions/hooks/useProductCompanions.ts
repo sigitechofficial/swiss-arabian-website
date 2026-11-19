@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addCartItems } from "@/features/cart/api/cart.service";
@@ -62,6 +64,7 @@ export function useProductCompanions({
   /** Groups the page already shows (e.g. its own "you may also like"). */
   omitGroupIds?: string[];
 }) {
+  const t = useShopCopy();
   const query = useQuery({
     queryKey: ["promotion-companions", productId, marketCode ?? ""],
     queryFn: () => fetchProductCompanions(productId),
@@ -107,23 +110,30 @@ export function useProductCompanions({
       void previewProductCompanions(
         productId,
         skus.map((sku) => ({ sku })),
-      ).then((result) => {
-        if (cancel) return;
-        setPreview({
-          key: selectionKey,
-          before: result.beforeSavings,
-          saving: result.promotionSaving,
-          total: result.yourTotal,
-          message: result.message,
-          ready: result.readyToAdd,
-        });
-      });
+      ).then(
+        (result) => {
+          if (cancel) return;
+          setPreview({
+            key: selectionKey,
+            before: result.beforeSavings,
+            saving: result.promotionSaving,
+            total: result.yourTotal,
+            message: result.message,
+            ready: result.readyToAdd,
+          });
+        },
+        () => {
+          // No price for this selection: say so, and keep "Add" off until it can be worked out.
+          if (cancel) return;
+          setPreview({ key: selectionKey, before: null, saving: null, total: null, message: t("promotions.previewFailed"), ready: false });
+        },
+      );
     }, 200);
     return () => {
       cancel = true;
       window.clearTimeout(timer);
     };
-  }, [productId, selectionKey]);
+  }, [productId, selectionKey, t]);
 
   const groups = (data?.groups ?? []).filter((group) => !omitGroupIds.includes(group.id));
   const fresh = preview?.key === selectionKey ? preview : null;
@@ -164,6 +174,7 @@ export function useProductCompanions({
         setCartOpen(true);
         trackPromotion("promotion_multi_add", { market: marketCode, surface: "pdp" });
       })
+      .catch(() => toast(t("promotions.addFailed"), "error"))
       .finally(() => setBusy(false));
   }
 

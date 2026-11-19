@@ -84,7 +84,7 @@ export function SapilOfferPage({ code }: { code: string }) {
       </header>
 
       <div className="sticky top-0 z-[20] -mx-sapil-gut mt-[28px] bg-sapil-paper px-sapil-gut py-[12px]">
-        <div className="grid items-stretch gap-[16px] grid-cols-[minmax(0,1fr)_320px] max-900:grid-cols-[1fr]">
+        <div className="grid items-stretch gap-[16px] grid-cols-[minmax(0,1fr)_320px] max-900:grid-cols-[minmax(0,1fr)]">
           <section
             aria-label={t("offers.tray")}
             className="rounded-[24px] bg-[linear-gradient(120deg,var(--sapil-p-pink)_0%,var(--sapil-p-peach)_60%,var(--sapil-p-butter)_100%)] px-[20px] py-[18px]"

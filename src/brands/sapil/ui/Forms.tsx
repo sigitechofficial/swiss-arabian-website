@@ -41,7 +41,7 @@ export function FieldGrid({ className, ...rest }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       {...rest}
-      className={cx("grid grid-cols-[repeat(2,minmax(0,1fr))] gap-y-[14px] gap-x-[16px] clear-both max-900:grid-cols-[1fr]", className)}
+      className={cx("grid grid-cols-[repeat(2,minmax(0,1fr))] gap-y-[14px] gap-x-[16px] clear-both max-900:grid-cols-[minmax(0,1fr)]", className)}
     />
   );
 }

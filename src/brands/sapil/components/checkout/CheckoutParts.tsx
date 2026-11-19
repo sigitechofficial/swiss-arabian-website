@@ -323,7 +323,7 @@ export function ReviewBlock({ rows }: { rows: Array<{ label: string; value: Reac
       {rows.map((row) => (
         <div
           key={row.label}
-          className="grid grid-cols-[110px_1fr_auto] gap-[16px] items-baseline py-[16px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[1fr_auto] max-900:gap-y-[4px] max-900:gap-x-[12px]"
+          className="grid grid-cols-[110px_minmax(0,1fr)_auto] gap-[16px] items-baseline py-[16px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[minmax(0,1fr)_auto] max-900:gap-y-[4px] max-900:gap-x-[12px]"
         >
           <dt className="text-sapil-muted text-[14px] max-900:col-span-full">{row.label}</dt>
           <dd className="min-w-0 break-words">{row.value}</dd>
@@ -417,7 +417,7 @@ export function OrderSummary({
           <li
             key={line.key}
             style={line.tile ? ({ "--sapil-tile": `var(--sapil-p-${line.tile})` } as CSSProperties) : undefined}
-            className="grid grid-cols-[68px_1fr_auto] gap-[14px] items-center py-[12px] border-b border-sapil-line"
+            className="grid grid-cols-[68px_minmax(0,1fr)_auto] gap-[14px] items-center py-[12px] border-b border-sapil-line"
           >
             <span className="relative aspect-square rounded-[14px] bg-sapil-tile grid place-items-center">
               {line.imageSrc ? (

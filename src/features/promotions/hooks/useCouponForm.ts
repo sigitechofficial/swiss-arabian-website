@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useCouponMutations } from "@/features/cart/hooks/useCouponMutations";
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { ApiClientError } from "@/lib/api/apiError";
@@ -17,6 +18,7 @@ import { couponLoginHref, peekPendingCoupon, takePendingCoupon } from "../utils/
  * quote, the code waiting for sign-in, and the shopper-facing error.
  */
 export function useCouponForm() {
+  const t = useShopCopy();
   const pathname = usePathname();
   const router = useLocaleRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -79,7 +81,7 @@ export function useCouponForm() {
     }
   }
 
-  const appliedView = applied ? appliedPromotionView(applied, promotions) : null;
+  const appliedView = applied ? appliedPromotionView(applied, promotions, t) : null;
 
   return {
     cartId,

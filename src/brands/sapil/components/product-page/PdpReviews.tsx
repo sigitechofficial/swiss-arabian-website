@@ -101,7 +101,7 @@ export function PdpReviews({
                           applyFilters({ rating: on ? null : n });
                         }}
                         className={cx(
-                          "w-full grid grid-cols-[62px_1fr_34px] items-center gap-[12px] text-[14px] rounded-[10px] py-[3px] px-[6px] -mx-[6px] text-start [transition:background_.2s] enabled:hover:bg-sapil-paper disabled:cursor-default",
+                          "w-full grid grid-cols-[62px_minmax(0,1fr)_34px] items-center gap-[12px] text-[14px] rounded-[10px] py-[3px] px-[6px] -mx-[6px] text-start [transition:background_.2s] enabled:hover:bg-sapil-paper disabled:cursor-default",
                           on && "bg-sapil-paper font-[700]",
                         )}
                       >

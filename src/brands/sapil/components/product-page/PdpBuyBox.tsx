@@ -208,7 +208,7 @@ export function PdpBuyBox({
             {rows.map((row) => (
               <div
                 key={row.layer}
-                className="grid grid-cols-[120px_1fr] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 max-900:grid-cols-1 max-900:gap-[8px]"
+                className="grid grid-cols-[120px_minmax(0,1fr)] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 max-900:grid-cols-1 max-900:gap-[8px]"
               >
                 <dt className="font-[600] text-[15px] leading-[1.2]">
                   {layerLabel[row.layer]}

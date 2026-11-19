@@ -81,7 +81,7 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
                 return (
                   <dl key={key} className="border-t border-sapil-line">
                     {block.rows.map((row) => (
-                      <div key={row.label} className="grid grid-cols-[110px_1fr] gap-[12px] py-[12px] border-b border-sapil-line text-[15px]">
+                      <div key={row.label} className="grid grid-cols-[110px_minmax(0,1fr)] gap-[12px] py-[12px] border-b border-sapil-line text-[15px]">
                         <dt className={cx(EYEBROW, "pt-[3px]")}>{row.label}</dt>
                         <dd className="text-sapil-ink">{row.notes}</dd>
                       </div>

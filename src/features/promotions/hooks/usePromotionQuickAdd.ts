@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "@/components/ui/Toaster";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { addCartItem } from "@/features/cart/api/cart.service";
 import { useCartStore } from "@/stores/useCartStore";
@@ -25,6 +27,7 @@ function scrollParent(node: HTMLElement): HTMLElement | null {
  * rail's outer element.
  */
 export function usePromotionQuickAdd({ surface = "cart", holdPosition = false }: { surface?: string; holdPosition?: boolean } = {}) {
+  const t = useShopCopy();
   const { data } = useApplicablePromotions();
   const recommendations = data?.recommendations;
   const cartId = useCartStore((state) => state.cartId);
@@ -79,6 +82,7 @@ export function usePromotionQuickAdd({ surface = "cart", holdPosition = false }:
         setCartFromApi(cart);
         trackPromotion("promotion_recommendation_added", tracking);
       })
+      .catch(() => toast(t("promotions.addFailed"), "error"))
       .finally(() => {
         setBusy(null);
         if (holdRef.current) holdRef.current.until = performance.now() + HOLD_SETTLE_MS;

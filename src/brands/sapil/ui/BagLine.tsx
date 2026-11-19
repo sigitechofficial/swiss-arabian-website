@@ -54,7 +54,7 @@ export function BagLine({
   return (
     <div
       style={tintStyle("--sapil-tile", tile)}
-      className="grid grid-cols-[72px_1fr_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
+      className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
     >
       <LinkComponent
         href={href}
