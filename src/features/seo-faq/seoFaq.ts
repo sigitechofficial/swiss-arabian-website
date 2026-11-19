@@ -28,13 +28,7 @@ export function seoFaqView(content: SeoFaqContent | null | undefined, fallbackLo
   return { entries, lang, dir: dir(lang) };
 }
 
-/** Answer paragraphs (a blank line starts a new one). */
-export function answerParagraphs(answer: string): string[] {
-  return answer
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
+export { answerHtml, answerParagraphs, answerText } from "./seoFaqText";
 
 /** The home page FAQ for a market and language; null when off, empty or unreachable. */
 export const loadHomeFaq = cache(async (locale: string, zoneCode: string): Promise<SeoFaqContent | null> => {

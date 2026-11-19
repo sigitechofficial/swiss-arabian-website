@@ -14,6 +14,19 @@ function text(html: string): string {
     .trim();
 }
 
+/**
+ * Imported pages often start with their own title ("Refund Policy") right under
+ * the page's H1 ("Refund policy"). That first heading is dropped when it says
+ * the same thing (case and spacing ignored); any other first heading stays.
+ */
+export function dropRepeatedTitle(html: string, title: string): string {
+  // The heading may sit inside wrapper elements (<div><h2>…); those are kept.
+  const first = /^(\s*(?:<(?:div|section|article)\b[^>]*>\s*)*)<(h[2-4])\b[^>]*>([\s\S]*?)<\/\2>/i.exec(html);
+  if (!first) return html;
+  const same = (s: string) => text(s).toLocaleLowerCase();
+  return same(first[3]) === same(title) ? first[1] + html.slice(first[0].length) : html;
+}
+
 export function splitHtmlSections(html: string): HtmlSections {
   const matches = [...html.matchAll(HEADING)];
   if (!matches.length) return { intro: html, sections: [] };
@@ -35,4 +48,27 @@ export function isQuestionList(split: HtmlSections): boolean {
   if (n < 3) return false;
   const questions = split.sections.filter((s) => /[?؟]\s*$/.test(s.title)).length;
   return questions / n >= 0.6;
+}
+
+/** A question list cut into groups: a heading with no text of its own titles the questions after it. */
+export type QuestionGroup = { title: string | null; items: HtmlSections["sections"] };
+
+/**
+ * Policies often group their questions under section headings ("Return Policy",
+ * "Refund Policy"). Those headings have no text of their own, so they become
+ * group titles instead of empty accordion rows.
+ */
+export function groupQuestionSections(split: HtmlSections): QuestionGroup[] {
+  const groups: QuestionGroup[] = [];
+  let current: QuestionGroup = { title: null, items: [] };
+  for (const section of split.sections) {
+    if (!text(section.html)) {
+      if (current.title || current.items.length) groups.push(current);
+      current = { title: section.title, items: [] };
+    } else {
+      current.items.push(section);
+    }
+  }
+  if (current.title || current.items.length) groups.push(current);
+  return groups.filter((g) => g.items.length);
 }

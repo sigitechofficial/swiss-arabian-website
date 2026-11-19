@@ -127,7 +127,9 @@ export type ArticleBlock =
   | { type: "h2"; text: string }
   | { type: "notes"; rows: NoteRow[] }
   | { type: "wear"; text: string }
-  | { type: "quote"; text: string };
+  | { type: "quote"; text: string }
+  /** HTML from the admin rich-text editor, already cleaned (allow-list) when loaded. */
+  | { type: "rich"; html: string };
 
 export type BlogArticleDetail = {
   slug: string;

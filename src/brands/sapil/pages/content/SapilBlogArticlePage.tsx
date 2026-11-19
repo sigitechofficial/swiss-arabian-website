@@ -101,6 +101,9 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
                     <p>&ldquo;{block.text}&rdquo;</p>
                   </blockquote>
                 );
+              case "rich":
+                // Same gap between the block's own paragraphs, headings, video and tables as between blocks.
+                return <div key={key} className="[&>*+*]:mt-[1em]" dangerouslySetInnerHTML={{ __html: block.html }} />;
               default:
                 return null;
             }

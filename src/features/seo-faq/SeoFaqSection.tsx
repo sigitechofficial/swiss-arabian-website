@@ -1,6 +1,7 @@
 import { getTranslator } from "@/lib/i18n/messages";
 import { sectionTitle } from "@/styles/landingChrome";
-import { answerParagraphs, type SeoFaqView } from "./seoFaq";
+import type { SeoFaqView } from "./seoFaq";
+import { answerHtml } from "./seoFaqText";
 
 /**
  * Visible FAQ section (home page, collection pages). Server-rendered: every
@@ -34,13 +35,10 @@ export async function SeoFaqSection({ faq }: { faq: SeoFaqView }) {
                   +
                 </span>
               </summary>
-              <div className="pb-5 text-[14px] leading-relaxed text-[var(--ink-2)]">
-                {answerParagraphs(entry.answer).map((p, i) => (
-                  <p key={i} className="mt-2 whitespace-pre-line first:mt-0">
-                    {p}
-                  </p>
-                ))}
-              </div>
+              <div
+                className="site-page-body pb-5 text-[14px] leading-relaxed text-[var(--ink-2)] [&_p+p]:mt-2"
+                dangerouslySetInnerHTML={{ __html: answerHtml(entry.answer) }}
+              />
             </details>
           ))}
         </div>
