@@ -1,13 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
 import type { ReturnEstimate } from "../types/afterSales";
-import { afterSalesCopyText } from "../utils/afterSalesCopy";
 import { afterSalesErrorMessage } from "../utils/afterSalesErrors";
+import { returnEstimateView } from "../utils/returnEstimateView";
 
 type ReturnEstimatePanelProps = {
   estimate: ReturnEstimate | undefined;
@@ -61,8 +60,6 @@ export function ReturnEstimatePanel({
 }: ReturnEstimatePanelProps) {
   const t = useShopCopy();
   const locale = useShopLocale();
-  const copy = (item: Parameters<typeof afterSalesCopyText>[0]) =>
-    afterSalesCopyText(item, t, locale);
 
   let body: ReactNode;
   if (empty) {
@@ -76,100 +73,16 @@ export function ReturnEstimatePanel({
       </p>
     );
   } else {
-    const e = estimate;
-    const money = (amount: string) => formatMoney(Number(amount), e.currencyCode);
-    const minus = (amount: string) => `− ${money(amount)}`;
-    const {
-      returnShippingFee,
-      restockingFee,
-      freeGift,
-      spentPoints,
-      offerAdjustment,
-      deliveryCharge,
-    } = e.deductions;
-    const giftNames = freeGift.gifts
-      .map((gift) => gift.productName || gift.sku)
-      .filter(Boolean)
-      .join(", ");
-    const requiredGiftIds = e.giftRequirement.gifts.map((gift) => gift.orderLineId);
-
+    const view = returnEstimateView(estimate, t, locale);
     body = (
       <>
         <div className="divide-y divide-sa-border">
-          <Row
-            label={t("returnEstimate.items")}
-            value={money(e.taxIncluded ? e.itemsTotal : e.itemsAmount)}
-            hint={
-              e.taxIncluded && Number(e.taxAmount) > 0
-                ? t("returnEstimate.vatIncluded", { money: money(e.taxAmount) })
-                : undefined
-            }
-          />
-          {!e.taxIncluded && Number(e.taxAmount) > 0 ? (
-            <Row label={t("returnEstimate.vat")} value={money(e.taxAmount)} />
-          ) : null}
-          <Row
-            label={t("returnEstimate.delivery")}
-            value={e.delivery.refunded ? money(e.delivery.amount) : t("returnEstimate.notRefunded")}
-            hint={copy(e.delivery.message)}
-          />
-          {Number(returnShippingFee.amount) > 0 || returnShippingFee.waived ? (
-            <Row
-              label={t("returnEstimate.returnShippingFee")}
-              value={
-                returnShippingFee.waived
-                  ? t("returnEstimate.waived")
-                  : minus(returnShippingFee.amount)
-              }
-            />
-          ) : null}
-          {Number(restockingFee.amount) > 0 || restockingFee.waived ? (
-            <Row
-              label={t("returnEstimate.restockingFee", { percent: restockingFee.percent })}
-              value={restockingFee.waived ? t("returnEstimate.waived") : minus(restockingFee.amount)}
-            />
-          ) : null}
-          {Number(freeGift.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.freeGift")}
-              value={minus(freeGift.amount)}
-              hint={giftNames || undefined}
-            />
-          ) : null}
-          {offerAdjustment && Number(offerAdjustment.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.offerAdjustment")}
-              value={minus(offerAdjustment.amount)}
-            />
-          ) : null}
-          {deliveryCharge && Number(deliveryCharge.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.deliveryCharge")}
-              value={minus(deliveryCharge.amount)}
-            />
-          ) : null}
-          {e.deliveryCredit && Number(e.deliveryCredit.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.deliveryCredit")}
-              value={`+ ${money(e.deliveryCredit.amount)}`}
-            />
-          ) : null}
-          {e.offerCredit && Number(e.offerCredit.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.offerCredit")}
-              value={`+ ${money(e.offerCredit.amount)}`}
-            />
-          ) : null}
-          {Number(spentPoints.amount) > 0 ? (
-            <Row
-              label={t("returnEstimate.spentPoints", { points: spentPoints.points })}
-              value={minus(spentPoints.amount)}
-            />
-          ) : null}
-          <Row strong label={t("returnEstimate.total")} value={money(e.estimatedRefund)} />
+          {view.rows.map((row) => (
+            <Row key={row.key} strong={row.strong} label={row.label} value={row.value} hint={row.hint} />
+          ))}
         </div>
 
-        {e.giftRequirement.required ? (
+        {view.giftRequired ? (
           <div
             className="flex flex-col gap-2 border border-terra/40 bg-section-soft p-3"
             role="alert"
@@ -184,7 +97,7 @@ export function ReturnEstimatePanel({
               <button
                 type="button"
                 className={`${accountBtnGhost} self-start`}
-                onClick={() => onAddGift(requiredGiftIds)}
+                onClick={() => onAddGift(view.giftRequired!.lineIds)}
               >
                 {t("returnEstimate.addGift")}
               </button>
@@ -193,15 +106,15 @@ export function ReturnEstimatePanel({
         ) : null}
 
         <ul className="flex list-disc flex-col gap-1 ps-5 text-[12px] leading-relaxed text-sa-muted">
-          {e.notes.map((note) => (
-            <li key={`${note.key}.${note.variant}`}>{copy(note)}</li>
+          {view.notes.map((note) => (
+            <li key={note.key}>{note.text}</li>
           ))}
         </ul>
         <div className="flex flex-col gap-1">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
             {t("returnEstimate.whereMoneyGoes")}
           </p>
-          <p className="text-[12px] leading-relaxed text-sa-muted">{copy(e.refundDestination)}</p>
+          <p className="text-[12px] leading-relaxed text-sa-muted">{view.destination}</p>
         </div>
       </>
     );

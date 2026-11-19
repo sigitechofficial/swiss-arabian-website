@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ReturnEstimate } from "../types/afterSales";
-import { ReturnRequestForm, toReturnEstimateDto } from "./ReturnRequestForm";
+import { toReturnEstimateDto } from "../utils/requestDtos";
+import { ReturnRequestForm } from "./ReturnRequestForm";
 
 const estimateState = vi.hoisted(() => ({
   data: undefined as ReturnEstimate | undefined,

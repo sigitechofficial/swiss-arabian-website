@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type Ref,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 import { cx } from "./shared";
 
@@ -145,6 +146,31 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
       ) : (
         control
       )}
+    </Shell>
+  );
+}
+
+export type TextAreaFieldProps = FieldShell &
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className"> & {
+    /** the textarea element (React 19 ref prop; react-hook-form `register` passes one) */
+    ref?: Ref<HTMLTextAreaElement>;
+  };
+
+/** v9 `.fld` for several lines of text: same shell and border as Field. */
+export function TextAreaField({ label, optional, error, wide, className, id, rows = 3, ...area }: TextAreaFieldProps) {
+  const auto = useId();
+  const fid = id ?? auto;
+  const errorId = `${fid}-err`;
+  return (
+    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
+      <textarea
+        {...area}
+        id={fid}
+        rows={rows}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : area["aria-describedby"]}
+        className={cx(CONTROL, "h-auto py-[12px] rounded-[14px] resize-y", error ? "border-sapil-sale" : "border-sapil-line-2")}
+      />
     </Shell>
   );
 }

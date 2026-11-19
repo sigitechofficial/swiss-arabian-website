@@ -1,17 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
-import {
-  useCustomerAfterSalesOptions,
-  useCustomerExchangesFeed,
-  useCustomerReturnsFeed,
-} from "../hooks/useAfterSales";
+import { useOrderAfterSales } from "../hooks/useOrderAfterSales";
 import type { AfterSalesOrderLine } from "../types/afterSales";
-import { resolveAfterSalesActions } from "../utils/afterSalesOptions";
-import { isOrderEligibleForAfterSales } from "../utils/eligibility";
 import {
   ExchangeRequestCard,
   ReturnRequestCard,
@@ -34,24 +27,12 @@ export function OrderAfterSalesSection({
   lines,
 }: OrderAfterSalesSectionProps) {
   const t = useShopCopy();
-  const [form, setForm] = useState<"return" | "exchange" | null>(null);
-  const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
-  const returns = useCustomerReturnsFeed(null, orderId);
-  const exchanges = useCustomerExchangesFeed(null, orderId);
-
-  const returnItems = useMemo(
-    () => returns.data?.pages.flatMap((page) => page.items) ?? [],
-    [returns.data],
-  );
-  const exchangeItems = useMemo(
-    () => exchanges.data?.pages.flatMap((page) => page.items) ?? [],
-    [exchanges.data],
-  );
-
-  const options = useCustomerAfterSalesOptions(orderId);
-  const actions = resolveAfterSalesActions(options.data, eligible, t);
-  const canReturn = actions.canReturn && lines.length > 0;
-  const canExchange = actions.canExchange && lines.length > 0;
+  const { form, setForm, eligible, canReturn, canExchange, notes, returnItems, exchangeItems } = useOrderAfterSales({
+    orderId,
+    status,
+    fulfillmentStatus,
+    lines,
+  });
 
   return (
     <section className="overflow-hidden border border-sa-border">
@@ -87,7 +68,7 @@ export function OrderAfterSalesSection({
             {t("afterSales.viewAll")}
           </LocaleLink>
         </div>
-        {actions.notes.map((note) => (
+        {notes.map((note) => (
           <p key={note} className="text-[13px] leading-relaxed text-sa-muted">
             {note}
           </p>

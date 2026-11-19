@@ -1,6 +1,8 @@
 "use client";
 
+import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
 import { useGuestTracking, useTrackLookup } from "@/features/tracking/hooks/useOrderTrackingLookup";
+import { SapilGuestAfterSales } from "../../components/afterSales/SapilAfterSales";
 import { Button, Field, Wrap } from "../../ui";
 import { buttonClass } from "../../ui/Button";
 import { useSapilCopy } from "../../i18n/SapilCopy";
@@ -112,6 +114,20 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
         steps={step >= 0 ? orderSteps(t, step) : undefined}
         stopped={step < 0 ? stoppedText(t, summary.status) : undefined}
         notices={<TrackingDetails summary={summary} timeline={tracking.timeline} />}
+        after={
+          // Opened with the order's access token (a guest): returns and exchanges here, as on Swiss Arabian.
+          tracking.viaGuestToken && tracking.token ? (
+            <div className="mt-[20px]">
+              <SapilGuestAfterSales
+                orderNumber={summary.orderNumber}
+                orderAccessToken={tracking.token}
+                status={summary.status}
+                fulfillmentStatus={summary.fulfillmentStatus}
+                lines={guestAfterSalesLines({ shipments: summary.shipments })}
+              />
+            </div>
+          ) : null
+        }
         actions={
           <>
             {tracking.ownOrder ? (

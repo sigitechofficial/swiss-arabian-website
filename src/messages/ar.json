@@ -1643,5 +1643,6 @@
   "promotions.applied.freeShipping": "توصيل مجاني",
   "promotions.applied.offer": "عرض",
   "promotions.addFailed": "تعذّرت الإضافة إلى حقيبتك. يُرجى المحاولة مرة أخرى.",
-  "promotions.previewFailed": "تعذّر احتساب هذا السعر. يُرجى المحاولة مرة أخرى."
+  "promotions.previewFailed": "تعذّر احتساب هذا السعر. يُرجى المحاولة مرة أخرى.",
+  "afterSales.quantityOf": "كمية {name}"
 }

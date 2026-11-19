@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   AccountStatusPill,
@@ -18,9 +17,7 @@ import type {
 } from "../types/afterSales";
 import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
 import { afterSalesOptionLabel, afterSalesStatusLabel } from "../utils/eligibility";
-import { formatOrderDate } from "@/features/orders/utils/orderStatus";
-import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
-import { formatMarketDate } from "@/lib/format/marketDate";
+import { useRequestDate } from "../hooks/useRequestDate";
 
 function statusTone(status: string): AccountStatusTone {
   switch (status?.toUpperCase()) {
@@ -34,16 +31,6 @@ function statusTone(status: string): AccountStatusTone {
     default:
       return "muted";
   }
-}
-
-/** "en-AE" short date in English (as before); the page's language otherwise. */
-function useRequestDate() {
-  const locale = useShopLocale();
-  const timeZone = useMarketTimeZone();
-  return (iso: string) =>
-    locale === "en"
-      ? formatMarketDate(iso, "en-AE", timeZone, { year: "numeric", month: "short", day: "numeric" })
-      : formatOrderDate(iso, { locale, timeZone });
 }
 
 export function ReturnRequestCard({

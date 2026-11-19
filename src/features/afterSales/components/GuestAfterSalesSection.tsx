@@ -1,17 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { accountBtnGhost } from "@/features/account/constants/accountForm";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { getStoredGuestOrderLines } from "@/features/checkout/utils/checkoutSession";
-import {
-  useGuestAfterSalesOptions,
-  useGuestExchanges,
-  useGuestReturns,
-} from "../hooks/useAfterSales";
+import { useGuestOrderAfterSales } from "../hooks/useOrderAfterSales";
 import type { AfterSalesOrderLine } from "../types/afterSales";
-import { resolveAfterSalesActions } from "../utils/afterSalesOptions";
-import { isOrderEligibleForAfterSales } from "../utils/eligibility";
 import {
   GuestExchangeRequestCard,
   GuestReturnRequestCard,
@@ -36,19 +28,18 @@ export function GuestAfterSalesSection({
   lines,
 }: GuestAfterSalesSectionProps) {
   const t = useShopCopy();
-  const [form, setForm] = useState<"return" | "exchange" | null>(null);
-  const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
-  const returns = useGuestReturns(orderNumber, orderAccessToken);
-  const exchanges = useGuestExchanges(orderNumber, orderAccessToken);
-  const creatableLines =
-    lines.length > 0 ? lines : getStoredGuestOrderLines(orderNumber);
-  const options = useGuestAfterSalesOptions(orderNumber, orderAccessToken);
-  const actions = resolveAfterSalesActions(options.data, eligible, t);
-  const hasLines = creatableLines.length > 0;
-  const canReturn = actions.canReturn && hasLines;
-  const canExchange = actions.canExchange && hasLines;
-  const returnItems = returns.data?.items ?? [];
-  const exchangeItems = exchanges.data?.items ?? [];
+  const {
+    form,
+    setForm,
+    eligible,
+    lines: creatableLines,
+    canReturn,
+    canExchange,
+    noLines,
+    notes,
+    returnItems,
+    exchangeItems,
+  } = useGuestOrderAfterSales({ orderNumber, orderAccessToken, status, fulfillmentStatus, lines });
 
   return (
     <section className="overflow-hidden border border-sa-border bg-page">
@@ -80,12 +71,12 @@ export function GuestAfterSalesSection({
             ) : null}
           </div>
         ) : null}
-        {(actions.canReturn || actions.canExchange) && !hasLines ? (
+        {noLines ? (
           <p className="text-[13px] leading-relaxed text-sa-muted">
             {t("afterSales.guestNoLines")}
           </p>
         ) : null}
-        {actions.notes.map((note) => (
+        {notes.map((note) => (
           <p key={note} className="text-[13px] leading-relaxed text-sa-muted">
             {note}
           </p>

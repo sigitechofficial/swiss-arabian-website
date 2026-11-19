@@ -8,6 +8,7 @@ import { cx } from "../../ui/shared";
 import { useSapilCopy, type SapilTranslator } from "../../i18n/SapilCopy";
 import type { SapilCopyKey } from "../../i18n/catalog";
 import { SapilLink } from "../commerce/shared";
+import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
 
 /**
  * Account sections Sapil links to. Loyalty / rewards, subscriptions, employee
@@ -43,14 +44,30 @@ const TONE: Record<string, string> = {
   PAYMENT_PENDING: "bg-sapil-p-butter text-sapil-ink",
   MANUAL_REVIEW: "bg-sapil-p-butter text-sapil-ink",
   REFUND_PENDING: "bg-sapil-p-butter text-sapil-ink",
+  // return and exchange requests
+  REQUESTED: "bg-sapil-p-butter text-sapil-ink",
+  PENDING_REVIEW: "bg-sapil-p-butter text-sapil-ink",
+  APPROVED: "bg-sapil-ok-soft text-sapil-ok",
+  COMPLETED: "bg-sapil-ok-soft text-sapil-ok",
+  REJECTED: "bg-sapil-p-peach text-sapil-sale",
 };
 
-export function StatusPill({ status, label }: { status: string; label: string }) {
+/** A shared status tone (refund states, …) in Sapil's colours. */
+const SHARED_TONE: Record<AccountStatusTone, string> = {
+  success: "bg-sapil-ok-soft text-sapil-ok",
+  warning: "bg-sapil-p-butter text-sapil-ink",
+  danger: "bg-sapil-p-peach text-sapil-sale",
+  accent: "bg-sapil-accent-soft text-sapil-accent",
+  muted: "bg-sapil-paper text-sapil-ink-2",
+};
+
+/** A status in a pill: coloured by `tone` when given, else by the order / request status. */
+export function StatusPill({ status, label, tone }: { status?: string; label: string; tone?: AccountStatusTone }) {
   return (
     <span
       className={cx(
         "inline-flex items-center py-[3px] px-[10px] rounded-full text-[12px] font-[600]",
-        TONE[status.toUpperCase()] ?? "bg-sapil-accent-soft text-sapil-accent",
+        tone ? SHARED_TONE[tone] : (TONE[(status ?? "").toUpperCase()] ?? "bg-sapil-accent-soft text-sapil-accent"),
       )}
     >
       {label}

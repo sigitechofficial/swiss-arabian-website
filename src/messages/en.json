@@ -1596,5 +1596,6 @@
   "promotions.applied.freeShipping": "Free shipping",
   "promotions.applied.offer": "Offer",
   "promotions.addFailed": "We couldn’t add that to your bag. Please try again.",
-  "promotions.previewFailed": "We couldn’t work out this price. Please try again."
+  "promotions.previewFailed": "We couldn’t work out this price. Please try again.",
+  "afterSales.quantityOf": "Quantity of {name}"
 }

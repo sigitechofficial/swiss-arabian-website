@@ -38,6 +38,7 @@ import { AccountPage, Card, LoadError, SAPIL_ACCOUNT_NAV, StatusPill, statusText
 import { PasswordField } from "../../components/account/AuthFields";
 import { SapilProductCard } from "../../components/product";
 import { FormMessage } from "../../components/account/FormCard";
+import { SapilExchangeCard, SapilReturnCard } from "../../components/afterSales/SapilAfterSalesCards";
 
 const linkBtn = cx(buttonClass("link"), "!text-[14px]");
 
@@ -766,36 +767,13 @@ export function SapilAccountReviewsPage() {
 
 export function SapilAccountAfterSalesPage() {
   const t = useSapilCopy();
-  const date = useSapilDate();
   const [kind, setKind] = useState<"returns" | "exchanges">("returns");
   const returns = useCustomerReturnsFeed(null);
   const exchanges = useCustomerExchangesFeed(null);
   const feed = kind === "returns" ? returns : exchanges;
-  const rows = useMemo(
-    () =>
-      kind === "returns"
-        ? (returns.data?.pages.flatMap((p) => p.items) ?? []).map((r) => ({
-            id: r.returnRequestId,
-            number: r.returnNumber,
-            orderId: r.orderId,
-            orderNumber: r.orderNumber,
-            status: r.status,
-            message: r.latestStatusMessage,
-            itemCount: r.itemCount,
-            createdAt: r.createdAt,
-          }))
-        : (exchanges.data?.pages.flatMap((p) => p.items) ?? []).map((r) => ({
-            id: r.exchangeRequestId,
-            number: r.exchangeNumber,
-            orderId: r.orderId,
-            orderNumber: r.orderNumber,
-            status: r.status,
-            message: r.latestStatusMessage,
-            itemCount: r.itemCount,
-            createdAt: r.createdAt,
-          })),
-    [kind, returns.data, exchanges.data],
-  );
+  const returnItems = useMemo(() => returns.data?.pages.flatMap((p) => p.items) ?? [], [returns.data]);
+  const exchangeItems = useMemo(() => exchanges.data?.pages.flatMap((p) => p.items) ?? [], [exchanges.data]);
+  const empty = kind === "returns" ? !returnItems.length : !exchangeItems.length;
   return (
     <AccountPage crumb={t("account.returnsTitle")} title={t("account.returnsTitle")} lede={t("account.returnsLede")}>
       <div className="flex gap-[8px] flex-wrap mb-[20px]" role="group" aria-label={t("account.returnsTitle")}>
@@ -810,34 +788,24 @@ export function SapilAccountAfterSalesPage() {
         <Loading />
       ) : feed.isError ? (
         <LoadError onRetry={() => void feed.refetch()} />
-      ) : !rows.length ? (
+      ) : empty ? (
         <Card className="text-center">
           <p className="text-sapil-ink-2">{t("account.returnsEmpty")}</p>
         </Card>
       ) : (
-        <ul className="list-none bg-sapil-white rounded-[24px] py-[6px] px-[20px]">
-          {rows.map((row) => (
-            <li key={row.id} className="flex justify-between gap-[12px] flex-wrap py-[14px] border-b border-sapil-line last:border-b-0">
-              <div>
-                <b className="font-[700]" dir="ltr">
-                  {row.number}
-                </b>
-                <p className="text-[14px] text-sapil-ink-2">
-                  {t("account.returnsRequested", { date: date(row.createdAt) })} · {t("account.returnsItems", { count: row.itemCount })}
-                  {row.orderNumber ? (
-                    <>
-                      {" · "}
-                      <SapilLink href={`/account/orders/${encodeURIComponent(row.orderId)}`} className="underline" dir="ltr">
-                        {row.orderNumber}
-                      </SapilLink>
-                    </>
-                  ) : null}
-                </p>
-                {row.message ? <p className="text-[13px] text-sapil-muted mt-[2px]">{row.message}</p> : null}
-              </div>
-              <StatusPill status={row.status} label={statusText(t, row.status)} />
-            </li>
-          ))}
+        // Each request opens its items; an exchange shows its price difference (pay or refund status).
+        <ul className="list-none p-0 m-0 grid gap-[12px]">
+          {kind === "returns"
+            ? returnItems.map((item) => (
+                <li key={item.returnRequestId}>
+                  <SapilReturnCard item={item} />
+                </li>
+              ))
+            : exchangeItems.map((item) => (
+                <li key={item.exchangeRequestId}>
+                  <SapilExchangeCard item={item} />
+                </li>
+              ))}
         </ul>
       )}
       {feed.hasNextPage ? (

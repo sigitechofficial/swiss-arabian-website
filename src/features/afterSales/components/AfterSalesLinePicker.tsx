@@ -9,6 +9,7 @@ import type {
 import { accountInputClass } from "@/features/account/constants/accountForm";
 import { formErrorText } from "@/lib/i18n/formErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { afterSalesLineErrors } from "../hooks/useAfterSalesForms";
 import type { AfterSalesOrderLine } from "../types/afterSales";
 
 type AfterSalesLinePickerProps<T extends FieldValues> = {
@@ -30,34 +31,19 @@ export function AfterSalesLinePicker<T extends FieldValues>({
   const lines = watch("lines" as never) as unknown as
     | { selected?: boolean }[]
     | undefined;
+  const lineErrors = afterSalesLineErrors(errors as never);
 
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-[11px] font-semibold uppercase tracking-widest text-sa-muted">
         {t("afterSales.items")}
       </legend>
-      {typeof (errors.lines as { message?: string; root?: { message?: string } } | undefined)
-        ?.message === "string" ||
-      typeof (errors.lines as { root?: { message?: string } } | undefined)?.root
-        ?.message === "string" ? (
-        <p className="text-[12px] text-red-600">
-          {formErrorText(
-            t,
-            (errors.lines as { message?: string; root?: { message?: string } }).message ??
-              (errors.lines as { root?: { message?: string } }).root?.message,
-          )}
-        </p>
+      {lineErrors.list ? (
+        <p className="text-[12px] text-red-600">{formErrorText(t, lineErrors.list)}</p>
       ) : null}
       {catalog.map((line, index) => {
         const selected = lines?.[index]?.selected;
-        const lineErrors = (
-          errors.lines as Record<
-            number,
-            { quantity?: { message?: string }; replacementSku?: { message?: string } }
-          > | undefined
-        )?.[index];
-        const qtyError = lineErrors?.quantity?.message;
-        const skuError = lineErrors?.replacementSku?.message;
+        const { quantity: qtyError, replacementSku: skuError } = lineErrors.line(index);
         return (
           <div
             key={line.orderLineId}
@@ -85,6 +71,7 @@ export function AfterSalesLinePicker<T extends FieldValues>({
                   min={1}
                   max={line.quantity}
                   disabled={!selected}
+                  aria-label={t("afterSales.quantityOf", { name: line.productName ?? line.sku })}
                   className={accountInputClass}
                   {...register(`lines.${index}.quantity` as never, {
                     valueAsNumber: true,
