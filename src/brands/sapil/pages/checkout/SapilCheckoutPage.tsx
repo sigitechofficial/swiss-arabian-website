@@ -199,7 +199,7 @@ export function SapilCheckoutPage() {
         </p>
         <SapilSkeleton className="h-[18px] w-[180px] mb-[18px]" />
         <SapilSkeleton className="h-[52px] w-[260px] mb-[28px]" />
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[48px] max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[48px] max-900:grid-cols-[minmax(0,1fr)]">
           <SapilSkeleton className="h-[480px] !rounded-[24px] max-900:h-[320px]" />
           <SapilSkeleton className="h-[420px] !rounded-[28px] max-900:hidden" />
         </div>

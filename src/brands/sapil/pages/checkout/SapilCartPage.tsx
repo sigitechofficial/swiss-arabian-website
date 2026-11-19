@@ -34,7 +34,7 @@ export function SapilCartPage() {
     return (
       <Wrap className="w-full pt-[32px] pb-[88px] min-h-[70vh]" aria-busy="true">
         <SapilSkeleton className="h-[48px] w-[220px] mb-[24px]" />
-        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[minmax(0,1fr)]">
           <SapilSkeleton className="h-[320px] !rounded-[24px]" />
           <SapilSkeleton className="h-[320px] !rounded-[28px] max-900:hidden" />
         </div>
@@ -138,7 +138,7 @@ export function SapilCartPage() {
       </header>
       {/* Tiered offers: steps to the next reward, or what the bag saved (as on Swiss Arabian). */}
       <SapilPromoProgress surface="cart" className="mb-[20px]" />
-      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[1fr] max-900:gap-[20px]">
+      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[minmax(0,1fr)] max-900:gap-[20px]">
         <section aria-label={t("bag.title")} aria-live="polite" className="bg-sapil-white rounded-[24px] py-[6px] px-[24px] max-900:px-[16px] max-900:rounded-[20px]">
           {lineData.map((line) => (
             <BagLine
