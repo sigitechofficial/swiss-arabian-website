@@ -20,6 +20,7 @@ import { SapilPromoProgress } from "./SapilPromoProgress";
 import { SapilAppliedOffers } from "./SapilAppliedOffers";
 import { SapilEmptyBagPicks, SapilQuickAdd } from "./SapilBagPicks";
 import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
+import { SapilPendingPayment } from "./SapilPendingPayment";
 
 /**
  * Sapil's bag drawer (v9 `.drawer`). Rendered once by the Sapil shell; opens
@@ -137,6 +138,7 @@ export function SapilBagDrawer() {
         />
       }
       pointsNote={pointsNote}
+      notice={<SapilPendingPayment className="mt-[14px]" onNavigate={close} />}
       payLater={
         bag.quotePending || bag.allUnavailable || bag.amountDue == null ? undefined : (
           <TabbyPromoSnippet amount={bag.amountDue} currency={bag.currency} source="cart" />

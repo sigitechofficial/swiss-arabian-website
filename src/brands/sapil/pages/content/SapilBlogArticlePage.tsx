@@ -59,7 +59,7 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
         {article.heroImage ? (
           <Wrap>
             <div className="relative aspect-[16/7] rounded-[32px] overflow-hidden bg-sapil-sand max-900:aspect-[4/3] max-900:rounded-[24px]">
-              <MediaImage src={article.heroImage} alt="" fill preload sizes="(max-width: 1440px) 100vw, 1440px" className="object-cover" />
+              <MediaImage src={article.heroImage} alt={article.heroTitle} fill preload sizes="(max-width: 1440px) 100vw, 1440px" className="object-cover" />
             </div>
           </Wrap>
         ) : null}

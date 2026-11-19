@@ -61,6 +61,7 @@ function reviewsWording(t: Translator, brand: string) {
     yes: r("yes"),
     no: r("no"),
     reportThanks: r("reportThanks"),
+    actionFailed: r("actionFailed"),
     ratings: ["", r("ratings.1"), r("ratings.2"), r("ratings.3"), r("ratings.4"), r("ratings.5")],
     yourRating: r("yourRating"),
     starsOf: (n: number, label: string) => r("starsOf", { count: n, label }),

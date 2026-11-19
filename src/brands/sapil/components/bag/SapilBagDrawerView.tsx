@@ -69,6 +69,8 @@ export type SapilBagDrawerViewProps = {
   applied?: ReactNode;
   /** under checkout: the market's return terms line */
   termsNote?: ReactNode;
+  /** top of the drawer: a payment for this bag was started and not finished */
+  notice?: ReactNode;
   checkoutHref: string;
   checkoutBlocked?: boolean;
   syncing?: boolean;
@@ -97,6 +99,7 @@ export function SapilBagDrawerView({
   emptyExtra,
   applied,
   termsNote,
+  notice,
   checkoutHref,
   checkoutBlocked = false,
   syncing = false,
@@ -202,6 +205,7 @@ export function SapilBagDrawerView({
       ship={ship}
       footer={footer}
     >
+      {notice}
       {empty ? (
         <div className="text-center py-[64px] text-sapil-ink-2">
           <b className="block font-sapil-serif font-[400] text-[26px] text-sapil-ink mb-[8px]">{t("bag.emptyTitle")}</b>

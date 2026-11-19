@@ -20,6 +20,7 @@ import { PdpRelatedRail } from "../../components/product-page/PdpRelatedRail";
 import { PdpRecentlyViewed } from "../../components/product-page/PdpRecentlyViewed";
 import { PdpReviews } from "../../components/product-page/PdpReviews";
 import { StickyBuyBar } from "../../components/product-page/StickyBuyBar";
+import { PdpPrVideo } from "../../components/product-page/PdpPrVideo";
 
 /**
  * `/products/[handle]` (v9 product): gallery and buy box, notes journey,
@@ -145,6 +146,9 @@ export function SapilProductPage({
           product={product}
           cartLine={page.cartLine}
         />
+      ) : null}
+      {page.prVideo ? (
+        <PdpPrVideo video={page.prVideo} poster={page.galleryImages[0]} title={product.title} resetKey={page.slug} onError={page.markImageFailed} />
       ) : null}
     </CatalogRoot>
   );

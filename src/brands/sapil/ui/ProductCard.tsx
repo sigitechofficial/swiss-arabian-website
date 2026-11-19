@@ -50,6 +50,8 @@ export type ProductCardProps = {
   badge?: ReactNode;
   /** small round controls at the tile's top end corner (wishlist, quick view) */
   actions?: ReactNode;
+  /** under the price (e.g. "Notify me" when out of stock) */
+  footer?: ReactNode;
   headingLevel?: ElementType;
   LinkComponent?: SapilLinkComponent;
   className?: string;
@@ -85,6 +87,7 @@ export function ProductCard({
   addLabel,
   badge,
   actions,
+  footer,
   // Product names are not headings (SEO audit p10, p12); a page may still ask for one.
   headingLevel: H = "p",
   LinkComponent = DefaultLink,
@@ -163,6 +166,7 @@ export function ProductCard({
           <p className="text-[11px] tracking-[.12em] uppercase text-sapil-muted mt-[2px] mb-[6px]">{family}</p>
         )}
         <Price variant="card" value={price} was={was} wasLabel={wasLabel} />
+        {footer}
       </div>
     </article>
   );

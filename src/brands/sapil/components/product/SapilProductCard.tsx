@@ -12,6 +12,7 @@ import { toSapilCardModel } from "./productCardModel";
 import { SapilLocaleLink } from "./SapilLocaleLink";
 import { SapilQuickView } from "./SapilQuickView";
 import { SapilWishlistButton } from "./SapilWishlistButton";
+import { SapilStockAlert } from "../product-page/SapilStockAlert";
 
 export type CardImagePriority = "high" | "eager" | "lazy";
 
@@ -164,6 +165,15 @@ export function SapilProductCard({
         viewLabel={t("product.viewProduct", { name: model.name })}
         addLabel={t("product.addToBagNamed", { name: model.name })}
         actions={actions}
+        footer={
+          model.outOfStock && !model.unavailable ? (
+            <SapilStockAlert
+              compact
+              product={product}
+              className="mt-[6px] text-[13px] font-[600] text-sapil-accent underline underline-offset-[3px] hover:text-sapil-ink"
+            />
+          ) : undefined
+        }
         headingLevel={headingLevel}
         LinkComponent={SapilLocaleLink}
         className={cx(className)}

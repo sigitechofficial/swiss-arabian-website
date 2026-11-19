@@ -45,6 +45,7 @@ export { SapilSitePageRoute as SitePageRoute } from "./pages/content/SapilSitePa
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
 export { SapilReviewRequestPage as ReviewRequestPageView } from "./pages/content/SapilReviewRequestPage";
 export { SapilOfferPage as OfferPageView } from "./pages/content/SapilOfferPage";
+export { SapilReturnTermsPage as ReturnTermsPageView } from "./pages/content/SapilReturnTermsPage";
 export {
   SapilStoreLocatorPage as StoreLocatorPageView,
   SapilStoreAreaPage as StoreAreaPageView,

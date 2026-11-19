@@ -46,5 +46,6 @@ export { StoresPageView as StoreLocatorPageView, StoreAreaPageView } from "@/fea
 export { StorePageView } from "@/features/stores/components/StorePageView";
 export { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
 export { TrackLookupView } from "@/features/tracking/components/TrackLookupView";
+export { ReturnTermsPageView } from "@/features/afterSales/components/ReturnTermsPageView";
 export { AccountWishlistPageView } from "@/features/wishlist";
 export { BrandHead } from "./BrandHead";

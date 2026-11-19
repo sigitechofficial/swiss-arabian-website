@@ -13,12 +13,9 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useReviewsCopy } from "../i18n/reviewsCopy";
+import { useReviewActions } from "../hooks/useReviewActions";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
-import {
-  createCustomerReview,
-  markReviewHelpful,
-  reportReview,
-} from "../api/reviews.service";
+import { createCustomerReview } from "../api/reviews.service";
 import { usePdpReviewList } from "../hooks/usePdpReviewList";
 import { writeReviewSchema, type WriteReviewValues } from "../schemas/review.schema";
 import type {
@@ -74,48 +71,12 @@ function Who({ review, showBadge }: { review: StorefrontPublicReview; showBadge:
  * guests are sent to sign in and come back to the reviews.
  */
 function ReviewActions({ review }: { review: StorefrontPublicReview }) {
-  const router = useLocaleRouter();
-  const pathname = usePathname();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const t = useReviewsCopy();
-  const [count, setCount] = useState(review.helpfulCount);
-  const [marked, setMarked] = useState(false);
-  const [reported, setReported] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const needSignIn = () => {
-    if (isAuthenticated) return false;
-    router.push(`/login?returnTo=${encodeURIComponent(`${pathname}#pdp-reviews`)}`);
-    return true;
-  };
-  const toggleHelpful = async () => {
-    if (needSignIn() || busy) return;
-    setBusy(true);
-    try {
-      const next = await markReviewHelpful(review.reviewId, !marked);
-      setMarked(!marked);
-      setCount((n) => next ?? Math.max(0, n + (marked ? -1 : 1)));
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const sendReport = async () => {
-    if (needSignIn() || busy) return;
-    setBusy(true);
-    try {
-      await reportReview(review.reviewId);
-      setReported(true);
-      setConfirming(false);
-      toast(t.reportThanks, "success");
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { count, marked, reported, confirming, setConfirming, busy, toggleHelpful, sendReport } = useReviewActions(review, {
+    anchor: "pdp-reviews",
+    onError: toastApiError,
+    onReported: () => toast(t.reportThanks, "success"),
+  });
 
   return (
     <div className={c.rvActions}>

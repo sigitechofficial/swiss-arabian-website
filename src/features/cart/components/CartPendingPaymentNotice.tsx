@@ -1,7 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useCartStore } from "@/stores/useCartStore";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { usePendingPayment } from "../hooks/usePendingPayment";
 
 /**
  * The server says an unpaid order holds this bag (checkout QA-006): the shopper
@@ -10,9 +11,9 @@ import { useCartStore } from "@/stores/useCartStore";
  * the bag as it is. Same for every payment method.
  */
 export function CartPendingPaymentNotice({ compact = false }: { compact?: boolean }) {
-  const pending = useCartStore((s) => s.pendingPayment);
+  const t = useShopCopy();
+  const pending = usePendingPayment();
   if (!pending) return null;
-  const retryHref = `/checkout/payment/cancel?orderId=${encodeURIComponent(pending.orderId)}`;
   return (
     <div
       role="status"
@@ -20,15 +21,13 @@ export function CartPendingPaymentNotice({ compact = false }: { compact?: boolea
         compact ? "mx-4 my-3 px-4 py-3 text-[0.85rem]" : "mb-6 px-5 py-4 text-[0.92rem]"
       }`}
     >
-      <p className="font-medium">Payment for order {pending.orderNumber} isn’t finished.</p>
-      <p className="mt-1 text-[var(--ink-2,#6b5f53)]">
-        Your bag is saved with it. Finish paying, or change your bag to cancel that order.
-      </p>
+      <p className="font-medium">{t("cart.pendingPayment.title", { orderNumber: pending.orderNumber })}</p>
+      <p className="mt-1 text-[var(--ink-2,#6b5f53)]">{t("cart.pendingPayment.body")}</p>
       <LocaleLink
-        href={retryHref}
+        href={pending.href}
         className="mt-2 inline-block font-medium text-[var(--copper,#8c4435)] underline underline-offset-4"
       >
-        Complete payment
+        {t("cart.pendingPayment.action")}
       </LocaleLink>
     </div>
   );

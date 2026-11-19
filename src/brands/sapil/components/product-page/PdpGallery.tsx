@@ -76,7 +76,7 @@ export function PdpGallery({
               style={tintStyle("--sapil-tile", tile)}
               className="relative w-[84px] h-[84px] rounded-[16px] bg-sapil-tile overflow-hidden opacity-[.65] [transition:opacity_.2s,box-shadow_.2s] hover:opacity-100 hover:shadow-[0_0_0_2px_var(--sapil-ink)] aria-pressed:opacity-100 aria-pressed:shadow-[0_0_0_2px_var(--sapil-ink)] max-900:w-[64px] max-900:h-[64px] max-900:rounded-[12px]"
             >
-              <MediaImage src={src} alt="" fill sizes="84px" className="object-cover" onError={() => onImageError(src)} />
+              <MediaImage src={src} alt={t("product.imageAlt", { name })} fill sizes="84px" className="object-cover" onError={() => onImageError(src)} />
             </button>
           ))}
         </div>

@@ -22,6 +22,7 @@ import { noteRows, noteTone } from "./notes";
 import { PdpInstalments } from "./PdpInstalments";
 import { PdpOffers } from "./PdpOffers";
 import { PdpShare } from "./PdpShare";
+import { SapilStockAlert } from "./SapilStockAlert";
 
 export function BagIcon() {
   return (
@@ -152,10 +153,19 @@ export function PdpBuyBox({
 
       {/* The button keeps its label on one line: below ~200px of room it moves to its own row (SE-7). */}
       <div ref={addRowRef} data-sapil="buy-row" className={cx("flex flex-wrap gap-[12px] items-center", description && "mt-[24px]")}>
-        {purchase.needsAlert ? (
+        {purchase.needsAlert && purchase.unavailable ? (
           <button type="button" disabled className={cx(buttonClass("dark"), "flex-[1_1_200px] whitespace-nowrap !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}>
-            {purchase.unavailable ? t("product.unavailable") : t("product.outOfStock")}
+            {t("product.unavailable")}
           </button>
+        ) : purchase.needsAlert ? (
+          // Out of stock: say so, and offer an email when it's back (as on Swiss Arabian).
+          <>
+            <p className="basis-full text-[15px] font-[600] text-sapil-sale m-0">{t("product.outOfStock")}</p>
+            <SapilStockAlert
+              product={product}
+              className={cx(buttonClass("dark"), "flex-[1_1_200px] whitespace-nowrap !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}
+            />
+          </>
         ) : (
           <>
             <QuantityStepper
