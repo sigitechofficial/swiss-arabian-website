@@ -65,5 +65,9 @@
   "giftUnavailable": "This free gift is unavailable.",
   "giftRemoved": "This free gift was removed.",
   "giftIneligible": "This offer no longer includes a free gift.",
-  "giftFailed": "We couldn’t update your free gift. Try again."
+  "giftFailed": "We couldn’t update your free gift. Try again.",
+  "add": "Add",
+  "appliedOffers": "Applied offers",
+  "appliedRow": "Applied",
+  "offPercent": "{percent}% off"
 }

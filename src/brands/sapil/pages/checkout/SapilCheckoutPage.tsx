@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { SapilPromoProgress } from "../../components/bag/SapilPromoProgress";
+import { SapilAppliedOffers } from "../../components/bag/SapilAppliedOffers";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
@@ -500,6 +502,10 @@ export function SapilCheckoutPage() {
             extra={
               <>
                 {giftLines}
+                {/* Tiered offers, as on Swiss Arabian's checkout summary. */}
+                <SapilPromoProgress surface="checkout" className="mt-[12px]" />
+                {/* Offers applied to the order; its free gifts are already order lines. */}
+                <SapilAppliedOffers snapshot={f.promoSnapshot} hideGifts className="mt-[12px]" />
                 {f.leftOutCount > 0 ? (
                   <p className="mt-[10px] text-[13px] text-sapil-ink-2">{t("checkout.leftOut", { count: f.leftOutCount })}</p>
                 ) : null}

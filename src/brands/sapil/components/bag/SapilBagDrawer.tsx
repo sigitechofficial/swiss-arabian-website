@@ -16,6 +16,10 @@ import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SapilLink, useSapilMoney } from "../commerce/shared";
 import { toBagGiftData, toBagLineData, toFreeDelivery } from "./bagData";
 import { SapilBagDrawerView } from "./SapilBagDrawerView";
+import { SapilPromoProgress } from "./SapilPromoProgress";
+import { SapilAppliedOffers } from "./SapilAppliedOffers";
+import { SapilEmptyBagPicks, SapilQuickAdd } from "./SapilBagPicks";
+import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 
 /**
  * Sapil's bag drawer (v9 `.drawer`). Rendered once by the Sapil shell; opens
@@ -120,7 +124,18 @@ export function SapilBagDrawer() {
             ? t("bag.updating")
             : money(bag.amountDue, bag.currency)
       }
-      promoNote={progress?.primary?.message ?? progress?.unlockedSummary ?? undefined}
+      promoNote={progress ? <SapilPromoProgress surface="drawer" /> : undefined}
+      // As on Swiss Arabian: picks that unlock the next reward, offers applied,
+      // suggestions in an empty bag, and the return terms line.
+      afterLines={<SapilQuickAdd surface="drawer" holdPosition />}
+      applied={<SapilAppliedOffers />}
+      emptyExtra={<SapilEmptyBagPicks surface="empty-drawer" />}
+      termsNote={
+        <ReturnTermsNote
+          className="text-[12px] leading-[1.5] text-sapil-muted text-center mt-[10px]"
+          linkClassName="font-[600] text-sapil-accent underline underline-offset-[3px]"
+        />
+      }
       pointsNote={pointsNote}
       payLater={
         bag.quotePending || bag.allUnavailable || bag.amountDue == null ? undefined : (

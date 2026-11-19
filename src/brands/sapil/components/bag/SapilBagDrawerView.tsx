@@ -55,12 +55,20 @@ export type SapilBagDrawerViewProps = {
   subtotalWas?: ReactNode;
   delivery: ReactNode;
   total: ReactNode;
-  /** promotion progress message from the promotions API */
+  /** promotion progress: the tiered rail (SapilPromoProgress), or a plain message */
   promoNote?: ReactNode;
   /** reward points: using them, or a link to use them on the bag page */
   pointsNote?: ReactNode;
   /** Tabby's official snippet for the total (only where checkout offers Tabby) */
   payLater?: ReactNode;
+  /** under the lines: picks that unlock the next reward (SapilQuickAdd) */
+  afterLines?: ReactNode;
+  /** in the empty bag: suggestions to start again (SapilEmptyBagPicks) */
+  emptyExtra?: ReactNode;
+  /** above the totals: offers applied to the bag (SapilAppliedOffers) */
+  applied?: ReactNode;
+  /** under checkout: the market's return terms line */
+  termsNote?: ReactNode;
   checkoutHref: string;
   checkoutBlocked?: boolean;
   syncing?: boolean;
@@ -85,6 +93,10 @@ export function SapilBagDrawerView({
   promoNote,
   pointsNote,
   payLater,
+  afterLines,
+  emptyExtra,
+  applied,
+  termsNote,
   checkoutHref,
   checkoutBlocked = false,
   syncing = false,
@@ -126,10 +138,16 @@ export function SapilBagDrawerView({
   const footer = empty ? undefined : (
     <>
       {promoNote ? (
-        <p className="text-[13px] text-sapil-ok mb-[6px]" aria-live="polite">
-          {promoNote}
-        </p>
+        typeof promoNote === "string" ? (
+          <p className="text-[13px] text-sapil-ok mb-[6px]" aria-live="polite">
+            {promoNote}
+          </p>
+        ) : (
+          // The tiered progress (steps, rewards, meter): it announces its own changes.
+          <div className="mb-[10px] empty:hidden">{promoNote}</div>
+        )
       ) : null}
+      {applied}
       <SummaryRow
         label={t("bag.subtotal")}
         value={
@@ -169,6 +187,7 @@ export function SapilBagDrawerView({
       >
         {t("bag.continueShopping")}
       </button>
+      {termsNote}
     </>
   );
 
@@ -190,6 +209,7 @@ export function SapilBagDrawerView({
           <Button href={shopHref} LinkComponent={Link} onClick={onClose} className="!flex w-fit mx-auto mt-[24px]">
             {t("bag.emptyCta")}
           </Button>
+          {emptyExtra ? <div className="text-start mt-[40px]">{emptyExtra}</div> : null}
         </div>
       ) : (
         <>
@@ -226,6 +246,7 @@ export function SapilBagDrawerView({
           {gifts.map((gift) => (
             <GiftRow key={gift.key} gift={gift} />
           ))}
+          {afterLines}
         </>
       )}
     </Drawer>
