@@ -101,6 +101,8 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
                     <p>&ldquo;{block.text}&rdquo;</p>
                   </blockquote>
                 );
+              case "rich":
+                return <div key={key} dangerouslySetInnerHTML={{ __html: block.html }} />;
               default:
                 return null;
             }
