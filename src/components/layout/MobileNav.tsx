@@ -159,10 +159,10 @@ export function MobileNav({ items }: { items?: MobileNavItem[] }) {
 
       <div className="mt-auto border-t border-sa-border px-6 py-6">
         <ul className="flex flex-col gap-1 text-[15px] font-semibold uppercase tracking-wide">
-          {brandLinkEnabled("/stores") ? (
+          {brandLinkEnabled("/store-locator") ? (
           <li>
             <Link
-              href="/stores"
+              href="/store-locator"
               className="block py-3 text-sa-primary"
               onClick={close}
             >

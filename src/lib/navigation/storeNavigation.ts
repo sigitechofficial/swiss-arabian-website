@@ -36,7 +36,7 @@ export const accountTabNav: NavItem[] = [
 export const footerNav = {
   shop: primaryNav,
   help: [
-    { label: "Contact", href: "/stores" },
+    { label: "Contact", href: "/store-locator" },
     { label: "Account", href: "/account" },
   ],
 } as const;

@@ -46,7 +46,7 @@ describe("page structured data builders", () => {
       {
         id: "dalma",
         name: "Dalma Mall",
-        url: "/stores",
+        url: "/store-locator",
         streetAddress: " Unit 1, Dalma Mall, Abu Dhabi ",
         addressCountry: "AE",
         telephone: "+971 50 000 0000",
@@ -57,9 +57,9 @@ describe("page structured data builders", () => {
     );
     expect(plain(absolutizeJsonLd(full, ORIGIN))).toEqual({
       "@type": "Store",
-      "@id": `${ORIGIN}/stores#store-dalma`,
+      "@id": `${ORIGIN}/store-locator#store-dalma`,
       name: "Dalma Mall",
-      url: `${ORIGIN}/stores`,
+      url: `${ORIGIN}/store-locator`,
       address: { "@type": "PostalAddress", streetAddress: "Unit 1, Dalma Mall, Abu Dhabi", addressCountry: "AE" },
       geo: { "@type": "GeoCoordinates", latitude: 24.3, longitude: 54.5 },
       telephone: "+971 50 000 0000",
@@ -67,15 +67,15 @@ describe("page structured data builders", () => {
       parentOrganization: { "@type": "Organization", name: "Swiss Arabian" },
     });
 
-    const bare = storeJsonLd({ id: "k", name: "Kiosk", url: "/stores", geo: { latitude: NaN, longitude: 1 } });
-    expect(plain(bare)).toEqual({ "@type": "Store", "@id": "/stores#store-k", name: "Kiosk", url: "/stores" });
+    const bare = storeJsonLd({ id: "k", name: "Kiosk", url: "/store-locator", geo: { latitude: NaN, longitude: 1 } });
+    expect(plain(bare)).toEqual({ "@type": "Store", "@id": "/store-locator#store-k", name: "Kiosk", url: "/store-locator" });
   });
 
   it("stores: one graph with every store", () => {
     const data = storesJsonLd(
       [
-        { id: "a", name: "A", url: "/stores" },
-        { id: "b", name: "B", url: "/stores" },
+        { id: "a", name: "A", url: "/store-locator" },
+        { id: "b", name: "B", url: "/store-locator" },
       ],
       "Brand",
     );

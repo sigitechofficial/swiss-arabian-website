@@ -43,7 +43,7 @@ const store = {
 
 describe("store links", () => {
   it("builds page, directions, maps, phone and WhatsApp links", () => {
-    expect(storePath(store)).toBe("/stores/abu-dhabi/yas-mall");
+    expect(storePath(store)).toBe("/store-locator/abu-dhabi/yas-mall");
     expect(directionsUrl(store)).toBe(
       "https://www.google.com/maps/dir/?api=1&destination=24.49%2C54.6&destination_place_id=ChIJ123",
     );

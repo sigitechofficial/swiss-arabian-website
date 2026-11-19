@@ -51,7 +51,7 @@ function AreaChips({ title, areas }: { title: string; areas: Array<{ slug: strin
   );
 }
 
-/** Sapil `StoreLocatorPageView` (/stores). */
+/** Sapil `StoreLocatorPageView` (/store-locator). */
 export function SapilStoreLocatorPage({ data }: { data: StoreLocatorData }) {
   const t = useShopTranslator();
   const locale = useShopLocale();
@@ -70,7 +70,7 @@ export function SapilStoreLocatorPage({ data }: { data: StoreLocatorData }) {
   );
 }
 
-/** Sapil `StoreAreaPageView` (/stores/<area>). */
+/** Sapil `StoreAreaPageView` (/store-locator/<area>). */
 export function SapilStoreAreaPage({ data }: { data: StoreAreaData }) {
   const t = useShopTranslator();
   const locale = useShopLocale();
@@ -98,7 +98,7 @@ export function SapilStoreAreaPage({ data }: { data: StoreAreaData }) {
   );
 }
 
-/** Sapil `StorePageView` (/stores/<area>/<store>). */
+/** Sapil `StorePageView` (/store-locator/<area>/<store>). */
 export function SapilStorePage({ store }: { store: StoreDetail }) {
   const t = useShopTranslator();
   const locale = useShopLocale();

@@ -36,9 +36,9 @@ const PAGE_REDIRECTS: Record<string, string> = {
   "our-story-1": "/our-story",
   faq: "/faq",
   faqs: "/faq",
-  "store-locator": "/stores",
-  stores: "/stores",
-  "our-stores": "/stores",
+  "store-locator": "/store-locator",
+  stores: "/store-locator",
+  "our-stores": "/store-locator",
   "track-order": "/track",
   "track-your-order": "/track",
   // Gift sets differ per market (giftsets-gifts, gifting-collection …).
@@ -52,8 +52,8 @@ const PAGE_REDIRECTS: Record<string, string> = {
   "search-results": "/search",
   "search-results-v-next": "/search",
   "order-status": "/track",
-  locator: "/stores",
-  "virtual-tour": "/stores",
+  locator: "/store-locator",
+  "virtual-tour": "/store-locator",
   blogs: "/blog",
   "joy-subscription": "/subscriptions",
   "manage-subscriptions": "/subscriptions",
@@ -129,17 +129,9 @@ function storeRedirectsFor(brandCode: string): StoreRedirects {
   return STORE_REDIRECTS[brandCode.toUpperCase()] ?? NO_STORE_REDIRECTS;
 }
 
-/**
- * The usual store-locator addresses (`/store-locator`, `/store-locator/dubai`,
- * `/store-locator/dubai/{shop}`) open the store pages, which live at `/stores`.
- * For every brand: links and search results commonly use this shape (SEO audit p22–23).
- */
-const STORE_LOCATOR = /^\/store-locator(\/[^/]+(?:\/[^/]+)?)?\/?$/i;
-
 function rewriteBare(path: string, store: StoreRedirects): string | null {
-  const locator = STORE_LOCATOR.exec(path);
-  if (locator) return `/stores${(locator[1] ?? "").toLowerCase()}`;
-
+  // The store locator itself lives at /store-locator (SEO audit p22–23); the
+  // Shopify page /pages/store-locator redirects there (PAGE_REDIRECTS).
   const folder = store.marketFolder?.exec(path);
   if (folder) {
     const rest = folder[2] && folder[2] !== "/" ? folder[2] : "/";

@@ -52,7 +52,7 @@ A brand switches whole sections of the site off in its config (`features` in `sr
 
 | Switch | Routes |
 |---|---|
-| `storeLocator` | `/stores` |
+| `storeLocator` | `/store-locator` |
 | `blog` | `/blog`, `/blog/[slug]` |
 | `loyalty` | `/account/rewards`, `/account/membership` |
 | `subscriptions` | `/subscriptions/**`, `/account/subscription/**` |

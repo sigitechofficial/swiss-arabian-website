@@ -1,9 +1,9 @@
 import type { StoreCard } from "../types";
 
 /** Site paths of the store locator (no language prefix). */
-export const storesPath = () => "/stores";
-export const storeAreaPath = (areaSlug: string) => `/stores/${areaSlug}`;
-export const storePath = (store: Pick<StoreCard, "areaSlug" | "slug">) => `/stores/${store.areaSlug}/${store.slug}`;
+export const storesPath = () => "/store-locator";
+export const storeAreaPath = (areaSlug: string) => `/store-locator/${areaSlug}`;
+export const storePath = (store: Pick<StoreCard, "areaSlug" | "slug">) => `/store-locator/${store.areaSlug}/${store.slug}`;
 
 /**
  * Google Maps directions to the shop: the exact Google listing when its place

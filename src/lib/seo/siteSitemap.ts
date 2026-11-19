@@ -108,12 +108,12 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
     const stores = await fetchStoreSlugs({ zoneCode: resolved.zoneCode });
     if (stores.stores.length) {
       const latest = stores.stores.reduce((a, s) => (s.updatedAt > a ? s.updatedAt : a), "");
-      // The market's CMS store page (if any) is replaced by the locator at /stores.
-      const i = entries.findIndex((e) => e.path === "/stores");
+      // The market's CMS store page (if any) is replaced by the locator at /store-locator.
+      const i = entries.findIndex((e) => e.path === "/store-locator");
       if (i >= 0) entries.splice(i, 1);
-      entries.push({ path: "/stores", lastModified: latest || undefined });
-      for (const area of stores.areas) entries.push({ path: `/stores/${area.slug}`, lastModified: area.updatedAt });
-      for (const store of stores.stores) entries.push({ path: `/stores/${store.areaSlug}/${store.slug}`, lastModified: store.updatedAt });
+      entries.push({ path: "/store-locator", lastModified: latest || undefined });
+      for (const area of stores.areas) entries.push({ path: `/store-locator/${area.slug}`, lastModified: area.updatedAt });
+      for (const store of stores.stores) entries.push({ path: `/store-locator/${store.areaSlug}/${store.slug}`, lastModified: store.updatedAt });
     }
   } catch {
     // Stores cannot be read: the rest of the sitemap still publishes.

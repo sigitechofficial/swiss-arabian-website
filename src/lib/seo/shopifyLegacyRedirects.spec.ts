@@ -74,22 +74,22 @@ describe("shopifyLegacyRedirect per brand", () => {
   });
 });
 
-/** SEO audit p22–23: the usual store-locator addresses open the store pages. */
+/** SEO audit p22–23: the store locator lives at /store-locator (and /store-locator/<emirate>). */
 describe("store-locator addresses", () => {
-  it.each([
-    ["/store-locator", "/stores"],
-    ["/store-locator/", "/stores"],
-    ["/store-locator/dubai", "/stores/dubai"],
-    ["/store-locator/Abu-Dhabi/", "/stores/abu-dhabi"],
-    ["/store-locator/dubai/dubai-mall", "/stores/dubai/dubai-mall"],
-    ["/ar/store-locator/sharjah", "/ar/stores/sharjah"],
-  ])("sends %s to %s", (path, target) => {
-    expect(shopifyLegacyRedirect(path, "SWISS_ARABIAN")).toBe(target);
-    expect(shopifyLegacyRedirect(path, "SAPIL")).toBe(target);
-  });
+  it.each(["/store-locator", "/store-locator/dubai", "/store-locator/dubai/dubai-mall", "/ar/store-locator/sharjah"])(
+    "%s is the store locator itself, not a redirect",
+    (path) => {
+      expect(shopifyLegacyRedirect(path, "SWISS_ARABIAN")).toBeNull();
+    },
+  );
 
-  it("leaves deeper or look-alike addresses alone", () => {
-    expect(shopifyLegacyRedirect("/store-locator/a/b/c")).toBeNull();
-    expect(shopifyLegacyRedirect("/store-locators")).toBeNull();
+  it.each([
+    // The live Shopify store's address (indexed by Google) moves to the new one.
+    ["/pages/store-locator", "/store-locator"],
+    ["/ar/pages/store-locator", "/ar/store-locator"],
+    ["/pages/stores", "/store-locator"],
+    ["/pages/our-stores", "/store-locator"],
+  ])("sends the Shopify page %s to %s", (path, target) => {
+    expect(shopifyLegacyRedirect(path, "SWISS_ARABIAN")).toBe(target);
   });
 });

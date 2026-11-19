@@ -5,7 +5,7 @@ import { directNavHref, withDirectNavHrefs } from "./directNavHrefs";
 describe("directNavHref", () => {
   it("points old Shopify page addresses at the page itself", () => {
     expect(directNavHref("/pages/faqs")).toBe("/faq");
-    expect(directNavHref("/pages/store-locator")).toBe("/stores");
+    expect(directNavHref("/pages/store-locator")).toBe("/store-locator");
     expect(directNavHref("/pages/our-story-1")).toBe("/our-story");
     expect(directNavHref("/blogs/blog")).toBe("/blog");
     expect(directNavHref("/collections/oud/products/oud-01?variant=1")).toBe(
