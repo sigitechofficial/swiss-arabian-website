@@ -2,7 +2,7 @@ import type { SitePage } from "@/features/site-pages/api/sitePages.service";
 import { sanitizePageHtml } from "@/lib/html/sanitizePageHtml";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import { Accordion, EYEBROW, Wrap, cx } from "../../ui";
-import { isQuestionList, splitHtmlSections } from "../../components/content/htmlSections";
+import { groupQuestionSections, isQuestionList, splitHtmlSections } from "../../components/content/htmlSections";
 import { SAPIL_PROSE } from "../../components/content/prose";
 import { SapilContentCrumbs } from "../../components/content/SapilContentCrumbs";
 
@@ -36,14 +36,23 @@ export function SapilSitePage({
         {folded ? (
           <>
             {split.intro.trim() ? <div className={SAPIL_PROSE} dangerouslySetInnerHTML={{ __html: split.intro }} /> : null}
-            <Accordion
-              className="mt-[24px] border-t border-sapil-line"
-              items={split.sections.map((s, i) => ({
-                id: `q-${i}`,
-                title: s.title,
-                content: <div className={cx(SAPIL_PROSE, "!text-[15px]")} dangerouslySetInnerHTML={{ __html: s.html }} />,
-              }))}
-            />
+            {groupQuestionSections(split).map((group, g) => (
+              <section key={`g-${g}`} aria-labelledby={group.title ? `qg-${g}` : undefined} className="mt-[32px] first:mt-[24px]">
+                {group.title ? (
+                  <h2 id={`qg-${g}`} className="font-sapil-display !font-[400] text-[28px] !leading-[1.15] mb-[12px]">
+                    {group.title}
+                  </h2>
+                ) : null}
+                <Accordion
+                  className="border-t border-sapil-line"
+                  items={group.items.map((s, i) => ({
+                    id: `q-${g}-${i}`,
+                    title: s.title,
+                    content: <div className={cx(SAPIL_PROSE, "!text-[15px]")} dangerouslySetInnerHTML={{ __html: s.html }} />,
+                  }))}
+                />
+              </section>
+            ))}
           </>
         ) : body ? (
           <div className={SAPIL_PROSE} dangerouslySetInnerHTML={{ __html: body }} />
