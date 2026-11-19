@@ -1,23 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useQuery } from "@tanstack/react-query";
-import { addCartItems } from "@/features/cart/api/cart.service";
-import { useCartStore } from "@/stores/useCartStore";
-import { useUiStore } from "@/stores/useUiStore";
-import {
-  fetchProductCompanions,
-  previewProductCompanions,
-} from "../api/promotions.service";
-import type { CompanionProduct } from "../types/companions";
-import { trackPromotion } from "../utils/promotionAnalytics";
 import { bottle } from "@/styles/landingChrome";
 import { pageContainer } from "@/styles/siteChrome";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
-import { toCatalogProduct } from "@/features/catalog/utils/toCatalogProduct";
-import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { MoneySummary } from "./MoneySummary";
+import { companionCard, useProductCompanions } from "../hooks/useProductCompanions";
 import {
   cartCta,
   cartCtaDisabled,
@@ -33,34 +22,6 @@ import {
   relatedTitle,
 } from "@/styles/pdpChrome";
 import { MediaImage } from "@/components/ui/MediaImage";
-
-function amountOf(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const parsed = Number(value.replace(/[^\d.]/g, ""));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function companionCard(
-  product: CompanionProduct,
-  currency: string,
-): CatalogProduct | null {
-  if (!product.slug) return null;
-  return toCatalogProduct({
-    id: product.productId,
-    slug: product.slug,
-    title: product.title,
-    price: amountOf(product.amount) ?? amountOf(product.price),
-    currency,
-    imageUrl: product.image,
-    imageUrls: product.image ? [product.image] : [],
-    sku: product.sku,
-    isSellable: product.inStock,
-    inStock: product.inStock,
-    concentration: null,
-    houseCollection: null,
-    featuredNote: null,
-  });
-}
 
 function pieceCardClass(on: boolean, inStock: boolean) {
   const base =
@@ -108,120 +69,26 @@ export function ProductCompanions({
   /** Merch already renders these groups, so the companion copy is left out. */
   omitGroupIds?: string[];
 }) {
-  const query = useQuery({
-    queryKey: ["promotion-companions", productId, marketCode ?? ""],
-    queryFn: () => fetchProductCompanions(productId),
-    enabled: Boolean(productId),
-    retry: false,
-  });
-  const data = query.data;
-  const cartId = useCartStore((state) => state.cartId);
-  const setCartFromApi = useCartStore((state) => state.setCartFromApi);
-  const setCartOpen = useUiStore((state) => state.setCartOpen);
-  const currency =
-    useUiStore((state) => state.catalogContext?.currencyCode) || "AED";
-  const [selected, setSelected] = useState<string[]>([]);
-  const [seededFor, setSeededFor] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [preview, setPreview] = useState<{
-    key: string;
-    before: string | null;
-    saving: string | null;
-    total: string | null;
-    message: string | null;
-    ready: boolean;
-  } | null>(null);
-
-  // Pre-select the current product once per product, when its data arrives.
-  if (data && seededFor !== productId) {
-    setSelected(data.current?.inStock ? [data.current.sku] : []);
-    setSeededFor(productId);
-  }
-
-  const products = useMemo(() => {
-    const rows = new Map<string, CompanionProduct>();
-    if (data?.current) rows.set(data.current.sku, data.current);
-    for (const group of data?.groups ?? []) {
-      for (const product of group.products) rows.set(product.sku, product);
-    }
-    return rows;
-  }, [data]);
-
-  const chosen = selected.filter((sku) => products.get(sku)?.inStock);
-  // Stable key for the current selection; the preview effect reads the SKUs
-  // from it so it re-runs only when the selection itself changes.
-  const selectionKey = chosen.slice().sort().join("|");
-
-  useEffect(() => {
-    // `fresh` below ignores a preview that no longer matches the selection.
-    if (!selectionKey) return;
-    const skus = selectionKey.split("|");
-    let cancel = false;
-    const timer = window.setTimeout(() => {
-      void previewProductCompanions(
-        productId,
-        skus.map((sku) => ({ sku })),
-      ).then((result) => {
-        if (cancel) return;
-        setPreview({
-          key: selectionKey,
-          before: result.beforeSavings,
-          saving: result.promotionSaving,
-          total: result.yourTotal,
-          message: result.message,
-          ready: result.readyToAdd,
-        });
-      });
-    }, 200);
-    return () => {
-      cancel = true;
-      window.clearTimeout(timer);
-    };
-  }, [productId, selectionKey]);
-
-  const groups = (data?.groups ?? []).filter(
-    (group) => !omitGroupIds.includes(group.id),
-  );
-  if (query.isPending) return null;
-  if (query.isError || !data || groups.length === 0) return <>{fallback}</>;
-
-  const fresh = preview?.key === selectionKey ? preview : null;
-
-  function toggle(sku: string) {
-    const product = products.get(sku);
-    if (!product?.inStock) return;
-    setSelected((current) => {
-      const next = current.includes(sku)
-        ? current.filter((item) => item !== sku)
-        : [...current, sku];
-      trackPromotion(
-        next.includes(sku)
-          ? "promotion_product_selected"
-          : "promotion_product_removed",
-        {
-          market: marketCode,
-          surface: "pdp",
-        },
-      );
-      return next;
-    });
-  }
-
-  const bundle = groups[0];
-  const later = groups.slice(1);
-  const pieces = [
-    ...(data.current?.inStock ? [data.current] : []),
-    ...(bundle?.products ?? []).filter(
-      (product) => product.sku !== data.current?.sku,
-    ),
-  ];
-  const subtotal = amountOf(fresh?.before);
-  const total = amountOf(fresh?.total);
-  const discount =
-    subtotal != null && total != null
-      ? Math.max(0, Number((subtotal - total).toFixed(2)))
-      : null;
-  const ready = Boolean(fresh?.ready) && !busy && chosen.length > 0;
+  // Data, selection, price preview and "add selected": shared with every brand.
+  const {
+    pending,
+    empty,
+    data,
+    currency,
+    bundle,
+    later,
+    pieces,
+    selected,
+    toggle,
+    message,
+    subtotal,
+    total,
+    discount,
+    ready,
+    addSelected,
+  } = useProductCompanions({ productId, marketCode, omitGroupIds });
+  if (pending) return null;
+  if (empty || !data) return <>{fallback}</>;
 
   return (
     <>
@@ -235,7 +102,7 @@ export function ProductCompanions({
                 </p>
                 <div data-heading id="companion-heading">{bundle.heading}</div>
               </div>
-              {fresh?.message ? <p className="m-0">{fresh.message}</p> : null}
+              {message ? <p className="m-0">{message}</p> : null}
             </div>
             <div className="grid items-start gap-5 max-[900px]:grid-cols-1 min-[901px]:grid-cols-[minmax(0,1fr)_300px]">
               <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 p-0">
@@ -321,30 +188,14 @@ export function ProductCompanions({
                     total={total}
                   />
                 ) : null}
-                {fresh?.message ? (
-                  <p className="mb-3 text-[0.85rem]">{fresh.message}</p>
+                {message ? (
+                  <p className="mb-3 text-[0.85rem]">{message}</p>
                 ) : null}
                 <button
                   className={ready ? cartCta : `${cartCta} ${cartCtaDisabled}`}
                   type="button"
                   disabled={!ready}
-                  onClick={() => {
-                    if (!ready) return;
-                    setBusy(true);
-                    void addCartItems(
-                      chosen.map((sku) => ({ sku, quantity: 1 })),
-                      cartId,
-                    )
-                      .then((cart) => {
-                        setCartFromApi(cart);
-                        setCartOpen(true);
-                        trackPromotion("promotion_multi_add", {
-                          market: marketCode,
-                          surface: "pdp",
-                        });
-                      })
-                      .finally(() => setBusy(false));
-                  }}
+                  onClick={addSelected}
                 >
                   {data.copy.addSelected}
                 </button>

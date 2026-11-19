@@ -85,7 +85,8 @@ export function ProductCard({
   addLabel,
   badge,
   actions,
-  headingLevel: H = "h3",
+  // Product names are not headings (SEO audit p10, p12); a page may still ask for one.
+  headingLevel: H = "p",
   LinkComponent = DefaultLink,
   className,
 }: ProductCardProps) {
@@ -153,7 +154,7 @@ export function ProductCard({
             ))}
           </div>
         )}
-        <H className="m-0 mb-[6px] font-sapil-sans font-[400] text-[16px] leading-[1] tracking-[-.6px] text-sapil-ink max-749:text-[14px]">
+        <H className="sapil-h m-0 mb-[6px] font-sapil-sans font-[400] text-[16px] leading-[1] tracking-[-.6px] text-sapil-ink max-749:text-[14px]">
           <LinkComponent href={href} className="leading-[1.3] hover:text-sapil-accent">
             {name}
           </LinkComponent>

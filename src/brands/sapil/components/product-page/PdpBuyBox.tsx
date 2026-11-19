@@ -20,6 +20,8 @@ import { SapilWishlistButton } from "../product/SapilWishlistButton";
 import { deliveryPerks } from "./deliveryPerks";
 import { noteRows, noteTone } from "./notes";
 import { PdpInstalments } from "./PdpInstalments";
+import { PdpOffers } from "./PdpOffers";
+import { PdpShare } from "./PdpShare";
 
 export function BagIcon() {
   return (
@@ -65,6 +67,7 @@ export function PdpBuyBox({
   money,
   addRowRef,
   concentration,
+  share = null,
 }: {
   product: CatalogProduct;
   /** "edp" / "extrait" as the API sends it (none: no kind shown) */
@@ -80,6 +83,8 @@ export function PdpBuyBox({
   money: (n: number) => string;
   /** the Add to bag row (the sticky bar shows once it scrolls away) */
   addRowRef?: Ref<HTMLDivElement>;
+  /** Canonical product address and share image; no share row without it. */
+  share?: { url: string; image?: string | null } | null;
 }) {
   const t = useSapilCopy();
   const purchase = useProductPurchase(product, cartLine);
@@ -179,6 +184,9 @@ export function PdpBuyBox({
       <p role="status" className="text-[14px] text-sapil-ink-2 mt-[8px] empty:hidden">
         {status}
       </p>
+
+      {/* The product's campaigns (bundles, free delivery, codes), as on Swiss Arabian. */}
+      <PdpOffers product={product} quantity={purchase.displayQty} money={money} />
       {product.price != null && product.price > 0 && !purchase.needsAlert ? (
         <PdpInstalments price={product.price} currency={product.currency || "AED"} money={money} />
       ) : null}
@@ -267,6 +275,8 @@ export function PdpBuyBox({
           ))}
         </ul>
       ) : null}
+
+      {share ? <PdpShare url={share.url} title={product.title} image={share.image} /> : null}
     </div>
   );
 }

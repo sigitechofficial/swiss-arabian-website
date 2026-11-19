@@ -27,6 +27,7 @@ export function NotesRail({ heading, title, subtitle }: { heading: string | null
     <HomeSection id="notes" labelledBy={headingId}>
       <Wrap>
         <SectionHead
+          as="p"
           id={headingId}
           eyebrow={heading ?? t("home.notesEyebrow")}
           {...sectionTitleProps(title, t("home.notesTitle"), t("home.notesAccent"))}

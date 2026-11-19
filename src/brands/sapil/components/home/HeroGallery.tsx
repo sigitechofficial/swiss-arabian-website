@@ -170,7 +170,7 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
                   >
                     <MediaImage
                       src={p.imageUrl}
-                      alt=""
+                      alt={t("product.imageAlt", { name: p.title })}
                       fill
                       sizes="(max-width: 900px) 86vw, 420px"
                       preload={i === hero.initialRoom}
@@ -215,9 +215,9 @@ export function HeroGallery({ hero }: { hero: HeroGalleryData }) {
                 >
                   <div>
                     <p className={cx(EYEBROW, "!text-[11px]")}>{t("home.heroRoom", { number: room.number, name: room.collection.name })}</p>
-                    <h2 className="!font-[300] text-[clamp(34px,3vw,46px)] !leading-[1] mt-[10px] whitespace-nowrap max-1100:text-[32px] max-900:text-[34px] max-900:whitespace-normal">
+                    <p role="heading" aria-level={2} className="sapil-h !font-[300] text-[clamp(34px,3vw,46px)] !leading-[1] mt-[10px] whitespace-nowrap max-1100:text-[32px] max-900:text-[34px] max-900:whitespace-normal">
                       <PartsText parts={room.title} serifClassName="!font-[300]" />
-                    </h2>
+                    </p>
                   </div>
                   <div className="bg-[rgba(255,253,250,.92)] rounded-sapil pt-[16px] pe-[16px] pb-[16px] ps-[18px] shadow-sapil">
                     <div className="flex items-center gap-[14px]">

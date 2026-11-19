@@ -227,6 +227,7 @@ export function HomeReels({ heading, title, subtitle }: { heading: string | null
     >
       <Wrap>
         <SectionHead
+          as="p"
           id={headingId}
           eyebrow={heading ?? t("home.reelsEyebrow")}
           {...sectionTitleProps(title, t("home.reelsTitle"), t("home.reelsAccent"))}

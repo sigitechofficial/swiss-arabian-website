@@ -49,12 +49,15 @@ export function PdpReviews({
               <i aria-hidden="true" className="w-[9px] h-[9px] rounded-full bg-sapil-ok-2" />
               {t("product.reviewsPill")}
             </span>
-            <h2
+            {/* Product pages: headings only for the product's own content (SEO audit p12). */}
+            <p
               id="reviews-heading"
-              className="font-sapil-sans font-[700] text-[clamp(34px,3.4vw,46px)] leading-[1.1] tracking-[-.035em] mt-[14px]"
+              role="heading"
+              aria-level={2}
+              className="sapil-h font-sapil-sans font-[700] text-[clamp(34px,3.4vw,46px)] leading-[1.1] tracking-[-.035em] mt-[14px]"
             >
               {t("product.reviewsTitle")}
-            </h2>
+            </p>
           </div>
           <Button variant="line" href={writeHref} LinkComponent={SapilLocaleLink}>
             {t("product.writeReview")}
@@ -111,7 +114,7 @@ export function PdpReviews({
                       </div>
                       <Stars rating={review.rating} size={16} className="my-[12px]" />
                       {review.title ? (
-                        <h3 className="font-sapil-sans font-[700] text-[18px] leading-[1.3] tracking-[-.01em] mb-[8px]">{review.title}</h3>
+                        <p className="sapil-h font-sapil-sans font-[700] text-[18px] leading-[1.3] tracking-[-.01em] mb-[8px]">{review.title}</p>
                       ) : null}
                       {review.body ? <p className="text-[15px] leading-[1.55] text-sapil-ink-2 flex-1">{review.body}</p> : null}
                       {display.showReplies && review.reply ? (

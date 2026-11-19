@@ -198,7 +198,6 @@ export function SapilOfferPage({ code }: { code: string }) {
                         tile="sand"
                         price={price ? <span dir="ltr">{price}</span> : ""}
                         badge={product.inStock ? undefined : t("offers.soldOut")}
-                        headingLevel="h3"
                         LinkComponent={SapilLink}
                       />
                       <Button

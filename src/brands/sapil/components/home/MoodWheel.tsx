@@ -164,14 +164,14 @@ export function MoodWheel({ eyebrow, heading, spinLabel, moods }: { eyebrow: str
           </div>
           <div key={current} aria-live="polite" className="max-900:text-center">
             <p className={cx(EYEBROW, "animate-[sapil-rise_.55s_var(--sapil-ease)_both]")}>{eyebrow ?? t("home.moodEyebrow")}</p>
-            <h2 className="text-[clamp(48px,6vw,88px)] mt-[12px] mb-[8px] !tracking-[-.03em] animate-[sapil-rise_.55s_var(--sapil-ease)_both]">{mood.name}</h2>
+            <p role="heading" aria-level={2} className="sapil-h text-[clamp(48px,6vw,88px)] mt-[12px] mb-[8px] !tracking-[-.03em] animate-[sapil-rise_.55s_var(--sapil-ease)_both]">{mood.name}</p>
             <p className="font-sapil-serif italic text-[22px] text-sapil-ink-2 mb-[28px] animate-[sapil-rise_.55s_var(--sapil-ease)_both]">
               {mood.line}
               {mood.notes.length ? ` ${t("home.moodNotes", { notes: mood.notes.join(", ").toLowerCase() })}` : null}
             </p>
             <div className="grid grid-cols-3 gap-[16px] mb-[28px] text-start max-900:grid-cols-none max-900:grid-flow-col max-900:auto-cols-[58%] max-900:overflow-x-auto max-900:snap-x max-900:snap-mandatory max-900:scroll-px-sapil-gut max-900:[scrollbar-width:none] max-900:-mx-sapil-gut max-900:mb-[24px] max-900:px-sapil-gut">
               {mood.products.slice(0, 3).map(({ product }) => (
-                <div key={product.id} className="max-900:snap-start [&_h3]:!text-[15px] [&_.tabular-nums]:!text-[15px]">
+                <div key={product.id} className="max-900:snap-start [&_.sapil-h]:!text-[15px] [&_.tabular-nums]:!text-[15px]">
                   {/* white tiles: the cards sit on the mood's coloured band */}
                   <SapilProductCard product={product} tile="var(--sapil-card)" quickView={false} imageSizes="(max-width: 900px) 58vw, 16vw" />
                 </div>

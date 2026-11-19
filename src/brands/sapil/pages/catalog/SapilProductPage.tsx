@@ -15,7 +15,9 @@ import { noteRows } from "../../components/product-page/notes";
 import { NotesJourney } from "../../components/product-page/NotesJourney";
 import { PdpBuyBox } from "../../components/product-page/PdpBuyBox";
 import { PdpGallery } from "../../components/product-page/PdpGallery";
+import { PdpCompanions } from "../../components/product-page/PdpCompanions";
 import { PdpRelatedRail } from "../../components/product-page/PdpRelatedRail";
+import { PdpRecentlyViewed } from "../../components/product-page/PdpRecentlyViewed";
 import { PdpReviews } from "../../components/product-page/PdpReviews";
 import { StickyBuyBar } from "../../components/product-page/StickyBuyBar";
 
@@ -29,11 +31,12 @@ export function SapilProductPage({
   product: serverDetail,
   serverZoneCode = null,
   slug: routeSlug,
+  share = null,
 }: {
   product: ProductDetail | null;
   serverZoneCode?: string | null;
   slug: string;
-  /** Share links (canonical URL); Sapil's v9 page has no share row. */
+  /** Canonical product address and share image (the share row under the buy box). */
   share?: { url: string; image?: string | null } | null;
 }) {
   const t = useSapilCopy();
@@ -120,12 +123,18 @@ export function SapilProductPage({
             money={money}
             addRowRef={addRowRef}
             concentration={detail?.concentration}
+            share={share}
           />
         </div>
       </Wrap>
       <NotesJourney rows={rows} photos={page.galleryImages.slice(2)} t={t} />
       <PdpReviews key={detail?.id ?? product.id} productId={detail?.id ?? product.id} reviews={page.pdpReviews} />
+      {detail?.id ? (
+        // Companion offers; "also" is left out because "More to fall for" already has those bottles.
+        <PdpCompanions productId={detail.id} marketCode={page.zoneCode} money={money} omitGroupIds={rail.length ? ["also"] : []} />
+      ) : null}
       <PdpRelatedRail products={rail} />
+      <PdpRecentlyViewed excludeProductId={detail?.id ?? product.id} />
       {buyable ? (
         <StickyBuyBar
           watchRef={addRowRef}

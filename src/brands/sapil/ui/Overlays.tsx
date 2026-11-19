@@ -72,7 +72,8 @@ export function Drawer({ open, onClose, title, count, countLabel, closeLabel = "
         )}
       >
         <div className="flex justify-between items-center py-[20px] px-[24px] border-b border-transparent bg-[linear-gradient(120deg,var(--sapil-p-pink),var(--sapil-p-peach)_55%,var(--sapil-p-butter))]">
-          <h2 id={titleId} className="text-[26px]">
+          {/* The drawer is in every page (closed): a heading for screen readers, not an h2 tag (SEO audit p12). */}
+          <div id={titleId} role="heading" aria-level={2} className="sapil-h text-[26px]">
             {title}
             {count ? (
               <span
@@ -82,7 +83,7 @@ export function Drawer({ open, onClose, title, count, countLabel, closeLabel = "
                 {count}
               </span>
             ) : null}
-          </h2>
+          </div>
           <IconButton ref={closeRef} label={closeLabel} onClick={onClose}>
             <CloseIcon />
           </IconButton>

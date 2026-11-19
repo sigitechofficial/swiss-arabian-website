@@ -65,9 +65,10 @@ export function SapilPhoneMenu({ open, onClose, logo, menu, quickLinks, accountH
           open ? "[transform:none]" : "[transform:translateX(-100%)] rtl:[transform:translateX(100%)]",
         )}
       >
-        <h2 id={titleId} className="sr-only">
+        {/* Rendered on every page (closed): a heading for screen readers, not an h2 tag (SEO audit p12). */}
+        <div id={titleId} role="heading" aria-level={2} className="sr-only">
           {t("shell.menu")}
-        </h2>
+        </div>
         <div className="flex justify-between items-center mb-[8px]">
           <MediaImage src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[28px] w-auto" />
           <IconButton ref={closeRef} label={t("shell.closeMenu")} onClick={onClose}>
