@@ -7,6 +7,7 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import { accountBtnPrimary } from "../constants/accountForm";
+import { consentRowFor, useConsentZoneId } from "../hooks/useConsentZone";
 import { useMarketingConsents } from "../hooks/useMarketingConsents";
 import type {
   ConsentChannel,
@@ -30,6 +31,7 @@ function asStatus(value: string | undefined): ConsentStatus {
 export function AccountConsentsSection() {
   const t = useShopCopy();
   const user = useCurrentUser();
+  const zoneId = useConsentZoneId();
   const { list, update } = useMarketingConsents();
   const [overrides, setOverrides] = useState<
     Partial<Record<ConsentChannel, boolean>>
@@ -37,7 +39,7 @@ export function AccountConsentsSection() {
 
   function isOptedIn(channel: ConsentChannel): boolean {
     if (channel in overrides) return Boolean(overrides[channel]);
-    const saved = list.data?.find((row) => row.channel === channel);
+    const saved = consentRowFor(list.data, channel, zoneId);
     return asStatus(saved?.status) === "OPTED_IN";
   }
 
@@ -76,7 +78,7 @@ export function AccountConsentsSection() {
               </li>
             ))}
           </ul>
-          {!user?.zoneId ? (
+          {!zoneId && !user?.zoneId ? (
             <p className="mt-3 text-[12px] text-sa-secondary">
               {t("account.consent.noZone")}
             </p>
@@ -91,7 +93,7 @@ export function AccountConsentsSection() {
                   consents: CHANNELS.map(({ channel }) => ({
                     channel,
                     status: isOptedIn(channel) ? "OPTED_IN" : "OPTED_OUT",
-                    zoneId: user?.zoneId,
+                    zoneId: zoneId ?? undefined,
                   })),
                 })
                 .then(() => setOverrides({}));

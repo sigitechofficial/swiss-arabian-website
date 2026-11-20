@@ -6,7 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAccountDashboard, useChangePassword } from "@/features/account/hooks/useAccountPages";
 import { useCustomerAddresses } from "@/features/account/hooks/useCustomerAddresses";
 import { useCustomerPhones } from "@/features/account/hooks/useCustomerPhones";
+import { consentRowFor, useConsentZoneId } from "@/features/account/hooks/useConsentZone";
 import { useMarketingConsents } from "@/features/account/hooks/useMarketingConsents";
+import { useStockAlerts } from "@/features/account/hooks/useStockAlerts";
 import { useUpdateCustomerMe } from "@/features/account/hooks/useUpdateCustomerMe";
 import { regionsForCountry } from "@/features/account/data/regionsByCountry";
 import { countryLabel, regionLabel } from "@/features/account/utils/addressDisplay";
@@ -210,10 +212,12 @@ export function SapilAccountProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const phones = useCustomerPhones();
   const consents = useMarketingConsents();
+  const consentZoneId = useConsentZoneId();
   const dial = useMarketDialCode();
   const [newPhone, setNewPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const optedIn = (channel: string) => (consents.list.data ?? []).some((c) => c.channel === channel && c.status === "OPTED_IN");
+  const optedIn = (channel: string) =>
+    consentRowFor(consents.list.data, channel, consentZoneId)?.status === "OPTED_IN";
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.fullName || "";
 
   return (
@@ -298,15 +302,60 @@ export function SapilAccountProfilePage() {
               checked={optedIn(channel)}
               disabled={consents.list.isPending || consents.update.isPending}
               onChange={(event) =>
-                consents.update.mutate({ consents: [{ channel, status: event.target.checked ? "OPTED_IN" : "OPTED_OUT" }] })
+                consents.update.mutate({
+                  consents: [
+                    {
+                      channel,
+                      status: event.target.checked ? "OPTED_IN" : "OPTED_OUT",
+                      zoneId: consentZoneId ?? undefined,
+                    },
+                  ],
+                })
               }
             >
               {t(`account.consent${channel}` as SapilCopyKey)}
             </Checkbox>
           ))}
         </Card>
+        <SapilStockAlertsCard />
       </div>
     </AccountPage>
+  );
+}
+
+/** "Back-in-stock alerts" with a stop button per product (D3-4b). Shop copy has both languages. */
+function SapilStockAlertsCard() {
+  const shop = useShopTranslator();
+  const { list, cancel } = useStockAlerts();
+  const items = list.data?.items ?? [];
+  return (
+    <Card title={shop("stockAlertsTitle")} headingLevel="h3">
+      <p className="text-[14px] text-sapil-ink-2">{shop("stockAlertsBody")}</p>
+      {list.isPending ? (
+        <SapilSkeleton className="h-[44px]" />
+      ) : list.isError ? (
+        <LoadError onRetry={() => void list.refetch()} />
+      ) : items.length === 0 ? (
+        <p className="mt-[10px] text-sapil-ink-2">{shop("stockAlertsEmpty")}</p>
+      ) : (
+        <ul className="list-none" data-testid="account-stock-alerts">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center justify-between gap-[12px] py-[10px] border-b border-sapil-line last:border-b-0">
+              {item.slug ? (
+                <SapilLink href={`/products/${item.slug}`} className="font-[600] hover:underline">
+                  {item.productName}
+                </SapilLink>
+              ) : (
+                <span className="font-[600]">{item.productName}</span>
+              )}
+              <button type="button" className={linkBtn} disabled={cancel.isPending} onClick={() => cancel.mutate(item.id)}>
+                {shop("stockAlertsStop")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

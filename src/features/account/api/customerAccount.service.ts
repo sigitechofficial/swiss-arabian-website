@@ -117,3 +117,22 @@ export async function updateMarketingConsents(
     dto,
   );
 }
+
+/** A waiting "Notify me" request of the signed-in shopper (D3-4b). */
+export type StorefrontStockAlertView = {
+  id: string;
+  productId: string;
+  productName: string;
+  slug: string | null;
+  sku: string;
+  zoneCode: string;
+  createdAt: string;
+};
+
+export async function listStockAlerts(): Promise<{ items: StorefrontStockAlertView[] }> {
+  return apiGet<{ items: StorefrontStockAlertView[] }>(`${BASE}/stock-alerts`);
+}
+
+export async function cancelStockAlert(id: string): Promise<{ cancelled: boolean }> {
+  return apiDelete<{ cancelled: boolean }>(`${BASE}/stock-alerts/${encodeURIComponent(id)}`);
+}

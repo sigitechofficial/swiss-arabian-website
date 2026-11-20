@@ -22,6 +22,7 @@ import {
   type ProfileNameFormValues,
 } from "../schemas/phoneBook.schema";
 import { AccountConsentsSection } from "./AccountConsentsSection";
+import { AccountStockAlertsSection } from "./AccountStockAlertsSection";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountPhonesSection } from "./AccountPhonesSection";
 
@@ -266,6 +267,10 @@ function ProfileContent() {
 
       <PrefBlock title={t("account.commsPrefs")} soft>
         <AccountConsentsSection />
+      </PrefBlock>
+
+      <PrefBlock title={t("stockAlertsTitle")}>
+        <AccountStockAlertsSection />
       </PrefBlock>
 
       <section className={`${accountContainer} py-7`}>
