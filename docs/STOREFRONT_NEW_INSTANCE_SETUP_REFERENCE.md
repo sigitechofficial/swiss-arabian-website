@@ -114,7 +114,7 @@ NEXT_PUBLIC_ENABLE_MFA=false
 NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true
 
 # Phone verification chrome after register/login
-NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true
+# NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI: removed 2026-11-20: verification follows the backend's `CUSTOMER_VERIFICATION_ENABLED` via `/storefront/site/integrations` (`accountVerification`); the build refuses the old flag
 
 # Google / Apple OAuth buttons
 NEXT_PUBLIC_ENABLE_OAUTH=false
@@ -476,7 +476,7 @@ For guests, also add: `&guestToken={sa_guest_token}`
 1. **Register** → tokens returned immediately → account page
 2. **Password login** (`identifier` = email or E.164 phone)
 3. **Email-code login** → request code → confirm
-4. **Email verification** (flag: `NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI`)
+4. **Email verification** (backend `CUSTOMER_VERIFICATION_ENABLED`, read by the website from `/storefront/site/integrations`)
 5. **Phone verify** (OTP — flag-gated)
 6. **Forgot password** → Reset password (flag: `NEXT_PUBLIC_ENABLE_PASSWORD_RESET`)
 7. **Logout** + **Logout all devices**
@@ -532,7 +532,7 @@ All flags are read from `src/lib/config/env.ts` via `env.flags.*`.
 |---|---|---|---|
 | `NEXT_PUBLIC_ENABLE_MFA` | `mfa` | `false` | Show MFA step in login |
 | `NEXT_PUBLIC_ENABLE_PASSWORD_RESET` | `passwordReset` | `true` | Show forgot/reset password UI |
-| `NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI` | `verification` | `true` | Show phone verify step |
+| ~~`NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI`~~ | — | — | removed 2026-11-20: verification follows the backend's `CUSTOMER_VERIFICATION_ENABLED` via `/storefront/site/integrations` (`accountVerification`); the build refuses the old flag |
 | `NEXT_PUBLIC_ENABLE_OAUTH` | `oauth` | `false` | Show Google/Apple login buttons |
 | `NEXT_PUBLIC_USE_DEV_SESSION` | `useDevSession` | `false` | Skip OTP checks (dev only) |
 | `NEXT_PUBLIC_USE_LOCAL_API` | `useLocalApi` | `false` | Use LAN backend instead of Azure |

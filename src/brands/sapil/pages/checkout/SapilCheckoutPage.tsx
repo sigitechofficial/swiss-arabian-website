@@ -3,7 +3,6 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { SapilPromoProgress } from "../../components/bag/SapilPromoProgress";
 import { SapilAppliedOffers } from "../../components/bag/SapilAppliedOffers";
-import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
 import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
@@ -58,14 +57,6 @@ import {
 } from "../../components/commerce/shared";
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-function dialCodeFor(country: string): string {
-  try {
-    return getCountryCallingCode(country.toUpperCase() as CountryCode);
-  } catch {
-    return "971";
-  }
-}
 
 /** Client checks before the API sees the address (inline message under each field). */
 function validateAddress(
@@ -137,7 +128,6 @@ export function SapilCheckoutPage() {
     regions: f.regionSet?.regions ?? [],
     countryCode: f.countryCode,
   };
-  const dialCode = dialCodeFor(f.countryCode);
 
   const payKinds = useMemo(() => paymentStepKinds(checkout.paymentMethods), [checkout.paymentMethods]);
   const payment = usePaymentOptions({
@@ -412,7 +402,6 @@ export function SapilCheckoutPage() {
                 address={f.shipping}
                 onField={setShippingField}
                 onPlace={(parsed) => applyGooglePlace(f.setShipping, parsed, f.countryCode)}
-                dialCode={dialCode}
                 errors={errors}
                 before={
                   f.testData ? (

@@ -20,7 +20,6 @@ import {
 import { profileNameSchema, type ProfileNameFormValues } from "@/features/account/schemas/phoneBook.schema";
 import type { ConsentChannel, StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
 import { useCustomerExchangesFeed, useCustomerReturnsFeed } from "@/features/afterSales/hooks/useAfterSales";
-import { useMarketDialCode } from "@/features/auth/hooks/useAuthForms";
 import { orderNeedsPaying, paymentFilterOf, usePaymentHistory, type PaymentFilter } from "@/features/payments/hooks/usePaymentHistory";
 import { useMyReviewsFeed } from "@/features/reviews/hooks/useProductReviews";
 import { useReviewMutations } from "@/features/reviews/hooks/useReviewMutations";
@@ -39,6 +38,7 @@ import { PasswordField } from "../../components/account/AuthFields";
 import { SapilProductCard } from "../../components/product";
 import { FormMessage } from "../../components/account/FormCard";
 import { SapilExchangeCard, SapilReturnCard } from "../../components/afterSales/SapilAfterSalesCards";
+import { formatPhoneNumber } from "@/components/ui/phone/usePhoneNumberField";
 
 const linkBtn = cx(buttonClass("link"), "!text-[14px]");
 
@@ -211,7 +211,6 @@ export function SapilAccountProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const phones = useCustomerPhones();
   const consents = useMarketingConsents();
-  const dial = useMarketDialCode();
   const [newPhone, setNewPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const optedIn = (channel: string) => (consents.list.data ?? []).some((c) => c.channel === channel && c.status === "OPTED_IN");
@@ -248,7 +247,7 @@ export function SapilAccountProfilePage() {
               {(phones.list.data ?? []).map((phone) => (
                 <li key={phone.id} className="flex items-center justify-between gap-[12px] flex-wrap py-[10px] border-b border-sapil-line last:border-b-0">
                   <span dir="ltr" className="font-[600]">
-                    {phone.phoneE164}
+                    {formatPhoneNumber(phone.phoneE164)}
                   </span>
                   <span className="flex items-center gap-[12px]">
                     {phone.isPrimary ? <StatusPill status="PAID" label={t("account.profilePhonePrimary")} /> : null}
@@ -279,7 +278,6 @@ export function SapilAccountProfilePage() {
               <SapilPhoneField
                 id="pf-phone"
                 label={t("account.profilePhoneAdd")}
-                dialCode={dial}
                 value={newPhone}
                 onChange={setNewPhone}
                 error={phoneError ?? undefined}
@@ -348,7 +346,6 @@ function AddressForm({
   const phone = useWatch({ control: form.control, name: "phone" });
   const regions = regionsForCountry(country)?.regions ?? [];
   const errors = form.formState.errors;
-  const dial = useMarketDialCode();
   return (
     <Card title={initial ? t("account.addressesEditTitle") : t("account.addressesNew")} headingLevel="h3">
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
@@ -389,7 +386,6 @@ function AddressForm({
           <SapilPhoneField
             id="ad-phone"
             label={t("account.addressesPhone")}
-            dialCode={dial}
             value={phone ?? ""}
             onChange={(value) => form.setValue("phone", value, { shouldValidate: Boolean(errors.phone) })}
             error={errors.phone ? t("account.authErrMobile") : undefined}
@@ -482,7 +478,7 @@ export function SapilAccountAddressesPage() {
                     {address.phoneE164 ? (
                       <>
                         <br />
-                        <span dir="ltr">{address.phoneE164}</span>
+                        <span dir="ltr">{formatPhoneNumber(address.phoneE164)}</span>
                       </>
                     ) : null}
                   </p>

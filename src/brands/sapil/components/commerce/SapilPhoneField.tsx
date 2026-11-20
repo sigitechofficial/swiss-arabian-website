@@ -1,88 +1,116 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { isValidPhoneNumber } from "libphonenumber-js";
-import { Field } from "../../ui";
+import { useId, type ReactNode } from "react";
+import { CountryFlag } from "@/components/ui/phone/CountryFlag";
+import { isValidMobile, usePhoneNumberField } from "@/components/ui/phone/usePhoneNumberField";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { FieldFrame, cx, fieldControlClass } from "../../ui";
 
-/** "+971501234567" → "501234567" for a +971 field (other numbers are shown whole). */
-export function nationalPart(e164: string, dialCode: string): string {
-  const value = e164.trim();
-  if (!value) return "";
-  if (value.startsWith(`+${dialCode}`)) return value.slice(dialCode.length + 1);
-  if (value.startsWith("+")) return value;
-  return value;
-}
-
-/** The typed national number with the field's dial code, as E.164 ("" when empty). */
-export function toE164(national: string, dialCode: string): string {
-  const trimmed = national.trim();
-  if (trimmed.startsWith("+")) return `+${trimmed.replace(/\D/g, "")}`;
-  const digits = trimmed.replace(/\D/g, "").replace(/^0+/, "");
-  return digits ? `+${dialCode}${digits}` : "";
-}
-
-export function isValidMobile(e164: string): boolean {
-  try {
-    return Boolean(e164) && isValidPhoneNumber(e164);
-  } catch {
-    return false;
-  }
-}
+export { isValidMobile };
 
 /**
- * v9 `.phone` field: the market's dial code as a fixed prefix (+971), the
- * national number typed after it. Reports E.164 ("+971501234567").
+ * v9 `.phone` field with a country picker (flag + dial code, the Gulf markets
+ * first, search), the national number typed after it. Starts on the market's
+ * country; reports E.164 ("+971501234567"). Same behaviour as Swiss Arabian
+ * (shared usePhoneNumberField).
  */
 export function SapilPhoneField({
   id,
   label,
-  dialCode,
   value,
   onChange,
   error,
-  placeholder,
   wide,
   name,
   autoComplete = "tel-national",
 }: {
   id: string;
   label: ReactNode;
-  dialCode: string;
   value: string;
   onChange: (e164: string) => void;
   error?: ReactNode;
-  placeholder?: string;
   wide?: boolean;
   name?: string;
   autoComplete?: string;
 }) {
-  // What the shopper typed (spaces kept); re-read when the value changes from outside (prefill).
-  const [typed, setTyped] = useState(() => nationalPart(value, dialCode));
-  const [lastValue, setLastValue] = useState(value);
-  if (value !== lastValue) {
-    setLastValue(value);
-    if (toE164(typed, dialCode) !== value) setTyped(nationalPart(value, dialCode));
-  }
+  const t = useShopCopy();
+  const { rootRef, inputRef, ...phone } = usePhoneNumberField({ value, onChange });
+  const listId = useId();
+  const errorId = `${id}-err`;
   return (
-    <Field
-      id={id}
-      name={name}
-      label={label}
-      type="tel"
-      inputMode="tel"
-      autoComplete={autoComplete}
-      prefix={<span dir="ltr">+{dialCode}</span>}
-      placeholder={placeholder}
-      value={typed}
-      dir="ltr"
-      onChange={(event) => {
-        setTyped(event.target.value);
-        const next = toE164(event.target.value, dialCode);
-        setLastValue(next);
-        onChange(next);
-      }}
-      error={error}
-      wide={wide}
-    />
+    <FieldFrame id={id} errorId={errorId} label={label} error={error} wide={wide}>
+      <div className="flex gap-[8px]" dir="ltr">
+        <div className="relative shrink-0" ref={rootRef}>
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={phone.open}
+            aria-controls={phone.open ? listId : undefined}
+            aria-label={t("phone.countryAria", { country: phone.countryLabel, dial: phone.dial })}
+            onClick={() => phone.setOpen((v) => !v)}
+            className={cx(fieldControlClass(Boolean(error)), "!w-auto inline-flex items-center gap-[8px] px-[12px] cursor-pointer font-[600]")}
+          >
+            <CountryFlag country={phone.country} />
+            <span>+{phone.dial}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <path d="M2.5 4.5 6 8l3.5-3.5" />
+            </svg>
+          </button>
+          {phone.open ? (
+            <div className="absolute start-0 top-[calc(100%+6px)] z-[40] w-[290px] overflow-hidden rounded-[16px] border border-sapil-line bg-sapil-white shadow-sapil-lg">
+              <div className="p-[10px] border-b border-sapil-line">
+                <input
+                  autoFocus
+                  type="search"
+                  autoComplete="off"
+                  name="country-search"
+                  value={phone.query}
+                  onChange={(event) => phone.setQuery(event.target.value)}
+                  placeholder={t("phone.search")}
+                  aria-label={t("phone.searchAria")}
+                  className="h-[40px] w-full rounded-[12px] border border-sapil-line-2 bg-sapil-card px-[12px] text-[14px] outline-none focus:border-sapil-accent"
+                />
+              </div>
+              <ul id={listId} role="listbox" aria-label={t("phone.codeAria")} className="max-h-[260px] overflow-auto py-[4px] list-none m-0 p-0">
+                {phone.countries.map((c) => (
+                  <li key={c.code}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={c.code === phone.country}
+                      onClick={() => phone.pick(c.code)}
+                      className={cx(
+                        "flex w-full items-center gap-[10px] px-[14px] py-[9px] text-start text-[14px] hover:bg-sapil-paper",
+                        c.code === phone.country && "bg-sapil-paper font-[600] text-sapil-accent",
+                      )}
+                    >
+                      <CountryFlag country={c.code} />
+                      <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                      <span className="shrink-0 text-sapil-ink-2">+{c.dial}</span>
+                    </button>
+                  </li>
+                ))}
+                {phone.countries.length === 0 ? <li className="px-[14px] py-[12px] text-[14px] text-sapil-ink-2">{t("phone.noMatch")}</li> : null}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+        <input
+          ref={inputRef}
+          id={id}
+          name={name}
+          type="tel"
+          inputMode="tel"
+          autoComplete={autoComplete}
+          placeholder={phone.example}
+          value={phone.national}
+          maxLength={phone.maxNationalDigits}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          onChange={(event) => phone.type(event.target.value)}
+          className={cx(fieldControlClass(Boolean(error)), "min-w-0 flex-1")}
+        />
+      </div>
+    </FieldFrame>
   );
 }

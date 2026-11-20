@@ -1644,5 +1644,10 @@
   "promotions.applied.offer": "عرض",
   "promotions.addFailed": "تعذّرت الإضافة إلى حقيبتك. يُرجى المحاولة مرة أخرى.",
   "promotions.previewFailed": "تعذّر احتساب هذا السعر. يُرجى المحاولة مرة أخرى.",
-  "afterSales.quantityOf": "كمية {name}"
+  "afterSales.quantityOf": "كمية {name}",
+  "pages.title.account": "حسابي",
+  "pages.title.payments": "المدفوعات",
+  "pages.title.profile": "الملف الشخصي",
+  "pages.title.subscriptions": "الاشتراكات",
+  "pages.title.subscription": "الاشتراك"
 }

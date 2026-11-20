@@ -10,7 +10,6 @@ import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { toast } from "@/components/ui/Toaster";
 import { toastApiError } from "@/lib/api/toastApiError";
 import { refreshCustomerScopedCaches } from "@/lib/auth/sessionCache";
-import { env } from "@/lib/config/env";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -141,7 +140,8 @@ export function useMarketDialCode(): string {
  */
 export function useLoginFlow(feedback?: AuthFeedback) {
   // Social sign-in is offered where it is on for this website's market (ADR-005 phase G).
-  const siteSignIn = useSiteIntegrations().signIn;
+  const site = useSiteIntegrations();
+  const siteSignIn = site.signIn;
   const signInOn = Boolean(siteSignIn.google || siteSignIn.apple);
   const router = useLocaleRouter();
   const say = useFeedback(feedback);
@@ -253,7 +253,8 @@ export function useLoginFlow(feedback?: AuthFeedback) {
     step,
     marketDialCode,
     oauthEnabled: signInOn,
-    codeSignInEnabled: env.flags.verification,
+    // The backend's setting (site integrations), not a build flag.
+    codeSignInEnabled: site.accountVerification,
     form,
     emailForm,
     codeForm,
@@ -272,7 +273,8 @@ export function useLoginFlow(feedback?: AuthFeedback) {
 /** Create an account in the selected market; with verification on, the emailed code finishes it. */
 export function useRegisterForm(feedback?: AuthFeedback) {
   // Social sign-in is offered where it is on for this website's market (ADR-005 phase G).
-  const siteSignIn = useSiteIntegrations().signIn;
+  const site = useSiteIntegrations();
+  const siteSignIn = site.signIn;
   const signInOn = Boolean(siteSignIn.google || siteSignIn.apple);
   const router = useLocaleRouter();
   const say = useFeedback(feedback);
@@ -302,7 +304,7 @@ export function useRegisterForm(feedback?: AuthFeedback) {
         firstName,
         lastName,
         // Without the code screen there is nowhere to finish, so only ask when it is on.
-        verifyEmailFirst: env.flags.verification,
+        verifyEmailFirst: site.accountVerification,
       });
       // The first dashboard visit says "Welcome", not "Welcome back".
       markNewAccount(values.email);
@@ -336,6 +338,7 @@ export function useVerifyForm(feedback?: AuthFeedback) {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const isLoginCode = searchParams.get("mode") === "login-code";
+  const accountVerification = useSiteIntegrations().accountVerification;
   const returnTo = useReturnTo();
   const [resending, setResending] = useState(false);
   const form = useForm<VerifyFormValues>({
@@ -390,7 +393,9 @@ export function useVerifyForm(feedback?: AuthFeedback) {
   }
 
   return {
-    enabled: env.flags.verification,
+    // On when the backend says verification is on, and always when it has just
+    // asked for a code (it sends here with the email): a shopper is never stuck.
+    enabled: accountVerification || Boolean(email),
     email,
     form,
     codeValue,

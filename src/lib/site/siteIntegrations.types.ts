@@ -22,6 +22,12 @@ export type SiteIntegrations = {
     google: { clientId: string } | null;
     apple: { clientId: string } | null;
   };
+  /**
+   * Customer email verification is on in the backend: sign-up asks for the
+   * emailed code, code sign-in is offered, an unverified email sign-in goes to
+   * the code screen. The backend is the only source (no build setting).
+   */
+  accountVerification: boolean;
 };
 
 /** Everything off: no answer from the backend never means "use some default". */
@@ -32,6 +38,7 @@ export const SITE_INTEGRATIONS_OFF: SiteIntegrations = {
   paymentPromos: { tabby: null, tamara: null },
   googleMaps: null,
   signIn: { google: null, apple: null },
+  accountVerification: false,
 };
 
 /** Cache tag of an address's settings; the backend's refresh call names the address. */

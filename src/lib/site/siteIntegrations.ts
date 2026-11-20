@@ -52,6 +52,7 @@ const responseSchema = z.object({
     google: z.object({ clientId: id(/^[A-Za-z0-9._-]{8,200}$/) }).nullable(),
     apple: z.object({ clientId: id(/^[A-Za-z0-9._-]{3,200}$/) }).nullable(),
   }),
+  accountVerification: z.boolean(),
 });
 
 /**
@@ -86,6 +87,7 @@ export function parseSiteIntegrations(raw: unknown): SiteIntegrations {
       google: pick(signInShape.google, signIn.google, null),
       apple: pick(signInShape.apple, signIn.apple, null),
     },
+    accountVerification: pick(shape.accountVerification, data.accountVerification, false),
   };
 }
 

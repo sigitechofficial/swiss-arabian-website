@@ -126,7 +126,9 @@ export function SapilOrderView({
         <HeroMark tone={tone} />
         <div className="min-w-0">
           <Eyebrow>{eyebrow}</Eyebrow>
-          <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,56px)] leading-[1.02] mt-[10px] mb-[12px] [&_.serif]:font-sapil-serif">
+          {/* `.order-ref`: an order number is a code, not a word. On small screens it takes its
+              own line at a smaller size and may break anywhere, instead of wrapping mid-code. */}
+          <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,56px)] leading-[1.02] mt-[10px] mb-[12px] [&_.serif]:font-sapil-serif [&_.order-ref]:[overflow-wrap:anywhere] max-600:[&_.order-ref]:block max-600:[&_.order-ref]:text-[0.62em] max-600:[&_.order-ref]:leading-[1.1] max-600:[&_.order-ref]:mt-[4px]">
             {headline}
           </h1>
           {intro ? <p className="text-sapil-ink-2 max-w-[62ch]">{intro}</p> : null}

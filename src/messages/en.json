@@ -1597,5 +1597,10 @@
   "promotions.applied.offer": "Offer",
   "promotions.addFailed": "We couldn’t add that to your bag. Please try again.",
   "promotions.previewFailed": "We couldn’t work out this price. Please try again.",
-  "afterSales.quantityOf": "Quantity of {name}"
+  "afterSales.quantityOf": "Quantity of {name}",
+  "pages.title.account": "My account",
+  "pages.title.payments": "Payments",
+  "pages.title.profile": "Profile",
+  "pages.title.subscriptions": "Subscriptions",
+  "pages.title.subscription": "Subscription"
 }

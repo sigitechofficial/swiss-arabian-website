@@ -23,7 +23,6 @@
   "emailPlaceholder": "you@email.com",
   "emailError": "أدخل بريدًا إلكترونيًا لنرسل إليك الإيصال.",
   "phone": "رقم الجوال",
-  "phonePlaceholder": "50 123 4567",
   "phoneError": "أدخل رقم جوال صحيحًا، مثل 50 123 4567.",
   "address": "عنوان التوصيل",
   "fullName": "الاسم الكامل",

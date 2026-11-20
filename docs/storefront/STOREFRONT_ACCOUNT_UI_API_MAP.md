@@ -19,7 +19,7 @@ Everything else renders real UI with placeholder content and an honest
 
 The OTP screen exists in code but is **off by default**:
 
-- Frontend gate: `NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI` → `env.flags.verification`
+- Frontend gate: `useSiteIntegrations().accountVerification` (backend `CUSTOMER_VERIFICATION_ENABLED`); `NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI` removed 2026-11-20
 - Backend gate: `CUSTOMER_VERIFICATION_ENABLED`
 
 Behaviour with the flag **off** (current state):

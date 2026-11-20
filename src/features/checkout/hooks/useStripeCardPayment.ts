@@ -133,6 +133,8 @@ export function resolveStripeContact(explicit: StripeContact) {
       ...(readCheckoutControl("delAddr2") ? { line2: readCheckoutControl("delAddr2") } : {}),
       ...(city ? { city } : {}),
       ...(readCheckoutControl("delEmirate") ? { state: readCheckoutControl("delEmirate") } : {}),
+      // Stripe needs a postcode here (the card form hides the field); markets
+      // without postcodes send its stand-in. It stays with Stripe, never on the order.
       postal_code: readCheckoutControl("delPostal") || "00000",
     },
   };

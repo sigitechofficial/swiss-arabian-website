@@ -35,6 +35,7 @@ import type {
 import { countryLabel, regionLabel, regionSetLabels } from "../utils/addressDisplay";
 import { AccountPageShell } from "./AccountPageShell";
 import { AccountPageTitle } from "./AccountPageTitle";
+import { formatPhoneNumber } from "@/components/ui/phone/usePhoneNumberField";
 
 function Field({
   label,
@@ -310,7 +311,7 @@ function AddressCard({
         <span>{line}</span>
         {place ? <span>{place}</span> : null}
         {country ? <span>{country}</span> : null}
-        {address.phoneE164 ? <span className="mt-1 text-sa-primary">{address.phoneE164}</span> : null}
+        {address.phoneE164 ? <span className="mt-1 text-sa-primary" dir="ltr">{formatPhoneNumber(address.phoneE164)}</span> : null}
       </address>
 
       <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-sa-border pt-4 text-[12.5px] font-semibold">

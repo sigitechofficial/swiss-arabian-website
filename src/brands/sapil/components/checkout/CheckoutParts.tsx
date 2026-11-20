@@ -131,7 +131,6 @@ export function ContactFieldset({
   onEmail,
   phone,
   onPhone,
-  dialCode,
   errors,
   before,
 }: {
@@ -139,7 +138,6 @@ export function ContactFieldset({
   onEmail: (value: string) => void;
   phone: string;
   onPhone: (value: string) => void;
-  dialCode: string;
   errors: AddressErrors;
   before?: ReactNode;
 }) {
@@ -164,8 +162,6 @@ export function ContactFieldset({
           id="co-phone"
           name="phone"
           label={t("checkout.phone")}
-          dialCode={dialCode}
-          placeholder={t("checkout.phonePlaceholder")}
           value={phone}
           onChange={onPhone}
           error={errors.phone}

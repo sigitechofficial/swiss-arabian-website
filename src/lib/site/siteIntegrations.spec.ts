@@ -25,6 +25,7 @@ const full = {
   paymentPromos: { tabby: { merchantCode: "SAUAE", publicKey: "pk_test_abc" }, tamara: null },
   googleMaps: { browserKey: "AIzaSyTestKeyForSpecs-123", mapId: null },
   signIn: { google: { clientId: "123-abc.apps.googleusercontent.com" }, apple: null },
+  accountVerification: true,
 };
 
 describe("parseSiteIntegrations (backend answer → what the page may load)", () => {
@@ -50,6 +51,14 @@ describe("parseSiteIntegrations (backend answer → what the page may load)", ()
   it("drops a sign-in client id that is not an id (never rendered into the page)", () => {
     const parsed = parseSiteIntegrations({ ...full, signIn: { google: { clientId: "x\"><script>" }, apple: null } });
     expect(parsed.signIn).toEqual({ google: null, apple: null });
+  });
+
+  it("takes customer email verification from the backend; anything but true is off", () => {
+    expect(parseSiteIntegrations(full).accountVerification).toBe(true);
+    expect(parseSiteIntegrations({ ...full, accountVerification: false }).accountVerification).toBe(false);
+    expect(parseSiteIntegrations({ ...full, accountVerification: "true" }).accountVerification).toBe(false);
+    const { accountVerification: _v, ...older } = full;
+    expect(parseSiteIntegrations(older).accountVerification).toBe(false);
   });
 
   it("is all off for nonsense", () => {

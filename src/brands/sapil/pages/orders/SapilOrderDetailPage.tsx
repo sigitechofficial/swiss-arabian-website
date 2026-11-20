@@ -81,7 +81,10 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
       eyebrow={<span dir="ltr">{t("account.odEyebrow", { number: detail.reference, date: date(order.createdAt) })}</span>}
       headline={
         <>
-          {t("account.odOrder")} <span dir="ltr">{detail.reference}</span>
+          {t("account.odOrder")}{" "}
+          <span dir="ltr" className="order-ref">
+            {detail.reference}
+          </span>
         </>
       }
       intro={<StatusPill status={order.status} label={statusLabel} />}

@@ -35,6 +35,8 @@ const MOVED_TO_RUNTIME =
   "environment settings are read when the server runs (APP_ENV, API_BASE_URL, SEO_INDEXING_ENABLED; local only: STOREFRONT_HOST, LOCAL_STOREFRONTS), so one image serves every environment";
 const SAME_ORIGIN =
   "the browser calls its own address (/storefront, /catalog, catalog images), which the website forwards to the backend";
+const FROM_BACKEND =
+  "customer email verification follows the backend (CUSTOMER_VERIFICATION_ENABLED), which the website reads from /storefront/site/integrations, so the two can never disagree";
 const RETURN_FROM_SITE =
   "payment returns go to the market website the shopper is on (checked by the backend)";
 
@@ -70,6 +72,7 @@ export const REMOVED_ENV_SETTINGS = {
   NEXT_PUBLIC_DEV_RETURN_URL: RETURN_FROM_SITE,
   NEXT_PUBLIC_STAGING_RETURN_URL: RETURN_FROM_SITE,
   NEXT_PUBLIC_PRODUCTION_RETURN_URL: RETURN_FROM_SITE,
+  NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI: FROM_BACKEND,
 } as const;
 export const REMOVED_ENV_KEYS = Object.keys(REMOVED_ENV_SETTINGS) as Array<
   keyof typeof REMOVED_ENV_SETTINGS

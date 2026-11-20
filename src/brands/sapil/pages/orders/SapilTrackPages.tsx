@@ -97,7 +97,11 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
         crumbs={[{ label: t("account.home"), href: "/" }, { label: t("account.trackEyebrow"), href: "/track" }, { label: summary.orderNumber }]}
         tone={summary.status === "CANCELLED" || summary.status === "FAILED" ? "failed" : step >= 4 ? "ok" : "info"}
         eyebrow={t("account.trackEyebrow")}
-        headline={<span dir="ltr">{summary.orderNumber}</span>}
+        headline={
+          <span dir="ltr" className="order-ref">
+            {summary.orderNumber}
+          </span>
+        }
         intro={
           <>
             {t("account.trackPlaced", {

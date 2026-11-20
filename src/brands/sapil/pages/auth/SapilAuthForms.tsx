@@ -4,7 +4,6 @@ import { Controller } from "react-hook-form";
 import {
   useForgotPasswordForm,
   useLoginFlow,
-  useMarketDialCode,
   useRegisterForm,
   useResetPasswordForm,
   useVerifyForm,
@@ -178,7 +177,6 @@ export function SapilRegisterForm() {
   const t = useSapilCopy();
   const messages = useAuthMessages();
   const { form, submit } = useRegisterForm(messages.feedback);
-  const dialCode = useMarketDialCode();
   const errors = form.formState.errors;
   return (
     <FormCard
@@ -222,8 +220,6 @@ export function SapilRegisterForm() {
               id="mobile"
               autoComplete="tel-national"
               label={t("account.authMobile")}
-              placeholder={t("account.authMobilePlaceholder")}
-              dialCode={dialCode}
               value={field.value ?? ""}
               onChange={field.onChange}
               error={errors.phone ? t("account.authErrMobile") : undefined}
