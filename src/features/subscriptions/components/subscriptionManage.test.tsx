@@ -5,6 +5,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiClientError } from "@/lib/api/apiError";
+import { englishTranslator } from "@/lib/i18n/messages";
 import { useUiStore } from "@/stores/useUiStore";
 import { AccountSubscriptionDetailPageView } from "./AccountSubscriptionDetailPageView";
 import { RENEWAL_CHARGE_PENDING_WARNING, SubscriptionManageSection } from "./SubscriptionManageSection";
@@ -318,7 +319,7 @@ describe("subscription management controls", () => {
     current = agreement({ renewalChargePending: true });
     apiPost.mockRejectedValue(new ApiClientError(409, { message: "A renewal charge is already in progress." }));
     renderPage();
-    expect(await screen.findByText(RENEWAL_CHARGE_PENDING_WARNING)).toBeInTheDocument();
+    expect(await screen.findByText(englishTranslator(RENEWAL_CHARGE_PENDING_WARNING))).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pause Subscription" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm pause" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("A renewal charge is already in progress.");

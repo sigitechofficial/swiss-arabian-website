@@ -10,6 +10,7 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { localizeHref } from "@/lib/i18n/localePath";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { listCustomerAddresses } from "@/features/account/api/customerAccount.service";
@@ -58,7 +59,8 @@ function PlanPriceCopy({
     monthlyTotal?: string | null;
   };
 }) {
-  const price = subscriptionPriceLines(source);
+  const t = useShopCopy();
+  const price = subscriptionPriceLines(source, t);
   if (!price.available) {
     return <p className="mt-3" role="status">{price.message}</p>;
   }
@@ -120,6 +122,7 @@ function writeDraft(
 }
 
 export function PlanSelectionPageView({ planCode }: Props) {
+  const t = useShopCopy();
   const router = useRouter();
   const pathname = usePathname() || "/";
   const queryClient = useQueryClient();
@@ -144,6 +147,8 @@ export function PlanSelectionPageView({ planCode }: Props) {
   const [acceptedFor, setAcceptedFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The server saw this registration with other details: offer a fresh one.
+  const [restartOffered, setRestartOffered] = useState(false);
   const [saved, setSaved] = useState<SubscriptionDetail | null>(null);
 
   const plan = useApiQuery(
@@ -178,21 +183,22 @@ export function PlanSelectionPageView({ planCode }: Props) {
         )
       : { selected, removed: 0 };
   const chosen = retained.selected;
-  const audienceNotice = audienceChangeNotice(retained.removed);
+  const audienceNotice = audienceChangeNotice(retained.removed, t);
   const names = chosen
     .map((id) => products.data?.find((item) => item.variantId === id)?.name ?? id)
     .filter(Boolean);
 
   function onPick(variantId: string) {
     setError(null);
+    setRestartOffered(false);
     if (!audience) {
-      setError("Choose Men or Women.");
+      setError(t("subs.rule.chooseAudience"));
       return;
     }
     try {
       writeDraft(planCode, mode, selectVariant(mode, chosen, variantId, allowed), audience);
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, "That fragrance cannot be selected."));
+      setError(getUserFacingErrorMessage(err, t("subs.plan.cannotSelect"), t));
     }
   }
 
@@ -200,6 +206,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
     if (!plan.data || !activeConsent || consent.isError || !audience) return;
     setSubmitting(true);
     setError(null);
+    setRestartOffered(false);
     try {
       const body = buildRegisterBody({
         zoneCode,
@@ -221,20 +228,19 @@ export function PlanSelectionPageView({ planCode }: Props) {
         setAcceptedFor(null);
         setError(
           err.code === "SUB_CONSENT_UNAVAILABLE"
-            ? "Registration is unavailable because this market has no active agreement."
-            : "This agreement was replaced. Review the current wording and accept it again.",
+            ? t("subs.plan.consentUnavailable")
+            : t("subs.plan.consentReplaced"),
         );
         await queryClient.invalidateQueries({
           queryKey: subscriptionKeys.consent(zoneCode, brandCode),
         });
       } else if (err instanceof ApiClientError && err.code === "SUB_SCHEDULE_UNAVAILABLE") {
-        setError(getUserFacingErrorMessage(err, SCHEDULE_UNAVAILABLE_MESSAGE));
+        setError(getUserFacingErrorMessage(err, t(SCHEDULE_UNAVAILABLE_MESSAGE), t));
       } else if (err instanceof ApiClientError && err.code === "SUB_IDEMPOTENCY_PAYLOAD_MISMATCH") {
-        setError(
-          "This registration was already sent with different details. Start a new registration to save another subscription.",
-        );
+        setError(t("subs.plan.payloadMismatch"));
+        setRestartOffered(true);
       } else {
-        setError(getUserFacingErrorMessage(err, "Registration could not be saved."));
+        setError(getUserFacingErrorMessage(err, t("subs.plan.saveFailed"), t));
       }
     } finally {
       setSubmitting(false);
@@ -242,13 +248,13 @@ export function PlanSelectionPageView({ planCode }: Props) {
   }
 
   if (!zoneCode) {
-    return <p className="px-4 py-10">Select a market before choosing a subscription plan.</p>;
+    return <p className="px-4 py-10">{t("subs.plan.selectMarket")}</p>;
   }
-  if (plan.isLoading || products.isLoading) return <PageLoading label="Loading this plan…" />;
+  if (plan.isLoading || products.isLoading) return <PageLoading label={t("subs.plan.loading")} />;
   if (plan.isError) {
     return (
       <p className="px-4 py-10" role="alert">
-        This plan is not available in the current market.
+        {t("subs.club.planUnavailable")}
       </p>
     );
   }
@@ -263,7 +269,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
       monthlyTotal: saved.monthlyTotal,
       mode: saved.selectionMode,
       fragranceNames: names,
-    });
+    }, t);
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <div className={accountPanel}>
@@ -274,7 +280,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
               </p>
             ))}
             <LocaleLink className={`${accountPrimaryCta} mt-6`} href={`/account/subscription/${saved.id}`}>
-              View this agreement
+              {t("subs.plan.viewAgreement")}
             </LocaleLink>
             {activeConsent ? (
               <SubscriptionCardSetup
@@ -293,7 +299,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
   return (
     <div className="mx-auto w-full max-w-[var(--chrome-content-max)] px-[var(--chrome-edge)] py-10 [@media(min-width:1200px)]:px-0">
       <LocaleLink href="/subscriptions" className="text-[0.85rem] text-[var(--copper,#8c4435)]">
-        All plans
+        {t("subs.plan.allPlans")}
       </LocaleLink>
       <h1 className="mt-3 text-[1.6rem] font-semibold break-words">{plan.data?.name}</h1>
       {plan.data?.description ? <p className="mt-2 max-w-2xl break-words">{plan.data.description}</p> : null}
@@ -301,12 +307,11 @@ export function PlanSelectionPageView({ planCode }: Props) {
         <PlanPriceCopy source={plan.data} />
       ) : null}
       <p className="mt-2 max-w-2xl text-[0.9rem] text-[var(--ink-2,#5b5148)]">
-        Fragrances below are the ones this plan currently allows. Product retail prices are not the subscription fee.
-        Replenishment keeps one fragrance. Queue keeps an ordered list. Surprise Me does not allocate a fragrance now.
+        {t("subs.plan.explainer")}
       </p>
 
       <fieldset className="mt-6 flex flex-wrap gap-2 border-0 p-0">
-        <legend className="mb-2 w-full text-[0.85rem] font-semibold">Audience</legend>
+        <legend className="mb-2 w-full text-[0.85rem] font-semibold">{t("subs.plan.audience")}</legend>
         {(["MEN", "WOMEN"] as const).map((value) => (
           <button
             key={value}
@@ -315,13 +320,13 @@ export function PlanSelectionPageView({ planCode }: Props) {
             aria-pressed={audience === value}
             onClick={() => writeDraft(planCode, mode, chosen, value)}
           >
-            {value === "MEN" ? "Men" : "Women"}
+            {value === "MEN" ? t("subs.audience.men") : t("subs.audience.women")}
           </button>
         ))}
       </fieldset>
 
       <fieldset className="mt-6 flex flex-wrap gap-2 border-0 p-0">
-        <legend className="mb-2 w-full text-[0.85rem] font-semibold">Selection</legend>
+        <legend className="mb-2 w-full text-[0.85rem] font-semibold">{t("subs.plan.selection")}</legend>
         {(["REPLENISHMENT", "QUEUE", "SURPRISE"] as const).map((value) => (
           <button
             key={value}
@@ -338,14 +343,14 @@ export function PlanSelectionPageView({ planCode }: Props) {
               writeDraft(planCode, value, nextSelected, audience);
             }}
           >
-            {modeLabel(value)}
+            {modeLabel(value, t)}
           </button>
         ))}
       </fieldset>
 
       {mode !== "SURPRISE" ? (
         <label className="mt-4 block text-[0.85rem]">
-          Search approved fragrances
+          {t("subs.plan.search")}
           <input
             className="mt-1 h-11 w-full max-w-md rounded border border-[var(--line)] px-3"
             value={query}
@@ -354,17 +359,17 @@ export function PlanSelectionPageView({ planCode }: Props) {
         </label>
       ) : (
         <p className="mt-4 text-[0.9rem]">
-          Surprise Me uses the published schedule for the audience you chose. No fragrance is allocated now.
+          {t("subs.plan.surpriseNote")}
         </p>
       )}
 
       {products.isError ? (
         <p className="mt-4" role="alert">
-          Approved fragrances could not be loaded.
+          {t("subs.plan.productsFailed")}
         </p>
       ) : null}
       {products.isSuccess && products.data.length === 0 ? (
-        <p className="mt-4">This plan has no selectable fragrances right now.</p>
+        <p className="mt-4">{t("subs.plan.noProducts")}</p>
       ) : null}
 
       {mode !== "SURPRISE" && visible.length > 0 ? (
@@ -377,7 +382,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
                   <p className="m-0 font-semibold break-words">{item.name}</p>
                   <p className="mt-1 text-[0.8rem] break-all text-[var(--ink-2,#5b5148)]">{item.sku}</p>
                   <button type="button" className="mt-3 h-11 underline" onClick={() => onPick(item.variantId)}>
-                    {on ? "Selected" : "Select"}
+                    {on ? t("subs.plan.selected") : t("subs.plan.select")}
                   </button>
                 </div>
               </li>
@@ -393,17 +398,17 @@ export function PlanSelectionPageView({ planCode }: Props) {
               {products.data?.find((item) => item.variantId === id)?.name ?? id}
               <span className="ms-2 inline-flex gap-2">
                 <button type="button" className="h-11 px-2 underline" onClick={() => writeDraft(planCode, mode, moveVariant(chosen, index, -1), audience)}>
-                  Up
+                  {t("subs.detail.up")}
                 </button>
                 <button type="button" className="h-11 px-2 underline" onClick={() => writeDraft(planCode, mode, moveVariant(chosen, index, 1), audience)}>
-                  Down
+                  {t("subs.detail.down")}
                 </button>
                 <button
                   type="button"
                   className="h-11 px-2 underline"
                   onClick={() => writeDraft(planCode, mode, chosen.filter((value) => value !== id), audience)}
                 >
-                  Remove
+                  {t("account.remove")}
                 </button>
               </span>
             </li>
@@ -411,14 +416,16 @@ export function PlanSelectionPageView({ planCode }: Props) {
         </ol>
       ) : null}
 
-      <p className="mt-4 text-[0.85rem]">Selected: {mode === "SURPRISE" ? "Surprise Me" : chosen.length}</p>
+      <p className="mt-4 text-[0.85rem]">
+        {t("subs.plan.selectedSummary", { selection: mode === "SURPRISE" ? modeLabel("SURPRISE", t) : chosen.length })}
+      </p>
 
       {bootstrapped && !authed ? (
         <LocaleLink
           className={`${accountPrimaryCta} mt-6`}
           href={`/login?returnTo=${encodeURIComponent(`/subscriptions/${planCode}`)}`}
         >
-          Sign in to register
+          {t("subs.plan.signIn")}
         </LocaleLink>
       ) : null}
 
@@ -431,14 +438,14 @@ export function PlanSelectionPageView({ planCode }: Props) {
           }}
         >
           <label className="block text-[0.85rem]">
-            Delivery address
+            {t("account.deliveryAddress")}
             <select
               className="mt-1 h-11 w-full rounded border border-[var(--line)] px-3"
               value={addressId}
               onChange={(event) => setAddressId(event.target.value)}
               required
             >
-              <option value="">Choose an address</option>
+              <option value="">{t("subs.plan.chooseAddress")}</option>
               {(addresses.data ?? []).map((address) => (
                 <option key={address.id} value={address.id}>
                   {[address.address1, address.city, address.country].filter(Boolean).join(", ")}
@@ -448,21 +455,21 @@ export function PlanSelectionPageView({ planCode }: Props) {
           </label>
           {addresses.isSuccess && addresses.data.length === 0 ? (
             <p className="mt-2 text-[0.85rem]">
-              Add an address in your account before registering.{" "}
+              {t("subs.plan.addAddress")}{" "}
               <button type="button" className="underline" onClick={() => router.push("/account/addresses")}>
-                Manage addresses
+                {t("account.manageAddresses")}
               </button>
             </p>
           ) : null}
 
           {consent.isPending ? (
             <p className="mt-4 text-[0.9rem]" role="status">
-              Loading the registration agreement…
+              {t("subs.plan.consentLoading")}
             </p>
           ) : null}
           {consent.isError ? (
             <p className="mt-4 text-[0.9rem]" role="alert">
-              The registration agreement could not be loaded. Registration stays closed until it can be read.
+              {t("subs.plan.consentFailed")}
             </p>
           ) : null}
           {consent.isSuccess && activeConsent ? (
@@ -479,8 +486,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
           ) : null}
           {consent.isSuccess && !activeConsent ? (
             <p className="mt-4 text-[0.9rem]" role="status">
-              Registration is unavailable until an approved agreement is published for this market.
-              No placeholder terms will be submitted.
+              {t("subs.plan.consentMissing")}
             </p>
           ) : null}
 
@@ -494,7 +500,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
               {error}
             </p>
           ) : null}
-          {error?.includes("Start a new registration") ? (
+          {error && restartOffered ? (
             <button
               type="button"
               className="mt-2 underline"
@@ -512,9 +518,10 @@ export function PlanSelectionPageView({ planCode }: Props) {
                 });
                 replaceRegistrationIdempotencyKey(registrationFingerprint(body), sessionStorage);
                 setError(null);
+                setRestartOffered(false);
               }}
             >
-              Start a new registration
+              {t("subs.plan.restart")}
             </button>
           ) : null}
 
@@ -529,10 +536,10 @@ export function PlanSelectionPageView({ planCode }: Props) {
               !accepted ||
               !addressId ||
               !audience ||
-              !(plan.data && subscriptionPriceLines(plan.data).available)
+              !(plan.data && subscriptionPriceLines(plan.data, t).available)
             }
           >
-            {submitting ? "Saving…" : "Save registration"}
+            {submitting ? t("account.saving") : t("subs.plan.save")}
           </button>
         </form>
       ) : null}

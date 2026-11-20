@@ -8,6 +8,8 @@ import { LandingHero } from "@/features/home/components/landing/LandingHero";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { localizeHref } from "@/lib/i18n/localePath";
+import type { MessageKey, Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -33,8 +35,8 @@ function useZoneCode(): string {
   return zoneCode || marketId || "";
 }
 
-function feeText(plan: PublicSubscriptionPlan): string {
-  const price = subscriptionPriceLines(plan);
+function feeText(plan: PublicSubscriptionPlan, t: Translator): string {
+  const price = subscriptionPriceLines(plan, t);
   if (!price.available) return price.message;
   return `${price.subscription}. ${price.shipping}. ${price.total}.`;
 }
@@ -90,6 +92,7 @@ function Check() {
 }
 
 export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: string } = {}) {
+  const t = useShopCopy();
   const router = useRouter();
   const modeIdPrefix = useId();
   const pathname = usePathname() || "/";
@@ -173,7 +176,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
     ? retainAudienceSelections(queue, products.data.map((item) => item.variantId))
     : { selected: queue, removed: 0 };
   const shownQueue = retained.selected;
-  const audienceNotice = audienceChangeNotice(audienceRemoved || retained.removed);
+  const audienceNotice = audienceChangeNotice(audienceRemoved || retained.removed, t);
 
   // Picks not offered for the new audience are dropped once and the count is
   // kept for the notice (after this the retained queue removes nothing).
@@ -235,7 +238,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
     setQueueChoice(next);
   }
 
-  const activePrice = active ? subscriptionPriceLines(active) : null;
+  const activePrice = active ? subscriptionPriceLines(active, t) : null;
   const price = active && activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "";
 
   function continueWithPlan() {
@@ -253,44 +256,44 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
       return;
     }
     if (!agreementId && mode === "choose" && selected.length < 1) {
-      setError("Add at least one fragrance.");
+      setError(t("subs.rule.addOne"));
       return;
     }
     setError(null);
     router.push(checkoutPath);
   }
 
-  const genderLabel = gender === "men" ? "For him" : "For her";
-  const modeLine = mode === "choose" ? "Your own queue of up to 12 picks" : "Hand-picked by our perfumers";
+  const genderLabel = gender === "men" ? t("subs.club.forHim") : t("subs.club.forHer");
+  const modeLine = mode === "choose" ? t("subs.club.modeQueue") : t("subs.club.modeSurprise");
   const remaining = QUEUE_LIMIT - shownQueue.length;
   const queueFull = shownQueue.length >= QUEUE_LIMIT;
   const continueLabel = queueFull
-    ? "Continue to checkout"
-    : `Continue with ${shownQueue.length} ${shownQueue.length === 1 ? "pick" : "picks"}`;
+    ? t("subs.club.continueCheckout")
+    : t("subs.club.continueWith", { count: shownQueue.length });
   const ring = 2 * Math.PI * 30;
   const dash = `${((ring * shownQueue.length) / QUEUE_LIMIT).toFixed(1)} ${ring.toFixed(1)}`;
 
   return (
     <div className="bg-[var(--cream,#faf6ee)] text-[var(--ink,#241f1b)]">
       <LandingHero
-        eyebrow="The Scent Club · Monthly subscription"
-        title="A new signature, every month."
-        lead="Discover a different fragrance each month in a 10 ml refillable atomizer. Pick your own twelve, or let our perfumers surprise you."
+        eyebrow={t("subs.club.eyebrow")}
+        title={t("subs.club.title")}
+        lead={t("subs.club.lead")}
         desktopImage="/assets/storefront/banner-shaghaf-powder.jpg"
-        primaryCta={{ href: "#plans", label: active ? `Start for ${price}` : "See the plans" }}
-        secondaryCta={{ href: "#how", label: "How it works" }}
+        primaryCta={{ href: "#plans", label: active ? t("subs.club.startFor", { price }) : t("subs.club.seePlans") }}
+        secondaryCta={{ href: "#how", label: t("subs.club.howItWorks") }}
       />
 
       <section className="mx-auto max-w-[1240px] px-6 pt-24 pb-10" aria-labelledby="why">
         <div className="mb-14 flex flex-col items-center gap-3 text-center">
-          <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">Why subscribe</p>
-          <h2 id="why" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">Wear something new, not the same</h2>
+          <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">{t("subs.club.whyEyebrow")}</p>
+          <h2 id="why" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">{t("subs.club.whyTitle")}</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            ["New month, new you", "Test-drive a different scent every month and find the ones that truly fit you before buying a full bottle."],
-            ["Light on the pocket", active ? `${price} a month brings a 10 ml refillable perfume atomizer to your door.` : "A fixed monthly fee brings a 10 ml refillable perfume atomizer to your door."],
-            ["Your nose never gets bored", "We change outfits every day, so why not perfume? Rotating scents keeps you noticing them, instead of growing used to one."],
+            [t("subs.club.why1Title"), t("subs.club.why1Body")],
+            [t("subs.club.why2Title"), active ? t("subs.club.why2BodyPrice", { price }) : t("subs.club.why2Body")],
+            [t("subs.club.why3Title"), t("subs.club.why3Body")],
           ].map(([title, body]) => (
             <article key={title} className="flex flex-col gap-4 rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white px-8 py-9">
               <div className="grid size-14 place-items-center rounded-full bg-[var(--cream-2,#f3ebda)] text-[var(--copper,#8c4435)]">
@@ -305,14 +308,14 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
 
       <section id="how" className={`mx-auto max-w-[1240px] px-6 pt-16 pb-24 ${SECTION_SCROLL}`} aria-labelledby="how-h">
         <div className="mb-14 flex flex-col items-center gap-3 text-center">
-          <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">How it works</p>
-          <h2 id="how-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">Three steps to your first atomizer</h2>
+          <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">{t("subs.club.howItWorks")}</p>
+          <h2 id="how-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">{t("subs.club.howTitle")}</h2>
         </div>
         <ol className="m-0 grid list-none gap-10 p-0 md:grid-cols-3">
           {[
-            ["01", "Choose, or let us choose", "Build a queue of up to 12 fragrances, one for each month. Or leave it to our perfumers to surprise you."],
-            ["02", "Activate your subscription", "Add your contact and delivery details. Accurate details help us get your package to you faster."],
-            ["03", "Pay, and we take it from there", "Complete payment and our courier will call you when your package is out for delivery."],
+            ["01", t("subs.club.step1Title"), t("subs.club.step1Body")],
+            ["02", t("subs.club.step2Title"), t("subs.club.step2Body")],
+            ["03", t("subs.club.step3Title"), t("subs.club.step3Body")],
           ].map(([number, title, body]) => (
             <li key={number} className="flex flex-col gap-3.5 border-t-2 border-[var(--ink,#241f1b)] pt-6">
               <div className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none text-[var(--copper,#8c4435)]">{number}</div>
@@ -327,26 +330,26 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
         <div className="mx-auto flex max-w-[1100px] flex-wrap items-stretch gap-12">
           <div className="flex min-w-0 flex-1 basis-[420px] flex-col gap-8">
             <div className="flex flex-col gap-3">
-              <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">Subscribe now</p>
-              <h2 id="plans-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">Set up your Scent Club</h2>
+              <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">{t("subs.club.subscribeNow")}</p>
+              <h2 id="plans-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">{t("subs.club.setupTitle")}</h2>
             </div>
 
-            {!zoneCode ? <p className="text-[length:var(--fs-body)]">Select a market to see plans for that zone.</p> : null}
-            {plans.isLoading ? <PageLoading label="Loading subscription plans…" /> : null}
+            {!zoneCode ? <p className="text-[length:var(--fs-body)]">{t("subs.club.selectMarket")}</p> : null}
+            {plans.isLoading ? <PageLoading label={t("subs.club.loadingPlans")} /> : null}
             {plans.isError ? (
-              <p className="text-[length:var(--fs-body)]" role="alert">Subscription plans could not be loaded.</p>
+              <p className="text-[length:var(--fs-body)]" role="alert">{t("subs.club.plansFailed")}</p>
             ) : null}
             {plans.isSuccess && published.length === 0 ? (
-              <p className="text-[length:var(--fs-body)]">No subscription plans are published for this market.</p>
+              <p className="text-[length:var(--fs-body)]">{t("subs.club.noPlans")}</p>
             ) : null}
 
             {lockedPlanCode && plans.isSuccess && !active ? (
-              <p className="text-[length:var(--fs-body)]" role="alert">This plan is not available in the current market.</p>
+              <p className="text-[length:var(--fs-body)]" role="alert">{t("subs.club.planUnavailable")}</p>
             ) : null}
 
             {!lockedPlanCode && published.length > 1 ? (
               <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-                <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">Which plan?</legend>
+                <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">{t("subs.club.whichPlan")}</legend>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {published.map((plan) => {
                     const selected = plan.planCode === active?.planCode;
@@ -359,7 +362,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                         className={`flex min-h-24 flex-col gap-1.5 rounded-2xl px-5 py-4 text-left ${selected ? "border-2 border-[var(--ink,#241f1b)] bg-white" : "border-2 border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)]"}`}
                       >
                         <span className="text-[length:var(--fs-body-lg)] font-semibold">{plan.name}</span>
-                        <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">{feeText(plan)}</p>
+                        <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">{feeText(plan, t)}</p>
                       </button>
                     );
                   })}
@@ -368,7 +371,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             ) : null}
 
             <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-              <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">What type of fragrance are you looking for?</legend>
+              <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">{t("subs.club.fragranceType")}</legend>
               <div className="grid max-w-[420px] grid-cols-2 gap-1.5 rounded-full border border-[var(--line,#d9ccb4)] bg-white p-1.5">
                 {(["men", "women"] as const).map((option) => (
                   <button
@@ -382,7 +385,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                     }}
                     className={`min-h-12 rounded-full text-[length:var(--fs-body)] ${gender === option ? "bg-[var(--ink,#241f1b)] font-semibold text-[var(--cream,#faf6ee)]" : "bg-transparent font-medium text-[var(--ink-2,#5b5148)]"}`}
                   >
-                    {option === "men" ? "Men" : "Women"}
+                    {option === "men" ? t("subs.audience.men") : t("subs.audience.women")}
                   </button>
                 ))}
               </div>
@@ -394,12 +397,16 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             </fieldset>
 
             <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-              <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">How should we pick your fragrances?</legend>
+              <legend className="mb-3 p-0 text-[length:var(--fs-body)] font-semibold">{t("subs.club.howPick")}</legend>
               <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  ["surprise", "Surprise me", "Our perfumers pick a new scent for you each month."],
-                  ["choose", "Pick my own 12", "Choose the fragrances you want, month by month."],
-                ].map(([value, title, description]) => {
+                {(
+                  [
+                    ["surprise", "subs.club.surpriseTitle", "subs.club.surpriseText"],
+                    ["choose", "subs.club.chooseTitle", "subs.club.chooseText"],
+                  ] as const satisfies readonly (readonly [string, MessageKey, MessageKey])[]
+                ).map(([value, titleKey, descriptionKey]) => {
+                  const title = t(titleKey);
+                  const description = t(descriptionKey);
                   const selected = mode === value;
                   return (
                     <button
@@ -424,19 +431,19 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
           {active ? (
             <div className="flex min-w-0 flex-1 basis-[360px] flex-col gap-5 rounded-3xl bg-[var(--ink,#241f1b)] px-9 py-10 text-[var(--cream,#faf6ee)]">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--gold,#b98a4b)] uppercase">Monthly plan</span>
+                <span className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--gold,#b98a4b)] uppercase">{t("subs.club.monthlyPlan")}</span>
                 <span className="rounded-full border border-white/20 px-3 py-1.5 text-[length:var(--fs-eyebrow)]">{genderLabel}</span>
               </div>
               <div className="flex items-baseline gap-2 whitespace-nowrap">
                 <span className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none whitespace-nowrap">{activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "—"}</span>
-                <span className="text-[length:var(--fs-body)] whitespace-nowrap text-[var(--sand,#ece0c9)]">/ month</span>
+                <span className="text-[length:var(--fs-body)] whitespace-nowrap text-[var(--sand,#ece0c9)]">{t("subs.perMonth")}</span>
               </div>
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">{active.name}</p>
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">
                 {activePrice?.available ? `${activePrice.subscription}. ${activePrice.shipping}.` : activePrice?.message}
               </p>
               <ul className="m-0 flex list-none flex-col gap-3 p-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">
-                {["One 10 ml refillable atomizer every month", modeLine, "Courier calls before delivery", "Skip, pause or cancel anytime"].map((line) => (
+                {[t("subs.club.featureAtomizer"), modeLine, t("subs.club.featureCourier"), t("subs.club.featureFlexible")].map((line) => (
                   <li key={line} className="flex items-start gap-3"><Check />{line}</li>
                 ))}
               </ul>
@@ -445,7 +452,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                   className="mt-2 flex min-h-14 items-center justify-center rounded-full bg-[var(--gold,#b98a4b)] text-[length:var(--fs-body-lg)] font-semibold text-[var(--ink,#241f1b)]"
                   href={`/login?returnTo=${encodeURIComponent(localizeHref(subscriptionCheckoutPath(active.planCode), pathname))}`}
                 >
-                  Sign in to subscribe
+                  {t("subs.club.signIn")}
                 </LocaleLink>
               ) : null}
               {error ? (
@@ -464,10 +471,10 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                   disabled={!activePrice?.available}
                   className="mt-2 flex min-h-14 items-center justify-center rounded-full bg-[var(--gold,#b98a4b)] text-[length:var(--fs-body-lg)] font-semibold whitespace-nowrap text-[var(--ink,#241f1b)] disabled:opacity-50"
                 >
-                  {agreementId ? "Continue to checkout" : mode === "choose" && shownQueue.length === 0 ? "Choose your 12" : "Subscribe now"}
+                  {agreementId ? t("subs.club.continueCheckout") : mode === "choose" && shownQueue.length === 0 ? t("subs.club.chooseYour12") : t("subs.club.subscribeNow")}
                 </button>
               ) : null}
-              <p className="m-0 text-center text-[0.82rem] text-[var(--sand,#ece0c9)]">We ship one fragrance at the start of each month.</p>
+              <p className="m-0 text-center text-[0.82rem] text-[var(--sand,#ece0c9)]">{t("subs.club.shipNote")}</p>
             </div>
           ) : null}
         </div>
@@ -477,17 +484,17 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
         <section id="favourite-12" className={`mx-auto max-w-[1240px] px-6 py-24 pb-36 lg:pb-24 ${SECTION_SCROLL}`} aria-labelledby="pick-h">
           <div className="mb-9 flex flex-wrap items-end justify-between gap-6">
             <div className="flex flex-col gap-3">
-              <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">Build your queue</p>
-              <h2 id="pick-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">Choose your favourite 12</h2>
-              <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">Each pick fills the next month. Any empty months are chosen by our perfumers.</p>
+              <p className="text-[length:var(--fs-eyebrow)] font-semibold tracking-[var(--tracking-wide)] text-[var(--copper,#8c4435)] uppercase">{t("subs.club.queueEyebrow")}</p>
+              <h2 id="pick-h" className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] leading-[1.1] font-medium">{t("subs.club.queueTitle")}</h2>
+              <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">{t("subs.club.queueLead")}</p>
             </div>
             <label className="flex min-h-[52px] min-w-[260px] flex-1 basis-[380px] items-center gap-2.5 rounded-full border border-[var(--line,#d9ccb4)] bg-white px-5">
-              <span className="sr-only">Search fragrances</span>
+              <span className="sr-only">{t("subs.club.search")}</span>
               <input
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name"
+                placeholder={t("subs.club.searchPlaceholder")}
                 className="min-w-0 flex-1 border-0 bg-transparent text-[length:var(--fs-body)] text-[var(--ink,#241f1b)] outline-none"
               />
             </label>
@@ -496,13 +503,13 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
           <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="flex min-w-0 flex-col gap-5">
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">
-                {products.isSuccess ? `${visible.length} ${visible.length === 1 ? "fragrance" : "fragrances"} on this plan` : "Fragrances for this plan"}
+                {products.isSuccess ? t("subs.club.fragranceCount", { count: visible.length }) : t("subs.club.fragrancesForPlan")}
               </p>
-              {products.isLoading ? <PageLoading label="Loading fragrances…" /> : null}
-              {products.isError ? <p role="alert">These fragrances could not be loaded.</p> : null}
+              {products.isLoading ? <PageLoading label={t("subs.club.loadingFragrances")} /> : null}
+              {products.isError ? <p role="alert">{t("subs.club.fragrancesFailed")}</p> : null}
               {products.isSuccess && visible.length === 0 ? (
                 <div className="rounded-[20px] border border-dashed border-[var(--line,#d9ccb4)] px-6 py-12 text-center text-[length:var(--fs-body)] text-[var(--ink-2,#5b5148)]">
-                  {search.trim() ? "No fragrances match that search." : "No fragrances are available for this audience."}
+                  {search.trim() ? t("subs.club.noMatch") : t("subs.club.noneForAudience")}
                 </div>
               ) : null}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-5">
@@ -530,7 +537,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                           onClick={() => toggleFragrance(item.variantId)}
                           className={`mt-auto flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border border-[var(--ink,#241f1b)] text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.06em] uppercase disabled:cursor-not-allowed ${queued ? "bg-[var(--ink,#241f1b)] text-[var(--cream,#faf6ee)]" : "bg-white text-[var(--ink,#241f1b)]"} disabled:opacity-50`}
                         >
-                          {queued ? `Month ${position + 1}` : full ? "Queue full" : "Add to queue"}
+                          {queued ? t("subs.club.monthN", { month: position + 1 }) : full ? t("subs.club.queueFull") : t("subs.club.addToQueue")}
                         </button>
                       </div>
                     </article>
@@ -542,39 +549,39 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             <aside className={`sticky ${STICKY_TOP} ${PANEL_MAX} hidden min-h-0 flex-col self-start lg:flex`}>
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[20px] border border-[var(--line,#d9ccb4)] bg-white p-5">
                 <div className="flex shrink-0 items-center gap-4">
-                  <div className="relative size-[76px] shrink-0" role="img" aria-label={`${shownQueue.length} of 12 fragrances chosen`}>
+                  <div className="relative size-[76px] shrink-0" role="img" aria-label={t("subs.club.chosenOf", { chosen: shownQueue.length, limit: QUEUE_LIMIT })}>
                     <svg className="size-full" viewBox="0 0 76 76" aria-hidden="true">
                       <circle cx="38" cy="38" r="30" fill="none" stroke="var(--cream-2, #f3ebda)" strokeWidth="5" />
                       <circle cx="38" cy="38" r="30" fill="none" stroke="var(--copper, #8c4435)" strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} transform="rotate(-90 38 38)" />
                     </svg>
                     <span className="absolute inset-0 flex flex-col items-center justify-center leading-none text-[var(--ink,#241f1b)]">
                       <span className="text-[20px] font-bold tabular-nums">{shownQueue.length}</span>
-                      <span className="mt-0.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--ink-2,#5b5148)] uppercase">of 12</span>
+                      <span className="mt-0.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--ink-2,#5b5148)] uppercase">{t("subs.club.ofLimit", { limit: QUEUE_LIMIT })}</span>
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[length:var(--fs-body-lg)] font-semibold">Your queue</span>
+                    <span className="text-[length:var(--fs-body-lg)] font-semibold">{t("subs.club.yourQueue")}</span>
                     <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)]">
-                      {remaining === 0 ? "All 12 months planned" : `${remaining} ${remaining === 1 ? "month" : "months"} left to fill`}
+                      {remaining === 0 ? t("subs.club.allPlanned", { limit: QUEUE_LIMIT }) : t("subs.club.monthsLeft", { count: remaining })}
                     </span>
                   </div>
                 </div>
-                <span className="shrink-0 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">Months in your queue</span>
+                <span className="shrink-0 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">{t("subs.club.monthsInQueue")}</span>
                 <ol className="m-0 flex min-h-0 flex-1 list-none flex-col gap-1 overflow-auto p-0">
                   {Array.from({ length: QUEUE_LIMIT }, (_, index) => {
                     const id = shownQueue[index];
                     const item = products.data?.find((row) => row.variantId === id);
                     return (
                       <li key={index} className="flex min-h-10 min-w-0 items-center gap-3 overflow-hidden border-b border-[var(--cream-2,#f3ebda)]">
-                        <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">M{index + 1}</span>
+                        <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">{t("subs.club.monthShort", { month: index + 1 })}</span>
                         {item ? (
                           <>
                             <span className="size-2.5 shrink-0 rounded-full" style={{ background: tintFor(item.name) }} />
                             <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold" title={item.name}>{item.name}</span>
-                            <button type="button" aria-label={`Remove ${item.name}`} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 shrink-0 cursor-pointer place-items-center text-[var(--ink-2,#5b5148)]">×</button>
+                            <button type="button" aria-label={t("subs.club.remove", { name: item.name })} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 shrink-0 cursor-pointer place-items-center text-[var(--ink-2,#5b5148)]">×</button>
                           </>
                         ) : (
-                          <span className="min-w-0 flex-1 truncate text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">Perfumer&apos;s choice</span>
+                          <span className="min-w-0 flex-1 truncate text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">{t("subs.club.perfumersChoice")}</span>
                         )}
                       </li>
                     );
@@ -584,35 +591,35 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                   <button type="button" onClick={continueWithPlan} disabled={shownQueue.length === 0} className="flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-full bg-[var(--ink,#241f1b)] px-3 text-[0.82rem] font-semibold text-[var(--cream,#faf6ee)] disabled:cursor-not-allowed disabled:opacity-50">
                     {continueLabel}
                   </button>
-                  <p className="m-0 mt-2 text-center text-[0.75rem] text-[var(--ink-2,#5b5148)]">Empty months are our perfumers&apos; choice</p>
+                  <p className="m-0 mt-2 text-center text-[0.75rem] text-[var(--ink-2,#5b5148)]">{t("subs.club.emptyMonthsNote")}</p>
                 </div>
               </div>
             </aside>
           </div>
 
           {monthsOpen ? (
-            <button type="button" aria-label="Close months" className="fixed inset-0 z-40 bg-[rgba(36,31,27,0.45)] lg:hidden" onClick={() => setMonthsOpen(false)} />
+            <button type="button" aria-label={t("subs.club.closeMonths")} className="fixed inset-0 z-40 bg-[rgba(36,31,27,0.45)] lg:hidden" onClick={() => setMonthsOpen(false)} />
           ) : null}
           <div
             className={`fixed inset-x-0 bottom-[7.75rem] z-50 max-h-[70vh] overflow-auto rounded-t-[20px] border border-[var(--line,#d9ccb4)] bg-white px-4 pt-3 pb-4 shadow-[0_-12px_40px_rgba(36,31,27,0.12)] transition-transform duration-300 ease-out lg:hidden ${monthsOpen ? "translate-y-0" : "pointer-events-none translate-y-[120%]"}`}
             aria-hidden={!monthsOpen}
           >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--line,#d9ccb4)]" />
-            <p className="m-0 mb-2 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">Months in your queue</p>
+            <p className="m-0 mb-2 text-[length:var(--fs-eyebrow)] font-semibold tracking-[0.14em] uppercase">{t("subs.club.monthsInQueue")}</p>
             <ol className="m-0 list-none p-0">
               {Array.from({ length: QUEUE_LIMIT }, (_, index) => {
                 const id = shownQueue[index];
                 const item = products.data?.find((row) => row.variantId === id);
                 return (
                   <li key={index} className="flex min-h-10 items-center gap-3 border-b border-[var(--cream-2,#f3ebda)]">
-                    <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">M{index + 1}</span>
+                    <span className="w-9 shrink-0 text-[length:var(--fs-eyebrow)] font-semibold text-[var(--copper,#8c4435)]">{t("subs.club.monthShort", { month: index + 1 })}</span>
                     {item ? (
                       <>
                         <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold">{item.name}</span>
-                        <button type="button" aria-label={`Remove ${item.name}`} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 place-items-center text-[var(--ink-2,#5b5148)]">×</button>
+                        <button type="button" aria-label={t("subs.club.remove", { name: item.name })} onClick={() => toggleFragrance(item.variantId)} className="grid h-10 w-8 place-items-center text-[var(--ink-2,#5b5148)]">×</button>
                       </>
                     ) : (
-                      <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">Perfumer&apos;s choice</span>
+                      <span className="text-[0.82rem] text-[var(--ink-2,#5b5148)] italic">{t("subs.club.perfumersChoice")}</span>
                     )}
                   </li>
                 );
@@ -622,17 +629,17 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line,#d9ccb4)] bg-[var(--cream,#faf6ee)] lg:hidden">
             <div className="flex items-center justify-between gap-3 px-4 pt-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="relative size-11 shrink-0" role="img" aria-label={`${shownQueue.length} of 12`}>
+                <div className="relative size-11 shrink-0" role="img" aria-label={t("subs.club.chosenShort", { chosen: shownQueue.length, limit: QUEUE_LIMIT })}>
                   <svg className="size-full" viewBox="0 0 76 76" aria-hidden="true">
                     <circle cx="38" cy="38" r="30" fill="none" stroke="var(--cream-2, #f3ebda)" strokeWidth="5" />
                     <circle cx="38" cy="38" r="30" fill="none" stroke="var(--copper, #8c4435)" strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} transform="rotate(-90 38 38)" />
                   </svg>
                   <span className="absolute inset-0 grid place-items-center text-[12px] font-bold tabular-nums">{shownQueue.length}</span>
                 </div>
-                <p className="m-0 text-[0.95rem] font-semibold leading-tight">Your queue</p>
+                <p className="m-0 text-[0.95rem] font-semibold leading-tight">{t("subs.club.yourQueue")}</p>
               </div>
               <button type="button" className="shrink-0 text-[0.82rem] font-semibold text-[var(--copper,#8c4435)] underline" aria-expanded={monthsOpen} onClick={() => setMonthsOpen((open) => !open)}>
-                {monthsOpen ? "Hide months" : "View months"}
+                {monthsOpen ? t("subs.club.hideMonths") : t("subs.club.viewMonths")}
               </button>
             </div>
             <div className="flex justify-center px-4 pt-2 pb-3">
@@ -646,12 +653,12 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
 
       {active && mode === "surprise" ? (
         <section id="perfumers" className={`mx-auto flex max-w-[900px] flex-col items-center gap-4 px-6 py-24 text-center ${SECTION_SCROLL}`}>
-          <h2 className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] font-medium">Leave it to our perfumers</h2>
+          <h2 className="m-0 font-[family-name:var(--font-display)] text-[length:var(--fs-h2)] font-medium">{t("subs.club.leaveToPerfumers")}</h2>
           <p className="m-0 max-w-[560px] text-[length:var(--fs-body-lg)] leading-[var(--leading-body)] text-[var(--ink-2,#5b5148)]">
-            Each month our perfumers pick a {gender === "men" ? "men's or unisex" : "women's or unisex"} fragrance for you.
+            {gender === "men" ? t("subs.club.perfumersPickMen") : t("subs.club.perfumersPickWomen")}
           </p>
           <button type="button" className="text-[length:var(--fs-body)] font-semibold text-[var(--copper,#8c4435)] underline" onClick={() => pickMode("choose")}>
-            Pick my own 12 instead
+            {t("subs.club.pickOwnInstead")}
           </button>
         </section>
       ) : null}

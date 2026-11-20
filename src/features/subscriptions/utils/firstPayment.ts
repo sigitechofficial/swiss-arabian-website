@@ -1,3 +1,4 @@
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 import type { FirstPaymentBody, FirstPaymentOutcome, FirstPaymentSnapshot } from "../api/subscription.api";
 
 export function firstPaymentBody(zoneCode: string, paymentInstrumentId: string): FirstPaymentBody {
@@ -25,21 +26,22 @@ export function reusableInstrument(
   return active[0]?.id ?? null;
 }
 
-export function firstPaymentMessage(view: Pick<FirstPaymentSnapshot, "status" | "cycle">): string {
-  if (subscriptionActivated(view)) {
-    return "Subscription activated. The first payment is confirmed. Fulfillment is still pending, and no order has been placed.";
-  }
+export function firstPaymentMessage(
+  view: Pick<FirstPaymentSnapshot, "status" | "cycle">,
+  t: Translator = englishTranslator,
+): string {
+  if (subscriptionActivated(view)) return t("subs.firstPayment.activated");
   switch (view.cycle.outcome) {
     case "PROCESSING":
-      return "The payment is processing. This page will not start another charge.";
+      return t("subs.firstPayment.processing");
     case "REQUIRES_CUSTOMER_ACTION":
-      return "Your bank needs to confirm this payment. The subscription stays inactive until that payment is confirmed.";
+      return t("subs.firstPayment.actionRequired");
     case "FAILED":
-      return "The payment did not succeed. No new charge was started.";
+      return t("subs.firstPayment.failed");
     case "RECONCILIATION_REQUIRED":
-      return "This payment needs support to finish. No new charge was started.";
+      return t("subs.firstPayment.needsSupport");
     default:
-      return "The saved card is ready. The subscription payment has not been confirmed.";
+      return t("subs.firstPayment.cardReady");
   }
 }
 

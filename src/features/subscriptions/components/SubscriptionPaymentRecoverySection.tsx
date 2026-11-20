@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { accountPanel, accountPanelBody, accountPrimaryCta, orderNotice, orderNoticeTone } from "@/styles/accountChrome";
 import type { SubscriptionPaymentRecovery } from "../types/subscription.types";
 import { paymentRetryError, recoveryRetryVisible, recoveryStatusLine } from "../utils/subscriptionManagement";
@@ -14,12 +15,13 @@ type Props = {
 };
 
 export function SubscriptionPaymentRecoverySection({ recovery, canReplace, onRetry, onRefresh }: Props) {
+  const t = useShopCopy();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
   const retryVisible = recoveryRetryVisible(recovery);
-  const statusLine = recoveryStatusLine(recovery.status);
+  const statusLine = recoveryStatusLine(recovery.status, t);
   const offerCardChange = canReplace && (recovery.status === "FAILED" || recovery.status === "ACTION_REQUIRED");
 
   async function confirm() {
@@ -31,7 +33,7 @@ export function SubscriptionPaymentRecoverySection({ recovery, canReplace, onRet
       await onRetry();
       setConfirming(false);
     } catch (err) {
-      const parsed = paymentRetryError(err);
+      const parsed = paymentRetryError(err, t);
       setError(parsed.message);
       try {
         await onRefresh();
@@ -49,10 +51,10 @@ export function SubscriptionPaymentRecoverySection({ recovery, canReplace, onRet
     <section className={accountPanel} aria-labelledby="payment-recovery">
       <div className={`${accountPanelBody} flex flex-col gap-3`}>
         <h2 id="payment-recovery" className="m-0 text-[1rem] font-semibold">
-          Payment recovery
+          {t("subs.recovery.title")}
         </h2>
         {recovery.cycleNumber != null ? (
-          <p className="m-0 text-[0.9rem]">Month {recovery.cycleNumber}</p>
+          <p className="m-0 text-[0.9rem]">{t("subs.club.monthN", { month: recovery.cycleNumber })}</p>
         ) : null}
         {statusLine ? <p className="m-0 text-[0.9rem]">{statusLine}</p> : null}
         {recovery.message ? (
@@ -64,18 +66,18 @@ export function SubscriptionPaymentRecoverySection({ recovery, canReplace, onRet
           </p>
         ) : null}
         {offerCardChange ? (
-          <p className="m-0 text-[0.9rem]">Change Payment Method is available below before you retry.</p>
+          <p className="m-0 text-[0.9rem]">{t("subs.recovery.changeCardHint")}</p>
         ) : null}
         {confirming && retryVisible ? (
           <div>
             <p className="m-0 text-[0.9rem]">
-              Retry this month&apos;s payment? The amount is the one already stored for this subscription.
+              {t("subs.recovery.confirmText")}
             </p>
             <button type="button" className={`mt-3 ${accountPrimaryCta} disabled:opacity-60`} disabled={busy} onClick={() => void confirm()}>
-              Confirm retry
+              {t("subs.recovery.confirm")}
             </button>
             <button type="button" className="ms-3 h-11 underline" disabled={busy} onClick={() => setConfirming(false)}>
-              Keep this payment
+              {t("subs.recovery.keep")}
             </button>
           </div>
         ) : null}
@@ -86,7 +88,7 @@ export function SubscriptionPaymentRecoverySection({ recovery, canReplace, onRet
             disabled={busy}
             onClick={() => setConfirming(true)}
           >
-            Retry Payment
+            {t("subs.recovery.retry")}
           </button>
         ) : null}
         {error ? (

@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import { accountPanel, accountPanelBody, accountPrimaryCta } from "@/styles/accountChrome";
 import {
@@ -50,6 +51,7 @@ function ReplacementCardForm({
   onConfirm: () => Promise<void>;
   onMessage: (message: string) => void;
 }) {
+  const t = useShopCopy();
   const stripe = useStripe();
   const elements = useElements();
   const submitting = useRef(false);
@@ -68,12 +70,12 @@ function ReplacementCardForm({
       });
       const phase = classifySetupConfirmation(result);
       if (phase !== "webhook_pending") {
-        onMessage(CARD_SETUP_COPY[phase]);
+        onMessage(t(CARD_SETUP_COPY[phase]));
         return;
       }
       await onConfirm();
     } catch (err) {
-      onMessage(paymentMethodErrorMessage(err));
+      onMessage(paymentMethodErrorMessage(err, t));
     } finally {
       submitting.current = false;
       setSaving(false);
@@ -89,7 +91,7 @@ function ReplacementCardForm({
         disabled={!stripe || !elements || saving || busy}
         onClick={() => void confirm()}
       >
-        {saving ? "Saving card…" : "Save replacement card"}
+        {saving ? t("subs.card.saving") : t("subs.card.saveReplacement")}
       </button>
     </div>
   );
@@ -106,6 +108,7 @@ export function SubscriptionPaymentMethodSection({
   embedded = false,
   nextChargeLabel = null,
 }: Props) {
+  const t = useShopCopy();
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -131,7 +134,7 @@ export function SubscriptionPaymentMethodSection({
       const created = await startSubscriptionPaymentMethod(subscriptionId, body);
       const publishableKey = selectTestPublishableKey(created.publishableKey);
       if (!created.instrumentId || !created.clientSecret || !publishableKey) {
-        setMessage(CARD_SETUP_COPY.unavailable);
+        setMessage(t(CARD_SETUP_COPY.unavailable));
         return;
       }
       setSession({
@@ -140,7 +143,7 @@ export function SubscriptionPaymentMethodSection({
         publishableKey,
       });
     } catch (err) {
-      setMessage(paymentMethodErrorMessage(err));
+      setMessage(paymentMethodErrorMessage(err, t));
     } finally {
       setBusy(false);
     }
@@ -160,7 +163,7 @@ export function SubscriptionPaymentMethodSection({
       setOpen(false);
       setAccepted(false);
     } catch (err) {
-      setMessage(paymentMethodErrorMessage(err));
+      setMessage(paymentMethodErrorMessage(err, t));
     } finally {
       setBusy(false);
     }
@@ -168,24 +171,24 @@ export function SubscriptionPaymentMethodSection({
 
   const cardSummary = paymentMethod ? (
     <p className="m-0 text-[0.9rem]">
-      {paymentMethod.brand?.trim() || "Card"}
+      {paymentMethod.brand?.trim() || t("subs.card.card")}
       {last4 ? ` · ${last4}` : ""}
       {paymentMethod.expiryMonth && paymentMethod.expiryYear
-        ? ` · Expires ${paymentMethod.expiryMonth}/${paymentMethod.expiryYear}`
+        ? ` · ${t("subs.card.expires", { expiry: `${paymentMethod.expiryMonth}/${paymentMethod.expiryYear}` })}`
         : ""}
-      {` · ${paymentMethodStatusLabel(paymentMethod.status)}`}
+      {` · ${paymentMethodStatusLabel(paymentMethod.status, t)}`}
     </p>
   ) : (
-    <p className="m-0 text-[0.9rem]">No saved card is attached to this subscription.</p>
+    <p className="m-0 text-[0.9rem]">{t("subs.card.none")}</p>
   );
   const changeButton = canReplace && !open && !session ? (
     <button
       type="button"
-      aria-label="Change Payment Method"
+      aria-label={t("subs.card.change")}
       className={embedded ? "text-sm font-semibold text-[#8E4636]" : `${accountPrimaryCta} w-fit max-[599px]:w-full`}
       onClick={() => setOpen(true)}
     >
-      {embedded ? "Change" : "Change Payment Method"}
+      {embedded ? t("subs.card.changeShort") : t("subs.card.change")}
     </button>
   ) : null;
 
@@ -195,7 +198,7 @@ export function SubscriptionPaymentMethodSection({
         <div className="flex flex-col gap-3">
           {consent ? <p className="m-0 text-[0.9rem]">{consent.text}</p> : (
             <p className="m-0 text-[0.9rem]" role="status">
-              The current card agreement is not available.
+              {t("subs.card.consentMissing")}
             </p>
           )}
           <label className="flex items-start gap-2 text-[0.9rem]">
@@ -206,7 +209,7 @@ export function SubscriptionPaymentMethodSection({
               onChange={(event) => setAccepted(event.target.checked)}
               disabled={!consent || busy}
             />
-            <span>I accept recurring card use for this subscription.</span>
+            <span>{t("subs.card.accept")}</span>
           </label>
           <div className="flex flex-wrap gap-2">
             <button
@@ -215,10 +218,10 @@ export function SubscriptionPaymentMethodSection({
               disabled={!accepted || !consent || busy}
               onClick={() => void start()}
             >
-              {busy ? "Starting card setup…" : "Continue to card"}
+              {busy ? t("subs.cardSetup.starting") : t("subs.cardSetup.continue")}
             </button>
             <button type="button" className="h-11 underline" disabled={busy} onClick={() => setOpen(false)}>
-              Keep current card
+              {t("subs.card.keep")}
             </button>
           </div>
         </div>
@@ -248,7 +251,7 @@ export function SubscriptionPaymentMethodSection({
         <div className="flex items-center gap-3 rounded-xl bg-[#F8F4EC] px-3.5 py-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-white text-[#8E4636]" aria-hidden="true">▭</span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold">{paymentMethod?.brand?.trim() || "Card"}{last4 ? ` · ${last4}` : ""}</div>
+            <div className="text-sm font-semibold">{paymentMethod?.brand?.trim() || t("subs.card.card")}{last4 ? ` · ${last4}` : ""}</div>
             {nextChargeLabel ? <div className="text-xs text-[#6E5A50]">{nextChargeLabel}</div> : cardSummary}
           </div>
           {changeButton}
@@ -262,7 +265,7 @@ export function SubscriptionPaymentMethodSection({
     <section className={accountPanel} aria-labelledby="subscription-payment-method">
       <div className={`${accountPanelBody} flex flex-col gap-3`}>
         <h2 id="subscription-payment-method" className="m-0 text-[1rem] font-semibold">
-          Payment Method
+          {t("subs.card.title")}
         </h2>
         {cardSummary}
         {changeButton}

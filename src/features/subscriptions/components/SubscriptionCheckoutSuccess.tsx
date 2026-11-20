@@ -1,6 +1,9 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 import {
   checkoutCta,
@@ -47,16 +50,23 @@ export function SubscriptionCheckoutSuccess({
   fulfillmentStatus,
   shipmentStatus,
 }: Props) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
-  const order = subscriptionCheckoutOrderPresentation({
-    orderState,
-    orderId,
-    orderNumber,
-    orderStatus,
-    fulfillmentStatus,
-    shipmentStatus,
-  });
-  const billingLabel = nextBillingAt ? formatOrderDate(nextBillingAt, { long: true, timeZone }) : "Not scheduled on this page";
+  const order = subscriptionCheckoutOrderPresentation(
+    {
+      orderState,
+      orderId,
+      orderNumber,
+      orderStatus,
+      fulfillmentStatus,
+      shipmentStatus,
+    },
+    t,
+  );
+  const billingLabel = nextBillingAt
+    ? formatOrderDate(nextBillingAt, { long: true, timeZone, locale })
+    : t("subs.success.notScheduled");
 
   return (
     <section className={ocHero} aria-labelledby="subscription-success-heading">
@@ -66,56 +76,59 @@ export function SubscriptionCheckoutSuccess({
           <path className={ocBadgeMark} d="M15 27l7.5 7.5L37 19" />
         </svg>
       </span>
-      <p className={ocEyebrow}>Payment successful</p>
+      <p className={ocEyebrow}>{t("subs.success.eyebrow")}</p>
       <h1 className={ocTitle} id="subscription-success-heading">
-        Your subscription is <em className={ocEm}>activated</em>.
+        <TextWithLinks
+          text={t("subs.success.title", linkSlots(["activated"]))}
+          links={{ activated: <em className={ocEm}>{t("subs.success.titleEm")}</em> }}
+        />
       </h1>
       <p className={ocHeroIntro}>
-        The first payment is confirmed. Future months stay upcoming until each billing date.
+        {t("subs.success.intro")}
       </p>
       <dl className={ocMeta}>
         <div>
-          <dt>Plan</dt>
+          <dt>{t("subs.success.plan")}</dt>
           <dd>{planName}</dd>
         </div>
         <div>
-          <dt>Monthly total</dt>
+          <dt>{t("subs.detail.monthlyTotal")}</dt>
           <dd dir="ltr">{currencyCode} {monthlyTotal}</dd>
         </div>
         <div>
-          <dt>First payment</dt>
-          <dd>Paid</dd>
+          <dt>{t("subs.success.firstPayment")}</dt>
+          <dd>{t("subs.text.paid")}</dd>
         </div>
         <div>
-          <dt>First order</dt>
+          <dt>{t("subs.success.firstOrder")}</dt>
           <dd className={order.trackHref ? ocMetaNumber : undefined}>
             {order.trackHref ? <span dir="ltr">{order.orderLabel}</span> : order.orderLabel}
           </dd>
         </div>
         {order.fulfillmentLabel ? (
           <div>
-            <dt>Order status</dt>
+            <dt>{t("subs.success.orderStatus")}</dt>
             <dd>{order.fulfillmentLabel}</dd>
           </div>
         ) : null}
         <div>
-          <dt>Next billing date</dt>
+          <dt>{t("subs.success.nextBilling")}</dt>
           <dd>{billingLabel}</dd>
         </div>
       </dl>
       <div className={ocActions}>
         <LocaleLink className={checkoutCta} href={`/account/subscription/${encodeURIComponent(subscriptionId)}`}>
-          <span>View subscription</span>
+          <span>{t("subs.success.view")}</span>
           <b aria-hidden="true">↗</b>
         </LocaleLink>
         {order.trackHref ? (
           <LocaleLink className={checkoutCtaGhost} href={order.trackHref}>
-            <span>Track first order</span>
+            <span>{t("subs.success.trackFirst")}</span>
           </LocaleLink>
         ) : null}
       </div>
       <LocaleLink className={`${checkoutLink} mt-4`} href="/account/subscription">
-        All subscriptions
+        {t("subs.detail.all")}
       </LocaleLink>
     </section>
   );

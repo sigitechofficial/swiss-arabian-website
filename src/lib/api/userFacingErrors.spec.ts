@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createTranslator, englishTranslator } from "@/lib/i18n/messages";
+import { KeyedError } from "@/lib/i18n/keyedError";
 import { setPageTranslator } from "@/lib/i18n/pageTranslator";
 import ar from "@/messages/ar.json";
 import { ApiClientError, CLIENT_ERROR_CODES } from "./apiError";
@@ -54,5 +55,14 @@ describe("getUserFacingErrorMessage", () => {
     expect(knownErrorMessage(new ApiClientError(404, { code: "ORDER_NOT_FOUND", message: "We couldn’t find this order." }))).toBe(
       "We couldn’t find this order.",
     );
+  });
+
+  it("words a rule the browser checked itself (KeyedError) in the page's language", () => {
+    const error = new KeyedError("subs.detail.queueLimit");
+    expect(error.message).toBe(englishTranslator("subs.detail.queueLimit"));
+    expect(getUserFacingErrorMessage(error, "fallback", arabic)).toBe(arabic("subs.detail.queueLimit"));
+    setPageTranslator(arabic);
+    expect(knownErrorMessage(error)).toBe(arabic("subs.detail.queueLimit"));
+    setPageTranslator(englishTranslator);
   });
 });

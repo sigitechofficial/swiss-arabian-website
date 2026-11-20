@@ -18,6 +18,7 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { localizeHref } from "@/lib/i18n/localePath";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import { useMarket } from "@/providers/MarketProvider";
@@ -131,6 +132,7 @@ function PayForm({
 }: {
   onConfirmed: () => Promise<void>;
 }) {
+  const t = useShopCopy();
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -142,7 +144,8 @@ function PayForm({
     setError(null);
     const result = await stripe.confirmPayment({ elements, redirect: "if_required" });
     if (result.error) {
-      setError(result.error.message ?? "Payment was not confirmed.");
+      // Stripe words its own errors in the page language (Elements locale).
+      setError(result.error.message ?? t("subs.checkout.paymentNotConfirmed"));
       setBusy(false);
       return;
     }
@@ -155,7 +158,7 @@ function PayForm({
       <PaymentElement />
       {error ? <p className={checkoutError} role="alert">{error}</p> : null}
       <button type="button" className={`${checkoutCta} ${stripePayCta}`} disabled={!stripe || !elements || busy} onClick={() => void confirm()}>
-        <span>{busy ? "Processing…" : "Pay today"}</span>
+        <span>{busy ? t("subs.checkout.processing") : t("subs.checkout.payToday")}</span>
         <b aria-hidden="true">↗</b>
       </button>
     </div>
@@ -163,6 +166,7 @@ function PayForm({
 }
 
 export function SubscriptionCheckoutPageView({ planCode }: { planCode: string }) {
+  const t = useShopCopy();
   const router = useRouter();
   const pathname = usePathname();
   const authed = useAuthStore((state) => state.isAuthenticated);
@@ -230,14 +234,14 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   }, [zoneCode, countryCode, authed]);
 
   const amounts = checkout
-    ? subscriptionPayToday(checkout)
+    ? subscriptionPayToday(checkout, t)
     : plan
       ? subscriptionPayToday({
           currencyCode: plan.currencyCode,
           amount: plan.amount,
           shippingAmount: plan.shippingAmount ?? "0.00",
           monthlyTotal: plan.monthlyTotal ?? plan.amount,
-        })
+        }, t)
       : null;
   const publishableKey = subscriptionCheckoutTestKey(checkout?.publishableKey);
   const stripePromise = useMemo(() => (publishableKey ? getStripe(publishableKey) : null), [publishableKey]);
@@ -308,7 +312,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
         let addressId = selectedAddressId;
         if (!addressId) {
           if (!shipping.address1 || !shipping.fullName) {
-            setError("Choose a delivery address.");
+            setError(t("subs.checkout.chooseAddress"));
             return;
           }
           const [firstName, ...rest] = shipping.fullName.trim().split(/\s+/);
@@ -346,7 +350,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
       }
       await refreshPayment(id);
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, "Checkout could not be started."));
+      setError(getUserFacingErrorMessage(err, t("subs.checkout.startFailed"), t));
     } finally {
       setBusy(false);
     }
@@ -378,7 +382,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
         setError(null);
         return;
       }
-      setError(getUserFacingErrorMessage(err, "Checkout could not be loaded."));
+      setError(getUserFacingErrorMessage(err, t("subs.checkout.loadFailed"), t));
     });
     // Resume an existing agreement once. Polling and Stripe confirmation read again themselves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -438,19 +442,19 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
     <div>
       <section className={collectionHeadFlush} aria-labelledby="checkout-heading">
         <div className={pageContainer}>
-          <nav className={crumbs} aria-label="Breadcrumb">
+          <nav className={crumbs} aria-label={t("subs.checkout.breadcrumb")}>
             <ol className={checkoutCrumbsList} role="list">
-              <li><LocaleLink href="/">Home</LocaleLink></li>
-              <li><LocaleLink href={`/subscriptions/${encodeURIComponent(planCode)}`}>Scent Club</LocaleLink></li>
-              <li aria-current="page">Checkout</li>
+              <li><LocaleLink href="/">{t("home")}</LocaleLink></li>
+              <li><LocaleLink href={`/subscriptions/${encodeURIComponent(planCode)}`}>{t("subs.checkout.scentClub")}</LocaleLink></li>
+              <li aria-current="page">{t("pages.title.checkout")}</li>
             </ol>
           </nav>
           <header className={checkoutHead}>
-            <h1 className={pageTitle} id="checkout-heading">Checkout</h1>
+            <h1 className={pageTitle} id="checkout-heading">{t("pages.title.checkout")}</h1>
             <ol className={checkoutSteps}>
-              <li><LocaleLink href={`/subscriptions/${encodeURIComponent(planCode)}`}>Scent Club</LocaleLink></li>
+              <li><LocaleLink href={`/subscriptions/${encodeURIComponent(planCode)}`}>{t("subs.checkout.scentClub")}</LocaleLink></li>
               <li aria-hidden="true">·</li>
-              <li className={checkoutStepCurrent}>Details &amp; payment</li>
+              <li className={checkoutStepCurrent}>{t("subs.checkout.detailsStep")}</li>
             </ol>
           </header>
           {checkout && subscriptionCheckoutSucceeded(checkout) ? (
@@ -478,7 +482,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
               aria-controls="checkout-summary"
               onClick={() => setSummaryOpen((open) => !open)}
             >
-              <span>Order summary</span>
+              <span>{t("orders.summary")}</span>
               <span className={checkoutSummaryToggleTotal} dir="ltr">
                 {summaryTotal}
                 <i className={checkoutSummaryChevron} aria-hidden="true" />
@@ -512,10 +516,10 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                   regionSet={regionSet}
                   beforeFields={savedRows.length > 0 && !addressLock.locked ? (
                     <label className={fldFull}>
-                      <span>Saved address</span>
+                      <span>{t("subs.checkout.savedAddress")}</span>
                       <div className={fldSelect}>
                         <select
-                          aria-label="Delivery address"
+                          aria-label={t("account.deliveryAddress")}
                           value={selectedAddressId}
                           onChange={(event) => {
                             const id = event.target.value;
@@ -524,7 +528,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                             setShipping(address ? addressFields(address) : EMPTY_ADDRESS);
                           }}
                         >
-                          <option value="">Add a new address</option>
+                          <option value="">{t("subs.checkout.newAddress")}</option>
                           {savedRows.map((address) => (
                             <option key={address.id} value={address.id}>
                               {[address.address1, address.city].filter(Boolean).join(", ")}
@@ -545,13 +549,13 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                   onSelect={setSelectedDeliveryId}
                 />
                 <section className={cbox}>
-                  <header className={cboxHead}><h2>Payment method</h2></header>
-                  <div className={payOptions} role="radiogroup" aria-label="Payment method">
+                  <header className={cboxHead}><h2>{t("subs.checkout.paymentMethod")}</h2></header>
+                  <div className={payOptions} role="radiogroup" aria-label={t("subs.checkout.paymentMethod")}>
                     <label className={`${payOpt} ${payOptActive}`}>
                       <input type="radio" name="subscriptionPay" checked onChange={() => undefined} />
                       <span>
-                        <span className={payOptTitle}>Card</span>
-                        <span className={payOptNote}>Visa, Mastercard, American Express</span>
+                        <span className={payOptTitle}>{t("subs.card.card")}</span>
+                        <span className={payOptNote}>{t("subs.checkout.cardBrands")}</span>
                       </span>
                     </label>
                   </div>
@@ -568,18 +572,18 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                   ) : null}
                 </section>
                 {error ? <p className={checkoutError} role="alert">{error}</p> : null}
-                {checkout ? <p role="status">{subscriptionCheckoutResultCopy(checkout)}</p> : null}
+                {checkout ? <p role="status">{subscriptionCheckoutResultCopy(checkout, t)}</p> : null}
                 {!checkout?.clientSecret ? (
                   <button type="submit" className={checkoutCta} disabled={busy || !selectedMethod || (!agreementId && !accepted)}>
-                    <span>{busy ? "Starting payment…" : "Continue to payment"}</span>
+                    <span>{busy ? t("subs.checkout.starting") : t("subs.checkout.continue")}</span>
                     <b aria-hidden="true">↗</b>
                   </button>
                 ) : null}
-                <p className={checkoutLegal}>The same monthly total repeats until you cancel. Payment is encrypted.</p>
+                <p className={checkoutLegal}>{t("subs.checkout.legal")}</p>
               </form>
             </GooglePlacesProvider>
-            <aside className={`${checkoutSummary} ${summaryOpen ? checkoutSummaryOpen : ""}`} id="checkout-summary" aria-label="Order summary">
-              <h2>Your order</h2>
+            <aside className={`${checkoutSummary} ${summaryOpen ? checkoutSummaryOpen : ""}`} id="checkout-summary" aria-label={t("orders.summary")}>
+              <h2>{t("subs.checkout.yourOrder")}</h2>
               <div className={checkoutLines}>
                 <article className={coline} style={{ gridTemplateColumns: "112px minmax(0, 1fr)", alignItems: "center" }}>
                   <div className={colineMedia} style={{ width: 112, height: 112 }}>
@@ -595,19 +599,19 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
                   </div>
                   <div className={colineBody}>
                     <div className={colineTop}>
-                      <h3 className={colineName}>{plan?.name ?? "Scent Club"}</h3>
+                      <h3 className={colineName}>{plan?.name ?? t("subs.checkout.scentClub")}</h3>
                       <p className={colinePrice} dir="ltr">{amounts?.subscription ?? ""}</p>
                     </div>
-                    <p className={colineMeta}>Monthly subscription</p>
+                    <p className={colineMeta}>{t("subs.checkout.monthly")}</p>
                   </div>
                 </article>
               </div>
               <dl className={checkoutTotals}>
-                <div><dt>Subscription</dt><dd>{amounts?.subscription ?? ""}</dd></div>
-                <div><dt>Shipping</dt><dd>{amounts?.shipping ?? ""}</dd></div>
-                <div className={checkoutTotalsLine}><dt>Pay today</dt><dd>{amounts?.payToday ?? ""}</dd></div>
+                <div><dt>{t("subs.checkout.subscription")}</dt><dd>{amounts?.subscription ?? ""}</dd></div>
+                <div><dt>{t("orders.shipping")}</dt><dd>{amounts?.shipping ?? ""}</dd></div>
+                <div className={checkoutTotalsLine}><dt>{t("subs.checkout.payToday")}</dt><dd>{amounts?.payToday ?? ""}</dd></div>
               </dl>
-              <p className={checkoutBadges}>SSL Encrypted · Monthly total stays fixed</p>
+              <p className={checkoutBadges}>{t("subs.checkout.badges")}</p>
             </aside>
           </div>
           )}
