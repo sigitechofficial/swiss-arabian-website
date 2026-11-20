@@ -74,7 +74,7 @@ export function PhoneNumberField({
   const fieldLabel = label ?? t("phone.label");
   const styles = VARIANTS[variant];
   const phone = usePhoneNumberField({ value, onChange });
-  const { open, setOpen, query, setQuery, rootRef, inputRef, national, maxNationalDigits } = phone;
+  const { open, toggle, query, setQuery, rootRef, inputRef, national, maxNationalDigits } = phone;
   const activeCountry = phone.country;
   const filtered = phone.countries;
 
@@ -113,7 +113,7 @@ export function PhoneNumberField({
             aria-haspopup="listbox"
             aria-expanded={open}
             aria-label={t("phone.countryAria", { country: phone.countryLabel, dial: phone.dial })}
-            onClick={() => setOpen((v) => !v)}
+            onClick={toggle}
           >
             <Flag country={activeCountry} />
             <span dir="ltr">+{phone.dial}</span>

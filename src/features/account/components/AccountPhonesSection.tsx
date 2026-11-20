@@ -101,6 +101,7 @@ export function AccountPhonesSection() {
       {adding ? (
         <form
           className="mt-4 rounded-lg border border-sa-border p-4"
+          noValidate
           onSubmit={handleSubmit(async (values) => {
             await create.unwrap({
               phone: values.phone,

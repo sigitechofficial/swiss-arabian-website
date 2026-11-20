@@ -2,11 +2,11 @@
 
 import { useId, type ReactNode } from "react";
 import { CountryFlag } from "@/components/ui/phone/CountryFlag";
-import { isValidMobile, usePhoneNumberField } from "@/components/ui/phone/usePhoneNumberField";
+import { exampleForNumber, isValidMobile, usePhoneNumberField } from "@/components/ui/phone/usePhoneNumberField";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { FieldFrame, cx, fieldControlClass } from "../../ui";
 
-export { isValidMobile };
+export { exampleForNumber, isValidMobile };
 
 /**
  * v9 `.phone` field with a country picker (flag + dial code, the Gulf markets
@@ -47,7 +47,7 @@ export function SapilPhoneField({
             aria-expanded={phone.open}
             aria-controls={phone.open ? listId : undefined}
             aria-label={t("phone.countryAria", { country: phone.countryLabel, dial: phone.dial })}
-            onClick={() => phone.setOpen((v) => !v)}
+            onClick={phone.toggle}
             className={cx(fieldControlClass(Boolean(error)), "!w-auto inline-flex items-center gap-[8px] px-[12px] cursor-pointer font-[600]")}
           >
             <CountryFlag country={phone.country} />

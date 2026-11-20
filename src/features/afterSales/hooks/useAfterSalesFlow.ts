@@ -159,11 +159,15 @@ export function useAfterSalesFlow({
   // The market wants the free gift back with this return (giftOnReturn = MUST_RETURN):
   // the request would be refused without it, so the review step asks for it first.
   const giftRequirement = draft.kind === "return" ? returnEstimate.data?.giftRequirement : undefined;
-  const giftsToAdd = giftRequirement?.required
-    ? giftRequirement.gifts
-        .map((gift) => gift.orderLineId)
-        .filter((id) => (draft.quantities[id] ?? 0) === 0 && lines.some((line) => line.orderLineId === id && isPickable(line)))
-    : [];
+  const giftsToAdd = useMemo(
+    () =>
+      giftRequirement?.required
+        ? giftRequirement.gifts
+            .map((gift) => gift.orderLineId)
+            .filter((id) => (draft.quantities[id] ?? 0) === 0 && lines.some((line) => line.orderLineId === id && isPickable(line)))
+        : [],
+    [giftRequirement, draft.quantities, lines],
+  );
 
   /** Put the free gift(s) the market needs back into the return, all units. */
   const addRequiredGifts = useCallback(() => {

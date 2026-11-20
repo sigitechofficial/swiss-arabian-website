@@ -289,7 +289,8 @@ export function OrderStateCard({ title, body, actions, busy }: { title: ReactNod
           {title}
         </h1>
         {body ? <p className="text-sapil-ink-2 mb-[24px]">{body}</p> : null}
-        {actions ? <div className="flex gap-[10px] justify-center flex-wrap">{actions}</div> : null}
+        {/* Centred on one line: a text link next to a button keeps its underline under the words. */}
+        {actions ? <div className="flex gap-[10px] justify-center items-center flex-wrap">{actions}</div> : null}
       </div>
     </Wrap>
   );

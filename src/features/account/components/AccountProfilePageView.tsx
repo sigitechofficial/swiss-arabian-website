@@ -113,6 +113,7 @@ function NameEditor({
   return (
     <form
       className="border-b border-sa-border py-5"
+      noValidate
       onSubmit={handleSubmit(async (values) => {
         await updateMe.unwrap({
           firstName: values.firstName.trim(),

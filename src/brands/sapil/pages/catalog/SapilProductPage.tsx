@@ -129,7 +129,7 @@ export function SapilProductPage({
         </div>
       </Wrap>
       <NotesJourney rows={rows} photos={page.galleryImages.slice(2)} t={t} />
-      <PdpReviews key={detail?.id ?? product.id} productId={detail?.id ?? product.id} reviews={page.pdpReviews} />
+      <PdpReviews key={detail?.id ?? product.id} productId={detail?.id ?? product.id} productTitle={product.title} reviews={page.pdpReviews} />
       {detail?.id ? (
         // Companion offers; "also" is left out because "More to fall for" already has those bottles.
         <PdpCompanions productId={detail.id} marketCode={page.zoneCode} money={money} omitGroupIds={rail.length ? ["also"] : []} />

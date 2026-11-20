@@ -26,7 +26,9 @@ function reviewsWording(t: Translator, brand: string) {
     count: (n: number) => r("count", { count: n }),
     inMarket: r("inMarket"),
     fromVerified: (n: number) => r("fromVerified", { count: n }),
-    barLabel: (stars: number, n: number) => r("barLabel", { stars, count: n }),
+    // "1 star: 1 review", "5 stars: 2 reviews" (each part pluralised on its own).
+    barLabel: (stars: number, n: number) =>
+      r("barLabel", { stars: r("stars", { count: stars }), reviews: r("count", { count: n }) }),
     verifiedNote: r("verifiedNote"),
     honestNote: r("honestNote"),
     filter: r("filter"),
@@ -101,6 +103,12 @@ function reviewsWording(t: Translator, brand: string) {
     thanksOrder: r("thanksOrder"),
     noEmailsShort: r("noEmailsShort"),
     chooseRating: r("chooseRating"),
+    errors: {
+      rating: r("chooseRating"),
+      body: r("err.body"),
+      name: r("err.name"),
+      honest: r("err.honest"),
+    },
     postFailed: r("postFailed"),
     alreadyShort: r("alreadyShort"),
     ratingFor: (name: string) => r("ratingFor", { name }),

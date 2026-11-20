@@ -14,7 +14,7 @@ import { toBagGiftData, toBagLineData } from "../../components/bag/bagData";
 import { SapilPromoProgress } from "../../components/bag/SapilPromoProgress";
 import { SapilAppliedOffers } from "../../components/bag/SapilAppliedOffers";
 import { SapilEmptyBagPicks, SapilQuickAdd } from "../../components/bag/SapilBagPicks";
-import { SapilPendingPayment } from "../../components/bag/SapilPendingPayment";
+import { SapilPaymentConfirming } from "../../components/bag/SapilPaymentConfirming";
 import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 import { CheckoutEmptyCard, OrderSummary, type SummaryTotalRow } from "../../components/checkout/CheckoutParts";
 import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
@@ -137,8 +137,8 @@ export function SapilCartPage() {
         <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,52px)] leading-[1]">{t("bag.title")}</h1>
         <span className="text-[15px] text-sapil-muted pb-[4px]">{t("bag.items", { count: bag.itemCount })}</span>
       </header>
-      {/* A payment for this bag was started and not finished (as on Swiss Arabian). */}
-      <SapilPendingPayment className="mb-[20px]" />
+      {/* Only while a payment for this bag is being confirmed (as on Swiss Arabian). */}
+      <SapilPaymentConfirming className="mb-[20px]" />
       {/* Tiered offers: steps to the next reward, or what the bag saved (as on Swiss Arabian). */}
       <SapilPromoProgress surface="cart" className="mb-[20px]" />
       <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[minmax(0,1fr)] max-900:gap-[20px]">

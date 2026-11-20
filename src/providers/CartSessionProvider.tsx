@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { createOrResolveCart, getActiveCart } from "@/features/cart/api/cart.service";
 import { ApiClientError } from "@/lib/api/apiError";
+import { getAccessToken, getRefreshToken } from "@/lib/auth/token";
 import {
   getStoredCartId,
   readGuestToken,
@@ -13,6 +14,11 @@ import {
   clearCartId,
   clearGuestToken,
 } from "@/features/cart/utils/guestToken";
+
+/** A signed-in session is stored on this device (confirmed or not). */
+function hasStoredSession(): boolean {
+  return Boolean(getAccessToken() || getRefreshToken());
+}
 
 export function CartSessionProvider({ children }: { children: ReactNode }) {
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
@@ -54,6 +60,9 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
           .catch(() => {
             // Soft failure — local lines remain from Zustand persist.
           });
+      } else if (hasStoredSession()) {
+        // Signed in, but the server couldn't confirm it just now: this bag is
+        // the account's. Leave it as it is; the next page load signs in again.
       } else if (cartId || readGuestToken()) {
         // A guest's cart for this market (by cart id, else by guest token).
         void getActiveCart(cartId)

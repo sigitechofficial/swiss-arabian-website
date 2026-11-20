@@ -23,7 +23,14 @@ type RequestOptions = {
   skipAuth?: boolean;
 };
 
-let refreshInFlight: Promise<boolean> | null = null;
+/**
+ * How a session refresh ended: a new token, the refresh token refused (the
+ * session is over), or the server not reached / failing (the session may still
+ * be good: never sign the shopper out for that).
+ */
+export type RefreshOutcome = "refreshed" | "rejected" | "unreachable";
+
+let refreshInFlight: Promise<RefreshOutcome> | null = null;
 
 /**
  * The page's language (`<html lang>`), sent as `x-storefront-language` so the
@@ -39,12 +46,12 @@ export function pageLanguage(): string | null {
 const PUBLIC_AUTH_PATH =
   /^\/storefront\/auth\/(login|register|refresh|verify-|forgot-password|reset-password|otp\/|oauth\/(google|apple|code))/;
 
-async function tryRefresh(): Promise<boolean> {
+async function tryRefresh(): Promise<RefreshOutcome> {
   if (refreshInFlight) return refreshInFlight;
 
-  refreshInFlight = (async () => {
+  refreshInFlight = (async (): Promise<RefreshOutcome> => {
     const refreshToken = getRefreshToken();
-    if (!refreshToken) return false;
+    if (!refreshToken) return "rejected";
 
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -55,7 +62,9 @@ async function tryRefresh(): Promise<boolean> {
         headers,
         body: JSON.stringify({ refreshToken }),
       });
-      if (!res.ok) return false;
+      // 5xx and rate limits say nothing about the session.
+      if (res.status >= 500 || res.status === 429) return "unreachable";
+      if (!res.ok) return "rejected";
       const json = (await res.json()) as ApiEnvelope<{
         token?: {
           accessToken: string;
@@ -67,11 +76,12 @@ async function tryRefresh(): Promise<boolean> {
       const access = json.data?.token?.accessToken ?? json.data?.accessToken;
       const nextRefresh =
         json.data?.token?.refreshToken ?? json.data?.refreshToken;
-      if (!json.success || !access) return false;
+      if (!json.success || !access) return "rejected";
       setTokens(access, nextRefresh);
-      return true;
+      return "refreshed";
     } catch {
-      return false;
+      // Offline, connection reset, unreadable reply.
+      return "unreachable";
     } finally {
       refreshInFlight = null;
     }
@@ -132,9 +142,13 @@ async function request<T>(
     !PUBLIC_AUTH_PATH.test(path);
 
   if (canRefresh) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
+    const outcome = await tryRefresh();
+    if (outcome === "refreshed") {
       return request<T>(method, path, body, options, true);
+    }
+    if (outcome === "unreachable") {
+      // The session may still be good: keep it, report the request as failed.
+      throw new ApiClientError(503, "We couldn’t reach the shop. Please try again.");
     }
     endSession();
     throw new ApiClientError(
@@ -186,6 +200,6 @@ export function apiDelete<T>(path: string, options?: RequestOptions) {
 }
 
 /** Expose refresh for session bootstrap (single-flight). */
-export function refreshAccessToken(): Promise<boolean> {
+export function refreshAccessToken(): Promise<RefreshOutcome> {
   return tryRefresh();
 }

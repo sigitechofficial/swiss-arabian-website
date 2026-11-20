@@ -15,7 +15,7 @@ export function RegisterPageView() {
 
   return (
     <AuthShell heading={t("auth.createAccount")} subtitle={t("auth.register.subtitle")}>
-      <form className="flex w-full flex-col" onSubmit={submit}>
+      <form className="flex w-full flex-col" onSubmit={submit} noValidate>
         {oauthEnabled ? (
           <>
             <AuthSocialButtons />

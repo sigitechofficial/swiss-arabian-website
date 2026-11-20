@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import examples from "libphonenumber-js/examples.mobile.json";
+import metadata from "libphonenumber-js/metadata.min.json";
 import {
   AsYouType,
   getCountries,
@@ -74,6 +75,23 @@ export function formatPhoneNumber(e164: string | null | undefined): string {
 export function exampleNationalNumber(country: CountryCode): string {
   const example = getExampleNumber(country, examples);
   return example ? new AsYouType(country).input(example.nationalNumber) : "";
+}
+
+/**
+ * The example for the country a (possibly unfinished) number was typed for, so
+ * an error message matches the picker: "+974 12" → Qatar's "3312 3456". A dial
+ * code shared by several countries uses its main one (+1 → US); an empty number
+ * uses `fallback` (the market's country).
+ */
+export function exampleForNumber(e164: string, fallback: string | null | undefined): string {
+  const typed = new AsYouType();
+  typed.input(e164.trim());
+  const callingCode = typed.getCallingCode();
+  const mainForCode = callingCode
+    ? (metadata.country_calling_codes as Record<string, string[]>)[callingCode]?.[0]
+    : undefined;
+  const country = asCountry(typed.getCountry()) ?? asCountry(mainForCode) ?? asCountry(fallback) ?? FALLBACK_COUNTRY;
+  return exampleNationalNumber(country);
 }
 
 /** A complete, valid number (E.164). */
@@ -153,19 +171,35 @@ export function usePhoneNumberField({ value, onChange }: { value: string; onChan
     inputRef.current?.setCustomValidity(value && !isValidPhoneNumber(value) ? t("phone.invalid") : "");
   }, [value, t]);
 
-  // The list closes on a click outside or Escape.
+  // Closing the list always forgets the search, so it reopens on every country.
+  function close() {
+    setOpen(false);
+    setQuery("");
+  }
+
+  // The list closes on a click outside, on focus moving out of it (Tab), or Escape.
   useEffect(() => {
     if (!open) return;
+    const close = () => {
+      setOpen(false);
+      setQuery("");
+    };
+    const outside = (event: Event) => !rootRef.current?.contains(event.target as Node);
     const onPointer = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (outside(event)) close();
+    };
+    const onFocus = (event: FocusEvent) => {
+      if (outside(event)) close();
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     };
     document.addEventListener("mousedown", onPointer);
+    document.addEventListener("focusin", onFocus);
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("focusin", onFocus);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -182,15 +216,18 @@ export function usePhoneNumberField({ value, onChange }: { value: string; onChan
     query,
     setQuery,
     open,
-    setOpen,
+    /** Open or close the country list. */
+    toggle() {
+      if (open) close();
+      else setOpen(true);
+    },
     rootRef,
     inputRef,
     /** Choose a country from the list (keeps the typed number). */
     pick(nextCountry: CountryCode) {
       setCountry(nextCountry);
       onChange(toE164(nextCountry, national));
-      setOpen(false);
-      setQuery("");
+      close();
     },
     /** The number box changed: digits only, never more than E.164 allows. */
     type(raw: string) {

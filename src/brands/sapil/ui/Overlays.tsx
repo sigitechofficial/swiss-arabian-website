@@ -152,14 +152,18 @@ export type ToastProps = {
   action?: { label: string; onClick: () => void };
 };
 
-/** v9 `.toast`: ink pill at the bottom centre. Always mounted so the status region is announced. */
+/**
+ * v9 `.toast` ink pill, shown at the top centre under the header (moved from the
+ * bottom so it never covers the sticky buy bar or the bag button). Long messages
+ * wrap. Always mounted so the status region is announced.
+ */
 export function Toast({ open, message, action }: ToastProps) {
   return (
     <div
       role="status"
       className={cx(
-        "fixed left-1/2 bottom-[24px] bg-sapil-ink text-sapil-white py-[12px] px-[20px] rounded-full text-[14px] font-[500] z-[80] [transition:all_.3s_var(--sapil-ease)] pointer-events-none whitespace-nowrap",
-        open ? "opacity-100 [transform:translate(-50%,0)]" : "opacity-0 [transform:translate(-50%,24px)]",
+        "fixed left-1/2 top-[80px] w-max max-w-[calc(100vw-32px)] text-center bg-sapil-ink text-sapil-white py-[12px] px-[20px] rounded-[24px] text-[14px] font-[500] z-[80] [transition:all_.3s_var(--sapil-ease)] pointer-events-none",
+        open ? "opacity-100 [transform:translate(-50%,0)]" : "opacity-0 [transform:translate(-50%,-24px)]",
       )}
     >
       {open && message}

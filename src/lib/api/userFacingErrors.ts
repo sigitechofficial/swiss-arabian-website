@@ -1,4 +1,13 @@
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import { ApiClientError } from "./apiError";
+
+/** Codes whose message is the shop's own wording, in the page's language. */
+const SHOP_WORDED_CODES = {
+  // The bag's payment went through after all (it is an order now).
+  BAG_ORDER_PAID: "cart.bagOrderPaid",
+  // A payment for the bag holds money or is under review: no changes yet.
+  BAG_AWAITING_PAYMENT: "cart.bagPaymentConfirming",
+} as const;
 
 const OPS_PHRASES = [
   /POST\s+\/[a-z0-9/_-]+/gi,
@@ -40,6 +49,8 @@ export function getUserFacingErrorMessage(error: unknown): string {
     return insufficientStockMessage(error.data);
   }
   if (error instanceof ApiClientError) {
+    const key = error.code ? SHOP_WORDED_CODES[error.code as keyof typeof SHOP_WORDED_CODES] : undefined;
+    if (key) return pageTranslator()(key);
     return sanitizeUserFacingMessage(error.message);
   }
   if (error instanceof Error) {

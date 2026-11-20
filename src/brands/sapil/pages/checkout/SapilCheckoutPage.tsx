@@ -46,7 +46,7 @@ import {
   type CheckoutAddress,
 } from "../../components/checkout/CheckoutSections";
 import { EarnNote, GiftCardBox, MissThisRow } from "../../components/checkout/CheckoutExtras";
-import { isValidMobile } from "../../components/commerce/SapilPhoneField";
+import { exampleForNumber, isValidMobile } from "../../components/commerce/SapilPhoneField";
 import {
   DEFAULT_TILE,
   SapilLink,
@@ -64,12 +64,13 @@ function validateAddress(
   address: CheckoutAddress,
   t: SapilTranslator,
   regionKey: "emirate" | "region",
+  marketCountry: string,
   withContact = true,
 ): AddressErrors {
   const errors: AddressErrors = {};
   if (withContact && !EMAIL.test(email.trim())) errors.email = t("checkout.emailError");
   if (!address.fullName.trim()) errors.fullName = t("checkout.fullNameError");
-  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError");
+  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError", { example: exampleForNumber(address.phone, marketCountry) });
   if (address.address1.trim().length < 3) errors.address1 = t("checkout.streetError");
   if (!address.city.trim()) errors.city = t("checkout.cityError");
   if (!address.emirate) errors.emirate = regionKey === "emirate" ? t("checkout.emirateError") : t("checkout.regionError");
@@ -148,10 +149,10 @@ export function SapilCheckoutPage() {
 
   /** Delivery and (when separate) billing; focuses the first field to fix. */
   function checkFields(): boolean {
-    const shipFound = validateAddress(f.email, f.shipping, t, regionKey);
+    const shipFound = validateAddress(f.email, f.shipping, t, regionKey, f.countryCode);
     const billFound = f.billingSame
       ? {}
-      : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, false);
+      : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, f.countryCode, false);
     setErrors(shipFound);
     setBillingErrors(billFound);
     const first =

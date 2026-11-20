@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { localeFromPathname } from "./localePath";
+import { setPageTranslator } from "./pageTranslator";
 import type { ShopLocale } from "./locales";
 import {
   createTranslator,
@@ -32,6 +33,8 @@ export function ShopLocaleProvider({
     () => ({ locale, t: createTranslator(locale, messages) }),
     [locale, messages],
   );
+  // Error toasts and background bag sync speak the page's language too.
+  useEffect(() => setPageTranslator(value.t), [value.t]);
   return <ShopLocaleContext.Provider value={value}>{children}</ShopLocaleContext.Provider>;
 }
 

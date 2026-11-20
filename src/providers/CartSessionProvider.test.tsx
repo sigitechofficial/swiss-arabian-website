@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({ getActiveCart: vi.fn(), createOrResolveCart: vi.
 vi.mock("@/features/cart/api/cart.service", () => api);
 
 import { getStoredCartId, storeCartId } from "@/features/cart/utils/guestToken";
+import { clearTokens, setTokens } from "@/lib/auth/token";
 import { CartSessionProvider } from "./CartSessionProvider";
 
 const line = { variantId: "v1", slug: "berry-crush", title: "Berry Crush", unitPrice: 63, currency: "AED", quantity: 2 };
@@ -29,6 +30,7 @@ describe("CartSessionProvider (guest restore)", () => {
   beforeEach(() => {
     api.getActiveCart.mockReset();
     api.createOrResolveCart.mockReset();
+    clearTokens();
   });
 
   it("starts a fresh guest bag when the stored cart belongs to an account (403)", async () => {
@@ -49,6 +51,15 @@ describe("CartSessionProvider (guest restore)", () => {
     api.getActiveCart.mockRejectedValue(new ApiClientError(503, "Unavailable"));
     startAsGuestWithStoredCart();
     await waitFor(() => expect(api.getActiveCart).toHaveBeenCalled());
+    expect(getStoredCartId()).toBe("cart-of-an-account");
+    expect(useCartStore.getState().lines).toHaveLength(1);
+  });
+
+  it("leaves the bag alone while a stored sign-in could not be confirmed (server blip)", async () => {
+    setTokens("access", "refresh");
+    startAsGuestWithStoredCart();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(api.getActiveCart).not.toHaveBeenCalled();
     expect(getStoredCartId()).toBe("cart-of-an-account");
     expect(useCartStore.getState().lines).toHaveLength(1);
   });

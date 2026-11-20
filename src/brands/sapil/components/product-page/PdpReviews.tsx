@@ -6,13 +6,12 @@ import { useReviewActions } from "@/features/catalog/hooks/useReviewActions";
 import { useReviewsCopy } from "@/features/catalog/i18n/reviewsCopy";
 import type { ReviewSort, StorefrontPdpReviews, StorefrontPublicReview } from "@/features/catalog/types/pdpReviews";
 import { DEFAULT_REVIEW_DISPLAY, reviewDate } from "@/features/catalog/utils/pdpReviews";
-import { useIsAuthenticated } from "@/hooks/useCurrentUser";
 import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useSapilCopy } from "../../i18n/SapilCopy";
+import { SapilWriteReview } from "./SapilWriteReview";
 import { Button, Stars, Wrap } from "../../ui";
 import { cx, SAPIL_PASTELS } from "../../ui/shared";
-import { SapilLocaleLink } from "../product/SapilLocaleLink";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 const AVATARS = ["pink", "sky", "lilac", "butter"] as const;
@@ -29,16 +28,17 @@ const CHIP_OFF = "bg-sapil-white border-sapil-line hover:border-sapil-ink";
  */
 export function PdpReviews({
   productId,
+  productTitle,
   reviews,
 }: {
   productId: string;
+  productTitle: string;
   reviews: StorefrontPdpReviews | null | undefined;
 }) {
   const t = useSapilCopy();
   const rc = useReviewsCopy();
   const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
-  const signedIn = useIsAuthenticated();
   const [failed, setFailed] = useState(false);
   const list = usePdpReviewList(productId, reviews, { firstRow: 4, nextRow: 4, onError: () => setFailed(true) });
   const summary = reviews?.summary;
@@ -46,8 +46,8 @@ export function PdpReviews({
   const count = summary?.reviewCount ?? 0;
   const breakdown = summary?.ratingBreakdown;
   const { sort, verifiedOnly, starFilter, applyFilters } = list;
-  // Writing a review happens from the shopper's account (orders → review); guests sign in first.
-  const writeHref = signedIn ? "/account/reviews" : `/login?returnTo=${encodeURIComponent("/account/reviews")}`;
+  // Written here, in a panel (as on Swiss Arabian); a guest signs in first and comes back.
+  const [writing, setWriting] = useState(false);
 
   return (
     <section id="reviews" aria-labelledby="reviews-heading" className="pt-[40px] pb-[64px] max-900:pt-[32px] max-900:pb-[48px] scroll-mt-[96px]">
@@ -68,7 +68,7 @@ export function PdpReviews({
               {t("product.reviewsTitle")}
             </p>
           </div>
-          <Button variant="line" href={writeHref} LinkComponent={SapilLocaleLink}>
+          <Button variant="line" onClick={() => setWriting(true)}>
             {t("product.writeReview")}
           </Button>
         </div>
@@ -101,7 +101,7 @@ export function PdpReviews({
                           applyFilters({ rating: on ? null : n });
                         }}
                         className={cx(
-                          "w-full grid grid-cols-[62px_minmax(0,1fr)_34px] items-center gap-[12px] text-[14px] rounded-[10px] py-[3px] px-[6px] -mx-[6px] text-start [transition:background_.2s] enabled:hover:bg-sapil-paper disabled:cursor-default",
+                          "w-full grid grid-cols-[84px_minmax(0,1fr)_34px] whitespace-nowrap items-center gap-[12px] text-[14px] rounded-[10px] py-[3px] px-[6px] -mx-[6px] text-start [transition:background_.2s] enabled:hover:bg-sapil-paper disabled:cursor-default",
                           on && "bg-sapil-paper font-[700]",
                         )}
                       >
@@ -109,7 +109,8 @@ export function PdpReviews({
                         <i aria-hidden="true" className="h-[7px] rounded-full bg-sapil-line overflow-hidden">
                           <span
                             className="block h-full rounded-full bg-sapil-ok-2"
-                            style={{ width: `max(${count ? (c / count) * 100 : 0}%, 3px)` }}
+                            // A sliver keeps a row with reviews visible; a row with none stays empty.
+                            style={{ width: c > 0 && count ? `max(${(c / count) * 100}%, 3px)` : "0" }}
                           />
                         </i>
                         <b className="text-end font-[500] text-sapil-ink-2">{c}</b>
@@ -234,6 +235,7 @@ export function PdpReviews({
           </div>
         )}
       </Wrap>
+      <SapilWriteReview open={writing} onClose={() => setWriting(false)} productId={productId} productTitle={productTitle} />
     </section>
   );
 }

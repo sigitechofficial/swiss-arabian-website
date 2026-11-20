@@ -57,6 +57,7 @@ export function LoginPageView() {
       {step.kind === "password" ? (
         <form
           className="flex w-full flex-col"
+          noValidate
           onSubmit={submitPassword}
         >
           {oauthEnabled ? (
@@ -124,6 +125,7 @@ export function LoginPageView() {
       {step.kind === "email-code-request" ? (
         <form
           className="flex w-full flex-col"
+          noValidate
           onSubmit={submitCodeRequest}
         >
           <AuthField
@@ -156,6 +158,7 @@ export function LoginPageView() {
       {step.kind === "email-code-confirm" ? (
         <form
           className="flex w-full flex-col gap-5"
+          noValidate
           onSubmit={submitCode}
         >
           <AuthOtpField

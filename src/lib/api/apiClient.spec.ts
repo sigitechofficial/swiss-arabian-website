@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { apiGet } from "./apiClient";
 
 describe("api client storefront host", () => {
@@ -28,5 +29,55 @@ describe("api client storefront host", () => {
     const headers = new Headers(calls[0]?.[1]?.headers);
     expect(headers.get("x-storefront-host")).toBe("shop.example:3000");
     Object.defineProperty(window, "location", { configurable: true, value: original });
+  });
+});
+
+describe("api client session refresh", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    clearTokens();
+  });
+
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+  /** First call: the request (401); then the refresh answers `refresh`; then the retried request. */
+  function stubFetch(refresh: () => Response | Promise<Response>) {
+    const fetchMock = vi.fn(async (input: string) => {
+      if (String(input).endsWith("/storefront/auth/refresh")) return refresh();
+      const authorised = fetchMock.mock.calls.some(([url]) => String(url).endsWith("/storefront/auth/refresh"));
+      return authorised
+        ? json(200, { success: true, data: { id: "c1" } })
+        : json(401, { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("refreshes and retries once", async () => {
+    setTokens("old", "refresh");
+    stubFetch(() => json(200, { success: true, data: { accessToken: "new", refreshToken: "refresh-2" } }));
+    await expect(apiGet("/storefront/customer/me")).resolves.toEqual({ id: "c1" });
+    expect(getAccessToken()).toBe("new");
+  });
+
+  it("a refused refresh ends the session", async () => {
+    setTokens("old", "refresh");
+    stubFetch(() => json(401, { success: false }));
+    await expect(apiGet("/storefront/customer/me")).rejects.toMatchObject({ status: 401 });
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
+  });
+
+  it.each([
+    ["a server error", () => json(502, { success: false })],
+    ["a dropped connection", () => Promise.reject(new TypeError("Failed to fetch"))],
+  ])("%s during refresh keeps the session", async (_label, refresh) => {
+    setTokens("old", "refresh");
+    stubFetch(refresh as () => Promise<Response>);
+    await expect(apiGet("/storefront/customer/me")).rejects.toMatchObject({ status: 503 });
+    expect(getAccessToken()).toBe("old");
+    expect(getRefreshToken()).toBe("refresh");
   });
 });
