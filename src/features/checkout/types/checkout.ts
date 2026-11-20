@@ -48,6 +48,21 @@ export interface CheckoutInventorySnapshot {
   checkedAt: string | null;
 }
 
+/**
+ * The payment or delivery method an order was placed with. `displayName` is
+ * in the order's language; `displayNames` has every language (`{ en, ar, … }`),
+ * read with `nameInLanguage` for the page's language.
+ */
+export interface OrderMethodSummary {
+  /** Set on payment methods. */
+  providerCode?: string | null;
+  /** Set on delivery methods. */
+  partnerCode?: string | null;
+  methodCode: string | null;
+  displayName?: string | null;
+  displayNames?: Readonly<Record<string, string>> | null;
+}
+
 export interface SelectedPaymentMethod {
   paymentMethodId: string | null;
   zonePaymentMethodId: string | null;
@@ -233,12 +248,6 @@ export interface GuestTrackingResponse {
   message: string;
 }
 
-export interface OrderMethodSummary {
-  providerCode?: string | null;
-  partnerCode?: string | null;
-  methodCode: string | null;
-}
-
 export interface OrderResponse {
   orderId: string;
   orderNumber: string | null;
@@ -252,8 +261,8 @@ export interface OrderResponse {
   addresses: OrderAddressSummary[];
   totals: OrderTotals;
   currency: string;
-  selectedPaymentMethod: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null;
-  selectedDeliveryMethod: { partnerCode: string | null; methodCode: string | null } | null;
+  selectedPaymentMethod: OrderMethodSummary & { providerCode: string | null } | null;
+  selectedDeliveryMethod: OrderMethodSummary & { partnerCode: string | null } | null;
   timeline: OrderTimelineEvent[];
   /** Frozen header snapshot when the order was placed. Not used to recompute totals. */
   promotionSnapshot?: OrderLinePromotionSnapshot | null;

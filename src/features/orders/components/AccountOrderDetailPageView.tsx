@@ -557,13 +557,13 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                 <div>
                   <dt className={orderFactLabel}>{t("orders.delivery")}</dt>
                   <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
-                    {orderDeliveryLabel(order.selectedDeliveryMethod)}
+                    {orderDeliveryLabel(order.selectedDeliveryMethod, t, locale)}
                   </dd>
                 </div>
                 <div>
                   <dt className={orderFactLabel}>{t("orders.payment")}</dt>
                   <dd className={`${orderDetailText} font-medium text-[var(--ink,#241f1b)]!`}>
-                    {orderPaymentLabel(order.selectedPaymentMethod)}
+                    {orderPaymentLabel(order.selectedPaymentMethod, t, locale)}
                   </dd>
                 </div>
               </dl>
