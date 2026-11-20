@@ -1,4 +1,5 @@
 "use client";
+import { providerTextIn } from "../utils/providerText";
 
 import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -173,7 +174,7 @@ export function TabbyReturnView() {
       (hint === "cancel" || hint === "failure"));
 
   if (notPaid) {
-    const message = cancelled ? TABBY_CANCELLED_MESSAGE[lang] : TABBY_REJECTED_MESSAGE[lang];
+    const message = providerTextIn(cancelled ? TABBY_CANCELLED_MESSAGE : TABBY_REJECTED_MESSAGE, lang);
     return (
       <CheckoutStateShell current="Payment">
         <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>

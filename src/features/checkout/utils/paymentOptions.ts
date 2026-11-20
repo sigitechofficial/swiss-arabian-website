@@ -1,3 +1,4 @@
+import { providerTextIn } from "./providerText";
 import type { TabbyPrescore } from "../hooks/useTabbyPrescore";
 import type { TamaraPrecheck } from "../hooks/useTamaraPrecheck";
 import type { PaymentMethodOption } from "../types/checkout";
@@ -142,8 +143,8 @@ export function paymentGroups(
           row.tamaraState = tamaraPrecheck.state;
           if (tamaraPrecheck.state === "rejected") {
             row.disabled = true;
-            row.sub = tamaraPrecheck.message[tabbyLang];
-            row.tamaraMessage = tamaraPrecheck.message[tabbyLang];
+            row.sub = providerTextIn(tamaraPrecheck.message, tabbyLang);
+            row.tamaraMessage = providerTextIn(tamaraPrecheck.message, tabbyLang);
           } else if (tamaraPrecheck.state === "checking") {
             row.sub = "Checking eligibility…";
           }
@@ -157,8 +158,8 @@ export function paymentGroups(
         row.tabbyState = tabbyPrescore.state;
         if (tabbyPrescore.state === "rejected") {
           row.disabled = true;
-          row.sub = tabbyPrescore.message[tabbyLang];
-          row.tabbyMessage = tabbyPrescore.message[tabbyLang];
+          row.sub = providerTextIn(tabbyPrescore.message, tabbyLang);
+          row.tabbyMessage = providerTextIn(tabbyPrescore.message, tabbyLang);
         } else if (tabbyPrescore.state === "checking") {
           row.sub = "Checking eligibility…";
         }

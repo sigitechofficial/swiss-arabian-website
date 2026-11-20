@@ -1,3 +1,4 @@
+import type { ProviderText } from "../utils/providerText";
 import { getAccessToken } from "@/lib/auth/token";
 import { apiGet, apiPost, apiDelete } from "@/lib/api/apiClient";
 import { storefrontContextQuery } from "@/lib/storefront/context";
@@ -96,8 +97,8 @@ export type TabbyPrescoreResponse = {
   providerCode: "tabby";
   available: boolean;
   rejectionReason: string | null;
-  /** Tabby's wording to show when unavailable. */
-  message: { en: string; ar: string } | null;
+  /** Tabby's wording to show when unavailable, per language (English always). */
+  message: ProviderText | null;
 };
 
 /**
@@ -123,7 +124,7 @@ export type TamaraPrecheckResponse = {
   messageEn?: string | null;
   messageAr?: string | null;
   /** Same wording, Tabby-style; read when the flat fields are missing. */
-  message?: { en: string; ar: string } | null;
+  message?: ProviderText | null;
 };
 
 /**

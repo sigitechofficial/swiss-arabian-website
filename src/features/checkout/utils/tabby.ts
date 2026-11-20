@@ -1,3 +1,4 @@
+import { readProviderText, type ProviderText } from "./providerText";
 import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
 
@@ -8,7 +9,8 @@ import { baseLanguage } from "@/lib/i18n/locales";
 
 export type TabbyLang = "en" | "ar";
 
-export type TabbyMessage = { en: string; ar: string };
+/** Tabby's wording per language, English always present (see providerText.ts). */
+export type TabbyMessage = ProviderText;
 
 export const TABBY_REJECTED_MESSAGE: TabbyMessage = {
   en: "Sorry, Tabby is unable to approve this purchase. Please use an alternative payment method for your order.",
@@ -88,14 +90,8 @@ export function tabbyRejectionFrom(
   metadata: Record<string, unknown> | null | undefined,
 ): TabbyMessage | null {
   if (!metadata || !metadata.tabbyRejectionReason) return null;
-  const message = metadata.tabbyRejectionMessage;
-  if (message && typeof message === "object" && !Array.isArray(message)) {
-    const { en, ar } = message as Record<string, unknown>;
-    if (typeof en === "string" && en.trim() && typeof ar === "string" && ar.trim()) {
-      return { en: en.trim(), ar: ar.trim() };
-    }
-  }
-  return TABBY_REJECTED_MESSAGE;
+  // Any language map with English (the backend sends every language it has).
+  return readProviderText(metadata.tabbyRejectionMessage) ?? TABBY_REJECTED_MESSAGE;
 }
 
 /**

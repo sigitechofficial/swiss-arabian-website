@@ -1,4 +1,5 @@
 "use client";
+import { providerTextIn } from "../utils/providerText";
 
 import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -182,7 +183,7 @@ export function TamaraReturnView() {
       (hint === "cancel" || hint === "failure"));
 
   if (notPaid) {
-    const message = cancelled ? TAMARA_CANCELLED_MESSAGE[lang] : TAMARA_REJECTED_MESSAGE[lang];
+    const message = providerTextIn(cancelled ? TAMARA_CANCELLED_MESSAGE : TAMARA_REJECTED_MESSAGE, lang);
     return (
       <CheckoutStateShell current="Payment">
         <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>

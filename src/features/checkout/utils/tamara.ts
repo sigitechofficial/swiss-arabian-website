@@ -1,3 +1,4 @@
+import { readProviderText, type ProviderText } from "./providerText";
 import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
 
@@ -9,7 +10,8 @@ import { baseLanguage } from "@/lib/i18n/locales";
 
 export type TamaraLang = "en" | "ar";
 
-export type TamaraMessage = { en: string; ar: string };
+/** Tamara's wording per language, English always present (see providerText.ts). */
+export type TamaraMessage = ProviderText;
 
 /** Pre-check said no, or Tamara isn't offered for this order. */
 export const TAMARA_NOT_AVAILABLE_MESSAGE: TamaraMessage = {
@@ -74,14 +76,8 @@ export function isTamaraCheckoutUrl(url: string | null | undefined): boolean {
   }
 }
 
-function readMessage(value: unknown): TamaraMessage | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const { en, ar } = value as Record<string, unknown>;
-  if (typeof en === "string" && en.trim() && typeof ar === "string" && ar.trim()) {
-    return { en: en.trim(), ar: ar.trim() };
-  }
-  return null;
-}
+/** Any language map with English (the backend sends every language it has). */
+const readMessage = readProviderText;
 
 /** Backend's reason code → the matching default wording. */
 export function tamaraMessageForReason(reason: string | null | undefined): TamaraMessage {
@@ -94,7 +90,7 @@ export function tamaraMessageForReason(reason: string | null | undefined): Tamar
 /**
  * Tamara declined the purchase when the payment was started (never an error to log).
  * The backend sets `metadata.tamaraRejectionReason` and
- * `metadata.tamaraRejectionMessage` (`{ en, ar }`), same as Tabby. A nested
+ * `metadata.tamaraRejectionMessage` (`{ en, ar, … }`), same as Tabby. A nested
  * `metadata.tamara.{rejectionReason, rejectionMessage}` is also accepted.
  */
 export function tamaraRejectionFrom(
@@ -118,16 +114,16 @@ export function tamaraRejectionFrom(
   return readMessage(tamara.rejectionMessage) ?? tamaraMessageForReason(reason);
 }
 
-/** Pre-check response → message. Accepts `{ messageEn, messageAr }` or `{ message: { en, ar } }`. */
+/** Pre-check response → message. Accepts `{ message: { en, ar, … } }` or the older `{ messageEn, messageAr }`. */
 export function tamaraPrecheckMessage(res: {
   rejectionReason?: string | null;
   messageEn?: string | null;
   messageAr?: string | null;
-  message?: { en?: string | null; ar?: string | null } | null;
+  message?: Record<string, string | null | undefined> | null;
 }): TamaraMessage {
   return (
-    readMessage({ en: res.messageEn, ar: res.messageAr }) ??
     readMessage(res.message) ??
+    readMessage({ en: res.messageEn, ar: res.messageAr }) ??
     tamaraMessageForReason(res.rejectionReason ?? null)
   );
 }

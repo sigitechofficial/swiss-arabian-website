@@ -1,4 +1,5 @@
 "use client";
+import { readProviderText } from "../utils/providerText";
 
 import { useEffect, useState } from "react";
 import { prescoreTabby } from "../api/checkout.service";
@@ -51,7 +52,7 @@ export function useTabbyPrescore(input: {
             key,
             result:
               res.available === false
-                ? { state: "rejected", message: res.message ?? TABBY_REJECTED_MESSAGE }
+                ? { state: "rejected", message: readProviderText(res.message) ?? TABBY_REJECTED_MESSAGE }
                 : { state: "available" },
           });
         })
