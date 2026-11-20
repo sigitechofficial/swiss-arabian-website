@@ -5,6 +5,7 @@ import { OnsiteMessageView } from "../components/OnsiteMessageView";
 import type { OnsiteMessage } from "../types";
 import { OnsiteDesignView } from "./OnsiteDesignView";
 import { countdownParts, resolveDesign, type OnsiteDesign } from "./onsiteDesign";
+import { isRtl } from "@/lib/i18n/locales";
 
 const design: OnsiteDesign = {
   version: 1,
@@ -66,7 +67,7 @@ describe("OnsiteMessageView with a design", () => {
 describe("OnsiteDesignView", () => {
   it("hides blocks for the device and turns right-to-left for Arabic", () => {
     render(
-      <OnsiteDesignView design={resolveDesign(design, "ar")} device="mobile" frame="canvas" onClose={vi.fn()} />,
+      <OnsiteDesignView design={resolveDesign(design, "ar", undefined, isRtl)} device="mobile" frame="canvas" onClose={vi.fn()} />,
     );
     expect(screen.getByRole("dialog")).toHaveAttribute("dir", "rtl");
     expect(screen.getByText("تخفيضات")).toBeInTheDocument();

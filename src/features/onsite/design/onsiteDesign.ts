@@ -5,11 +5,23 @@
  * and the storefront (src/features/onsite/design/). The backend owns the checks
  * (src/modules/onsite/onsite-design.ts). Change all three together.
  *
- * A design is data, never markup: a layout plus typed blocks. Texts are per language (`en`
- * required, `ar` optional, falling back to `en`).
+ * A design is data, never markup: a layout plus typed blocks. Texts are per language: `en`
+ * required, any other base language optional, falling back to `en`. This file imports
+ * nothing, so it stays identical in both repos: each passes its own right-to-left check.
  */
 
-export type LocalText = { en: string; ar?: string };
+/** The language every on-site text has. */
+const PAGE_LANGUAGE_FALLBACK = "en";
+
+/** "fr-CA" → "fr". */
+const baseLanguage = (code: string | null | undefined) =>
+  (code ?? "").trim().toLowerCase().split(/[-_]/)[0] ?? "";
+
+/**
+ * A text in English (always) and any other language: `{ en, ar?, fr?, … }`
+ * keyed by base language code, as the backend stores it.
+ */
+export type LocalText = { en: string; [language: string]: string | undefined };
 
 export type OnsiteLayoutType = "popup" | "bar" | "slide_in";
 export type OnsiteLayoutPosition = "center" | "top" | "bottom" | "bottom_left" | "bottom_right";
@@ -196,23 +208,23 @@ export type ResolvedDesign = {
   layout: OnsiteDesignLayout;
   blocks: ResolvedBlock[];
   successBlocks: ResolvedBlock[];
-  /** Right-to-left: the chosen language is Arabic and the design has Arabic text. */
+  /** The language shown (the shopper's when the design has it, else English). */
+  language: string;
+  /** Right-to-left: the language shown is written right to left. */
   rtl: boolean;
 };
 
-function pick(text: LocalText | undefined, arabic: boolean): string {
+/** A text in a language: its own wording when written, else English. */
+export function textIn(text: LocalText | undefined, language: string): string {
   if (!text) return "";
-  return arabic && text.ar && text.ar.trim() ? text.ar : text.en;
+  const own = text[baseLanguage(language)];
+  return own && own.trim() ? own : text.en;
 }
 
-/** Arabic when asked for and written; English otherwise. `fill` replaces words like {{first_name}}. */
-export function resolveDesign(
-  design: OnsiteDesign,
-  locale: string,
-  fill: (text: string) => string = (text) => text,
-): ResolvedDesign {
-  const wantsArabic = locale.toLowerCase().split("-")[0] === "ar";
-  const hasArabic = design.blocks.some((block) => {
+/** Languages a design is written in: those its main texts (text, buttons, submit) have. */
+export function designLanguages(design: OnsiteDesign): Set<string> {
+  const out = new Set<string>([PAGE_LANGUAGE_FALLBACK]);
+  for (const block of design.blocks) {
     const text =
       block.type === "text"
         ? block.text
@@ -221,40 +233,59 @@ export function resolveDesign(
           : block.type === "form"
             ? block.submitLabel
             : undefined;
-    return Boolean(text?.ar && text.ar.trim());
-  });
-  const arabic = wantsArabic && hasArabic;
+    for (const [language, value] of Object.entries(text ?? {})) {
+      if (typeof value === "string" && value.trim()) out.add(language);
+    }
+  }
+  return out;
+}
+
+/**
+ * The design in the shopper's language when it is written in it, else in
+ * English (never half and half), as the website shows it. `fill` replaces
+ * words like {{first_name}}.
+ */
+export function resolveDesign(
+  design: OnsiteDesign,
+  locale: string,
+  fill: (text: string) => string = (text) => text,
+  /** The repo's right-to-left check (src/lib/i18n). */
+  isRtl: (language: string) => boolean = () => false,
+): ResolvedDesign {
+  const wanted = baseLanguage(locale) || PAGE_LANGUAGE_FALLBACK;
+  const language = designLanguages(design).has(wanted) ? wanted : PAGE_LANGUAGE_FALLBACK;
+  const pick = (text: LocalText | undefined) => textIn(text, language);
   const resolveBlock = (block: OnsiteBlock): ResolvedBlock => {
     switch (block.type) {
       case "text":
-        return { ...block, text: fill(pick(block.text, arabic)) };
+        return { ...block, text: fill(pick(block.text)) };
       case "image":
-        return { ...block, alt: pick(block.alt, arabic) };
+        return { ...block, alt: pick(block.alt) };
       case "button":
-        return { ...block, label: fill(pick(block.label, arabic)) };
+        return { ...block, label: fill(pick(block.label)) };
       case "countdown":
-        return { ...block, expiredText: pick(block.expiredText, arabic) };
+        return { ...block, expiredText: pick(block.expiredText) };
       case "coupon":
         return {
           ...block,
-          copyLabel: pick(block.copyLabel, arabic),
-          copiedLabel: pick(block.copiedLabel, arabic),
+          copyLabel: pick(block.copyLabel),
+          copiedLabel: pick(block.copiedLabel),
         };
       case "form":
         return {
           ...block,
-          emailLabel: pick(block.emailLabel, arabic),
-          emailPlaceholder: pick(block.emailPlaceholder, arabic),
-          phoneLabel: pick(block.phoneLabel, arabic),
-          interests: block.interests.map((choice) => pick(choice, arabic)),
-          interestsLabel: pick(block.interestsLabel, arabic),
-          consentText: pick(block.consentText, arabic),
-          submitLabel: fill(pick(block.submitLabel, arabic)),
+          emailLabel: pick(block.emailLabel),
+          emailPlaceholder: pick(block.emailPlaceholder),
+          phoneLabel: pick(block.phoneLabel),
+          interests: block.interests.map((choice) => pick(choice)),
+          interestsLabel: pick(block.interestsLabel),
+          consentText: pick(block.consentText),
+          submitLabel: fill(pick(block.submitLabel)),
         };
       case "wheel":
         return {
           ...block,
-          segments: block.segments.map((segment) => ({ label: pick(segment.label, arabic), color: segment.color })),
+          segments: block.segments.map((segment) => ({ label: pick(segment.label), color: segment.color })),
         };
       default:
         return block;
@@ -265,7 +296,8 @@ export function resolveDesign(
     layout: design.layout,
     blocks: design.blocks.map(resolveBlock),
     successBlocks: (design.success?.blocks ?? []).map(resolveBlock),
-    rtl: arabic,
+    language,
+    rtl: isRtl(language),
   };
 }
 
