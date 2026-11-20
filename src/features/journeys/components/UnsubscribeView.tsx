@@ -2,7 +2,7 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { useUnsubscribe } from "../hooks/useEmailLinks";
+import { PREFERENCES_PATH, useUnsubscribe } from "../hooks/useEmailLinks";
 
 /** Swiss Arabian's unsubscribe page (logic: useUnsubscribe, every brand). */
 export function UnsubscribeView() {
@@ -26,6 +26,14 @@ export function UnsubscribeView() {
             {copy("unsubscribeAction")}
           </button>
         </>
+      )}
+      {(status === "done" || status === "failed") && (
+        <LocaleLink
+          href={PREFERENCES_PATH}
+          className="rounded-full bg-black px-6 py-3 text-sm uppercase tracking-wider text-white"
+        >
+          {copy("unsubscribeManage")}
+        </LocaleLink>
       )}
       <LocaleLink href="/" className="text-sm underline">
         {copy("unsubscribeBack")}

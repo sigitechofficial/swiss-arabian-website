@@ -1,105 +1,74 @@
 "use client";
 
-import { useState } from "react";
-import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { COMMUNICATION_PREFERENCES_ID, useCommunicationPreferences } from "../hooks/useCommunicationPreferences";
+import type { MarketingChannel } from "../types/customerAccount";
 
-import { accountBtnPrimary } from "../constants/accountForm";
-import { useMarketingConsents } from "../hooks/useMarketingConsents";
-import type {
-  ConsentChannel,
-  ConsentStatus,
-} from "../types/customerAccount";
+/** Label per channel; the list itself comes from the backend (channels in use). */
+export const MARKETING_CHANNEL_LABEL: Record<MarketingChannel, MessageKey> = {
+  EMAIL: "account.consent.email",
+  SMS: "account.consent.sms",
+  WHATSAPP: "account.consent.whatsapp",
+  PUSH: "account.consent.push",
+};
 
-const CHANNELS: Array<{ channel: ConsentChannel; label: MessageKey }> = [
-  { channel: "EMAIL", label: "account.consent.email" },
-  { channel: "SMS", label: "account.consent.sms" },
-  { channel: "WHATSAPP", label: "account.consent.whatsapp" },
-  { channel: "PUSH", label: "account.consent.push" },
-];
-
-function asStatus(value: string | undefined): ConsentStatus {
-  if (value === "OPTED_IN" || value === "OPTED_OUT" || value === "UNKNOWN") {
-    return value;
-  }
-  return "UNKNOWN";
-}
-
+/**
+ * Swiss Arabian's communication preferences: one switch per channel we send
+ * offers on. Each switch saves at once and shows what will really happen
+ * (shared useCommunicationPreferences).
+ */
 export function AccountConsentsSection() {
   const t = useShopCopy();
-  const user = useCurrentUser();
-  const { list, update } = useMarketingConsents();
-  const [overrides, setOverrides] = useState<
-    Partial<Record<ConsentChannel, boolean>>
-  >({});
-
-  function isOptedIn(channel: ConsentChannel): boolean {
-    if (channel in overrides) return Boolean(overrides[channel]);
-    const saved = list.data?.find((row) => row.channel === channel);
-    return asStatus(saved?.status) === "OPTED_IN";
-  }
-
-  const dirty = CHANNELS.some(({ channel }) => channel in overrides);
+  const prefs = useCommunicationPreferences();
 
   return (
-    <div>
-      <p className="max-w-[660px] text-[12px] text-sa-secondary">
-        {t("account.consent.intro")}
-      </p>
+    <div id={COMMUNICATION_PREFERENCES_ID}>
+      <p className="max-w-[660px] text-[12px] text-sa-secondary">{t("account.consent.intro")}</p>
 
-      {list.isPending ? (
+      {prefs.loading ? (
         <p className="mt-4 text-[12px] text-sa-secondary">{t("account.consent.loading")}</p>
-      ) : list.isError ? (
-        <p className="mt-4 text-[12px] text-red-600">
-          {getUserFacingErrorMessage(list.error)}
+      ) : prefs.failed ? (
+        <p className="mt-4 text-[12px] text-red-600" role="alert">
+          {t("account.consent.loadFailed")}{" "}
+          <button type="button" className="cursor-pointer underline" onClick={prefs.retry}>
+            {t("account.consent.retry")}
+          </button>
         </p>
       ) : (
-        <>
-          <ul className="mt-4 flex flex-col gap-3">
-            {CHANNELS.map(({ channel, label }) => (
+        <ul className="mt-4 flex flex-col gap-3">
+          {prefs.channels.map(({ channel, subscribed }) => {
+            const saving = prefs.savingChannel === channel;
+            return (
               <li key={channel}>
-                <label className="flex items-center gap-2 text-[13px] text-sa-primary">
+                <label className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-sa-primary">
+                  <span>{t(MARKETING_CHANNEL_LABEL[channel])}</span>
                   <input
                     type="checkbox"
-                    checked={isOptedIn(channel)}
-                    onChange={(e) =>
-                      setOverrides((prev) => ({
-                        ...prev,
-                        [channel]: e.target.checked,
-                      }))
-                    }
+                    role="switch"
+                    aria-checked={subscribed}
+                    checked={subscribed}
+                    disabled={saving}
+                    onChange={(event) => prefs.setSubscribed(channel, event.target.checked)}
+                    className="peer sr-only"
                   />
-                  {t(label)}
+                  <span
+                    aria-hidden="true"
+                    className={`relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-sa-primary ${
+                      subscribed ? "bg-sa-primary" : "bg-sa-border"
+                    } ${saving ? "opacity-60" : ""}`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        subscribed ? "translate-x-[22px] rtl:-translate-x-[22px]" : "translate-x-0.5 rtl:-translate-x-0.5"
+                      }`}
+                    />
+                  </span>
                 </label>
               </li>
-            ))}
-          </ul>
-          {!user?.zoneId ? (
-            <p className="mt-3 text-[12px] text-sa-secondary">
-              {t("account.consent.noZone")}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            className={`${accountBtnPrimary} mt-5`}
-            disabled={update.isPending || !dirty}
-            onClick={() => {
-              void update
-                .unwrap({
-                  consents: CHANNELS.map(({ channel }) => ({
-                    channel,
-                    status: isOptedIn(channel) ? "OPTED_IN" : "OPTED_OUT",
-                    zoneId: user?.zoneId,
-                  })),
-                })
-                .then(() => setOverrides({}));
-            }}
-          >
-            {update.isPending ? t("account.saving") : t("account.consent.save")}
-          </button>
-        </>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

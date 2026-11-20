@@ -1,6 +1,6 @@
 "use client";
 
-import { useEmailLinkRedirect, useUnsubscribe } from "@/features/journeys/hooks/useEmailLinks";
+import { PREFERENCES_PATH, useEmailLinkRedirect, useUnsubscribe } from "@/features/journeys/hooks/useEmailLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { Button, cx } from "../../ui";
 import { buttonClass } from "../../ui/Button";
@@ -28,6 +28,12 @@ export function SapilUnsubscribePage() {
           {status === "idle" || status === "working" ? (
             <Button onClick={() => void confirm()} disabled={status === "working"} className={cx(status === "working" && "opacity-60 cursor-wait")}>
               {copy("unsubscribeAction")}
+            </Button>
+          ) : null}
+          {/* Done or a dead link: the account is where offers are chosen, channel by channel. */}
+          {status === "done" || status === "failed" ? (
+            <Button href={PREFERENCES_PATH} variant={status === "failed" ? "dark" : "line"} LinkComponent={SapilLink}>
+              {copy("unsubscribeManage")}
             </Button>
           ) : null}
           <SapilLink href="/" className={buttonClass("link")}>

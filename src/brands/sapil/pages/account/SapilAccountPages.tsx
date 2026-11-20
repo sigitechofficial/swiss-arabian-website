@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAccountDashboard, useChangePassword } from "@/features/account/hooks/useAccountPages";
 import { useCustomerAddresses } from "@/features/account/hooks/useCustomerAddresses";
 import { useCustomerPhones } from "@/features/account/hooks/useCustomerPhones";
-import { useMarketingConsents } from "@/features/account/hooks/useMarketingConsents";
+import { COMMUNICATION_PREFERENCES_ID, useCommunicationPreferences } from "@/features/account/hooks/useCommunicationPreferences";
 import { useUpdateCustomerMe } from "@/features/account/hooks/useUpdateCustomerMe";
 import { regionsForCountry } from "@/features/account/data/regionsByCountry";
 import { countryLabel, regionLabel } from "@/features/account/utils/addressDisplay";
@@ -18,7 +18,7 @@ import {
   type AddressBookFormValues,
 } from "@/features/account/schemas/addressBook.schema";
 import { profileNameSchema, type ProfileNameFormValues } from "@/features/account/schemas/phoneBook.schema";
-import type { ConsentChannel, StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
+import type { StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
 import { useCustomerExchangesFeed, useCustomerReturnsFeed } from "@/features/afterSales/hooks/useAfterSales";
 import { orderNeedsPaying, paymentFilterOf, usePaymentHistory, type PaymentFilter } from "@/features/payments/hooks/usePaymentHistory";
 import { useMyReviewsFeed } from "@/features/reviews/hooks/useProductReviews";
@@ -203,17 +203,14 @@ function NameForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-const CONSENT_CHANNELS: ConsentChannel[] = ["EMAIL", "SMS", "WHATSAPP"];
-
 export function SapilAccountProfilePage() {
   const t = useSapilCopy();
   const user = useCurrentUser();
   const [editingName, setEditingName] = useState(false);
   const phones = useCustomerPhones();
-  const consents = useMarketingConsents();
+  const prefs = useCommunicationPreferences();
   const [newPhone, setNewPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const optedIn = (channel: string) => (consents.list.data ?? []).some((c) => c.channel === channel && c.status === "OPTED_IN");
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.fullName || "";
 
   return (
@@ -289,20 +286,22 @@ export function SapilAccountProfilePage() {
           </form>
         </Card>
         <Card title={t("account.profileConsents")} headingLevel="h3">
-          <p className="text-[14px] text-sapil-ink-2">{t("account.profileConsentsLede")}</p>
-          {consents.list.isError ? <LoadError onRetry={() => void consents.list.refetch()} /> : null}
-          {CONSENT_CHANNELS.map((channel) => (
-            <Checkbox
-              key={channel}
-              checked={optedIn(channel)}
-              disabled={consents.list.isPending || consents.update.isPending}
-              onChange={(event) =>
-                consents.update.mutate({ consents: [{ channel, status: event.target.checked ? "OPTED_IN" : "OPTED_OUT" }] })
-              }
-            >
-              {t(`account.consent${channel}` as SapilCopyKey)}
-            </Checkbox>
-          ))}
+          {/* One switch per channel we send offers on; each saves at once (shared useCommunicationPreferences). */}
+          <div id={COMMUNICATION_PREFERENCES_ID} className="flex flex-col gap-[12px]">
+            <p className="text-[14px] text-sapil-ink-2">{t("account.profileConsentsLede")}</p>
+            {prefs.loading ? <SapilSkeleton className="h-[44px]" /> : null}
+            {prefs.failed ? <LoadError onRetry={prefs.retry} /> : null}
+            {prefs.channels.map(({ channel, subscribed }) => (
+              <Checkbox
+                key={channel}
+                checked={subscribed}
+                disabled={prefs.savingChannel === channel}
+                onChange={(event) => prefs.setSubscribed(channel, event.target.checked)}
+              >
+                {t(`account.consent${channel}` as SapilCopyKey)}
+              </Checkbox>
+            ))}
+          </div>
         </Card>
       </div>
     </AccountPage>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { COMMUNICATION_PREFERENCES_ID } from "@/features/account/hooks/useCommunicationPreferences";
 import { apiPost } from "@/lib/api/apiClient";
 import { localizeHref } from "@/lib/i18n/localePath";
 
@@ -11,6 +12,9 @@ type LinkOpenResult = { ok: boolean; destination: string | null };
 export function isSitePath(path: string | null): path is string {
   return Boolean(path && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\"));
 }
+
+/** The account's communication preferences (sign-in first when needed). */
+export const PREFERENCES_PATH = `/account/profile#${COMMUNICATION_PREFERENCES_ID}`;
 
 export type UnsubscribeStatus = "idle" | "working" | "done" | "failed";
 

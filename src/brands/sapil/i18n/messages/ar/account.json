@@ -150,9 +150,10 @@
   "profilePhoneNone": "لا أرقام بعد.",
   "profileConsents": "رسائل من سابيل",
   "profileConsentsLede": "اختر كيف نُبلغك بالإصدارات الجديدة والعروض.",
-  "consentEMAIL": "البريد الإلكتروني",
-  "consentSMS": "الرسائل النصية",
-  "consentWHATSAPP": "واتساب",
+  "consentEMAIL": "العروض والإصدارات الجديدة عبر البريد الإلكتروني",
+  "consentSMS": "العروض عبر الرسائل النصية",
+  "consentWHATSAPP": "العروض عبر واتساب",
+  "consentPUSH": "العروض عبر إشعارات التطبيق",
 
   "addressesTitle": "العناوين",
   "addressesLede": "العناوين المحفوظة تملأ صفحة الدفع تلقائيًا.",

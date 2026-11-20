@@ -101,23 +101,15 @@ export type UpdateCustomerProfileDto = {
   gender?: string;
 };
 
-export type ConsentChannel = "EMAIL" | "SMS" | "WHATSAPP" | "PUSH";
-export type ConsentStatus = "OPTED_IN" | "OPTED_OUT" | "UNKNOWN";
+/** A channel the platform can send marketing on (the backend lists the ones in use). */
+export type MarketingChannel = "EMAIL" | "SMS" | "WHATSAPP" | "PUSH";
 
-export type StorefrontMarketingConsentView = {
-  channel: string;
-  status: string;
-  zoneId: string | null;
-  consentedAt: string | null;
-  revokedAt: string | null;
-};
-
-export type UpdateMarketingConsentsDto = {
-  consents: Array<{
-    channel: ConsentChannel;
-    status: ConsentStatus;
-    zoneId?: string;
-  }>;
+/**
+ * The shopper's marketing choices, one per channel the platform sends
+ * marketing on today. `subscribed` is exactly what the sender decides.
+ */
+export type CommunicationPreferences = {
+  channels: Array<{ channel: MarketingChannel; subscribed: boolean }>;
 };
 
 export type MutationAck = {
