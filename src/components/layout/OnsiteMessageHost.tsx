@@ -13,10 +13,11 @@ import {
 } from "@/features/onsite/api/onsite.service";
 import { OnsiteMessageView } from "@/features/onsite/components/OnsiteMessageView";
 import { watchOnsiteTriggers } from "@/features/onsite/lib/watchTriggers";
-import type { OnsiteMessage } from "@/features/onsite/types";
+import { ASSISTANT_LINK, ASSISTANT_OPEN_EVENT, type OnsiteMessage } from "@/features/onsite/types";
 import { getSessionId, getVisitorId } from "@/lib/analytics/tracker";
 import { env } from "@/lib/config/env";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 
 /** `?onsite_preview=<token>`: an admin testing a campaign from the playground. */
@@ -42,6 +43,12 @@ export function OnsiteMessageHost() {
   // frequency limits, so they appear only after the shopper allowed marketing.
   const marketing = useConsentFor("marketing");
   const contextRef = useRef<OnsiteContext | null>(null);
+  // Read when an idle nudge asks for a bag with items; kept in a ref so the timers never restart.
+  const cartItems = useCartStore((state) => state.itemCount());
+  const cartItemsRef = useRef(0);
+  useEffect(() => {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
   const showing = useRef(false);
   // An admin preview shows that one saved campaign straight away, whatever its status, rules or the
   // cookie choice (it is the admin's own test). Nothing is recorded and normal rules are not asked.
@@ -89,9 +96,10 @@ export function OnsiteMessageHost() {
         stop = watchOnsiteTriggers(triggers, (trigger, observed) => {
           if (showing.current) return;
           void decideOnsiteMessage(context, {
-            ...trigger,
-            seconds: trigger.type === "dwell" ? observed.seconds : undefined,
+            type: trigger.type,
+            seconds: trigger.type === "dwell" || trigger.type === "idle" ? observed.seconds : undefined,
             scrollPercent: trigger.type === "scroll" ? observed.scrollPercent : undefined,
+            cartItems: trigger.type === "idle" ? observed.cartItems : undefined,
           })
             .then((decided) => {
               if (cancelled || !decided || showing.current) return;
@@ -100,7 +108,7 @@ export function OnsiteMessageHost() {
               void recordOnsiteEvent(context, decided.ruleId, "SHOWN").catch(() => undefined);
             })
             .catch(() => undefined);
-        });
+        }, () => cartItemsRef.current);
       } catch {
         // On-site messages are optional: never disturb the page.
       }
@@ -119,6 +127,20 @@ export function OnsiteMessageHost() {
     const context = contextRef.current;
     if (context) void recordOnsiteEvent(context, ruleId, type).catch(() => undefined);
   }, []);
+
+  // A button whose link is `assistant:open` opens the chat instead of leaving the page.
+  useEffect(() => {
+    if (!message) return;
+    const onClick = (event: MouseEvent) => {
+      const link = (event.target as Element | null)?.closest?.("a[data-onsite-cta]");
+      if (!link || link.getAttribute("href") !== ASSISTANT_LINK) return;
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent(ASSISTANT_OPEN_EVENT));
+      setMessage(null);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [message]);
 
   if (!message) return null;
   return (

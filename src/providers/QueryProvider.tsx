@@ -12,7 +12,8 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       {children}
-      {env.isDev ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+      {/* Development only. Bottom-left, so it does not cover the shopping assistant button. */}
+      {env.isDev ? <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" /> : null}
     </QueryClientProvider>
   );
 }

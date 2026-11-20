@@ -239,6 +239,14 @@ export const EMPLOYEE_BENEFITS_COPY = {
   support: "If you believe this is a mistake, contact HR or store support through the approved process.",
   rewardsSeparate: "Customer Rewards",
   waitingMarket: "Waiting for the current market…",
+  acceptTitle: "Have an invitation?",
+  acceptHint: "If HR gave you an invitation ID and claim code for this account, enter them here to connect your employee record.",
+  invitationId: "Invitation ID",
+  claimSecret: "Claim code",
+  acceptSubmit: "Connect employee account",
+  acceptSubmitting: "Connecting\u2026",
+  acceptSuccess: "Your employee account is now connected.",
+  acceptAlready: "This invitation was already accepted. Your employee account is connected.",
 } as const;
 
 export function acceptInvitationMessage(message: string | undefined): string {

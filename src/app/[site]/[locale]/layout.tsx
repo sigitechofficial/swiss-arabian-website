@@ -6,6 +6,7 @@ import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { ConsentBanner } from "@/components/layout/ConsentBanner";
 import { CONSENT_STORAGE_KEY, CONSENT_VERSION } from "@/lib/consent/consent";
 import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
+import { AssistantHost } from "@/components/layout/AssistantHost";
 import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
 import { PlatformTracker } from "@/components/layout/PlatformTracker";
 import { getBrand } from "@/lib/brand";
@@ -177,6 +178,7 @@ export default async function RootLayout({
           <JourneyEventsPoller />
           <PlatformTracker />
           <OnsiteMessageHost />
+          <AssistantHost />
           <ConsentBanner />
           {children}
         </AppProviders>
