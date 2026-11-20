@@ -107,6 +107,14 @@ export function BlogArticlePageView({ article }: { article: BlogArticleDetail | 
                     </p>
                   </blockquote>
                 );
+              case "rich":
+                return (
+                  <div
+                    key={key}
+                    className={`${index === 0 ? "" : "mt-6"} site-page-body text-[15px] leading-[1.85] text-sa-primary sm:text-[17px]`}
+                    dangerouslySetInnerHTML={{ __html: block.html }}
+                  />
+                );
               default:
                 return null;
             }

@@ -40,7 +40,13 @@ const responseSchema = z.object({
         publicKey: id(/^pk_[A-Za-z0-9_-]+$/).nullable(),
       })
       .nullable(),
-    tamara: z.object({ merchantCode: optionalText }).nullable(),
+    tamara: z
+      .object({
+        merchantCode: optionalText,
+        // Optional in the answer: without it the website shows plain wording, not Tamara's widget.
+        publicKey: optionalText.optional().transform((value) => value ?? null),
+      })
+      .nullable(),
   }),
   googleMaps: z
     .object({

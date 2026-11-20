@@ -15,6 +15,8 @@ import { useTabbyCheckoutCard } from "@/features/checkout/hooks/useTabbyCheckout
 import type { InlinePaymentSession } from "@/features/checkout/utils/startPayment";
 import { stripeCheckoutElementsOptions } from "@/features/checkout/utils/stripeCheckoutAppearance";
 import type { TabbyLang, TabbySnippetConfig } from "@/features/checkout/utils/tabby";
+import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
+import { tamaraFallbackText, type TamaraLang } from "@/features/checkout/utils/tamara";
 import { dir as textDirection } from "@/lib/i18n/locales";
 import { getStripe } from "@/lib/stripe/getStripe";
 import { useSapilCopy } from "../../i18n/SapilCopy";
@@ -256,4 +258,36 @@ export function SapilTabbyCard({
   }
   // Tabby's snippet needs at least 320px; on narrow phones it may use the panel's padding.
   return <div ref={hostRef} className="min-w-[min(320px,100%)] max-480:-mx-[10px]" dir={textDirection(lang)} />;
+}
+
+/* ------------------------------------------------------------------ Tamara */
+
+/**
+ * Tamara's own widget under the Tamara option; without a public key, or if the
+ * script can't load, Tamara's pay-in-4 sentence in v9 text.
+ */
+export function SapilTamaraCard({
+  publicKey,
+  total,
+  currency,
+  lang,
+}: {
+  publicKey: string;
+  total: number;
+  currency: string;
+  lang: TamaraLang;
+}) {
+  return (
+    <TamaraWidget
+      amount={total}
+      currency={currency}
+      lang={lang}
+      publicKey={publicKey}
+      fallback={
+        <p className="flex items-center gap-[10px] text-[14px] text-sapil-ink-2" dir={textDirection(lang)}>
+          <span>{tamaraFallbackText(total, currency, lang)}</span>
+        </p>
+      }
+    />
+  );
 }

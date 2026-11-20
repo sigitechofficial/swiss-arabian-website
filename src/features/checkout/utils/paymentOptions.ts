@@ -1,7 +1,9 @@
 import type { TabbyPrescore } from "../hooks/useTabbyPrescore";
+import type { TamaraPrecheck } from "../hooks/useTamaraPrecheck";
 import type { PaymentMethodOption } from "../types/checkout";
 import { isStripePaymentMethod, paymentMethodNote, upcomingPaymentMethods } from "./methodLabels";
 import { isTabbyPaymentMethod, tabbySnippetConfig, type TabbyLang, TABBY_METHOD_TITLE } from "./tabby";
+import { isTamaraPaymentMethod, tamaraPublicKeyFrom } from "./tamara";
 
 /** Where the card / wallet form for an option opens inside checkout. */
 export type PaymentSurface = "card" | "apple_pay" | "google_pay";
@@ -33,6 +35,12 @@ export type PayRow = {
   tabbyState?: TabbyPrescore["state"];
   /** Tabby's own rejection message, in the page's language. */
   tabbyMessage?: string;
+  /** Tamara row: public key for Tamara's widget from the backend (`""` when none is set). */
+  tamara?: string;
+  /** Tamara row: pre-check state for this shopper. */
+  tamaraState?: TamaraPrecheck["state"];
+  /** Tamara's own rejection message, in the page's language. */
+  tamaraMessage?: string;
 };
 
 export type PayGroup = { id: "stripe" | "paymob" | "other" | "more"; title: string | null; rows: PayRow[] };
@@ -42,6 +50,7 @@ export function paymentGroups(
   countryCode: string | null | undefined,
   tabbyPrescore: TabbyPrescore,
   tabbyLang: TabbyLang,
+  tamaraPrecheck: TamaraPrecheck = { state: "idle" },
 ): PayGroup[] {
   const country = (countryCode || "AE").toUpperCase();
   const stripeFirst = !["SA", "EG", "PK"].includes(country);
@@ -127,6 +136,19 @@ export function paymentGroups(
           zoneId: method.zonePaymentMethodId,
           method,
         };
+        if (isTamaraPaymentMethod(method)) {
+          // Tamara: its mark, and its own wording when it can't offer this order.
+          row.tamara = tamaraPublicKeyFrom(method);
+          row.tamaraState = tamaraPrecheck.state;
+          if (tamaraPrecheck.state === "rejected") {
+            row.disabled = true;
+            row.sub = tamaraPrecheck.message[tabbyLang];
+            row.tamaraMessage = tamaraPrecheck.message[tabbyLang];
+          } else if (tamaraPrecheck.state === "checking") {
+            row.sub = "Checking eligibility…";
+          }
+          return row;
+        }
         if (!isTabbyPaymentMethod(method)) return row;
         // Tabby: their official logo and approved name in the shopper's language,
         // and their own wording when they can't approve this shopper.

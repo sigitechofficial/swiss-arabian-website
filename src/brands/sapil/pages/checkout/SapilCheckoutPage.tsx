@@ -4,12 +4,13 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
-import { SapilInlinePayment, SapilTabbyCard } from "../../components/checkout/SapilInlinePayment";
+import { SapilInlinePayment, SapilTabbyCard, SapilTamaraCard } from "../../components/checkout/SapilInlinePayment";
 import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { applyGooglePlace, useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
 import { deliveryOptionTitles, paymentStepKinds } from "@/features/checkout/utils/methodLabels";
 import type { PayRow } from "@/features/checkout/utils/paymentOptions";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { appliedCoupon, useFreeShippingBar } from "@/features/promotions";
 import { useCouponForm } from "@/features/promotions/hooks/useCouponForm";
 import { useGiftAwards } from "@/features/promotions/hooks/useGiftAwards";
@@ -152,7 +153,10 @@ export function SapilCheckoutPage() {
     },
     tabbyPrescore: f.tabbyPrescore,
     tabbyLang: f.payLang,
+    tamaraPrecheck: f.tamaraPrecheck,
   });
+  // Tamara widget key: the method's own (backend metadata), else the address's promo key.
+  const tamaraSiteKey = useSiteIntegrations().paymentPromos.tamara?.publicKey ?? "";
 
   /** Delivery and (when separate) billing; focuses the first field to fix. */
   function checkFields(): boolean {
@@ -351,6 +355,9 @@ export function SapilCheckoutPage() {
     }
     if (row.tabby !== undefined && !row.disabled && payable > 0) {
       return <SapilTabbyCard config={row.tabby || null} total={payable} currency={currency} lang={f.payLang} />;
+    }
+    if (row.tamara !== undefined && !row.disabled && payable > 0) {
+      return <SapilTamaraCard publicKey={row.tamara || tamaraSiteKey} total={payable} currency={currency} lang={f.payLang} />;
     }
     return undefined;
   }

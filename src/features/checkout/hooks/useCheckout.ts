@@ -64,7 +64,8 @@ import {
   type PreparedInlinePayment,
 } from "../utils/startPayment";
 import { isTabbyPaymentMethod, tabbyLang, tabbyStartFailureMessage } from "../utils/tabby";
-import { clearTabbyDeclined, offeredPaymentMethods } from "../utils/returnToCheckout";
+import { isTamaraPaymentMethod, tamaraStartFailureMessage } from "../utils/tamara";
+import { clearDeclinedPayments, offeredPaymentMethods } from "../utils/returnToCheckout";
 import { checkoutHref } from "../utils/checkoutLocale";
 import { describeOrderChanges, type OrderChanges } from "../utils/orderChanges";
 
@@ -332,7 +333,7 @@ export function useCheckout() {
           listPaymentMethods(sessionId),
         ]);
         setDeliveryMethods(delivery);
-        // A bag Tabby declined is not offered Tabby again (Tabby QA, Nov 2026).
+        // A bag Tabby or Tamara declined is not offered that provider again (Tabby QA, Nov 2026).
         setPaymentMethods(offeredPaymentMethods(payment, useCartStore.getState().cartId));
 
         const deliveryPick =
@@ -490,7 +491,7 @@ export function useCheckout() {
       };
 
       const goToConfirmation = (orderId: string) => {
-        clearTabbyDeclined();
+        clearDeclinedPayments();
         window.location.replace(checkoutHref(`/order-confirmation/${orderId}`));
         clearCart();
         setCartId(null);
@@ -519,6 +520,7 @@ export function useCheckout() {
           return e.messages[tabbyLang(document.documentElement.lang)];
         }
         if (e instanceof PaymentGatewayError) {
+          if (payment && isTamaraPaymentMethod(payment)) return tamaraStartFailureMessage(e.warnings);
           return payment && isTabbyPaymentMethod(payment)
             ? tabbyStartFailureMessage(e.warnings)
             : gatewayFallback;

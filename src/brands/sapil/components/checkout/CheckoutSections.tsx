@@ -7,6 +7,7 @@ import type { PaymentStepKind } from "@/features/checkout/utils/methodLabels";
 import { usesHostedRedirect } from "@/features/checkout/utils/methodLabels";
 import type { PayGroup, PayRow } from "@/features/checkout/utils/paymentOptions";
 import { isTabbyPaymentMethod } from "@/features/checkout/utils/tabby";
+import { isTamaraPaymentMethod } from "@/features/checkout/utils/tamara";
 import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import { useShopTranslator } from "@/lib/i18n/ShopLocaleProvider";
@@ -505,6 +506,11 @@ export function payNote(row: PayRow, t: SapilTranslator): string | undefined {
     // Tabby QA: no plan caption; the Tabby snippet below shows the plans.
     return undefined;
   }
+  if (isTamaraPaymentMethod(method)) {
+    if (row.tamaraState === "checking") return t("checkout.payTabbyChecking");
+    if (row.tamaraState === "rejected") return row.tamaraMessage;
+    return t("checkout.payTamaraNote");
+  }
   if (isCashMethod(method)) return t("checkout.payCashNote");
   if (usesHostedRedirect(method)) return t("checkout.payRedirectNote");
   return undefined;
@@ -517,7 +523,12 @@ function groupTitle(group: PayGroup, t: SapilTranslator): string | null {
   return null;
 }
 
-const PAY_KIND_KEY = { card: "checkout.payKindCard", tabby: "checkout.payKindTabby", cash: "checkout.payKindCash" } as const;
+const PAY_KIND_KEY = {
+  card: "checkout.payKindCard",
+  tabby: "checkout.payKindTabby",
+  tamara: "checkout.payKindTamara",
+  cash: "checkout.payKindCash",
+} as const;
 
 /** "Card, Tabby or cash" from what the market offers; null until it is known. */
 export function paymentKindsText(kinds: readonly PaymentStepKind[], lang: "en" | "ar", t: SapilTranslator): string | null {
@@ -541,7 +552,7 @@ export function PaymentSection({
   groups: PayGroup[];
   activeKey: string | null;
   onPick: (row: PayRow) => void;
-  /** card form / Tabby snippet under the active row */
+  /** card form / Tabby snippet / Tamara widget under the active row */
   panelFor: (row: PayRow) => ReactNode;
   disabled: boolean;
   covered: boolean;

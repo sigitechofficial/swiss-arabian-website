@@ -69,6 +69,7 @@ export {
   SapilPaymentCancel as PaymentCancelView,
   SapilPaymentSuccess as PaymentSuccessView,
   SapilTabbyReturn as TabbyReturnView,
+  SapilTamaraReturn as TamaraReturnView,
   SapilTelrReturn as TelrReturnView,
 } from "./pages/checkout/SapilPaymentScreens";
 export {

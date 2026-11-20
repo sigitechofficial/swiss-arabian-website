@@ -22,7 +22,12 @@ import { regionLabel as regionName } from "@/features/account/utils/addressDispl
 import { SapilPhoneField } from "../commerce/SapilPhoneField";
 import type { PaymentStepKind } from "@/features/checkout/utils/methodLabels";
 
-const PAY_KIND_KEY = { card: "checkout.payKindCard", tabby: "checkout.payKindTabby", cash: "checkout.payKindCash" } as const;
+const PAY_KIND_KEY = {
+  card: "checkout.payKindCard",
+  tabby: "checkout.payKindTabby",
+  tamara: "checkout.payKindTamara",
+  cash: "checkout.payKindCash",
+} as const;
 
 /** "Card, Tabby or cash" from what the market offers; a neutral hint until it is known. */
 function paymentHint(

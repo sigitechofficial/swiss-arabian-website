@@ -1,3 +1,4 @@
+import { answerText } from "@/features/seo-faq/seoFaqText";
 import { getTranslator } from "@/lib/i18n/messages";
 import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
 import type { OpeningHoursSpecification } from "@/lib/seo/openingHours";
@@ -275,7 +276,8 @@ export function faqPageJsonLd(entries: ReadonlyArray<{ question: string; answer:
     mainEntity: entries.map((entry) => ({
       "@type": "Question",
       name: entry.question,
-      acceptedAnswer: { "@type": "Answer", text: entry.answer },
+      // Rich answers are given as plain text (what the page shows, without markup).
+      acceptedAnswer: { "@type": "Answer", text: answerText(entry.answer) },
     })),
   };
 }

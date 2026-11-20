@@ -4,6 +4,10 @@ import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { usePathname } from "next/navigation";
+import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
+import { tamaraCountry, tamaraLang } from "@/features/checkout/utils/tamara";
+import { localeFromPathname } from "@/lib/i18n/localePath";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
 import { useInstalmentPlan, type CustomInstalmentProvider } from "../../hooks/useInstalmentPlan";
 import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
@@ -58,6 +62,19 @@ function useLiveProviders() {
 const WHEN = ["Today", "In 1 month", "In 2 months", "In 3 months"] as const;
 
 export { payInFour } from "../../utils/instalments";
+
+/**
+ * Tamara's official widget v2 replaces our Tamara button once the market's
+ * checkout offers Tamara, a public key is set and the currency is one Tamara
+ * covers (AED / SAR).
+ */
+export function usesTamaraWidget(
+  currency: string,
+  live: boolean,
+  publicKey: string | null | undefined,
+): boolean {
+  return live && Boolean(publicKey) && tamaraCountry(currency) !== null;
+}
 
 /** Escape closes, the page behind stops scrolling, and focus starts on the close button. */
 function useDialogChrome(onClose: () => void) {
@@ -164,7 +181,8 @@ function PayDialog({
 /**
  * Instalments under the price: Tabby's official snippet (only where this
  * market's checkout offers Tabby), then our pay-in-4 card for the other
- * providers the market offers (Tamara), with our schedule dialog.
+ * providers the market offers (Tamara). Tamara shows its own widget v2 when it
+ * can (see `usesTamaraWidget`), otherwise our schedule dialog.
  */
 export function PdpInstalments({ price, currency }: { price: number; currency: string }) {
   return (
@@ -179,6 +197,10 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
   const plan = useInstalmentPlan(price);
   const { open, close } = plan;
   const each = formatMoney(plan.each, currency);
+  const locale = localeFromPathname(usePathname() || "/");
+  const tamara = useSiteIntegrations().paymentPromos.tamara;
+  const tamaraKey = tamara?.publicKey ?? "";
+  const tamaraWidget = usesTamaraWidget(currency, Boolean(tamara), tamaraKey);
 
   // Only providers this market's checkout offers; no row when there are none.
   if (!plan.available) return null;
@@ -212,7 +234,7 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
         <div className={pdpPayFoot}>
           {plan.providers.map(({ id: provider }) => {
             const { name, mark } = PROVIDERS[provider];
-            return (
+            const button = (
               <button
                 type="button"
                 className={pdpPayBtn}
@@ -228,6 +250,18 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>
+            );
+            if (provider !== "tamara" || !tamaraWidget) return button;
+            return (
+              <TamaraWidget
+                key={provider}
+                amount={price}
+                currency={currency}
+                lang={tamaraLang(locale)}
+                publicKey={tamaraKey}
+                className="min-w-0 flex-1"
+                fallback={button}
+              />
             );
           })}
         </div>

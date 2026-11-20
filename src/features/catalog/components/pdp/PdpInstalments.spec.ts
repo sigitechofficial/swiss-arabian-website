@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { payInFour } from "./PdpInstalments";
+import { payInFour, usesTamaraWidget } from "./PdpInstalments";
 
 describe("pay in four", () => {
   it("splits an even price into four equal payments", () => {
@@ -17,5 +17,15 @@ describe("pay in four", () => {
       const cents = payInFour(price).reduce((sum, value) => sum + Math.round(value * 100), 0);
       expect(cents).toBe(Math.round(price * 100));
     }
+  });
+});
+
+describe("tamara widget on the product page", () => {
+  it("is used only when Tamara is live, has a key and covers the currency", () => {
+    expect(usesTamaraWidget("AED", true, "pk")).toBe(true);
+    expect(usesTamaraWidget("sar", true, "pk")).toBe(true);
+    expect(usesTamaraWidget("AED", false, "pk")).toBe(false);
+    expect(usesTamaraWidget("AED", true, "")).toBe(false);
+    expect(usesTamaraWidget("KWD", true, "pk")).toBe(false);
   });
 });

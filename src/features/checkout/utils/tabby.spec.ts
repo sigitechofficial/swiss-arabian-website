@@ -93,9 +93,11 @@ describe("tabby helpers", () => {
     // A market without Tabby, or a bag Tabby declined (its method is filtered out).
     const without = upcomingPaymentMethods("AE", [paymob]).map((row) => row.id);
     expect(without).not.toContain("tabby");
-    expect(without).toContain("tamara");
+    expect(without).not.toContain("tamara");
     const live = upcomingPaymentMethods("AE", [paymob, tabbyMethod]).map((row) => row.id);
     expect(live).not.toContain("tabby");
+    // Tamara is a real method of its own, never a Paymob "coming soon" row.
+    expect(live).not.toContain("tamara");
   });
 });
 

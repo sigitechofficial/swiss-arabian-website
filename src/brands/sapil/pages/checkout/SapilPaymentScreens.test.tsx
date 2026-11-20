@@ -5,7 +5,7 @@ import { SapilCopyProvider } from "../../i18n/SapilCopy";
 
 const state = vi.hoisted(() => ({
   push: null as null | ((href: string) => void),
-  returnToCheckout: null as null | ((orderId: string, opts: { declined?: boolean }) => Promise<{ kind: string }>),
+  returnToCheckout: null as null | ((orderId: string, opts: { declined?: boolean; provider?: string }) => Promise<{ kind: string }>),
   params: new URLSearchParams(),
   path: "/checkout/payment/cancel",
   stored: null as string | null,
@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/features/checkout/utils/returnToCheckout", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/checkout/utils/returnToCheckout")>()),
-  returnToCheckout: (orderId: string, opts: { declined?: boolean }) => state.returnToCheckout!(orderId, opts),
+  returnToCheckout: (orderId: string, opts: { declined?: boolean; provider?: string }) => state.returnToCheckout!(orderId, opts),
 }));
 vi.mock("@/hooks/useHydrated", () => ({ useHydrated: () => true }));
 vi.mock("@/features/checkout/hooks/usePaymentReturn", async (importOriginal) => ({
@@ -32,7 +32,7 @@ vi.mock("@/features/checkout/utils/checkoutSession", async (importOriginal) => (
   getStoredOrderNumber: () => "SP-1001",
 }));
 
-import { SapilPaymentCancel, SapilPaymentSuccess, SapilTabbyReturn } from "./SapilPaymentScreens";
+import { SapilPaymentCancel, SapilPaymentSuccess, SapilTabbyReturn, SapilTamaraReturn } from "./SapilPaymentScreens";
 
 async function renderIn(locale: "en" | "ar", ui: React.ReactNode) {
   state.path = locale === "ar" ? "/ar/checkout/payment/cancel" : "/checkout/payment/cancel";
@@ -86,7 +86,7 @@ describe("Sapil payment screens", () => {
     state.settlement = { kind: "failed", status: "CANCELLED" };
     const pushed: string[] = [];
     state.push = (href) => pushed.push(href);
-    const calls: Array<[string, { declined?: boolean }]> = [];
+    const calls: Array<[string, { declined?: boolean; provider?: string }]> = [];
     state.returnToCheckout = async (orderId, opts) => {
       calls.push([orderId, opts]);
       return { kind: "checkout" };
@@ -94,14 +94,14 @@ describe("Sapil payment screens", () => {
     await renderIn("en", <SapilTabbyReturn />);
     fireEvent.click(screen.getByRole("button", { name: "Back to checkout" }));
     await waitFor(() => expect(pushed).toEqual(["/checkout"]));
-    expect(calls).toEqual([["order-1", { declined: false }]]);
+    expect(calls).toEqual([["order-1", { declined: false, provider: "tabby" }]]);
   });
 
   it("tabby declined: the bag comes back without Tabby; an open payment keeps the order", async () => {
     state.params = new URLSearchParams("result=failure");
     state.stored = "order-1";
     state.settlement = { kind: "failed", status: "FAILED" };
-    const calls: Array<[string, { declined?: boolean }]> = [];
+    const calls: Array<[string, { declined?: boolean; provider?: string }]> = [];
     state.returnToCheckout = async (orderId, opts) => {
       calls.push([orderId, opts]);
       return { kind: "kept" };
@@ -110,6 +110,38 @@ describe("Sapil payment screens", () => {
     expect(screen.getAllByRole("alert")[0]!.textContent).toMatch(/Tabby is unable to approve/);
     fireEvent.click(screen.getByRole("button", { name: "Choose another payment method" }));
     await waitFor(() => expect(screen.getByText(/still being processed/)).toBeTruthy());
-    expect(calls).toEqual([["order-1", { declined: true }]]);
+    expect(calls).toEqual([["order-1", { declined: true, provider: "tabby" }]]);
+  });
+  it("tamara cancelled: back to checkout with the bag, Tamara still offered", async () => {
+    state.params = new URLSearchParams("result=cancel");
+    state.stored = "order-1";
+    state.settlement = { kind: "failed", status: "CANCELLED" };
+    const pushed: string[] = [];
+    state.push = (href) => pushed.push(href);
+    const calls: Array<[string, { declined?: boolean; provider?: string }]> = [];
+    state.returnToCheckout = async (orderId, opts) => {
+      calls.push([orderId, opts]);
+      return { kind: "checkout" };
+    };
+    await renderIn("en", <SapilTamaraReturn />);
+    fireEvent.click(screen.getByRole("button", { name: "Back to checkout" }));
+    await waitFor(() => expect(pushed).toEqual(["/checkout"]));
+    expect(calls).toEqual([["order-1", { declined: false, provider: "tamara" }]]);
+  });
+
+  it("tamara declined: the bag comes back without Tamara", async () => {
+    state.params = new URLSearchParams("result=failure");
+    state.stored = "order-1";
+    state.settlement = { kind: "failed", status: "FAILED" };
+    const calls: Array<[string, { declined?: boolean; provider?: string }]> = [];
+    state.returnToCheckout = async (orderId, opts) => {
+      calls.push([orderId, opts]);
+      return { kind: "kept" };
+    };
+    await renderIn("en", <SapilTamaraReturn />);
+    expect(screen.getAllByRole("alert")[0]!.textContent).toMatch(/Tamara could not approve/);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another payment method" }));
+    await waitFor(() => expect(screen.getByText(/still being processed/)).toBeTruthy());
+    expect(calls).toEqual([["order-1", { declined: true, provider: "tamara" }]]);
   });
 });
