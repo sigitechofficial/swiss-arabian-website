@@ -46,6 +46,8 @@ export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/Sap
 export { SapilReviewRequestPage as ReviewRequestPageView } from "./pages/content/SapilReviewRequestPage";
 export { SapilOfferPage as OfferPageView } from "./pages/content/SapilOfferPage";
 export { SapilReturnTermsPage as ReturnTermsPageView } from "./pages/content/SapilReturnTermsPage";
+export { SapilSeoFaqSection as SeoFaqSection } from "./components/content/SapilSeoFaqSection";
+export { SapilUnsubscribePage as UnsubscribeView, SapilEmailLinkPage as EmailLinkRedirect } from "./pages/content/SapilEmailPages";
 export {
   SapilStoreLocatorPage as StoreLocatorPageView,
   SapilStoreAreaPage as StoreAreaPageView,

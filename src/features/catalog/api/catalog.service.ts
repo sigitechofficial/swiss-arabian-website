@@ -735,16 +735,22 @@ export type CatalogSitemapEntry = {
   noindex?: boolean;
 };
 
+export type CatalogSitemap = {
+  entries: CatalogSitemapEntry[];
+  /** Every address the brand's SEO Management publishes as noindex in this market (any page type). */
+  noindexPaths: string[];
+};
+
 /** Every product, collection and category visible in the market, with its market address. */
 export async function fetchCatalogSitemap(
   zoneCode?: string | null,
   market?: StorefrontContextInput | null,
-): Promise<CatalogSitemapEntry[]> {
-  const data = await apiGet<{ entries?: CatalogSitemapEntry[] }>(
+): Promise<CatalogSitemap> {
+  const data = await apiGet<{ entries?: CatalogSitemapEntry[]; noindexPaths?: string[] }>(
     `/storefront/catalog/seo/sitemap?${contextQs(zoneCode, market)}`,
     { skipAuth: true },
   );
-  return data.entries ?? [];
+  return { entries: data.entries ?? [], noindexPaths: data.noindexPaths ?? [] };
 }
 
 export async function fetchCollections(

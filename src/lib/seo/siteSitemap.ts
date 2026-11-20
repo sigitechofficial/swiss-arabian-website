@@ -76,10 +76,13 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
 
   const entries: Array<{ path: string; lastModified?: string }> = STATIC_PATHS.map((path) => ({ path }));
   const resolved = await resolveCatalogMarketFor(DEFAULT_LOCALE);
+  // Addresses the admin publishes as noindex (SEO Management): left out wherever they come from.
+  let noindex = new Set<string>();
 
   try {
     const catalog = await fetchCatalogSitemap(resolved.zoneCode, resolved.market);
-    for (const entry of catalog) {
+    noindex = new Set(catalog.noindexPaths);
+    for (const entry of catalog.entries) {
       if (entry.noindex || !entry.path) continue;
       // An address that redirects (e.g. Shopify's /collections/all → /products) is not listed.
       if (shopifyLegacyRedirect(entry.path)) continue;
@@ -125,6 +128,7 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
     for (const language of LOCALES) {
       const posts = await fetchBlogSlugs({ zoneCode: resolved.zoneCode, languageCode: language });
       for (const post of posts) {
+        if (noindex.has(`/blog/${post.slug}`)) continue;
         const url = withLocalePrefix(`/blog/${post.slug}`, language);
         blogEntries.push({ url: origin ? absolute(origin, url) : url, lastModified: post.updatedAt });
       }
@@ -135,8 +139,9 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const crossMarket = await crossMarketFor(origin);
+  const listed = entries.filter((entry) => !noindex.has(entry.path));
   return [
-    ...sitemapAlternates(entries, origin, LOCALES, DEFAULT_LOCALE, crossMarket),
+    ...sitemapAlternates(listed, origin, LOCALES, DEFAULT_LOCALE, crossMarket),
     ...blogEntries,
   ];
 }
