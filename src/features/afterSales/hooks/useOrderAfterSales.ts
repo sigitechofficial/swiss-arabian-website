@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { getStoredGuestOrderLines } from "@/features/checkout/utils/checkoutSession";
+import { useMemo } from "react";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import type { AfterSalesOrderLine } from "../types/afterSales";
+import type { AfterSalesOptions } from "../types/afterSales";
+import { afterSalesFlowHref } from "../utils/afterSalesFlow";
 import { resolveAfterSalesActions } from "../utils/afterSalesOptions";
 import { isOrderEligibleForAfterSales } from "../utils/eligibility";
 import {
@@ -14,84 +14,83 @@ import {
   useGuestExchanges,
   useGuestReturns,
 } from "./useAfterSales";
+import { useLastDayFormat } from "./useRequestDate";
 
-export type AfterSalesFormKind = "return" | "exchange";
+/** The later of the return / exchange deadlines among those offered. */
+function lastDayToAsk(options: AfterSalesOptions | undefined): string | null {
+  if (!options) return null;
+  const days = [options.returns, options.exchanges]
+    .filter((option) => option.allowed && option.eligibleUntil)
+    .map((option) => option.eligibleUntil as string)
+    .sort();
+  return days.at(-1) ?? null;
+}
 
 /**
  * The order page's returns and exchanges for a signed-in customer, for every
- * brand: what can be asked for (the market's settings, from the backend), why
- * not, the form that is open, and this order's requests so far.
+ * brand: whether a return or exchange can be started (the market's settings,
+ * from the backend), why not, until when, where the guided flow is, and this
+ * order's requests so far.
  */
 export function useOrderAfterSales({
   orderId,
   status,
   fulfillmentStatus,
-  lines,
 }: {
   orderId: string;
   status: string;
   fulfillmentStatus?: string | null;
-  lines: AfterSalesOrderLine[];
 }) {
   const t = useShopCopy();
-  const [form, setForm] = useState<AfterSalesFormKind | null>(null);
+  const lastDay = useLastDayFormat();
   const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
   const returns = useCustomerReturnsFeed(null, orderId);
   const exchanges = useCustomerExchangesFeed(null, orderId);
   const options = useCustomerAfterSalesOptions(orderId);
-  const actions = resolveAfterSalesActions(options.data, eligible, t);
+  const actions = resolveAfterSalesActions(options.data, eligible, t, lastDay);
   const returnItems = useMemo(() => returns.data?.pages.flatMap((page) => page.items) ?? [], [returns.data]);
   const exchangeItems = useMemo(() => exchanges.data?.pages.flatMap((page) => page.items) ?? [], [exchanges.data]);
 
   return {
-    form,
-    setForm,
     eligible,
-    canReturn: actions.canReturn && lines.length > 0,
-    canExchange: actions.canExchange && lines.length > 0,
+    canStart: actions.canReturn || actions.canExchange,
+    canReturn: actions.canReturn,
+    canExchange: actions.canExchange,
+    eligibleUntil: lastDayToAsk(options.data),
+    flowHref: afterSalesFlowHref({ orderId }),
     notes: actions.notes,
     returnItems,
     exchangeItems,
   };
 }
 
-/**
- * The same for a guest's order (tracking page, order number + access token).
- * Lines come from the order, else from this browser's checkout (a guest's
- * order summary may not list them).
- */
+/** The same for a guest's order (tracking page, order number + access token). */
 export function useGuestOrderAfterSales({
   orderNumber,
   orderAccessToken,
   status,
   fulfillmentStatus,
-  lines,
 }: {
   orderNumber: string;
   orderAccessToken: string;
   status: string;
   fulfillmentStatus?: string | null;
-  lines: AfterSalesOrderLine[];
 }) {
   const t = useShopCopy();
-  const [form, setForm] = useState<AfterSalesFormKind | null>(null);
+  const lastDay = useLastDayFormat();
   const eligible = isOrderEligibleForAfterSales(status, fulfillmentStatus);
   const returns = useGuestReturns(orderNumber, orderAccessToken);
   const exchanges = useGuestExchanges(orderNumber, orderAccessToken);
   const options = useGuestAfterSalesOptions(orderNumber, orderAccessToken);
-  const actions = resolveAfterSalesActions(options.data, eligible, t);
-  const creatableLines = lines.length > 0 ? lines : getStoredGuestOrderLines(orderNumber);
-  const hasLines = creatableLines.length > 0;
+  const actions = resolveAfterSalesActions(options.data, eligible, t, lastDay);
 
   return {
-    form,
-    setForm,
     eligible,
-    lines: creatableLines,
-    canReturn: actions.canReturn && hasLines,
-    canExchange: actions.canExchange && hasLines,
-    /** Allowed, but this browser doesn't know the order's lines. */
-    noLines: (actions.canReturn || actions.canExchange) && !hasLines,
+    canStart: actions.canReturn || actions.canExchange,
+    canReturn: actions.canReturn,
+    canExchange: actions.canExchange,
+    eligibleUntil: lastDayToAsk(options.data),
+    flowHref: afterSalesFlowHref({ orderNumber }),
     notes: actions.notes,
     returnItems: returns.data?.items ?? [],
     exchangeItems: exchanges.data?.items ?? [],

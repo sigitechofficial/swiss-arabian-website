@@ -48,7 +48,12 @@ export function returnEstimateView(e: ReturnEstimate, t: Translator, locale: str
   rows.push({
     key: "delivery",
     label: t("returnEstimate.delivery"),
-    value: e.delivery.refunded ? money(e.delivery.amount) : t("returnEstimate.notRefunded"),
+    // No fee was charged: nothing to refund (not "not refunded").
+    value: e.delivery.refunded
+      ? money(e.delivery.amount)
+      : e.delivery.reason === "NO_SHIPPING_CHARGED"
+        ? t("returnEstimate.noDeliveryFee")
+        : t("returnEstimate.notRefunded"),
     hint: copy(e.delivery.message),
   });
   if (Number(returnShippingFee.amount) > 0 || returnShippingFee.waived) {

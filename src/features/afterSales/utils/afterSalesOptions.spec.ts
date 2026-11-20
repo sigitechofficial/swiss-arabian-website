@@ -38,7 +38,7 @@ describe("resolveAfterSalesActions", () => {
     expect(r).toEqual({
       canReturn: true,
       canExchange: false,
-      notes: ["Online exchanges aren't available."],
+      notes: ["Online exchanges aren't available for this order. Please contact customer service and we'll help you."],
     });
   });
 
@@ -48,7 +48,11 @@ describe("resolveAfterSalesActions", () => {
       opts(no("AFTER_SALES_SIGN_IN_REQUIRED", msg), no("AFTER_SALES_SIGN_IN_REQUIRED", msg)),
       true,
     );
-    expect(r).toEqual({ canReturn: false, canExchange: false, notes: [msg] });
+    expect(r).toEqual({
+      canReturn: false,
+      canExchange: false,
+      notes: ["Sign in to your account to request a return or an exchange."],
+    });
   });
 
   it("uses friendly wording for order-state blocks", () => {
@@ -57,5 +61,29 @@ describe("resolveAfterSalesActions", () => {
       false,
     );
     expect(r.notes).toEqual([NOT_SHIPPED_MESSAGE]);
+  });
+
+  it("words every reason in the shopper's language by its code, with the last day when closed", () => {
+    const closed = { ...no("RETURN_WINDOW_CLOSED", "The return period ended on 2026-12-04."), eligibleUntil: "2026-12-04T19:59:59.000Z" };
+    const r = resolveAfterSalesActions(opts(closed, ok), true, undefined, () => "4 December 2026");
+    expect(r.notes).toEqual([
+      "The return period for this order ended on 4 December 2026. Please contact customer service and we'll help you.",
+    ]);
+  });
+
+  it("says when everything is already in a return or exchange", () => {
+    const r = resolveAfterSalesActions(
+      opts(no("NOTHING_LEFT_TO_REQUEST", "x"), no("NOTHING_LEFT_TO_REQUEST", "x")),
+      true,
+    );
+    expect(r).toEqual({
+      canReturn: false,
+      canExchange: false,
+      notes: ["Everything on this order is already in a return or exchange."],
+    });
+  });
+
+  it("falls back to the backend's sentence for a code it does not know yet", () => {
+    expect(resolveAfterSalesActions(opts(no("SOMETHING_NEW", "A new reason."), ok), true).notes).toEqual(["A new reason."]);
   });
 });

@@ -23,8 +23,8 @@ import {
   checkoutNote,
   fldFull,
 } from "@/styles/checkoutChrome";
-import { GuestAfterSalesSection } from "@/features/afterSales";
-import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
+import { AfterSalesRequestsPanel, AfterSalesStart } from "@/features/afterSales/components/OrderAfterSalesPanels";
+import { useGuestOrderAfterSales } from "@/features/afterSales/hooks/useOrderAfterSales";
 import { useGuestTracking } from "../hooks/useOrderTrackingLookup";
 import { OrderTrackingPanel } from "./OrderTrackingPanel";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
@@ -53,6 +53,14 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
   const t = useShopCopy();
   const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
+  // Returns and exchanges here are for a guest holding the order's access token.
+  const guestToken = viaGuestToken && token ? token : "";
+  const afterSales = useGuestOrderAfterSales({
+    orderNumber: guestToken ? (summary?.orderNumber ?? orderNumber) : "",
+    orderAccessToken: guestToken,
+    status: summary?.status ?? "",
+    fulfillmentStatus: summary?.fulfillmentStatus,
+  });
   const formError =
     formErrorKind === "empty"
       ? t("track.errToken")
@@ -85,17 +93,19 @@ export function GuestTrackingPageView({ orderNumber }: { orderNumber: string }) 
             <div className="mt-3 flex justify-center">
               <AccountStatusPill label={label} tone={tone} />
             </div>
+            {guestToken ? (
+              <div className="mt-5 flex justify-center">
+                <AfterSalesStart state={afterSales} align="center" />
+              </div>
+            ) : null}
           </header>
 
           <OrderTrackingPanel summary={summary} timeline={timeline} />
 
-          {viaGuestToken && token ? (
-            <GuestAfterSalesSection
-              orderNumber={summary.orderNumber}
-              orderAccessToken={token}
-              status={summary.status}
-              fulfillmentStatus={summary.fulfillmentStatus}
-              lines={guestAfterSalesLines({ shipments: summary.shipments })}
+          {guestToken ? (
+            <AfterSalesRequestsPanel
+              state={afterSales}
+              source={{ mode: "guest", orderNumber: summary.orderNumber, orderAccessToken: guestToken }}
             />
           ) : null}
 

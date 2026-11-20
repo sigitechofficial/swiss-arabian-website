@@ -8,15 +8,21 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useApiMutation, useApiQuery } from "@/lib/api/queryHooks";
-import { afterSalesKeys, isReturnEstimateKey } from "../api/afterSales.keys";
+import { afterSalesKeys, isEstimateKey } from "../api/afterSales.keys";
 import {
   AFTER_SALES_PAGE_SIZE,
   createCustomerExchange,
   createCustomerReturn,
   createGuestExchange,
   createGuestReturn,
+  estimateCustomerExchange,
   estimateCustomerReturn,
+  estimateGuestExchange,
   estimateGuestReturn,
+  getCustomerEligibility,
+  getCustomerExchangeOptions,
+  getGuestEligibility,
+  getGuestExchangeOptions,
   getCustomerAfterSalesOptions,
   getCustomerOrderReturnsPolicy,
   getGuestOrderReturnsPolicy,
@@ -30,8 +36,10 @@ import {
   listGuestReturns,
 } from "../api/afterSales.service";
 import type {
+  AfterSalesKind,
   CreateExchangeDto,
   CreateReturnDto,
+  ExchangeEstimateDto,
   ReturnEstimateDto,
 } from "../types/afterSales";
 
@@ -164,7 +172,7 @@ export function useAfterSalesMutations() {
   const invalidateAll = () =>
     queryClient.invalidateQueries({
       queryKey: afterSalesKeys.all,
-      predicate: (query) => !isReturnEstimateKey(query.queryKey),
+      predicate: (query) => !isEstimateKey(query.queryKey),
     });
 
   const createReturn = useApiMutation(
@@ -291,4 +299,82 @@ export function useReturnsPolicy(source: ReturnsPolicySource, enabled = true) {
       staleTime: 5 * 60_000,
     },
   );
+}
+
+function targetRef(target: ReturnOrderTarget): string {
+  return target.mode === "customer" ? target.orderId : target.orderNumber;
+}
+
+function targetReady(target: ReturnOrderTarget): boolean {
+  return target.mode === "customer"
+    ? Boolean(target.orderId)
+    : Boolean(target.orderNumber && target.orderAccessToken);
+}
+
+/** Lines of the order with the units still free for a return or an exchange. */
+export function useAfterSalesEligibility(
+  target: ReturnOrderTarget,
+  kind: AfterSalesKind | null,
+) {
+  return useApiQuery(
+    afterSalesKeys.eligibility(targetRef(target), kind ?? "return"),
+    () =>
+      target.mode === "customer"
+        ? getCustomerEligibility(target.orderId, kind!)
+        : getGuestEligibility(target.orderNumber, target.orderAccessToken, kind!),
+    { enabled: targetReady(target) && Boolean(kind), retry: retryUnlessNotFound },
+  );
+}
+
+/** What each item can be exchanged for, in the shopper's language. */
+export function useExchangeOptions(
+  target: ReturnOrderTarget,
+  locale: string | null,
+  enabled = true,
+) {
+  return useApiQuery(
+    afterSalesKeys.exchangeOptions(targetRef(target), locale),
+    () =>
+      target.mode === "customer"
+        ? getCustomerExchangeOptions(target.orderId, locale)
+        : getGuestExchangeOptions(target.orderNumber, target.orderAccessToken, locale),
+    { enabled: targetReady(target) && enabled, retry: retryUnlessNotFound, staleTime: 60_000 },
+  );
+}
+
+/**
+ * What the exchange being put together costs or gives back (the approval's
+ * math). Like the refund estimate: waits for changes to settle, keeps the last
+ * figures while the next load. `null` = nothing to price yet.
+ */
+export function useExchangeEstimate(
+  target: ReturnOrderTarget,
+  dto: ExchangeEstimateDto | null,
+) {
+  const payload = dto && dto.items.length > 0 ? JSON.stringify(dto) : "";
+  const settled = useDebounce(payload, ESTIMATE_DEBOUNCE_MS);
+  const ref = targetRef(target);
+  const query = useApiQuery(
+    afterSalesKeys.exchangeEstimate(ref, settled),
+    () => {
+      const body = JSON.parse(settled) as ExchangeEstimateDto;
+      return target.mode === "customer"
+        ? estimateCustomerExchange(target.orderId, body)
+        : estimateGuestExchange(target.orderNumber, {
+            ...body,
+            orderAccessToken: target.orderAccessToken,
+          });
+    },
+    {
+      enabled: Boolean(settled) && targetReady(target),
+      placeholderData: keepPreviousData,
+      retry: false,
+      staleTime: 30_000,
+    },
+  );
+  return {
+    ...query,
+    empty: !payload,
+    updating: Boolean(payload) && (payload !== settled || query.isPlaceholderData || query.isFetching),
+  };
 }

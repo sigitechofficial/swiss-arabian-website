@@ -18,6 +18,7 @@ import type {
 import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
 import { afterSalesOptionLabel, afterSalesStatusLabel } from "../utils/eligibility";
 import { useRequestDate } from "../hooks/useRequestDate";
+import { requestUnitCount } from "../utils/requestUnits";
 
 function statusTone(status: string): AccountStatusTone {
   switch (status?.toUpperCase()) {
@@ -64,7 +65,7 @@ export function ReturnRequestCard({
               t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -148,7 +149,7 @@ export function ExchangeRequestCard({
               t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -229,7 +230,7 @@ export function GuestReturnRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -266,7 +267,7 @@ export function GuestExchangeRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill

@@ -56,8 +56,8 @@ import {
   orderTotals,
 } from "@/styles/accountChrome";
 import { crumbsList, pageTitle } from "@/styles/shopChrome";
-import { OrderAfterSalesSection } from "@/features/afterSales";
-import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
+import { AfterSalesRequestsPanel, AfterSalesStart } from "@/features/afterSales/components/OrderAfterSalesPanels";
+import { useOrderAfterSales } from "@/features/afterSales/hooks/useOrderAfterSales";
 import { HistoricalGiftNote } from "./HistoricalGiftNote";
 import { HistoricalLineDiscount } from "./HistoricalLineDiscount";
 import { trackingSummaryFromDetail } from "../utils/trackingFallback";
@@ -321,6 +321,11 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
   const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
   const orderReward = useOrderReward(orderId);
+  const afterSales = useOrderAfterSales({
+    orderId,
+    status: detailQuery.data?.order.status ?? "",
+    fulfillmentStatus: detailQuery.data?.order.fulfillmentStatus,
+  });
   const feedback: Feedback | null = cancelResult
     ? cancelResult
     : cancelFailure
@@ -415,7 +420,9 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
             >
               {t("orders.completePayment")}
             </LocaleLink>
-          ) : null}
+          ) : (
+            <AfterSalesStart state={afterSales} />
+          )}
         </header>
 
         {feedback || (showCancel && cancellationWindow) || needsSupport ? (
@@ -506,14 +513,8 @@ export function AccountOrderDetailPageView({ orderId }: { orderId: string }) {
                 })}
               </ul>
             </Panel>
+            <AfterSalesRequestsPanel state={afterSales} source={{ mode: "customer", orderId: order.orderId }} />
           </OrderTrackingPanel>
-
-          <OrderAfterSalesSection
-            orderId={order.orderId}
-            status={order.status}
-            fulfillmentStatus={order.fulfillmentStatus}
-            lines={mapOrderLinesForAfterSales(activeLines)}
-          />
 
           <aside className={accountCol} aria-label={t("orders.summaryAndDelivery")}>
             <Panel title={t("orders.summary")}>

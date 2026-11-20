@@ -52,8 +52,8 @@ const CONTROL =
 
 type FieldShell = {
   label: ReactNode;
-  /** adds "(optional)" after the label */
-  optional?: boolean | string;
+  /** translated optional mark shown after the label, e.g. t("account.optional") */
+  optional?: string;
   /** error message; shows it and marks the control invalid (v9 `.fld.err`) */
   error?: ReactNode;
   /** spans both grid columns (v9 `.fld.wide`) */
@@ -89,7 +89,7 @@ function Shell({
           <>
             {" "}
             <small className="font-[400] [font-size:smaller] text-sapil-muted">
-              {typeof optional === "string" ? optional : "(optional)"}
+              {optional}
             </small>
           </>
         )}

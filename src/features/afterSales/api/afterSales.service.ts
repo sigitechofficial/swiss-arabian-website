@@ -1,6 +1,11 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import type {
+  AfterSalesEligibility,
+  AfterSalesKind,
   AfterSalesOptions,
+  ExchangeEstimate,
+  ExchangeEstimateDto,
+  ExchangeOptions,
   CreateExchangeDto,
   CreateReturnDto,
   ExchangeDifferencePaymentResult,
@@ -256,5 +261,70 @@ export async function getMarketReturnsPolicy(
   return apiGet<ReturnsPolicySummary>(
     `/storefront/returns/policy/${encodeURIComponent(zoneCode)}`,
     { skipAuth: true },
+  );
+}
+
+/** Per-line quantities still free for a return or an exchange (with names and pictures). */
+export async function getCustomerEligibility(
+  orderId: string,
+  kind: AfterSalesKind,
+): Promise<AfterSalesEligibility> {
+  return apiGet<AfterSalesEligibility>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/${kind === "return" ? "returns" : "exchanges"}/eligibility`,
+  );
+}
+
+export async function getGuestEligibility(
+  orderNumber: string,
+  orderAccessToken: string,
+  kind: AfterSalesKind,
+): Promise<AfterSalesEligibility> {
+  return apiGet<AfterSalesEligibility>(
+    `/storefront/${kind === "return" ? "returns" : "exchanges"}/order/${encodeURIComponent(orderNumber)}/eligibility?${guestQuery(orderAccessToken)}`,
+  );
+}
+
+function localeQuery(locale: string | null): string {
+  return locale ? `locale=${encodeURIComponent(locale)}` : "";
+}
+
+/** What each item can be exchanged for: the same item, or another size of it. */
+export async function getCustomerExchangeOptions(
+  orderId: string,
+  locale: string | null,
+): Promise<ExchangeOptions> {
+  return apiGet<ExchangeOptions>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/exchanges/options?${localeQuery(locale)}`,
+  );
+}
+
+export async function getGuestExchangeOptions(
+  orderNumber: string,
+  orderAccessToken: string,
+  locale: string | null,
+): Promise<ExchangeOptions> {
+  const query = [guestQuery(orderAccessToken), localeQuery(locale)].filter(Boolean).join("&");
+  return apiGet<ExchangeOptions>(
+    `/storefront/exchanges/order/${encodeURIComponent(orderNumber)}/options?${query}`,
+  );
+}
+
+export async function estimateCustomerExchange(
+  orderId: string,
+  dto: ExchangeEstimateDto,
+): Promise<ExchangeEstimate> {
+  return apiPost<ExchangeEstimate>(
+    `/storefront/customer/orders/${encodeURIComponent(orderId)}/exchanges/estimate`,
+    dto,
+  );
+}
+
+export async function estimateGuestExchange(
+  orderNumber: string,
+  dto: ExchangeEstimateDto & GuestProofDto,
+): Promise<ExchangeEstimate> {
+  return apiPost<ExchangeEstimate>(
+    `/storefront/exchanges/order/${encodeURIComponent(orderNumber)}/estimate`,
+    dto,
   );
 }

@@ -14,6 +14,7 @@ import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { Button, cx } from "../../ui";
 import { StatusPill } from "../account/AccountChrome";
 import { SapilLink } from "../shared/SapilLink";
+import { requestUnitCount } from "@/features/afterSales/utils/requestUnits";
 
 const CARD = "rounded-[20px] bg-sapil-white p-[20px] max-600:p-[16px]";
 const LINK = "font-[600] text-sapil-accent underline underline-offset-[3px]";
@@ -111,7 +112,7 @@ export function SapilReturnCard({ item, showOrder = true }: { item: StorefrontRe
       <CardHead
         number={item.returnNumber}
         status={item.status}
-        meta={<OrderMeta orderId={showOrder ? item.orderId : undefined} orderNumber={item.orderNumber} createdAt={item.createdAt} itemCount={item.itemCount} />}
+        meta={<OrderMeta orderId={showOrder ? item.orderId : undefined} orderNumber={item.orderNumber} createdAt={item.createdAt} itemCount={requestUnitCount(item)} />}
       />
       <p className="mt-[10px] text-[14px]">
         {afterSalesOptionLabel("returnReason", item.reasonCode, t)} · {afterSalesOptionLabel("returnResolution", item.requestedResolution, t)}
@@ -150,7 +151,7 @@ export function SapilExchangeCard({ item, showOrder = true }: { item: Storefront
       <CardHead
         number={item.exchangeNumber}
         status={item.status}
-        meta={<OrderMeta orderId={showOrder ? item.orderId : undefined} orderNumber={item.orderNumber} createdAt={item.createdAt} itemCount={item.itemCount} />}
+        meta={<OrderMeta orderId={showOrder ? item.orderId : undefined} orderNumber={item.orderNumber} createdAt={item.createdAt} itemCount={requestUnitCount(item)} />}
       />
       <p className="mt-[10px] text-[14px]">
         {afterSalesOptionLabel("exchangeReason", item.reasonCode, t)} · {afterSalesOptionLabel("exchangeType", item.exchangeType, t)}
@@ -193,7 +194,7 @@ export function SapilExchangeCard({ item, showOrder = true }: { item: Storefront
 export function SapilGuestReturnCard({ item }: { item: StorefrontReturnSummaryView }) {
   return (
     <article className={CARD} data-sapil="return-request">
-      <CardHead number={item.returnNumber} status={item.status} meta={<OrderMeta createdAt={item.createdAt} itemCount={item.itemCount} />} />
+      <CardHead number={item.returnNumber} status={item.status} meta={<OrderMeta createdAt={item.createdAt} itemCount={requestUnitCount(item)} />} />
       {item.latestStatusMessage ? <p className="mt-[8px] text-[14px] leading-[1.5] text-sapil-ink-2">{item.latestStatusMessage}</p> : null}
     </article>
   );
@@ -203,7 +204,7 @@ export function SapilGuestReturnCard({ item }: { item: StorefrontReturnSummaryVi
 export function SapilGuestExchangeCard({ item, guest }: { item: StorefrontExchangeSummaryView; guest: ExchangeGuestProof }) {
   return (
     <article className={CARD} data-sapil="exchange-request">
-      <CardHead number={item.exchangeNumber} status={item.status} meta={<OrderMeta createdAt={item.createdAt} itemCount={item.itemCount} />} />
+      <CardHead number={item.exchangeNumber} status={item.status} meta={<OrderMeta createdAt={item.createdAt} itemCount={requestUnitCount(item)} />} />
       {item.latestStatusMessage ? <p className="mt-[8px] text-[14px] leading-[1.5] text-sapil-ink-2">{item.latestStatusMessage}</p> : null}
       <SapilExchangeMoney exchangeRequestId={item.exchangeRequestId} money={item.money} guest={guest} />
     </article>

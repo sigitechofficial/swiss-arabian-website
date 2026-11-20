@@ -1,8 +1,8 @@
 "use client";
 
-import { guestAfterSalesLines } from "@/features/afterSales/utils/lines";
+import { useGuestOrderAfterSales } from "@/features/afterSales/hooks/useOrderAfterSales";
 import { useGuestTracking, useTrackLookup } from "@/features/tracking/hooks/useOrderTrackingLookup";
-import { SapilGuestAfterSales } from "../../components/afterSales/SapilAfterSales";
+import { SapilAfterSalesRequests, SapilAfterSalesStart } from "../../components/afterSales/SapilAfterSales";
 import { Button, Field, Wrap } from "../../ui";
 import { buttonClass } from "../../ui/Button";
 import { useSapilCopy } from "../../i18n/SapilCopy";
@@ -86,6 +86,14 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
   const tracking = useGuestTracking(orderNumber);
   const deliveryHighlight = useDeliveryHighlight();
   const { summary } = tracking;
+  // Opened with the order's access token (a guest): returns and exchanges here, as on Swiss Arabian.
+  const guestToken = tracking.viaGuestToken && tracking.token ? tracking.token : "";
+  const afterSales = useGuestOrderAfterSales({
+    orderNumber: guestToken ? (summary?.orderNumber ?? orderNumber) : "",
+    orderAccessToken: guestToken,
+    status: summary?.status ?? "",
+    fulfillmentStatus: summary?.fulfillmentStatus,
+  });
 
   if (tracking.loading) return <OrderStateCard busy title={t("account.trackLookup")} />;
 
@@ -117,17 +125,18 @@ export function SapilGuestTrackingPage({ orderNumber }: { orderNumber: string })
         highlight={deliveryHighlight(summary) ?? undefined}
         steps={step >= 0 ? orderSteps(t, step) : undefined}
         stopped={step < 0 ? stoppedText(t, summary.status) : undefined}
-        notices={<TrackingDetails summary={summary} timeline={tracking.timeline} />}
+        notices={
+          <>
+            {guestToken ? <SapilAfterSalesStart state={afterSales} /> : null}
+            <TrackingDetails summary={summary} timeline={tracking.timeline} />
+          </>
+        }
         after={
-          // Opened with the order's access token (a guest): returns and exchanges here, as on Swiss Arabian.
-          tracking.viaGuestToken && tracking.token ? (
+          guestToken ? (
             <div className="mt-[20px]">
-              <SapilGuestAfterSales
-                orderNumber={summary.orderNumber}
-                orderAccessToken={tracking.token}
-                status={summary.status}
-                fulfillmentStatus={summary.fulfillmentStatus}
-                lines={guestAfterSalesLines({ shipments: summary.shipments })}
+              <SapilAfterSalesRequests
+                state={afterSales}
+                source={{ mode: "guest", orderNumber: summary.orderNumber, orderAccessToken: guestToken }}
               />
             </div>
           ) : null

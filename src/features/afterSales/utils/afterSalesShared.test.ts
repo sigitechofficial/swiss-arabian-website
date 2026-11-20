@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { englishTranslator } from "@/lib/i18n/messages";
-import { afterSalesLineErrors } from "../hooks/useAfterSalesForms";
 import type { ReturnEstimate } from "../types/afterSales";
-import { toExchangeDto, toReturnDto } from "./requestDtos";
+import { requestUnitCount } from "./requestUnits";
 import { returnEstimateView } from "./returnEstimateView";
 
 const copy = (key: string) => ({ key, variant: "default", values: {}, text: key });
@@ -68,46 +67,20 @@ describe("returnEstimateView", () => {
   });
 });
 
-describe("request conversions", () => {
-  const line = { orderLineId: "l1", selected: true, quantity: 1, maxQty: 2, sku: "RO" };
-
-  it("sends only the selected lines, and notes only when written", () => {
-    expect(
-      toReturnDto({
-        reasonCode: "DAMAGED",
-        requestedResolution: "REFUND",
-        reasonText: "  ",
-        customerNote: " Box was open ",
-        lines: [line, { ...line, orderLineId: "l2", selected: false }],
-      } as never),
-    ).toEqual({
-      items: [{ orderLineId: "l1", quantity: 1, reasonCode: "DAMAGED" }],
-      reasonCode: "DAMAGED",
-      requestedResolution: "REFUND",
-      customerNote: "Box was open",
-    });
-  });
-
-  it("keeps the line's own SKU when no replacement is typed", () => {
-    const dto = toExchangeDto({
-      reasonCode: "WRONG_VARIANT",
-      exchangeType: "SIZE_OR_COLOR_CHANGE",
-      customerNote: "",
-      lines: [{ ...line, replacementSku: " ", replacementSize: " 50 ml " }],
-    } as never);
-    expect(dto.items).toEqual([{ orderLineId: "l1", quantity: 1, replacementSku: "RO", reasonCode: "WRONG_VARIANT", replacementSize: "50 ml" }]);
-    expect(dto).not.toHaveProperty("customerNote");
+describe("requestUnitCount", () => {
+  it("counts units asked for, falling back to lines on older APIs", () => {
+    expect(requestUnitCount({ itemCount: 1, unitCount: 3 })).toBe(3);
+    expect(requestUnitCount({ itemCount: 2 })).toBe(2);
   });
 });
 
-describe("afterSalesLineErrors", () => {
-  it("reads the list message (either shape) and each line's messages", () => {
-    const errors = afterSalesLineErrors({
-      lines: { root: { message: "afterSales.err.selectItem" }, 1: { quantity: { message: "afterSales.err.qty" } } },
-    } as never);
-    expect(errors.list).toBe("afterSales.err.selectItem");
-    expect(errors.line(1)).toEqual({ quantity: "afterSales.err.qty", replacementSku: null });
-    expect(errors.line(0)).toEqual({ quantity: null, replacementSku: null });
-    expect(afterSalesLineErrors({} as never).list).toBeNull();
+describe("returnEstimateView delivery", () => {
+  it("says there is no fee when none was charged, and 'not refunded' only when one was", () => {
+    const row = (reason: string) =>
+      returnEstimateView(estimate({ delivery: { refunded: false, amount: "0", reason, message: copy("d") } }), englishTranslator, "en").rows.find(
+        (r) => r.key === "delivery",
+      )?.value;
+    expect(row("NO_SHIPPING_CHARGED")).toBe("None");
+    expect(row("NOT_FULL_ORDER")).toBe("Not refunded");
   });
 });

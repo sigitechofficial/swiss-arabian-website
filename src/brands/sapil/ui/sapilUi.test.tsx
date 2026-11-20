@@ -121,7 +121,7 @@ describe("Sapil UI kit", () => {
     render(
       <Fieldset legend="Contact">
         <Field label="Email" type="email" error="Enter an email." />
-        <Field label="Mobile number" type="tel" prefix="+971" optional />
+        <Field label="Mobile number" type="tel" prefix="+971" optional="(optional)" />
         <Checkbox defaultChecked>Send me offers</Checkbox>
       </Fieldset>,
     );

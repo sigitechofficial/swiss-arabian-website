@@ -1,7 +1,7 @@
 "use client";
 
-import { SapilOrderAfterSales } from "../../components/afterSales/SapilAfterSales";
-import { mapOrderLinesForAfterSales } from "@/features/afterSales/utils/lines";
+import { SapilAfterSalesRequests, SapilAfterSalesStart } from "../../components/afterSales/SapilAfterSales";
+import { useOrderAfterSales } from "@/features/afterSales/hooks/useOrderAfterSales";
 import { orderDeliveryLabel, orderPaymentLabel } from "@/features/checkout/utils/methodLabels";
 import { useCustomerOrderDetail, type OrderCancelError } from "@/features/orders/hooks/useCustomerOrders";
 import { cancellableOrderLines } from "@/features/orders/utils/cancelItems";
@@ -38,6 +38,11 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
   const detail = useCustomerOrderDetail(orderId);
   const deliveryHighlight = useDeliveryHighlight();
   const { order } = detail;
+  const afterSales = useOrderAfterSales({
+    orderId,
+    status: order?.status ?? "",
+    fulfillmentStatus: order?.fulfillmentStatus,
+  });
 
   if (detail.loading) return <OrderStateCard busy title={t("account.odLoading")} />;
   if (detail.notFound || !order) {
@@ -97,6 +102,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
       stopped={step < 0 ? stoppedText(t, order.status) : undefined}
       notices={
         <>
+          <SapilAfterSalesStart state={afterSales} />
           {feedback ? (
             <p className="bg-sapil-white rounded-[20px] py-[14px] px-[20px] mb-[20px] text-[14px]" role="status">
               {feedback}
@@ -172,12 +178,7 @@ export function SapilOrderDetailPage({ orderId }: { orderId: string }) {
       }
       after={
         <div className="mt-[20px]">
-          <SapilOrderAfterSales
-            orderId={order.orderId}
-            status={order.status}
-            fulfillmentStatus={order.fulfillmentStatus}
-            lines={mapOrderLinesForAfterSales(activeLines)}
-          />
+          <SapilAfterSalesRequests state={afterSales} source={{ mode: "customer", orderId: order.orderId }} />
         </div>
       }
       actions={

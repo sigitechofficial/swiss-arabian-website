@@ -82,6 +82,7 @@ export { SapilOrderConfirmationPage as OrderConfirmationView } from "./pages/ord
 export { SapilOrdersPage as PurchaseHistoryPageView } from "./pages/orders/SapilOrdersPage";
 export { SapilOrderDetailPage as AccountOrderDetailPageView } from "./pages/orders/SapilOrderDetailPage";
 export { SapilGuestTrackingPage as GuestTrackingPageView, SapilTrackLookupPage as TrackLookupView } from "./pages/orders/SapilTrackPages";
+export { SapilAfterSalesFlowPage as AfterSalesFlowPageView } from "./pages/orders/SapilAfterSalesFlowPage";
 
 // --- auth + account ---
 export {

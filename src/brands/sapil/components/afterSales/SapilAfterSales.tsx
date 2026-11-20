@@ -2,17 +2,14 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { useReturnsPolicy, type ReturnsPolicySource } from "@/features/afterSales/hooks/useAfterSales";
-import { useGuestOrderAfterSales, useOrderAfterSales } from "@/features/afterSales/hooks/useOrderAfterSales";
-import type { AfterSalesOrderLine } from "@/features/afterSales/types/afterSales";
+import type { OrderAfterSalesState } from "@/features/afterSales/components/OrderAfterSalesPanels";
 import { afterSalesCopyText } from "@/features/afterSales/utils/afterSalesCopy";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { Button, cx } from "../../ui";
+import { useSapilDate } from "../commerce/shared";
 import { SapilLink } from "../shared/SapilLink";
 import { SapilExchangeCard, SapilGuestExchangeCard, SapilGuestReturnCard, SapilReturnCard } from "./SapilAfterSalesCards";
-import { SapilExchangeForm, SapilReturnForm } from "./SapilAfterSalesForms";
-
-const ACTION = "!h-[44px] !px-[18px] !text-[14px]";
 const GROUP = "text-[12px] font-[700] tracking-[.14em] uppercase text-sapil-muted";
 
 /**
@@ -58,14 +55,17 @@ function SapilReturnTerms({ source }: { source: ReturnsPolicySource }) {
   );
 }
 
-function Section({ children }: { children: ReactNode }) {
+function Section({ children, action }: { children: ReactNode; action?: ReactNode }) {
   const t = useShopCopy();
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} data-sapil="after-sales" className="bg-sapil-white rounded-[24px] p-[24px] max-900:p-[20px] flex flex-col gap-[16px]">
-      <h2 id={headingId} className="font-sapil-sans font-[700] text-[20px] leading-[1.2] tracking-[-.02em]">
-        {t("afterSales.title")}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-[10px]">
+        <h2 id={headingId} className="font-sapil-sans font-[700] text-[20px] leading-[1.2] tracking-[-.02em]">
+          {t("afterSales.title")}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -84,114 +84,65 @@ function Notes({ notes }: { notes: string[] }) {
 }
 
 /**
- * The Sapil order page's returns and exchanges (signed-in customer): start a
- * return or exchange the market allows, the order's return terms, and this
- * order's requests. Same rules as Swiss Arabian (useOrderAfterSales).
+ * The way into the guided return / exchange, at the top of the order (v9
+ * notice card): one button and the last day to ask. Nothing when the order
+ * can't be returned or exchanged.
  */
-export function SapilOrderAfterSales({
-  orderId,
-  status,
-  fulfillmentStatus,
-  lines,
-}: {
-  orderId: string;
-  status: string;
-  fulfillmentStatus?: string | null;
-  lines: AfterSalesOrderLine[];
-}) {
+export function SapilAfterSalesStart({ state }: { state: OrderAfterSalesState }) {
   const t = useShopCopy();
-  const a = useOrderAfterSales({ orderId, status, fulfillmentStatus, lines });
-  const formProps = { mode: "customer" as const, orderId, lines, onCancel: () => a.setForm(null), onSubmitted: () => a.setForm(null) };
+  const date = useSapilDate();
+  if (!state.canStart) return null;
   return (
-    <Section>
-      <div className="flex flex-wrap items-center gap-[10px]">
-        {a.canReturn ? (
-          <Button variant={a.form === "return" ? "dark" : "line"} aria-pressed={a.form === "return"} className={ACTION} onClick={() => a.setForm("return")}>
-            {t("afterSales.requestReturn")}
-          </Button>
+    <div className="flex flex-wrap items-center justify-between gap-[14px] bg-sapil-white rounded-[20px] py-[16px] px-[20px] mb-[20px]">
+      <p className="text-[15px] leading-[1.45]">
+        <b className="font-[600]">{t("afterSales.flow.entry.title")}</b>
+        {state.eligibleUntil ? (
+          <span className="block text-[14px] text-sapil-ink-2">{t("afterSales.flow.entry.until", { date: date(state.eligibleUntil) })}</span>
         ) : null}
-        {a.canExchange ? (
-          <Button variant={a.form === "exchange" ? "dark" : "line"} aria-pressed={a.form === "exchange"} className={ACTION} onClick={() => a.setForm("exchange")}>
-            {t("afterSales.requestExchange")}
-          </Button>
-        ) : null}
-        <SapilLink href="/account/returns" className="inline-flex min-h-[44px] items-center text-[14px] font-[600] text-sapil-accent underline underline-offset-[3px]">
-          {t("afterSales.viewAll")}
-        </SapilLink>
-      </div>
-      <Notes notes={a.notes} />
-      {a.eligible ? <SapilReturnTerms source={{ mode: "customer", orderId }} /> : null}
-      {a.form === "return" ? <SapilReturnForm {...formProps} /> : null}
-      {a.form === "exchange" ? <SapilExchangeForm {...formProps} /> : null}
-      {a.returnItems.length ? (
-        <div className="grid gap-[10px]">
-          <p className={GROUP}>{t("afterSales.returnRequests")}</p>
-          {a.returnItems.map((item) => (
-            <SapilReturnCard key={item.returnRequestId} item={item} showOrder={false} />
-          ))}
-        </div>
-      ) : null}
-      {a.exchangeItems.length ? (
-        <div className="grid gap-[10px]">
-          <p className={GROUP}>{t("afterSales.exchangeRequests")}</p>
-          {a.exchangeItems.map((item) => (
-            <SapilExchangeCard key={item.exchangeRequestId} item={item} showOrder={false} />
-          ))}
-        </div>
-      ) : null}
-    </Section>
+      </p>
+      <Button href={state.flowHref} LinkComponent={SapilLink} className="!h-[44px] !px-[20px] !text-[14px]">
+        {t("afterSales.flow.entry.button")}
+      </Button>
+    </div>
   );
 }
 
-/** The same on the tracking page for a guest (order number + access token). */
-export function SapilGuestAfterSales({
-  orderNumber,
-  orderAccessToken,
-  status,
-  fulfillmentStatus,
-  lines,
-}: {
-  orderNumber: string;
-  orderAccessToken: string;
-  status: string;
-  fulfillmentStatus?: string | null;
-  lines: AfterSalesOrderLine[];
-}) {
+/**
+ * The order's returns and exchanges so far, why a new one can't be asked (if
+ * so) and the order's return terms. Shown when there is something to say.
+ */
+export function SapilAfterSalesRequests({ state, source }: { state: OrderAfterSalesState; source: ReturnsPolicySource }) {
   const t = useShopCopy();
-  const a = useGuestOrderAfterSales({ orderNumber, orderAccessToken, status, fulfillmentStatus, lines });
-  const guest = { orderNumber, orderAccessToken };
-  const formProps = { mode: "guest" as const, ...guest, lines: a.lines, onCancel: () => a.setForm(null), onSubmitted: () => a.setForm(null) };
+  const hasRequests = state.returnItems.length + state.exchangeItems.length > 0;
+  if (!state.eligible && !hasRequests && state.notes.length === 0) return null;
+  const guest = source.mode === "guest" ? { orderNumber: source.orderNumber, orderAccessToken: source.orderAccessToken } : null;
   return (
-    <Section>
-      {a.canReturn || a.canExchange ? (
-        <div className="flex flex-wrap items-center gap-[10px]">
-          {a.canReturn ? (
-            <Button variant={a.form === "return" ? "dark" : "line"} aria-pressed={a.form === "return"} className={ACTION} onClick={() => a.setForm("return")}>
-              {t("afterSales.requestReturn")}
-            </Button>
-          ) : null}
-          {a.canExchange ? (
-            <Button variant={a.form === "exchange" ? "dark" : "line"} aria-pressed={a.form === "exchange"} className={ACTION} onClick={() => a.setForm("exchange")}>
-              {t("afterSales.requestExchange")}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {a.noLines ? <p className="text-[14px] leading-[1.55] text-sapil-ink-2">{t("afterSales.guestNoLines")}</p> : null}
-      <Notes notes={a.notes} />
-      {a.eligible ? <SapilReturnTerms source={{ mode: "guest", orderNumber, orderAccessToken }} /> : null}
-      {a.form === "return" ? <SapilReturnForm {...formProps} /> : null}
-      {a.form === "exchange" ? <SapilExchangeForm {...formProps} /> : null}
-      {a.returnItems.length || a.exchangeItems.length ? (
+    <Section
+      action={
+        source.mode === "customer" ? (
+          <SapilLink href="/account/returns" className="inline-flex min-h-[44px] items-center text-[14px] font-[600] text-sapil-accent underline underline-offset-[3px]">
+            {t("afterSales.viewAll")}
+          </SapilLink>
+        ) : null
+      }
+    >
+      <Notes notes={state.notes} />
+      {hasRequests ? (
         <div className="grid gap-[10px]">
-          {a.returnItems.map((item) => (
-            <SapilGuestReturnCard key={item.returnRequestId} item={item} />
-          ))}
-          {a.exchangeItems.map((item) => (
-            <SapilGuestExchangeCard key={item.exchangeRequestId} item={item} guest={guest} />
-          ))}
+          <p className={GROUP}>{t("afterSales.flow.entry.requests")}</p>
+          {state.returnItems.map((item) =>
+            guest ? <SapilGuestReturnCard key={item.returnRequestId} item={item} /> : <SapilReturnCard key={item.returnRequestId} item={item} showOrder={false} />,
+          )}
+          {state.exchangeItems.map((item) =>
+            guest ? (
+              <SapilGuestExchangeCard key={item.exchangeRequestId} item={item} guest={guest} />
+            ) : (
+              <SapilExchangeCard key={item.exchangeRequestId} item={item} showOrder={false} />
+            ),
+          )}
         </div>
       ) : null}
+      {state.eligible ? <SapilReturnTerms source={source} /> : null}
     </Section>
   );
 }

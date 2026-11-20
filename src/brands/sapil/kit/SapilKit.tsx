@@ -246,7 +246,7 @@ export function SapilKit({ only }: { only?: string }) {
                 <option value="">Choose an emirate</option>
                 <option>Dubai</option>
               </SelectField>
-              <Field label="Apartment or villa" optional placeholder="e.g. Apt 1204" />
+              <Field label="Apartment or villa" optional="(optional)" placeholder="e.g. Apt 1204" />
             </FieldGrid>
           </Fieldset>
         )}

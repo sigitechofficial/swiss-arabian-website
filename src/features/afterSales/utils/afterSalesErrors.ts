@@ -15,10 +15,16 @@ export function isGiftRequiredError(error: unknown): boolean {
 /** A free gift can only be exchanged for the same item (platform rule). */
 export const EXCHANGE_GIFT_SAME_ITEM_ONLY = "EXCHANGE_GIFT_SAME_ITEM_ONLY";
 
+/** The replacement is not the same item or another size of it sold in this market. */
+export const EXCHANGE_REPLACEMENT_NOT_OFFERED = "EXCHANGE_REPLACEMENT_NOT_OFFERED";
+
 export function afterSalesErrorMessage(error: unknown, t: Translator = englishTranslator): string {
   if (isGiftRequiredError(error)) return t("afterSales.err.giftRequired");
   if (error instanceof ApiClientError && error.code === EXCHANGE_GIFT_SAME_ITEM_ONLY) {
     return t("afterSales.err.giftSameItemOnly");
+  }
+  if (error instanceof ApiClientError && error.code === EXCHANGE_REPLACEMENT_NOT_OFFERED) {
+    return t("afterSales.err.replacementNotOffered");
   }
   if (error instanceof ApiClientError) {
     if (error.status === 404) return t("afterSales.err.notFound");
