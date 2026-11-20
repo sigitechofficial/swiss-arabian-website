@@ -49,6 +49,8 @@ type CartTotals = {
    * carts persisted in the browser before tax policies existed lack them.
    */
   taxLabel?: string;
+  /** The tax label in every language (`{ en, ar, … }`). */
+  taxLabels?: Readonly<Record<string, string>> | null;
   taxIncluded?: boolean;
   amountPayable: number | null;
   currency: string;
@@ -229,7 +231,9 @@ export const useCartStore = create<CartState>()(
             discount: Number(cart.discountEstimate ?? "0"),
             shipping: Number(cart.shippingEstimate ?? "0"),
             tax: Number(cart.taxEstimate ?? "0"),
-            taxLabel: cart.context?.taxDisplay?.taxLabel || "VAT",
+            // No English fallback here: the summary words "VAT" in the page's language.
+            taxLabel: cart.context?.taxDisplay?.taxLabel || undefined,
+            taxLabels: cart.context?.taxDisplay?.taxLabels ?? null,
             taxIncluded: cart.context?.taxDisplay?.pricesIncludeTax === true,
             amountPayable: (() => {
               const raw =

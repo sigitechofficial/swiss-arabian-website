@@ -187,6 +187,7 @@ export function CheckoutSummary({
         shippingDiscount={shipDiscount}
         tax={tax}
         taxLabel={session?.context?.taxDisplay?.taxLabel}
+        taxLabels={session?.context?.taxDisplay?.taxLabels}
         taxIncluded={session?.context?.taxDisplay?.pricesIncludeTax === true}
         total={total}
         amountPayable={amountPayable}

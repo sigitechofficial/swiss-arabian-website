@@ -1,5 +1,6 @@
 "use client";
 
+import { nameInLanguage } from "@/lib/i18n/nameByLanguage";
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
@@ -187,7 +188,14 @@ export function OrderTrackingPanel({
             const history = trackingHistory(events, t);
             const carrierLine = [
               shipment.shippingPartner?.displayName,
-              shipment.deliveryMethod?.displayName,
+              // The delivery method in the page's language.
+              shipment.deliveryMethod
+                ? nameInLanguage(
+                    shipment.deliveryMethod.displayNames,
+                    locale,
+                    shipment.deliveryMethod.displayName,
+                  )
+                : null,
             ]
               .filter(Boolean)
               .join(" · ");

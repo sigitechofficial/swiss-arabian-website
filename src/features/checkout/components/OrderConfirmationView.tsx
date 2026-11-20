@@ -261,7 +261,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           </div>
           <div>
             <dt>{t("orders.payment")}</dt>
-            <dd>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dd>
+            <dd>{orderPaymentLabel(order.selectedPaymentMethod, t, locale)}</dd>
           </div>
         </dl>
 
@@ -439,7 +439,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
               ) : null}
               {paidByOtherTenders ? (
                 <div className={checkoutTotalsLine}>
-                  <dt>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dt>
+                  <dt>{orderPaymentLabel(order.selectedPaymentMethod, t, locale)}</dt>
                   <dd dir="ltr">{formatMoney(Number(totals.amountPayable ?? 0), currency)}</dd>
                 </div>
               ) : null}
@@ -468,11 +468,11 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             <dl className={ocMethods}>
               <div>
                 <dt>{t("orders.delivery")}</dt>
-                <dd>{orderDeliveryLabel(order.selectedDeliveryMethod, t)}</dd>
+                <dd>{orderDeliveryLabel(order.selectedDeliveryMethod, t, locale)}</dd>
               </div>
               <div>
                 <dt>{t("orders.payment")}</dt>
-                <dd>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dd>
+                <dd>{orderPaymentLabel(order.selectedPaymentMethod, t, locale)}</dd>
               </div>
             </dl>
           </section>

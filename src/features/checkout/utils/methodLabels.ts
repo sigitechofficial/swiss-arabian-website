@@ -1,7 +1,8 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
-import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
+import { nameInLanguage } from "@/lib/i18n/nameByLanguage";
+import type { DeliveryMethodOption, OrderMethodSummary, PaymentMethodOption } from "../types/checkout";
 import { isTabbyPaymentMethod } from "./tabby";
 import { isTamaraPaymentMethod } from "./tamara";
 
@@ -24,23 +25,48 @@ export function isStripePaymentMethod(
   );
 }
 
+/**
+ * Methods are told apart by their codes and `methodType`, never by their
+ * name: names follow the shopper's language (and admins can rename them).
+ */
+function methodCodes(method: Pick<PaymentMethodOption, "providerCode" | "methodCode">): string {
+  return `${method.providerCode ?? ""} ${method.methodCode ?? ""}`.toLowerCase();
+}
+
 export function isSmokePaymentMethod(
-  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode">,
 ): boolean {
-  const blob = `${method.providerCode ?? ""} ${method.methodCode ?? ""} ${method.displayName ?? ""}`.toLowerCase();
-  return blob.includes("smoke") || blob.includes("test payment");
+  const codes = methodCodes(method);
+  return codes.includes("smoke") || codes.includes("test_pay");
 }
 
 export function isTelrPaymentMethod(
-  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode">,
 ): boolean {
-  const blob = `${method.providerCode ?? ""} ${method.methodCode ?? ""} ${method.displayName ?? ""}`.toLowerCase();
-  return blob.includes("telr");
+  return methodCodes(method).includes("telr");
+}
+
+/** Cash on delivery: by `methodType`, else (older answers) by its codes. */
+export function isCashPaymentMethod(
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "methodType">,
+): boolean {
+  const type = method.methodType?.toUpperCase();
+  if (type) return type === "CASH_ON_DELIVERY";
+  return /cod|cash/.test(methodCodes(method));
+}
+
+/** Card-type methods (cards and card wallets): by `methodType`, else by their codes. */
+function isCardPaymentMethod(
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "methodType">,
+): boolean {
+  const type = method.methodType?.toUpperCase();
+  if (type) return type === "CARD" || type === "APPLE_PAY" || type === "GOOGLE_PAY";
+  return usesInlineCardForm(method) || isTelrPaymentMethod(method) || /card/.test(methodCodes(method));
 }
 
 /** Card iframes (Stripe / Paymob). Test Payment skips this and goes to confirmation. */
 export function usesInlineCardForm(
-  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "displayName">,
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode">,
 ): boolean {
   if (isSmokePaymentMethod(method)) return false;
   return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
@@ -48,10 +74,7 @@ export function usesInlineCardForm(
 
 /** Hosted redirect gateways (Telr HPP, Tabby, Tamara, and any method flagged `requiresRedirect`). */
 export function usesHostedRedirect(
-  method: Pick<
-    PaymentMethodOption,
-    "providerCode" | "methodCode" | "displayName" | "requiresRedirect"
-  >,
+  method: Pick<PaymentMethodOption, "providerCode" | "methodCode" | "requiresRedirect">,
 ): boolean {
   if (isSmokePaymentMethod(method) || usesInlineCardForm(method)) return false;
   return (
@@ -75,10 +98,8 @@ export function paymentStepKinds(methods: PaymentMethodOption[]): PaymentStepKin
   for (const method of live) {
     if (isTabbyPaymentMethod(method)) kinds.add("tabby");
     else if (isTamaraPaymentMethod(method)) kinds.add("tamara");
-    else if (/cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`)) kinds.add("cash");
-    else if (usesInlineCardForm(method) || isTelrPaymentMethod(method) || /card/i.test(`${method.methodCode} ${method.displayName}`)) {
-      kinds.add("card");
-    }
+    else if (isCashPaymentMethod(method)) kinds.add("cash");
+    else if (isCardPaymentMethod(method)) kinds.add("card");
   }
   return (["card", "tabby", "tamara", "cash"] as const).filter((kind) => kinds.has(kind));
 }
@@ -174,9 +195,7 @@ export function upcomingPaymentMethods(
   if (country === "QA") {
     rows.push({ id: "naps", title: "NAPS", note: t("checkout.method.napsNote") });
   }
-  const hasCash = methods.some((method) =>
-    /cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`),
-  );
+  const hasCash = methods.some((method) => isCashPaymentMethod(method));
   if (!hasCash && (country === "AE" || country === "SA" || country === "KW" || country === "OM" || country === "QA")) {
     rows.push({ id: "cash-on-delivery", title: t("payments.cod"), note: t("checkout.method.codNote") });
   }
@@ -217,12 +236,13 @@ export function deliveryFeeLabel(
 // ─── Order summaries (confirmation page) ────────────────────────────────────
 
 export function orderPaymentLabel(
-  method: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null,
+  method: (OrderMethodSummary & { providerCode: string | null }) | null,
   t: Translator = pageTranslator(),
+  language?: string | null,
 ): string {
   if (!method) return "—";
-  // The backend sends the shopper-facing PaymentMethod.displayName; codes are a fallback only.
-  const displayName = method.displayName?.trim();
+  // The backend sends the method's name in every language; codes are a fallback only.
+  const displayName = nameInLanguage(method.displayNames, language, method.displayName);
   if (displayName) return displayName;
   const provider = method.providerCode?.toLowerCase();
   if (provider === "paymob") return t("checkout.method.cardVia", { provider: "Paymob" });
@@ -230,11 +250,17 @@ export function orderPaymentLabel(
   return titleCase(method.methodCode ?? method.providerCode ?? "") || "—";
 }
 
-/** `iq_fulfillment` + `iq_standard` → "Standard delivery". */
+/**
+ * The order's delivery method in the page's language (the backend's names);
+ * without them, built from its code: `iq_fulfillment` + `iq_standard` → "Standard delivery".
+ */
 export function orderDeliveryLabel(
-  method: { partnerCode: string | null; methodCode: string | null } | null,
+  method: (OrderMethodSummary & { partnerCode: string | null }) | null,
   t: Translator = pageTranslator(),
+  language?: string | null,
 ): string {
+  const named = method ? nameInLanguage(method.displayNames, language, method.displayName) : "";
+  if (named) return named;
   const code = method?.methodCode ?? "";
   if (!code) return t("checkout.delivery.standard");
   // Drop every leading word the method code shares with the partner code:
@@ -261,8 +287,10 @@ function partnerLabel(code: string | null | undefined): string {
 
 /**
  * Several partners can expose an option with the same name (URD1 had three
- * "Standard delivery" rows). When names collide, add the partner so the
- * shopper can tell which one they pick. Keyed by zoneDeliveryMethodId.
+ * "Standard delivery" rows). The names arrive in the page's language; when
+ * two still collide, the partner's name (a proper name, the same in every
+ * language) is added after a "·", never with connector words of another
+ * language. Keyed by zoneDeliveryMethodId.
  */
 export function deliveryOptionTitles(methods: DeliveryMethodOption[]): Map<string, string> {
   const counts = new Map<string, number>();

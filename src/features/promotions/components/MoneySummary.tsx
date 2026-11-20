@@ -2,6 +2,8 @@
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { nameInLanguage } from "@/lib/i18n/nameByLanguage";
 import type { GiftCardTender } from "../types/promotions";
 import { cartTotalsLine } from "@/styles/cartChrome";
 import { checkoutTotalsLine } from "@/styles/checkoutChrome";
@@ -15,6 +17,7 @@ export function MoneySummary({
   shippingDiscount,
   tax = 0,
   taxLabel,
+  taxLabels,
   taxIncluded = false,
   total,
   amountPayable,
@@ -31,8 +34,10 @@ export function MoneySummary({
   shipping?: number | null;
   shippingDiscount: number;
   tax?: number;
-  /** Market tax label (from the market tax policy). */
+  /** Market tax label (from the market tax policy), in the answer's language. */
   taxLabel?: string;
+  /** The label in every language (`{ en, ar, … }`); the page's language wins. */
+  taxLabels?: Readonly<Record<string, string>> | null;
   /** True when prices already include the tax: the row is informational, not added. */
   taxIncluded?: boolean;
   total: number;
@@ -46,7 +51,10 @@ export function MoneySummary({
   surface?: "cart" | "checkout";
 }) {
   const t = useShopCopy();
-  const taxName = taxLabel?.trim() || t("promotions.summary.vat");
+  const locale = useShopLocale();
+  // The market's label in the page's language, else the worded "VAT".
+  const taxName =
+    nameInLanguage(taxLabels, locale, taxLabel) || t("promotions.summary.vat");
   const checkout = surface
     ? surface === "checkout"
     : className.includes("checkout");
