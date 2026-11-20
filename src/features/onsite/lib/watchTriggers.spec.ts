@@ -2,13 +2,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { watchOnsiteTriggers } from "./watchTriggers";
 
 function setVisibility(state: "visible" | "hidden") {
-  Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+  Object.defineProperty(document, "visibilityState", {
+    value: state,
+    configurable: true,
+  });
 }
 
 function scrollTo(scrollY: number, innerHeight: number, scrollHeight: number) {
-  Object.defineProperty(window, "scrollY", { value: scrollY, configurable: true });
-  Object.defineProperty(window, "innerHeight", { value: innerHeight, configurable: true });
-  Object.defineProperty(document.documentElement, "scrollHeight", { value: scrollHeight, configurable: true });
+  Object.defineProperty(window, "scrollY", {
+    value: scrollY,
+    configurable: true,
+  });
+  Object.defineProperty(window, "innerHeight", {
+    value: innerHeight,
+    configurable: true,
+  });
+  Object.defineProperty(document.documentElement, "scrollHeight", {
+    value: scrollHeight,
+    configurable: true,
+  });
   window.dispatchEvent(new Event("scroll"));
 }
 
@@ -27,7 +39,10 @@ describe("watchOnsiteTriggers", () => {
     const onFire = vi.fn();
     const stop = watchOnsiteTriggers([{ type: "page_view" }], onFire);
     expect(onFire).toHaveBeenCalledTimes(1);
-    expect(onFire).toHaveBeenCalledWith({ type: "page_view" }, { seconds: 0, scrollPercent: 0 });
+    expect(onFire).toHaveBeenCalledWith(
+      { type: "page_view" },
+      { seconds: 0, scrollPercent: 0 },
+    );
     stop();
   });
 
@@ -58,7 +73,10 @@ describe("watchOnsiteTriggers", () => {
 
   it("fires a scroll trigger once past its depth", () => {
     const onFire = vi.fn();
-    const stop = watchOnsiteTriggers([{ type: "scroll", scrollPercent: 50 }], onFire);
+    const stop = watchOnsiteTriggers(
+      [{ type: "scroll", scrollPercent: 50 }],
+      onFire,
+    );
     scrollTo(0, 800, 4000);
     expect(onFire).not.toHaveBeenCalled();
     scrollTo(1400, 800, 4000);
@@ -96,5 +114,64 @@ describe("watchOnsiteTriggers", () => {
     stop();
     vi.advanceTimersByTime(10_000);
     expect(onFire).not.toHaveBeenCalled();
+  });
+});
+
+describe("assistant nudges", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setVisibility("visible");
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("fires an exit-intent trigger when the pointer leaves through the top, once", () => {
+    const onFire = vi.fn();
+    const stop = watchOnsiteTriggers([{ type: "exit_intent" }], onFire);
+    document.dispatchEvent(
+      new MouseEvent("mouseout", {
+        clientY: 200,
+        relatedTarget: document.body,
+      }),
+    );
+    expect(onFire).not.toHaveBeenCalled();
+    document.dispatchEvent(new MouseEvent("mouseout", { clientY: -2 }));
+    document.dispatchEvent(new MouseEvent("mouseout", { clientY: -2 }));
+    expect(onFire).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  it("fires an idle trigger after the quiet time, and activity starts it again", () => {
+    const onFire = vi.fn();
+    const stop = watchOnsiteTriggers([{ type: "idle", seconds: 30 }], onFire);
+    vi.advanceTimersByTime(20_000);
+    window.dispatchEvent(new Event("mousemove"));
+    vi.advanceTimersByTime(20_000);
+    expect(onFire).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(10_000);
+    expect(onFire).toHaveBeenCalledTimes(1);
+    expect(onFire.mock.calls[0][1]).toMatchObject({
+      seconds: 30,
+      cartItems: 0,
+    });
+    stop();
+  });
+
+  it("an idle trigger for a full bag waits until the bag has something in it", () => {
+    let items = 0;
+    const onFire = vi.fn();
+    const stop = watchOnsiteTriggers(
+      [{ type: "idle", seconds: 10, cartNotEmpty: true }],
+      onFire,
+      () => items,
+    );
+    vi.advanceTimersByTime(15_000);
+    expect(onFire).not.toHaveBeenCalled();
+    items = 2;
+    vi.advanceTimersByTime(1_000);
+    expect(onFire).toHaveBeenCalledTimes(1);
+    expect(onFire.mock.calls[0][1]).toMatchObject({ cartItems: 2 });
+    stop();
   });
 });
