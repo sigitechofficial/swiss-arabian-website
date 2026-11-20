@@ -35,7 +35,7 @@ describe("subscription monthly tracker", () => {
     expect(checkout).toContain("SubscriptionCheckoutSuccess");
     expect(checkout).toContain("subscriptionCheckoutSucceeded");
     expect(checkout).not.toContain("OrderConfirmationView");
-    expect(retail).toContain("Track order");
+    expect(retail).toContain("track.trackOrder");
     expect(retail).not.toContain("SubscriptionCheckoutSuccess");
   });
 
