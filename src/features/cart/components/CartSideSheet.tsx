@@ -24,6 +24,7 @@ import { useGiftChoiceStore } from "@/features/promotions/giftChoiceStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useAddToCart } from "../hooks/useAddToCart";
 import { useBag } from "../hooks/useBag";
 import { bundleTags } from "../utils/bundleTags";
@@ -83,6 +84,7 @@ import {
 import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 
 export function CartSideSheet() {
+  const copy = useShopCopy();
   const open = useUiStore((s) => s.cartOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const {
@@ -348,7 +350,7 @@ export function CartSideSheet() {
                         </div>
                         {atStockLimit(line) && line.maxQuantity != null ? (
                           <p className={cartQtyLimit} role="status">
-                            {stockLimitNote(line.maxQuantity)}
+                            {stockLimitNote(line.maxQuantity, copy)}
                           </p>
                         ) : null}
                       </div>
