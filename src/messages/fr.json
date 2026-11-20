@@ -159,12 +159,13 @@
   "reviews.writeFirst": "Rédigez le premier avis",
   "reviews.write": "Rédiger un avis",
   "reviews.overall": "Note globale",
+  "pdp.scentLabel": "Parfum :",
   "reviews.count": {
     "one": "{count} avis",
     "other": "{count} avis"
   },
   "reviews.inMarket": " sur ce marché",
-  "reviews.fromVerified": "{count} d’acheteurs vérifiés",
+  "reviews.fromVerified": "dont {count} d’acheteurs vérifiés",
   "reviews.barLabel": "{stars} : {reviews}",
   "reviews.stars": {
     "one": "{count} étoile",
@@ -2521,7 +2522,7 @@
   "catalog.moreProducts": "Plus de produits",
   "pdp.related.alsoLike": "Vous {em}",
   "pdp.related.alsoLikeEm": "aimerez aussi.",
-  "pdp.related.moreFrom": "Plus de {collection}.",
+  "pdp.related.moreFrom": "Découvrez aussi {collection}.",
   "pdp.gallery.images": "Images du produit",
   "pdp.gallery.next": "Image suivante du produit",
   "pdp.pay.today": "Aujourd’hui",

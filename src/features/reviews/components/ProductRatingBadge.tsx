@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useProductReviewSummary } from "../hooks/useProductReviews";
 import { StarRating } from "./StarRating";
 
@@ -10,11 +11,11 @@ type ProductRatingBadgeProps = {
 
 export function ProductRatingBadge({ productKey }: ProductRatingBadgeProps) {
   const { data } = useProductReviewSummary(productKey);
+  const t = useShopCopy();
 
   if (!data || data.reviewCount === 0) return null;
 
-  const countLabel =
-    data.reviewCount === 1 ? "1 review" : `${data.reviewCount} reviews`;
+  const countLabel = t("reviews.count", { count: data.reviewCount });
 
   return (
     <Link

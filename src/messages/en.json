@@ -158,6 +158,7 @@
   "reviews.writeFirst": "Write the first review",
   "reviews.write": "Write a review",
   "reviews.overall": "Overall rating",
+  "pdp.scentLabel": "Scent:",
   "reviews.count": {
     "one": "{count} review",
     "other": "{count} reviews"

@@ -97,7 +97,7 @@ export function PdpBuyBox({
             <strong>{reviewSummary.averageRating.toFixed(1)}</strong>
             {` · `}
             <span className="underline underline-offset-[3px]">
-              {reviewSummary.reviewCount} {reviewSummary.reviewCount === 1 ? "review" : "reviews"}
+              {t("reviews.count", { count: reviewSummary.reviewCount })}
             </span>
           </span>
         </a>

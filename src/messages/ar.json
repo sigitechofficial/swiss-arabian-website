@@ -157,6 +157,7 @@
   "reviews.writeFirst": "اكتب أول تقييم",
   "reviews.write": "اكتب تقييمًا",
   "reviews.overall": "التقييم العام",
+  "pdp.scentLabel": "العطر:",
   "reviews.count": {
     "zero": "{count} تقييمات",
     "one": "تقييم واحد",

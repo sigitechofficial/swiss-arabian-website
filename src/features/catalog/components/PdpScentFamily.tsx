@@ -1,6 +1,7 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { bottle } from "@/styles/landingChrome";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts } from "../api/catalog.service";
@@ -19,6 +20,7 @@ export function PdpScentFamily({
   zoneCode: string;
   fallback: CatalogProduct[];
 }) {
+  const t = useShopCopy();
   const query = useQuery({
     queryKey: ["pdp-scent-family", zoneCode, familyCode ?? ""],
     queryFn: () =>
@@ -50,7 +52,7 @@ export function PdpScentFamily({
   return (
     <section className="m-0 min-w-0" aria-labelledby="pdp-scents-heading">
       <p className="mb-3 text-[0.95rem]" id="pdp-scents-heading">
-        Scent: <strong>{current.title}</strong>
+        {t("pdp.scentLabel")} <strong>{current.title}</strong>
       </p>
       <ul className="m-0 flex w-full min-w-0 list-none flex-wrap items-start gap-3 p-0">
         {items.map((product) => {
