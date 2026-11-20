@@ -33,19 +33,34 @@ const ENGLISH_ON_PURPOSE: Record<string, string[]> = {
   ],
 };
 
+/** A note about the file itself (e.g. "draft translation"), not a message. */
+const isFileNote = (key: string) => key === "$comment";
+
 const slotNames = (value: unknown) =>
   [...new Set([...JSON.stringify(value).matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
 
 describe("message files", () => {
   it("finds the language files", () => {
     expect(LANGUAGE_FILES.map((file) => file.locale)).toContain("ar");
+    expect(LANGUAGE_FILES.map((file) => file.locale)).toContain("fr");
+  });
+
+  it("French (draft) reads its own wording with French plural rules", () => {
+    // "fr" is not an enabled shop locale in tests (NEXT_PUBLIC_SHOP_LOCALES), so read the file directly.
+    const fr = LANGUAGE_FILES.find((file) => file.locale === "fr")!.messages;
+    const t = createTranslator("fr", fr as Parameters<typeof createTranslator>[1]);
+    expect(t("home")).toBe("Accueil");
+    // French "one" covers 0 and 1.
+    expect(t("catalog.productCount", { count: 0 })).toBe("0 produit");
+    expect(t("catalog.productCount", { count: 1 })).toBe("1 produit");
+    expect(t("catalog.productCount", { count: 2 })).toBe("2 produits");
   });
 
   it.each(LANGUAGE_FILES)("$locale.json has every English key (or leaves it out on purpose)", ({ locale, messages }) => {
     const missing = Object.keys(en).filter((key) => !(key in messages));
     expect(missing.sort()).toEqual([...(ENGLISH_ON_PURPOSE[locale] ?? [])].sort());
-    // No key that English does not define.
-    expect(Object.keys(messages).filter((key) => !(key in en))).toEqual([]);
+    // No key that English does not define (a `$comment` note about the file is allowed).
+    expect(Object.keys(messages).filter((key) => !(key in en) && !isFileNote(key))).toEqual([]);
   });
 
   it.each(LANGUAGE_FILES)("$locale.json uses the same {slots} as English", ({ locale, messages }) => {
