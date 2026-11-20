@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { SortOption } from "../../constants/catalogProducts";
 import {
   catalogCount,
@@ -28,30 +31,31 @@ export function CatalogToolbar({
   onSort,
   serverFiltered,
 }: CatalogToolbarProps) {
+  const t = useShopCopy();
   return (
     <div className={toolbar}>
       <button type="button" className={filtersButton} aria-expanded={filtersOpen} onClick={onToggleFilters}>
-        Filters
+        {t("catalog.toolbar.filters")}
       </button>
       <p className={catalogCount} aria-live="polite">
-        Showing {shown} of {total}
+        {t("search.showing", { shown, total })}
       </p>
       <label className={catalogSort}>
-        <span className={catalogSortLabel}>Sort by</span>
+        <span className={catalogSortLabel}>{t("catalog.toolbar.sortBy")}</span>
         <select
           className={catalogSortSelect}
           style={catalogSortSelectStyle}
           value={sort}
           onChange={(event) => onSort(event.target.value as SortOption)}
         >
-          <option value="featured">Featured</option>
-          <option value="newest">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
+          <option value="featured">{t("catalog.sort.featured")}</option>
+          <option value="newest">{t("search.sortOption.newest")}</option>
+          <option value="price-asc">{t("catalog.sort.priceAsc")}</option>
+          <option value="price-desc">{t("catalog.sort.priceDesc")}</option>
           {serverFiltered ? null : (
             <>
-              <option value="rating">Customer Ratings</option>
-              <option value="bestselling">Best Selling</option>
+              <option value="rating">{t("catalog.sort.rating")}</option>
+              <option value="bestselling">{t("catalog.sort.bestSelling")}</option>
             </>
           )}
         </select>

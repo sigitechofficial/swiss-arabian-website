@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useFreeShippingBar } from "../hooks/useFreeShippingBar";
 import { promotionConflictNotes } from "../utils/conflictNotes";
 import { offerQualificationMessage } from "../utils/qualificationCopy";
@@ -31,16 +32,17 @@ export function PromotionUnlockNote({
     snapshot,
     offers,
   } = useFreeShippingBar();
+  const t = useShopCopy();
   const [whoop, setWhoop] = useState(false);
   const wasFreeRef = useRef<boolean | null>(null);
 
   const qualificationNotes = offers
     .map((offer) =>
-      offerQualificationMessage(offer, currency, { shippingApplied: unlocked }),
+      offerQualificationMessage(offer, currency, { shippingApplied: unlocked }, t),
     )
     .filter((note): note is string => Boolean(note));
 
-  const conflicts = promotionConflictNotes(snapshot?.rejected);
+  const conflicts = promotionConflictNotes(snapshot?.rejected, t);
   const bundleNotes = setBundleNotes(offers, snapshot);
   const showBar = threshold != null || isFree;
 
@@ -67,7 +69,7 @@ export function PromotionUnlockNote({
   const barCopy = unlocked
     ? null
     : threshold != null
-      ? `Spend ${formatMoney(remaining, currency)} to unlock free shipping`
+      ? t("promotions.qualify.spendFreeShipping", { amount: formatMoney(remaining, currency) })
       : (qualificationNotes[0] ?? null);
 
   return (
@@ -89,7 +91,7 @@ export function PromotionUnlockNote({
             {unlocked ? (
               <>
                 <span className={shipWhoopCheck} aria-hidden="true" />
-                You&apos;ve unlocked free shipping
+                {t("promotions.qualify.freeShippingUnlocked")}
               </>
             ) : (
               barCopy

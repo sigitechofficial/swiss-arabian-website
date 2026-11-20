@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useQuery } from "@tanstack/react-query";
 import { trackProductViewed } from "@/lib/analytics/siteEvents";
 import { ensureInsiderProductPage } from "@/lib/insider";
@@ -47,6 +48,7 @@ export type ProductDetailPageInput = {
  * (Insider product page, "recently viewed").
  */
 export function useProductDetailPage({ product: serverDetail, serverZoneCode = null, slug: routeSlug }: ProductDetailPageInput) {
+  const t = useShopCopy();
   const { marketId } = useMarket();
   const zoneCode = marketId ?? "";
   // The page is prerendered for the default market: another market loads its own product.
@@ -75,9 +77,9 @@ export function useProductDetailPage({ product: serverDetail, serverZoneCode = n
       reviewSummary.reviewCount > 0 &&
       reviewSummary.reviewCount >= (pdpReviews?.display.minReviewsToShowStars ?? 1),
   );
-  const daysLine = shippingPromise ? shippingDaysLine(shippingPromise) : null;
-  const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise) : null;
-  const liveShippingCopy = shippingTabCopy(shippingPromise);
+  const daysLine = shippingPromise ? shippingDaysLine(shippingPromise, t) : null;
+  const thresholdLine = shippingPromise ? shippingThresholdLine(shippingPromise, t) : null;
+  const liveShippingCopy = shippingTabCopy(shippingPromise, t);
 
   const [failedImages, setFailedImages] = useState<string[]>([]);
   const markFailed = useCallback((src: string) => {

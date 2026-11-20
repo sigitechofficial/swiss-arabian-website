@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { pageContainer } from "@/styles/siteChrome";
 import { related as relatedSection, relatedAll, relatedGrid, relatedHead, relatedTitle } from "@/styles/pdpChrome";
@@ -20,6 +23,7 @@ export function PdpRelatedRail({
   products,
   collectionSlug,
 }: PdpRelatedRailProps) {
+  const t = useShopCopy();
   if (!products.length) return null;
 
   return (
@@ -30,7 +34,7 @@ export function PdpRelatedRail({
             {heading}
           </p>
           <LocaleLink className={relatedAll} href={seeAllHref}>
-            See all
+            {t("search.seeAll")}
           </LocaleLink>
         </div>
         <ul className={relatedGrid} role="list">

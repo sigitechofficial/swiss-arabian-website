@@ -78,11 +78,12 @@ function ProductRow({
 }
 
 export function NavbarSearchDropdown({
-  placeholder = "Search fragrances",
+  placeholder: placeholderProp,
 }: {
   placeholder?: string;
 } = {}) {
   const t = useShopCopy();
+  const placeholder = placeholderProp ?? t("nav.searchFragrances");
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -132,7 +133,7 @@ export function NavbarSearchDropdown({
     };
   }, [open]);
 
-  const idleKicker = recents.length ? "Recent" : "Popular";
+  const idleKicker = recents.length ? t("search.drop.recent") : t("search.drop.popular");
 
   return (
     <div className={`${navSearch} ${navSearchMinimal}`} data-nav-search ref={rootRef}>
@@ -166,9 +167,9 @@ export function NavbarSearchDropdown({
       </label>
 
       {open ? (
-        <div className={navSearchDrop} id="nav-search-drop" role="dialog" aria-label="Search suggestions">
+        <div className={navSearchDrop} id="nav-search-drop" role="dialog" aria-label={t("search.drop.suggestions")}>
           <div className={navSearchDropBlock}>
-            <p className={navSearchDropKicker}>{isIdle ? idleKicker : "Results"}</p>
+            <p className={navSearchDropKicker}>{isIdle ? idleKicker : t("search.drop.results")}</p>
             {isIdle ? (
               recents.length ? (
                 <ul className={navSearchDropQueries} role="list">
@@ -207,11 +208,11 @@ export function NavbarSearchDropdown({
                 ))}
               </ul>
             ) : (
-              <p className={navSearchDropEmpty}>No matches yet — keep typing or browse new in.</p>
+              <p className={navSearchDropEmpty}>{t("search.drop.empty")}</p>
             )}
             {isIdle ? null : (
               <button type="button" className={navSearchDropAll} onClick={submit}>
-                See all results
+                {t("search.drop.allResults")}
               </button>
             )}
           </div>
@@ -219,9 +220,9 @@ export function NavbarSearchDropdown({
           {newest.length ? (
             <div className={navSearchDropBlock}>
               <div className={navSearchDropNewHead}>
-                <p className={navSearchDropKicker}>New in</p>
+                <p className={navSearchDropKicker}>{t("search.newIn")}</p>
                 <LocaleLink href="/collections/new-launches" onClick={close}>
-                  See all
+                  {t("search.seeAll")}
                 </LocaleLink>
               </div>
               <ul className={navSearchDropCards} role="list">

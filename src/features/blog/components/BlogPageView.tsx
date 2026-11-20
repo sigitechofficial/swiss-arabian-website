@@ -1,6 +1,7 @@
 "use client";
 
 import { Reveal, InViewItem } from "@/components/motion";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import type { BlogPost } from "../data/blogContent";
 import { BlogHero } from "./BlogHero";
@@ -19,6 +20,7 @@ export function BlogPageView({
   totalPages: number;
   total: number;
 }) {
+  const t = useShopCopy();
   const safePage = Math.max(1, Math.min(page, Math.max(totalPages, 1)));
 
   const hrefForPage = (p: number) => (p <= 1 ? "/blog" : `/blog?page=${p}`);
@@ -31,14 +33,14 @@ export function BlogPageView({
 
       <section
         className="mx-auto w-full max-w-[1280px] px-4 pb-10 pt-6 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
-        aria-label="All articles"
+        aria-label={t("blog.all.label")}
       >
         <header className="flex items-end justify-between border-b border-sa-border pb-6">
           <h2 className="font-sans text-[22px] font-light tracking-[0.02em] text-sa-primary sm:text-[28px]">
-            All Articles
+            {t("blog.all.title")}
           </h2>
           <p className="pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sa-muted sm:text-[11px]">
-            {total} {total === 1 ? "Post" : "Posts"}
+            {t("blog.all.count", { count: total })}
           </p>
         </header>
 
@@ -52,7 +54,7 @@ export function BlogPageView({
           </div>
         ) : (
           <p className="mt-16 text-center text-[14px] text-sa-muted">
-            More articles coming soon.
+            {t("blog.all.soon")}
           </p>
         )}
 

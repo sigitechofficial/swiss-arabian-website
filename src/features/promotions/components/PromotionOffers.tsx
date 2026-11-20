@@ -96,6 +96,7 @@ function OfferBody({
   chrome: DiscoveryChrome;
   prominent?: boolean;
 }) {
+  const t = useShopCopy();
   return (
     <article
       className={
@@ -141,7 +142,7 @@ function OfferBody({
               })
             }
           >
-            {offer.details.ctaLabel || "Choose your pieces"}
+            {offer.details.ctaLabel || t("promo.choosePieces")}
           </LocaleLink>
         ) : null}
       </div>
@@ -158,6 +159,7 @@ function Details({
   chrome: DiscoveryChrome;
   onClose: () => void;
 }) {
+  const t = useShopCopy();
   const titleId = useId();
   const ref = useDialog(true, onClose);
   return (
@@ -202,7 +204,7 @@ function Details({
             className="border border-current px-3 py-2 text-inherit no-underline"
             href={offer.shopOfferPath}
           >
-            {offer.details.ctaLabel || "Choose your pieces"}
+            {offer.details.ctaLabel || t("promo.choosePieces")}
           </LocaleLink>
         </div>
       ) : null}
@@ -265,7 +267,7 @@ export function PromotionOfferHub({
           <button
             className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]"
             type="button"
-            aria-label="Close"
+            aria-label={t("promo.close")}
             onClick={() => setOpen(false)}
           />
           <div
@@ -340,7 +342,7 @@ export function PromotionOfferHub({
           <button
             className="fixed inset-0 z-[280] border-0 bg-[rgba(20,16,12,0.45)]"
             type="button"
-            aria-label="Close details"
+            aria-label={t("promo.closeDetails")}
             onClick={() => setDetails(null)}
           />
           <Details

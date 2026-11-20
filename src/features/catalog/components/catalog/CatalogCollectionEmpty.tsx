@@ -12,10 +12,10 @@ export function CatalogCollectionEmpty() {
     <div className={pageContainer}>
       <div className={emptyState} role="status">
         <MediaImage className={emptyArt} src="/assets/catalog/empty-products.svg" alt="" width={180} height={180} />
-        <p className={emptyEyebrow}>Coming soon</p>
+        <p className={emptyEyebrow}>{copy("checkout.pay.comingSoon")}</p>
         <h3 className={emptyTitle}>{copy("empty")}</h3>
         <p className={emptyText}>
-          We’re still filling this collection. Explore the rest of the house in the meantime.
+          {copy("catalog.collectionEmpty")}
         </p>
         <LocaleLink className={emptyCta} href="/products">
           {copy("browseAll")}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useNewsletterSignup } from "@/features/newsletter/hooks/useNewsletterSignup";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 export type NewsletterSectionProps = {
   eyebrow?: string | null;
@@ -12,20 +13,27 @@ export type NewsletterSectionProps = {
 };
 
 export function NewsletterSection({
-  eyebrow = "The List",
-  heading = "Be first to every new accord",
-  description = "Launches, limited editions and members-only offers — straight to your inbox.",
+  eyebrow: eyebrowProp,
+  heading: headingProp,
+  description: descriptionProp,
   placeholder = "your@email.com",
-  buttonLabel = "Sign up",
-  successMessage = "Thanks — we'll be in touch.",
+  buttonLabel: buttonProp,
+  successMessage: successProp,
 }: NewsletterSectionProps = {}) {
+  const t = useShopCopy();
+  // Not set by the CMS (undefined): the house wording in the page's language.
+  const eyebrow = eyebrowProp === undefined ? t("newsletter.eyebrow") : eyebrowProp;
+  const heading = headingProp === undefined ? t("newsletter.heading") : headingProp;
+  const description = descriptionProp === undefined ? t("newsletter.description") : descriptionProp;
+  const buttonLabel = buttonProp === undefined ? t("newsletter.signUp") : buttonProp;
+  const successMessage = successProp === undefined ? t("newsletter.thanks") : successProp;
   // Consent/provider integration lives in the shared hook (not connected yet).
   const { email, setEmail, submitted, onSubmit } = useNewsletterSignup();
 
   return (
     <section
       className="bg-cream py-20 text-center dark:bg-section-soft"
-      aria-label="Newsletter"
+      aria-label={t("newsletter.label")}
     >
       <div className="mx-auto max-w-xl px-4 sm:px-6">
         {eyebrow ? (
@@ -56,14 +64,14 @@ export function NewsletterSection({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={placeholder || "your@email.com"}
-              aria-label="Email address"
+              aria-label={t("newsletter.email")}
               className="min-w-0 flex-1 bg-transparent px-5 py-3 text-[14px] text-sa-primary outline-none placeholder:text-sa-muted"
             />
             <button
               type="submit"
               className="shrink-0 bg-inverse px-7 text-[13px] font-semibold text-cream transition-colors hover:opacity-90"
             >
-              {buttonLabel || "Sign up"}
+              {buttonLabel || t("newsletter.signUp")}
             </button>
           </form>
         )}

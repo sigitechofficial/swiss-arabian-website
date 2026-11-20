@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 export function CatalogInfiniteSentinel({
   disabled,
@@ -14,6 +15,7 @@ export function CatalogInfiniteSentinel({
   /** Address of the next page: a plain link crawlers can follow (no JavaScript). */
   nextHref?: string | null;
 }) {
+  const t = useShopCopy();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function CatalogInfiniteSentinel({
     >
       {loading ? (
         <p className="text-[13px] text-sa-muted" role="status">
-          Loading more products…
+          {t("catalog.loadingMore")}
         </p>
       ) : nextHref && !disabled ? (
         <a
@@ -52,7 +54,7 @@ export function CatalogInfiniteSentinel({
             onVisible();
           }}
         >
-          More products
+          {t("catalog.moreProducts")}
         </a>
       ) : (
         <span className="h-px w-px overflow-hidden" aria-hidden="true" />

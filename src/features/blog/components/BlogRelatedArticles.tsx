@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type RelatedItem = {
   slug: string;
@@ -10,19 +13,20 @@ type RelatedItem = {
 
 /** Figma related grid — You may also like */
 export function BlogRelatedArticles({ items }: { items: RelatedItem[] }) {
+  const t = useShopCopy();
   if (!items.length) return null;
 
   return (
     <section
       className="border-t border-sa-border px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-14 lg:px-10"
-      aria-label="Related articles"
+      aria-label={t("blog.related.label")}
     >
       <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
-        You may also like
+        {t("blog.related.title")}
       </p>
       <div className="mx-auto mt-8 grid max-w-[1200px] grid-cols-1 gap-8 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
         {items.map((item) => (
-          <Link
+          <LocaleLink
             key={item.slug}
             href={`/blog/${item.slug}`}
             className="group flex flex-col"
@@ -43,7 +47,7 @@ export function BlogRelatedArticles({ items }: { items: RelatedItem[] }) {
             <p className="mt-3 line-clamp-2 text-[13px] leading-[1.6] text-sa-muted sm:text-[13.5px]">
               {item.excerpt}
             </p>
-          </Link>
+          </LocaleLink>
         ))}
       </div>
     </section>

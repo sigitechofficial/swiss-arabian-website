@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { useFragranceNotes } from "@/features/merchandising";
@@ -25,6 +26,7 @@ export type LandingNotesProps = {
 };
 
 export function LandingNotes({ heading }: LandingNotesProps = {}) {
+  const t = useShopCopy();
   const stripRef = useRef<HTMLUListElement>(null);
   const { tiles, sectionTitle, isReady } = useFragranceNotes();
   const title = heading?.trim() || sectionTitle;
@@ -82,7 +84,7 @@ export function LandingNotes({ heading }: LandingNotesProps = {}) {
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll notes left</span>
+              <span className={visuallyHidden}>{t("landing.notes.left")}</span>
             </button>
             <button
               className={arrowOutline}
@@ -98,7 +100,7 @@ export function LandingNotes({ heading }: LandingNotesProps = {}) {
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll notes right</span>
+              <span className={visuallyHidden}>{t("landing.notes.right")}</span>
             </button>
           </div>
         </div>

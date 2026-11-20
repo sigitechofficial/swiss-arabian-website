@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import {
   eyebrow,
@@ -44,12 +47,16 @@ export type LandingPlansProps = {
 };
 
 export function LandingPlans({
-  eyebrowText = "Plans",
-  heading = "Choose your plan",
+  eyebrowText: eyebrowProp,
+  heading: headingProp,
   description = null,
   plans,
   editorialPricingOnly = true,
 }: LandingPlansProps = {}) {
+  const t = useShopCopy();
+  // Not set by the CMS (undefined): the house wording in the page's language.
+  const eyebrowText = eyebrowProp === undefined ? t("landing.plans.eyebrow") : eyebrowProp;
+  const heading = headingProp === undefined ? t("landing.plans.heading") : headingProp;
   const cards: LandingPlanCard[] =
     // Only real plans (subscription service / CMS). Never built-in prices.
     plans ?? [];
@@ -67,8 +74,7 @@ export function LandingPlans({
           {description ? <p className={lead}>{description}</p> : null}
           {editorialPricingOnly && plans ? (
             <p className={lead}>
-              Plan pricing shown for merchandising only — checkout uses the
-              subscription service when available.
+              {t("landing.plans.editorial")}
             </p>
           ) : null}
         </header>
@@ -88,7 +94,7 @@ export function LandingPlans({
                   <p className={planName}>{plan.name}</p>
                   {plan.featured || plan.badgeLabel ? (
                     <span className={planBadge}>
-                      {plan.badgeLabel || "Most popular"}
+                      {plan.badgeLabel || t("landing.plans.popular")}
                     </span>
                   ) : null}
                 </div>
@@ -111,7 +117,7 @@ export function LandingPlans({
                   className={plan.featured ? planCta : planCtaGhost}
                   href={href}
                 >
-                  {plan.ctaLabel?.trim() || "Start plan"}
+                  {plan.ctaLabel?.trim() || t("landing.plans.start")}
                 </LocaleLink>
               </article>
             );

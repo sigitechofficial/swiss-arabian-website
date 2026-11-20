@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type CatalogEmptyStateProps = {
   title?: string;
@@ -9,10 +12,14 @@ type CatalogEmptyStateProps = {
 };
 
 export function CatalogEmptyState({
-  title = "No products found",
-  description = "We couldn’t find fragrances for this market right now. Check back soon or browse the home page.",
-  backLabel = "Back to home",
+  title: titleProp,
+  description: descriptionProp,
+  backLabel: backLabelProp,
 }: CatalogEmptyStateProps) {
+  const t = useShopCopy();
+  const title = titleProp ?? t("catalog.emptyState.title");
+  const description = descriptionProp ?? t("catalog.emptyState.description");
+  const backLabel = backLabelProp ?? t("catalog.emptyState.back");
   return (
     <div
       className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center"

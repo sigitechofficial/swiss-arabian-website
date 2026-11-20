@@ -6,6 +6,7 @@ import { fetchBlogArticle } from "@/features/blog/api/blogApi";
 import { BlogArticlePageView, CatalogJsonLd } from "@brand-ui";
 import { blogBreadcrumbs } from "@/features/blog/routes/blogListingRoute";
 import { requireBrandFeature } from "@/lib/brand/featureGate";
+import { routeTranslator } from "@/lib/i18n/routeLocale";
 
 async function load(slug: string) {
   const { zoneCode, contentLanguage, locale } = await resolveRequestCatalogMarket();
@@ -20,7 +21,10 @@ export async function generateMetadata({
   requireBrandFeature("blog");
   const { slug } = await params;
   const article = await load(slug);
-  if (!article) return { title: "Article not found", robots: { index: false, follow: true } };
+  if (!article) {
+    const { t } = await routeTranslator();
+    return { title: t("blog.notFound.title"), robots: { index: false, follow: true } };
+  }
   return pageMetadata({
     path: `/blog/${article.slug}`,
     title: article.seoTitle || article.heroTitle,

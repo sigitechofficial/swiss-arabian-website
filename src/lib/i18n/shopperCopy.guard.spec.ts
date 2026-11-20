@@ -72,6 +72,44 @@ const SCOPE = [
   "features/employeeBenefits/types/employeeCheckout.ts",
   "features/search/constants.ts",
   "features/onsite/components/OnsiteMessageView.tsx",
+  "features/catalog/constants/productBadges.ts",
+  "features/catalog/components/ProductCardTags.tsx",
+  "features/catalog/components/catalog/CatalogToolbar.tsx",
+  "features/catalog/components/catalog/CatalogFilters.tsx",
+  "features/catalog/components/catalog/CatalogCollectionEmpty.tsx",
+  "features/catalog/components/catalog/CatalogProductCard.tsx",
+  "features/catalog/components/CatalogEmptyState.tsx",
+  "features/catalog/components/CatalogInfiniteSentinel.tsx",
+  "features/catalog/components/ProductDetailPageView.tsx",
+  "features/catalog/components/pdp/PdpGallery.tsx",
+  "features/catalog/components/pdp/PdpRelatedRail.tsx",
+  "features/catalog/components/pdp/PdpInstalments.tsx",
+  "features/catalog/components/pdp/PdpBuyBox.tsx",
+  "features/catalog/utils/pdpShipping.ts",
+  "features/catalog/hooks/useProductDetailPage.ts",
+  "components/layout/navbar/NavbarSearchDropdown.tsx",
+  "components/layout/SearchOverlay.tsx",
+  "components/ui/CrashFallback.tsx",
+  "components/ui/ShopUnavailableView.tsx",
+  "components/ui/ForbiddenView.tsx",
+  "features/blog/components/BlogArticlePageView.tsx",
+  "features/blog/components/BlogRelatedArticles.tsx",
+  "features/blog/components/BlogPageView.tsx",
+  "features/promotions/components/PromotionOffers.tsx",
+  "features/promotions/components/ProductCompanions.tsx",
+  "features/promotions/components/PromotionUnlockNote.tsx",
+  "features/promotions/utils/qualificationCopy.ts",
+  "features/promotions/utils/conflictNotes.ts",
+  "features/home/components/landing/LandingTrending.tsx",
+  "features/home/components/landing/LandingProductsBand.tsx",
+  "features/home/components/landing/LandingNotes.tsx",
+  "features/home/components/landing/LandingHero.tsx",
+  "features/home/components/landing/LandingReviews.tsx",
+  "features/home/components/landing/LandingPlans.tsx",
+  "features/home/components/NewsletterSection.tsx",
+  "features/cms/components/CmsHomePageView.tsx",
+  "features/faq/components/FaqHelp.tsx",
+  "features/faq/components/FaqCabinet.tsx",
 ];
 
 /** Brand and payment scheme names: written the same in every language. */
@@ -130,6 +168,19 @@ const ALLOWED: Record<string, string[]> = {
     "group/campaign relative grid min-h-[clamp(440px,46vw,620px)] place-items-center overflow-hidden max-[1023px]:block max-[1023px]:min-h-0 max-[1023px]:data-[open=true]:[&_[data-campaign-actions]]:pointer-events-none max-[1023px]:data-[open=true]:[&_[data-campaign-actions]]:invisible max-[767px]:aspect-[535/690] max-[767px]:max-h-[min(68vh,620px)] min-[768px]:max-[1023px]:aspect-[16/10] min-[1024px]:place-items-end min-[1024px]:bg-[#e6c9a8]",
     "mt-[0.2rem] block truncate text-[0.66rem] tracking-[0.09em] text-white/60 uppercase max-[1023px]:text-[rgba(36,31,27,0.55)]",
     "Eau de Parfum",
+  ],
+  // Catalog tag values the badge rule matches (data, not shown).
+  "features/catalog/constants/productBadges.ts": ["best seller", "best sellers", "new launch", "new launches"],
+  // The catalog's placeholder text, matched to hide it (not shown).
+  "features/catalog/hooks/useProductDetailPage.ts": ["Product details will appear"],
+  // Social network names and typographic quotes.
+  "features/blog/components/BlogArticlePageView.tsx": ["Facebook", "Instagram", "&ldquo;", "&rdquo;"],
+  // Inline CSS / class values the scan reads as words.
+  "features/catalog/components/pdp/PdpInstalments.tsx": [
+    "conic-gradient(var(--copper, #8c4435) {} deg, rgb(140 68 53 / 0.14) 0)",
+  ],
+  "features/promotions/components/ProductCompanions.tsx": [
+    "group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-2 transition-[border-color,box-shadow,background-color] duration-200",
   ],
   // Shared with the admin (no app imports): English defaults for `words` (the website passes
   // its own), inline CSS values, and labels drawn only while editing in the admin playground.

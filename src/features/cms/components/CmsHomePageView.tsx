@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { env } from "@/lib/config/env";
 import { CmsSectionList } from "./CmsSectionList";
 import { LegacyHomeFallback } from "./LegacyHomeFallback";
@@ -17,6 +18,7 @@ function legacyFallbackEnabled(): boolean {
 }
 
 export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null } = {}) {
+  const t = useShopCopy();
   const home = usePublishedHome(initial);
 
   if (!cmsHomeEnabled()) {
@@ -28,7 +30,7 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
       <div
         className="min-h-[40vh] animate-pulse bg-[var(--cream,#faf6ee)]"
         aria-busy="true"
-        aria-label="Loading homepage"
+        aria-label={t("cms.home.loading")}
       />
     );
   }
@@ -38,11 +40,10 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-xl font-semibold text-[var(--ink,#241f1b)]">
-          Homepage unavailable
+          {t("cms.home.unavailable")}
         </h1>
         <p className="mt-2 text-[var(--ink-2,#5b5148)]">
-          We could not load storefront content right now. Please try again
-          shortly.
+          {t("cms.home.unavailableBody")}
         </p>
       </div>
     );
@@ -53,10 +54,10 @@ export function CmsHomePageView({ initial }: { initial?: CmsHomeInitial | null }
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-xl font-semibold text-[var(--ink,#241f1b)]">
-          Coming soon
+          {t("checkout.pay.comingSoon")}
         </h1>
         <p className="mt-2 text-[var(--ink-2,#5b5148)]">
-          This market does not have a published Homepage yet.
+          {t("cms.home.empty")}
         </p>
       </div>
     );

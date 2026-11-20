@@ -97,14 +97,14 @@ export function CatalogFilters({
       <button
         type="button"
         className={filtersBackdrop(open)}
-        aria-label="Close filters"
+        aria-label={copy("catalog.filters.close")}
         tabIndex={open ? 0 : -1}
         onClick={onClose}
       />
-      <aside className={filtersRail(open)} aria-label="Filters">
+      <aside className={filtersRail(open)} aria-label={copy("catalog.toolbar.filters")}>
         <div className={filtersHead}>
           <p className={filtersTitle}>{copy("filterBy")}</p>
-          <button type="button" className={filtersClose} aria-label="Close filters" onClick={onClose}>
+          <button type="button" className={filtersClose} aria-label={copy("catalog.filters.close")} onClick={onClose}>
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <path d="M5 5l10 10M15 5L5 15" />
             </svg>
@@ -113,8 +113,8 @@ export function CatalogFilters({
 
         <div className={filtersBody}>
           {showPrice ? (
-            <div className={filtersGroup} role="group" aria-label="Price">
-              <p className={filtersLabel}>Price</p>
+            <div className={filtersGroup} role="group" aria-label={copy("catalog.filters.price")}>
+              <p className={filtersLabel}>{copy("catalog.filters.price")}</p>
               <div className={priceRange}>
                 <div className={priceValues}>
                   <span>
@@ -137,7 +137,7 @@ export function CatalogFilters({
                     max={priceCeil}
                     value={priceMin}
                     step={1}
-                    aria-label="Minimum price"
+                    aria-label={copy("catalog.filters.minPrice")}
                     onChange={(event) => onPriceMin(Math.min(Number(event.target.value), priceMax))}
                   />
                   <input
@@ -147,7 +147,7 @@ export function CatalogFilters({
                     max={priceCeil}
                     value={priceMax}
                     step={1}
-                    aria-label="Maximum price"
+                    aria-label={copy("catalog.filters.maxPrice")}
                     onChange={(event) => onPriceMax(Math.max(Number(event.target.value), priceMin))}
                   />
                 </div>
@@ -157,8 +157,8 @@ export function CatalogFilters({
 
           {showConcentration ? (
             <CatalogFilterChoices
-              label="Concentration"
-              allLabel="All "
+              label={copy("catalog.filters.concentration")}
+              allLabel={`${copy("catalog.filters.all")} `}
               allSuffix={<span className={railFilterCount}>({allCount})</span>}
               value={concentration}
               options={concentrationOptions}
@@ -168,8 +168,8 @@ export function CatalogFilters({
 
           {showCollection ? (
             <CatalogFilterChoices
-              label="Collection"
-              allLabel="All collections"
+              label={copy("catalog.filters.collection")}
+              allLabel={copy("catalog.filters.allCollections")}
               allSuffix={serverFiltered ? <span className={railFilterCount}> ({allCount})</span> : null}
               value={collection}
               options={collectionOptions}
@@ -179,8 +179,8 @@ export function CatalogFilters({
 
           {showNotes ? (
             <CatalogFilterChoices
-              label="Featured note"
-              allLabel="All notes"
+              label={copy("catalog.filters.note")}
+              allLabel={copy("catalog.filters.allNotes")}
               allSuffix={serverFiltered ? <span className={railFilterCount}> ({allCount})</span> : null}
               value={note}
               options={noteOptions}
@@ -190,8 +190,8 @@ export function CatalogFilters({
 
           {showFragranceFamily ? (
             <CatalogFilterChoices
-              label="Fragrance family"
-              allLabel="All families"
+              label={copy("product.fragranceFamily")}
+              allLabel={copy("catalog.filters.allFamilies")}
               allSuffix={serverFiltered ? <span className={railFilterCount}> ({allCount})</span> : null}
               value={fragranceFamily}
               options={fragranceFamilyOptions}
@@ -202,7 +202,7 @@ export function CatalogFilters({
 
         <div className={filtersFoot}>
           <button type="button" className={filtersApply} onClick={onApply}>
-            Apply Filters
+            {copy("catalog.filters.apply")}
           </button>
         </div>
       </aside>

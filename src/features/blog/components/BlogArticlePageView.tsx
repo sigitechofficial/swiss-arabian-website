@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import Link from "next/link";
+import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { NewsletterSection } from "@/features/home/components/NewsletterSection";
 import { CatalogEmptyState } from "@/features/catalog/components/CatalogEmptyState";
 import type { BlogArticleDetail } from "../data/blogContent";
@@ -19,6 +20,7 @@ const SHARE = [
 
 /** Figma 915:7094 — Blog Article detail */
 export function BlogArticlePageView({ article }: { article: BlogArticleDetail | null }) {
+  const t = useShopCopy();
   const sharePath = article ? `/blog/${article.slug}` : "/blog";
   // Full address in the browser; the path while rendering on the server (no mismatch).
   const shareUrl = useSyncExternalStore(
@@ -30,8 +32,8 @@ export function BlogArticlePageView({ article }: { article: BlogArticleDetail | 
   if (!article) {
     return (
       <CatalogEmptyState
-        title="Article not found"
-        description="This journal entry isn’t available. Browse all articles from The Journal."
+        title={t("blog.notFound.title")}
+        description={t("blog.notFound.body")}
       />
     );
   }
@@ -89,7 +91,7 @@ export function BlogArticlePageView({ article }: { article: BlogArticleDetail | 
                 return (
                   <div key={key} className="mt-7">
                     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold sm:text-[10.5px]">
-                      Wear it when
+                      {t("blog.wearItWhen")}
                     </p>
                     <p className="mt-2.5 text-[15px] leading-[1.85] text-sa-primary sm:text-[17px]">
                       {block.text}
@@ -135,7 +137,7 @@ export function BlogArticlePageView({ article }: { article: BlogArticleDetail | 
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-            <span className="font-semibold text-sa-primary">Share</span>
+            <span className="font-semibold text-sa-primary">{t("blog.share")}</span>
             {SHARE.map((item) => (
               <a
                 key={item.label}
@@ -157,12 +159,12 @@ export function BlogArticlePageView({ article }: { article: BlogArticleDetail | 
         </div>
 
         <div className="mt-10">
-          <Link
+          <LocaleLink
             href="/blog"
             className="inline-flex text-[11px] font-bold uppercase tracking-[0.12em] text-terra transition-opacity hover:opacity-80"
           >
-            ← Back to The Journal
-          </Link>
+            {t("blog.back")}
+          </LocaleLink>
         </div>
       </article>
 

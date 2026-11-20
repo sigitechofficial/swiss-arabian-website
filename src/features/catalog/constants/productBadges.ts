@@ -1,4 +1,13 @@
-export type ProductBadge = "New" | "Best Seller";
+import type { MessageKey } from "@/lib/i18n/messages";
+
+/** A shopper badge on a product card, as a kind (its words live in the message files). */
+export type ProductBadge = "new" | "bestSeller";
+
+/** The badge's label (`t(PRODUCT_BADGE_LABEL[badge])`). */
+export const PRODUCT_BADGE_LABEL: Record<ProductBadge, MessageKey> = {
+  new: "catalog.badge.new",
+  bestSeller: "catalog.badge.bestSeller",
+};
 
 /**
  * Catalog `tags[]` is a mixed bag: merch labels, categories, and ops flags.
@@ -58,14 +67,14 @@ export function shopperBadgeFromTags(
   const bestForCollection = collectionSlug
     ? bestTags.filter((tag) => isGenericBestSeller(tag) || mentionsCollection(tag, collectionSlug))
     : bestTags;
-  if (bestForCollection.length) return "Best Seller";
-  if (normalized.some((tag) => NEW.has(tag))) return "New";
+  if (bestForCollection.length) return "bestSeller";
+  if (normalized.some((tag) => NEW.has(tag))) return "new";
   return null;
 }
 
 function badgeFromStaticSlug(slug: string | undefined): ProductBadge | null {
   if (!slug || NO_BADGE_SLUGS.has(slug)) return null;
-  if (NEW_SLUGS.has(slug)) return "New";
+  if (NEW_SLUGS.has(slug)) return "new";
   return null;
 }
 

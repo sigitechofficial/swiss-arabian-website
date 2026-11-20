@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { MERCH_RAIL_SLUGS } from "@/features/merchandising";
 import { ProductCompanions } from "@/features/promotions/components/ProductCompanions";
 import { RecentlyViewed } from "@/features/promotions/components/RecentlyViewed";
@@ -143,10 +144,10 @@ export function ProductDetailPageView({
     <div>
       <section className={pdpHero} aria-labelledby="product-name" data-reveal={reveal ? "play" : undefined}>
         <div className={pageContainer}>
-          <nav className="pt-3 pb-4" aria-label="Breadcrumb">
+          <nav className="pt-3 pb-4" aria-label={copy("account.breadcrumbNav")}>
             <ol className={crumbsList} role="list">
               <li>
-                <LocaleLink href="/">Home</LocaleLink>
+                <LocaleLink href="/">{copy("home")}</LocaleLink>
               </li>
               {moreFromCollection ? (
                 <li>
@@ -218,9 +219,10 @@ export function ProductDetailPageView({
         <PdpRelatedRail
           id="also-like-heading"
           heading={
-            <>
-              You may also <em className={relatedEm}>like.</em>
-            </>
+            <TextWithLinks
+              text={copy("pdp.related.alsoLike", linkSlots(["em"]))}
+              links={{ em: <em className={relatedEm}>{copy("pdp.related.alsoLikeEm")}</em> }}
+            />
           }
           seeAllHref={`/collections/${MERCH_RAIL_SLUGS.pdpAlsoLike}`}
           products={youMayAlsoLike}
@@ -229,7 +231,7 @@ export function ProductDetailPageView({
       {related.length && moreFromCollection ? (
         <PdpRelatedRail
           id="related-heading"
-          heading={`More from ${moreFromHeading}.`}
+          heading={copy("pdp.related.moreFrom", { collection: moreFromHeading })}
           seeAllHref={`/collections/${moreFromCollection.slug}`}
           products={related}
           collectionSlug={moreFromCollection.slug}

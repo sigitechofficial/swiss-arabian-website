@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { pageContainer } from "@/styles/siteChrome";
 import {
@@ -96,29 +99,28 @@ export type LandingHeroProps = {
   secondaryCta?: LandingHeroCta | null;
 };
 
-const DEFAULT_PRIMARY: LandingHeroCta = {
-  href: "/products",
-  label: "Shop the collection",
-};
-
-const DEFAULT_SECONDARY: LandingHeroCta = {
-  href: "#story",
-  label: "Discover our story",
-};
-
 export function LandingHero({
-  eyebrow = "Extrait de Parfum · Est. 1974",
-  title = "East Meets West",
-  lead = "A house founded on duality — the drama and grandeur of the Orient, the power and dynamism of the West — captured in every bottle.",
+  eyebrow: eyebrowProp,
+  title: titleProp,
+  lead: leadProp,
   desktopImage,
   mobileImage,
   slides,
   autoplay,
   autoplayIntervalMs,
   showNavigation,
-  primaryCta = DEFAULT_PRIMARY,
-  secondaryCta = DEFAULT_SECONDARY,
+  primaryCta: primaryProp,
+  secondaryCta: secondaryProp,
 }: LandingHeroProps = {}) {
+  const t = useShopCopy();
+  // Not set by the CMS (undefined): the house wording in the page's language.
+  const eyebrow = eyebrowProp === undefined ? t("landing.hero.eyebrow") : eyebrowProp;
+  const title = titleProp === undefined ? t("landing.hero.title") : titleProp;
+  const lead = leadProp === undefined ? t("landing.hero.lead") : leadProp;
+  const primaryCta =
+    primaryProp === undefined ? { href: "/products", label: t("landing.hero.primary") } : primaryProp;
+  const secondaryCta =
+    secondaryProp === undefined ? { href: "#story", label: t("landing.hero.secondary") } : secondaryProp;
   const cmsDesktop = desktopImage?.trim();
   const cmsMobile = mobileImage?.trim() || cmsDesktop;
   const useCmsMedia = Boolean(cmsDesktop);

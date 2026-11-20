@@ -8,6 +8,9 @@ import { usePathname } from "next/navigation";
 import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
 import { tamaraCountry, tamaraLang } from "@/features/checkout/utils/tamara";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import type { Translator } from "@/lib/i18n/messages";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { giftChoiceBackdrop, giftChoiceRoot } from "@/styles/cartChrome";
 import { useInstalmentPlan, type CustomInstalmentProvider } from "../../hooks/useInstalmentPlan";
 import { TabbyPromoSnippet } from "@/features/payments/tabby/TabbyPromoSnippet";
@@ -59,7 +62,19 @@ function useLiveProviders() {
   return instalmentProviders(useSiteIntegrations().paymentPromos);
 }
 
-const WHEN = ["Today", "In 1 month", "In 2 months", "In 3 months"] as const;
+/** When each of the four payments is taken: today, then in 1, 2 and 3 months. */
+const WHEN = [0, 1, 2, 3] as const;
+
+/** "In 2 months" — the narrowest phones drop the "In" part so four labels still fit side by side. */
+function whenParts(months: number, t: Translator): { prefix: string | null; rest: string } {
+  if (months === 0) return { prefix: null, rest: t("pdp.pay.today") };
+  return { prefix: t("pdp.pay.inPrefix"), rest: t("pdp.pay.months", { count: months }) };
+}
+
+function whenLabel(months: number, t: Translator): string {
+  const { prefix, rest } = whenParts(months, t);
+  return prefix ? `${prefix} ${rest}` : rest;
+}
 
 export { payInFour } from "../../utils/instalments";
 
@@ -122,6 +137,7 @@ function PayDialog({
   currency: string;
   onClose: () => void;
 }) {
+  const t = useShopCopy();
   const { name, mark } = PROVIDERS[provider];
   const { live } = useLiveProviders()[provider];
   const titleId = useId();
@@ -130,47 +146,49 @@ function PayDialog({
 
   return createPortal(
     <div className={giftChoiceRoot}>
-      <button type="button" className={giftChoiceBackdrop} aria-label="Close" onClick={onClose} />
+      <button type="button" className={giftChoiceBackdrop} aria-label={t("promo.close")} onClick={onClose} />
       <section role="dialog" aria-modal="true" aria-labelledby={titleId} className={pdpPayDialog}>
-        <button type="button" className={pdpPayClose} aria-label="Close" onClick={onClose} ref={closeRef}>
+        <button type="button" className={pdpPayClose} aria-label={t("promo.close")} onClick={onClose} ref={closeRef}>
           <X size={18} />
         </button>
 
         <span className={mark}>{name}</span>
         <p className={pdpPayTitle} id={titleId}>
-          Pay in 4, interest-free
+          {t("pdp.pay.title")}
         </p>
         <p className={pdpPayLede}>
-          Split <strong>{formatMoney(price, currency)}</strong> into 4 payments with {name}. No interest.
+          <TextWithLinks
+            text={t("pdp.pay.lede", { ...linkSlots(["amount"]), provider: name })}
+            links={{ amount: <strong>{formatMoney(price, currency)}</strong> }}
+          />
         </p>
 
-        <ol className={pdpPayPlan} aria-label="Payment schedule">
+        <ol className={pdpPayPlan} aria-label={t("pdp.pay.schedule")}>
           {payments.map((amount, index) => (
             <li className={pdpPayStep} key={WHEN[index]}>
               <PayRing quarters={index + 1} />
               <p className={pdpPayAmount}>{formatMoney(amount, currency)}</p>
-              <p className={pdpPayWhen}>{WHEN[index]}</p>
+              <p className={pdpPayWhen}>{whenLabel(WHEN[index] ?? index, t)}</p>
             </li>
           ))}
         </ol>
 
-        <p className={pdpPayHeading}>How it works</p>
+        <p className={pdpPayHeading}>{t("subs.club.howItWorks")}</p>
         <ol className={pdpPaySteps}>
-          <li>Add your fragrances to the bag and go to checkout.</li>
-          <li>Choose {name} as your payment method.</li>
-          <li>Enter your details with {name} and pay the first instalment.</li>
-          <li>The other three are collected automatically, one a month.</li>
+          <li>{t("pdp.pay.step1")}</li>
+          <li>{t("pdp.pay.step2", { provider: name })}</li>
+          <li>{t("pdp.pay.step3", { provider: name })}</li>
+          <li>{t("pdp.pay.step4")}</li>
         </ol>
 
-        {live ? null : <p className={pdpPaySoon}>{name} is coming soon to our checkout.</p>}
+        {live ? null : <p className={pdpPaySoon}>{t("pdp.pay.soon", { provider: name })}</p>}
 
         <p className={pdpPayNote}>
-          {name} decides approval and sets the payment terms. The schedule above is for this item at
-          today’s price; your bag total may differ.
+          {t("pdp.pay.note", { provider: name })}
         </p>
 
         <button type="button" className={pdpPayDone} onClick={onClose}>
-          Got it
+          {t("pdp.pay.gotIt")}
         </button>
       </section>
     </div>,
@@ -194,6 +212,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
 }
 
 function CustomInstalments({ price, currency }: { price: number; currency: string }) {
+  const t = useShopCopy();
   const plan = useInstalmentPlan(price);
   const { open, close } = plan;
   const each = formatMoney(plan.each, currency);
@@ -207,28 +226,34 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
 
   return (
     <>
-      <section className={pdpPay} aria-label="Pay in instalments">
+      <section className={pdpPay} aria-label={t("pdp.pay.section")}>
         <div className={pdpPayHead}>
           <div className={pdpPayTop}>
             <div className="min-w-0">
-              <p className={pdpPayEyebrow}>Pay in 4</p>
+              <p className={pdpPayEyebrow}>{t("pdp.pay.eyebrow")}</p>
               <p className={pdpPayOffer}>
-                4 payments of <strong>{each}</strong>
+                <TextWithLinks
+                  text={t("pdp.pay.offer", linkSlots(["amount"]))}
+                  links={{ amount: <strong>{each}</strong> }}
+                />
               </p>
             </div>
-            <span className={pdpPayBadge}>0% interest</span>
+            <span className={pdpPayBadge}>{t("pdp.pay.zeroInterest")}</span>
           </div>
-          <ol className={pdpPayTrack} aria-label="Payment schedule">
-            {WHEN.map((when, index) => (
-              <li className={pdpPayTrackStep} data-now={index === 0} key={when}>
-                <PayRing quarters={index + 1} className={pdpPayTrackRing} />
-                {/* The narrowest phones drop "In" so four labels still fit side by side. */}
-                <span>
-                  {when.startsWith("In ") ? <span className="max-[380px]:hidden">In </span> : null}
-                  {when.replace(/^In /, "")}
-                </span>
-              </li>
-            ))}
+          <ol className={pdpPayTrack} aria-label={t("pdp.pay.schedule")}>
+            {WHEN.map((months, index) => {
+              const { prefix, rest } = whenParts(months, t);
+              return (
+                <li className={pdpPayTrackStep} data-now={index === 0} key={months}>
+                  <PayRing quarters={index + 1} className={pdpPayTrackRing} />
+                  {/* The narrowest phones drop "In" so four labels still fit side by side. */}
+                  <span>
+                    {prefix ? <span className="max-[380px]:hidden">{prefix} </span> : null}
+                    {rest}
+                  </span>
+                </li>
+              );
+            })}
           </ol>
         </div>
         <div className={pdpPayFoot}>
@@ -244,9 +269,9 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
               >
                 <span className={mark}>{name}</span>
                 <span className={pdpPayBtnMore}>
-                  Learn more
+                  {t("pdp.pay.learnMore")}
                   {/* Visible text stays in the accessible name ("Tabby Learn more about paying with Tabby"). */}
-                  <span className="sr-only"> about paying with {name}</span>
+                  <span className="sr-only"> {t("pdp.pay.learnMoreAbout", { provider: name })}</span>
                   <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </button>

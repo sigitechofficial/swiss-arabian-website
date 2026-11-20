@@ -2,6 +2,8 @@
 
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import type { ProductSummary } from "@/features/catalog/types/product";
@@ -57,6 +59,7 @@ export function LandingProductsBand({
   viewAllLabel,
   collectionSlug = "best-sellers",
 }: LandingProductsBandProps = {}) {
+  const t = useShopCopy();
   const stripRef = useRef<HTMLUListElement>(null);
   const fetched = useHomeCollectionProducts("best-sellers", 8);
   const fromCms = productsProp !== undefined;
@@ -66,9 +69,10 @@ export function LandingProductsBand({
   const allHref = viewAllHref ?? `/collections/${collectionSlug}`;
   const heading =
     title ?? (
-      <>
-        Our <em className={productsBandTitleEm}>best sellers.</em>
-      </>
+      <TextWithLinks
+        text={t("landing.bestSellers.title", linkSlots(["em"]))}
+        links={{ em: <em className={productsBandTitleEm}>{t("landing.bestSellers.titleEm")}</em> }}
+      />
     );
 
   // Preload AND fully decode every ingredients hover image once the page is
@@ -98,7 +102,7 @@ export function LandingProductsBand({
               className={`${linkUnderline} shrink-0 whitespace-nowrap`}
               href={allHref}
             >
-              {viewAllLabel?.trim() || "View all"}
+              {viewAllLabel?.trim() || t("landing.viewAll")}
             </LocaleLink>
           ) : null}
         </header>
@@ -107,7 +111,7 @@ export function LandingProductsBand({
           className={productStrip}
           role="list"
           tabIndex={0}
-          aria-label="Our best sellers, scrollable"
+          aria-label={t("landing.bestSellers.strip")}
           aria-busy={pending}
           ref={stripRef}
         >
@@ -219,7 +223,7 @@ export function LandingProductsBand({
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll products left</span>
+              <span className={visuallyHidden}>{t("landing.bestSellers.left")}</span>
             </button>
             <button
               className={arrowOutline}
@@ -235,7 +239,7 @@ export function LandingProductsBand({
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll products right</span>
+              <span className={visuallyHidden}>{t("landing.bestSellers.right")}</span>
             </button>
           </div>
         </div>
