@@ -152,18 +152,14 @@ describe("FE-L6 server-driven loyalty promotion eligibility", () => {
     });
     expect(visibleApplied(gold)[0]?.code).toBe("GOLDONLY");
 
+    // The server words the refusal (without naming the tier); the shop shows it.
     const silver = new ApiClientError(422, {
-      code: "COUPON_NOT_APPLICABLE",
-      context: { reason: "LOYALTY_TIER_REQUIRED" },
+      code: "COUPON_NOT_APPLICABLE_LOYALTY_TIER_MISMATCH",
+      message: "This offer isn’t available for your Rewards level.",
+      context: { reason: "LOYALTY_TIER_MISMATCH" },
     });
-    expect(couponErrorMessage(silver)).toBe("This code isn’t available with your current Rewards status.");
+    expect(couponErrorMessage(silver)).toBe("This offer isn’t available for your Rewards level.");
     expect(couponErrorMessage(silver)).not.toMatch(/Gold|Silver|required tier/i);
-
-    const guest = new ApiClientError(422, {
-      code: "COUPON_NOT_APPLICABLE",
-      context: { reason: "LOYALTY_MEMBER_REQUIRED" },
-    });
-    expect(couponErrorMessage(guest)).toBe("This code is for Rewards members.");
   });
 
   it("keys discovery and applicable quotes by market and customer so stale Gold results cannot leak", () => {

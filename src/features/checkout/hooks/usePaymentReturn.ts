@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pollUntilPaymentSettles } from "../api/orders.service";
 import { checkoutHref } from "../utils/checkoutLocale";
-import { checkoutErrorMessage } from "../utils/checkoutIssues";
+import { knownErrorMessage } from "@/lib/api/userFacingErrors";
 import {
   clearPaymentState,
   getStoredOrderId,
@@ -106,7 +106,7 @@ export function usePaymentRetry({
           ? { kind: "rejected", message: e.messages[tabbyLang(document.documentElement.lang)] }
           : e instanceof PaymentGatewayError
             ? { kind: "gateway" }
-            : { kind: "other", message: checkoutErrorMessage(e, "") || null },
+            : { kind: "other", message: knownErrorMessage(e) },
       );
       setRetrying(false);
     }

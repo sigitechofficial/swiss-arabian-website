@@ -1,5 +1,6 @@
 "use client";
 
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
@@ -144,7 +145,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
       });
       setMessage(firstPaymentMessage(view));
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "The subscription payment could not be confirmed.");
+      setMessage(getUserFacingErrorMessage(err, "The subscription payment could not be confirmed."));
     } finally {
       setPaying(false);
     }
@@ -202,7 +203,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
       }
       setSession({ instrumentId: created.instrumentId, clientSecret: created.clientSecret, publishableKey });
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : CARD_SETUP_COPY.declined);
+      setMessage(getUserFacingErrorMessage(err, CARD_SETUP_COPY.declined));
     } finally {
       setBusy(false);
     }

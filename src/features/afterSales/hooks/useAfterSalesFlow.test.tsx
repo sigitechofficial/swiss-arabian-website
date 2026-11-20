@@ -124,7 +124,9 @@ describe("useAfterSalesFlow", () => {
   });
 
   it("sends a guest's return with the order's access token, and explains a refusal", async () => {
-    h.createGuestReturn.mockRejectedValue(new ApiClientError(404, "Not found"));
+    h.createGuestReturn.mockRejectedValue(
+      new ApiClientError(404, { code: "ORDER_NOT_FOUND", message: "We couldn’t find this order." }),
+    );
     const { result } = renderHook(() =>
       useAfterSalesFlow({ target: { mode: "guest", orderNumber: "SA-1", orderAccessToken: "tok" }, locale: "en" }),
     );
@@ -133,7 +135,7 @@ describe("useAfterSalesFlow", () => {
       await result.current.submit();
     });
     expect(h.createGuestReturn).toHaveBeenCalledWith(expect.objectContaining({ orderNumber: "SA-1", orderAccessToken: "tok" }));
-    expect(result.current.submitError).toBe("afterSales.err.notFound");
+    expect(result.current.submitError).toBe("We couldn’t find this order.");
     expect(result.current.result).toBeNull();
   });
 

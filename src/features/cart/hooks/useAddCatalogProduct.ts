@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "@/components/ui/Toaster";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import { fetchProductBySlug } from "@/features/catalog/api/catalog.service";
 import { useUiStore } from "@/stores/useUiStore";
 import { useAddToCart } from "./useAddToCart";
@@ -24,24 +25,24 @@ export function useAddCatalogProduct() {
 
   return async (opts: CatalogAddOpts): Promise<void> => {
     if (!zoneCode) {
-      toast("This product isn’t available to purchase yet.", "error");
+      toast(pageTranslator()("error.productNotPurchasable"), "error");
       return;
     }
     let product: Awaited<ReturnType<typeof fetchProductBySlug>>;
     try {
       product = await fetchProductBySlug(opts.slug, zoneCode);
     } catch {
-      toast("We couldn’t reach the shop. Please try again.", "error");
+      toast(pageTranslator()("error.unreachable"), "error");
       return;
     }
     if (!product || (!product.variantId && !product.sku)) {
-      toast("This product isn’t available to purchase yet.", "error");
+      toast(pageTranslator()("error.productNotPurchasable"), "error");
       return;
     }
 
     const price = product.price ?? opts.price;
     if (price == null) {
-      toast("This product isn’t available to purchase yet.", "error");
+      toast(pageTranslator()("error.productNotPurchasable"), "error");
       return;
     }
 

@@ -1,98 +1,72 @@
-import { ApiClientError } from "@/lib/api/apiError";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import type { MessageKey, Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import type { CheckoutValidationIssue } from "../types/checkout";
 
-/** `issueType` → shopper copy. Guide §4.8 types first, then codes the reference observed live. */
-const ISSUE_MESSAGES: Record<string, string> = {
-  ITEM_NOT_SELLABLE: "One of your items is no longer available. Please review your bag.",
-  ITEM_PRICE_MISSING: "One of your items doesn’t have a price right now. Please review your bag.",
-  ITEM_INSUFFICIENT_INVENTORY: "One of your items is out of stock. Please review your bag.",
-  ITEM_PRICE_CHANGED: "Prices have been updated since you added these items.",
-  ADDRESS_MISSING: "Please enter a delivery address.",
-  DELIVERY_METHOD_MISSING: "Choose a shipping method to continue.",
-  PAYMENT_METHOD_MISSING: "Choose a payment method to continue.",
-  PRICE_MISSING: "One of your items doesn’t have a price right now. Please review your bag.",
-  PRODUCT_NOT_SELLABLE: "One of your items is no longer available. Please review your bag.",
-  PRODUCT_NOT_VISIBLE: "One of your items isn’t available in your region.",
-  INSUFFICIENT_INVENTORY: "One of your items is out of stock. Please review your bag.",
-  INVENTORY_MISSING: "One of your items has no available stock.",
-  VARIANT_INACTIVE: "One of your items is no longer sold. Please remove it from your bag.",
-  CURRENCY_MISMATCH: "Your bag’s currency changed. Please refresh and try again.",
-  ADDRESS_INVALID: "Your delivery address looks incomplete. Please check it.",
-  PAYMENT_METHOD_UNAVAILABLE: "That payment method isn’t available. Please choose another.",
-  DELIVERY_METHOD_UNAVAILABLE: "That shipping method isn’t available. Please choose another.",
-  MANUAL_REVIEW_REQUIRED: "Your order needs a manual review. Please contact us to complete it.",
-};
-
-/** Envelope `error.code` → shopper copy. */
-const ERROR_CODE_MESSAGES: Record<string, string> = {
-  CHECKOUT_CART_EMPTY: "Your bag is empty.",
-  CHECKOUT_CART_UNAVAILABLE: "An item in your bag is unavailable. Remove it before checkout.",
-  CHECKOUT_NOT_FOUND: "Your checkout session has ended. Please try again.",
-  CHECKOUT_SESSION_NOT_ACTIVE: "Your checkout session has expired. Please try again.",
-  CHECKOUT_ADDRESS_INPUT_REQUIRED: "Please enter a delivery address.",
-  CHECKOUT_BILLING_REQUIRES_SHIPPING:
-    "Add a delivery address before using it for billing.",
-  CHECKOUT_DELIVERY_METHOD_UNAVAILABLE:
-    "That shipping method isn’t available for this order. Please choose another.",
-  CHECKOUT_PAYMENT_METHOD_UNAVAILABLE:
-    "That payment method isn’t available for this order. Please choose another.",
-  BUSINESS_RULE_FAILED:
-    "We couldn’t place your order. Please review your details and try again.",
-  ORDER_NOT_PAYABLE: "This order can’t be paid — it may already be paid or cancelled.",
-  ORDER_GIFT_OUT_OF_STOCK:
-    "Your free gift just went out of stock. Go back to your bag to choose another gift.",
-  PAYMENT_METHOD_VALIDATION_FAILED:
-    "That payment method is unavailable. Please refresh and try again.",
-  PRICING_CHANGED:
-    "Prices have changed. We’ve refreshed your bag — check the total before placing the order.",
-  REDEMPTION_EXPIRED: "That offer expired. Apply the code again.",
-  FORBIDDEN: "This checkout belongs to another session. Please start again from your bag.",
-};
-
-const GENERIC = "Something went wrong. Please try again.";
+/**
+ * Checkout validation issues (`issueType`, then `code`) the shop words for
+ * shoppers: `checkout.issue.<TYPE>` in the message files. Guide §4.8 types
+ * first, then codes the reference observed live. Anything else is internal.
+ */
+const ISSUE_TYPES = new Set([
+  "ITEM_NOT_SELLABLE",
+  "ITEM_PRICE_MISSING",
+  "ITEM_INSUFFICIENT_INVENTORY",
+  "ITEM_PRICE_CHANGED",
+  "ADDRESS_MISSING",
+  "DELIVERY_METHOD_MISSING",
+  "PAYMENT_METHOD_MISSING",
+  "PRICE_MISSING",
+  "PRODUCT_NOT_SELLABLE",
+  "PRODUCT_NOT_VISIBLE",
+  "INSUFFICIENT_INVENTORY",
+  "INVENTORY_MISSING",
+  "VARIANT_INACTIVE",
+  "CURRENCY_MISMATCH",
+  "ADDRESS_INVALID",
+  "PAYMENT_METHOD_UNAVAILABLE",
+  "DELIVERY_METHOD_UNAVAILABLE",
+  "MANUAL_REVIEW_REQUIRED",
+]);
 
 function isError(issue: CheckoutValidationIssue): boolean {
   return (issue.severity ?? "").toUpperCase() === "ERROR";
 }
 
-function issueCopy(issue: CheckoutValidationIssue): string {
-  return (
-    ISSUE_MESSAGES[issue.issueType] ??
-    (issue.code ? ISSUE_MESSAGES[issue.code] : undefined) ??
-    issue.message ??
-    GENERIC
-  );
+function issueKey(issue: CheckoutValidationIssue): MessageKey | null {
+  const type = [issue.issueType, issue.code].find((value) => value && ISSUE_TYPES.has(value));
+  return type ? (`checkout.issue.${type}` as MessageKey) : null;
+}
+
+function issueCopy(issue: CheckoutValidationIssue, t: Translator): string {
+  const key = issueKey(issue);
+  return key ? t(key) : t("checkout.err.blocked");
 }
 
 /** The one message to show when validation blocks placement. */
-export function checkoutIssueMessage(issues: CheckoutValidationIssue[] | undefined): string {
+export function checkoutIssueMessage(
+  issues: CheckoutValidationIssue[] | undefined,
+  t: Translator = pageTranslator(),
+): string {
   const list = issues ?? [];
   const blocking = list.find(isError) ?? list[0];
-  return blocking
-    ? issueCopy(blocking)
-    : "Some details need attention before we can place your order.";
+  return blocking ? issueCopy(blocking, t) : t("checkout.err.blocked");
 }
 
 /** Non-blocking notices (e.g. price changed) — shown, but checkout proceeds. */
 export function checkoutWarningMessages(
   issues: CheckoutValidationIssue[] | undefined,
+  t: Translator = pageTranslator(),
 ): string[] {
   // Only warnings written for shoppers. Internal notices (e.g. the D365
   // customer mapping, which only affects back-office posting) never show.
   const warnings = (issues ?? []).filter(
-    (i) =>
-      (i.severity ?? "").toUpperCase() === "WARNING" &&
-      Boolean(ISSUE_MESSAGES[i.issueType] ?? (i.code ? ISSUE_MESSAGES[i.code] : undefined)),
+    (i) => (i.severity ?? "").toUpperCase() === "WARNING" && issueKey(i) !== null,
   );
-  return [...new Set(warnings.map(issueCopy))];
+  return [...new Set(warnings.map((issue) => issueCopy(issue, t)))];
 }
 
-export function checkoutErrorMessage(error: unknown, fallback = GENERIC): string {
-  if (error instanceof ApiClientError) {
-    return (error.code && ERROR_CODE_MESSAGES[error.code]) || error.message || fallback;
-  }
-  if (error instanceof TypeError) {
-    return "We couldn’t reach the store. Check your connection and try again.";
-  }
-  return fallback;
+/** A failed checkout call, as the shopper reads it (the shop's one error rule). */
+export function checkoutErrorMessage(error: unknown, fallback?: string | null): string {
+  return getUserFacingErrorMessage(error, fallback);
 }

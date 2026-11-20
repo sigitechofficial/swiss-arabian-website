@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from "@/lib/api/apiClient";
-import { ApiClientError } from "@/lib/api/apiError";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import type { OnsiteLeadPayload, OnsiteLeadResult } from "../design/OnsiteDesignView";
 import type { OnsiteEventType, OnsiteMessage, OnsiteTrigger } from "../types";
 
@@ -59,16 +59,12 @@ export async function fetchOnsitePreview(
   return data.message ?? null;
 }
 
-/** A readable reason from a failed form send, for the visitor. */
+/**
+ * A readable reason from a failed form send, for the visitor: the server words
+ * each problem (email, phone, consent…) in the page's language.
+ */
 function leadErrorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = Array.isArray(error.details) ? error.details : [];
-    const first = details.find((item) => typeof item === "string") as string | undefined;
-    if (first) return first;
-    if (error.status === 404) return "This offer is no longer available.";
-    if (error.status === 429) return "Too many tries. Please wait a moment and try again.";
-  }
-  return "Something went wrong. Please try again.";
+  return getUserFacingErrorMessage(error);
 }
 
 /**

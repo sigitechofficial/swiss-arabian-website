@@ -6,7 +6,7 @@ import {
   SHOP_UNAVAILABLE_CODES,
   SHOP_UNAVAILABLE_PATH,
 } from "@/lib/storefront/brand";
-import { ApiClientError, type ApiErrorBody } from "./apiError";
+import { ApiClientError, CLIENT_ERROR_CODES, type ApiErrorBody } from "./apiError";
 import { resolveStorefrontHost } from "./storefrontHost";
 
 type ApiEnvelope<T> = {
@@ -125,7 +125,9 @@ async function request<T>(
     try {
       json = JSON.parse(text) as ApiEnvelope<T>;
     } catch {
-      throw new ApiClientError(res.status, "Unexpected response from server.");
+      throw new ApiClientError(res.status, {
+        code: CLIENT_ERROR_CODES.unexpectedResponse,
+      });
     }
   }
 
@@ -148,13 +150,10 @@ async function request<T>(
     }
     if (outcome === "unreachable") {
       // The session may still be good: keep it, report the request as failed.
-      throw new ApiClientError(503, "We couldn’t reach the shop. Please try again.");
+      throw new ApiClientError(503, { code: CLIENT_ERROR_CODES.unreachable });
     }
     endSession();
-    throw new ApiClientError(
-      401,
-      "Your session has expired. Please sign in again.",
-    );
+    throw new ApiClientError(401, { code: CLIENT_ERROR_CODES.sessionEnded });
   }
 
   if (

@@ -32,6 +32,7 @@ import type {
 import { buildAddressSnapshot, type AddressFields } from "../utils/addressSnapshot";
 import { ApiClientError } from "@/lib/api/apiError";
 import { checkoutErrorMessage, checkoutIssueMessage } from "../utils/checkoutIssues";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   clearCheckoutSessionId,
   getStoredCheckoutSessionId,
@@ -175,6 +176,7 @@ export function checkoutScopeKey(
 }
 
 export function useCheckout() {
+  const copy = useShopCopy();
   const cartId = useCartStore((s) => s.cartId);
   const lines = useCartStore((s) => s.lines);
   /** True while the bag is being reloaded (market switch): its id and lines are in flux. */
@@ -242,11 +244,11 @@ export function useCheckout() {
         sessionSigRef.current = commerceSignature(currentLines);
         adopt(next);
       } catch (e) {
-        setErrorMsg(checkoutErrorMessage(e, "We couldn’t start checkout. Please try again."));
+        setErrorMsg(checkoutErrorMessage(e, copy("checkout.err.start")));
         setStatus("error");
       }
     },
-    [adopt],
+    [adopt, copy],
   );
 
   // Market or cart changed (market switch on this page): the current session belongs
@@ -348,7 +350,7 @@ export function useCheckout() {
             // Re-asserted on submit.
           }
         } else {
-          setErrorMsg("No shipping options are available for this order right now.");
+          setErrorMsg(copy("checkout.err.noShipping"));
         }
 
         const paymentPick =
@@ -368,13 +370,13 @@ export function useCheckout() {
         }
       } catch (e) {
         setErrorMsg(
-          checkoutErrorMessage(e, "We couldn’t load shipping and payment options. Please refresh."),
+          checkoutErrorMessage(e, copy("checkout.err.options")),
         );
       } finally {
         setStatus("ready");
       }
     })();
-  }, [sessionId]);
+  }, [sessionId, copy]);
 
   useEffect(() => {
     const selected = paymentMethods.find((method) => method.zonePaymentMethodId === selectedPaymentId);
@@ -475,12 +477,10 @@ export function useCheckout() {
         session.promotionSnapshot?.totals?.amountPayable;
       const payable = payableRaw == null || payableRaw === "" ? null : Number(payableRaw);
       const covered = payable === 0;
-      if (!delivery) return setErrorMsg("Choose a shipping method to continue.");
-      if (!covered && !payment) return setErrorMsg("Choose a payment method to continue.");
+      if (!delivery) return setErrorMsg(copy("checkout.err.chooseShipping"));
+      if (!covered && !payment) return setErrorMsg(copy("checkout.err.choosePayment"));
       if (staffDiscountPaymentBlocked(readEmployeeCheckout(session.staffPurchase ?? session.employeeCheckout))) {
-        return setErrorMsg(
-          "Staff discount cannot be paid yet. This quote is a preview, so the order was not placed.",
-        );
+        return setErrorMsg(copy("checkout.err.staffPreview"));
       }
 
       const confirmInlinePay = (orderId: string) => {
@@ -543,7 +543,7 @@ export function useCheckout() {
           // form and let the shopper enter the card again.
           if (preparedForMethod && started.inline.clientSecret !== preparedForMethod.clientSecret) {
             preparedRef.current = null;
-            setErrorMsg("Please enter your card details again, then tap Pay now.");
+            setErrorMsg(copy("checkout.err.cardAgain"));
             return started;
           }
           confirmInlinePay(orderId);
@@ -567,7 +567,7 @@ export function useCheckout() {
             );
           } catch (e) {
             setErrorMsg(
-              paymentStartError(e, "Payment couldn’t be started. Your order is saved — try Pay again."),
+              paymentStartError(e, copy("checkout.err.paymentStart")),
             );
             setStatus("ready");
           }
@@ -616,7 +616,7 @@ export function useCheckout() {
         const validated = await validateCheckout(id);
         setSession(validated);
         if (validated.validation?.isValid !== true) {
-          setErrorMsg(checkoutIssueMessage(validated.validationIssues));
+          setErrorMsg(checkoutIssueMessage(validated.validationIssues, copy));
           setStatus("ready");
           return;
         }
@@ -686,10 +686,7 @@ export function useCheckout() {
       } catch (e) {
         if (placedOrderId) {
           setErrorMsg(
-            paymentStartError(
-              e,
-              "Card payment couldn’t be started. Your order is saved — try Pay again.",
-            ),
+            paymentStartError(e, copy("checkout.err.cardStart")),
           );
           setStatus("ready");
           return;
@@ -728,6 +725,7 @@ export function useCheckout() {
       }
     },
     [
+      copy,
       session,
       deliveryMethods,
       paymentMethods,

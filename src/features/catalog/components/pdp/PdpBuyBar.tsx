@@ -126,7 +126,7 @@ export function PdpBuyBar({ product, cartLine, onQuantityChange }: PdpBuyBarProp
                 const result = purchase.add();
                 setStatus(
                   result.status === "full"
-                    ? fullLineMessage(result.maxQuantity)
+                    ? fullLineMessage(result.maxQuantity, copy)
                     : `Added ${product.title} to your bag.`,
                 );
               }}

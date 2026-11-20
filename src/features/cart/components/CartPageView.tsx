@@ -61,6 +61,7 @@ import {
 } from "@/styles/cartChrome";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { addItemOptimistic } from "../api/optimisticCart";
 import { useBagPage } from "../hooks/useBagPage";
 import { bundleTags } from "../utils/bundleTags";
@@ -96,6 +97,7 @@ function sizeLabelFor(product: CatalogProduct) {
 }
 
 export function CartPageView() {
+  const copy = useShopCopy();
   const {
     totals,
     orderedLines,
@@ -310,7 +312,7 @@ export function CartPageView() {
                           </div>
                           {atStockLimit(line) && line.maxQuantity != null ? (
                             <p className={cartQtyLimit} role="status">
-                              {stockLimitNote(line.maxQuantity)}
+                              {stockLimitNote(line.maxQuantity, copy)}
                             </p>
                           ) : null}
                         </div>

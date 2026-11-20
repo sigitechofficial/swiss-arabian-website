@@ -1,3 +1,4 @@
+import { getUserFacingErrorMessage, knownErrorMessage } from "@/lib/api/userFacingErrors";
 import { ApiClientError } from "@/lib/api/apiError";
 import type {
   PaymentRecoveryStatus,
@@ -32,7 +33,8 @@ export function paymentMethodSummary(card: SubscriptionPaymentMethod | null | un
 
 export function paymentMethodErrorMessage(err: unknown): string {
   if (err instanceof ApiClientError) {
-    if (err.message) return err.message;
+    const said = knownErrorMessage(err);
+    if (said) return said;
     if (err.status === 401) return "Your session has expired. Sign in again.";
     if (err.status === 404) return "This subscription could not be found.";
     if (err.code === "SUB_PAYMENT_METHOD_RENEWAL_PENDING") {
@@ -45,20 +47,11 @@ export function paymentMethodErrorMessage(err: unknown): string {
       return "This card is not saved for this market. The saved card is unchanged.";
     }
   }
-  if (err instanceof Error && /failed to fetch|network|load failed/i.test(err.message)) {
-    return "The card could not be updated. Check your connection and try again.";
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return "The card could not be updated. Check your connection and try again.";
+  return getUserFacingErrorMessage(err, "The card could not be updated. Check your connection and try again.");
 }
 
 export function managementErrorMessage(err: unknown): string {
-  if (err instanceof ApiClientError) return err.message;
-  if (err instanceof Error && /failed to fetch|network|load failed/i.test(err.message)) {
-    return "The subscription could not be updated. Check your connection and try again.";
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return "The subscription could not be updated. Check your connection and try again.";
+  return getUserFacingErrorMessage(err, "The subscription could not be updated. Check your connection and try again.");
 }
 
 export const PAYMENT_RETRY_UNCONFIRMED =
@@ -82,15 +75,15 @@ export function paymentRetryError(err: unknown): { ambiguous: boolean; message: 
       return { ambiguous: true, message: PAYMENT_RETRY_UNCONFIRMED };
     }
     if (err.status === 401) {
-      return { ambiguous: false, message: err.message || "Your session has expired. Sign in again." };
+      return { ambiguous: false, message: knownErrorMessage(err) ?? "Your session has expired. Sign in again." };
     }
     if (err.status === 403) {
-      return { ambiguous: false, message: err.message || "You cannot retry this subscription payment." };
+      return { ambiguous: false, message: knownErrorMessage(err) ?? "You cannot retry this subscription payment." };
     }
     if (err.status === 404) {
-      return { ambiguous: false, message: err.message || "This subscription could not be found." };
+      return { ambiguous: false, message: knownErrorMessage(err) ?? "This subscription could not be found." };
     }
-    return { ambiguous: false, message: err.message || "This payment could not be retried." };
+    return { ambiguous: false, message: knownErrorMessage(err) ?? "This payment could not be retried." };
   }
   return { ambiguous: true, message: PAYMENT_RETRY_UNCONFIRMED };
 }
