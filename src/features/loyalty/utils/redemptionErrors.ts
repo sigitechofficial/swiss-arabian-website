@@ -1,13 +1,8 @@
-import { ApiClientError } from "@/lib/api/apiError";
-import { redemptionReasonMessage } from "../types/loyalty";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 
-export function loyaltyRedemptionErrorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const fromCode = redemptionReasonMessage(error.code);
-    if (fromCode) return fromCode;
-    const fromMessage = redemptionReasonMessage(error.message);
-    if (fromMessage) return fromMessage;
-    return error.message || "We couldn’t apply those reward points. Please try again.";
-  }
-  return "We couldn’t apply those reward points. Please try again.";
+/** Refused reward points, as the shopper reads it (the server words each reason code). */
+export function loyaltyRedemptionErrorMessage(error: unknown, t: Translator = pageTranslator()): string {
+  return getUserFacingErrorMessage(error, t("error.loyalty.apply"), t);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
@@ -278,7 +279,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
   }
 
   function missingSubscription(err: unknown): boolean {
-    return err instanceof ApiClientError && err.message === "Subscription not found";
+    return err instanceof ApiClientError && err.code === "SUBSCRIPTION_NOT_FOUND";
   }
 
   async function registerAndPay() {
@@ -345,7 +346,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
       }
       await refreshPayment(id);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Checkout could not be started.");
+      setError(getUserFacingErrorMessage(err, "Checkout could not be started."));
     } finally {
       setBusy(false);
     }
@@ -377,7 +378,7 @@ export function SubscriptionCheckoutPageView({ planCode }: { planCode: string })
         setError(null);
         return;
       }
-      setError(err instanceof ApiClientError ? err.message : "Checkout could not be loaded.");
+      setError(getUserFacingErrorMessage(err, "Checkout could not be loaded."));
     });
     // Resume an existing agreement once. Polling and Stripe confirmation read again themselves.
     // eslint-disable-next-line react-hooks/exhaustive-deps

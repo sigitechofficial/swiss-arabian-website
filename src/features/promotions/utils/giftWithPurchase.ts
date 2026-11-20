@@ -1,3 +1,4 @@
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import {
   readGiftAwards,
   type PromotionGiftAward,
@@ -34,7 +35,7 @@ export function giftErrorMessage(code: string | null | undefined, fallback?: str
     case "NO_LONGER_QUALIFIES":
       return "This offer no longer includes a free gift.";
     default:
-      return fallback?.trim() || "We couldn’t update your free gift. Please try again.";
+      return fallback?.trim() || pageTranslator()("error.gift.update");
   }
 }
 

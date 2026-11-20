@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useHydrated } from "@/hooks/useHydrated";
-import { ApiClientError } from "@/lib/api/apiError";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { afterSalesKeys } from "../api/afterSales.keys";
 import {
@@ -134,7 +134,7 @@ export function useExchangeMoney({
     } catch (e) {
       setPhase({
         kind: "error",
-        message: e instanceof ApiClientError && e.message ? e.message : t("exchangeMoney.openFailed"),
+        message: getUserFacingErrorMessage(e, t("exchangeMoney.openFailed")),
       });
     }
   }

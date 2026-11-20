@@ -3,6 +3,7 @@
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { storedOrderIdIf, usePaymentRetry } from "../hooks/usePaymentReturn";
 import { CheckoutStateShell } from "./CheckoutStateShell";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
@@ -16,14 +17,13 @@ import {
   checkoutLink,
 } from "@/styles/checkoutChrome";
 
-const GATEWAY_ERROR =
-  "Card payment couldn’t be started right now. Your order is saved — please try again in a moment, or contact us if it keeps happening.";
 
 /**
  * Gateway cancel URL, and the retry screen for any placed-but-unpaid order.
  * Cancelling payment never cancels the order — it just waits to be paid.
  */
 export function PaymentCancelView() {
+  const copy = useShopCopy();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const { orderId, orderNumber, retrying, error: retryError, retry } = usePaymentRetry({
@@ -35,10 +35,10 @@ export function PaymentCancelView() {
   const error = !retryError
     ? null
     : retryError.kind === "gateway"
-      ? GATEWAY_ERROR
+      ? copy("checkout.err.gateway")
       : retryError.kind === "rejected"
         ? retryError.message
-        : retryError.message || "We couldn’t restart your payment. Please try again or contact us.";
+        : retryError.message || copy("checkout.err.retryPayment");
 
   if (hydrated && !orderId) {
     return (

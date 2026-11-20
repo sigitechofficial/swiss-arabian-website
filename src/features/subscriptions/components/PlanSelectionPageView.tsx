@@ -1,5 +1,6 @@
 "use client";
 
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -191,7 +192,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
     try {
       writeDraft(planCode, mode, selectVariant(mode, chosen, variantId, allowed), audience);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That fragrance cannot be selected.");
+      setError(getUserFacingErrorMessage(err, "That fragrance cannot be selected."));
     }
   }
 
@@ -227,13 +228,13 @@ export function PlanSelectionPageView({ planCode }: Props) {
           queryKey: subscriptionKeys.consent(zoneCode, brandCode),
         });
       } else if (err instanceof ApiClientError && err.code === "SUB_SCHEDULE_UNAVAILABLE") {
-        setError(err.message && err.message !== "The request could not be completed." ? err.message : SCHEDULE_UNAVAILABLE_MESSAGE);
+        setError(getUserFacingErrorMessage(err, SCHEDULE_UNAVAILABLE_MESSAGE));
       } else if (err instanceof ApiClientError && err.code === "SUB_IDEMPOTENCY_PAYLOAD_MISMATCH") {
         setError(
           "This registration was already sent with different details. Start a new registration to save another subscription.",
         );
       } else {
-        setError(err instanceof Error ? err.message : "Registration could not be saved.");
+        setError(getUserFacingErrorMessage(err, "Registration could not be saved."));
       }
     } finally {
       setSubmitting(false);
@@ -247,7 +248,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
   if (plan.isError) {
     return (
       <p className="px-4 py-10" role="alert">
-        This plan is not available in the current market. {plan.error.message}
+        This plan is not available in the current market.
       </p>
     );
   }
@@ -359,7 +360,7 @@ export function PlanSelectionPageView({ planCode }: Props) {
 
       {products.isError ? (
         <p className="mt-4" role="alert">
-          Approved fragrances could not be loaded. {products.error.message}
+          Approved fragrances could not be loaded.
         </p>
       ) : null}
       {products.isSuccess && products.data.length === 0 ? (

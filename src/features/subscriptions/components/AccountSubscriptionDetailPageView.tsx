@@ -1,11 +1,11 @@
 "use client";
 
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { PageLoading } from "@/components/ui/PageLoading";
-import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { knownText } from "@/lib/i18n/formErrors";
@@ -114,7 +114,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
       setDraft(null);
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : t("subs.detail.queueFailed"));
+      setError(getUserFacingErrorMessage(err, t("subs.detail.queueFailed")));
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
       setDraft(null);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("subs.detail.modeFailed"));
+      setError(getUserFacingErrorMessage(err, t("subs.detail.modeFailed")));
     } finally {
       setBusy(false);
     }
@@ -157,7 +157,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
       setConfirmCancel(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("subs.detail.cancelFailed"));
+      setError(getUserFacingErrorMessage(err, t("subs.detail.cancelFailed")));
     } finally {
       setBusy(false);
     }
@@ -174,7 +174,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
     <AccountPageShell>
       <div className={`${accountContainer} flex flex-col gap-6 pt-7 pb-16 text-[#2B1D17] sm:pt-8`}>
         {detail.isLoading ? <PageLoading label={t("subs.detail.loading")} /> : null}
-        {detail.isError ? <p role="alert">{detail.error.message}</p> : null}
+        {detail.isError ? <p role="alert">{getUserFacingErrorMessage(detail.error)}</p> : null}
         {detail.data ? (
           <>
             <div className="flex flex-col gap-3.5">
@@ -345,7 +345,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                     try {
                       setDraft(selectVariant(detail.data!.selectionMode, selected, item.variantId, allowed));
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : t("subs.detail.cannotAdd"));
+                      setError(getUserFacingErrorMessage(err, t("subs.detail.cannotAdd")));
                     }
                   }}
                 >

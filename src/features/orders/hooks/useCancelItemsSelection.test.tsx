@@ -49,7 +49,9 @@ describe("useCancelItemsSelection", () => {
   });
 
   it("shows the server's reason when it refuses the pick, and blocks confirm", async () => {
-    previewCancelItems.mockRejectedValue(new ApiClientError(422, "Keep at least one item."));
+    previewCancelItems.mockRejectedValue(
+      new ApiClientError(422, { code: "ORDER_PARTIAL_CANCEL_INVALID_ITEMS", message: "Keep at least one item." }),
+    );
     const { result } = renderHook(() => useCancelItemsSelection("o1", lines), { wrapper });
     act(() => result.current.change("a", 2, 1));
     await waitFor(() => expect(result.current.error).toBe("Keep at least one item."));

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { previewCancelItems, type CancelItemInput } from "@/features/account/api/customerOrders.service";
 import { useDebounce } from "@/hooks/useDebounce";
-import { ApiClientError } from "@/lib/api/apiError";
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { CancellableLine } from "../utils/cancelItems";
 
@@ -37,9 +37,7 @@ export function useCancelItemsSelection(orderId: string, lines: readonly Cancell
   const loading = items.length > 0 && (!settled || previewQuery.isFetching);
   const error =
     items.length > 0 && !loading && !preview && previewQuery.isError
-      ? previewQuery.error instanceof ApiClientError && previewQuery.error.status === 422
-        ? previewQuery.error.message
-        : t("orders.cancel.preview.failed")
+      ? getUserFacingErrorMessage(previewQuery.error, t("orders.cancel.preview.failed"), t)
       : null;
 
   return {

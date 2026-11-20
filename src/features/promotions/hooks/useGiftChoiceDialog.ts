@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ApiClientError } from "@/lib/api/apiError";
+import { knownErrorMessage } from "@/lib/api/userFacingErrors";
 import type { PromotionGiftAward } from "../types/promotions";
 import { giftDisplayName } from "../utils/giftWithPurchase";
 import { useGiftCatalogMap } from "./useGiftCatalog";
@@ -38,7 +39,7 @@ export function useGiftChoiceDialog(award: PromotionGiftAward, onClose: () => vo
     } catch (caught) {
       setError({
         code: caught instanceof ApiClientError ? (caught.code ?? null) : null,
-        message: caught instanceof ApiClientError ? caught.message : null,
+        message: knownErrorMessage(caught),
       });
     }
   }

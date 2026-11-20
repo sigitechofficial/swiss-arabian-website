@@ -98,7 +98,7 @@ export function AccountSubscriptionsPageView() {
 
         {!zoneCode ? <p>{t("subs.selectMarket")}</p> : null}
         {list.isLoading ? <PageLoading label={t("subs.loading")} /> : null}
-        {list.isError ? <p role="alert">{t("subs.loadFailed")} {list.error.message}</p> : null}
+        {list.isError ? <p role="alert">{t("subs.loadFailed")}</p> : null}
 
         {list.isSuccess ? (
           <>

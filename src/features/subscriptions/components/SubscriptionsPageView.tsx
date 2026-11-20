@@ -334,7 +334,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
             {!zoneCode ? <p className="text-[length:var(--fs-body)]">Select a market to see plans for that zone.</p> : null}
             {plans.isLoading ? <PageLoading label="Loading subscription plans…" /> : null}
             {plans.isError ? (
-              <p className="text-[length:var(--fs-body)]" role="alert">Subscription plans could not be loaded. {plans.error.message}</p>
+              <p className="text-[length:var(--fs-body)]" role="alert">Subscription plans could not be loaded.</p>
             ) : null}
             {plans.isSuccess && published.length === 0 ? (
               <p className="text-[length:var(--fs-body)]">No subscription plans are published for this market.</p>

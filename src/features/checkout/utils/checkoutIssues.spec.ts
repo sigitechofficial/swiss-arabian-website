@@ -1,14 +1,37 @@
 import { describe, expect, it } from "vitest";
-
+import ar from "@/messages/ar.json";
 import { ApiClientError } from "@/lib/api/apiError";
+import { createTranslator } from "@/lib/i18n/messages";
+import { checkoutErrorMessage, checkoutIssueMessage, checkoutWarningMessages } from "./checkoutIssues";
 
-import { checkoutErrorMessage, checkoutWarningMessages } from "./checkoutIssues";
+const arabic = createTranslator("ar", ar);
 
 describe("checkoutErrorMessage", () => {
-  it("sends the customer back to the bag when a free gift sold out", () => {
-    const error = new ApiClientError(409, { code: "ORDER_GIFT_OUT_OF_STOCK", message: "raw" });
-    expect(checkoutErrorMessage(error)).toBe(
-      "Your free gift just went out of stock. Go back to your bag to choose another gift.",
+  it("shows the server's wording of the refusal (already in the page's language)", () => {
+    const error = new ApiClientError(409, {
+      code: "ORDER_GIFT_OUT_OF_STOCK",
+      message: "نفدت هديتك المجانية للتو. عد إلى حقيبتك لاختيار هدية أخرى.",
+    });
+    expect(checkoutErrorMessage(error)).toBe("نفدت هديتك المجانية للتو. عد إلى حقيبتك لاختيار هدية أخرى.");
+  });
+
+  it("uses the caller's words when the server sent no sentence", () => {
+    expect(checkoutErrorMessage(new ApiClientError(502, "<html/>"), "We couldn’t start checkout.")).toBe(
+      "We couldn’t start checkout.",
+    );
+  });
+});
+
+describe("checkoutIssueMessage", () => {
+  it("words the blocking issue in the page's language", () => {
+    expect(
+      checkoutIssueMessage([{ issueType: "ADDRESS_INVALID", severity: "ERROR", message: "raw" }] as never, arabic),
+    ).toBe(ar["checkout.issue.ADDRESS_INVALID"]);
+  });
+
+  it("an issue the shop does not word reads as the general sentence, never its raw text", () => {
+    expect(checkoutIssueMessage([{ issueType: "UNKNOWN", severity: "ERROR", message: "raw" }] as never)).toBe(
+      "Some details need attention before we can place your order.",
     );
   });
 });

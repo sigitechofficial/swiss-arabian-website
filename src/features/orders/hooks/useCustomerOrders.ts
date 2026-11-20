@@ -13,6 +13,7 @@ import {
 } from "@/features/account/api/customerOrders.service";
 import { getOrderTracking, getOrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
 import { ApiClientError } from "@/lib/api/apiError";
+import { knownErrorMessage } from "@/lib/api/userFacingErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { cancelItemsOutcome, cancelOutcome } from "../utils/orderAftercare";
 import { readCustomerRefunds, toOrderRefundView } from "../utils/orderRefunds";
@@ -86,7 +87,8 @@ function cancelError(error: unknown, copy: ReturnType<typeof useShopCopy>): Orde
     if (refusal === "closed") return "closed";
     if (refusal) return { message: copy(refusal) };
     if (error.status === 404) return "notFound";
-    return { message: error.message };
+    const said = knownErrorMessage(error);
+    return said ? { message: said } : "failed";
   }
   return "failed";
 }

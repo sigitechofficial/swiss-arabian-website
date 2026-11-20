@@ -359,7 +359,10 @@ describe("account subscriptions and registration gate", () => {
     fireEvent.change(screen.getByLabelText("Delivery address"), { target: { value: "addr-1" } });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Save registration" }));
-    expect(await screen.findByText("network")).toBeInTheDocument();
+    // A failed request reads as the shop's sentence, never the raw error text.
+    expect(
+      await screen.findByText("We couldn’t reach the shop. Check your connection and try again."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save registration" }));
     await waitFor(() => expect(registerSubscription).toHaveBeenCalledTimes(2));
     const firstKey = registerSubscription.mock.calls[0]?.[1];
