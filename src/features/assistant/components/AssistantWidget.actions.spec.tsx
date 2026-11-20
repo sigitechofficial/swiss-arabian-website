@@ -53,7 +53,8 @@ function setup(options: {
     messages: [],
   };
   const addToBag = vi.fn(async () => true);
-  const handoff = vi.fn(async () => ({ ticketNumber: "TKT-77" }));
+  // Typed with its argument so the test can read what the widget sent.
+  const handoff = vi.fn(async (_input: unknown) => ({ ticketNumber: "TKT-77" }));
   render(
     <AssistantWidget
       zoneCode="UAE"

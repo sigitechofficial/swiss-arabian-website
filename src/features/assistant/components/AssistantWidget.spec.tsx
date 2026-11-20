@@ -3,6 +3,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApiClientError } from "@/lib/api/apiError";
 import { AssistantWidget } from "./AssistantWidget";
+
+type WidgetProps = React.ComponentProps<typeof AssistantWidget>;
 import type { AssistantChatResponse, AssistantHistory } from "../types";
 
 vi.mock("@/lib/i18n/LocaleLink", () => ({
@@ -41,7 +43,15 @@ function setup(
     return options.history ?? guestHistory;
   });
   const clearHistory = options.clear ?? vi.fn(async () => undefined);
-  render(<AssistantWidget zoneCode="UAE" locale="en" send={send} loadHistory={loadHistory} clearHistory={clearHistory} />);
+  render(
+    <AssistantWidget
+      zoneCode="UAE"
+      locale="en"
+      send={send as WidgetProps["send"]}
+      loadHistory={loadHistory}
+      clearHistory={clearHistory as WidgetProps["clearHistory"]}
+    />,
+  );
   return { send, loadHistory, clearHistory, user: userEvent.setup() };
 }
 
