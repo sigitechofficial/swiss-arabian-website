@@ -6,6 +6,7 @@ import {
 } from "@/features/catalog/routes/listingRoutes";
 import { CatalogCopy } from "../../components/catalog/CatalogCopy";
 import { SapilCollectionSeoText } from "../../components/catalog/SapilCollectionSeoText";
+import { SapilSeoFaqSection } from "../../components/content/SapilSeoFaqSection";
 import { SapilProductPage } from "./SapilProductPage";
 import { SapilSearchPage } from "./SapilSearchPage";
 import {
@@ -37,7 +38,7 @@ export async function SapilCollectionListing({ slug, page }: { slug: string; pag
       <CollectionListing
         slug={slug}
         page={page}
-        view={{ View: SapilCollectionView, FromUrl: SapilCollectionViewFromUrl, SeoText: SapilCollectionSeoText }}
+        view={{ View: SapilCollectionView, FromUrl: SapilCollectionViewFromUrl, SeoText: SapilCollectionSeoText, SeoFaq: SapilSeoFaqSection }}
       />
     </CatalogCopy>
   );

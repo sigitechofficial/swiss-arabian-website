@@ -144,7 +144,7 @@ Optional passwordless:
 | Flag | Default for new design |
 |------|------------------------|
 | `NEXT_PUBLIC_ENABLE_PASSWORD_RESET` | `true` |
-| `NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI` | `true` |
+| ~~`NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI`~~ | removed 2026-11-20: verification follows the backend's `CUSTOMER_VERIFICATION_ENABLED` via `/storefront/site/integrations` (`accountVerification`); the build refuses the old flag |
 | `NEXT_PUBLIC_ENABLE_OAUTH` | `false` — do not wire Google/Apple |
 
 | Method | Path | Body notes |

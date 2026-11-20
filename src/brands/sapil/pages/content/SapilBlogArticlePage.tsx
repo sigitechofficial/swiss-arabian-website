@@ -59,7 +59,7 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
         {article.heroImage ? (
           <Wrap>
             <div className="relative aspect-[16/7] rounded-[32px] overflow-hidden bg-sapil-sand max-900:aspect-[4/3] max-900:rounded-[24px]">
-              <MediaImage src={article.heroImage} alt="" fill preload sizes="(max-width: 1440px) 100vw, 1440px" className="object-cover" />
+              <MediaImage src={article.heroImage} alt={article.heroTitle} fill preload sizes="(max-width: 1440px) 100vw, 1440px" className="object-cover" />
             </div>
           </Wrap>
         ) : null}
@@ -81,7 +81,7 @@ export function SapilBlogArticlePage({ article }: { article: BlogArticleDetail |
                 return (
                   <dl key={key} className="border-t border-sapil-line">
                     {block.rows.map((row) => (
-                      <div key={row.label} className="grid grid-cols-[110px_1fr] gap-[12px] py-[12px] border-b border-sapil-line text-[15px]">
+                      <div key={row.label} className="grid grid-cols-[110px_minmax(0,1fr)] gap-[12px] py-[12px] border-b border-sapil-line text-[15px]">
                         <dt className={cx(EYEBROW, "pt-[3px]")}>{row.label}</dt>
                         <dd className="text-sapil-ink">{row.notes}</dd>
                       </div>

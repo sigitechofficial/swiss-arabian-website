@@ -27,7 +27,10 @@ export function AuthGuard({
   useEffect(() => {
     if (!bootstrapped || !requireAuth) return;
     if (!isAuthenticated) {
-      const returnTo = pathname ? `?returnTo=${encodeURIComponent(pathname)}` : "";
+      // Back to exactly where they were going: the page, its query and the
+      // section (e.g. /account/profile#communication-preferences from an email).
+      const here = pathname ? `${pathname}${window.location.search}${window.location.hash}` : "";
+      const returnTo = here ? `?returnTo=${encodeURIComponent(here)}` : "";
       router.replace(`/login${returnTo}`);
     }
   }, [bootstrapped, isAuthenticated, requireAuth, router, pathname]);

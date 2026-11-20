@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useApplicablePromotions } from "../hooks/useApplicablePromotions";
 import type { ProgressMark } from "../types/promotions";
-import { trackPromotion } from "../utils/promotionAnalytics";
+import { usePromotionProgressTracking } from "../hooks/usePromotionProgressTracking";
+import { compactProgressView, rewardFill } from "../utils/progressView";
 import { PromotionUnlockNote } from "./PromotionUnlockNote";
 import {
   promoMark,
@@ -28,32 +28,7 @@ export function PromotionProgressRail({
 }) {
   const { data } = useApplicablePromotions();
   const progress = data?.progress;
-  const tracked = useRef("");
-
-  useEffect(() => {
-    if (!progress) return;
-    const key = `${progress.primary?.message ?? ""}|${progress.unlockedSummary ?? ""}|${progress.unlocked.map((line) => line.message).join("|")}`;
-    if (tracked.current === key) return;
-    tracked.current = key;
-    const market = data?.promotions.context.zoneCode ?? null;
-    if (progress.primary) {
-      trackPromotion("promotion_progress_advanced", {
-        campaignCode: progress.primary.campaignCode,
-        mechanic: progress.primary.mechanic,
-        market,
-        surface,
-      });
-    }
-    if (progress.unlockedSummary || progress.unlocked.length) {
-      trackPromotion("promotion_unlocked", {
-        campaignCode:
-          progress.unlocked[0]?.campaignCode ?? progress.primary?.campaignCode,
-        mechanic: progress.unlocked[0]?.mechanic ?? null,
-        market,
-        surface,
-      });
-    }
-  }, [progress, data?.promotions.context.zoneCode, surface]);
+  usePromotionProgressTracking(progress, data?.promotions.context.zoneCode ?? null, surface);
 
   if (!progress) return <PromotionUnlockNote surface={surface} />;
   if (
@@ -94,19 +69,10 @@ export function PromotionProgressRail({
         : surface === "cart"
           ? "px-[22px] pt-5 pb-1"
           : "mb-4";
-    const note =
-      progress.unlockedSummary ||
-      progress.unlocked.find((line) => line.mechanic !== "GWP")?.message ||
-      null;
-    const headline = progress.primary?.message ?? note;
-    if (!headline && !progress.marks.length) return null;
-    const stillOpen = progress.marks.some((mark) => mark.state !== "complete");
-    const saved =
-      headline != null &&
-      /saved\s+\d+\s*%|وفرت\s+\d+/i.test(headline) &&
-      !/add\s+\d|أضف/i.test(headline) &&
-      !stillOpen;
-    if (saved && headline) {
+    const view = compactProgressView(progress);
+    if (view.kind === "none") return null;
+    if (view.kind === "saved") {
+      const headline = view.headline;
       return (
         <div className={insetClass} aria-live="polite">
           <div
@@ -134,6 +100,7 @@ export function PromotionProgressRail({
         </div>
       );
     }
+    const note = view.note;
     return (
       <div className={insetClass} aria-live="polite">
         {progress.primary ? (
@@ -270,50 +237,6 @@ export function PromotionProgressRail({
       ))}
     </div>
   );
-}
-
-function rewardFill(marks: ProgressMark[]): number {
-  const thresholds = marks.map((mark) => Number(mark.threshold));
-  const count = marks.length;
-  if (
-    !count ||
-    thresholds.some((value) => !Number.isFinite(value) || value <= 0)
-  )
-    return 0;
-  const center = (index: number) => ((index + 0.5) / count) * 100;
-  const next = marks.find(
-    (mark) =>
-      mark.state === "current" &&
-      mark.threshold != null &&
-      mark.amountRemaining != null,
-  );
-  let current = 0;
-  if (next) {
-    current = Math.max(
-      0,
-      Number(next.threshold) - Number(next.amountRemaining),
-    );
-  } else if (marks.every((mark) => mark.state === "complete")) {
-    return 100;
-  } else {
-    const done = [...marks].reverse().find((mark) => mark.state === "complete");
-    current = Number(done?.threshold) || 0;
-  }
-  if (!Number.isFinite(current) || current <= 0) return 0;
-  if (current >= thresholds[count - 1]) return 100;
-  let previousAmount = 0;
-  let previousAt = 0;
-  for (let index = 0; index < count; index += 1) {
-    const at = index === count - 1 ? 100 : center(index);
-    if (current <= thresholds[index]) {
-      const span = thresholds[index] - previousAmount;
-      const ratio = span <= 0 ? 1 : (current - previousAmount) / span;
-      return previousAt + (at - previousAt) * ratio;
-    }
-    previousAmount = thresholds[index];
-    previousAt = at;
-  }
-  return 100;
 }
 
 function RewardHeadline({ message }: { message: string }) {

@@ -1,5 +1,7 @@
 /** Promotion snapshot v1 — render as sent. Do not invent fields or client math. */
 
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
+
 export const KNOWN_PROMOTION_KINDS = ["COUPON", "AUTOMATIC", "FREE_SHIPPING"] as const;
 export type KnownPromotionKind = (typeof KNOWN_PROMOTION_KINDS)[number];
 export type PromotionAppliedKind = KnownPromotionKind | string;
@@ -262,7 +264,7 @@ export type AppliedPromotionView = {
   code: string | null;
   /** Positive server amount. Null means do not print a money figure (including 0). */
   amount: number | null;
-  /** Non-money status, such as "Free shipping", when there is no merchandise amount. */
+  /** Non-money status, such as "Free shipping", when there is no merchandise amount (in the page's language). */
   status: string | null;
 };
 
@@ -274,15 +276,17 @@ export function isFixedAmountBxgy(item: PromotionApplied): boolean {
   const raw = meta.rewardType ?? meta.rewardDiscountType;
   return typeof raw === "string" && raw.trim().toUpperCase() === "FIXED_AMOUNT";
 }
+/** One applied offer for display. `t` is the page's translator (fallback label and status words). */
 export function appliedPromotionView(
   item: PromotionApplied,
   snapshot?: PromotionSnapshotV1 | null,
+  t: Translator = englishTranslator,
 ): AppliedPromotionView {
   const shipping = isFreeShippingBenefit(item);
   const label =
     item.label?.trim() ||
     item.code?.trim() ||
-    (shipping ? "Free shipping" : "Offer");
+    (shipping ? t("promotions.applied.freeShipping") : t("promotions.applied.offer"));
   const code = item.code?.trim() || null;
 
   if (shipping) {
@@ -292,7 +296,7 @@ export function appliedPromotionView(
       if (Number.isFinite(rowAmount) && rowAmount > 0) {
         return { label, code, amount: rowAmount, status: null };
       }
-      return { label, code, amount: null, status: "Free shipping" };
+      return { label, code, amount: null, status: t("promotions.applied.freeShipping") };
     }
     // A positive row amount is the post-clamp contribution. The shipping total
     // is only a stand-in when this applied row has no merchandise amount.
@@ -300,14 +304,14 @@ export function appliedPromotionView(
       return { label, code, amount: rowAmount, status: null };
     }
     if (quoted > 0) return { label, code, amount: quoted, status: null };
-    return { label, code, amount: null, status: "Free shipping" };
+    return { label, code, amount: null, status: t("promotions.applied.freeShipping") };
   }
 
   const amount = Number(item.amount);
   if (Number.isFinite(amount) && amount > 0) {
     return { label, code, amount, status: null };
   }
-  return { label, code, amount: null, status: "Applied" };
+  return { label, code, amount: null, status: t("promotions.applied.status") };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

@@ -97,7 +97,7 @@ export function PriceEditShelf({ copy }: { copy?: PriceEditCopy } = {}) {
           ) : null}
           <div>
             <p className={cx(EYEBROW, "!text-sapil-rose")}>{copy?.eyebrow ?? t("home.priceEyebrow", { amount: ceiling })}</p>
-            <h2 className="font-sapil-display !font-[400] text-[clamp(48px,5vw,80px)] !leading-[.95] !tracking-[-.01em] mt-[16px] mb-[18px] max-900:text-[46px]">
+            <p role="heading" aria-level={2} className="sapil-h font-sapil-display !font-[400] text-[clamp(48px,5vw,80px)] !leading-[.95] !tracking-[-.01em] mt-[16px] mb-[18px] max-900:text-[46px]">
               {copy?.title.length ? (
                 <TitleParts parts={copy.title} />
               ) : (
@@ -105,7 +105,7 @@ export function PriceEditShelf({ copy }: { copy?: PriceEditCopy } = {}) {
                   {t("home.priceTitle")} <Serif>{t("home.priceAccent")}</Serif>
                 </>
               )}
-            </h2>
+            </p>
             <p className="text-[17px] text-sapil-ink-2 max-w-[34ch] mb-[26px]">
               {t("home.priceLine", { count: total, from: price(from, currency), ceiling })}
             </p>
@@ -171,7 +171,7 @@ export function PriceEditShelf({ copy }: { copy?: PriceEditCopy } = {}) {
                 )}
               >
                 <span className="absolute bottom-[-10%] left-1/2 h-full aspect-square [transform:translateX(-50%)_scale(1.06)] origin-bottom [filter:drop-shadow(0_16px_16px_rgba(80,40,30,.2))] [transition:transform_.5s_var(--sapil-ease)] group-hover/sb:[transform:translateX(-50%)_scale(1.06)_translateY(-8px)]">
-                  <MediaImage src={p.imageUrl as string} alt="" fill sizes="160px" className="!object-contain" />
+                  <MediaImage src={p.imageUrl as string} alt={t("product.imageAlt", { name: p.title })} fill sizes="160px" className="!object-contain" />
                 </span>
                 <span
                   aria-hidden="true"

@@ -19,6 +19,7 @@ import {
   phoneBookSchema,
   type PhoneBookFormValues,
 } from "../schemas/phoneBook.schema";
+import { formatPhoneNumber } from "@/components/ui/phone/usePhoneNumberField";
 
 export function AccountPhonesSection() {
   const t = useShopCopy();
@@ -63,7 +64,7 @@ export function AccountPhonesSection() {
               className="flex flex-wrap items-center justify-between gap-3 py-3"
             >
               <div>
-                <p className="text-[13.5px] text-sa-primary">{phone.phoneE164}</p>
+                <p className="text-[13.5px] text-sa-primary" dir="ltr">{formatPhoneNumber(phone.phoneE164)}</p>
                 {phone.isPrimary ? (
                   <p className="text-[12px] font-semibold text-terra">{t("account.primary")}</p>
                 ) : null}
@@ -100,6 +101,7 @@ export function AccountPhonesSection() {
       {adding ? (
         <form
           className="mt-4 rounded-lg border border-sa-border p-4"
+          noValidate
           onSubmit={handleSubmit(async (values) => {
             await create.unwrap({
               phone: values.phone,

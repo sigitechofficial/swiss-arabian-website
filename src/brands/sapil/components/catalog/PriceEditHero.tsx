@@ -162,7 +162,7 @@ export function PriceEditHero({
           >
             <MediaImage
               src={b.image}
-              alt=""
+              alt={b.label}
               width={400}
               height={600}
               sizes="(max-width: 900px) 30vw, 180px"

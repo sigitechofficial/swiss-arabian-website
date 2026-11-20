@@ -91,7 +91,6 @@ jobs:
             --build-arg "NEXT_PUBLIC_STOREFRONT_BRAND_CODE=${{ matrix.brand }}" \
             --build-arg NEXT_PUBLIC_ENABLE_MFA=false \
             --build-arg NEXT_PUBLIC_ENABLE_PASSWORD_RESET=true \
-            --build-arg NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI=true \
             --build-arg "NEXT_DEPLOYMENT_ID=${{ github.sha }}" \
             -t "${{ steps.vars.outputs.image }}" \
             .

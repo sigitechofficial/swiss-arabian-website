@@ -1,50 +1,12 @@
 "use client";
 
-// Country flag sprites (real SVGs: Windows renders no flag emoji). Imported here, not in
-// globals.css, so only pages with a phone field load the ~270-flag stylesheet.
-import "flag-icons/css/flag-icons.min.css";
-
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  AsYouType,
-  getCountries,
-  getCountryCallingCode,
-  isValidPhoneNumber,
-  parsePhoneNumberFromString,
-  type CountryCode,
-} from "libphonenumber-js";
 import { phoneCc, phoneNum } from "@/styles/checkoutChrome";
-import { useMarket } from "@/providers/MarketProvider";
-import { intlLocale } from "@/lib/i18n/locales";
-import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { CountryFlag as Flag } from "./phone/CountryFlag";
+import { toE164, usePhoneNumberField } from "./phone/usePhoneNumberField";
 
-/** Shown first — the markets the storefront actually ships to. */
-const PREFERRED: CountryCode[] = ["AE", "SA", "QA", "KW", "BH", "OM"];
-const FALLBACK_COUNTRY: CountryCode = "AE";
-
-function asCountry(code: string | null | undefined): CountryCode | null {
-  const upper = code?.trim().toUpperCase();
-  return upper && (getCountries() as string[]).includes(upper) ? (upper as CountryCode) : null;
-}
-
-function countryName(country: string, locale = "en"): string {
-  try {
-    return new Intl.DisplayNames([locale === "en" ? "en" : intlLocale(locale)], { type: "region" }).of(country) ?? country;
-  } catch {
-    return country;
-  }
-}
-
-/** Real SVG sprite (flag-icons) — Windows renders no flag emoji at all. */
-function Flag({ country }: { country: string }) {
-  return (
-    <span
-      className={`fi fi-${country.toLowerCase()} h-[14px] w-[19px] shrink-0 rounded-[2px] bg-cover`}
-      aria-hidden="true"
-    />
-  );
-}
+/** Kept for callers that import it from here. */
+export { toE164 };
 
 /** Each surface keeps its own field styling; the behaviour is identical. */
 type PhoneVariant = "auth" | "account" | "checkout";
@@ -109,101 +71,12 @@ export function PhoneNumberField({
   autoComplete = "tel",
 }: PhoneNumberFieldProps) {
   const t = useShopCopy();
-  const locale = useShopLocale();
   const fieldLabel = label ?? t("phone.label");
-  const parsed = value ? parsePhoneNumberFromString(value) : undefined;
-  // An empty field starts on the selected market's country (+974 in Qatar).
-  const marketCountry = asCountry(useMarket().catalogContext?.countryCode) ?? FALLBACK_COUNTRY;
-  const [country, setCountry] = useState<CountryCode>(
-    (parsed?.country as CountryCode | undefined) ?? marketCountry,
-  );
-  // Follow a market switch while nothing has been typed yet.
-  const [lastMarketCountry, setLastMarketCountry] = useState(marketCountry);
-  if (marketCountry !== lastMarketCountry) {
-    setLastMarketCountry(marketCountry);
-    if (!value) setCountry(marketCountry);
-  }
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const styles = VARIANTS[variant];
-
-  // A parsed number wins: pasting "+9665…" switches the picker to Saudi Arabia.
-  const activeCountry = (parsed?.country as CountryCode | undefined) ?? country;
-  const national = parsed ? parsed.nationalNumber.toString() : stripDialCode(value, activeCountry);
-  // E.164 allows 15 digits in total, dial code included.
-  const maxNationalDigits = 15 - getCountryCallingCode(activeCountry).length;
-
-  const countries = useMemo(() => {
-    const all = getCountries();
-    const rest = all
-      .filter((code) => !PREFERRED.includes(code))
-      .map((code) => ({ code, name: countryName(code, locale), dial: getCountryCallingCode(code) }))
-      .sort((a, b) => a.name.localeCompare(b.name, locale));
-    return [
-      ...PREFERRED.filter((code) => all.includes(code)).map((code) => ({
-        code,
-        name: countryName(code, locale),
-        dial: getCountryCallingCode(code),
-      })),
-      ...rest,
-    ];
-  }, [locale]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return countries;
-    const digits = q.replace(/\D/g, "");
-    return countries.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
-        (digits && c.dial.startsWith(digits)),
-    );
-  }, [countries, query]);
-
-  // A prefilled number with the dial code doubled (`+971971…`) is repaired once.
-  useEffect(() => {
-    if (!value || isValidPhoneNumber(value)) return;
-    const repaired = toE164(activeCountry, national);
-    if (repaired !== value && isValidPhoneNumber(repaired)) onChange(repaired);
-  }, [value, activeCountry, national, onChange]);
-
-  // Forms that call `reportValidity()` (checkout) must not submit a number
-  // the payment providers will reject — Tabby fails the whole session on it.
-  useEffect(() => {
-    inputRef.current?.setCustomValidity(
-      value && !isValidPhoneNumber(value) ? t("phone.invalid") : "",
-    );
-  }, [value, t]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  function emit(nextCountry: CountryCode, nextNational: string) {
-    onChange(toE164(nextCountry, nextNational));
-  }
-
-  function pick(nextCountry: CountryCode) {
-    setCountry(nextCountry);
-    emit(nextCountry, national);
-    setOpen(false);
-    setQuery("");
-  }
+  const phone = usePhoneNumberField({ value, onChange });
+  const { open, toggle, query, setQuery, rootRef, inputRef, national, maxNationalDigits } = phone;
+  const activeCountry = phone.country;
+  const filtered = phone.countries;
 
   const numberInput = (
     <input
@@ -215,17 +88,12 @@ export function PhoneNumberField({
       required={required}
       autoComplete={autoComplete}
       className={styles.input}
-      placeholder="50 123 4567"
+      placeholder={phone.example}
       value={national}
       maxLength={maxNationalDigits}
       pattern="[0-9]*"
       onBlur={onBlur}
-      onChange={(event) => {
-        // Digits only, and never more than E.164 allows for this country.
-        const digits = event.target.value.replace(/\D/g, "").slice(0, maxNationalDigits);
-        setCountry(activeCountry);
-        emit(activeCountry, digits);
-      }}
+      onChange={(event) => phone.type(event.target.value)}
     />
   );
 
@@ -244,11 +112,11 @@ export function PhoneNumberField({
             className={styles.trigger}
             aria-haspopup="listbox"
             aria-expanded={open}
-            aria-label={t("phone.countryAria", { country: countryName(activeCountry, locale), dial: getCountryCallingCode(activeCountry) })}
-            onClick={() => setOpen((v) => !v)}
+            aria-label={t("phone.countryAria", { country: phone.countryLabel, dial: phone.dial })}
+            onClick={toggle}
           >
             <Flag country={activeCountry} />
-            <span dir="ltr">+{getCountryCallingCode(activeCountry)}</span>
+            <span dir="ltr">+{phone.dial}</span>
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M2.5 4.5 6 8l3.5-3.5" />
             </svg>
@@ -276,7 +144,7 @@ export function PhoneNumberField({
                       type="button"
                       role="option"
                       aria-selected={code === activeCountry}
-                      onClick={() => pick(code)}
+                      onClick={() => phone.pick(code)}
                       className={`flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-[13px] transition-colors hover:bg-section-soft ${
                         code === activeCountry ? "bg-section-soft font-semibold text-terra" : "text-sa-primary"
                       }`}
@@ -315,34 +183,4 @@ export function PhoneNumberField({
       ) : null}
     </div>
   );
-}
-
-/**
- * E.164 from the picker country + whatever was typed in the number box.
- * Shoppers often type the dial code again (`971 50…` next to `+971`) or a
- * trunk zero (`050…`); once that reads as a valid number, keep only the
- * national part so we never send `+971971…`.
- */
-export function toE164(country: CountryCode, typed: string): string {
-  const digits = typed.replace(/\D/g, "");
-  if (!digits) return "";
-  const dial = getCountryCallingCode(country);
-  const plain = `+${dial}${digits}`;
-  // `.number` is the canonical form: `+9710501…` comes back as `+971501…`.
-  const asTyped = parsePhoneNumberFromString(plain);
-  if (asTyped?.isValid()) return asTyped.number;
-  const asNational = parsePhoneNumberFromString(digits, country);
-  if (asNational?.isValid() && asNational.countryCallingCode === dial) {
-    return asNational.number;
-  }
-  return plain;
-}
-
-/** Digits typed before the number parses — drop a leading dial code if present. */
-function stripDialCode(raw: string, country: CountryCode): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  const dial = getCountryCallingCode(country);
-  const national = digits.startsWith(dial) ? digits.slice(dial.length) : digits;
-  return new AsYouType(country).input(national);
 }

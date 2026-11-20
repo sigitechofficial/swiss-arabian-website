@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAccountDashboard, useChangePassword } from "@/features/account/hooks/useAccountPages";
 import { useCustomerAddresses } from "@/features/account/hooks/useCustomerAddresses";
 import { useCustomerPhones } from "@/features/account/hooks/useCustomerPhones";
-import { useMarketingConsents } from "@/features/account/hooks/useMarketingConsents";
+import { COMMUNICATION_PREFERENCES_ID, useCommunicationPreferences } from "@/features/account/hooks/useCommunicationPreferences";
 import { useUpdateCustomerMe } from "@/features/account/hooks/useUpdateCustomerMe";
 import { regionsForCountry } from "@/features/account/data/regionsByCountry";
 import { countryLabel, regionLabel } from "@/features/account/utils/addressDisplay";
@@ -18,9 +18,8 @@ import {
   type AddressBookFormValues,
 } from "@/features/account/schemas/addressBook.schema";
 import { profileNameSchema, type ProfileNameFormValues } from "@/features/account/schemas/phoneBook.schema";
-import type { ConsentChannel, StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
+import type { StorefrontCustomerAddressView } from "@/features/account/types/customerAccount";
 import { useCustomerExchangesFeed, useCustomerReturnsFeed } from "@/features/afterSales/hooks/useAfterSales";
-import { useMarketDialCode } from "@/features/auth/hooks/useAuthForms";
 import { orderNeedsPaying, paymentFilterOf, usePaymentHistory, type PaymentFilter } from "@/features/payments/hooks/usePaymentHistory";
 import { useMyReviewsFeed } from "@/features/reviews/hooks/useProductReviews";
 import { useReviewMutations } from "@/features/reviews/hooks/useReviewMutations";
@@ -38,6 +37,8 @@ import { AccountPage, Card, LoadError, SAPIL_ACCOUNT_NAV, StatusPill, statusText
 import { PasswordField } from "../../components/account/AuthFields";
 import { SapilProductCard } from "../../components/product";
 import { FormMessage } from "../../components/account/FormCard";
+import { SapilExchangeCard, SapilReturnCard } from "../../components/afterSales/SapilAfterSalesCards";
+import { formatPhoneNumber } from "@/components/ui/phone/usePhoneNumberField";
 
 const linkBtn = cx(buttonClass("link"), "!text-[14px]");
 
@@ -83,7 +84,7 @@ export function SapilAccountPage() {
         </Button>
       }
     >
-      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[1fr]">
+      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[minmax(0,1fr)]">
         <div className="flex flex-col gap-[20px]">
           <Card title={t("account.dashRecent")} id="acc-recent">
             {recentQuery.isPending ? (
@@ -114,7 +115,7 @@ export function SapilAccountPage() {
             </SapilLink>
           </Card>
           <Card title={t("account.dashShortcuts")} id="acc-tiles">
-            <ul className="list-none grid grid-cols-2 gap-[10px] mt-[10px] max-600:grid-cols-[1fr]">
+            <ul className="list-none grid grid-cols-2 gap-[10px] mt-[10px] max-600:grid-cols-[minmax(0,1fr)]">
               {SAPIL_ACCOUNT_NAV.map((item) => (
                 <li key={item.href}>
                   <SapilLink
@@ -202,18 +203,14 @@ function NameForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-const CONSENT_CHANNELS: ConsentChannel[] = ["EMAIL", "SMS", "WHATSAPP"];
-
 export function SapilAccountProfilePage() {
   const t = useSapilCopy();
   const user = useCurrentUser();
   const [editingName, setEditingName] = useState(false);
   const phones = useCustomerPhones();
-  const consents = useMarketingConsents();
-  const dial = useMarketDialCode();
+  const prefs = useCommunicationPreferences();
   const [newPhone, setNewPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const optedIn = (channel: string) => (consents.list.data ?? []).some((c) => c.channel === channel && c.status === "OPTED_IN");
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.fullName || "";
 
   return (
@@ -247,7 +244,7 @@ export function SapilAccountProfilePage() {
               {(phones.list.data ?? []).map((phone) => (
                 <li key={phone.id} className="flex items-center justify-between gap-[12px] flex-wrap py-[10px] border-b border-sapil-line last:border-b-0">
                   <span dir="ltr" className="font-[600]">
-                    {phone.phoneE164}
+                    {formatPhoneNumber(phone.phoneE164)}
                   </span>
                   <span className="flex items-center gap-[12px]">
                     {phone.isPrimary ? <StatusPill status="PAID" label={t("account.profilePhonePrimary")} /> : null}
@@ -278,7 +275,6 @@ export function SapilAccountProfilePage() {
               <SapilPhoneField
                 id="pf-phone"
                 label={t("account.profilePhoneAdd")}
-                dialCode={dial}
                 value={newPhone}
                 onChange={setNewPhone}
                 error={phoneError ?? undefined}
@@ -290,20 +286,22 @@ export function SapilAccountProfilePage() {
           </form>
         </Card>
         <Card title={t("account.profileConsents")} headingLevel="h3">
-          <p className="text-[14px] text-sapil-ink-2">{t("account.profileConsentsLede")}</p>
-          {consents.list.isError ? <LoadError onRetry={() => void consents.list.refetch()} /> : null}
-          {CONSENT_CHANNELS.map((channel) => (
-            <Checkbox
-              key={channel}
-              checked={optedIn(channel)}
-              disabled={consents.list.isPending || consents.update.isPending}
-              onChange={(event) =>
-                consents.update.mutate({ consents: [{ channel, status: event.target.checked ? "OPTED_IN" : "OPTED_OUT" }] })
-              }
-            >
-              {t(`account.consent${channel}` as SapilCopyKey)}
-            </Checkbox>
-          ))}
+          {/* One switch per channel we send offers on; each saves at once (shared useCommunicationPreferences). */}
+          <div id={COMMUNICATION_PREFERENCES_ID} className="flex flex-col gap-[12px]">
+            <p className="text-[14px] text-sapil-ink-2">{t("account.profileConsentsLede")}</p>
+            {prefs.loading ? <SapilSkeleton className="h-[44px]" /> : null}
+            {prefs.failed ? <LoadError onRetry={prefs.retry} /> : null}
+            {prefs.channels.map(({ channel, subscribed }) => (
+              <Checkbox
+                key={channel}
+                checked={subscribed}
+                disabled={prefs.savingChannel === channel}
+                onChange={(event) => prefs.setSubscribed(channel, event.target.checked)}
+              >
+                {t(`account.consent${channel}` as SapilCopyKey)}
+              </Checkbox>
+            ))}
+          </div>
         </Card>
       </div>
     </AccountPage>
@@ -347,7 +345,6 @@ function AddressForm({
   const phone = useWatch({ control: form.control, name: "phone" });
   const regions = regionsForCountry(country)?.regions ?? [];
   const errors = form.formState.errors;
-  const dial = useMarketDialCode();
   return (
     <Card title={initial ? t("account.addressesEditTitle") : t("account.addressesNew")} headingLevel="h3">
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
@@ -388,7 +385,6 @@ function AddressForm({
           <SapilPhoneField
             id="ad-phone"
             label={t("account.addressesPhone")}
-            dialCode={dial}
             value={phone ?? ""}
             onChange={(value) => form.setValue("phone", value, { shouldValidate: Boolean(errors.phone) })}
             error={errors.phone ? t("account.authErrMobile") : undefined}
@@ -432,7 +428,7 @@ export function SapilAccountAddressesPage() {
       ) : list.isError ? (
         <LoadError onRetry={() => void list.refetch()} />
       ) : (
-        <div className="grid grid-cols-2 gap-[20px] items-start max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-2 gap-[20px] items-start max-900:grid-cols-[minmax(0,1fr)]">
           {mode === "create" ? (
             <AddressForm
               isFirst={addresses.length === 0}
@@ -481,7 +477,7 @@ export function SapilAccountAddressesPage() {
                     {address.phoneE164 ? (
                       <>
                         <br />
-                        <span dir="ltr">{address.phoneE164}</span>
+                        <span dir="ltr">{formatPhoneNumber(address.phoneE164)}</span>
                       </>
                     ) : null}
                   </p>
@@ -766,36 +762,13 @@ export function SapilAccountReviewsPage() {
 
 export function SapilAccountAfterSalesPage() {
   const t = useSapilCopy();
-  const date = useSapilDate();
   const [kind, setKind] = useState<"returns" | "exchanges">("returns");
   const returns = useCustomerReturnsFeed(null);
   const exchanges = useCustomerExchangesFeed(null);
   const feed = kind === "returns" ? returns : exchanges;
-  const rows = useMemo(
-    () =>
-      kind === "returns"
-        ? (returns.data?.pages.flatMap((p) => p.items) ?? []).map((r) => ({
-            id: r.returnRequestId,
-            number: r.returnNumber,
-            orderId: r.orderId,
-            orderNumber: r.orderNumber,
-            status: r.status,
-            message: r.latestStatusMessage,
-            itemCount: r.itemCount,
-            createdAt: r.createdAt,
-          }))
-        : (exchanges.data?.pages.flatMap((p) => p.items) ?? []).map((r) => ({
-            id: r.exchangeRequestId,
-            number: r.exchangeNumber,
-            orderId: r.orderId,
-            orderNumber: r.orderNumber,
-            status: r.status,
-            message: r.latestStatusMessage,
-            itemCount: r.itemCount,
-            createdAt: r.createdAt,
-          })),
-    [kind, returns.data, exchanges.data],
-  );
+  const returnItems = useMemo(() => returns.data?.pages.flatMap((p) => p.items) ?? [], [returns.data]);
+  const exchangeItems = useMemo(() => exchanges.data?.pages.flatMap((p) => p.items) ?? [], [exchanges.data]);
+  const empty = kind === "returns" ? !returnItems.length : !exchangeItems.length;
   return (
     <AccountPage crumb={t("account.returnsTitle")} title={t("account.returnsTitle")} lede={t("account.returnsLede")}>
       <div className="flex gap-[8px] flex-wrap mb-[20px]" role="group" aria-label={t("account.returnsTitle")}>
@@ -810,34 +783,24 @@ export function SapilAccountAfterSalesPage() {
         <Loading />
       ) : feed.isError ? (
         <LoadError onRetry={() => void feed.refetch()} />
-      ) : !rows.length ? (
+      ) : empty ? (
         <Card className="text-center">
           <p className="text-sapil-ink-2">{t("account.returnsEmpty")}</p>
         </Card>
       ) : (
-        <ul className="list-none bg-sapil-white rounded-[24px] py-[6px] px-[20px]">
-          {rows.map((row) => (
-            <li key={row.id} className="flex justify-between gap-[12px] flex-wrap py-[14px] border-b border-sapil-line last:border-b-0">
-              <div>
-                <b className="font-[700]" dir="ltr">
-                  {row.number}
-                </b>
-                <p className="text-[14px] text-sapil-ink-2">
-                  {t("account.returnsRequested", { date: date(row.createdAt) })} · {t("account.returnsItems", { count: row.itemCount })}
-                  {row.orderNumber ? (
-                    <>
-                      {" · "}
-                      <SapilLink href={`/account/orders/${encodeURIComponent(row.orderId)}`} className="underline" dir="ltr">
-                        {row.orderNumber}
-                      </SapilLink>
-                    </>
-                  ) : null}
-                </p>
-                {row.message ? <p className="text-[13px] text-sapil-muted mt-[2px]">{row.message}</p> : null}
-              </div>
-              <StatusPill status={row.status} label={statusText(t, row.status)} />
-            </li>
-          ))}
+        // Each request opens its items; an exchange shows its price difference (pay or refund status).
+        <ul className="list-none p-0 m-0 grid gap-[12px]">
+          {kind === "returns"
+            ? returnItems.map((item) => (
+                <li key={item.returnRequestId}>
+                  <SapilReturnCard item={item} />
+                </li>
+              ))
+            : exchangeItems.map((item) => (
+                <li key={item.exchangeRequestId}>
+                  <SapilExchangeCard item={item} />
+                </li>
+              ))}
         </ul>
       )}
       {feed.hasNextPage ? (
@@ -898,7 +861,7 @@ export function SapilPaymentsPage() {
             const payLabel = t(payKey) === payKey ? statusText(t, order.paymentStatus) : t(payKey);
             const kind = paymentFilterOf(order.paymentStatus);
             return (
-              <li key={order.orderId} className="grid grid-cols-[1fr_1fr_auto_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[1fr_auto]">
+              <li key={order.orderId} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 text-[15px] max-900:grid-cols-[minmax(0,1fr)_auto]">
                 <SapilLink href={`/account/orders/${encodeURIComponent(order.orderId)}`} className="font-[700] hover:underline" dir="ltr">
                   {order.orderNumber ?? order.orderId.slice(0, 8).toUpperCase()}
                 </SapilLink>

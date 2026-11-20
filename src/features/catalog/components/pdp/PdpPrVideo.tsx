@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { videoClose, videoEl, videoExpand, videoExpanded, videoFrame } from "@/styles/pdpChrome";
 import { useResetOnChange } from "@/hooks/useResetOnChange";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 type PdpPrVideoProps = {
   video: { url: string; name: string | null };
@@ -13,6 +14,7 @@ type PdpPrVideoProps = {
 };
 
 export function PdpPrVideo({ video, poster, title, resetKey, onError }: PdpPrVideoProps) {
+  const t = useShopCopy();
   const [open, setOpen] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
@@ -33,10 +35,11 @@ export function PdpPrVideo({ video, poster, title, resetKey, onError }: PdpPrVid
         muted
         loop
         playsInline
-        aria-label={video.name ?? `${title} video`}
+        // The stored name is the file name ("flower.mp4"): shoppers hear the product instead.
+        aria-label={t("pdpVideo.label", { title })}
         onError={() => onError(video.url)}
       />
-      <button type="button" className={videoClose} aria-label="Close video" onClick={() => setOpen(false)}>
+      <button type="button" className={videoClose} aria-label={t("pdpVideo.close")} onClick={() => setOpen(false)}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
         </svg>
@@ -44,7 +47,7 @@ export function PdpPrVideo({ video, poster, title, resetKey, onError }: PdpPrVid
       <button
         type="button"
         className={videoExpand}
-        aria-label={expanded ? "Shrink video" : "Expand video"}
+        aria-label={expanded ? t("pdpVideo.shrink") : t("pdpVideo.expand")}
         onClick={() => setExpanded((current) => !current)}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">

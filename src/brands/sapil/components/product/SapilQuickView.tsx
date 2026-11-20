@@ -5,10 +5,11 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import { useSapilCopy } from "../../i18n/SapilCopy";
-import { Button, Dialog, Eyebrow, Price } from "../../ui";
+import { Button, Dialog, Eyebrow, Price, buttonClass } from "../../ui";
 import { cx, tintStyle } from "../../ui/shared";
 import type { SapilCardModel } from "./productCardModel";
 import { SapilLocaleLink } from "./SapilLocaleLink";
+import { SapilStockAlert } from "../product-page/SapilStockAlert";
 
 /**
  * v9 quick view (`dialog` + `.qv`): the product's images on its tile, kind and
@@ -84,9 +85,12 @@ export function SapilQuickView({
                 {t("product.addToBag")}
               </Button>
             ) : (
-              <span className="text-[14px] font-[600] text-sapil-sale">
-                {model.unavailable ? t("product.unavailable") : t("product.outOfStock")}
-              </span>
+              <>
+                <span className="text-[14px] font-[600] text-sapil-sale">
+                  {model.unavailable ? t("product.unavailable") : t("product.outOfStock")}
+                </span>
+                {model.unavailable ? null : <SapilStockAlert product={product} className={buttonClass("dark")} />}
+              </>
             )}
           </div>
           <p className="mt-[24px]">

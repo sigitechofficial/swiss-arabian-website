@@ -11,6 +11,11 @@ import { buttonClass } from "../../ui/Button";
 import { cx } from "../../ui/shared";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { toBagGiftData, toBagLineData } from "../../components/bag/bagData";
+import { SapilPromoProgress } from "../../components/bag/SapilPromoProgress";
+import { SapilAppliedOffers } from "../../components/bag/SapilAppliedOffers";
+import { SapilEmptyBagPicks, SapilQuickAdd } from "../../components/bag/SapilBagPicks";
+import { SapilPaymentConfirming } from "../../components/bag/SapilPaymentConfirming";
+import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 import { CheckoutEmptyCard, OrderSummary, type SummaryTotalRow } from "../../components/checkout/CheckoutParts";
 import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { loyaltyLineFromQuote } from "@/features/loyalty/hooks/useLoyaltyRedemption";
@@ -30,7 +35,7 @@ export function SapilCartPage() {
     return (
       <Wrap className="w-full pt-[32px] pb-[88px] min-h-[70vh]" aria-busy="true">
         <SapilSkeleton className="h-[48px] w-[220px] mb-[24px]" />
-        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] max-900:grid-cols-[minmax(0,1fr)]">
           <SapilSkeleton className="h-[320px] !rounded-[24px]" />
           <SapilSkeleton className="h-[320px] !rounded-[28px] max-900:hidden" />
         </div>
@@ -52,6 +57,10 @@ export function SapilCartPage() {
               </Button>
             }
           />
+          {/* Suggestions to start again, as on Swiss Arabian's empty bag. */}
+          <div className="mt-[32px]">
+            <SapilEmptyBagPicks surface="empty-cart" />
+          </div>
         </div>
       </Wrap>
     );
@@ -128,7 +137,11 @@ export function SapilCartPage() {
         <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,52px)] leading-[1]">{t("bag.title")}</h1>
         <span className="text-[15px] text-sapil-muted pb-[4px]">{t("bag.items", { count: bag.itemCount })}</span>
       </header>
-      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[1fr] max-900:gap-[20px]">
+      {/* Only while a payment for this bag is being confirmed (as on Swiss Arabian). */}
+      <SapilPaymentConfirming className="mb-[20px]" />
+      {/* Tiered offers: steps to the next reward, or what the bag saved (as on Swiss Arabian). */}
+      <SapilPromoProgress surface="cart" className="mb-[20px]" />
+      <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[minmax(0,1fr)] max-900:gap-[20px]">
         <section aria-label={t("bag.title")} aria-live="polite" className="bg-sapil-white rounded-[24px] py-[6px] px-[24px] max-900:px-[16px] max-900:rounded-[20px]">
           {lineData.map((line) => (
             <BagLine
@@ -209,11 +222,14 @@ export function SapilCartPage() {
               </div>
             ),
           )}
+          {/* Picks that unlock the next reward. */}
+          <SapilQuickAdd surface="cart" className="pb-[14px]" />
         </section>
 
         <OrderSummary
           open
           lines={[]}
+          extra={<SapilAppliedOffers />}
           promo={{
             value: coupon.value,
             onChange: coupon.setCode,
@@ -279,6 +295,10 @@ export function SapilCartPage() {
               <SapilLink href="/products" className={cx(buttonClass("link"), "self-center !text-[14px]")}>
                 {t("bag.continueShopping")}
               </SapilLink>
+              <ReturnTermsNote
+                className="text-[12px] leading-[1.5] text-sapil-muted text-center"
+                linkClassName="font-[600] text-sapil-accent underline underline-offset-[3px]"
+              />
             </div>
           }
           trust={[t("bag.pageSecure")]}

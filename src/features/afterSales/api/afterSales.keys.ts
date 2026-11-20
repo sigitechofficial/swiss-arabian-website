@@ -27,11 +27,22 @@ export const afterSalesKeys = {
   /** Refund estimate: per order and the exact lines + reason asked. */
   returnEstimate: (orderRef: string, payloadKey: string) =>
     [...afterSalesKeys.all, "return-estimate", orderRef, payloadKey] as const,
+  /** Free units per line for a return or an exchange (customer orderId or guest orderNumber). */
+  eligibility: (orderRef: string, kind: "return" | "exchange") =>
+    [...afterSalesKeys.all, "eligibility", orderRef, kind] as const,
+  exchangeOptions: (orderRef: string, locale: string | null) =>
+    [...afterSalesKeys.all, "exchange-options", orderRef, locale ?? "default"] as const,
+  /** Exchange price estimate: per order and the exact lines + reason asked. */
+  exchangeEstimate: (orderRef: string, payloadKey: string) =>
+    [...afterSalesKeys.all, "exchange-estimate", orderRef, payloadKey] as const,
   returnsPolicy: (scope: "order" | "guest" | "market", ref: string) =>
     [...afterSalesKeys.all, "returns-policy", scope, ref] as const,
 };
 
-/** True for refund-estimate queries (see afterSalesKeys.returnEstimate). */
-export function isReturnEstimateKey(queryKey: readonly unknown[]): boolean {
-  return queryKey[0] === afterSalesKeys.all[0] && queryKey[1] === "return-estimate";
+/** True for estimate queries (refund or exchange): they describe a draft, see useAfterSalesMutations. */
+export function isEstimateKey(queryKey: readonly unknown[]): boolean {
+  return (
+    queryKey[0] === afterSalesKeys.all[0] &&
+    (queryKey[1] === "return-estimate" || queryKey[1] === "exchange-estimate")
+  );
 }

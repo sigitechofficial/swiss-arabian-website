@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderTrackingSummary, OrderTrackingTimeline } from "@/features/tracking/api/orderTracking.service";
@@ -90,10 +91,14 @@ const timeline = {
 async function renderIn(locale: "en" | "ar") {
   state.path = locale === "ar" ? "/ar/track/SP-1" : "/track/SP-1";
   const messages = await loadSapilMessages(locale);
+  // As in the app: the page reads returns and exchanges through react-query.
+  const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <SapilCopyProvider messages={messages}>
-      <SapilGuestTrackingPage orderNumber="SP-1" />
-    </SapilCopyProvider>,
+    <QueryClientProvider client={queries}>
+      <SapilCopyProvider messages={messages}>
+        <SapilGuestTrackingPage orderNumber="SP-1" />
+      </SapilCopyProvider>
+    </QueryClientProvider>,
   );
 }
 

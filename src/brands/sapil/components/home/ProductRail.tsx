@@ -34,6 +34,7 @@ export function ProductRail({ sectionId, band, eyebrow, title, accent, descripti
     <HomeSection id={sectionId} band={band} labelledBy={headingId}>
       <Wrap>
         <SectionHead
+          as="p"
           id={headingId}
           eyebrow={eyebrow}
           title={title}

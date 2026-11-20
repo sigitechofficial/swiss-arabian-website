@@ -53,6 +53,8 @@ export type StorefrontReturnSummaryView = {
   reasonText: string | null;
   requestedResolution: string;
   itemCount: number;
+  /** Units asked for across the lines (older APIs: absent). */
+  unitCount?: number;
   createdAt: string;
   updatedAt: string;
   latestStatusMessage: string;
@@ -147,6 +149,8 @@ export type StorefrontExchangeSummaryView = {
   reasonCode: string;
   exchangeType: string;
   itemCount: number;
+  /** Units asked for across the lines (older APIs: absent). */
+  unitCount?: number;
   createdAt: string;
   updatedAt: string;
   latestStatusMessage: string;
@@ -195,20 +199,13 @@ export type CreateExchangeItemDto = {
 export type CreateExchangeDto = {
   items: CreateExchangeItemDto[];
   reasonCode?: string;
+  reasonText?: string;
   exchangeType?: ExchangeType;
   customerNote?: string;
 };
 
 export type GuestProofDto = {
   orderAccessToken: string;
-};
-
-export type AfterSalesOrderLine = {
-  orderLineId: string;
-  sku: string;
-  productName: string | null;
-  variantName: string | null;
-  quantity: number;
 };
 
 /** Whether one of return / exchange can be requested for an order, and if not, why. */
@@ -335,4 +332,97 @@ export type ReturnEstimate = {
     gifts: ReturnEstimateGift[];
   };
   notes: AfterSalesCopyItem[];
+};
+
+export type AfterSalesKind = "return" | "exchange";
+
+/** One order line as returns / exchanges see it now. */
+export type AfterSalesEligibilityLine = {
+  orderLineId: string;
+  sku: string;
+  productName: string | null;
+  variantName: string | null;
+  /** Units bought and not cancelled. */
+  orderedQty: number;
+  /** A free gift: exchanged for the same item only. */
+  isGift: boolean;
+  imageUrl: string | null;
+  /** Units still free: not in an open return or exchange. */
+  returnableQty: number;
+  /** Why the line cannot be picked (QTY_EXCEEDED, NON_RETURNABLE_SKU, …). */
+  blockedReason?: string;
+};
+
+export type AfterSalesEligibility = {
+  kind: AfterSalesKind;
+  orderId: string;
+  orderNumber: string | null;
+  withinPolicyWindow: boolean;
+  eligibleUntil: string | null;
+  supportedResolutions: string[];
+  lines: AfterSalesEligibilityLine[];
+};
+
+export type ExchangeUnitDifference = {
+  direction: "EVEN" | "CUSTOMER_OWES" | "REFUND_DUE";
+  /** Always positive; `direction` says who pays. */
+  amount: string;
+};
+
+/** Something an item can be exchanged for. */
+export type ExchangeOption = {
+  sku: string;
+  variantId: string | null;
+  productName: string | null;
+  variantName: string | null;
+  imageUrl: string | null;
+  sameItem: boolean;
+  inStock: boolean;
+  /** Null when it has no price in this market today. */
+  unitDifference: ExchangeUnitDifference | null;
+};
+
+export type ExchangeOptionsLine = {
+  orderLineId: string;
+  sku: string;
+  sameItemOnly: boolean;
+  options: ExchangeOption[];
+};
+
+export type ExchangeOptions = {
+  orderId: string;
+  orderNumber: string | null;
+  currencyCode: string;
+  lines: ExchangeOptionsLine[];
+};
+
+export type ExchangeEstimateDto = {
+  items: Array<{ orderLineId: string; quantity: number; replacementSku: string }>;
+  reasonCode?: string;
+};
+
+/** What an exchange would cost or give back before it is sent (the approval's math). */
+export type ExchangeEstimate = {
+  orderId: string;
+  orderNumber: string | null;
+  currencyCode: string;
+  isEstimate: true;
+  reasonCode: string;
+  direction: "EVEN" | "CUSTOMER_OWES" | "REFUND_DUE";
+  lines: Array<{
+    orderLineId: string;
+    originalSku: string;
+    replacementSku: string;
+    quantity: number;
+    /** Signed: + the customer pays, - given back. */
+    differenceAmount: string;
+    inStock: boolean;
+  }>;
+  replacementDelivery: { amount: string; waived: boolean };
+  /** Offer the kept items no longer earn (signed). */
+  offerAdjustmentAmount: string;
+  customerPayableAmount: string;
+  refundableDifferenceAmount: string;
+  stockOk: boolean;
+  unavailableSkus: string[];
 };

@@ -13,7 +13,7 @@ export function ForgotPasswordPageView() {
 
   return (
     <AuthShell heading={t("auth.forgot.heading")} subtitle={t("auth.forgot.subtitle")}>
-      <form className="flex w-full flex-col gap-5" onSubmit={submit}>
+      <form className="flex w-full flex-col gap-5" onSubmit={submit} noValidate>
         <AuthField
           id="identifier"
           label={t("auth.emailOrPhone")}

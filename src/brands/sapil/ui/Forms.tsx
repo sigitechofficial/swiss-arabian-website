@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type Ref,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 import { cx } from "./shared";
 
@@ -41,7 +42,7 @@ export function FieldGrid({ className, ...rest }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       {...rest}
-      className={cx("grid grid-cols-[repeat(2,minmax(0,1fr))] gap-y-[14px] gap-x-[16px] clear-both max-900:grid-cols-[1fr]", className)}
+      className={cx("grid grid-cols-[repeat(2,minmax(0,1fr))] gap-y-[14px] gap-x-[16px] clear-both max-900:grid-cols-[minmax(0,1fr)]", className)}
     />
   );
 }
@@ -51,8 +52,8 @@ const CONTROL =
 
 type FieldShell = {
   label: ReactNode;
-  /** adds "(optional)" after the label */
-  optional?: boolean | string;
+  /** translated optional mark shown after the label, e.g. t("account.optional") */
+  optional?: string;
   /** error message; shows it and marks the control invalid (v9 `.fld.err`) */
   error?: ReactNode;
   /** spans both grid columns (v9 `.fld.wide`) */
@@ -88,7 +89,7 @@ function Shell({
           <>
             {" "}
             <small className="font-[400] [font-size:smaller] text-sapil-muted">
-              {typeof optional === "string" ? optional : "(optional)"}
+              {optional}
             </small>
           </>
         )}
@@ -145,6 +146,31 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
       ) : (
         control
       )}
+    </Shell>
+  );
+}
+
+export type TextAreaFieldProps = FieldShell &
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className"> & {
+    /** the textarea element (React 19 ref prop; react-hook-form `register` passes one) */
+    ref?: Ref<HTMLTextAreaElement>;
+  };
+
+/** v9 `.fld` for several lines of text: same shell and border as Field. */
+export function TextAreaField({ label, optional, error, wide, className, id, rows = 3, ...area }: TextAreaFieldProps) {
+  const auto = useId();
+  const fid = id ?? auto;
+  const errorId = `${fid}-err`;
+  return (
+    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
+      <textarea
+        {...area}
+        id={fid}
+        rows={rows}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : area["aria-describedby"]}
+        className={cx(CONTROL, "h-auto py-[12px] rounded-[14px] resize-y", error ? "border-sapil-sale" : "border-sapil-line-2")}
+      />
     </Shell>
   );
 }

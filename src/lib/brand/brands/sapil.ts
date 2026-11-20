@@ -32,12 +32,12 @@ export const sapil = defineBrand({
   },
   // TODO(brand): Sapil social profiles.
   social: {},
-  // Sapil's CMS pages (seeded from Swiss Arabian's, rebranded). Privacy and refund
-  // are pages with Arabic text; terms and shipping exist only as policies.
+  // Sapil's policies (Pages & policies in the admin), at their own addresses:
+  // no redirect in between (the old /pages/… addresses only redirect on dev).
   legal: {
-    privacy: "/pages/privacy-policy",
+    privacy: "/policies/privacy-policy",
     terms: "/policies/terms-of-service",
-    refund: "/pages/refund-policy",
+    refund: "/policies/refund-policy",
     shipping: "/policies/shipping-policy",
   },
   seo: {

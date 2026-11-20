@@ -109,7 +109,8 @@ export function Toaster() {
   return (
     <ToastContext.Provider value={api}>
       {state.open && !claimed ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[1400] flex justify-center px-4">
+        // Top centre under the header, so it never covers sticky bars at the bottom.
+        <div className="pointer-events-none fixed inset-x-0 top-20 z-[1400] flex justify-center px-4">
           <div
             className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-md px-4 py-3 text-sm text-white shadow-[0_12px_32px_rgba(44,36,29,0.18)] ${toneClass}`}
             role="status"

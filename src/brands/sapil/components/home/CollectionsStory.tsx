@@ -38,6 +38,7 @@ export function CollectionsStory({
     <HomeSection id="collections" labelledBy={headingId}>
       <Wrap>
         <SectionHead
+          as="p"
           id={headingId}
           eyebrow={heading ?? t("home.collectionsEyebrow")}
           {...sectionTitleProps(title, t("home.collectionsTitle"), t("home.collectionsAccent"))}
@@ -83,7 +84,7 @@ export function CollectionsStory({
                         IMG[i],
                       )}
                     >
-                      <MediaImage src={src} alt="" fill sizes="200px" className="!object-contain" />
+                      <MediaImage src={src} alt={t("product.imageAlt", { name: im.name })} fill sizes="200px" className="!object-contain" />
                     </span>
                   ) : null;
                 })}

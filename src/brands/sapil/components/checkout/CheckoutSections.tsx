@@ -220,7 +220,6 @@ export function DeliverySection({
   address,
   onField,
   onPlace,
-  dialCode,
   errors,
   before,
   ...region
@@ -230,7 +229,6 @@ export function DeliverySection({
   address: CheckoutAddress;
   onField: (field: AddressField, value: string) => void;
   onPlace: (parsed: ParsedStreetAddress) => void;
-  dialCode: string;
   errors: AddressErrors;
   /** test-site "fill test data" bar */
   before?: ReactNode;
@@ -270,8 +268,6 @@ export function DeliverySection({
           name="delPhone"
           wide
           label={t("checkout.phone")}
-          dialCode={dialCode}
-          placeholder={t("checkout.phonePlaceholder")}
           value={address.phone}
           onChange={(value) => onField("phone", value)}
           error={errors.phone}

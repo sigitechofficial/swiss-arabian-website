@@ -1,57 +1,21 @@
 "use client";
 
-import { FormEvent, type MouseEvent, useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { createPortal } from "react-dom";
-import { apiPost } from "@/lib/api/apiClient";
-import { storefrontContextQuery } from "@/lib/storefront/context";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pdpAdd } from "@/styles/pdpChrome";
 import { cardAddButton } from "@/styles/productCard";
-import type { ProductSummary } from "../../types/product";
+import { type StockAlertProduct, useStockAlert } from "../../hooks/useStockAlert";
 
 type StockAlertButtonProps = {
-  product: Pick<ProductSummary, "id" | "title" | "slug"> & {
-    variantId?: string;
-    sku?: string;
-  };
+  product: StockAlertProduct;
   appearance?: "pdp" | "card";
 };
 
 export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButtonProps) {
+  const t = useShopCopy();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState("");
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!product.sku || !product.id) {
-      setError("This product cannot take an alert yet.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const query = storefrontContextQuery();
-      await apiPost(
-        `/storefront/catalog/stock-alerts${query ? `?${query}` : ""}`,
-        {
-          productId: product.id,
-          variantId: product.variantId,
-          sku: product.sku,
-          productName: product.title,
-          slug: product.slug,
-          email,
-        },
-        { skipAuth: true },
-      );
-      setDone(true);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "We couldn't save that email.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { email, setEmail, busy, done, error, submit } = useStockAlert(product);
 
   return (
     <>
@@ -64,7 +28,7 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
           setOpen(true);
         }}
       >
-        {appearance === "card" ? "Notify me" : "Notify me when available"}
+        {appearance === "card" ? t("stockAlert.notifyMe") : t("stockAlert.notifyWhenAvailable")}
       </button>
       {open
         ? createPortal(
@@ -90,7 +54,7 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 id="stock-alert-title" className="m-0 text-[1.35rem] font-semibold tracking-[-0.02em]">
-                  Email me when available
+                  {t("stockAlert.title")}
                 </h2>
                 <p className="mt-2 mb-0 text-[0.95rem] font-medium">{product.title}</p>
               </div>
@@ -104,17 +68,17 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
                   setOpen(false);
                 }}
               >
-                Close
+                {t("stockAlert.close")}
               </button>
             </div>
             {done ? (
               <p className="mt-6 mb-0 text-[0.95rem] leading-relaxed" role="status">
-                We’ll email {email.trim()} when this is available again.
+                {t("stockAlert.done", { email: email.trim() })}
               </p>
             ) : (
               <>
                 <label className="mt-6 block text-[0.8rem] font-medium" htmlFor="stock-alert-email">
-                  Email address
+                  {t("stockAlert.emailLabel")}
                 </label>
                 <input
                   id="stock-alert-email"
@@ -122,7 +86,7 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="Enter your email address"
+                  placeholder={t("stockAlert.emailPlaceholder")}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
@@ -136,7 +100,7 @@ export function StockAlertButton({ product, appearance = "pdp" }: StockAlertButt
                   type="submit"
                   disabled={busy}
                 >
-                  {busy ? "Saving…" : "Notify me"}
+                  {busy ? t("stockAlert.saving") : t("stockAlert.notifyMe")}
                 </button>
               </>
             )}

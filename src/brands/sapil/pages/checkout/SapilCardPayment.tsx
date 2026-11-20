@@ -106,7 +106,7 @@ function CardPaymentLayout({
 }) {
   const t = useSapilCopy();
   return (
-    <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[1fr] max-900:gap-[24px]">
+    <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[56px] items-start max-900:grid-cols-[minmax(0,1fr)] max-900:gap-[24px]">
       <div className="min-w-0">
         <Eyebrow>{t("checkout.payment")}</Eyebrow>
         <h1 className="!font-[400] !leading-[1.05] mt-[10px]">

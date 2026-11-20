@@ -14,7 +14,7 @@ export function ResetPasswordPageView() {
 
   return (
     <AuthShell heading={t("auth.reset.heading")} subtitle={t("auth.reset.subtitle")}>
-      <form className="flex w-full flex-col gap-4" onSubmit={submit}>
+      <form className="flex w-full flex-col gap-4" onSubmit={submit} noValidate>
         <AuthField
           id="identifier"
           label={t("auth.emailOrPhone")}

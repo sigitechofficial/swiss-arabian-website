@@ -119,14 +119,16 @@ export function SapilOrderView({
       <header
         className={cx(
           "grid grid-cols-[auto_minmax(0,1fr)_auto] gap-[28px] items-center rounded-[32px] py-[40px] px-[44px] mt-[24px] mb-[20px]",
-          "max-900:grid-cols-[1fr] max-900:py-[28px] max-900:px-[22px] max-900:gap-[16px] max-900:rounded-[24px]",
+          "max-900:grid-cols-[minmax(0,1fr)] max-900:py-[28px] max-900:px-[22px] max-900:gap-[16px] max-900:rounded-[24px]",
           HERO_BG[tone],
         )}
       >
         <HeroMark tone={tone} />
         <div className="min-w-0">
           <Eyebrow>{eyebrow}</Eyebrow>
-          <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,56px)] leading-[1.02] mt-[10px] mb-[12px] [&_.serif]:font-sapil-serif">
+          {/* `.order-ref`: an order number is a code, not a word. On small screens it takes its
+              own line at a smaller size and may break anywhere, instead of wrapping mid-code. */}
+          <h1 className="font-sapil-display font-[400] text-[clamp(36px,4vw,56px)] leading-[1.02] mt-[10px] mb-[12px] [&_.serif]:font-sapil-serif [&_.order-ref]:[overflow-wrap:anywhere] max-600:[&_.order-ref]:block max-600:[&_.order-ref]:text-[0.62em] max-600:[&_.order-ref]:leading-[1.1] max-600:[&_.order-ref]:mt-[4px]">
             {headline}
           </h1>
           {intro ? <p className="text-sapil-ink-2 max-w-[62ch]">{intro}</p> : null}
@@ -146,7 +148,7 @@ export function SapilOrderView({
         <ol
           aria-label={t("account.odStatus")}
           style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
-          className="list-none grid bg-sapil-white rounded-[24px] py-[26px] px-[28px] mb-[20px] max-900:!grid-cols-[1fr] max-900:p-[20px]"
+          className="list-none grid bg-sapil-white rounded-[24px] py-[26px] px-[28px] mb-[20px] max-900:!grid-cols-[minmax(0,1fr)] max-900:p-[20px]"
         >
           {steps.map((step, index) => (
             <li
@@ -189,7 +191,7 @@ export function SapilOrderView({
       {notices}
 
       {lines ? (
-        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[20px] items-start max-900:grid-cols-[minmax(0,1fr)]">
           <section className="bg-sapil-white rounded-[24px] py-[24px] px-[26px] max-900:p-[20px]" aria-labelledby="od-items">
             <h2 id="od-items" className="font-sapil-sans font-[700] text-[20px] leading-[normal] tracking-[-.02em] mb-[6px]">
               {itemsTitle}
@@ -208,7 +210,7 @@ export function SapilOrderView({
                   </span>
                 );
                 return (
-                  <li key={line.key} className="grid grid-cols-[76px_1fr_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line">
+                  <li key={line.key} className="grid grid-cols-[76px_minmax(0,1fr)_auto] gap-[16px] items-center py-[14px] border-b border-sapil-line">
                     {line.href ? (
                       <SapilLink href={line.href} tabIndex={-1} aria-hidden="true">
                         {thumb}
@@ -287,7 +289,8 @@ export function OrderStateCard({ title, body, actions, busy }: { title: ReactNod
           {title}
         </h1>
         {body ? <p className="text-sapil-ink-2 mb-[24px]">{body}</p> : null}
-        {actions ? <div className="flex gap-[10px] justify-center flex-wrap">{actions}</div> : null}
+        {/* Centred on one line: a text link next to a button keeps its underline under the words. */}
+        {actions ? <div className="flex gap-[10px] justify-center items-center flex-wrap">{actions}</div> : null}
       </div>
     </Wrap>
   );

@@ -70,7 +70,9 @@ export type ApiCartItem = {
 
 /**
  * The bag is held by an order waiting for payment (any payment method). The
- * server shows it on every device; changing the bag releases that order.
+ * shopper is never shown that order: the bag stays their bag. Checking out or
+ * changing it releases the order (server side). Only while a payment is being
+ * confirmed (`paymentConfirming`) does the bag say so and stay as it is.
  */
 export type CartPendingPayment = {
   orderId: string;
@@ -79,6 +81,8 @@ export type CartPendingPayment = {
   currencyCode: string;
   /** After this the order is released automatically. */
   paymentDueAt: string | null;
+  /** A payment took or holds money, or is under review: the bag can't change yet. */
+  paymentConfirming?: boolean;
 };
 
 export type ApiCartUnavailableItem = ApiCartItem & {

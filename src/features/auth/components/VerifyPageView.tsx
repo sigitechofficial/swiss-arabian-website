@@ -29,7 +29,7 @@ export function VerifyPageView() {
       heading={t("auth.verify.heading")}
       subtitle={email ? t("auth.verify.subtitle", { email }) : t("auth.verify.subtitleNoEmail")}
     >
-      <form className="flex w-full flex-col gap-5" onSubmit={submit}>
+      <form className="flex w-full flex-col gap-5" onSubmit={submit} noValidate>
         <AuthOtpField
           id="code"
           label={t("auth.verify.code")}

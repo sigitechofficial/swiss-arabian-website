@@ -2,10 +2,9 @@
 
 import { CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { useMarket } from "@/providers/MarketProvider";
 import { checkoutNote } from "@/styles/checkoutChrome";
 import { pageTitle } from "@/styles/shopChrome";
-import { useReturnsPolicy } from "../hooks/useAfterSales";
+import { useMarketReturnTerms } from "../hooks/useMarketReturnTerms";
 import { ReturnsPolicyList } from "./ReturnsPolicySummary";
 
 /**
@@ -16,11 +15,7 @@ import { ReturnsPolicyList } from "./ReturnsPolicySummary";
  */
 export function ReturnTermsPageView() {
   const t = useShopCopy();
-  const { marketId, regionOptions } = useMarket();
-  const zoneCode = marketId ?? "";
-  const market =
-    regionOptions.find((option) => option.id === marketId)?.label ?? zoneCode;
-  const policy = useReturnsPolicy({ mode: "market", zoneCode });
+  const { market, policy } = useMarketReturnTerms();
 
   return (
     <CheckoutStateShell current={t("returnsPolicy.termsPage.title")}>

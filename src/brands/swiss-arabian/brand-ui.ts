@@ -45,6 +45,11 @@ export { SubscriptionsPageView } from "@/features/subscriptions/components/Subsc
 export { StoresPageView as StoreLocatorPageView, StoreAreaPageView } from "@/features/stores/components/StoresPageView";
 export { StorePageView } from "@/features/stores/components/StorePageView";
 export { GuestTrackingPageView } from "@/features/tracking/components/GuestTrackingPageView";
+export { AfterSalesFlowPageView } from "@/features/afterSales/components/flow/AfterSalesFlowPageView";
 export { TrackLookupView } from "@/features/tracking/components/TrackLookupView";
+export { ReturnTermsPageView } from "@/features/afterSales/components/ReturnTermsPageView";
+export { SeoFaqSection } from "@/features/seo-faq/SeoFaqSection";
+export { UnsubscribeView } from "@/features/journeys/components/UnsubscribeView";
+export { EmailLinkRedirect } from "@/features/journeys/components/EmailLinkRedirect";
 export { AccountWishlistPageView } from "@/features/wishlist";
 export { BrandHead } from "./BrandHead";

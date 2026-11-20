@@ -57,6 +57,8 @@ export type ProductsListingViewProps = ComponentProps<typeof CatalogPageView>;
 export type CollectionListingViewProps = ComponentProps<typeof CollectionDetailPageView>;
 export type CategoryListingViewProps = ComponentProps<typeof CategoryDetailPageView>;
 export type CollectionSeoTextProps = ComponentProps<typeof CollectionSeoText>;
+/** The visible FAQ block (server-rendered: every answer in the HTML). */
+export type SeoFaqBlock = typeof SeoFaqSection;
 
 const DEFAULT_PRODUCTS_VIEW: ListingViewPair<ProductsListingViewProps> = {
   View: CatalogPageView,
@@ -64,10 +66,12 @@ const DEFAULT_PRODUCTS_VIEW: ListingViewPair<ProductsListingViewProps> = {
 };
 const DEFAULT_COLLECTION_VIEW: ListingViewPair<CollectionListingViewProps> & {
   SeoText: ComponentType<CollectionSeoTextProps>;
+  SeoFaq: SeoFaqBlock;
 } = {
   View: CollectionDetailPageView,
   FromUrl: CollectionDetailPageViewFromUrl,
   SeoText: CollectionSeoText,
+  SeoFaq: SeoFaqSection,
 };
 const DEFAULT_CATEGORY_VIEW: ListingViewPair<CategoryListingViewProps> = {
   View: CategoryDetailPageView,
@@ -168,12 +172,13 @@ export async function CollectionListing({
 }: {
   slug: string;
   page: number;
-  /** The brand's client view and SEO text block (default: Swiss Arabian's). */
+  /** The brand's client view, SEO text and FAQ blocks (default: Swiss Arabian's). */
   view?: ListingViewPair<CollectionListingViewProps> & {
     SeoText: ComponentType<CollectionSeoTextProps>;
+    SeoFaq: SeoFaqBlock;
   };
 }) {
-  const { View, FromUrl, SeoText } = view;
+  const { View, FromUrl, SeoText, SeoFaq } = view;
   // Page 2+ included, so search engines get the product links without running JavaScript.
   const loaded = await loadCatalogDocument("collection", slug, page);
   const { locale, collection, listing, zoneCode } = loaded;
@@ -222,7 +227,7 @@ export async function CollectionListing({
       {faq ? (
         <>
           <CatalogJsonLd data={faqPageJsonLd(faq.entries)} />
-          <SeoFaqSection faq={faq} />
+          <SeoFaq faq={faq} />
         </>
       ) : null}
       {/* Above the footer: this collection's SEO text, else the market's (one block only). */}

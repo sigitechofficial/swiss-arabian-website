@@ -267,7 +267,9 @@
     letter-spacing: normal;
     -webkit-font-smoothing: antialiased;
   }
-  [data-brand="sapil"] :is(h1, h2, h3) {
+  /* .sapil-h: a title that looks like a heading but is not one (SEO audit p5, p10, p12:
+     no H2/H3 for home sections, product names or drawers), so it keeps the same type. */
+  [data-brand="sapil"] :is(h1, h2, h3, .sapil-h) {
     font-family: var(--sapil-serif);
     font-weight: 400;
     letter-spacing: -0.02em;

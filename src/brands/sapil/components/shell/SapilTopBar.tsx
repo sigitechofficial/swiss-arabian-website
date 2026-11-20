@@ -29,7 +29,7 @@ export function SapilTopBar({ items, intervalMs, pending = false, tools }: Sapil
     <div
       data-sapil-topbar=""
       className={cx(
-        "relative z-[50] bg-sapil-p-mint text-sapil-ink min-h-[41px] grid grid-cols-[minmax(0,1fr)_minmax(0,auto)_1fr] items-center max-760:grid-cols-1",
+        "relative z-[50] bg-sapil-p-mint text-sapil-ink min-h-[41px] grid grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] items-center max-760:grid-cols-1",
       )}
     >
       <span aria-hidden="true" className="max-760:hidden" />

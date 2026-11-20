@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   AccountStatusPill,
@@ -18,9 +17,8 @@ import type {
 } from "../types/afterSales";
 import { ExchangeMoneyPanel } from "./ExchangeMoneyPanel";
 import { afterSalesOptionLabel, afterSalesStatusLabel } from "../utils/eligibility";
-import { formatOrderDate } from "@/features/orders/utils/orderStatus";
-import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
-import { formatMarketDate } from "@/lib/format/marketDate";
+import { useRequestDate } from "../hooks/useRequestDate";
+import { requestUnitCount } from "../utils/requestUnits";
 
 function statusTone(status: string): AccountStatusTone {
   switch (status?.toUpperCase()) {
@@ -34,16 +32,6 @@ function statusTone(status: string): AccountStatusTone {
     default:
       return "muted";
   }
-}
-
-/** "en-AE" short date in English (as before); the page's language otherwise. */
-function useRequestDate() {
-  const locale = useShopLocale();
-  const timeZone = useMarketTimeZone();
-  return (iso: string) =>
-    locale === "en"
-      ? formatMarketDate(iso, "en-AE", timeZone, { year: "numeric", month: "short", day: "numeric" })
-      : formatOrderDate(iso, { locale, timeZone });
 }
 
 export function ReturnRequestCard({
@@ -77,7 +65,7 @@ export function ReturnRequestCard({
               t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -161,7 +149,7 @@ export function ExchangeRequestCard({
               t("account.orderLabel")
             )}
             {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -242,7 +230,7 @@ export function GuestReturnRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill
@@ -279,7 +267,7 @@ export function GuestExchangeRequestCard({
           </p>
           <p className="mt-1 text-[12px] text-sa-muted">
             {formatDate(item.createdAt)}
-            {` · ${t("account.itemCount", { count: item.itemCount })}`}
+            {` · ${t("account.itemCount", { count: requestUnitCount(item) })}`}
           </p>
         </div>
         <AccountStatusPill

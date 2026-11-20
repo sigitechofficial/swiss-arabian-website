@@ -70,7 +70,7 @@ export function SapilCollectionsPage({
               >
                 {c.image ? (
                   <span aria-hidden="true" className="absolute inset-0 opacity-[.9]">
-                    <MediaImage src={c.image} alt="" fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="object-cover" />
+                    <MediaImage src={c.image} alt={c.heading || c.name} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="object-cover" />
                     <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,250,0)_30%,rgba(255,253,250,.92)_75%)]" />
                   </span>
                 ) : null}

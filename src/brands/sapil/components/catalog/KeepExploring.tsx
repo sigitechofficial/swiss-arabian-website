@@ -135,6 +135,7 @@ export function KeepExploring({
         <>
           <Wrap>
             <SectionHead
+              as="p"
               eyebrow={eyebrow}
               title={title}
               accent={accent}

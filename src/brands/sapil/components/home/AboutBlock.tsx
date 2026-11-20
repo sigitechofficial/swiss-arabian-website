@@ -23,9 +23,9 @@ export function AboutBlock({ story }: { story: BrandStory }) {
         ) : null}
         <div className={story.image ? undefined : "col-span-full max-w-[720px]"}>
           {story.eyebrow ? <Eyebrow>{story.eyebrow}</Eyebrow> : null}
-          <h2 id={headingId} className="text-[clamp(38px,4.4vw,60px)] mt-[14px] mb-[24px]">
+          <p id={headingId} role="heading" aria-level={2} className="sapil-h text-[clamp(38px,4.4vw,60px)] mt-[14px] mb-[24px]">
             {story.heading}
-          </h2>
+          </p>
           {story.paragraphs.map((p, i) => (
             <p key={i} className="text-sapil-ink-2 text-[17px] mb-[16px] max-w-[52ch]">
               {p}
@@ -66,9 +66,9 @@ export function HomeNewsletter({ newsletter }: { newsletter: Newsletter }) {
     <HomeSection labelledBy={`${id}-h`}>
       <Wrap className="text-center max-w-[640px]">
         {newsletter.eyebrow ? <Eyebrow>{newsletter.eyebrow}</Eyebrow> : null}
-        <h2 id={`${id}-h`} className="text-[clamp(34px,4.2vw,56px)] mt-[14px] mb-[12px]">
+        <p id={`${id}-h`} role="heading" aria-level={2} className="sapil-h text-[clamp(34px,4.2vw,56px)] mt-[14px] mb-[12px]">
           {newsletter.heading}
-        </h2>
+        </p>
         {newsletter.description ? <p className="text-sapil-ink-2 text-[17px] mb-[24px]">{newsletter.description}</p> : null}
         <form noValidate onSubmit={signup.onSubmit} className="flex gap-[8px] max-w-[420px] mx-auto">
           <label className="sr-only" htmlFor={`${id}-email`}>

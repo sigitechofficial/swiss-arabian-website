@@ -60,13 +60,14 @@ export function SapilFooterView({
         >
           <div className="max-900:col-span-full">
             <MediaImage src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="h-[30px] w-auto" />
-            <h3 className="text-[30px] mt-[20px] mb-[10px]">
+            {/* On every page, so not a heading tag (SEO audit p12); still one for screen readers. */}
+            <p role="heading" aria-level={2} className="sapil-h text-[30px] mt-[20px] mb-[10px]">
               {newsletterHeading || (
                 <>
                   {t("shell.newsTitle")} <Serif>{t("shell.newsAccent")}</Serif>
                 </>
               )}
-            </h3>
+            </p>
             <p className="text-sapil-ink-2 text-[15px] mb-[20px]">{t("shell.newsText")}</p>
             <form
               noValidate

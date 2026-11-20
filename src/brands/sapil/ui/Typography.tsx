@@ -35,7 +35,12 @@ export function SectionHead({ eyebrow, title, accent, description, actions, as: 
       <div>
         {/* v9 quirk kept on purpose: `.sec-head p` also hits the eyebrow (12px top margin, ink-2) */}
         {eyebrow && <Eyebrow className="mt-[12px] mb-[14px] !text-sapil-ink-2 max-w-[46ch]">{eyebrow}</Eyebrow>}
-        <H id={id} className="text-[clamp(34px,4.2vw,56px)]">
+        <H
+          id={id}
+          // As plain text (SEO audit p5, p12) it stays a heading for screen readers.
+          {...(H === "p" ? { role: "heading", "aria-level": 2 } : {})}
+          className={cx("text-[clamp(34px,4.2vw,56px)]", H === "p" && "sapil-h")}
+        >
           {title}
           {accent && (
             <>

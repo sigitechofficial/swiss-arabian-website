@@ -36,8 +36,6 @@ export const env = {
     passwordReset:
       readPublic(process.env.NEXT_PUBLIC_ENABLE_PASSWORD_RESET, "true") ===
       "true",
-    verification:
-      readPublic(process.env.NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI) === "true",
     useDevSession:
       readPublic(process.env.NEXT_PUBLIC_USE_DEV_SESSION) === "true" &&
       process.env.NODE_ENV === "development",

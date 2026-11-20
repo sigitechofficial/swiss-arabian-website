@@ -96,5 +96,26 @@
   "loadFailed": "تعذّر تحميل هذه العبوة.",
   "missingTitle": "هذه العبوة غير موجودة.",
   "missingBody": "ربما نُقلت أو نفدت نهائيًا.",
-  "backToShop": "العودة إلى المتجر"
+  "backToShop": "العودة إلى المتجر",
+
+  "share": "مشاركة",
+  "shareOn": "مشاركة على {network} (تفتح في علامة تبويب جديدة)",
+  "shareNative": "مشاركة",
+  "shareCopy": "نسخ الرابط",
+  "shareCopied": "تم نسخ الرابط.",
+  "shareCopyFailed": "تعذّر نسخ الرابط.",
+  "recentlyEyebrow": "شاهدتها مؤخرًا",
+  "recentlyTitle": "ما زالت",
+  "recentlyAccent": "في بالك.",
+  "offersEyebrow": "عروض لك",
+  "offersCount": { "one": "عرض واحد", "other": "{count} عروض" },
+  "offersWord": "عروض",
+  "offersOff": "خصم",
+  "offersSeeAll": "عرض الكل",
+  "offersTitle": "طرق للتوفير",
+  "offersOn": "على {name}",
+  "offersCodeCopied": "تم نسخ الرمز {code}.",
+  "offersCopyFailed": "تعذّر نسخ الرمز.",
+  "companionsEyebrow": "غالبًا ما تُشترى معًا",
+  "companionsSummary": "مجموعتك"
 }

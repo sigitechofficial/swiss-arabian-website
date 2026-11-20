@@ -80,7 +80,7 @@ import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { CartTamaraPromo } from "./CartTamaraPromo";
 import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
-import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
+import { CartPaymentConfirmingNotice } from "./CartPaymentConfirmingNotice";
 import { CartUnavailableItems } from "./CartUnavailableItems";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
@@ -194,7 +194,7 @@ export function CartPageView() {
             ) : null}
           </header>
 
-          <CartPendingPaymentNotice />
+          <CartPaymentConfirmingNotice />
           <CartUnavailableItems />
 
           {!isEmpty ? (

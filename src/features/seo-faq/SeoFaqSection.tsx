@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, matchLocale } from "@/lib/i18n/locales";
 import { getTranslator } from "@/lib/i18n/messages";
 import { sectionTitle } from "@/styles/landingChrome";
 import type { SeoFaqView } from "./seoFaq";
@@ -10,7 +11,8 @@ import { answerHtml } from "./seoFaqText";
  * keeps one H1 and only this section's H2 (SEO audit headings rule).
  */
 export async function SeoFaqSection({ faq }: { faq: SeoFaqView }) {
-  const t = await getTranslator(faq.lang === "ar" ? "ar" : "en");
+  // Labels in the FAQ's own language, whichever configured language it is.
+  const t = await getTranslator(matchLocale(faq.lang) ?? DEFAULT_LOCALE);
   return (
     <section
       aria-labelledby="seo-faq-heading"

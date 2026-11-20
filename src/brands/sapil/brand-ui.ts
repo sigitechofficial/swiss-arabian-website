@@ -45,6 +45,9 @@ export { SapilSitePageRoute as SitePageRoute } from "./pages/content/SapilSitePa
 export { SapilCollectionsPage as CollectionsPageView } from "./pages/content/SapilCollectionsPage";
 export { SapilReviewRequestPage as ReviewRequestPageView } from "./pages/content/SapilReviewRequestPage";
 export { SapilOfferPage as OfferPageView } from "./pages/content/SapilOfferPage";
+export { SapilReturnTermsPage as ReturnTermsPageView } from "./pages/content/SapilReturnTermsPage";
+export { SapilSeoFaqSection as SeoFaqSection } from "./components/content/SapilSeoFaqSection";
+export { SapilUnsubscribePage as UnsubscribeView, SapilEmailLinkPage as EmailLinkRedirect } from "./pages/content/SapilEmailPages";
 export {
   SapilStoreLocatorPage as StoreLocatorPageView,
   SapilStoreAreaPage as StoreAreaPageView,
@@ -80,6 +83,7 @@ export { SapilOrderConfirmationPage as OrderConfirmationView } from "./pages/ord
 export { SapilOrdersPage as PurchaseHistoryPageView } from "./pages/orders/SapilOrdersPage";
 export { SapilOrderDetailPage as AccountOrderDetailPageView } from "./pages/orders/SapilOrderDetailPage";
 export { SapilGuestTrackingPage as GuestTrackingPageView, SapilTrackLookupPage as TrackLookupView } from "./pages/orders/SapilTrackPages";
+export { SapilAfterSalesFlowPage as AfterSalesFlowPageView } from "./pages/orders/SapilAfterSalesFlowPage";
 
 // --- auth + account ---
 export {

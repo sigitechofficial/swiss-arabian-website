@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
+import { SapilPromoProgress } from "../../components/bag/SapilPromoProgress";
+import { SapilAppliedOffers } from "../../components/bag/SapilAppliedOffers";
 import { useBag } from "@/features/cart/hooks/useBag";
 import { useMarketDelivery } from "@/features/markets/hooks/useMarketDelivery";
 import { SapilInlinePayment, SapilTabbyCard, SapilTamaraCard } from "../../components/checkout/SapilInlinePayment";
@@ -46,7 +47,7 @@ import {
   type CheckoutAddress,
 } from "../../components/checkout/CheckoutSections";
 import { EarnNote, GiftCardBox, MissThisRow } from "../../components/checkout/CheckoutExtras";
-import { isValidMobile } from "../../components/commerce/SapilPhoneField";
+import { exampleForNumber, isValidMobile } from "../../components/commerce/SapilPhoneField";
 import {
   DEFAULT_TILE,
   SapilLink,
@@ -58,26 +59,19 @@ import {
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-function dialCodeFor(country: string): string {
-  try {
-    return getCountryCallingCode(country.toUpperCase() as CountryCode);
-  } catch {
-    return "971";
-  }
-}
-
 /** Client checks before the API sees the address (inline message under each field). */
 function validateAddress(
   email: string,
   address: CheckoutAddress,
   t: SapilTranslator,
   regionKey: "emirate" | "region",
+  marketCountry: string,
   withContact = true,
 ): AddressErrors {
   const errors: AddressErrors = {};
   if (withContact && !EMAIL.test(email.trim())) errors.email = t("checkout.emailError");
   if (!address.fullName.trim()) errors.fullName = t("checkout.fullNameError");
-  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError");
+  if (withContact && !isValidMobile(address.phone)) errors.phone = t("checkout.phoneError", { example: exampleForNumber(address.phone, marketCountry) });
   if (address.address1.trim().length < 3) errors.address1 = t("checkout.streetError");
   if (!address.city.trim()) errors.city = t("checkout.cityError");
   if (!address.emirate) errors.emirate = regionKey === "emirate" ? t("checkout.emirateError") : t("checkout.regionError");
@@ -136,7 +130,6 @@ export function SapilCheckoutPage() {
     regions: f.regionSet?.regions ?? [],
     countryCode: f.countryCode,
   };
-  const dialCode = dialCodeFor(f.countryCode);
 
   const payKinds = useMemo(() => paymentStepKinds(checkout.paymentMethods), [checkout.paymentMethods]);
   const payment = usePaymentOptions({
@@ -160,10 +153,10 @@ export function SapilCheckoutPage() {
 
   /** Delivery and (when separate) billing; focuses the first field to fix. */
   function checkFields(): boolean {
-    const shipFound = validateAddress(f.email, f.shipping, t, regionKey);
+    const shipFound = validateAddress(f.email, f.shipping, t, regionKey, f.countryCode);
     const billFound = f.billingSame
       ? {}
-      : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, false);
+      : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, f.countryCode, false);
     setErrors(shipFound);
     setBillingErrors(billFound);
     const first =
@@ -201,7 +194,7 @@ export function SapilCheckoutPage() {
         </p>
         <SapilSkeleton className="h-[18px] w-[180px] mb-[18px]" />
         <SapilSkeleton className="h-[52px] w-[260px] mb-[28px]" />
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[48px] max-900:grid-cols-[1fr]">
+        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(280px,440px)] gap-[48px] max-900:grid-cols-[minmax(0,1fr)]">
           <SapilSkeleton className="h-[480px] !rounded-[24px] max-900:h-[320px]" />
           <SapilSkeleton className="h-[420px] !rounded-[28px] max-900:hidden" />
         </div>
@@ -417,7 +410,6 @@ export function SapilCheckoutPage() {
                 address={f.shipping}
                 onField={setShippingField}
                 onPlace={(parsed) => applyGooglePlace(f.setShipping, parsed, f.countryCode)}
-                dialCode={dialCode}
                 errors={errors}
                 before={
                   f.testData ? (
@@ -507,6 +499,10 @@ export function SapilCheckoutPage() {
             extra={
               <>
                 {giftLines}
+                {/* Tiered offers, as on Swiss Arabian's checkout summary. */}
+                <SapilPromoProgress surface="checkout" className="mt-[12px]" />
+                {/* Offers applied to the order; its free gifts are already order lines. */}
+                <SapilAppliedOffers snapshot={f.promoSnapshot} hideGifts className="mt-[12px]" />
                 {f.leftOutCount > 0 ? (
                   <p className="mt-[10px] text-[13px] text-sapil-ink-2">{t("checkout.leftOut", { count: f.leftOutCount })}</p>
                 ) : null}

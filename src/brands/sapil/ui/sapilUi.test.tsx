@@ -81,7 +81,9 @@ describe("Sapil UI kit", () => {
       />,
     );
     expect(screen.getByRole("article")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Berry Crush" })).toBeInTheDocument();
+    // Product names are plain text, not headings (SEO audit p10, p12).
+    expect(screen.getByRole("article").querySelector("p.sapil-h")?.textContent).toContain("Berry Crush");
+    expect(screen.queryByRole("heading", { name: "Berry Crush" })).toBeNull();
     expect(screen.getByRole("link", { name: "View Berry Crush" })).toHaveAttribute("href", "/p/berry-crush");
     // the hover "Shop Now" pill is hidden from AT and the tab order, as in v9
     expect(screen.queryByRole("link", { name: "Shop Now" })).toBeNull();
@@ -119,7 +121,7 @@ describe("Sapil UI kit", () => {
     render(
       <Fieldset legend="Contact">
         <Field label="Email" type="email" error="Enter an email." />
-        <Field label="Mobile number" type="tel" prefix="+971" optional />
+        <Field label="Mobile number" type="tel" prefix="+971" optional="(optional)" />
         <Checkbox defaultChecked>Send me offers</Checkbox>
       </Fieldset>,
     );

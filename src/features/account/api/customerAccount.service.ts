@@ -1,18 +1,18 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/apiClient";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api/apiClient";
 
 import type {
   AddressDefaultTarget,
+  CommunicationPreferences,
   CreateCustomerAddressDto,
   CreateCustomerPhoneDto,
+  MarketingChannel,
   MutationAck,
   StorefrontCustomerAddressView,
   StorefrontCustomerPhoneView,
   StorefrontCustomerProfileView,
-  StorefrontMarketingConsentView,
   UpdateCustomerAddressDto,
   UpdateCustomerPhoneDto,
   UpdateCustomerProfileDto,
-  UpdateMarketingConsentsDto,
 } from "../types/customerAccount";
 
 const BASE = "/storefront/customer";
@@ -101,19 +101,18 @@ export async function setDefaultCustomerPhone(
   );
 }
 
-export async function listMarketingConsents(): Promise<
-  StorefrontMarketingConsentView[]
-> {
-  return apiGet<StorefrontMarketingConsentView[]>(
-    `${BASE}/marketing-consents`,
-  );
+/** The shopper's marketing choices per channel. */
+export async function getCommunicationPreferences(): Promise<CommunicationPreferences> {
+  return apiGet<CommunicationPreferences>(`${BASE}/communication-preferences`);
 }
 
-export async function updateMarketingConsents(
-  dto: UpdateMarketingConsentsDto,
-): Promise<StorefrontMarketingConsentView[]> {
-  return apiPatch<StorefrontMarketingConsentView[]>(
-    `${BASE}/marketing-consents`,
-    dto,
-  );
+/** Turn marketing on one channel on or off (every market of the account). */
+export async function setCommunicationPreference(
+  channel: MarketingChannel,
+  subscribed: boolean,
+): Promise<CommunicationPreferences> {
+  return apiPut<CommunicationPreferences>(`${BASE}/communication-preferences`, {
+    channel,
+    subscribed,
+  });
 }

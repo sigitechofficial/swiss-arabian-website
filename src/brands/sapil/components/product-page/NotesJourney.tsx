@@ -33,7 +33,7 @@ export function NotesJourney({ rows, photos, t }: { rows: NoteRow[]; photos: str
               <article key={row.layer} className="bg-sapil-white rounded-[24px] overflow-hidden shadow-[0_18px_40px_-28px_rgba(13,33,82,.35)]">
                 <div style={tintStyle("--nc", tone.color)} className="relative aspect-[4/3] bg-[var(--nc)] overflow-hidden grid place-items-center">
                   {photo ? (
-                    <MediaImage src={photo} alt="" fill sizes="(max-width: 900px) 100vw, 460px" className="object-cover" />
+                    <MediaImage src={photo} alt={row.notes.join(", ")} fill sizes="(max-width: 900px) 100vw, 460px" className="object-cover" />
                   ) : (
                     <span aria-hidden="true" className="font-sapil-serif italic text-[clamp(36px,3.4vw,52px)] text-sapil-accent">
                       {row.notes[0]}

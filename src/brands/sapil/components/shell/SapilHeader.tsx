@@ -63,7 +63,7 @@ function MegaPanel({ item, id, onNavigate }: { item: MenuItem; id: string; onNav
       )}
     >
       {wide ? (
-        <div className="grid grid-cols-[4fr_5fr] gap-[20px] mb-[18px] max-900:grid-cols-1">
+        <div className="grid grid-cols-[minmax(0,4fr)_minmax(0,5fr)] gap-[20px] mb-[18px] max-900:grid-cols-1">
           {item.options.length ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-[10px]">
               {item.options.map((o, i) => (

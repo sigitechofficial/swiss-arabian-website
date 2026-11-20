@@ -764,6 +764,7 @@ export function OnsiteDesignView({
       aria-modal={isPopup && !isEditing ? true : undefined}
       aria-label="Message"
       dir={design.rtl ? "rtl" : "ltr"}
+      lang={design.language}
       data-onsite-box
       style={{
         ...box,

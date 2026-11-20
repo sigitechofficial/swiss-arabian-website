@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { createOrResolveCart, getActiveCart } from "@/features/cart/api/cart.service";
 import { ApiClientError } from "@/lib/api/apiError";
+import { getAccessToken, getRefreshToken } from "@/lib/auth/token";
 import {
   getStoredCartId,
   readGuestToken,
@@ -13,6 +14,11 @@ import {
   clearCartId,
   clearGuestToken,
 } from "@/features/cart/utils/guestToken";
+
+/** A signed-in session is stored on this device (confirmed or not). */
+function hasStoredSession(): boolean {
+  return Boolean(getAccessToken() || getRefreshToken());
+}
 
 export function CartSessionProvider({ children }: { children: ReactNode }) {
   const bootstrapped = useAuthStore((s) => s.bootstrapped);
@@ -54,6 +60,9 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
           .catch(() => {
             // Soft failure — local lines remain from Zustand persist.
           });
+      } else if (hasStoredSession()) {
+        // Signed in, but the server couldn't confirm it just now: this bag is
+        // the account's. Leave it as it is; the next page load signs in again.
       } else if (cartId || readGuestToken()) {
         // A guest's cart for this market (by cart id, else by guest token).
         void getActiveCart(cartId)
@@ -65,7 +74,20 @@ export function CartSessionProvider({ children }: { children: ReactNode }) {
           .catch((error: unknown) => {
             // Forget the id only when the cart is really gone; a server that
             // is briefly down must not lose the shopper's cart.
-            if (error instanceof ApiClientError && error.status === 404) clearCartId();
+            if (!(error instanceof ApiClientError)) return;
+            if (error.status === 404) {
+              clearCartId();
+              return;
+            }
+            // Not this visitor's cart: it belongs to an account whose session
+            // ended (signed out elsewhere, expired). Its lines are the
+            // account's, not the guest's: start a fresh guest bag instead of
+            // failing every add with "access denied".
+            if (error.status === 403) {
+              clear();
+              setCartId(null);
+              clearCartId();
+            }
           });
       }
 

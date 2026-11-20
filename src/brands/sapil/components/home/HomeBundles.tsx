@@ -57,6 +57,7 @@ export function HomeBundles({ bundles }: { bundles: Bundle[] }) {
     <HomeSection id="bundles" band labelledBy={headingId}>
       <Wrap>
         <SectionHead
+          as="p"
           id={headingId}
           eyebrow={first?.row.heading ?? t("home.bundlesEyebrow")}
           {...sectionTitleProps(first?.row.title, t("home.bundlesTitle"), t("home.bundlesAccent"))}
@@ -91,7 +92,7 @@ export function HomeBundles({ bundles }: { bundles: Bundle[] }) {
                         style={{ "--x": x, "--s": Math.abs(x) < 1 ? 1 : 0.86, zIndex: 10 - Math.round(Math.abs(x) * 2) } as CSSProperties}
                         className="absolute bottom-0 left-[calc(50%+var(--x)*var(--sp))] h-[86%] aspect-square [transform:translateX(-50%)_scale(var(--s))] origin-bottom [filter:drop-shadow(0_16px_16px_rgba(22,20,15,.18))] [transition:left_.6s_var(--sapil-ease),transform_.6s_var(--sapil-ease)] group-hover/b:[transform:translateX(-50%)_scale(var(--s))_translateY(-6px)]"
                       >
-                        <MediaImage src={p.imageUrl} alt="" fill sizes="200px" className="!object-contain" />
+                        <MediaImage src={p.imageUrl} alt={t("product.imageAlt", { name: p.title })} fill sizes="200px" className="!object-contain" />
                       </span>
                     );
                   })}
@@ -182,7 +183,7 @@ export function HeroPromo({ bundle }: { bundle: Bundle }) {
                     style={{ "--i": i } as CSSProperties}
                     className="absolute bottom-[-3%] h-[72%] aspect-square start-[calc(2%+var(--i)*21%)] [transform:rotate(calc((var(--i)-1.5)*5deg))] origin-bottom [filter:drop-shadow(0_22px_20px_rgba(120,40,70,.22))] max-900:h-[62%] max-900:start-[calc(1%+var(--i)*23%)]"
                   >
-                    <MediaImage src={p.imageUrl} alt="" fill sizes="240px" preload={i === 0} className="!object-contain" />
+                    <MediaImage src={p.imageUrl} alt={t("product.imageAlt", { name: p.title })} fill sizes="240px" preload={i === 0} className="!object-contain" />
                   </span>
                 ) : null,
               )}
@@ -203,7 +204,7 @@ export function HeroPromo({ bundle }: { bundle: Bundle }) {
                   </span>
                   {tile.image ? (
                     <span className="relative h-[88%] max-h-[240px] aspect-square [filter:drop-shadow(0_16px_16px_rgba(22,20,15,.18))] [transition:transform_.5s_var(--sapil-ease)] group-hover/tile:[transform:translateY(-6px)_rotate(-3deg)] max-900:h-[150px]">
-                      <MediaImage src={tile.image} alt="" fill sizes="120px" className="!object-contain" />
+                      <MediaImage src={tile.image} alt={tile.title} fill sizes="120px" className="!object-contain" />
                     </span>
                   ) : null}
                   <span aria-hidden="true" className="absolute start-[32px] bottom-[26px] w-[44px] h-[44px] rounded-full bg-sapil-white grid place-items-center [&_svg]:w-[18px] [&_svg]:h-[18px] rtl:[&_svg]:[transform:scaleX(-1)] max-900:start-[20px] max-900:bottom-[20px]">

@@ -20,6 +20,8 @@ export function PdpRelatedRail({ products }: { products: ProductSummary[] }) {
     <section aria-labelledby="related-heading" className="bg-sapil-white pt-[64px] pb-[80px] max-900:pt-[48px] max-900:pb-[56px]">
       <Wrap>
         <SectionHead
+          // Product pages: headings only for the product's own content (SEO audit p12).
+          as="p"
           id="related-heading"
           eyebrow={t("product.youMayAlsoLike")}
           title={t("product.moreToFallFor")}

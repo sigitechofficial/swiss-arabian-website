@@ -55,12 +55,22 @@ export type SapilBagDrawerViewProps = {
   subtotalWas?: ReactNode;
   delivery: ReactNode;
   total: ReactNode;
-  /** promotion progress message from the promotions API */
+  /** promotion progress: the tiered rail (SapilPromoProgress) */
   promoNote?: ReactNode;
   /** reward points: using them, or a link to use them on the bag page */
   pointsNote?: ReactNode;
   /** Tabby's official snippet for the total (only where checkout offers Tabby) */
   payLater?: ReactNode;
+  /** under the lines: picks that unlock the next reward (SapilQuickAdd) */
+  afterLines?: ReactNode;
+  /** in the empty bag: suggestions to start again (SapilEmptyBagPicks) */
+  emptyExtra?: ReactNode;
+  /** above the totals: offers applied to the bag (SapilAppliedOffers) */
+  applied?: ReactNode;
+  /** under checkout: the market's return terms line */
+  termsNote?: ReactNode;
+  /** top of the drawer: a payment for this bag was started and not finished */
+  notice?: ReactNode;
   checkoutHref: string;
   checkoutBlocked?: boolean;
   syncing?: boolean;
@@ -85,6 +95,11 @@ export function SapilBagDrawerView({
   promoNote,
   pointsNote,
   payLater,
+  afterLines,
+  emptyExtra,
+  applied,
+  termsNote,
+  notice,
   checkoutHref,
   checkoutBlocked = false,
   syncing = false,
@@ -125,11 +140,9 @@ export function SapilBagDrawerView({
 
   const footer = empty ? undefined : (
     <>
-      {promoNote ? (
-        <p className="text-[13px] text-sapil-ok mb-[6px]" aria-live="polite">
-          {promoNote}
-        </p>
-      ) : null}
+      {/* The tiered progress (steps, rewards, meter): it announces its own changes. */}
+      {promoNote ? <div className="mb-[10px] empty:hidden">{promoNote}</div> : null}
+      {applied}
       <SummaryRow
         label={t("bag.subtotal")}
         value={
@@ -169,6 +182,7 @@ export function SapilBagDrawerView({
       >
         {t("bag.continueShopping")}
       </button>
+      {termsNote}
     </>
   );
 
@@ -183,6 +197,7 @@ export function SapilBagDrawerView({
       ship={ship}
       footer={footer}
     >
+      {notice}
       {empty ? (
         <div className="text-center py-[64px] text-sapil-ink-2">
           <b className="block font-sapil-serif font-[400] text-[26px] text-sapil-ink mb-[8px]">{t("bag.emptyTitle")}</b>
@@ -190,6 +205,7 @@ export function SapilBagDrawerView({
           <Button href={shopHref} LinkComponent={Link} onClick={onClose} className="!flex w-fit mx-auto mt-[24px]">
             {t("bag.emptyCta")}
           </Button>
+          {emptyExtra ? <div className="text-start mt-[40px]">{emptyExtra}</div> : null}
         </div>
       ) : (
         <>
@@ -226,6 +242,7 @@ export function SapilBagDrawerView({
           {gifts.map((gift) => (
             <GiftRow key={gift.key} gift={gift} />
           ))}
+          {afterLines}
         </>
       )}
     </Drawer>
@@ -288,7 +305,7 @@ function GiftRow({ gift }: { gift: SapilBagGiftData }) {
           key={item.key}
           aria-label={t("bag.giftItem", { name: item.name })}
           role="group"
-          className="grid grid-cols-[72px_1fr_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
+          className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-[14px] py-[16px] border-b border-sapil-line items-center"
         >
           <span className="aspect-square rounded-sapil-sm bg-sapil-p-mint grid place-items-center">
             {item.imageSrc ? (

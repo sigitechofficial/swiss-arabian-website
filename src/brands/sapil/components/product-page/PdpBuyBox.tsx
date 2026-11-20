@@ -20,6 +20,9 @@ import { SapilWishlistButton } from "../product/SapilWishlistButton";
 import { deliveryPerks } from "./deliveryPerks";
 import { noteRows, noteTone } from "./notes";
 import { PdpInstalments } from "./PdpInstalments";
+import { PdpOffers } from "./PdpOffers";
+import { PdpShare } from "./PdpShare";
+import { SapilStockAlert } from "./SapilStockAlert";
 
 export function BagIcon() {
   return (
@@ -65,6 +68,7 @@ export function PdpBuyBox({
   money,
   addRowRef,
   concentration,
+  share = null,
 }: {
   product: CatalogProduct;
   /** "edp" / "extrait" as the API sends it (none: no kind shown) */
@@ -80,6 +84,8 @@ export function PdpBuyBox({
   money: (n: number) => string;
   /** the Add to bag row (the sticky bar shows once it scrolls away) */
   addRowRef?: Ref<HTMLDivElement>;
+  /** Canonical product address and share image; no share row without it. */
+  share?: { url: string; image?: string | null } | null;
 }) {
   const t = useSapilCopy();
   const purchase = useProductPurchase(product, cartLine);
@@ -147,10 +153,19 @@ export function PdpBuyBox({
 
       {/* The button keeps its label on one line: below ~200px of room it moves to its own row (SE-7). */}
       <div ref={addRowRef} data-sapil="buy-row" className={cx("flex flex-wrap gap-[12px] items-center", description && "mt-[24px]")}>
-        {purchase.needsAlert ? (
+        {purchase.needsAlert && purchase.unavailable ? (
           <button type="button" disabled className={cx(buttonClass("dark"), "flex-[1_1_200px] whitespace-nowrap !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}>
-            {purchase.unavailable ? t("product.unavailable") : t("product.outOfStock")}
+            {t("product.unavailable")}
           </button>
+        ) : purchase.needsAlert ? (
+          // Out of stock: say so, and offer an email when it's back (as on Swiss Arabian).
+          <>
+            <p className="basis-full text-[15px] font-[600] text-sapil-sale m-0">{t("product.outOfStock")}</p>
+            <SapilStockAlert
+              product={product}
+              className={cx(buttonClass("dark"), "flex-[1_1_200px] whitespace-nowrap !h-[58px] !text-[17px] !rounded-[18px] max-900:!text-[15px]")}
+            />
+          </>
         ) : (
           <>
             <QuantityStepper
@@ -179,6 +194,9 @@ export function PdpBuyBox({
       <p role="status" className="text-[14px] text-sapil-ink-2 mt-[8px] empty:hidden">
         {status}
       </p>
+
+      {/* The product's campaigns (bundles, free delivery, codes), as on Swiss Arabian. */}
+      <PdpOffers product={product} quantity={purchase.displayQty} money={money} />
       {product.price != null && product.price > 0 && !purchase.needsAlert ? (
         <PdpInstalments price={product.price} currency={product.currency || "AED"} money={money} />
       ) : null}
@@ -190,7 +208,7 @@ export function PdpBuyBox({
             {rows.map((row) => (
               <div
                 key={row.layer}
-                className="grid grid-cols-[120px_1fr] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 max-900:grid-cols-1 max-900:gap-[8px]"
+                className="grid grid-cols-[120px_minmax(0,1fr)] gap-[16px] items-center py-[14px] border-b border-sapil-line last:border-b-0 max-900:grid-cols-1 max-900:gap-[8px]"
               >
                 <dt className="font-[600] text-[15px] leading-[1.2]">
                   {layerLabel[row.layer]}
@@ -267,6 +285,8 @@ export function PdpBuyBox({
           ))}
         </ul>
       ) : null}
+
+      {share ? <PdpShare url={share.url} title={product.title} image={share.image} /> : null}
     </div>
   );
 }

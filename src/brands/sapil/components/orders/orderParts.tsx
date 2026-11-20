@@ -83,6 +83,8 @@ type OrderLine = {
   currencyCode: string;
   imageUrl?: string | null;
   isGift?: boolean;
+  /** Cancelled after ordering (cancel some items): shown struck through, not counted. */
+  cancelled?: boolean;
 };
 
 export function orderLines(t: SapilTranslator, money: SapilMoney, lines: OrderLine[], currency: string): OrderLineView[] {
@@ -95,14 +97,31 @@ export function orderLines(t: SapilTranslator, money: SapilMoney, lines: OrderLi
       key: line.orderLineId,
       name,
       imageSrc: line.imageUrl?.startsWith("http") ? line.imageUrl : undefined,
-      meta: [line.isGift ? t("account.odFreeGift") : null, variant, t("account.odQty", { count: qty })].filter(Boolean).join(" · "),
-      price: line.isGift ? t("account.odFree") : money(Number(line.lineTotal), line.currencyCode || currency),
+      meta: [
+        line.cancelled ? t("account.odLineCancelled") : null,
+        line.isGift ? t("account.odFreeGift") : null,
+        variant,
+        t("account.odQty", { count: qty }),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      price: line.cancelled ? (
+        <s className="text-sapil-muted font-[400]">
+          <span className="sr-only">{t("account.odLineCancelled")} </span>
+          {money(Number(line.lineTotal), line.currencyCode || currency)}
+        </s>
+      ) : line.isGift ? (
+        t("account.odFree")
+      ) : (
+        money(Number(line.lineTotal), line.currencyCode || currency)
+      ),
     };
   });
 }
 
-export function itemCountOf(lines: Array<{ quantity: string }>): number {
-  return lines.reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
+/** Units still on the order (cancelled lines are not counted). */
+export function itemCountOf(lines: Array<{ quantity: string; cancelled?: boolean }>): number {
+  return lines.filter((line) => !line.cancelled).reduce((sum, line) => sum + (Number.parseInt(line.quantity, 10) || 1), 0);
 }
 
 type Address = { fullName: string | null; address1: string | null; city: string | null; countryCode: string | null };

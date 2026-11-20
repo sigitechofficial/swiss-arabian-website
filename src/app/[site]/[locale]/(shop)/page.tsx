@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { faqPageJsonLd, ORGANIZATION_ID, WEBSITE_ID } from "@/features/catalog/components/CatalogJsonLd";
 import { loadHomeFaq, seoFaqView } from "@/features/seo-faq/seoFaq";
-import { SeoFaqSection } from "@/features/seo-faq/SeoFaqSection";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
@@ -13,7 +12,7 @@ import {
 import { loadFooterSeoText } from "@/features/seo-footer/footerSeoText.service";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import type { Translator } from "@/lib/i18n/messages";
-import { CatalogJsonLd, HomePageView } from "@brand-ui";
+import { CatalogJsonLd, HomePageView, SeoFaqSection } from "@brand-ui";
 
 /** Prerendered per language and revalidated (ISR); the browser keeps sections fresh. */
 export const revalidate = 300;

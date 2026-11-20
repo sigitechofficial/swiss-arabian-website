@@ -1,26 +1,15 @@
 "use client";
 
 import { intlLocale } from "@/lib/i18n/locales";
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
-import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { toast } from "@/components/ui/Toaster";
-import { ApiClientError } from "@/lib/api/apiError";
 import { toastApiError } from "@/lib/api/toastApiError";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { useReviewsCopy } from "../i18n/reviewsCopy";
-import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
-import {
-  createCustomerReview,
-  markReviewHelpful,
-  reportReview,
-} from "../api/reviews.service";
+import { useReviewActions } from "../hooks/useReviewActions";
 import { usePdpReviewList } from "../hooks/usePdpReviewList";
-import { writeReviewSchema, type WriteReviewValues } from "../schemas/review.schema";
+import { useWriteReview } from "../hooks/useWriteReview";
 import type {
   ReviewSort,
   StorefrontPdpReviews,
@@ -74,48 +63,12 @@ function Who({ review, showBadge }: { review: StorefrontPublicReview; showBadge:
  * guests are sent to sign in and come back to the reviews.
  */
 function ReviewActions({ review }: { review: StorefrontPublicReview }) {
-  const router = useLocaleRouter();
-  const pathname = usePathname();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const t = useReviewsCopy();
-  const [count, setCount] = useState(review.helpfulCount);
-  const [marked, setMarked] = useState(false);
-  const [reported, setReported] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const needSignIn = () => {
-    if (isAuthenticated) return false;
-    router.push(`/login?returnTo=${encodeURIComponent(`${pathname}#pdp-reviews`)}`);
-    return true;
-  };
-  const toggleHelpful = async () => {
-    if (needSignIn() || busy) return;
-    setBusy(true);
-    try {
-      const next = await markReviewHelpful(review.reviewId, !marked);
-      setMarked(!marked);
-      setCount((n) => next ?? Math.max(0, n + (marked ? -1 : 1)));
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const sendReport = async () => {
-    if (needSignIn() || busy) return;
-    setBusy(true);
-    try {
-      await reportReview(review.reviewId);
-      setReported(true);
-      setConfirming(false);
-      toast(t.reportThanks, "success");
-    } catch (error) {
-      toastApiError(error);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { count, marked, reported, confirming, setConfirming, busy, toggleHelpful, sendReport } = useReviewActions(review, {
+    anchor: "pdp-reviews",
+    onError: toastApiError,
+    onReported: () => toast(t.reportThanks, "success"),
+  });
 
   return (
     <div className={c.rvActions}>
@@ -167,7 +120,6 @@ export function PdpReviews({
   variantId?: string;
   reviews: StorefrontPdpReviews | null | undefined;
 }) {
-  const market = useSelectedCatalogMarket();
   const t = useReviewsCopy();
   const timeZone = useMarketTimeZone();
   const summary = reviews?.summary;
@@ -352,7 +304,6 @@ export function PdpReviews({
         productTitle={productTitle}
         productImage={productImage}
         variantId={variantId}
-        zoneCode={market?.zoneCode ?? null}
       />
     </section>
   );
@@ -475,7 +426,6 @@ function WriteReviewPanel({
   productTitle,
   productImage,
   variantId,
-  zoneCode,
 }: {
   open: boolean;
   onClose: () => void;
@@ -483,75 +433,18 @@ function WriteReviewPanel({
   productTitle: string;
   productImage?: string | null;
   variantId?: string;
-  zoneCode: string | null;
 }) {
-  const router = useLocaleRouter();
-  const pathname = usePathname();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const user = useAuthStore((s) => s.user);
-  const t = useReviewsCopy();
-  const [submitting, setSubmitting] = useState(false);
-  const defaultName = useMemo(
-    () => user?.fullName?.trim() || [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || "",
-    [user],
-  );
-  const form = useForm<WriteReviewValues>({
-    resolver: zodResolver(writeReviewSchema),
-    defaultValues: { rating: 5, title: "", body: "", name: defaultName, honest: true },
+  const { t, form, rating, bodyLength, setRating, submit, submitting, canWrite } = useWriteReview({
+    open,
+    onClose,
+    productId,
+    variantId,
+    anchor: "pdp-reviews",
   });
-  const rating = useWatch({ control: form.control, name: "rating" });
-  const body = useWatch({ control: form.control, name: "body" }) ?? "";
-
-  useEffect(() => {
-    if (open && !isAuthenticated) {
-      router.push(`/login?returnTo=${encodeURIComponent(`${pathname}#pdp-reviews`)}`);
-      onClose();
-    }
-    if (open && defaultName && !form.getValues("name")) form.setValue("name", defaultName);
-  }, [open, isAuthenticated, defaultName, form, onClose, pathname, router]);
-
-  const onSubmit = async (values: WriteReviewValues) => {
-    setSubmitting(true);
-    try {
-      const result = await createCustomerReview(
-        {
-          productId,
-          rating: values.rating,
-          title: values.title?.trim() || undefined,
-          body: values.body.trim(),
-          displayName: values.name.trim(),
-          variantId,
-        },
-        zoneCode,
-      );
-      form.reset({ rating: 5, title: "", body: "", name: values.name, honest: true });
-      onClose();
-      toast(
-        result.status === "APPROVED" ? t.live : t.pending,
-        "success",
-      );
-    } catch (error) {
-      if (error instanceof ApiClientError && error.status === 401) {
-        router.push(`/login?returnTo=${encodeURIComponent(pathname)}`);
-        return;
-      }
-      if (error instanceof ApiClientError && error.status === 409) {
-        toast(t.already, "info");
-        return;
-      }
-      if (error instanceof ApiClientError && (error.status === 422 || error.status === 400)) {
-        toast(t.notBought, "info");
-        return;
-      }
-      toastApiError(error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
-    <SideSheet open={open && isAuthenticated} onClose={onClose} label={t.write}>
-      <form className={c.rvPanel} noValidate onSubmit={form.handleSubmit(onSubmit)}>
+    <SideSheet open={canWrite} onClose={onClose} label={t.write}>
+      <form className={c.rvPanel} noValidate onSubmit={submit}>
         <div className={c.rvPanelHead}>
           {productImage ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -577,7 +470,7 @@ function WriteReviewPanel({
                   aria-checked={rating === value}
                   aria-label={t.starsOf(value, t.ratings[value])}
                   className={`${c.rvPickStar} ${rating >= value ? c.rvPickStarOn : c.rvPickStarOff}`}
-                  onClick={() => form.setValue("rating", value, { shouldValidate: true })}
+                  onClick={() => setRating(value)}
                 >
                   ★
                 </button>
@@ -599,7 +492,7 @@ function WriteReviewPanel({
             />
             <span className={c.rvHint}>
               <span>{form.formState.errors.body?.message ?? t.minChars}</span>
-              <span>{body.length} / 2,000</span>
+              <span>{bodyLength} / 2,000</span>
             </span>
           </label>
           <label className={fld}>

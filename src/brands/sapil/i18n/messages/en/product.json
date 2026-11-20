@@ -96,5 +96,26 @@
   "loadFailed": "We couldn’t load this bottle.",
   "missingTitle": "This bottle isn’t here.",
   "missingBody": "It may have moved or sold out for good.",
-  "backToShop": "Back to the shop"
+  "backToShop": "Back to the shop",
+
+  "share": "Share",
+  "shareOn": "Share on {network} (opens a new tab)",
+  "shareNative": "Share",
+  "shareCopy": "Copy link",
+  "shareCopied": "Link copied.",
+  "shareCopyFailed": "Couldn’t copy the link.",
+  "recentlyEyebrow": "Recently viewed",
+  "recentlyTitle": "Still on",
+  "recentlyAccent": "your mind.",
+  "offersEyebrow": "Offers for you",
+  "offersCount": { "one": "{count} offer", "other": "{count} offers" },
+  "offersWord": "offers",
+  "offersOff": "off",
+  "offersSeeAll": "See all",
+  "offersTitle": "Ways to save",
+  "offersOn": "On {name}",
+  "offersCodeCopied": "Code {code} copied.",
+  "offersCopyFailed": "Couldn’t copy the code.",
+  "companionsEyebrow": "Often bought together",
+  "companionsSummary": "Your bundle"
 }
