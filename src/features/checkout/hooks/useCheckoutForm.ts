@@ -42,6 +42,8 @@ import { useCheckout } from "./useCheckout";
 import { useTabbyPrescore } from "./useTabbyPrescore";
 import { useTabbyLang } from "./useTabbyLang";
 import { isTabbyPaymentMethod } from "../utils/tabby";
+import { useTamaraPrecheck } from "./useTamaraPrecheck";
+import { isTamaraPaymentMethod } from "../utils/tamara";
 import type { AddressFields } from "../utils/addressSnapshot";
 import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import { isStripePaymentMethod } from "../utils/methodLabels";
@@ -279,15 +281,28 @@ export function useCheckoutForm() {
   });
   const tabbyRejected = tabbyPrescore.state === "rejected";
   const tabbySelected = Boolean(selectedPayment && isTabbyPaymentMethod(selectedPayment));
-  // Tabby can't approve this shopper: move the selection to another method.
+  // Tamara pre-check: same triggers as Tabby's pre-scoring.
+  const tamaraMethod = checkout.paymentMethods.find((m) => isTamaraPaymentMethod(m));
+  const tamaraPrecheck = useTamaraPrecheck({
+    checkoutSessionId: session?.checkoutSessionId,
+    enabled: Boolean(tamaraMethod) && !covered,
+    email,
+    phone: shipping.phone ?? "",
+    total: amountPayable ?? total,
+  });
+  const tamaraRejected = tamaraPrecheck.state === "rejected";
+  const tamaraSelected = Boolean(selectedPayment && isTamaraPaymentMethod(selectedPayment));
+  // Tabby / Tamara can't take this shopper: move the selection to another method.
   const { paymentMethods, choosePayment } = checkout;
   useEffect(() => {
-    if (!tabbyRejected || !tabbySelected) return;
-    const other =
-      paymentMethods.find((m) => !isTabbyPaymentMethod(m) && m.isDefault) ??
-      paymentMethods.find((m) => !isTabbyPaymentMethod(m));
+    const leaveTabby = tabbyRejected && tabbySelected;
+    const leaveTamara = tamaraRejected && tamaraSelected;
+    if (!leaveTabby && !leaveTamara) return;
+    const usable = (m: (typeof paymentMethods)[number]) =>
+      !(isTabbyPaymentMethod(m) && tabbyRejected) && !(isTamaraPaymentMethod(m) && tamaraRejected);
+    const other = paymentMethods.find((m) => usable(m) && m.isDefault) ?? paymentMethods.find(usable);
     if (other) void choosePayment(other.zonePaymentMethodId);
-  }, [tabbyRejected, tabbySelected, paymentMethods, choosePayment]);
+  }, [tabbyRejected, tabbySelected, tamaraRejected, tamaraSelected, paymentMethods, choosePayment]);
   const staffPaymentBlocked = staffDiscountPaymentBlocked(
     readEmployeeCheckout(session?.staffPurchase ?? session?.employeeCheckout),
   );
@@ -296,6 +311,8 @@ export function useCheckoutForm() {
     !staffPaymentBlocked &&
     // Never submit with a Tabby option Tabby has already declined.
     !(tabbyRejected && tabbySelected && !covered) &&
+    // …or a Tamara option Tamara has already declined.
+    !(tamaraRejected && tamaraSelected && !covered) &&
     Boolean(
       checkout.selectedDeliveryId && (covered || checkout.selectedPaymentId),
     );
@@ -415,6 +432,8 @@ export function useCheckoutForm() {
     payLang,
     tabbyPrescore,
     tabbyRejected,
+    tamaraPrecheck,
+    tamaraRejected,
     staffPaymentBlocked,
     canSubmit,
     ctaKind,

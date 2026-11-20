@@ -1,6 +1,7 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
 import { isTabbyPaymentMethod } from "./tabby";
+import { isTamaraPaymentMethod } from "./tamara";
 
 function titleCase(value: string): string {
   return value
@@ -43,7 +44,7 @@ export function usesInlineCardForm(
   return isStripePaymentMethod(method) || method.providerCode?.toLowerCase() === "paymob";
 }
 
-/** Hosted redirect gateways (Telr HPP, Tabby, and any method flagged `requiresRedirect`). */
+/** Hosted redirect gateways (Telr HPP, Tabby, Tamara, and any method flagged `requiresRedirect`). */
 export function usesHostedRedirect(
   method: Pick<
     PaymentMethodOption,
@@ -54,15 +55,16 @@ export function usesHostedRedirect(
   return (
     Boolean(method.requiresRedirect) ||
     isTelrPaymentMethod(method) ||
-    isTabbyPaymentMethod(method)
+    isTabbyPaymentMethod(method) ||
+    isTamaraPaymentMethod(method)
   );
 }
 
-export type PaymentStepKind = "card" | "tabby" | "cash";
+export type PaymentStepKind = "card" | "tabby" | "tamara" | "cash";
 
 /**
  * The ways to pay this checkout really offers, in a fixed order, for the step
- * hint ("Card, Tabby or cash"). Built from the market's live methods: nothing
+ * hint ("Card, Tabby, Tamara or cash"). Built from the market's live methods: nothing
  * the shopper can't pick (SE-8). Test Payment is not a way to pay.
  */
 export function paymentStepKinds(methods: PaymentMethodOption[]): PaymentStepKind[] {
@@ -70,12 +72,13 @@ export function paymentStepKinds(methods: PaymentMethodOption[]): PaymentStepKin
   const kinds = new Set<PaymentStepKind>();
   for (const method of live) {
     if (isTabbyPaymentMethod(method)) kinds.add("tabby");
+    else if (isTamaraPaymentMethod(method)) kinds.add("tamara");
     else if (/cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`)) kinds.add("cash");
     else if (usesInlineCardForm(method) || isTelrPaymentMethod(method) || /card/i.test(`${method.methodCode} ${method.displayName}`)) {
       kinds.add("card");
     }
   }
-  return (["card", "tabby", "cash"] as const).filter((kind) => kinds.has(kind));
+  return (["card", "tabby", "tamara", "cash"] as const).filter((kind) => kinds.has(kind));
 }
 
 /** Backend default first, skipping anything explicitly disabled. */
@@ -101,6 +104,9 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     // Tabby QA: no plan caption. Tabby offers more plans than Pay in 4 (some
     // with a fee); the Tabby snippet under the method shows the real ones.
     return "";
+  }
+  if (isTamaraPaymentMethod(method)) {
+    return "Split in 4, interest-free";
   }
   if (method.requiresRedirect) {
     return "Completed on the provider’s secure page";
@@ -152,12 +158,9 @@ export function upcomingPaymentMethods(
     rows.push({ id: "mada", title: "mada", note: "Paymob" });
     rows.push({ id: "stc-pay", title: "STC Pay", note: "Paymob" });
   }
-  // No "coming soon" Tabby row: Tabby is a direct integration, listed only where
-  // the market's checkout offers it (and not for a bag Tabby declined), never
-  // advertised elsewhere (Tabby QA, Nov 2026).
-  if (paymob && (country === "AE" || country === "SA")) {
-    rows.push({ id: "tamara", title: "Tamara", note: "Paymob · split payments" });
-  }
+  // No "coming soon" Tabby or Tamara rows: both are direct integrations, listed
+  // only where the market's checkout offers them (and not for a bag the provider
+  // declined), never advertised elsewhere (Tabby QA, Nov 2026).
   if (country === "KW") {
     rows.push({ id: "knet", title: "KNET", note: "Kuwait debit cards" });
   }

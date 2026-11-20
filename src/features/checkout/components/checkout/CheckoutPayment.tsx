@@ -21,6 +21,10 @@ import type { TabbyLang } from "../../utils/tabby";
 import { usePaymentOptions } from "../../hooks/usePaymentOptions";
 import type { PayMark } from "../../utils/paymentOptions";
 import { TabbyLogo } from "@/components/payments/TabbyLogo";
+import { TamaraCheckoutCard } from "./TamaraCheckoutCard";
+import type { TamaraPrecheck } from "../../hooks/useTamaraPrecheck";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
+import { pdpPayMarkTamara } from "@/styles/pdpChrome";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { TextWithLinks, linkSlots } from "@/lib/i18n/TextWithLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -47,6 +51,8 @@ type CheckoutPaymentProps = {
   tabbyPrescore?: TabbyPrescore;
   /** Language for Tabby's own wording and snippet. */
   tabbyLang?: TabbyLang;
+  /** Tamara pre-check for this shopper and total. */
+  tamaraPrecheck?: TamaraPrecheck;
 };
 
 export function CheckoutPayment({
@@ -69,6 +75,7 @@ export function CheckoutPayment({
   shopperPhone,
   tabbyPrescore = { state: "idle" },
   tabbyLang = "en",
+  tamaraPrecheck = { state: "idle" },
 }: CheckoutPaymentProps) {
   const { covered, groups, activeKey, activeRow, selectedOpensHere, formReady, hideSubmit, pick, payNow } =
     usePaymentOptions({
@@ -82,7 +89,10 @@ export function CheckoutPayment({
       onPayNow,
       tabbyPrescore,
       tabbyLang,
+      tamaraPrecheck,
     });
+  // Widget key: the method's own (backend `metadata.tamara.publicKey`), else the address's promo key.
+  const tamaraSiteKey = useSiteIntegrations().paymentPromos.tamara?.publicKey ?? "";
 
   const payLabel = submitting
     ? "Placing order…"
@@ -132,6 +142,7 @@ export function CheckoutPayment({
                             />
                             {row.wallet ? <WalletMark kind={row.wallet} /> : null}
                             {row.tabby !== undefined ? <TabbyLogo /> : null}
+                            {row.tamara !== undefined ? <span className={pdpPayMarkTamara} aria-hidden="true">tamara</span> : null}
                             <span className="min-w-0 flex-1">
                               <span className={payOptTitle}>{row.title}</span>
                               {row.sub ? <span id={`pay-opt-note-${row.key}`} className={payOptNote}>{row.sub}</span> : null}
@@ -159,6 +170,16 @@ export function CheckoutPayment({
                             <div className="px-4 pb-4 ps-12">
                               <TabbyCheckoutCard
                                 config={row.tabby || null}
+                                total={amountPayable}
+                                currency={currency}
+                                lang={tabbyLang}
+                              />
+                            </div>
+                          ) : null}
+                          {on && row.tamara !== undefined && !row.disabled && amountPayable != null && amountPayable > 0 ? (
+                            <div className="px-4 pb-4 ps-12">
+                              <TamaraCheckoutCard
+                                publicKey={row.tamara || tamaraSiteKey}
                                 total={amountPayable}
                                 currency={currency}
                                 lang={tabbyLang}

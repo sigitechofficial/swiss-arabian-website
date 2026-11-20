@@ -83,4 +83,16 @@ describe("paymentStepKinds (SE-8)", () => {
     ]);
     expect(paymentStepKinds([m("tabby", "tabby_installments", "Tabby", { isEnabled: false })])).toEqual([]);
   });
+
+  it("includes Tamara only when Tamara is a live method", () => {
+    expect(
+      paymentStepKinds([
+        m("cash_on_delivery", "cod", "Cash on Delivery"),
+        m("tamara", "tamara_installments", "Tamara"),
+        m("tabby", "tabby_installments", "Pay later with Tabby"),
+        m("stripe", "stripe_card", "Card"),
+      ]),
+    ).toEqual(["card", "tabby", "tamara", "cash"]);
+    expect(paymentStepKinds([m("tamara", "tamara_installments", "Tamara", { isEnabled: false })])).toEqual([]);
+  });
 });

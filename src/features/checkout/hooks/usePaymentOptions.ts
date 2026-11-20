@@ -7,6 +7,7 @@ import { isStripePaymentMethod } from "../utils/methodLabels";
 import { defaultRowKey, paymentGroups, type PayRow } from "../utils/paymentOptions";
 import type { TabbyLang } from "../utils/tabby";
 import type { TabbyPrescore } from "./useTabbyPrescore";
+import type { TamaraPrecheck } from "./useTamaraPrecheck";
 
 /**
  * The payment step's choices: rows for each zone method (Stripe and Paymob
@@ -24,6 +25,7 @@ export function usePaymentOptions(input: {
   onPayNow?: () => void;
   tabbyPrescore?: TabbyPrescore;
   tabbyLang?: TabbyLang;
+  tamaraPrecheck?: TamaraPrecheck;
 }) {
   const {
     methods,
@@ -36,11 +38,12 @@ export function usePaymentOptions(input: {
     onPayNow = () => undefined,
     tabbyPrescore = { state: "idle" },
     tabbyLang = "en",
+    tamaraPrecheck = { state: "idle" },
   } = input;
   const covered = amountPayable === 0;
   const opening = useRef(false);
   const [optionKey, setOptionKey] = useState<string | null>(null);
-  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang);
+  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang, tamaraPrecheck);
   const rows = groups.flatMap((group) => group.rows);
   const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
   const fallbackKey = selected ? defaultRowKey(selected) : null;

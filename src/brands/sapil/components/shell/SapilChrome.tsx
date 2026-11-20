@@ -146,6 +146,7 @@ export function SapilChrome({ children, beforeFooter }: { children: ReactNode; b
         newsletterButtonLabel={footer.newsletterButtonLabel}
         copyright={footer.copyrightText || t("shell.copyright", { year: new Date().getFullYear(), brand: localized(brandName, locale) })}
         legalEnd={<SapilLocaleSwitcher />}
+        socialLinks={footer.socialLinks}
       />
       <SapilSearchDialog />
       <SapilToastHost />

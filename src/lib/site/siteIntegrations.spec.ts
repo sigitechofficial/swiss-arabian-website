@@ -52,6 +52,16 @@ describe("parseSiteIntegrations (backend answer → what the page may load)", ()
     expect(parsed.signIn).toEqual({ google: null, apple: null });
   });
 
+  it("reads Tamara's promo with or without a widget key (backend sends only the merchant code today)", () => {
+    const withoutKey = parseSiteIntegrations({ ...full, paymentPromos: { tabby: null, tamara: { merchantCode: "TMUAE" } } });
+    expect(withoutKey.paymentPromos.tamara).toEqual({ merchantCode: "TMUAE", publicKey: null });
+    const withKey = parseSiteIntegrations({
+      ...full,
+      paymentPromos: { tabby: null, tamara: { merchantCode: null, publicKey: "tamara-public-key" } },
+    });
+    expect(withKey.paymentPromos.tamara).toEqual({ merchantCode: null, publicKey: "tamara-public-key" });
+  });
+
   it("is all off for nonsense", () => {
     expect(parseSiteIntegrations(null)).toEqual(SITE_INTEGRATIONS_OFF);
     expect(parseSiteIntegrations("x")).toEqual(SITE_INTEGRATIONS_OFF);

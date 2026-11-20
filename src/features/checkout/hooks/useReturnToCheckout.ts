@@ -4,15 +4,15 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { checkoutHref } from "../utils/checkoutLocale";
 import { clearPaymentState, storeOrderId } from "../utils/checkoutSession";
-import { returnToCheckout } from "../utils/returnToCheckout";
+import { returnToCheckout, type DecliningProvider } from "../utils/returnToCheckout";
 
 /**
- * "Choose another payment method" on a Tabby return page (every brand).
- * Cancelled: back to checkout with the bag, Tabby still offered.
- * Declined: back to checkout with the bag, Tabby not offered again.
+ * "Choose another payment method" on a Tabby or Tamara return page (every brand).
+ * Cancelled: back to checkout with the bag, the provider still offered.
+ * Declined: back to checkout with the bag, the provider not offered again.
  * Paid after all: the confirmation. Order still open: stay, with `failed` set.
  */
-export function useReturnToCheckout(orderId: string | null) {
+export function useReturnToCheckout(orderId: string | null, provider: DecliningProvider = "tabby") {
   const router = useRouter();
   const [returning, setReturning] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -26,7 +26,7 @@ export function useReturnToCheckout(orderId: string | null) {
       setReturning(true);
       setFailed(false);
       try {
-        const result = await returnToCheckout(orderId, { declined });
+        const result = await returnToCheckout(orderId, { declined, provider });
         if (result.kind === "paid") {
           clearPaymentState();
           router.replace(checkoutHref(`/order-confirmation/${encodeURIComponent(orderId)}`));
@@ -43,7 +43,7 @@ export function useReturnToCheckout(orderId: string | null) {
       setFailed(true);
       setReturning(false);
     },
-    [orderId, router],
+    [orderId, provider, router],
   );
 
   return { returning, failed, go };

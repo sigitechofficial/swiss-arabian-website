@@ -37,7 +37,7 @@ describe("useInstalmentPlan", () => {
     function TamaraMarket({ children }: { children: ReactNode }) {
       return (
         <SiteIntegrationsProvider
-          value={{ ...SITE_INTEGRATIONS_OFF, paymentPromos: { tabby: null, tamara: { merchantCode: "TAM" } } }}
+          value={{ ...SITE_INTEGRATIONS_OFF, paymentPromos: { tabby: null, tamara: { merchantCode: "TAM", publicKey: null } } }}
         >
           {children}
         </SiteIntegrationsProvider>

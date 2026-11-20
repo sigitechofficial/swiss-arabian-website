@@ -3,6 +3,7 @@
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useId, type ReactNode } from "react";
 import { CookieSettingsLink } from "@/components/layout/CookieSettingsLink";
+import { socialNetwork } from "@/lib/social/socialNetworks";
 import { toast } from "@/components/ui/Toaster";
 import { useNewsletterSignup } from "@/features/newsletter/hooks/useNewsletterSignup";
 import { useSapilCopy } from "../../i18n/SapilCopy";
@@ -21,6 +22,8 @@ export type SapilFooterViewProps = {
   copyright: string;
   /** right side of the legal row (market + language pickers) */
   legalEnd?: ReactNode;
+  /** Footer social links from the CMS (Website → Pages → Footer). Networks without an icon are left out. */
+  socialLinks?: Array<{ id: string; label: string; href: string }>;
 };
 
 /** v9 `footer`: newsletter, link columns from the market's footer menu, legal row. */
@@ -33,6 +36,7 @@ export function SapilFooterView({
   newsletterButtonLabel,
   copyright,
   legalEnd,
+  socialLinks = [],
 }: SapilFooterViewProps) {
   const t = useSapilCopy();
   const id = useId();
@@ -43,6 +47,10 @@ export function SapilFooterView({
     },
   });
   const cols = columnsLoading && !columns.length ? [] : columns;
+  const social = socialLinks.flatMap((link) => {
+    const network = socialNetwork(link);
+    return network ? [{ ...link, network }] : [];
+  });
   return (
     <footer data-sapil-footer="" className="pt-[72px] pb-[40px]">
       <Wrap>
@@ -87,6 +95,28 @@ export function SapilFooterView({
               <p id={`${id}-err`} role="alert" className="text-[13px] text-sapil-sale mt-[8px]">
                 {t("shell.emailInvalid")}
               </p>
+            ) : null}
+            {social.length ? (
+              <div className="mt-[28px]">
+                <p id={`${id}-follow`} className="text-[13px] font-[600] tracking-[.12em] uppercase text-sapil-muted mb-[12px]">
+                  {t("shell.followUs")}
+                </p>
+                <ul aria-labelledby={`${id}-follow`} className="list-none flex flex-wrap gap-[10px]">
+                  {social.map((link) => (
+                    <li key={`${link.id}-${link.href}`}>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.network.label}
+                        className="grid place-items-center w-[40px] h-[40px] rounded-full border border-sapil-line-2 text-sapil-ink hover:border-sapil-ink hover:text-sapil-accent [&_svg]:w-[18px] [&_svg]:h-[18px]"
+                      >
+                        {link.network.icon}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </div>
           {cols.map((col) => (

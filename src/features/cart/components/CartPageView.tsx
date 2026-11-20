@@ -78,6 +78,7 @@ import {
 } from "@/features/promotions";
 import { MissThisSwiper } from "./MissThisSwiper";
 import { CartTabbyPromo } from "./CartTabbyPromo";
+import { CartTamaraPromo } from "./CartTamaraPromo";
 import { ReturnTermsNote } from "@/features/afterSales/components/ReturnTermsNote";
 import { CartPendingPaymentNotice } from "./CartPendingPaymentNotice";
 import { CartUnavailableItems } from "./CartUnavailableItems";
@@ -371,6 +372,9 @@ export function CartPageView() {
                 )}
                 {quotePending ? null : (
                   <CartTabbyPromo amount={amountPayable ?? total} currency={currency} />
+                )}
+                {quotePending ? null : (
+                  <CartTamaraPromo amount={amountPayable ?? total} currency={currency} />
                 )}
                 {quotePending ? null : (
                   <EarnPreviewNote

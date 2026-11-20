@@ -14,7 +14,8 @@ export type SiteIntegrations = {
   /** Only providers the market's checkout offers now; the ids are optional. */
   paymentPromos: {
     tabby: { merchantCode: string | null; publicKey: string | null } | null;
-    tamara: { merchantCode: string | null } | null;
+    /** `publicKey`: Tamara widget v2 key (browser-safe); null → plain pay-in-4 wording instead of the widget. */
+    tamara: { merchantCode: string | null; publicKey: string | null } | null;
   };
   googleMaps: { browserKey: string; mapId: string | null } | null;
   /** Social sign-in on for the market: the website's client id per provider (ADR-005 phase G). */

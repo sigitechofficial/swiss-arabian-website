@@ -74,6 +74,7 @@ export function CheckoutPageView() {
     submitting,
     payLang,
     tabbyPrescore,
+    tamaraPrecheck,
     canSubmit,
     ctaKind,
     isEmpty,
@@ -225,6 +226,7 @@ export function CheckoutPageView() {
                     shopperPhone={shipping.phone}
                     tabbyPrescore={tabbyPrescore}
                     tabbyLang={payLang}
+                    tamaraPrecheck={tamaraPrecheck}
                     onPayNow={() => {
                       const form = document.getElementById("checkout-form");
                       if (form instanceof HTMLFormElement) form.requestSubmit();

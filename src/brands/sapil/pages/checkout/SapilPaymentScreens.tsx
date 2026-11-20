@@ -4,9 +4,11 @@ import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { ORDER_UUID, parseResultHint as tabbyResultHint } from "@/features/checkout/components/TabbyReturnView";
 import { parseResultHint as telrResultHint } from "@/features/checkout/components/TelrReturnView";
+import { parseResultHint as tamaraResultHint, pickOrderId } from "@/features/checkout/components/TamaraReturnView";
 import { storedOrderIdIf, usePaymentRetry, useSettlePayment } from "@/features/checkout/hooks/usePaymentReturn";
 import { useReturnToCheckout } from "@/features/checkout/hooks/useReturnToCheckout";
 import { TABBY_CANCELLED_MESSAGE, TABBY_REJECTED_MESSAGE, tabbyLang } from "@/features/checkout/utils/tabby";
+import { TAMARA_CANCELLED_MESSAGE, TAMARA_REJECTED_MESSAGE, tamaraLang } from "@/features/checkout/utils/tamara";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { Breadcrumbs, Button, Eyebrow, Serif, Wrap } from "../../ui";
@@ -231,6 +233,64 @@ export function SapilTabbyReturn() {
         alert
         eyebrow={t(cancelled ? "checkout.payCancelledEyebrow" : "checkout.payDeclinedEyebrow")}
         title={(cancelled ? TABBY_CANCELLED_MESSAGE : TABBY_REJECTED_MESSAGE)[lang]}
+        error={back.failed ? t("checkout.payKeptError") : null}
+        primary={{
+          label: back.returning
+            ? t("checkout.payReturning")
+            : t(cancelled ? "checkout.payBackToCheckout" : "checkout.payOtherMethod"),
+          onClick: () => void back.go(!cancelled),
+          disabled: back.returning,
+        }}
+        secondary={home}
+      />
+    );
+  } else if (!orderId) {
+    body = <PaymentPanel eyebrow={t("checkout.payNoOrderEyebrow")} title={t("checkout.payNoOrderTitle")} body={t("checkout.payNoOrderBody")} primary={home} />;
+  } else {
+    body = (
+      <PaymentPanel
+        eyebrow={t("checkout.payPendingEyebrow")}
+        title={t("checkout.payPendingTitle")}
+        accent={t("checkout.payPendingAccent")}
+        body={t("checkout.payPendingBody")}
+        primary={{ label: t("checkout.payOrderStatus"), href: `/order-confirmation/${orderId}?verify=1` }}
+        secondary={home}
+      />
+    );
+  }
+  return <SapilCheckoutStateShell>{body}</SapilCheckoutStateShell>;
+}
+
+/**
+ * Tamara hosted-page return. `result=` is only a hint: the platform decides.
+ * Tamara adds its own `orderId` to the address; ours is picked (`pickOrderId`).
+ */
+export function SapilTamaraReturn() {
+  const t = useSapilCopy();
+  const locale = useShopLocale();
+  const lang = tamaraLang(locale);
+  const searchParams = useSearchParams();
+  const hydrated = useHydrated();
+  const hint = useMemo(() => tamaraResultHint(searchParams.get("result")), [searchParams]);
+  const orderId = hydrated ? pickOrderId(searchParams.getAll("orderId"), storedOrderIdIf(true)) : null;
+  const settlement = useSettlePayment(orderId);
+  // As for Tabby: cancelled → checkout with the bag; declined → the bag, without Tamara.
+  const back = useReturnToCheckout(orderId, "tamara");
+  const home = { label: t("checkout.payHome"), href: "/" };
+  const refused = hint === "cancel" || hint === "failure";
+
+  let body: ReactNode;
+  if (!hydrated || (orderId && !settlement)) {
+    body = <SapilCheckoutSpinner eyebrow={t("checkout.payPendingEyebrow")} title={t(refused ? "checkout.payChecking" : "checkout.paymentConfirming")} body={t("checkout.payDontClose")} />;
+  } else if (settlement?.kind === "paid") {
+    body = <SapilCheckoutSpinner eyebrow="Tamara" title={t("checkout.payConfirmed")} body={t("checkout.payConfirmedBody")} />;
+  } else if (settlement?.kind === "failed" || refused) {
+    const cancelled = hint === "cancel";
+    body = (
+      <PaymentPanel
+        alert
+        eyebrow={t(cancelled ? "checkout.payCancelledEyebrow" : "checkout.payDeclinedEyebrow")}
+        title={(cancelled ? TAMARA_CANCELLED_MESSAGE : TAMARA_REJECTED_MESSAGE)[lang]}
         error={back.failed ? t("checkout.payKeptError") : null}
         primary={{
           label: back.returning

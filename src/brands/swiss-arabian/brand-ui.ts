@@ -21,7 +21,7 @@ export { CartPageView } from "@/features/cart";
 export { ProductDetailPageView } from "@/features/catalog";
 export { CatalogJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 export { CategoryListing, CollectionListing, ProductsListing } from "@/features/catalog/routes/listingRoutes";
-export { CheckoutPageView, OrderConfirmationView, PaymentCancelView, PaymentSuccessView, PaymobPaymentFormView, StripePaymentFormView, TabbyReturnView, TelrReturnView } from "@/features/checkout";
+export { CheckoutPageView, OrderConfirmationView, PaymentCancelView, PaymentSuccessView, PaymobPaymentFormView, StripePaymentFormView, TabbyReturnView, TamaraReturnView, TelrReturnView } from "@/features/checkout";
 export { CheckoutSpinnerState, CheckoutStateShell } from "@/features/checkout/components/CheckoutStateShell";
 export { CmsPreviewHomeView } from "@/features/cms/components/CmsPreviewHomeView";
 export { CollectionsPageView } from "@/features/collections";

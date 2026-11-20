@@ -5,47 +5,72 @@ import { releaseOrderToCart } from "../api/orders.service";
 import type { PaymentMethodOption } from "../types/checkout";
 import { clearCheckoutSessionId, clearPaymentState } from "./checkoutSession";
 import { isTabbyPaymentMethod } from "./tabby";
+import { isTamaraPaymentMethod } from "./tamara";
 
 /**
  * Tabby QA (Nov 2026): after a cancelled or declined Tabby payment the shopper
  * goes back to checkout with the same bag, to try again or pay another way.
- * After a decline Tabby is not offered again for that bag. Shared by every brand.
+ * After a decline Tabby is not offered again for that bag. Tamara, Tabby's
+ * twin, works the same way. Shared by every brand.
  */
 
-const DECLINED_KEY = "sa_tabby_declined_cart";
+/** Hosted BNPL providers that can decline a bag and send the shopper back. */
+export type DecliningProvider = "tabby" | "tamara";
 
-/** Tabby declined this bag: hide Tabby at checkout for it (this tab only). */
-export function markTabbyDeclined(cartId: string): void {
+const DECLINED_KEY: Record<DecliningProvider, string> = {
+  tabby: "sa_tabby_declined_cart",
+  tamara: "sa_tamara_declined_cart",
+};
+
+const IS_PROVIDER_METHOD: Record<
+  DecliningProvider,
+  (method: Pick<PaymentMethodOption, "providerCode" | "methodCode">) => boolean
+> = {
+  tabby: isTabbyPaymentMethod,
+  tamara: isTamaraPaymentMethod,
+};
+
+const PROVIDERS = Object.keys(DECLINED_KEY) as DecliningProvider[];
+
+/** The provider declined this bag: hide it at checkout for that bag (this tab only). */
+export function markDeclined(provider: DecliningProvider, cartId: string): void {
   try {
-    sessionStorage.setItem(DECLINED_KEY, cartId);
+    sessionStorage.setItem(DECLINED_KEY[provider], cartId);
   } catch {
-    // Storage blocked: Tabby's own pre-check still declines it at checkout.
+    // Storage blocked: the provider's own pre-check still declines it at checkout.
   }
 }
 
-export function isTabbyDeclinedFor(cartId: string | null | undefined): boolean {
+export function isDeclinedFor(provider: DecliningProvider, cartId: string | null | undefined): boolean {
   if (!cartId) return false;
   try {
-    return sessionStorage.getItem(DECLINED_KEY) === cartId;
+    return sessionStorage.getItem(DECLINED_KEY[provider]) === cartId;
   } catch {
     return false;
   }
 }
 
-export function clearTabbyDeclined(): void {
+export function clearDeclined(provider: DecliningProvider): void {
   try {
-    sessionStorage.removeItem(DECLINED_KEY);
+    sessionStorage.removeItem(DECLINED_KEY[provider]);
   } catch {
     // ignore
   }
 }
 
-/** Payment methods to show for this bag: without Tabby once Tabby declined it. */
+/** Order placed: no bag is declined any more. */
+export function clearDeclinedPayments(): void {
+  for (const provider of PROVIDERS) clearDeclined(provider);
+}
+
+/** Payment methods to show for this bag: without Tabby / Tamara once that provider declined it. */
 export function offeredPaymentMethods<T extends Pick<PaymentMethodOption, "providerCode" | "methodCode">>(
   methods: T[],
   cartId: string | null | undefined,
 ): T[] {
-  return isTabbyDeclinedFor(cartId) ? methods.filter((m) => !isTabbyPaymentMethod(m)) : methods;
+  const declined = PROVIDERS.filter((provider) => isDeclinedFor(provider, cartId));
+  if (!declined.length) return methods;
+  return methods.filter((m) => !declined.some((provider) => IS_PROVIDER_METHOD[provider](m)));
 }
 
 export type ReturnToCheckoutResult =
@@ -62,7 +87,7 @@ export type ReturnToCheckoutResult =
  */
 export async function returnToCheckout(
   orderId: string,
-  opts: { declined?: boolean } = {},
+  opts: { declined?: boolean; provider?: DecliningProvider } = {},
 ): Promise<ReturnToCheckoutResult> {
   const released = await releaseOrderToCart(orderId);
   if (released.outcome === "paid") return { kind: "paid" };
@@ -76,7 +101,8 @@ export async function returnToCheckout(
   // The old checkout belonged to the cancelled order; checkout opens a new one.
   clearCheckoutSessionId();
   clearPaymentState();
-  if (opts.declined) markTabbyDeclined(cartId);
-  else clearTabbyDeclined();
+  const provider = opts.provider ?? "tabby";
+  if (opts.declined) markDeclined(provider, cartId);
+  else clearDeclined(provider);
   return { kind: "checkout" };
 }
