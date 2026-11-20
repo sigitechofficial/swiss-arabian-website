@@ -1,0 +1,34 @@
+{
+  "$comment": "Texts a third party must approve in every language before shoppers see a translation (by translation pack id). The pack notes of these texts say who must approve them. Tabby and Tamara require their own wording for their payment texts.",
+  "approvals": [
+    {
+      "by": "Tabby",
+      "keys": [
+        "site:pages.title.tabbyConfirming",
+        "site:payments.tabby",
+        "site:payments.tabbyText",
+        "site:checkout.tabby.startPhone",
+        "site:checkout.tabby.startEmail",
+        "site:checkout.tabby.startAddress",
+        "site:checkout.tabby.startUnavailable",
+        "site:checkout.tabby.confirming",
+        "site:sapil:checkout:payKindTabby",
+        "site:sapil:checkout:payTabbyChecking"
+      ]
+    },
+    {
+      "by": "Tamara",
+      "keys": [
+        "site:pages.title.tamaraConfirming",
+        "site:checkout.tamara.startPhone",
+        "site:checkout.tamara.startEmail",
+        "site:checkout.tamara.startAddress",
+        "site:checkout.tamara.startUnavailable",
+        "site:checkout.tamara.confirming",
+        "site:checkout.method.tamaraNote",
+        "site:sapil:checkout:payKindTamara",
+        "site:sapil:checkout:payTamaraNote"
+      ]
+    }
+  ]
+}
