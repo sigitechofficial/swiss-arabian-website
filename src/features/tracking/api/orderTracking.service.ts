@@ -21,7 +21,10 @@ export interface TrackingEvent {
 
 export interface TrackingDeliveryMethod {
   methodCode: string;
+  /** In the order's language. */
   displayName: string | null;
+  /** Every language (`{ en, ar, … }`): pick the page's with `nameInLanguage`. */
+  displayNames?: Readonly<Record<string, string>> | null;
   methodType?: string | null;
   estimatedMinDays: number | null;
   estimatedMaxDays: number | null;
