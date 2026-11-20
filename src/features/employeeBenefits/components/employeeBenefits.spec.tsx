@@ -15,6 +15,7 @@ import { AccountTabNav } from "@/features/account/components/AccountTabNav";
 const fetchEmployeeLink = vi.hoisted(() => vi.fn());
 const fetchEmployeeContext = vi.hoisted(() => vi.fn());
 const fetchEmployeeBenefits = vi.hoisted(() => vi.fn());
+const acceptEmployeeInvitation = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/account/employee-benefits",
@@ -29,6 +30,7 @@ vi.mock("../api/employeeBenefits.service", () => ({
   fetchEmployeeLink: (...args: unknown[]) => fetchEmployeeLink(...args),
   fetchEmployeeContext: (...args: unknown[]) => fetchEmployeeContext(...args),
   fetchEmployeeBenefits: (...args: unknown[]) => fetchEmployeeBenefits(...args),
+  acceptEmployeeInvitation: (...args: unknown[]) => acceptEmployeeInvitation(...args),
 }));
 
 const loyaltyAccount = vi.hoisted(() => vi.fn());
@@ -143,8 +145,8 @@ describe("employee benefits account", () => {
     expect(await screen.findByText(/Swiss Arabian Admin verification/i)).toBeInTheDocument();
     expect(fetchEmployeeLink).toHaveBeenCalledWith("UAE");
     expect(fetchEmployeeContext).toHaveBeenCalledWith("UAE");
-    expect(screen.queryByLabelText("Invitation ID")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Invitation claim code")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Invitation ID")).toBeInTheDocument();
+    expect(screen.getByLabelText("Claim code")).toBeInTheDocument();
     expect(screen.queryByText("Amount limit")).not.toBeInTheDocument();
     expect(fetchEmployeeBenefits).not.toHaveBeenCalled();
   });
@@ -408,12 +410,14 @@ describe("employee benefits account", () => {
     expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
   });
 
-  it("does not collect an invitation secret or show another employee's record", async () => {
+  it("offers the HR invitation form but never shows another employee's record", async () => {
     renderView();
     expect(await screen.findByText(/Swiss Arabian Admin verification/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText("Invitation ID")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Invitation claim code")).not.toBeInTheDocument();
+    // The customer types the invitation HR gave them; the backend checks it belongs to this account.
+    expect(screen.getByLabelText("Invitation ID")).toBeInTheDocument();
+    expect(screen.getByLabelText("Claim code")).toHaveAttribute("type", "password");
     expect(screen.queryByText("000123")).not.toBeInTheDocument();
+    expect(acceptEmployeeInvitation).not.toHaveBeenCalled();
   });
 
   it("refreshes employee context for the current zone after sign-in clears the cache", () => {

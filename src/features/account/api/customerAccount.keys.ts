@@ -3,4 +3,5 @@ export const customerAccountKeys = {
   addresses: () => [...customerAccountKeys.all, "addresses"] as const,
   phones: () => [...customerAccountKeys.all, "phones"] as const,
   communication: () => [...customerAccountKeys.all, "communication"] as const,
+  stockAlerts: () => [...customerAccountKeys.all, "stock-alerts"] as const,
 };

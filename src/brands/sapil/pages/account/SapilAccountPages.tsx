@@ -7,6 +7,7 @@ import { useAccountDashboard, useChangePassword } from "@/features/account/hooks
 import { useCustomerAddresses } from "@/features/account/hooks/useCustomerAddresses";
 import { useCustomerPhones } from "@/features/account/hooks/useCustomerPhones";
 import { COMMUNICATION_PREFERENCES_ID, useCommunicationPreferences } from "@/features/account/hooks/useCommunicationPreferences";
+import { useStockAlerts } from "@/features/account/hooks/useStockAlerts";
 import { useUpdateCustomerMe } from "@/features/account/hooks/useUpdateCustomerMe";
 import { regionsForCountry } from "@/features/account/data/regionsByCountry";
 import { countryLabel, regionLabel } from "@/features/account/utils/addressDisplay";
@@ -303,8 +304,45 @@ export function SapilAccountProfilePage() {
             ))}
           </div>
         </Card>
+        <SapilStockAlertsCard />
       </div>
     </AccountPage>
+  );
+}
+
+/** "Back-in-stock alerts" with a stop button per product (D3-4b). Shop copy has both languages. */
+function SapilStockAlertsCard() {
+  const shop = useShopTranslator();
+  const { list, cancel } = useStockAlerts();
+  const items = list.data?.items ?? [];
+  return (
+    <Card title={shop("stockAlertsTitle")} headingLevel="h3">
+      <p className="text-[14px] text-sapil-ink-2">{shop("stockAlertsBody")}</p>
+      {list.isPending ? (
+        <SapilSkeleton className="h-[44px]" />
+      ) : list.isError ? (
+        <LoadError onRetry={() => void list.refetch()} />
+      ) : items.length === 0 ? (
+        <p className="mt-[10px] text-sapil-ink-2">{shop("stockAlertsEmpty")}</p>
+      ) : (
+        <ul className="list-none" data-testid="account-stock-alerts">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center justify-between gap-[12px] py-[10px] border-b border-sapil-line last:border-b-0">
+              {item.slug ? (
+                <SapilLink href={`/products/${item.slug}`} className="font-[600] hover:underline">
+                  {item.productName}
+                </SapilLink>
+              ) : (
+                <span className="font-[600]">{item.productName}</span>
+              )}
+              <button type="button" className={linkBtn} disabled={cancel.isPending} onClick={() => cancel.mutate(item.id)}>
+                {shop("stockAlertsStop")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

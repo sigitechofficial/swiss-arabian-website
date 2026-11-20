@@ -23,27 +23,27 @@ export function useAddCatalogProduct() {
   const marketId = useUiStore((s) => s.selectedMarketId);
   const zoneCode = marketId?.trim() || "";
 
-  return async (opts: CatalogAddOpts): Promise<void> => {
+  return async (opts: CatalogAddOpts): Promise<boolean> => {
     if (!zoneCode) {
       toast(pageTranslator()("error.productNotPurchasable"), "error");
-      return;
+      return false;
     }
     let product: Awaited<ReturnType<typeof fetchProductBySlug>>;
     try {
       product = await fetchProductBySlug(opts.slug, zoneCode);
     } catch {
       toast(pageTranslator()("error.unreachable"), "error");
-      return;
+      return false;
     }
     if (!product || (!product.variantId && !product.sku)) {
       toast(pageTranslator()("error.productNotPurchasable"), "error");
-      return;
+      return false;
     }
 
     const price = product.price ?? opts.price;
     if (price == null) {
       toast(pageTranslator()("error.productNotPurchasable"), "error");
-      return;
+      return false;
     }
 
     await addToCart({
@@ -56,5 +56,6 @@ export function useAddCatalogProduct() {
       currency: product.currency || "AED",
       quantity: 1,
     });
+    return true;
   };
 }
