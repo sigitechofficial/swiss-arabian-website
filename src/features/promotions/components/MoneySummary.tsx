@@ -1,6 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { GiftCardTender } from "../types/promotions";
 import { cartTotalsLine } from "@/styles/cartChrome";
 import { checkoutTotalsLine } from "@/styles/checkoutChrome";
@@ -13,7 +14,7 @@ export function MoneySummary({
   shipping = null,
   shippingDiscount,
   tax = 0,
-  taxLabel = "VAT",
+  taxLabel,
   taxIncluded = false,
   total,
   amountPayable,
@@ -44,6 +45,8 @@ export function MoneySummary({
   /** Checkout rows use the summary total rule. Cart is the default. */
   surface?: "cart" | "checkout";
 }) {
+  const t = useShopCopy();
+  const taxName = taxLabel?.trim() || t("promotions.summary.vat");
   const checkout = surface
     ? surface === "checkout"
     : className.includes("checkout");
@@ -56,38 +59,38 @@ export function MoneySummary({
   return (
     <dl className={className}>
       <div>
-        <dt>Subtotal</dt>
+        <dt>{t("orders.subtotal")}</dt>
         <dd dir="ltr">{formatMoney(subtotal, currency)}</dd>
       </div>
       {discount > 0 ? (
         <div>
-          <dt>Discount</dt>
+          <dt>{t("orders.discount")}</dt>
           <dd dir="ltr">−{formatMoney(discount, currency)}</dd>
         </div>
       ) : null}
       {shipping != null ? (
         <div>
-          <dt>Shipping</dt>
+          <dt>{t("orders.shipping")}</dt>
           <dd dir="ltr">
-            {shipping === 0 ? "Free" : formatMoney(shipping, currency)}
+            {shipping === 0 ? t("orders.free") : formatMoney(shipping, currency)}
           </dd>
         </div>
       ) : null}
       {shippingDiscount > 0 ? (
         <div>
-          <dt>Shipping discount</dt>
+          <dt>{t("promotions.summary.shippingDiscount")}</dt>
           <dd dir="ltr">−{formatMoney(shippingDiscount, currency)}</dd>
         </div>
       ) : null}
       {tax > 0 ? (
         <div>
-          <dt>{taxIncluded ? `Includes ${taxLabel}` : taxLabel}</dt>
+          <dt>{taxIncluded ? t("promotions.summary.taxIncluded", { tax: taxName }) : taxName}</dt>
           <dd dir="ltr">{formatMoney(tax, currency)}</dd>
         </div>
       ) : null}
       {freeGifts.map((gift, index) => (
         <div key={`${gift.name}-${index}`}>
-          <dt>Free gift</dt>
+          <dt>{t("checkout.confirmation.freeGift")}</dt>
           <dd dir="ltr">
             {gift.name}
             {gift.quantity > 1 ? ` ×${gift.quantity}` : ""}{" "}
@@ -96,12 +99,12 @@ export function MoneySummary({
         </div>
       ))}
       <div className={totalsLine}>
-        <dt>Total</dt>
+        <dt>{t("orders.total")}</dt>
         <dd dir="ltr">{formatMoney(total, currency)}</dd>
       </div>
       {loyalty && loyalty.points > 0 ? (
         <div>
-          <dt>Reward points</dt>
+          <dt>{t("loyalty.redeem.title")}</dt>
           <dd dir="ltr">
             −{formatMoney(loyalty.amount, loyalty.currency || currency)}
           </dd>
@@ -112,7 +115,11 @@ export function MoneySummary({
         if (!(amount > 0)) return null;
         return (
           <div key={card.usageId ?? card.maskedCode ?? index}>
-            <dt>Gift card{card.maskedCode ? ` (${card.maskedCode})` : ""}</dt>
+            <dt>
+              {card.maskedCode
+                ? t("promotions.summary.giftCardCode", { code: card.maskedCode })
+                : t("promotions.giftCard.label")}
+            </dt>
             <dd dir="ltr">
               −{formatMoney(amount, card.currencyCode || currency)}
             </dd>
@@ -121,7 +128,7 @@ export function MoneySummary({
       })}
       {showPayable ? (
         <div className={totalsLine}>
-          <dt>Amount due</dt>
+          <dt>{t("promotions.summary.amountDue")}</dt>
           <dd dir="ltr">{formatMoney(amountPayable, currency)}</dd>
         </div>
       ) : null}

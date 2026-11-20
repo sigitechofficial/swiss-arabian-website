@@ -1,6 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useCouponForm } from "../hooks/useCouponForm";
 import {
   couponApplied,
@@ -15,6 +16,7 @@ import {
 } from "@/styles/cartChrome";
 
 export function CouponForm() {
+  const t = useShopCopy();
   const {
     cartId,
     currency,
@@ -34,7 +36,7 @@ export function CouponForm() {
 
   return (
     <div className={couponBox} data-coupon="">
-      <p className={couponLabel}>Promo code</p>
+      <p className={couponLabel}>{t("promotions.coupon.label")}</p>
       {applied?.code ? (
         <div className={couponApplied}>
           <div>
@@ -45,8 +47,9 @@ export function CouponForm() {
           </div>
           {appliedView?.amount != null && appliedView.amount > 0 ? (
             <span className={couponAppliedAmt} dir="ltr">
-              {appliedIsFixedBxgy ? "Applied · " : "−"}
-              {formatMoney(appliedView.amount, currency)}
+              {appliedIsFixedBxgy
+                ? t("promotions.applied.amount", { amount: formatMoney(appliedView.amount, currency) })
+                : `−${formatMoney(appliedView.amount, currency)}`}
             </span>
           ) : appliedView?.status ? (
             <span className={couponAppliedAmt}>{appliedView.status}</span>
@@ -57,7 +60,7 @@ export function CouponForm() {
             onClick={() => void onRemove()}
             disabled={busy}
           >
-            {removing ? "Removing…" : "Remove"}
+            {removing ? t("loyalty.redeem.removing") : t("account.remove")}
           </button>
         </div>
       ) : null}
@@ -66,17 +69,17 @@ export function CouponForm() {
           name="coupon"
           autoComplete="off"
           spellCheck={false}
-          aria-label="Promo code"
+          aria-label={t("promotions.coupon.label")}
           aria-invalid={fieldError ? true : undefined}
           placeholder={
-            applied?.code ? "Replace with another code" : "Enter code"
+            applied?.code ? t("promotions.coupon.replacePlaceholder") : t("promotions.coupon.placeholder")
           }
           value={value}
           onChange={(e) => setCode(e.target.value)}
           disabled={busy || !cartId}
         />
         <button type="submit" disabled={busy || !cartId || !code.trim()}>
-          {applying ? "Applying…" : applied?.code ? "Replace" : "Apply"}
+          {applying ? t("loyalty.redeem.applying") : applied?.code ? t("promotions.coupon.replace") : t("loyalty.redeem.apply")}
         </button>
       </form>
       {fieldError ? (

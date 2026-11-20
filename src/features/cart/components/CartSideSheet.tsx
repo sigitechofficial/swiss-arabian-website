@@ -211,7 +211,7 @@ export function CartSideSheet() {
     <SideSheet
       open={open}
       onClose={() => setCartOpen(false)}
-      label="Bag"
+      label={copy("nav.bag")}
       className="w-full bg-transparent shadow-[-12px_0_48px_rgba(0,0,0,0.12)] sm:w-[480px] lg:w-[520px]"
     >
       <div
@@ -234,12 +234,12 @@ export function CartSideSheet() {
         </div>
 
         <header className={drawerHead}>
-          <h2>{itemCount > 0 ? `My Bag (${itemCount})` : "My Bag"}</h2>
+          <h2>{itemCount > 0 ? copy("cart.drawer.titleCount", { count: itemCount }) : copy("cart.drawer.title")}</h2>
           <button
             type="button"
             className={drawerClose}
             onClick={() => setCartOpen(false)}
-            aria-label="Close"
+            aria-label={copy("promo.close")}
           >
             <X size={18} />
           </button>
@@ -253,16 +253,16 @@ export function CartSideSheet() {
                 <span className={drawerEmptyIcon} aria-hidden="true">
                   <ShoppingBag size={24} strokeWidth={1.6} />
                 </span>
-                <p className={drawerEmptyTitle}>Your bag is empty</p>
+                <p className={drawerEmptyTitle}>{copy("cart.empty.title")}</p>
                 <p className={drawerEmptyCopy}>
-                  Explore our fragrances, or pick up where you left off below.
+                  {copy("cart.empty.body")}
                 </p>
                 <LocaleLink
                   className={drawerEmptyCta}
                   href="/products"
                   onClick={() => setCartOpen(false)}
                 >
-                  Shop fragrances
+                  {copy("cart.empty.shop")}
                 </LocaleLink>
               </div>
               <EmptyBagRecovery surface="empty-cart" fit />
@@ -288,7 +288,7 @@ export function CartSideSheet() {
                         <div className={drawerLineTop}>
                           <p className={drawerLineName}>{line.title}</p>
                           {line.isSellable === false ? (
-                            <p className={drawerLinePrice}>Unavailable</p>
+                            <p className={drawerLinePrice}>{copy("cart.unavailable.UNAVAILABLE")}</p>
                           ) : (
                             <PromoLinePrice
                               className={drawerLinePrice}
@@ -321,7 +321,7 @@ export function CartSideSheet() {
                               onClick={() =>
                                 setLineQuantity(line, Math.max(1, line.quantity - 1))
                               }
-                              aria-label="Decrease quantity"
+                              aria-label={copy("cart.line.decreaseQty")}
                               disabled={line.isSellable === false}
                             >
                               <Minus size={13} />
@@ -332,7 +332,7 @@ export function CartSideSheet() {
                               onClick={() =>
                                 setLineQuantity(line, line.quantity + 1)
                               }
-                              aria-label="Increase quantity"
+                              aria-label={copy("cart.line.increaseQty")}
                               disabled={
                                 line.isSellable === false || atStockLimit(line)
                               }
@@ -345,7 +345,7 @@ export function CartSideSheet() {
                             className={drawerLineRemove}
                             onClick={() => removeLine(line)}
                           >
-                            Remove
+                            {copy("account.remove")}
                           </button>
                         </div>
                         {atStockLimit(line) && line.maxQuantity != null ? (
@@ -368,7 +368,7 @@ export function CartSideSheet() {
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
             <div className={cartRecs}>
-              <h3 className={cartRecsTitle}>Layer your scents</h3>
+              <h3 className={cartRecsTitle}>{copy("cart.drawer.layer")}</h3>
               <div className={cartRecsSwiper} role="list">
                 {recs.map((product) => {
                   const canAdd = Boolean(product.variantId || product.sku);
@@ -390,7 +390,7 @@ export function CartSideSheet() {
                         <p className={cartRecPrice}>
                           {formatMoney(product.price, product.currency)}
                         </p>
-                        <p className={cartRecSize}>50 ml</p>
+                        <p className={cartRecSize}>{copy("cart.drawer.recSize")}</p>
                       </div>
                       <button
                         type="button"
@@ -398,8 +398,8 @@ export function CartSideSheet() {
                         disabled={!canAdd}
                         aria-label={
                           pressed
-                            ? `${product.title} added`
-                            : `Add ${product.title}`
+                            ? copy("cart.addon.added", { name: product.title })
+                            : copy("cart.addon.add", { name: product.title })
                         }
                         aria-pressed={pressed}
                         onClick={() => {
@@ -436,12 +436,12 @@ export function CartSideSheet() {
           <footer className={drawerFoot}>
             <PromotionProgressRail surface="drawer" inset={false} />
             <div className={drawerTotalRow}>
-              <span>Total</span>
+              <span>{copy("orders.total")}</span>
               <strong>
                 {allUnavailable
-                  ? "Unavailable"
+                  ? copy("cart.unavailable.UNAVAILABLE")
                   : amountDue == null
-                    ? "Updating…"
+                    ? copy("cart.drawer.updating")
                     : formatMoney(amountDue, currency)}
               </strong>
             </div>
@@ -485,7 +485,7 @@ export function CartSideSheet() {
                 href="/cart"
                 onClick={() => setCartOpen(false)}
               >
-                View bag
+                {copy("cart.drawer.viewBag")}
               </LocaleLink>
               {/* Checkout reads the server cart, so hold it for the second or two
                   a background sync is still writing the latest bag changes. */}
@@ -501,7 +501,7 @@ export function CartSideSheet() {
                   setCartOpen(false);
                 }}
               >
-                {syncing ? "Updating bag…" : "Checkout"}
+                {syncing ? copy("cart.page.updating") : copy("pages.title.checkout")}
               </LocaleLink>
             </div>
             <ReturnTermsNote className="mt-2 text-center text-[11px] leading-snug text-sa-muted" />

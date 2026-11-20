@@ -1,6 +1,8 @@
 import type { GiftCatalogHit } from "../hooks/useGiftCatalog";
 import type { PromotionGiftLine } from "../types/promotions";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   cline,
   clineBody,
@@ -33,11 +35,12 @@ function isSourceSku(value: string): boolean {
 export function giftCardTitle(
   line: PromotionGiftLine,
   product: GiftCatalogHit | null | undefined,
+  t: Translator = englishTranslator,
 ): string {
   if (product?.title) return product.title;
   const name = line.name?.trim();
   if (name && !isSourceSku(name)) return name;
-  return "Free gift";
+  return t("checkout.confirmation.freeGift");
 }
 
 export function giftCardSku(
@@ -63,7 +66,8 @@ export function GiftCartItem({
   /** Checkout summary uses the bag-drawer row; cart page uses full `cline`; the bag drawer a compact row. */
   variant?: "checkout" | "cart" | "drawer";
 }) {
-  const title = giftCardTitle(line, product);
+  const t = useShopCopy();
+  const title = giftCardTitle(line, product, t);
   const imageUrl = product?.imageUrl || line.imageUrl;
   const money = product?.currency?.trim() || currency;
   const list =
@@ -73,7 +77,7 @@ export function GiftCartItem({
 
   if (variant === "drawer") {
     return (
-      <article className={giftDrawerLine} aria-label={`Free gift: ${title}`}>
+      <article className={giftDrawerLine} aria-label={t("promotions.gift.lineLabel", { name: title })}>
         <div className={giftDrawerMedia}>
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -90,8 +94,8 @@ export function GiftCartItem({
             />
           </div>
           <div className={giftDrawerMeta}>
-            <span className={drawerLineTag}>Free gift</span>
-            <span>Qty {line.quantity}</span>
+            <span className={drawerLineTag}>{t("checkout.confirmation.freeGift")}</span>
+            <span>{t("checkout.confirmation.qty", { qty: line.quantity })}</span>
           </div>
         </div>
       </article>
@@ -100,7 +104,7 @@ export function GiftCartItem({
 
   if (variant === "checkout") {
     return (
-      <article className={coline} aria-label={`Free gift: ${title}`}>
+      <article className={coline} aria-label={t("promotions.gift.lineLabel", { name: title })}>
         <div className={colineMedia}>
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -125,7 +129,7 @@ export function GiftCartItem({
   }
 
   return (
-    <article className={cline} aria-label={`Free gift: ${title}`}>
+    <article className={cline} aria-label={t("promotions.gift.lineLabel", { name: title })}>
       <div className={clineMedia}>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -137,7 +141,7 @@ export function GiftCartItem({
           <h3>{title}</h3>
           <GiftPrice list={list} currency={money} className={clinePrice} />
         </div>
-        <p className={clineMeta}>Qty {line.quantity}</p>
+        <p className={clineMeta}>{t("checkout.confirmation.qty", { qty: line.quantity })}</p>
       </div>
     </article>
   );
@@ -152,6 +156,7 @@ function GiftPrice({
   currency: string;
   className: string;
 }) {
+  const t = useShopCopy();
   return (
     <p className={`${className} flex flex-col items-end gap-1`} dir="ltr">
       {list != null ? (
@@ -159,7 +164,7 @@ function GiftPrice({
           {formatMoney(list, currency)}
         </span>
       ) : null}
-      <span>Free</span>
+      <span>{t("orders.free")}</span>
     </p>
   );
 }

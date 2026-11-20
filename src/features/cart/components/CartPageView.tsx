@@ -61,6 +61,7 @@ import {
 } from "@/styles/cartChrome";
 import { showsDistinctSize } from "../utils/showsDistinctSize";
 import { atStockLimit, stockLimitNote } from "../utils/stockLimit";
+import type { Translator } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { addItemOptimistic } from "../api/optimisticCart";
 import { useBagPage } from "../hooks/useBagPage";
@@ -85,15 +86,11 @@ import { CartPaymentConfirmingNotice } from "./CartPaymentConfirmingNotice";
 import { CartUnavailableItems } from "./CartUnavailableItems";
 import { PopperBurstLayer, useBundleCelebration } from "./BundleCelebration";
 
-function itemsLabel(n: number) {
-  return n === 1 ? "1 item" : `${n} items`;
-}
-
-function sizeLabelFor(product: CatalogProduct) {
+function sizeLabelFor(product: CatalogProduct, t: Translator) {
   const concentration = product.concentration
     ? CONCENTRATION_LABELS[product.concentration]
-    : "Fragrance";
-  return `${concentration} · 50 ml`;
+    : t("cart.line.fragrance");
+  return t("cart.line.size", { concentration });
 }
 
 export function CartPageView() {
@@ -169,7 +166,7 @@ export function CartPageView() {
         imageUrl: product.imageUrl ?? undefined,
         unitPrice: product.price ?? 0,
         currency: product.currency,
-        sizeLabel: sizeLabelFor(product),
+        sizeLabel: sizeLabelFor(product, copy),
       },
     });
   }
@@ -178,21 +175,21 @@ export function CartPageView() {
     <div>
       <section className={collectionHeadFlush} aria-labelledby="cart-heading">
         <div className={pageContainer}>
-          <nav className={cartCrumbs} aria-label="Breadcrumb">
+          <nav className={cartCrumbs} aria-label={copy("account.breadcrumbNav")}>
             <ol className={cartCrumbsList} role="list">
               <li>
-                <LocaleLink href="/">Home</LocaleLink>
+                <LocaleLink href="/">{copy("home")}</LocaleLink>
               </li>
-              <li aria-current="page">Bag</li>
+              <li aria-current="page">{copy("nav.bag")}</li>
             </ol>
           </nav>
 
           <header className={cartPageHead}>
             <h1 className={pageTitle} id="cart-heading">
-              Your bag
+              {copy("cart.page.title")}
             </h1>
             {!isEmpty ? (
-              <span className={cartPageCount}>{itemsLabel(itemCount)}</span>
+              <span className={cartPageCount}>{copy("cart.page.items", { count: itemCount })}</span>
             ) : null}
           </header>
 
@@ -244,7 +241,7 @@ export function CartPageView() {
                               </LocaleLink>
                             </h3>
                             {line.isSellable === false ? (
-                              <p className={cartRowPrice}>Unavailable</p>
+                              <p className={cartRowPrice}>{copy("cart.unavailable.UNAVAILABLE")}</p>
                             ) : (
                               <PromoLinePrice
                                 className={cartRowPrice}
@@ -276,7 +273,7 @@ export function CartPageView() {
                             <span className={cartRowQty}>
                               <button
                                 type="button"
-                                aria-label="Decrease"
+                                aria-label={copy("cart.line.decrease")}
                                 disabled={line.isSellable === false}
                                 onClick={() =>
                                   setLineQuantity(
@@ -290,7 +287,7 @@ export function CartPageView() {
                               <span dir="ltr">{line.quantity}</span>
                               <button
                                 type="button"
-                                aria-label="Increase"
+                                aria-label={copy("cart.line.increase")}
                                 disabled={
                                   line.isSellable === false ||
                                   atStockLimit(line)
@@ -307,7 +304,7 @@ export function CartPageView() {
                               className={cartRowRemove}
                               onClick={() => removeLine(line)}
                             >
-                              Remove
+                              {copy("account.remove")}
                             </button>
                           </div>
                           {atStockLimit(line) && line.maxQuantity != null ? (
@@ -339,11 +336,11 @@ export function CartPageView() {
                 <PromotionQuickAdd surface="cart" />
               </div>
 
-              <aside className={cartSummary} aria-label="Order summary">
-                <h2 className={cartSummaryTitle}>Order summary</h2>
+              <aside className={cartSummary} aria-label={copy("orders.summary")}>
+                <h2 className={cartSummaryTitle}>{copy("orders.summary")}</h2>
                 {quotePending ? (
                   <p className={cartHint} role="status">
-                    Updating offers…
+                    {copy("cart.page.updatingOffers")}
                   </p>
                 ) : (
                   <AppliedCampaigns hideGifts />
@@ -387,14 +384,14 @@ export function CartPageView() {
                 )}
                 {priceChanged ? (
                   <p className={cartHint} role="status">
-                    Prices have been updated since you added these items.
+                    {copy("checkout.issue.ITEM_PRICE_CHANGED")}
                   </p>
                 ) : null}
                 {blockingErrors.length ? (
                   <ul className={cartHint} role="alert">
                     {blockingErrors.map((issue, index) => (
                       <li key={`${issue.type}-${issue.cartItemId ?? index}`}>
-                        {cartErrorMessage(issue.type, issue.message)}
+                        {cartErrorMessage(issue.type, issue.message, copy)}
                       </li>
                     ))}
                   </ul>
@@ -407,23 +404,23 @@ export function CartPageView() {
                 >
                   <span>
                     {syncing
-                      ? "Updating bag…"
+                      ? copy("cart.page.updating")
                       : validating
-                        ? "Checking availability…"
-                        : "Proceed to checkout"}
+                        ? copy("cart.page.checking")
+                        : copy("cart.page.checkout")}
                   </span>
                   <span className={cartCtaGlyph} aria-hidden="true">
                     ↗
                   </span>
                 </button>
                 <LocaleLink className={cartContinue} href="/products">
-                  Continue shopping
+                  {copy("track.continueShopping")}
                 </LocaleLink>
                 {/* The market's return terms, generated from its settings (not a
                     fixed promise): how offers, gifts and delivery work on a return. */}
                 <ReturnTermsNote className="mt-3 text-center text-[12px] leading-relaxed text-sa-muted" />
                 <div className={cartBadges}>
-                  <span>SSL Secured</span>
+                  <span>{copy("cart.page.ssl")}</span>
                 </div>
               </aside>
             </div>
@@ -433,12 +430,12 @@ export function CartPageView() {
                 <span className={drawerEmptyIcon} aria-hidden="true">
                   <ShoppingBag size={24} strokeWidth={1.6} />
                 </span>
-                <p className={drawerEmptyTitle}>Your bag is empty</p>
+                <p className={drawerEmptyTitle}>{copy("cart.empty.title")}</p>
                 <p className={drawerEmptyCopy}>
-                  Explore our fragrances, or pick up where you left off below.
+                  {copy("cart.empty.body")}
                 </p>
                 <LocaleLink className={drawerEmptyCta} href="/products">
-                  Shop fragrances
+                  {copy("cart.empty.shop")}
                 </LocaleLink>
               </div>
               <div className={cartEmptyRails}>

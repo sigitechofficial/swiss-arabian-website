@@ -1,6 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatPoints, type LoyaltyEarnPreviewView } from "../types/loyalty";
 
 /**
@@ -20,6 +21,7 @@ export function EarnPreviewNote({
   /** Cart and checkout may show the server's eligible merchandise amount. */
   showBasis?: boolean;
 }) {
+  const t = useShopCopy();
   // Disabled program, disabled market and disabled earning all render nothing
   // rather than claiming zero points.
   if (!preview?.enabled) return null;
@@ -33,7 +35,7 @@ export function EarnPreviewNote({
   if (variant === "inline") {
     return (
       <p className="loyalty-earn-note" data-testid="earn-preview">
-        {`Earn approximately ${points} reward points`}
+        {t("loyalty.earn.inline", { count: preview.estimatedPoints, points })}
       </p>
     );
   }
@@ -45,14 +47,14 @@ export function EarnPreviewNote({
       data-testid="earn-preview"
     >
       <h3 id="rewards-earn-heading" className="loyalty-earn-block__title">
-        Rewards
+        {t("loyalty.earn.title")}
       </h3>
       <p className="loyalty-earn-block__points">
-        {`You'll earn approximately ${points} points`}
+        {t("loyalty.earn.block", { count: preview.estimatedPoints, points })}
       </p>
       {basis ? (
         <p className="loyalty-earn-block__basis">
-          {`Based on ${basis} of eligible merchandise`}
+          {t("loyalty.earn.basis", { amount: basis })}
         </p>
       ) : null}
     </section>

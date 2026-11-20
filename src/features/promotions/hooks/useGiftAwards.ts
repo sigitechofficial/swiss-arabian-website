@@ -1,5 +1,7 @@
 "use client";
 
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useCartStore } from "@/stores/useCartStore";
 import { giftCardSku, giftCardTitle } from "../components/GiftCartItem";
 import { useGiftChoiceStore } from "../giftChoiceStore";
@@ -33,9 +35,10 @@ function viewOf(
   index: number,
   catalog: Map<string, GiftCatalogHit>,
   currency: string,
+  t: Translator,
 ): GiftAwardView {
   const key = `${award.promotionCode ?? "gift"}-${index}`;
-  const notice = giftNotice(award);
+  const notice = giftNotice(award, t);
   if (notice) return { kind: "notice", key, message: notice };
   const open = () => useGiftChoiceStore.getState().open(giftAwardCode(award));
   if (awaitingGiftChoice(award)) return { kind: "choose", key, open };
@@ -49,7 +52,7 @@ function viewOf(
         key: `${line.tierId ?? "gift"}-${line.sku}`,
         line,
         product,
-        title: giftCardTitle(line, product),
+        title: giftCardTitle(line, product, t),
         sku: giftCardSku(line, product),
         imageUrl: product?.imageUrl || line.imageUrl || null,
         listPrice: product?.price != null && product.price > 0 ? product.price * line.quantity : null,
@@ -65,6 +68,7 @@ function viewOf(
  * "choose your gift" prompts and awarded gift lines with their catalog data.
  */
 export function useGiftAwards(snapshot?: PromotionSnapshotV1 | null, currency = "AED") {
+  const t = useShopCopy();
   const fromStore = useCartStore((s) => s.promotions);
   const data = snapshot ?? fromStore;
   const awards = readGiftAwards(data);
@@ -74,6 +78,6 @@ export function useGiftAwards(snapshot?: PromotionSnapshotV1 | null, currency = 
   return {
     awards,
     catalog,
-    views: awards.map((award, index) => viewOf(award, index, catalog, currency)),
+    views: awards.map((award, index) => viewOf(award, index, catalog, currency, t)),
   };
 }

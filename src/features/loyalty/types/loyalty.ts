@@ -1,3 +1,4 @@
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import {
   readOmnichannelLoyalty,
   readExternalLoyaltyActivity,
@@ -154,8 +155,10 @@ export type LoyaltyRedemptionView = {
   appliedAmount: number;
   currencyCode: string | null;
   reason: string | null;
-  /** Customer-safe sentence. Raw reason codes are never printed. */
+  /** Customer-safe sentence (English when the server sent none). Raw reason codes are never printed. */
   reasonMessage: string | null;
+  /** The server's own sentence for the reason (already in the page's language), if it sent one. */
+  serverReasonMessage?: string | null;
 };
 
 export const EMPTY_ORDER_REWARD: LoyaltyOrderRewardView = {
@@ -217,17 +220,17 @@ const TIER_HISTORY_COPY: Record<string, string> = {
 /** Temporary reservation chatter is hidden unless the server marks the row visible. */
 const TRANSIENT_ACTIVITY = new Set(["POINTS_RESERVED", "POINTS_RELEASED"]);
 
-const REDEMPTION_REASON_COPY: Record<string, string> = {
-  REDEMPTION_DISABLED: "Reward points can’t be used on this order.",
-  BELOW_MINIMUM: "Enter at least the minimum number of points.",
-  INVALID_INCREMENT: "Use points in the allowed increment.",
-  INSUFFICIENT_POINTS: "You don’t have enough reward points.",
-  EXCEEDS_ORDER_COVERAGE: "That’s more points than this order can take.",
-  LOYALTY_NOT_AVAILABLE: PROGRAM_UNAVAILABLE,
-  REDEMPTION_NOT_AVAILABLE_WITH_CURRENT_OFFERS:
-    "Reward points can’t be used with the current offer.",
-  RESERVATION_EXPIRED: "Your reserved points expired. Apply them again.",
-  CART_NOT_QUALIFIED: "Reward points can’t be used on this bag yet.",
+/** Why reward points can't be used, by reason code (message keys). */
+const REDEMPTION_REASON_KEYS: Record<string, MessageKey> = {
+  REDEMPTION_DISABLED: "loyalty.redeemReason.REDEMPTION_DISABLED",
+  BELOW_MINIMUM: "loyalty.redeemReason.BELOW_MINIMUM",
+  INVALID_INCREMENT: "loyalty.redeemReason.INVALID_INCREMENT",
+  INSUFFICIENT_POINTS: "loyalty.redeemReason.INSUFFICIENT_POINTS",
+  EXCEEDS_ORDER_COVERAGE: "loyalty.redeemReason.EXCEEDS_ORDER_COVERAGE",
+  LOYALTY_NOT_AVAILABLE: "loyalty.text.programUnavailable",
+  REDEMPTION_NOT_AVAILABLE_WITH_CURRENT_OFFERS: "loyalty.redeemReason.REDEMPTION_NOT_AVAILABLE_WITH_CURRENT_OFFERS",
+  RESERVATION_EXPIRED: "loyalty.redeemReason.RESERVATION_EXPIRED",
+  CART_NOT_QUALIFIED: "loyalty.redeemReason.CART_NOT_QUALIFIED",
 };
 
 /**
@@ -781,9 +784,8 @@ function parseRedemptionQuote(quote: Record<string, unknown>): LoyaltyRedemption
     appliedAmount: readMoney(quote, ["appliedAmount"]) ?? 0,
     currencyCode: readText(quote, ["currencyCode"]),
     reason: reason || null,
-    reasonMessage:
-      readText(quote, ["message", "customerMessage"]) ??
-      (reason ? REDEMPTION_REASON_COPY[reason] ?? null : null),
+    reasonMessage: readText(quote, ["message", "customerMessage"]) ?? redemptionReasonMessage(reason),
+    serverReasonMessage: readText(quote, ["message", "customerMessage"]),
   };
 }
 
@@ -807,10 +809,19 @@ export function loyaltyRedemptionSignature(quote: LoyaltyRedemptionView | null |
   return `${quote.appliedPoints}:${quote.appliedAmount}`;
 }
 
-export function redemptionReasonMessage(reason: string | null | undefined): string | null {
+/** The shop's sentence for a reason code, in the language of `t` (English by default). */
+export function redemptionReasonMessage(
+  reason: string | null | undefined,
+  t: Translator = englishTranslator,
+): string | null {
   if (!reason) return null;
-  const key = reason.trim().toUpperCase();
-  return REDEMPTION_REASON_COPY[key] ?? null;
+  const key = REDEMPTION_REASON_KEYS[reason.trim().toUpperCase()];
+  return key ? t(key) : null;
+}
+
+/** What to show for a quote's reason: the server's sentence, else the shop's for its code. */
+export function redemptionReasonText(quote: LoyaltyRedemptionView, t: Translator): string | null {
+  return quote.serverReasonMessage ?? redemptionReasonMessage(quote.reason, t) ?? quote.reasonMessage;
 }
 
 export function isLoyaltyRedemptionHidden(quote: LoyaltyRedemptionView | null | undefined): boolean {

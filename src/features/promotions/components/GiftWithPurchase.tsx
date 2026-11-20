@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useGiftAwards } from "../hooks/useGiftAwards";
 import { useGiftChoiceStore } from "../giftChoiceStore";
 import type { PromotionSnapshotV1 } from "../types/promotions";
@@ -34,6 +35,7 @@ export function GiftWithPurchase({
   /** The bag drawer gets compact gift rows. */
   surface?: "page" | "drawer";
 }) {
+  const t = useShopCopy();
   const { awards, catalog } = useGiftAwards(snapshot, currency);
 
   if (!awards.length) return null;
@@ -41,7 +43,7 @@ export function GiftWithPurchase({
   return (
     <div className={surface === "drawer" ? promoGiftsDrawer : promoGifts}>
       {awards.map((award, index) => {
-        const notice = giftNotice(award);
+        const notice = giftNotice(award, t);
         const key = `${award.promotionCode ?? "gift"}-${index}`;
         if (notice) {
           return (
@@ -53,7 +55,7 @@ export function GiftWithPurchase({
         if (awaitingGiftChoice(award)) {
           return (
             <div className={promoGiftsPrompt} key={key}>
-              <p className={promoGiftsTitle}>A free gift is waiting</p>
+              <p className={promoGiftsTitle}>{t("promotions.gift.waiting")}</p>
               <button
                 type="button"
                 className={promoGiftsChoose}
@@ -61,13 +63,13 @@ export function GiftWithPurchase({
                   useGiftChoiceStore.getState().open(giftAwardCode(award))
                 }
               >
-                Choose your free gift
+                {t("promotions.gift.choose")}
               </button>
             </div>
           );
         }
         return (
-          <div className={promoGiftsAwarded} aria-label="Free gifts" key={key}>
+          <div className={promoGiftsAwarded} aria-label={t("promotions.gift.awarded")} key={key}>
             {award.giftItems.map((gift) => (
               <GiftCartItem
                 key={`${gift.tierId ?? "gift"}-${gift.sku}`}
@@ -91,7 +93,7 @@ export function GiftWithPurchase({
                   useGiftChoiceStore.getState().open(giftAwardCode(award))
                 }
               >
-                Change gift
+                {t("promotions.gift.change")}
               </button>
             ) : null}
           </div>

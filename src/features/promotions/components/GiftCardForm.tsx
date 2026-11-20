@@ -3,6 +3,7 @@
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useState, type FormEvent } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useCartStore } from "@/stores/useCartStore";
 import type { CheckoutSessionResponse } from "@/features/checkout/types/checkout";
 import { useGiftCardMutations } from "../hooks/useGiftCardMutations";
@@ -56,6 +57,7 @@ export function GiftCardForm({
     onCheckoutSession,
   });
 
+  const t = useShopCopy();
   const [code, setCode] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [balanceNote, setBalanceNote] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function GiftCardForm({
       await apply.mutateAsync(next);
       setCode("");
     } catch (error) {
-      setFieldError(giftCardErrorMessage(error));
+      setFieldError(giftCardErrorMessage(error, t));
     }
   }
 
@@ -82,7 +84,7 @@ export function GiftCardForm({
     try {
       await remove.mutateAsync(usageId);
     } catch (error) {
-      setFieldError(giftCardErrorMessage(error));
+      setFieldError(giftCardErrorMessage(error, t));
     }
   }
 
@@ -90,28 +92,31 @@ export function GiftCardForm({
     const next = code.trim();
     if (!next) {
       setBalanceNote(null);
-      setFieldError("Enter a gift card code first.");
+      setFieldError(t("promotions.giftCard.enterFirst"));
       return;
     }
     setFieldError(null);
     try {
       const result = await balance.mutateAsync(next);
       const remaining = Number(result.remainingBalance);
-      const label = result.maskedCode || "Gift card";
+      const label = result.maskedCode || t("promotions.giftCard.label");
       setBalanceNote(
         Number.isFinite(remaining)
-          ? `${label} · ${formatMoney(remaining, result.currencyCode || currency)} remaining`
-          : `${label} balance checked.`,
+          ? t("promotions.giftCard.remaining", {
+              card: label,
+              amount: formatMoney(remaining, result.currencyCode || currency),
+            })
+          : t("promotions.giftCard.checked", { card: label }),
       );
     } catch (error) {
       setBalanceNote(null);
-      setFieldError(giftCardErrorMessage(error));
+      setFieldError(giftCardErrorMessage(error, t));
     }
   }
 
   return (
     <div className={couponBox} data-coupon="">
-      <p className={couponLabel}>Gift card</p>
+      <p className={couponLabel}>{t("promotions.giftCard.label")}</p>
       {cards.map((card, index) => {
         const amount = Number(card.amount);
         return (
@@ -121,9 +126,9 @@ export function GiftCardForm({
           >
             <div>
               <p className={couponAppliedName}>
-                {card.maskedCode || "Gift card"}
+                {card.maskedCode || t("promotions.giftCard.label")}
               </p>
-              <p className={couponAppliedCode}>Applied as payment</p>
+              <p className={couponAppliedCode}>{t("promotions.giftCard.appliedAsPayment")}</p>
             </div>
             {amount > 0 ? (
               <span className={couponAppliedAmt} dir="ltr">
@@ -136,7 +141,7 @@ export function GiftCardForm({
               onClick={() => void onRemove(card.usageId)}
               disabled={busy}
             >
-              {remove.isPending ? "Removing…" : "Remove"}
+              {remove.isPending ? t("loyalty.redeem.removing") : t("account.remove")}
             </button>
           </div>
         );
@@ -146,9 +151,9 @@ export function GiftCardForm({
           name="gift-card"
           autoComplete="off"
           spellCheck={false}
-          aria-label="Gift card code"
+          aria-label={t("promotions.giftCard.code")}
           aria-invalid={fieldError ? true : undefined}
-          placeholder="Enter gift card"
+          placeholder={t("promotions.giftCard.placeholder")}
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
@@ -158,7 +163,7 @@ export function GiftCardForm({
           disabled={busy || !ready}
         />
         <button type="submit" disabled={busy || !ready || !code.trim()}>
-          {apply.isPending ? "Applying…" : "Apply"}
+          {apply.isPending ? t("loyalty.redeem.applying") : t("loyalty.redeem.apply")}
         </button>
       </form>
       <button
@@ -167,7 +172,7 @@ export function GiftCardForm({
         onClick={() => void onCheck()}
         disabled={busy}
       >
-        {balance.isPending ? "Checking…" : "Check balance"}
+        {balance.isPending ? t("checkout.confirmation.checking") : t("promotions.giftCard.checkBalance")}
       </button>
       {balanceNote ? <p className={couponHint}>{balanceNote}</p> : null}
       {fieldError ? (

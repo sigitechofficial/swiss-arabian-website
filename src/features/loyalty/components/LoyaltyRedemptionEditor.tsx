@@ -3,6 +3,8 @@
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useState, type FormEvent } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   couponApplied,
   couponAppliedAmt,
@@ -18,17 +20,18 @@ import {
 } from "@/styles/cartChrome";
 import { useLoyaltyAccount } from "../hooks/useLoyaltyAccount";
 import { useLoyaltyRedemption } from "../hooks/useLoyaltyRedemption";
-import { formatPoints, type LoyaltyRedemptionView } from "../types/loyalty";
+import { formatPoints, redemptionReasonText, type LoyaltyRedemptionView } from "../types/loyalty";
 import { loyaltyRedemptionErrorMessage } from "../utils/redemptionErrors";
 
 function availableCopy(
   quote: LoyaltyRedemptionView,
   worth: number | null,
   currency: string,
+  t: Translator,
 ) {
-  const points = `${formatPoints(quote.availablePoints)} points`;
-  if (worth == null) return `Available ${points}`;
-  return `Available ${points} · worth ${formatMoney(worth, currency)}`;
+  const points = t("loyalty.redeem.points", { count: quote.availablePoints, points: formatPoints(quote.availablePoints) });
+  if (worth == null) return t("loyalty.redeem.available", { points });
+  return t("loyalty.redeem.availableWorth", { points, worth: formatMoney(worth, currency) });
 }
 
 export function LoyaltyRedemptionEditor({
@@ -36,6 +39,7 @@ export function LoyaltyRedemptionEditor({
 }: {
   quoteOverride?: unknown;
 } = {}) {
+  const t = useShopCopy();
   const marketCurrency = useMarketCurrency();
   const {
     quote,
@@ -67,7 +71,7 @@ export function LoyaltyRedemptionEditor({
   const busy = apply.isPending || remove.isPending;
   const ready = Boolean(cartId);
   const showForm = quote.enabled && quote.eligible && (!applied || editing);
-  const showReason = !showForm && !applied && quote.reasonMessage;
+  const reasonText = !showForm && !applied ? redemptionReasonText(quote, t) : null;
 
   async function onApply(event: FormEvent) {
     event.preventDefault();
@@ -79,7 +83,7 @@ export function LoyaltyRedemptionEditor({
       setPoints("");
       setEditing(false);
     } catch (error) {
-      setFieldError(loyaltyRedemptionErrorMessage(error));
+      setFieldError(loyaltyRedemptionErrorMessage(error, t));
     }
   }
 
@@ -90,7 +94,7 @@ export function LoyaltyRedemptionEditor({
       setPoints("");
       setEditing(false);
     } catch (error) {
-      setFieldError(loyaltyRedemptionErrorMessage(error));
+      setFieldError(loyaltyRedemptionErrorMessage(error, t));
     }
   }
 
@@ -101,10 +105,10 @@ export function LoyaltyRedemptionEditor({
 
   return (
     <div className={couponBox} data-loyalty-redemption="">
-      <p className={couponLabel}>Reward points</p>
+      <p className={couponLabel}>{t("loyalty.redeem.title")}</p>
       {adjusted ? (
         <p className={couponHint} role="status">
-          Your reward points were adjusted after your bag changed.
+          {t("loyalty.redeem.adjusted")}
         </p>
       ) : null}
       {applied && !editing ? (
@@ -112,8 +116,10 @@ export function LoyaltyRedemptionEditor({
           <div>
             <p
               className={couponAppliedName}
-            >{`${formatPoints(quote.appliedPoints)} points applied`}</p>
-            <p className={couponAppliedCode}>Reserved on this bag</p>
+            >
+              {t("loyalty.redeem.applied", { count: quote.appliedPoints, points: formatPoints(quote.appliedPoints) })}
+            </p>
+            <p className={couponAppliedCode}>{t("loyalty.redeem.reserved")}</p>
           </div>
           {quote.appliedAmount > 0 ? (
             <span className={couponAppliedAmt} dir="ltr">
@@ -130,7 +136,7 @@ export function LoyaltyRedemptionEditor({
             }}
             disabled={busy}
           >
-            Change
+            {t("loyalty.redeem.change")}
           </button>
           <button
             type="button"
@@ -138,13 +144,13 @@ export function LoyaltyRedemptionEditor({
             onClick={() => void onRemove()}
             disabled={busy}
           >
-            {remove.isPending ? "Removing…" : "Remove"}
+            {remove.isPending ? t("loyalty.redeem.removing") : t("account.remove")}
           </button>
         </div>
       ) : null}
       {showForm ? (
         <>
-          <p className={couponHint}>{availableCopy(quote, worth, currency)}</p>
+          <p className={couponHint}>{availableCopy(quote, worth, currency, t)}</p>
           <form className={couponForm} onSubmit={(e) => void onApply(e)}>
             <input
               name="reward-points"
@@ -152,13 +158,13 @@ export function LoyaltyRedemptionEditor({
               inputMode="numeric"
               autoComplete="off"
               spellCheck={false}
-              aria-label="Reward points to use"
+              aria-label={t("loyalty.redeem.input")}
               aria-invalid={fieldError ? true : undefined}
               min={min || undefined}
               max={max || undefined}
               step={increment || undefined}
               placeholder={
-                min > 0 ? `Minimum ${formatPoints(min)}` : "Enter points"
+                min > 0 ? t("loyalty.redeem.minimum", { points: formatPoints(min) }) : t("loyalty.redeem.enter")
               }
               value={points}
               onChange={(e) => {
@@ -168,7 +174,7 @@ export function LoyaltyRedemptionEditor({
               disabled={busy || !ready}
             />
             <button type="submit" disabled={busy || !ready || !points.trim()}>
-              {apply.isPending ? "Applying…" : "Apply"}
+              {apply.isPending ? t("loyalty.redeem.applying") : t("loyalty.redeem.apply")}
             </button>
           </form>
           {max > 0 ? (
@@ -178,12 +184,12 @@ export function LoyaltyRedemptionEditor({
               onClick={useMaximum}
               disabled={busy || !ready}
             >
-              Use maximum
+              {t("loyalty.redeem.useMax")}
             </button>
           ) : null}
         </>
       ) : null}
-      {showReason ? <p className={couponHint}>{quote.reasonMessage}</p> : null}
+      {reasonText ? <p className={couponHint}>{reasonText}</p> : null}
       {fieldError ? (
         <p className={couponError} role="alert">
           {fieldError}

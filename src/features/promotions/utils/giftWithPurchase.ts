@@ -1,3 +1,4 @@
+import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import {
   readGiftAwards,
@@ -14,28 +15,31 @@ const INELIGIBLE = new Set([
   "GIFT_INELIGIBLE",
 ]);
 
-export function giftNotice(award: PromotionGiftAward): string | null {
+/** Why an awarded gift is not in the bag: the server's sentence, else the shop's for its status. */
+export function giftNotice(award: PromotionGiftAward, t: Translator = pageTranslator()): string | null {
   const status = award.status?.trim().toUpperCase() ?? "";
-  if (REMOVED.has(status)) return award.message?.trim() || "This free gift was removed.";
-  if (UNAVAILABLE.has(status)) return award.message?.trim() || "This free gift is unavailable.";
-  if (INELIGIBLE.has(status)) {
-    return award.message?.trim() || "This offer no longer includes a free gift.";
-  }
+  if (REMOVED.has(status)) return award.message?.trim() || t("promotions.gift.removed");
+  if (UNAVAILABLE.has(status)) return award.message?.trim() || t("promotions.gift.unavailable");
+  if (INELIGIBLE.has(status)) return award.message?.trim() || t("promotions.gift.ineligible");
   return null;
 }
 
-export function giftErrorMessage(code: string | null | undefined, fallback?: string | null): string {
+export function giftErrorMessage(
+  code: string | null | undefined,
+  fallback?: string | null,
+  t: Translator = pageTranslator(),
+): string {
   switch (code) {
     case "GIFT_UNAVAILABLE":
-      return "This free gift is unavailable.";
+      return t("promotions.gift.unavailable");
     case "GIFT_REMOVED":
-      return "This free gift was removed.";
+      return t("promotions.gift.removed");
     case "PROMOTION_INELIGIBLE":
     case "GIFT_INELIGIBLE":
     case "NO_LONGER_QUALIFIES":
-      return "This offer no longer includes a free gift.";
+      return t("promotions.gift.ineligible");
     default:
-      return fallback?.trim() || pageTranslator()("error.gift.update");
+      return fallback?.trim() || t("error.gift.update");
   }
 }
 

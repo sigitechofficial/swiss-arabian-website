@@ -1,6 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import {
   checkoutAddon,
@@ -29,7 +30,8 @@ export function CheckoutAddonRow({
   /** Shown but not addable (e.g. static items with no live SKU yet). */
   disabled?: boolean;
 }) {
-  const unavailableLabel = `${product.title} can’t be added yet`;
+  const t = useShopCopy();
+  const unavailableLabel = t("cart.addon.unavailable", { name: product.title });
   return (
     <article
       className={compact ? checkoutMissCard : checkoutAddon}
@@ -61,11 +63,11 @@ export function CheckoutAddonRow({
           disabled
             ? unavailableLabel
             : adding
-              ? `Adding ${product.title}`
-              : `Add ${product.title}`
+              ? t("cart.addon.adding", { name: product.title })
+              : t("cart.addon.add", { name: product.title })
         }
       >
-        {compact ? (adding ? "…" : "+") : adding ? "Adding" : "+ Add"}
+        {compact ? (adding ? "…" : "+") : adding ? t("cart.addon.addingShort") : t("cart.addon.addShort")}
       </button>
     </article>
   );
@@ -83,11 +85,12 @@ export function MissThisSwiper({
   /** Omit to allow adding every product (cart page behaviour). */
   canAdd?: (product: CatalogProduct) => boolean;
 }) {
+  const t = useShopCopy();
   return (
     <div className={checkoutMiss} aria-labelledby="checkout-miss-heading">
       <div className={checkoutMissHead}>
         <h3 className={checkoutMissTitle} id="checkout-miss-heading">
-          Don’t miss this
+          {t("cart.addon.title")}
         </h3>
       </div>
       <div className={checkoutMissList}>
