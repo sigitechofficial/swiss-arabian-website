@@ -53,7 +53,8 @@ export function PdpPrVideo({
         muted
         loop
         playsInline
-        aria-label={video.name ?? t("pdpVideo.label", { title })}
+        // The stored name is the file name ("flower.mp4"): shoppers hear the product instead.
+        aria-label={t("pdpVideo.label", { title })}
         onError={() => onError(video.url)}
       />
       <button type="button" className={cx(BTN, "top-[6px] end-[6px]")} aria-label={t("pdpVideo.close")} onClick={() => setOpen(false)}>
