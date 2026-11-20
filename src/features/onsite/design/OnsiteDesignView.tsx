@@ -46,6 +46,11 @@ export type OnsiteDesignWords = {
   failed: string;
   unavailable: string;
   timeLeft: string;
+  /** Countdown units under each number ("d", "h", "m", "s" in English). */
+  days: string;
+  hours: string;
+  minutes: string;
+  seconds: string;
   close: string;
   message: string;
 };
@@ -57,6 +62,10 @@ export const ONSITE_DESIGN_WORDS: OnsiteDesignWords = {
   failed: "Something went wrong. Please try again.",
   unavailable: "This form is not available right now.",
   timeLeft: "Time left",
+  days: "d",
+  hours: "h",
+  minutes: "m",
+  seconds: "s",
   close: "Close",
   message: "Message",
 };
@@ -136,7 +145,8 @@ function useNow(active: boolean): number {
   return now;
 }
 
-function Countdown({ block, timeLeft }: { block: Extract<ResolvedBlock, { type: "countdown" }>; timeLeft: string }) {
+function Countdown({ block, words }: { block: Extract<ResolvedBlock, { type: "countdown" }>; words: OnsiteDesignWords }) {
+  const timeLeft = words.timeLeft;
   const now = useNow(true);
   const parts = countdownParts(block.endsAt, now);
   if (!parts) {
@@ -147,10 +157,10 @@ function Countdown({ block, timeLeft }: { block: Extract<ResolvedBlock, { type: 
     ) : null;
   }
   const cells: Array<[number, string]> = [
-    [parts.days, "d"],
-    [parts.hours, "h"],
-    [parts.minutes, "m"],
-    [parts.seconds, "s"],
+    [parts.days, words.days],
+    [parts.hours, words.hours],
+    [parts.minutes, words.minutes],
+    [parts.seconds, words.seconds],
   ];
   return (
     <div style={{ display: "flex", gap: 8, justifyContent: "center" }} dir="ltr" aria-label={timeLeft}>
@@ -548,7 +558,7 @@ function BlockView({
     case "divider":
       return <hr style={{ border: "none", borderTop: `1px solid ${block.color}`, margin: 0 }} />;
     case "countdown":
-      return <Countdown block={block} timeLeft={ctx.words.timeLeft} />;
+      return <Countdown block={block} words={ctx.words} />;
     case "coupon":
       return <Coupon block={block} editing={editing} prize={ctx.prize} />;
     case "form":

@@ -45,6 +45,10 @@ function DesignedMessage({ message, onDismiss, onCta, onLead }: Props) {
     failed: t("error.generic"),
     unavailable: t("onsite.words.unavailable"),
     timeLeft: t("onsite.words.timeLeft"),
+    days: t("onsite.words.days"),
+    hours: t("onsite.words.hours"),
+    minutes: t("onsite.words.minutes"),
+    seconds: t("onsite.words.seconds"),
     close: t("promo.close"),
     message: t("onsite.words.message"),
   };
