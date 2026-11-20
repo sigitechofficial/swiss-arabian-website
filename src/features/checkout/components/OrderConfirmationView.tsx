@@ -1,6 +1,10 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { intlLocale } from "@/lib/i18n/locales";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEffect, useState } from "react";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
@@ -51,27 +55,30 @@ import {
 } from "@/styles/checkoutChrome";
 import { HistoricalGiftNote } from "@/features/orders/components/HistoricalGiftNote";
 import { HistoricalLineDiscount } from "@/features/orders/components/HistoricalLineDiscount";
-import { ORDER_PROGRESS_STEPS, formatOrderDate } from "@/features/orders/utils/orderStatus";
+import { ORDER_PROGRESS_STEPS, ORDER_PROGRESS_STEP_KEYS, formatOrderDate } from "@/features/orders/utils/orderStatus";
 import type { OrderAddressSummary } from "../types/checkout";
 import { useOrderConfirmation, type OrderPaymentState } from "../hooks/useOrderConfirmation";
 import { orderDeliveryLabel, orderPaymentLabel } from "../utils/methodLabels";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { EM_SLOT, EmphasisCopy } from "./EmphasisCopy";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
 type PaymentState = OrderPaymentState;
 
-const STEP_HINTS: Record<(typeof ORDER_PROGRESS_STEPS)[number], string> = {
-  Placed: "We’ve received your order",
-  Confirmed: "Payment confirmed",
-  Preparing: "Packed with care",
-  Shipped: "Tracking sent by email",
-  Delivered: "Enjoy your fragrance",
+const STEP_HINTS: Record<(typeof ORDER_PROGRESS_STEPS)[number], MessageKey> = {
+  Placed: "checkout.confirmation.step.placed",
+  Confirmed: "checkout.confirmation.step.confirmed",
+  Preparing: "checkout.confirmation.step.preparing",
+  Shipped: "checkout.confirmation.step.shipped",
+  Delivered: "checkout.confirmation.step.delivered",
 };
 
-function countryName(code: string | null): string | null {
+/** The country's name in the page's language. */
+function countryName(code: string | null, locale: string): string | null {
   if (!code) return null;
   try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code;
+    return new Intl.DisplayNames([intlLocale(locale)], { type: "region" }).of(code.toUpperCase()) ?? code;
   } catch {
     return code;
   }
@@ -98,6 +105,7 @@ function StatusBadge({ state }: { state: PaymentState }) {
 }
 
 function CopyButton({ value }: { value: string }) {
+  const t = useShopCopy();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -113,15 +121,19 @@ function CopyButton({ value }: { value: string }) {
       onClick={() => {
         void navigator.clipboard?.writeText(value).then(() => setCopied(true));
       }}
-      aria-label={copied ? "Order number copied" : "Copy order number"}
+      aria-label={copied ? t("checkout.confirmation.numberCopied") : t("checkout.confirmation.copyNumber")}
     >
-      {copied ? "Copied" : "Copy"}
+      {copied ? t("checkout.confirmation.copied") : t("checkout.confirmation.copy")}
     </button>
   );
 }
 
 function AddressBlock({ title, address }: { title: string; address: OrderAddressSummary }) {
-  const cityLine = [address.city, countryName(address.countryCode)].filter(Boolean).join(", ");
+  const t = useShopCopy();
+  const locale = useShopLocale();
+  const cityLine = [address.city, countryName(address.countryCode, locale)]
+    .filter(Boolean)
+    .join(t("checkout.confirmation.listSeparator"));
   return (
     <div className={ocAddress}>
       <h3>{title}</h3>
@@ -135,6 +147,8 @@ function AddressBlock({ title, address }: { title: string; address: OrderAddress
 }
 
 export function OrderConfirmationView({ orderId }: { orderId: string }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
   const { orderQuery, polling, state, details, checking, checkAgain } = useOrderConfirmation(orderId);
   // Frozen order snapshot — never the last cart estimate.
@@ -142,13 +156,11 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
 
   if (orderQuery.isPending || polling) {
     return (
-      <CheckoutStateShell current="Order confirmation">
+      <CheckoutStateShell current={t("checkout.confirmation.crumb")}>
         <CheckoutSpinnerState
-          eyebrow={polling ? "Payment" : undefined}
-          title={polling ? "Confirming your payment…" : "Loading your order…"}
-          body={
-            polling ? "This usually takes a few seconds. Please don’t close or refresh this page." : undefined
-          }
+          eyebrow={polling ? t("checkout.state.payment") : undefined}
+          title={polling ? t("checkout.state.confirmingTitle") : t("checkout.confirmation.loading")}
+          body={polling ? t("checkout.state.confirmingBody") : undefined}
         />
       </CheckoutStateShell>
     );
@@ -157,13 +169,13 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
   const order = orderQuery.data;
   if (orderQuery.isError || !order) {
     return (
-      <CheckoutStateShell current="Order confirmation">
+      <CheckoutStateShell current={t("checkout.confirmation.crumb")}>
         <section className={checkoutEmpty}>
-          <p className={stateEyebrow}>Order</p>
-          <h1 className={collectionTitle}>We couldn’t load this order.</h1>
-          <p>It may belong to another session. Your confirmation email has the details.</p>
+          <p className={stateEyebrow}>{t("account.orderLabel")}</p>
+          <h1 className={collectionTitle}>{t("checkout.confirmation.loadFailed")}</h1>
+          <p>{t("checkout.confirmation.loadFailedBody")}</p>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
-            <span>Return home</span>
+            <span>{t("checkout.state.returnHome")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
         </section>
@@ -190,51 +202,49 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
   const shippingTotal = Number(totals.shipping);
 
   return (
-    <CheckoutStateShell current="Order confirmation">
+    <CheckoutStateShell current={t("checkout.confirmation.crumb")}>
       <section className={ocHero} aria-labelledby="order-heading">
         <StatusBadge state={state} />
         <p className={ocEyebrow}>
-          {state === "success" ? "Order confirmed" : state === "failed" ? "Payment unsuccessful" : "Payment processing"}
+          {state === "success"
+            ? t("checkout.confirmation.confirmed")
+            : state === "failed"
+              ? t("checkout.state.unsuccessful")
+              : t("checkout.confirmation.processing")}
         </p>
         <h1 className={ocTitle} id="order-heading">
           {state === "failed" ? (
-            <>
-              Your payment <em className={ocEm}>didn’t go through</em>.
-            </>
+            <EmphasisCopy text={t("checkout.state.failedTitle", EM_SLOT)} em={t("checkout.state.failedEm")} className={ocEm} />
           ) : firstName ? (
-            <>
-              Thank you, <em className={ocEm}>{firstName}</em>.
-            </>
+            <EmphasisCopy text={t("checkout.confirmation.thanksName", EM_SLOT)} em={firstName} className={ocEm} />
           ) : (
-            <>
-              Thank you for <em className={ocEm}>your order</em>.
-            </>
+            <EmphasisCopy text={t("checkout.confirmation.thanks", EM_SLOT)} em={t("checkout.confirmation.thanksEm")} className={ocEm} />
           )}
         </h1>
         <p className={ocHeroIntro}>
           {state === "success" ? (
             <>
-              We’ll start preparing your order shortly.
+              {t("checkout.confirmation.preparing")}{" "}
               {email ? (
-                <>
-                  {" "}
-                  A confirmation is on its way to <strong>{email}</strong>.
-                </>
+                <TextWithLinks
+                  text={t("checkout.confirmation.emailSent", linkSlots(["email"]))}
+                  links={{ email: <strong>{email}</strong> }}
+                />
               ) : (
-                " A confirmation is on its way to your inbox."
+                t("checkout.confirmation.inboxSent")
               )}
             </>
           ) : state === "failed" ? (
-            "Your order is saved, but the payment wasn’t completed. You can try again below."
+            t("checkout.confirmation.failedIntro")
           ) : (
-            "Your payment is still processing — check again shortly. We’ll email you as soon as it’s confirmed, so there’s no need to pay again."
+            t("checkout.confirmation.processingIntro")
           )}
         </p>
 
         <dl className={ocMeta}>
           {order.orderNumber ? (
             <div>
-              <dt>Order number</dt>
+              <dt>{t("checkout.confirmation.number")}</dt>
               <dd className={ocMetaNumber}>
                 <span dir="ltr">{order.orderNumber}</span>
                 <CopyButton value={order.orderNumber} />
@@ -242,16 +252,16 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
             </div>
           ) : null}
           <div>
-            <dt>Date</dt>
-            <dd>{formatOrderDate(order.createdAt, { timeZone })}</dd>
+            <dt>{t("checkout.confirmation.date")}</dt>
+            <dd>{formatOrderDate(order.createdAt, { timeZone, locale })}</dd>
           </div>
           <div>
-            <dt>Total</dt>
+            <dt>{t("orders.total")}</dt>
             <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
           </div>
           <div>
-            <dt>Payment</dt>
-            <dd>{orderPaymentLabel(order.selectedPaymentMethod)}</dd>
+            <dt>{t("orders.payment")}</dt>
+            <dd>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dd>
           </div>
         </dl>
 
@@ -259,23 +269,23 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           {state === "success" ? (
             <>
               <LocaleLink className={checkoutCta} href="/products">
-                <span>Continue shopping</span>
+                <span>{t("track.continueShopping")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
               {trackHref ? (
                 <LocaleLink className={checkoutCtaGhost} href={trackHref}>
-                  <span>Track order</span>
+                  <span>{t("track.trackOrder")}</span>
                 </LocaleLink>
               ) : null}
             </>
           ) : state === "failed" ? (
             <>
               <LocaleLink className={checkoutCta} href={retryHref}>
-                <span>Retry payment</span>
+                <span>{t("checkout.state.retryPayment")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
               <LocaleLink className={checkoutCtaGhost} href="/products">
-                <span>Continue shopping</span>
+                <span>{t("track.continueShopping")}</span>
               </LocaleLink>
             </>
           ) : (
@@ -286,21 +296,21 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 disabled={checking}
                 onClick={checkAgain}
               >
-                <span>{checking ? "Checking…" : "Check again"}</span>
+                <span>{checking ? t("checkout.confirmation.checking") : t("checkout.confirmation.checkAgain")}</span>
                 <b aria-hidden="true">↗</b>
               </button>
               <LocaleLink className={checkoutCtaGhost} href={retryHref}>
-                <span>Pay now</span>
+                <span>{t("checkout.confirmation.payNow")}</span>
               </LocaleLink>
             </>
           )}
         </div>
         {!isGuest ? (
           <LocaleLink className={`${checkoutLink} mt-4`} href="/account/orders">
-            View all your orders
+            {t("checkout.confirmation.allOrders")}
           </LocaleLink>
         ) : order.orderNumber ? (
-          <p className={`${checkoutNote} mt-4`}>Keep your order number — you’ll need it if you contact us about this order.</p>
+          <p className={`${checkoutNote} mt-4`}>{t("checkout.confirmation.keepNumber")}</p>
         ) : null}
       </section>
 
@@ -308,9 +318,10 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
         <div className={ocStack}>
           {showProgress ? (
             <section className={ocCard} aria-labelledby="order-progress">
-              <h2 id="order-progress">What happens next</h2>
+              <h2 id="order-progress">{t("checkout.confirmation.next")}</h2>
               <ol className={ocSteps}>
                 {ORDER_PROGRESS_STEPS.map((step, index) => {
+                  const label = ORDER_PROGRESS_STEP_KEYS[index];
                   const status = index < currentStep ? "done" : index === currentStep ? "current" : "todo";
                   return (
                     <li
@@ -320,8 +331,8 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                       aria-current={status === "current" ? "step" : undefined}
                     >
                       <span className={ocStepDot} aria-hidden="true" />
-                      <span className={ocStepLabel}>{step}</span>
-                      <span className={ocStepHint}>{STEP_HINTS[step]}</span>
+                      <span className={ocStepLabel}>{label ? t(label) : step}</span>
+                      <span className={ocStepHint}>{t(STEP_HINTS[step])}</span>
                     </li>
                   );
                 })}
@@ -331,7 +342,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
 
           <section className={ocCard} aria-labelledby="order-items">
             <h2 id="order-items">
-              Items ordered <span className={ocCardCount}>({itemCount})</span>
+              {t("checkout.confirmation.items")} <span className={ocCardCount}>({itemCount})</span>
             </h2>
             <ul className={ocLines} role="list">
               {order.lines.map((line) => {
@@ -361,7 +372,9 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                     <span className={ocLineBody}>
                       <span className={ocLineName}>{name}</span>
                       <span className={ocLineSub}>
-                        {[line.isGift ? "Free gift" : null, variant, `Qty ${qty}`].filter(Boolean).join(" · ")}
+                        {[line.isGift ? t("checkout.confirmation.freeGift") : null, variant, t("checkout.confirmation.qty", { qty })]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       <HistoricalLineDiscount
                         snapshot={line.promotionSnapshot}
@@ -370,7 +383,7 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                       />
                     </span>
                     <span className={ocLinePrice} dir="ltr">
-                      {line.isGift ? "Free" : formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
+                      {line.isGift ? t("orders.free") : formatMoney(Number(line.lineTotal), line.currencyCode || currency)}
                     </span>
                   </li>
                 );
@@ -381,31 +394,31 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
 
         <aside className={ocStack}>
           <section className={ocCard} aria-labelledby="order-summary">
-            <h2 id="order-summary">Order summary</h2>
+            <h2 id="order-summary">{t("orders.summary")}</h2>
             <dl className={checkoutTotals}>
               <div>
-                <dt>Subtotal</dt>
+                <dt>{t("orders.subtotal")}</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
               </div>
               {Number(totals.discount) > 0 ? (
                 <div>
-                  <dt>Discount</dt>
+                  <dt>{t("orders.discount")}</dt>
                   <dd dir="ltr">−{formatMoney(Number(totals.discount), currency)}</dd>
                 </div>
               ) : null}
               <div>
-                <dt>Shipping</dt>
-                <dd dir="ltr">{shippingTotal > 0 ? formatMoney(shippingTotal, currency) : "Free"}</dd>
+                <dt>{t("orders.shipping")}</dt>
+                <dd dir="ltr">{shippingTotal > 0 ? formatMoney(shippingTotal, currency) : t("orders.free")}</dd>
               </div>
               {Number(totals.tax) > 0 ? (
                 <div>
-                  <dt>Tax</dt>
+                  <dt>{t("orders.tax")}</dt>
                   <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
                 </div>
               ) : null}
               <HistoricalGiftNote snapshot={order.promotionSnapshot} className={ocLineDiscount} />
               <div className={checkoutTotalsLine}>
-                <dt>Total</dt>
+                <dt>{t("orders.total")}</dt>
                 <dd dir="ltr">{formatMoney(Number(totals.total), currency)}</dd>
               </div>
               {/* Gift card and reward points are tenders, not discounts: the
@@ -414,19 +427,19 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                   card read as AED 216 charged to the payment method. */}
               {Number(totals.giftCardApplied ?? 0) > 0 ? (
                 <div>
-                  <dt>Paid by gift card</dt>
+                  <dt>{t("checkout.confirmation.paidGiftCard")}</dt>
                   <dd dir="ltr">−{formatMoney(Number(totals.giftCardApplied), currency)}</dd>
                 </div>
               ) : null}
               {Number(totals.loyaltyApplied ?? 0) > 0 ? (
                 <div>
-                  <dt>Paid with reward points</dt>
+                  <dt>{t("checkout.confirmation.paidPoints")}</dt>
                   <dd dir="ltr">−{formatMoney(Number(totals.loyaltyApplied), currency)}</dd>
                 </div>
               ) : null}
               {paidByOtherTenders ? (
                 <div className={checkoutTotalsLine}>
-                  <dt>{orderPaymentLabel(order.selectedPaymentMethod)}</dt>
+                  <dt>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dt>
                   <dd dir="ltr">{formatMoney(Number(totals.amountPayable ?? 0), currency)}</dd>
                 </div>
               ) : null}
@@ -440,26 +453,26 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
           ) : null}
 
           <section className={ocCard} aria-labelledby="order-delivery">
-            <h2 id="order-delivery">Delivery &amp; payment</h2>
-            {shippingAddress ? <AddressBlock title="Ship to" address={shippingAddress} /> : null}
+            <h2 id="order-delivery">{t("checkout.confirmation.deliveryPayment")}</h2>
+            {shippingAddress ? <AddressBlock title={t("shipTo")} address={shippingAddress} /> : null}
             {billingAddress ? (
               billingSameAsShipping ? (
                 <div className={ocAddress}>
-                  <h3>Bill to</h3>
-                  <p className={ocAddressSame}>Same as shipping address</p>
+                  <h3>{t("checkout.confirmation.billTo")}</h3>
+                  <p className={ocAddressSame}>{t("checkout.confirmation.sameAsShipping")}</p>
                 </div>
               ) : (
-                <AddressBlock title="Bill to" address={billingAddress} />
+                <AddressBlock title={t("checkout.confirmation.billTo")} address={billingAddress} />
               )
             ) : null}
             <dl className={ocMethods}>
               <div>
-                <dt>Delivery</dt>
-                <dd>{orderDeliveryLabel(order.selectedDeliveryMethod)}</dd>
+                <dt>{t("orders.delivery")}</dt>
+                <dd>{orderDeliveryLabel(order.selectedDeliveryMethod, t)}</dd>
               </div>
               <div>
-                <dt>Payment</dt>
-                <dd>{orderPaymentLabel(order.selectedPaymentMethod)}</dd>
+                <dt>{t("orders.payment")}</dt>
+                <dd>{orderPaymentLabel(order.selectedPaymentMethod, t)}</dd>
               </div>
             </dl>
           </section>

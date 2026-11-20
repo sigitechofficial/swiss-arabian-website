@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { cbox, cboxHead, payMockNote, payOpt, payOptActive, payOptNote, payOptTitle, payOptions } from "@/styles/checkoutChrome";
 import type { CheckoutStatus } from "../../hooks/useCheckout";
 import type { DeliveryMethodOption } from "../../types/checkout";
@@ -22,18 +23,19 @@ export function CheckoutShippingMethod({
   currency,
   onSelect,
 }: CheckoutShippingMethodProps) {
+  const t = useShopCopy();
   const titles = deliveryOptionTitles(methods);
   return (
     <section className={cbox}>
       <header className={cboxHead}>
-        <h2>Shipping method</h2>
+        <h2>{t("checkout.shipping.title")}</h2>
       </header>
       {methods.length ? (
-        <div className={payOptions} role="radiogroup" aria-label="Shipping methods">
+        <div className={payOptions} role="radiogroup" aria-label={t("checkout.shipping.methods")}>
           {methods.map((method) => {
             const title = titles.get(method.zoneDeliveryMethodId) ?? method.displayName;
             const active = method.zoneDeliveryMethodId === selectedId;
-            const eta = deliveryEta(method);
+            const eta = deliveryEta(method, t);
             return (
               <label key={method.zoneDeliveryMethodId} className={`${payOpt} ${active ? payOptActive : ""}`}>
                 <input
@@ -50,7 +52,7 @@ export function CheckoutShippingMethod({
                 <span>
                   <span className={payOptTitle}>{title}</span>
                   <span id={`ship-opt-note-${method.zoneDeliveryMethodId}`} className={payOptNote}>
-                    {[eta, deliveryFeeLabel(method, currency)].filter(Boolean).join(" · ")}
+                    {[eta, deliveryFeeLabel(method, currency, t)].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </label>
@@ -59,7 +61,7 @@ export function CheckoutShippingMethod({
         </div>
       ) : (
         <p className={payMockNote}>
-          {status === "loading" ? "Loading shipping options…" : "No shipping options are available right now."}
+          {status === "loading" ? t("checkout.shipping.loading") : t("checkout.shipping.none")}
         </p>
       )}
     </section>

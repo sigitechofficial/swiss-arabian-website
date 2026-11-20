@@ -15,6 +15,8 @@ import {
 } from "@/styles/checkoutChrome";
 import { usePathname } from "next/navigation";
 import { localizeHref } from "@/lib/i18n/localePath";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { stripePayErrorText, useStripeCardPayment } from "../hooks/useStripeCardPayment";
 import { useStripeWalletPayment } from "../hooks/useStripeWalletPayment";
 
@@ -48,18 +50,19 @@ export function StripeCardPaymentForm({
   onNeedOrder?: () => void;
   cancelHref?: string;
 }) {
+  const t = useShopCopy();
   const pay = useStripeCardPayment({ orderId, email, name, phone, country, onNeedOrder });
   const { checkoutState, ready, loadFailed, phase } = pay;
-  const errorMsg = pay.error ? stripePayErrorText(pay.error) : null;
+  const errorMsg = pay.error ? stripePayErrorText(pay.error, t) : null;
   const cancelLink = localizeHref(cancelHref, usePathname() || "/");
 
   return (
     <div className="flex flex-col gap-3">
       {checkoutState.type === "error" ? (
         <p className={checkoutError} role="alert">
-          {pay.sessionError ? stripePayErrorText(pay.sessionError) : null}{" "}
+          {pay.sessionError ? stripePayErrorText(pay.sessionError, t) : null}{" "}
           <a className={checkoutLink} href={cancelLink}>
-            choose another way to pay
+            {t("checkout.pay.otherWay")}
           </a>
         </p>
       ) : null}
@@ -67,25 +70,30 @@ export function StripeCardPaymentForm({
       {phase === "polling" ? (
         <div className={stripePayState} aria-live="polite" aria-busy="true">
           <LoaderMark size={84} />
-          <p className={stripePayStateTitle}>Confirming your payment…</p>
-          <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
+          <p className={stripePayStateTitle}>{t("checkout.state.confirmingTitle")}</p>
+          <p className={checkoutNote}>{t("checkout.pay.confirmingBody")}</p>
         </div>
       ) : (
         <>
           {!ready && !loadFailed && checkoutState.type !== "error" ? (
             <div className={stripePayState} role="status" aria-live="polite">
               <LoaderMark size={72} />
-              <p className={checkoutNote}>Loading secure card form…</p>
+              <p className={checkoutNote}>{t("checkout.pay.loadingCardForm")}</p>
             </div>
           ) : null}
 
           {loadFailed ? (
             <p className={checkoutError} role="alert">
-              We couldn’t load the secure card form. Please refresh the page or{" "}
-              <a className={checkoutLink} href={cancelLink}>
-                choose another way to pay
-              </a>
-              .
+              <TextWithLinks
+                text={t("checkout.pay.formFailed", linkSlots(["other"]))}
+                links={{
+                  other: (
+                    <a className={checkoutLink} href={cancelLink}>
+                      {t("checkout.pay.otherWay")}
+                    </a>
+                  ),
+                }}
+              />
             </p>
           ) : null}
 
@@ -125,14 +133,14 @@ export function StripeCardPaymentForm({
             disabled={!pay.canPay}
             onClick={() => void pay.confirm(orderId)}
           >
-            <span>{phase === "confirming" ? "Processing…" : "Pay now"}</span>
+            <span>{phase === "confirming" ? t("subs.checkout.processing") : t("checkout.confirmation.payNow")}</span>
             <b aria-hidden="true">↗</b>
           </button>
         </>
       )}
       <p className={stripePayTrust}>
         <LockIcon />
-        <span>Secured by Stripe — your card details never touch our servers.</span>
+        <span>{t("checkout.stripe.secured")}</span>
       </p>
     </div>
   );
@@ -155,8 +163,9 @@ export function StripeWalletPaymentForm({
   country?: string | null;
   onNeedOrder?: () => void;
 }) {
+  const t = useShopCopy();
   const { error, pay } = useStripeWalletPayment({ orderId, email, name, phone, country, onNeedOrder });
-  const errorMsg = error ? stripePayErrorText(error) : null;
+  const errorMsg = error ? stripePayErrorText(error, t) : null;
   const apple = wallet === "apple_pay";
 
   return (
@@ -187,8 +196,8 @@ export function StripeWalletPaymentForm({
       />
       <p className="m-0 text-[0.82rem] leading-snug text-[var(--ink-2,#5b5148)]">
         {apple
-          ? "You’ll confirm the payment with Face ID, Touch ID, or your device passcode."
-          : "You’ll pick one of the cards saved in your Google account."}
+          ? t("checkout.stripe.appleHint")
+          : t("checkout.stripe.googleHint")}
       </p>
     </div>
   );

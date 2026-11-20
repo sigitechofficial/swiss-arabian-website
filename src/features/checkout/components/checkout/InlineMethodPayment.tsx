@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
 import type { StripeCheckoutElementsSdkOptions } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { checkoutError, checkoutNote } from "@/styles/checkoutChrome";
 import type { InlinePaymentSession } from "../../utils/startPayment";
 import { stripeCheckoutElementsOptions } from "../../utils/stripeCheckoutAppearance";
@@ -97,10 +98,16 @@ export function InlineMethodPayment({
     return <PaymobDrop session={session} />;
   }
 
-  return <p className={checkoutNote}>Loading secure payment…</p>;
+  return <InlineLoading />;
+}
+
+function InlineLoading() {
+  const t = useShopCopy();
+  return <p className={checkoutNote}>{t("checkout.pay.loadingSecure")}</p>;
 }
 
 function PaymobDrop({ session }: { session: InlinePaymentSession }) {
+  const t = useShopCopy();
   const threeDs = usePaymobThreeDsModal(session.orderId);
   const hostId = "paymob-elements-inline";
   const { failed } = useInlinePaymobCard({
@@ -113,7 +120,7 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {failed ? <p className={checkoutError}>We couldn’t load the card form. Please refresh and try again.</p> : null}
+      {failed ? <p className={checkoutError}>{t("checkout.pay.cardFormFailed")}</p> : null}
       {threeDs.challengeError ? <p className={checkoutError}>{threeDs.challengeError}</p> : null}
       <div id={hostId} />
       <CardSecureNote processor="Paymob" />
@@ -123,14 +130,15 @@ function PaymobDrop({ session }: { session: InlinePaymentSession }) {
 }
 
 function CardSecureNote({ processor }: { processor: "Paymob" | "Stripe" }) {
+  const t = useShopCopy();
   return (
     <div className="flex flex-col gap-2">
       <label className="flex items-center gap-2 text-[0.85rem] text-[var(--ink,#241f1b)]">
         <input type="checkbox" className="size-4 accent-copper" />
-        Save this card for next time
+        {t("checkout.pay.saveCard")}
       </label>
       <p className="m-0 text-[0.75rem] leading-snug text-[var(--ink-2,#5b5148)]">
-        Card details go straight to {processor}. We never store your full card number.
+        {t("checkout.pay.cardGoesTo", { processor })}
       </p>
     </div>
   );
@@ -147,12 +155,13 @@ export function InlineWalletMarks({ apple, google }: { apple: boolean; google: b
 }
 
 function ApplePayMark() {
+  const t = useShopCopy();
   return (
     <div
       className="flex h-12 w-full cursor-default items-center justify-center gap-1.5 rounded-[8px] bg-black text-white"
       role="img"
-      aria-label="Apple Pay, coming soon"
-      title="Coming soon"
+      aria-label={t("checkout.pay.walletSoon", { wallet: "Apple Pay" })}
+      title={t("checkout.pay.comingSoon")}
     >
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
         <path
@@ -166,12 +175,13 @@ function ApplePayMark() {
 }
 
 function GooglePayMark() {
+  const t = useShopCopy();
   return (
     <div
       className="flex h-12 w-full cursor-default items-center justify-center gap-2 rounded-[8px] border border-[#747775] bg-white"
       role="img"
-      aria-label="Google Pay, coming soon"
-      title="Coming soon"
+      aria-label={t("checkout.pay.walletSoon", { wallet: "Google Pay" })}
+      title={t("checkout.pay.comingSoon")}
     >
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
         <path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z" />

@@ -1,6 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { MessageKey, Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -10,6 +12,7 @@ import {
   getStoredPaymentTransactionId,
 } from "../utils/checkoutSession";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { EM_SLOT, EmphasisCopy } from "./EmphasisCopy";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
   checkoutCta,
@@ -42,52 +45,42 @@ export function parseResultHint(raw: string | null): TelrResultHint {
   return "unknown";
 }
 
-function hintCopy(hint: TelrResultHint): { eyebrow: string; title: ReactNode; body: string } {
+/** A sentence with its emphasised phrase, both from the message files. */
+function emphasis(t: Translator, key: MessageKey, em: MessageKey): ReactNode {
+  return <EmphasisCopy text={t(key, EM_SLOT)} em={t(em)} className={doneEm} />;
+}
+
+function hintCopy(hint: TelrResultHint, t: Translator): { eyebrow: string; title: ReactNode; body: string } {
   switch (hint) {
     case "authorised":
       return {
-        eyebrow: "Verification pending",
-        title: (
-          <>
-            Payment submitted — we’re confirming with the <em className={doneEm}>bank</em>.
-          </>
-        ),
-        body: "Don’t close this page. We’ll update as soon as the bank confirms.",
+        eyebrow: t("checkout.state.verificationPending"),
+        title: emphasis(t, "checkout.telr.authorisedTitle", "checkout.telr.authorisedEm"),
+        body: t("checkout.telr.authorisedBody"),
       };
     case "declined":
       return {
-        eyebrow: "Payment declined",
-        title: (
-          <>
-            Payment was <em className={doneEm}>declined</em>.
-          </>
-        ),
-        body: "You can try another method. Your order is saved and not marked paid.",
+        eyebrow: t("checkout.state.declined"),
+        title: emphasis(t, "checkout.state.wasTitle", "checkout.state.declinedEm"),
+        body: t("checkout.state.declinedBody"),
       };
     case "cancelled":
       return {
-        eyebrow: "Payment cancelled",
-        title: (
-          <>
-            Payment was <em className={doneEm}>cancelled</em>.
-          </>
-        ),
-        body: "Your order is not paid. You can return to checkout and try again.",
+        eyebrow: t("checkout.state.cancelled"),
+        title: emphasis(t, "checkout.state.wasTitle", "checkout.state.cancelledEm"),
+        body: t("checkout.telr.cancelledBody"),
       };
     default:
       return {
-        eyebrow: "Verification pending",
-        title: (
-          <>
-            We’re confirming your <em className={doneEm}>payment</em>.
-          </>
-        ),
-        body: "Don’t close this page. Final status comes from our systems — not this return link.",
+        eyebrow: t("checkout.state.verificationPending"),
+        title: emphasis(t, "checkout.telr.unknownTitle", "checkout.telr.unknownEm"),
+        body: t("checkout.telr.unknownBody"),
       };
   }
 }
 
 export function TelrReturnView() {
+  const t = useShopCopy();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
 
@@ -122,17 +115,17 @@ export function TelrReturnView() {
             : { kind: "failed", status: settlement.status, orderId };
 
   if (!hydrated || !outcome) {
-    const pending = hintCopy(hint === "unknown" ? "authorised" : hint);
+    const pending = hintCopy(hint === "unknown" ? "authorised" : hint, t);
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <CheckoutSpinnerState
           eyebrow={pending.eyebrow}
           title={
             hint === "declined" || hint === "cancelled"
-              ? "Checking payment status…"
-              : "Payment submitted — we’re confirming with the bank."
+              ? t("checkout.state.checking")
+              : t("checkout.telr.submitted")
           }
-          body="Don’t close this page."
+          body={t("checkout.state.dontClose")}
         />
       </CheckoutStateShell>
     );
@@ -140,11 +133,11 @@ export function TelrReturnView() {
 
   if (outcome.kind === "paid") {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <CheckoutSpinnerState
-          eyebrow="Payment"
-          title="Payment confirmed…"
-          body="Taking you to your order."
+          eyebrow={t("checkout.state.payment")}
+          title={t("checkout.state.paidTitle")}
+          body={t("checkout.state.paidBody")}
         />
       </CheckoutStateShell>
     );
@@ -155,24 +148,18 @@ export function TelrReturnView() {
     // claim the payment was received; just say we're still confirming.
     const unconfirmedFailure = hint === "declined" || hint === "cancelled";
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutDone}>
-          <p className={stateEyebrow}>Confirming payment</p>
+          <p className={stateEyebrow}>{t("checkout.state.confirmingEyebrow")}</p>
           <h1 className={doneTitle}>
-            {unconfirmedFailure ? (
-              <>
-                We’re still <em className={doneEm}>confirming</em> your payment status…
-              </>
-            ) : (
-              <>
-                Payment received, <em className={doneEm}>confirming</em>…
-              </>
-            )}
+            {unconfirmedFailure
+              ? emphasis(t, "checkout.telr.stillConfirming", "checkout.telr.confirmingEm")
+              : emphasis(t, "checkout.telr.receivedConfirming", "checkout.telr.confirmingEm")}
           </h1>
           <p className={stateIntro}>
             {unconfirmedFailure
-              ? "This usually takes a couple of minutes. Check your order status shortly before trying again."
-              : "This usually takes a couple of minutes. We’ll email you when it’s confirmed — there’s no need to pay again."}
+              ? t("checkout.telr.unconfirmedFailureBody")
+              : t("checkout.telr.receivedBody")}
           </p>
           <MetaNote
             paymentTransactionId={paymentTransactionId ?? storedTxnId}
@@ -186,18 +173,18 @@ export function TelrReturnView() {
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href={`/order-confirmation/${outcome.orderId}?verify=1`}
               >
-                <span>Check order status</span>
+                <span>{t("checkout.state.orderStatus")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             ) : (
               <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
-                <span>Return home</span>
+                <span>{t("checkout.state.returnHome")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             )}
             {outcome.orderId ? (
               <LocaleLink className={checkoutLink} href="/">
-                Return home
+                {t("checkout.state.returnHome")}
               </LocaleLink>
             ) : null}
           </div>
@@ -210,32 +197,24 @@ export function TelrReturnView() {
     const declined = outcome.status === "DECLINED";
     const cancelled = outcome.status === "CANCELLED";
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutDone}>
           <p className={stateEyebrow}>
-            {cancelled ? "Payment cancelled" : declined ? "Payment declined" : "Payment unsuccessful"}
+            {cancelled ? t("checkout.state.cancelled") : declined ? t("checkout.state.declined") : t("checkout.state.unsuccessful")}
           </p>
           <h1 className={doneTitle}>
-            {cancelled ? (
-              <>
-                Payment was <em className={doneEm}>cancelled</em>.
-              </>
-            ) : declined ? (
-              <>
-                Payment was <em className={doneEm}>declined</em>.
-              </>
-            ) : (
-              <>
-                Your payment <em className={doneEm}>didn’t go through</em>.
-              </>
-            )}
+            {cancelled
+              ? emphasis(t, "checkout.state.wasTitle", "checkout.state.cancelledEm")
+              : declined
+                ? emphasis(t, "checkout.state.wasTitle", "checkout.state.declinedEm")
+                : emphasis(t, "checkout.state.failedTitle", "checkout.state.failedEm")}
           </h1>
           <p className={stateIntro}>
             {cancelled
-              ? "Your order is not paid. You can try again when you’re ready."
+              ? t("checkout.telr.cancelledRetryBody")
               : declined
-                ? "You can try another method. Your order is saved and not marked paid."
-                : "We couldn’t confirm this payment. Your order is saved — you can try again."}
+                ? t("checkout.state.declinedBody")
+                : t("checkout.telr.failedBody")}
           </p>
           <MetaNote
             paymentTransactionId={paymentTransactionId ?? storedTxnId}
@@ -252,11 +231,11 @@ export function TelrReturnView() {
                   : "/checkout/payment/cancel"
               }
             >
-              <span>Try again</span>
+              <span>{t("tryAgain")}</span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
             <LocaleLink className={checkoutLink} href="/">
-              Return home
+              {t("checkout.state.returnHome")}
             </LocaleLink>
           </div>
         </section>
@@ -266,9 +245,9 @@ export function TelrReturnView() {
 
   // hint-only (no order in storage, or declined/cancelled without platform Paid)
   const resultHint = outcome.hint;
-  const copy = hintCopy(resultHint);
+  const copy = hintCopy(resultHint, t);
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={t("checkout.state.payment")}>
       <section className={checkoutDone}>
         <p className={stateEyebrow}>{copy.eyebrow}</p>
         <h1 className={doneTitle}>{copy.title}</h1>
@@ -282,9 +261,9 @@ export function TelrReturnView() {
         {!orderId ? (
           <section className={checkoutEmpty} style={{ marginTop: "1.5rem", padding: 0 }}>
             <h2 className={collectionTitle} style={{ fontSize: "1.05rem" }}>
-              We couldn’t match this return to a local order.
+              {t("checkout.telr.noLocalOrder")}
             </h2>
-            <p>If you completed a payment, your confirmation email has the details.</p>
+            <p>{t("checkout.state.noOrderBody")}</p>
           </section>
         ) : null}
         <div className={checkoutDoneActions}>
@@ -299,20 +278,20 @@ export function TelrReturnView() {
             >
               <span>
                 {resultHint === "authorised" || resultHint === "unknown"
-                  ? "Check order status"
-                  : "Try again"}
+                  ? t("checkout.state.orderStatus")
+                  : t("tryAgain")}
               </span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
           ) : (
             <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
-              <span>Return home</span>
+              <span>{t("checkout.state.returnHome")}</span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
           )}
           {orderId ? (
             <LocaleLink className={checkoutLink} href="/">
-              Return home
+              {t("checkout.state.returnHome")}
             </LocaleLink>
           ) : null}
         </div>
@@ -332,11 +311,12 @@ function MetaNote({
   provider: string | null;
   zone: string | null;
 }) {
+  const t = useShopCopy();
   const bits = [
-    provider ? `Provider ${provider}` : null,
-    zone ? `Zone ${zone}` : null,
-    paymentTransactionId ? `Txn ${paymentTransactionId.slice(0, 8)}…` : null,
-    paymentAttemptId ? `Attempt ${paymentAttemptId.slice(0, 8)}…` : null,
+    provider ? t("checkout.telr.meta.provider", { provider }) : null,
+    zone ? t("checkout.telr.meta.zone", { zone }) : null,
+    paymentTransactionId ? t("checkout.telr.meta.transaction", { id: paymentTransactionId.slice(0, 8) }) : null,
+    paymentAttemptId ? t("checkout.telr.meta.attempt", { id: paymentAttemptId.slice(0, 8) }) : null,
   ].filter(Boolean);
   if (!bits.length) return null;
   return <p className={checkoutNote}>{bits.join(" · ")}</p>;

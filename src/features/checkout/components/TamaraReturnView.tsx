@@ -3,6 +3,7 @@ import { providerTextIn } from "../utils/providerText";
 
 import { isRtl } from "@/lib/i18n/locales";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -13,7 +14,6 @@ import { useTamaraLang } from "../hooks/useTamaraLang";
 import {
   TAMARA_CANCELLED_MESSAGE,
   TAMARA_REJECTED_MESSAGE,
-  type TamaraLang,
 } from "../utils/tamara";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
 import { doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
@@ -55,76 +55,6 @@ export function parseResultHint(raw: string | null): TamaraResultHint {
   return "unknown";
 }
 
-const COPY: Record<
-  TamaraLang,
-  {
-    confirmingEyebrow: string;
-    confirming: string;
-    dontClose: string;
-    checking: string;
-    paidTitle: string;
-    paidBody: string;
-    cancelEyebrow: string;
-    failureEyebrow: string;
-    pendingEyebrow: string;
-    pendingTitle: string;
-    pendingBody: string;
-    retry: string;
-    backToCheckout: string;
-    returning: string;
-    keptError: string;
-    orderStatus: string;
-    home: string;
-    noOrderTitle: string;
-    noOrderBody: string;
-  }
-> = {
-  en: {
-    confirmingEyebrow: "Verification pending",
-    confirming: "We’re confirming your payment with Tamara.",
-    dontClose: "Don’t close this page.",
-    checking: "Checking payment status…",
-    paidTitle: "Payment confirmed…",
-    paidBody: "Taking you to your order.",
-    cancelEyebrow: "Payment cancelled",
-    failureEyebrow: "Payment not approved",
-    pendingEyebrow: "Confirming payment",
-    pendingTitle: "We’re confirming your payment",
-    pendingBody: "You’ll get an email shortly. There’s no need to pay again.",
-    retry: "Choose another payment method",
-    backToCheckout: "Back to checkout",
-    returning: "Opening checkout…",
-    keptError:
-      "We couldn’t reopen your bag because a payment for this order is still being processed. Please check your order status in a few minutes.",
-    orderStatus: "Check order status",
-    home: "Return home",
-    noOrderTitle: "We couldn’t match this return to an order.",
-    noOrderBody: "If you completed a payment, your confirmation email has the details.",
-  },
-  ar: {
-    confirmingEyebrow: "جارٍ التحقق",
-    confirming: "نقوم بتأكيد دفعتك مع تمارا.",
-    dontClose: "لا تغلق هذه الصفحة.",
-    checking: "جارٍ التحقق من حالة الدفع…",
-    paidTitle: "تم تأكيد الدفع…",
-    paidBody: "جارٍ تحويلك إلى طلبك.",
-    cancelEyebrow: "تم إلغاء الدفع",
-    failureEyebrow: "لم تتم الموافقة على الدفع",
-    pendingEyebrow: "جارٍ تأكيد الدفع",
-    pendingTitle: "نقوم بتأكيد دفعتك",
-    pendingBody: "ستصلك رسالة بريد إلكتروني قريبًا. لا حاجة للدفع مرة أخرى.",
-    retry: "اختر طريقة دفع أخرى",
-    backToCheckout: "العودة إلى صفحة الدفع",
-    returning: "جارٍ فتح صفحة الدفع…",
-    keptError:
-      "تعذّر إعادة فتح سلة التسوق لأن دفعة لهذا الطلب ما زالت قيد المعالجة. يرجى التحقق من حالة الطلب بعد بضع دقائق.",
-    orderStatus: "تحقق من حالة الطلب",
-    home: "العودة إلى الرئيسية",
-    noOrderTitle: "تعذّر ربط هذه العودة بطلب.",
-    noOrderBody: "إذا أتممت الدفع، ستجد التفاصيل في رسالة التأكيد.",
-  },
-};
-
 /**
  * Tamara hosted-page return — BE contract `/payments/tamara/return`.
  * Query: `orderId`, `paymentTransactionId`, `paymentAttemptId`, `provider`,
@@ -139,7 +69,7 @@ export function TamaraReturnView() {
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const lang = useTamaraLang();
-  const copy = COPY[lang];
+  const t = useShopCopy();
 
   const hint = useMemo(() => parseResultHint(searchParams.get("result")), [searchParams]);
   // The link names the order this payment was for (the backend adds it); the
@@ -156,11 +86,11 @@ export function TamaraReturnView() {
 
   if (!hydrated || !outcome) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <CheckoutSpinnerState
-          eyebrow={copy.confirmingEyebrow}
-          title={hint === "cancel" || hint === "failure" ? copy.checking : copy.confirming}
-          body={copy.dontClose}
+          eyebrow={t("checkout.state.verificationPending")}
+          title={hint === "cancel" || hint === "failure" ? t("checkout.state.checking") : t("checkout.tamara.confirming")}
+          body={t("checkout.state.dontClose")}
         />
       </CheckoutStateShell>
     );
@@ -168,8 +98,8 @@ export function TamaraReturnView() {
 
   if (outcome.kind === "paid") {
     return (
-      <CheckoutStateShell current="Payment">
-        <CheckoutSpinnerState eyebrow="Tamara" title={copy.paidTitle} body={copy.paidBody} />
+      <CheckoutStateShell current={t("checkout.state.payment")}>
+        <CheckoutSpinnerState eyebrow="Tamara" title={t("checkout.state.paidTitle")} body={t("checkout.state.paidBody")} />
       </CheckoutStateShell>
     );
   }
@@ -185,15 +115,15 @@ export function TamaraReturnView() {
   if (notPaid) {
     const message = providerTextIn(cancelled ? TAMARA_CANCELLED_MESSAGE : TAMARA_REJECTED_MESSAGE, lang);
     return (
-      <CheckoutStateShell current="Payment">
-        <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
-          <p className={stateEyebrow}>{cancelled ? copy.cancelEyebrow : copy.failureEyebrow}</p>
-          <h1 className={doneTitle} role="alert">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
+        <section className={checkoutDone}>
+          <p className={stateEyebrow}>{cancelled ? t("checkout.state.cancelled") : t("checkout.state.notApproved")}</p>
+          <h1 className={doneTitle} role="alert" dir={isRtl(lang) ? "rtl" : undefined}>
             {message}
           </h1>
           {back.failed ? (
             <p className={checkoutError} role="alert">
-              {copy.keptError}
+              {t("checkout.state.keptError")}
             </p>
           ) : null}
           <div className={checkoutDoneActions}>
@@ -203,11 +133,11 @@ export function TamaraReturnView() {
               onClick={() => void back.go(!cancelled)}
               disabled={back.returning}
             >
-              <span>{back.returning ? copy.returning : cancelled ? copy.backToCheckout : copy.retry}</span>
+              <span>{back.returning ? t("checkout.state.opening") : cancelled ? t("checkout.state.backToCheckout") : t("checkout.state.chooseAnother")}</span>
               <b aria-hidden="true">↗</b>
             </button>
             <LocaleLink className={checkoutLink} href="/">
-              {copy.home}
+              {t("checkout.state.returnHome")}
             </LocaleLink>
           </div>
         </section>
@@ -218,21 +148,21 @@ export function TamaraReturnView() {
   // Still pending after polling (the backend keeps confirming in the background),
   // or a success link we can't match to an order in this browser.
   return (
-    <CheckoutStateShell current="Payment">
-      <section className={checkoutDone} dir={isRtl(lang) ? "rtl" : undefined}>
-        <p className={stateEyebrow}>{copy.pendingEyebrow}</p>
+    <CheckoutStateShell current={t("checkout.state.payment")}>
+      <section className={checkoutDone}>
+        <p className={stateEyebrow}>{t("checkout.state.confirmingEyebrow")}</p>
         <h1 className={doneTitle}>
           {outcome.kind === "no-order" ? (
-            copy.noOrderTitle
+            t("checkout.state.noOrderTitle")
           ) : (
             <>
-              {copy.pendingTitle}
+              {t("checkout.state.pendingTitle")}
               <em className={doneEm}>…</em>
             </>
           )}
         </h1>
         <p className={stateIntro}>
-          {outcome.kind === "no-order" ? copy.noOrderBody : copy.pendingBody}
+          {outcome.kind === "no-order" ? t("checkout.state.noOrderBody") : t("checkout.state.pendingBody")}
         </p>
         <div className={checkoutDoneActions}>
           {orderId ? (
@@ -240,18 +170,18 @@ export function TamaraReturnView() {
               className={`${checkoutCta} ${checkoutCtaInline}`}
               href={`/order-confirmation/${orderId}?verify=1`}
             >
-              <span>{copy.orderStatus}</span>
+              <span>{t("checkout.state.orderStatus")}</span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
           ) : (
             <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
-              <span>{copy.home}</span>
+              <span>{t("checkout.state.returnHome")}</span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
           )}
           {orderId ? (
             <LocaleLink className={checkoutLink} href="/">
-              {copy.home}
+              {t("checkout.state.returnHome")}
             </LocaleLink>
           ) : null}
         </div>

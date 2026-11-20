@@ -1,6 +1,8 @@
 import { readProviderText, type ProviderText } from "./providerText";
 import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 
 /**
  * Tabby (pay in 4) helpers. Backend contract: `docs/storefront/TABBY_CHECKOUT.md`.
@@ -99,18 +101,21 @@ export function tabbyRejectionFrom(
  * The backend passes Tabby's own error text only as `warnings` — never shown
  * as-is, but read here so the shopper learns which detail to fix.
  */
-export function tabbyStartFailureMessage(warnings: readonly string[] | null | undefined): string {
+export function tabbyStartFailureMessage(
+  warnings: readonly string[] | null | undefined,
+  t: Translator = pageTranslator(),
+): string {
   const text = (warnings ?? []).join(" ").toLowerCase();
   if (/phone/.test(text)) {
-    return "Tabby couldn’t accept your phone number. Check it (e.g. +971 50 123 4567), then try Pay again. Your order is saved.";
+    return t("checkout.tabby.startPhone");
   }
   if (/e-?mail/.test(text)) {
-    return "Tabby couldn’t accept your email address. Check it, then try Pay again. Your order is saved.";
+    return t("checkout.tabby.startEmail");
   }
   if (/address|city|zip/.test(text)) {
-    return "Tabby couldn’t accept your delivery address. Check it, then try Pay again. Your order is saved.";
+    return t("checkout.tabby.startAddress");
   }
-  return "Tabby is unavailable right now. Try Pay again or choose another payment method. Your order is saved.";
+  return t("checkout.tabby.startUnavailable");
 }
 
 /** Pre-scoring needs a real email and phone; before that Tabby simply stays available. */

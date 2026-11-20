@@ -1,6 +1,8 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { CheckoutElementsProvider, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
 import type { StripeCheckoutSession } from "@stripe/stripe-js";
 import { LoaderMark } from "@/components/ui/PageLoading";
@@ -64,10 +66,11 @@ export function OrderSummary({
   loading: boolean;
   payable?: { amount: number; currency: string } | null;
 }) {
+  const t = useShopCopy();
   if (loading) {
     return (
-      <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary" aria-busy="true">
-        <h2>Your order</h2>
+      <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label={t("orders.summary")} aria-busy="true">
+        <h2>{t("subs.checkout.yourOrder")}</h2>
         <div className={`${stripePayState} ${stripePaySummaryState}`}>
           <LoaderMark size={56} />
         </div>
@@ -80,11 +83,11 @@ export function OrderSummary({
   const shipping = Number(totals.shipping);
 
   return (
-    <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label="Order summary">
-      <h2>Your order</h2>
+    <aside className={`${checkoutSummary} ${stripePaySummary}`} aria-label={t("orders.summary")}>
+      <h2>{t("subs.checkout.yourOrder")}</h2>
       {order.orderNumber ? (
         <p className={stripePayOrderNo}>
-          Order <span dir="ltr">{order.orderNumber}</span>
+          {t("account.orderLabel")} <span dir="ltr">{order.orderNumber}</span>
         </p>
       ) : null}
       <div className={checkoutLines}>
@@ -124,27 +127,27 @@ export function OrderSummary({
       </div>
       <dl className={checkoutTotals}>
         <div>
-          <dt>Subtotal</dt>
+          <dt>{t("orders.subtotal")}</dt>
           <dd dir="ltr">{formatMoney(Number(totals.subtotal), currency)}</dd>
         </div>
         {Number(totals.discount) > 0 ? (
           <div>
-            <dt>Discount</dt>
+            <dt>{t("orders.discount")}</dt>
             <dd dir="ltr">−{formatMoney(Number(totals.discount), currency)}</dd>
           </div>
         ) : null}
         <div>
-          <dt>Shipping</dt>
-          <dd dir="ltr">{shipping > 0 ? formatMoney(shipping, currency) : "Free"}</dd>
+          <dt>{t("orders.shipping")}</dt>
+          <dd dir="ltr">{shipping > 0 ? formatMoney(shipping, currency) : t("orders.free")}</dd>
         </div>
         {Number(totals.tax) > 0 ? (
           <div>
-            <dt>Tax</dt>
+            <dt>{t("orders.tax")}</dt>
             <dd dir="ltr">{formatMoney(Number(totals.tax), currency)}</dd>
           </div>
         ) : null}
         <div className={checkoutTotalsLine}>
-          <dt>Total</dt>
+          <dt>{t("orders.total")}</dt>
           <dd dir="ltr">
             {formatMoney(payable?.amount ?? Number(totals.total), payable?.currency ?? currency)}
           </dd>
@@ -163,6 +166,7 @@ function StripeCheckoutLayout({
   order: OrderResponse | undefined;
   loading: boolean;
 }) {
+  const t = useShopCopy();
   const checkoutState = useCheckoutElements();
   const payable = checkoutState.type === "success" ? sessionPayable(checkoutState.checkout) : null;
 
@@ -174,8 +178,8 @@ function StripeCheckoutLayout({
             <span className={`${cboxNum} ${stripePayNum}`}>
               <StripePayLockIcon />
             </span>
-            <h2 id="card-payment-heading">Pay with Stripe</h2>
-            <span className={stripePayBrands} aria-label="Visa, Mastercard and American Express accepted">
+            <h2 id="card-payment-heading">{t("checkout.pay.withStripe")}</h2>
+            <span className={stripePayBrands} aria-label={t("checkout.pay.stripeBrands")}>
               Visa · Mastercard · Amex
             </span>
           </div>
@@ -190,7 +194,10 @@ function StripeCheckoutLayout({
           </div>
         </section>
         <p className={checkoutLegal}>
-          Changed your mind? <LocaleLink href="/checkout/payment/cancel">Cancel payment</LocaleLink> — your order stays saved.
+          <TextWithLinks
+            text={t("checkout.pay.changedMind", linkSlots(["cancel"]))}
+            links={{ cancel: <LocaleLink href="/checkout/payment/cancel">{t("checkout.pay.cancelPayment")}</LocaleLink> }}
+          />
         </p>
       </div>
       <OrderSummary order={order} loading={loading} payable={payable} />
@@ -199,6 +206,7 @@ function StripeCheckoutLayout({
 }
 
 export function StripePaymentFormView() {
+  const t = useShopCopy();
   const session = useCardPaymentSession("stripe");
   const { hydrated, orderId, clientSecret, alreadyPaid } = session;
   const publishableKey = session.providerKey;
@@ -207,21 +215,21 @@ export function StripePaymentFormView() {
 
   if (!hydrated || alreadyPaid) {
     return (
-      <CheckoutStateShell current="Payment">
-        <CheckoutSpinnerState title="Loading secure payment…" />
+      <CheckoutStateShell current={t("checkout.state.payment")}>
+        <CheckoutSpinnerState title={t("checkout.pay.loadingSecure")} />
       </CheckoutStateShell>
     );
   }
 
   if (!clientSecret || !orderId || !stripePromise || !options) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutEmpty}>
-          <p className={stateEyebrow}>Payment</p>
-          <h1 className={collectionTitle}>This payment session has expired.</h1>
-          <p>If you already placed an order, you can finish paying for it from here.</p>
+          <p className={stateEyebrow}>{t("checkout.state.payment")}</p>
+          <h1 className={collectionTitle}>{t("checkout.pay.sessionExpired")}</h1>
+          <p>{t("checkout.pay.sessionExpiredBody")}</p>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
-            <span>Retry payment</span>
+            <span>{t("checkout.state.retryPayment")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
         </section>
@@ -230,17 +238,17 @@ export function StripePaymentFormView() {
   }
 
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={t("checkout.state.payment")}>
       <header className={checkoutHead}>
-        <h1 className={pageTitle}>Payment</h1>
+        <h1 className={pageTitle}>{t("checkout.state.payment")}</h1>
         <ol className={checkoutSteps}>
           <li>
-            <LocaleLink href="/cart">Bag</LocaleLink>
+            <LocaleLink href="/cart">{t("nav.bag")}</LocaleLink>
           </li>
           <li aria-hidden="true">·</li>
-          <li>Details</li>
+          <li>{t("checkout.pay.detailsStep")}</li>
           <li aria-hidden="true">·</li>
-          <li className={checkoutStepCurrent}>Payment</li>
+          <li className={checkoutStepCurrent}>{t("checkout.state.payment")}</li>
         </ol>
       </header>
 

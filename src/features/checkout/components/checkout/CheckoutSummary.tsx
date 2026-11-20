@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { StaffDiscountSummary } from "@/features/employeeBenefits/components/StaffDiscountSummary";
 import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
@@ -85,6 +86,7 @@ export function CheckoutSummary({
   warnings,
   earnPreview,
 }: CheckoutSummaryProps) {
+  const t = useShopCopy();
   const cartPromotions = useCartStore((state) => state.promotions);
   const cartLoyalty = useCartStore((state) => state.loyaltyRedemption);
   const cartEmployeeCheckout = useCartStore((state) => state.employeeCheckout);
@@ -99,9 +101,9 @@ export function CheckoutSummary({
     <aside
       className={`${checkoutSummary} ${open ? checkoutSummaryOpen : ""}`}
       id="checkout-summary"
-      aria-label="Order summary"
+      aria-label={t("orders.summary")}
     >
-      <h2>Your order</h2>
+      <h2>{t("subs.checkout.yourOrder")}</h2>
       <div className={checkoutLines} id="checkout-lines">
         {bundleLinesFirst(orderableLines, cartPromotions, promoSnapshot).map((line) => {
           const thumb = lineImageUrl(line.slug, line.imageUrl);
@@ -157,8 +159,7 @@ export function CheckoutSummary({
       {subtotal > 0 ? <PromotionProgressRail surface="checkout" /> : null}
       {leftOutCount > 0 ? (
         <p className={`${checkoutNote} ${checkoutSummaryNote}`}>
-          {leftOutCount === 1 ? "1 item" : `${leftOutCount} items`} in your bag can’t be ordered online and won’t be
-          included.
+          {t("checkout.summary.leftOut", { count: leftOutCount })}
         </p>
       ) : null}
       <AppliedCampaigns snapshot={promoSnapshot} hideGifts />
@@ -173,7 +174,7 @@ export function CheckoutSummary({
       <StaffDiscountSummary checkout={employeeCheckout} currency={currency} surface="checkout" />
       {staffDiscountPaymentBlocked(employeeCheckout) ? (
         <p className={`${checkoutNote} ${checkoutSummaryNote}`} role="status">
-          Staff discount cannot be paid yet. This quote is a preview, so the order cannot be placed at the discounted amount.
+          {t("checkout.summary.staffBlocked")}
         </p>
       ) : null}
       <MoneySummary
@@ -198,7 +199,7 @@ export function CheckoutSummary({
           {warning}
         </p>
       ))}
-      <p className={checkoutBadges}>SSL encrypted</p>
+      <p className={checkoutBadges}>{t("checkout.summary.ssl")}</p>
     </aside>
   );
 }

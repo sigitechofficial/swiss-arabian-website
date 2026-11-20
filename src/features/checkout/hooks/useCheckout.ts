@@ -519,9 +519,9 @@ export function useCheckout() {
           return e.messages[tabbyLang(document.documentElement.lang)];
         }
         if (e instanceof PaymentGatewayError) {
-          if (payment && isTamaraPaymentMethod(payment)) return tamaraStartFailureMessage(e.warnings);
+          if (payment && isTamaraPaymentMethod(payment)) return tamaraStartFailureMessage(e.warnings, copy);
           return payment && isTabbyPaymentMethod(payment)
-            ? tabbyStartFailureMessage(e.warnings)
+            ? tabbyStartFailureMessage(e.warnings, copy)
             : gatewayFallback;
         }
         return checkoutErrorMessage(e);

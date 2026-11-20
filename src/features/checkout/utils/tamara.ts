@@ -1,6 +1,8 @@
 import { readProviderText, type ProviderText } from "./providerText";
 import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 
 /**
  * Tamara (BNPL) helpers. Backend contract: provider `tamara`, method
@@ -132,18 +134,21 @@ export function tamaraPrecheckMessage(res: {
  * Tamara couldn't open a payment session (no redirect, not a rejection).
  * Backend `warnings` are never shown as-is, only read for the detail to fix.
  */
-export function tamaraStartFailureMessage(warnings: readonly string[] | null | undefined): string {
+export function tamaraStartFailureMessage(
+  warnings: readonly string[] | null | undefined,
+  t: Translator = pageTranslator(),
+): string {
   const text = (warnings ?? []).join(" ").toLowerCase();
   if (/phone/.test(text)) {
-    return "Tamara couldn’t accept your phone number. Check it (e.g. +971 50 123 4567), then try Pay again. Your order is saved.";
+    return t("checkout.tamara.startPhone");
   }
   if (/e-?mail/.test(text)) {
-    return "Tamara couldn’t accept your email address. Check it, then try Pay again. Your order is saved.";
+    return t("checkout.tamara.startEmail");
   }
   if (/address|city|zip/.test(text)) {
-    return "Tamara couldn’t accept your delivery address. Check it, then try Pay again. Your order is saved.";
+    return t("checkout.tamara.startAddress");
   }
-  return "Tamara is unavailable right now. Try Pay again or choose another payment method. Your order is saved.";
+  return t("checkout.tamara.startUnavailable");
 }
 
 /** Pre-check needs a real email and phone; before that Tamara simply stays available. */

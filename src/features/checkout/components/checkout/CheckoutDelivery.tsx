@@ -3,6 +3,8 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { PhoneNumberField } from "@/components/ui/PhoneNumberField";
 import type { CountryRegionSet } from "@/features/account/data/regionsByCountry";
+import { regionLabel, regionSetLabels } from "@/features/account/utils/addressDisplay";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { PlacesAddressInput } from "@/lib/google/PlacesAddressInput";
 import type { ParsedStreetAddress } from "@/lib/google/parseGooglePlace";
 import { cbox, cboxGrid, cboxHead, fld, fldFull, fldHint, fldSelect } from "@/styles/checkoutChrome";
@@ -38,15 +40,17 @@ export function CheckoutDelivery({
   regionSet,
   beforeFields,
 }: CheckoutDeliveryProps) {
+  const t = useShopCopy();
+  const region = regionSet ? regionSetLabels(regionSet, t) : null;
   return (
     <section className={cbox}>
       <header className={cboxHead}>
-        <h2>Delivery</h2>
+        <h2>{t("orders.delivery")}</h2>
       </header>
       <div className={cboxGrid}>
         {beforeFields}
         <label className={fldFull}>
-          <span>Email</span>
+          <span>{t("account.email")}</span>
           <input
             type="email"
             name="email"
@@ -58,18 +62,18 @@ export function CheckoutDelivery({
           />
         </label>
         <label className={fldFull}>
-          <span>Full name</span>
+          <span>{t("auth.fullName")}</span>
           <input
             type="text"
             name="delName"
             required
             autoComplete="name"
-            placeholder="First and last name"
+            placeholder={t("checkout.form.namePlaceholder")}
             {...bind("fullName")}
           />
         </label>
         <label className={fldFull}>
-          <span>Phone</span>
+          <span>{t("checkout.form.phone")}</span>
           <PhoneNumberField
             variant="checkout"
             renderLabel={false}
@@ -81,12 +85,12 @@ export function CheckoutDelivery({
           />
         </label>
         <label className={fldFull}>
-          <span>Address line 1</span>
+          <span>{t("checkout.form.address1")}</span>
           <PlacesAddressInput
             name="delAddr1"
             required
             minLength={3}
-            placeholder="Start typing your street address"
+            placeholder={t("address.streetPlaceholder")}
             value={shipping.address1}
             countryCode={countryCode}
             onChange={onAddress1}
@@ -95,28 +99,28 @@ export function CheckoutDelivery({
         </label>
         <label className={fldFull}>
           <span>
-            Address line 2 <span className={fldHint}>(optional)</span>
+            {t("checkout.form.address2")} <span className={fldHint}>{t("checkout.form.optional")}</span>
           </span>
           <input
             type="text"
             name="delAddr2"
             autoComplete="address-line2"
-            placeholder="Apartment, suite, floor"
+            placeholder={t("checkout.form.address2Placeholder")}
             {...bind("address2")}
           />
         </label>
         <label className={fld}>
-          <span>City</span>
-          <input type="text" name="delCity" aria-label="City" required autoComplete="address-level2" {...bind("city")} />
+          <span>{t("address.city")}</span>
+          <input type="text" name="delCity" aria-label={t("address.city")} required autoComplete="address-level2" {...bind("city")} />
         </label>
         <label className={fld}>
-          <span>{regionSet?.label ?? "Region"}</span>
+          <span>{region?.label ?? t("address.kind.region")}</span>
           <div className={fldSelect}>
             <select name="delEmirate" required autoComplete="address-level1" {...bind("emirate")}>
-              <option value="">{regionSet?.placeholder ?? "Select region"}</option>
-              {(regionSet?.regions ?? []).map((region) => (
-                <option key={region} value={region}>
-                  {region}
+              <option value="">{region?.placeholder ?? t("address.kind.regionSelect")}</option>
+              {(regionSet?.regions ?? []).map((name) => (
+                <option key={name} value={name}>
+                  {regionLabel(countryCode, name, t)}
                 </option>
               ))}
             </select>
@@ -125,12 +129,12 @@ export function CheckoutDelivery({
         </label>
         <label className={fldFull}>
           <span>
-            Postal code <span className={fldHint}>(optional)</span>
+            {t("checkout.form.postal")} <span className={fldHint}>{t("checkout.form.optional")}</span>
           </span>
           <input
             type="text"
             name="delPostal"
-            aria-label="Postal code (optional)"
+            aria-label={t("checkout.form.postalOptional")}
             autoComplete="postal-code"
             inputMode="numeric"
             {...bind("postalCode")}

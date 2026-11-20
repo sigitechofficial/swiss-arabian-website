@@ -17,15 +17,17 @@ import {
   paymobIframeReturnAction,
 } from "../utils/paymobThreeDs";
 import { useHydrated } from "@/hooks/useHydrated";
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 /** Why the 3-D Secure step did not finish (each brand words it). */
 export type PaymobThreeDsError = "cancelled" | "declined" | "unconfirmed";
 
-/** Swiss Arabian's sentences (also the default for any brand without its own). */
-export function paymobThreeDsErrorText(error: PaymobThreeDsError): string {
-  if (error === "cancelled") return "Payment was cancelled. You can try again with the same card.";
-  if (error === "declined") return "Your card was declined. Please try another card.";
-  return "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.";
+/** Swiss Arabian's sentences (also the default for any brand without its own), in the page's language. */
+export function paymobThreeDsErrorText(error: PaymobThreeDsError, t: Translator = englishTranslator): string {
+  if (error === "cancelled") return t("checkout.paymob.threeDs.cancelled");
+  if (error === "declined") return t("checkout.stripe.error.declined");
+  return t("checkout.paymob.error.unconfirmed");
 }
 
 /** What a brand's 3-D Secure overlay receives: the bank's page and its frame. */
@@ -46,6 +48,7 @@ export function usePaymobThreeDsModal(
   orderId: string | null,
   { Modal = PaymobThreeDsModal }: { Modal?: ComponentType<PaymobThreeDsModalProps> } = {},
 ) {
+  const t = useShopCopy();
   const [challengeUrl, setChallengeUrl] = useState<string | null>(null);
   const [challengeErrorCode, setChallengeErrorCode] = useState<PaymobThreeDsError | null>(null);
   const finishing = useRef(false);
@@ -120,7 +123,7 @@ export function usePaymobThreeDsModal(
 
   return {
     challengeErrorCode,
-    challengeError: challengeErrorCode ? paymobThreeDsErrorText(challengeErrorCode) : null,
+    challengeError: challengeErrorCode ? paymobThreeDsErrorText(challengeErrorCode, t) : null,
     overlay: challengeUrl ? (
       <Modal
         src={challengeUrl}
@@ -144,6 +147,7 @@ export function useLockPageScroll() {
 
 function PaymobThreeDsModal({ src, frameRef, onFrameLoad }: PaymobThreeDsModalProps) {
   // Portal target (document.body) exists only after hydration.
+  const t = useShopCopy();
   const mounted = useHydrated();
   useLockPageScroll();
 
@@ -159,13 +163,13 @@ function PaymobThreeDsModal({ src, frameRef, onFrameLoad }: PaymobThreeDsModalPr
       >
         <div className="border-b border-[#eee6d8] px-5 py-4 text-center">
           <h2 id="paymob-3ds-title" className="m-0 text-[1.05rem] font-semibold text-[#241f1b]">
-            Confirming your payment
+            {t("checkout.paymob.threeDs.title")}
           </h2>
-          <p className="m-0 mt-1 text-[0.8rem] text-[#5b5148]">Please do not close or refresh this page</p>
+          <p className="m-0 mt-1 text-[0.8rem] text-[#5b5148]">{t("checkout.paymob.threeDs.dontClose")}</p>
         </div>
         <iframe
           ref={frameRef}
-          title="Card verification"
+          title={t("checkout.paymob.threeDs.frame")}
           src={src}
           className="min-h-0 w-full flex-1 border-0 bg-white"
           allow="payment *; publickey-credentials-get *"
