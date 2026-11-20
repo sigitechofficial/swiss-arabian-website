@@ -1,5 +1,6 @@
 import type { SeoFaqView } from "@/features/seo-faq/seoFaq";
 import { answerHtml } from "@/features/seo-faq/seoFaqText";
+import { DEFAULT_LOCALE, matchLocale } from "@/lib/i18n/locales";
 import { getTranslator } from "@/lib/i18n/messages";
 import { Wrap } from "../../ui";
 
@@ -10,7 +11,8 @@ import { Wrap } from "../../ui";
  * so the page keeps one H1 and only this section's H2 (SEO audit headings rule).
  */
 export async function SapilSeoFaqSection({ faq }: { faq: SeoFaqView }) {
-  const t = await getTranslator(faq.lang === "ar" ? "ar" : "en");
+  // Labels in the FAQ's own language, whichever configured language it is.
+  const t = await getTranslator(matchLocale(faq.lang) ?? DEFAULT_LOCALE);
   return (
     <section aria-labelledby="seo-faq-heading" lang={faq.lang} dir={faq.dir} data-seo-faq className="py-[64px] max-900:py-[48px]">
       <Wrap className="max-w-[880px]">
