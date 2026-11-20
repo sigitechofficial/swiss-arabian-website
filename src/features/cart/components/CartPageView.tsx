@@ -362,6 +362,7 @@ export function CartPageView() {
                     shippingDiscount={shipDiscount}
                     tax={totals?.tax ?? 0}
                     taxLabel={totals?.taxLabel}
+                    taxLabels={totals?.taxLabels}
                     taxIncluded={totals?.taxIncluded}
                     total={total}
                     amountPayable={amountPayable}

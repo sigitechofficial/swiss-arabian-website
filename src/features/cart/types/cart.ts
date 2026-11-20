@@ -7,7 +7,10 @@ export type StorefrontTaxDisplay = {
   pricesIncludeTax: boolean;
   taxRatePercent: string;
   shippingTaxed: boolean;
+  /** The tax label in the language the answer was asked in. */
   taxLabel: string;
+  /** The label in every language (`{ en, ar, … }`): read with `nameInLanguage`. */
+  taxLabels?: Readonly<Record<string, string>> | null;
   pdpShowsTaxInclusive: boolean;
 };
 
