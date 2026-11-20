@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "quality": "npm run typecheck && npm run lint && npm run test && npm run build",
     "openapi:generate": "node scripts/openapi-generate.mjs",
-    "check:brand": "node scripts/check-brand-config.mjs"
+    "check:brand": "node scripts/check-brand-config.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",
