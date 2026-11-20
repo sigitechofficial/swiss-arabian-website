@@ -35,6 +35,32 @@ export type OnsiteDesignEditing = {
   onSelect: (id: string | null) => void;
 };
 
+/**
+ * The words the drawing itself uses (not the design's own text). The website passes them in the
+ * page's language; without them (the admin playground) the English defaults below apply.
+ */
+export type OnsiteDesignWords = {
+  invalidEmail: string;
+  phoneRequired: string;
+  consentRequired: string;
+  failed: string;
+  unavailable: string;
+  timeLeft: string;
+  close: string;
+  message: string;
+};
+
+export const ONSITE_DESIGN_WORDS: OnsiteDesignWords = {
+  invalidEmail: "Please enter a valid email address.",
+  phoneRequired: "Please enter your phone number.",
+  consentRequired: "Please tick the box to agree.",
+  failed: "Something went wrong. Please try again.",
+  unavailable: "This form is not available right now.",
+  timeLeft: "Time left",
+  close: "Close",
+  message: "Message",
+};
+
 /** What the email form sends. `interests` are the indexes of the ticked choices. */
 export type OnsiteLeadPayload = { email: string; phone: string; interests: number[]; consent: boolean };
 
@@ -53,6 +79,8 @@ export type OnsiteDesignViewProps = {
   editing?: OnsiteDesignEditing;
   /** Editing only: which page to draw (the form page or the thank-you page). */
   page?: "main" | "success";
+  /** The drawing's own words in the page's language (English when left out). */
+  words?: Partial<OnsiteDesignWords>;
 };
 
 /** Shared by the blocks of one drawing: the prize won, and how to send the form. */
@@ -63,6 +91,7 @@ type DrawContext = {
   /** Main page: the slice the wheel must stop on, once the platform has drawn it. */
   spinTo: number | null;
   submit: (payload: OnsiteLeadPayload) => Promise<void>;
+  words: OnsiteDesignWords;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -107,7 +136,7 @@ function useNow(active: boolean): number {
   return now;
 }
 
-function Countdown({ block }: { block: Extract<ResolvedBlock, { type: "countdown" }> }) {
+function Countdown({ block, timeLeft }: { block: Extract<ResolvedBlock, { type: "countdown" }>; timeLeft: string }) {
   const now = useNow(true);
   const parts = countdownParts(block.endsAt, now);
   if (!parts) {
@@ -124,7 +153,7 @@ function Countdown({ block }: { block: Extract<ResolvedBlock, { type: "countdown
     [parts.seconds, "s"],
   ];
   return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "center" }} dir="ltr" aria-label="Time left">
+    <div style={{ display: "flex", gap: 8, justifyContent: "center" }} dir="ltr" aria-label={timeLeft}>
       {cells.map(([value, unit]) => (
         <div
           key={unit}
@@ -229,15 +258,16 @@ function LeadForm({ block, ctx }: { block: Extract<ResolvedBlock, { type: "form"
   const send = async (event: FormEvent) => {
     event.preventDefault();
     if (ctx.editing || busy) return;
-    if (!EMAIL_PATTERN.test(email.trim())) return setError("Please enter a valid email address.");
-    if (block.phone === "required" && !phone.trim()) return setError("Please enter your phone number.");
-    if (!consent) return setError("Please tick the box to agree.");
+    // Instant feedback before sending; the server checks the same rules (LEAD_* codes).
+    if (!EMAIL_PATTERN.test(email.trim())) return setError(ctx.words.invalidEmail);
+    if (block.phone === "required" && !phone.trim()) return setError(ctx.words.phoneRequired);
+    if (!consent) return setError(ctx.words.consentRequired);
     setError("");
     setBusy(true);
     try {
       await ctx.submit({ email: email.trim(), phone: phone.trim(), interests: picked, consent });
     } catch (problem) {
-      setError(problem instanceof Error && problem.message ? problem.message : "Something went wrong. Please try again.");
+      setError(problem instanceof Error && problem.message ? problem.message : ctx.words.failed);
       setBusy(false);
     }
   };
@@ -518,7 +548,7 @@ function BlockView({
     case "divider":
       return <hr style={{ border: "none", borderTop: `1px solid ${block.color}`, margin: 0 }} />;
     case "countdown":
-      return <Countdown block={block} />;
+      return <Countdown block={block} timeLeft={ctx.words.timeLeft} />;
     case "coupon":
       return <Coupon block={block} editing={editing} prize={ctx.prize} />;
     case "form":
@@ -620,7 +650,9 @@ export function OnsiteDesignView({
   onLead,
   editing,
   page = "main",
+  words: wordsProp,
 }: OnsiteDesignViewProps) {
+  const words = { ...ONSITE_DESIGN_WORDS, ...wordsProp };
   const { layout } = design;
   const isEditing = Boolean(editing);
   // After the form is sent: the platform's answer (and, for a wheel, the slice to spin to).
@@ -638,8 +670,9 @@ export function OnsiteDesignView({
     editing: isEditing,
     prize: isEditing ? samplePrize : (result?.prize ?? null),
     spinTo,
+    words,
     submit: async (payload) => {
-      if (!onLead) throw new Error("This form is not available right now.");
+      if (!onLead) throw new Error(words.unavailable);
       const answer = await onLead(payload);
       if (answer.prize && wheel) {
         setSpinTo(answer.prize.index);
@@ -733,7 +766,7 @@ export function OnsiteDesignView({
   const close = layout.showClose ? (
     <button
       type="button"
-      aria-label="Close"
+      aria-label={words.close}
       onClick={(event) => {
         event.stopPropagation();
         if (!isEditing) onClose();
@@ -762,7 +795,7 @@ export function OnsiteDesignView({
     <div
       role={isPopup ? "dialog" : "region"}
       aria-modal={isPopup && !isEditing ? true : undefined}
-      aria-label="Message"
+      aria-label={words.message}
       dir={design.rtl ? "rtl" : "ltr"}
       lang={design.language}
       data-onsite-box

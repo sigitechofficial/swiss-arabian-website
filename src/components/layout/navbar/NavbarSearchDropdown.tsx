@@ -186,7 +186,7 @@ export function NavbarSearchDropdown({
                   {SEARCH_IDLE_SHORTCUTS.map((item) => (
                     <li key={item.href}>
                       <LocaleLink href={item.href} onClick={close}>
-                        <span>{item.label}</span>
+                        <span>{t(item.label)}</span>
                         <ChevronGlyph />
                       </LocaleLink>
                     </li>

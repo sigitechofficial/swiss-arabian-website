@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { intlLocale } from "@/lib/i18n/locales";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pageContainer } from "@/styles/siteChrome";
 import {
   compAccBtn,
@@ -32,14 +37,24 @@ import { COLLECTION_LABELS, type CatalogProduct } from "../../constants/catalogP
 import type { ProductDetailContent } from "../../constants/productDetailContent";
 import type { StorefrontPdpMetafields } from "../../types/pdpMetafields";
 
+/** Composition tabs; `label` is a message key. */
 const TABS = [
-  { id: "story", label: "Story" },
-  { id: "notes", label: "Notes" },
-  { id: "details", label: "Details" },
-  { id: "wear", label: "How to wear" },
-  { id: "ship", label: "Shipping" },
-  { id: "auth", label: "Authenticity" },
-] as const;
+  { id: "story", label: "pdp.composition.tab.story" },
+  { id: "notes", label: "pdp.composition.tab.notes" },
+  { id: "details", label: "pdp.composition.tab.details" },
+  { id: "wear", label: "pdp.composition.tab.wear" },
+  { id: "ship", label: "pdp.composition.tab.ship" },
+  { id: "auth", label: "pdp.composition.tab.auth" },
+] as const satisfies readonly { id: string; label: MessageKey }[];
+
+/** The house's country of origin, named in the page's language. */
+function originName(locale: string): string {
+  try {
+    return new Intl.DisplayNames([intlLocale(locale)], { type: "region" }).of("AE") ?? "AE";
+  } catch {
+    return "AE";
+  }
+}
 
 type TabId = (typeof TABS)[number]["id"];
 
@@ -108,6 +123,8 @@ export function PdpComposition({
   shippingCopy,
   resetKey,
 }: PdpCompositionProps) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
 
   const compositionTabs = useMemo(() => {
     return TABS.filter((tab) => {
@@ -158,12 +175,15 @@ export function PdpComposition({
   return (
     <section className={composition} aria-labelledby="composition-heading">
       <div className={pageContainer}>
-        <p className={compositionEyebrow}>The composition</p>
+        <p className={compositionEyebrow}>{t("pdp.composition.eyebrow")}</p>
         <h2 className={compositionTitle} id="composition-heading">
-          How it is <em className={compositionEm}>built.</em>
+          <TextWithLinks
+            text={t("pdp.composition.title", linkSlots(["em"]))}
+            links={{ em: <em className={compositionEm}>{t("pdp.composition.titleEm")}</em> }}
+          />
         </h2>
 
-        <div className={compTabs} role="tablist" aria-label="Composition details">
+        <div className={compTabs} role="tablist" aria-label={t("pdp.composition.tabs")}>
           {compositionTabs.map((tab) => (
             <button
               key={tab.id}
@@ -176,7 +196,7 @@ export function PdpComposition({
                 setChosenTab(tab.id);
               }}
             >
-              {tab.id === "notes" ? notesHeading : tab.label}
+              {tab.id === "notes" ? notesHeading : t(tab.label)}
             </button>
           ))}
         </div>
@@ -185,7 +205,7 @@ export function PdpComposition({
           {compositionTabs.map((tab) => (
             <CompItem
               key={tab.id}
-              label={tab.id === "notes" ? notesHeading : tab.label}
+              label={tab.id === "notes" ? notesHeading : t(tab.label)}
               open={activeTab === tab.id}
               onToggle={() => {
                 setTabsPaused(true);
@@ -212,7 +232,7 @@ export function PdpComposition({
                   </ul>
                   {notesBlurb ? <p className={compositionIntro}>{notesBlurb}</p> : null}
                   {showLongevityBars ? (
-                    <p className={notesKey}>Bar length — how long each layer stays on skin.</p>
+                    <p className={notesKey}>{t("pdp.composition.barKey")}</p>
                   ) : null}
                 </>
               ) : null}
@@ -220,25 +240,25 @@ export function PdpComposition({
                 <dl className={specs}>
                   {metafields?.fragrance_family_text?.trim() ? (
                     <div className={specsRow}>
-                      <dt>Family</dt>
+                      <dt>{t("pdp.composition.family")}</dt>
                       <dd>{metafields.fragrance_family_text.trim()}</dd>
                     </div>
                   ) : null}
                   <div className={specsRow}>
-                    <dt>Perfumer</dt>
-                    <dd>Not published</dd>
+                    <dt>{t("pdp.composition.perfumer")}</dt>
+                    <dd>{t("pdp.composition.notPublished")}</dd>
                   </div>
                   <div className={specsRow}>
-                    <dt>Format</dt>
+                    <dt>{t("pdp.composition.format")}</dt>
                     <dd>{formatLabel}</dd>
                   </div>
                   <div className={specsRow}>
-                    <dt>Collection</dt>
-                    <dd>{COLLECTION_LABELS[product.collection] ?? "Signature"}</dd>
+                    <dt>{t("pdp.composition.collection")}</dt>
+                    <dd>{COLLECTION_LABELS[product.collection] ?? t("pdp.composition.signature")}</dd>
                   </div>
                   <div className={specsRow}>
-                    <dt>Origin</dt>
-                    <dd>United Arab Emirates</dd>
+                    <dt>{t("pdp.composition.origin")}</dt>
+                    <dd>{originName(locale)}</dd>
                   </div>
                 </dl>
               ) : null}
@@ -249,7 +269,7 @@ export function PdpComposition({
           ))}
         </div>
 
-        <p className={pdpCode}>Product code: {productCode(product)}</p>
+        <p className={pdpCode}>{t("pdp.composition.code", { code: productCode(product) })}</p>
       </div>
     </section>
   );

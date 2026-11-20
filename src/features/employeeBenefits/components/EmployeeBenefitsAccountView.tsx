@@ -107,7 +107,7 @@ function CartAllowanceNote() {
   const checkout = useCartStore((state) => state.employeeCheckout);
   const allowance = checkout?.allowance;
   if (!checkout?.authorized) return null;
-  const hold = websiteHoldLabel(allowance?.websiteHold);
+  const hold = websiteHoldLabel(allowance?.websiteHold, t);
   const showConsumption = checkout.pricingApplied && isPositiveServerMoney(allowance?.thisPurchaseConsumption);
   if (!hold && !showConsumption) return null;
   return (

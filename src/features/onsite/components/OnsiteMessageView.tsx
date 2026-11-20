@@ -1,8 +1,14 @@
 "use client";
 
 import { getBrandConfig } from "@/lib/brand";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { OnsiteDesignView, type OnsiteLeadPayload, type OnsiteLeadResult } from "../design/OnsiteDesignView";
+import {
+  OnsiteDesignView,
+  type OnsiteDesignWords,
+  type OnsiteLeadPayload,
+  type OnsiteLeadResult,
+} from "../design/OnsiteDesignView";
 import type { OnsiteDevice } from "../design/onsiteDesign";
 import type { OnsiteMessage } from "../types";
 
@@ -29,7 +35,19 @@ function useDevice(): OnsiteDevice {
 
 /** A campaign designed in the admin playground. */
 function DesignedMessage({ message, onDismiss, onCta, onLead }: Props) {
+  const t = useShopCopy();
   const device = useDevice();
+  // The drawing's own words in the page's language (the design's text is the campaign's).
+  const words: OnsiteDesignWords = {
+    invalidEmail: t("onsite.words.invalidEmail"),
+    phoneRequired: t("onsite.words.phoneRequired"),
+    consentRequired: t("onsite.words.consentRequired"),
+    failed: t("error.generic"),
+    unavailable: t("onsite.words.unavailable"),
+    timeLeft: t("onsite.words.timeLeft"),
+    close: t("promo.close"),
+    message: t("onsite.words.message"),
+  };
   return (
     <OnsiteDesignView
       design={message.design!}
@@ -38,6 +56,7 @@ function DesignedMessage({ message, onDismiss, onCta, onLead }: Props) {
       onClose={onDismiss}
       onCta={onCta}
       onLead={onLead}
+      words={words}
     />
   );
 }
@@ -60,6 +79,7 @@ export function OnsiteMessageView(props: Props) {
 }
 
 function PlainMessage({ message, onDismiss, onCta }: Props) {
+  const t = useShopCopy();
   const closeRef = useRef<HTMLButtonElement>(null);
   const isPopup = message.slot === "POPUP";
 
@@ -103,7 +123,7 @@ function PlainMessage({ message, onDismiss, onCta }: Props) {
             {message.ctaLabel}
           </a>
         ) : null}
-        <button type="button" onClick={onDismiss} aria-label="Close" className="ml-2 cursor-pointer text-lg leading-none">
+        <button type="button" onClick={onDismiss} aria-label={t("promo.close")} className="ml-2 cursor-pointer text-lg leading-none">
           ×
         </button>
       </div>
@@ -129,7 +149,7 @@ function PlainMessage({ message, onDismiss, onCta }: Props) {
           ref={closeRef}
           type="button"
           onClick={onDismiss}
-          aria-label="Close"
+          aria-label={t("promo.close")}
           className="absolute right-3 top-3 flex size-8 cursor-pointer items-center justify-center rounded-full text-xl leading-none hover:bg-black/5"
         >
           ×

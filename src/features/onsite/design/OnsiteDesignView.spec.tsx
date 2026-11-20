@@ -154,4 +154,22 @@ describe("OnsiteDesignView email form", () => {
     await userEvent.click(screen.getByRole("button", { name: "Subscribe" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("This offer is no longer available.");
   });
+
+  it("words its own checks in the language it is given", async () => {
+    const onLead = vi.fn();
+    render(
+      <OnsiteDesignView
+        design={resolveDesign(leadDesign, "ar")}
+        device="desktop"
+        frame="canvas"
+        onClose={vi.fn()}
+        onLead={onLead}
+        words={{ consentRequired: "يرجى تحديد المربع للموافقة." }}
+      />,
+    );
+    await userEvent.type(screen.getByLabelText(/Email/), "sara@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Subscribe" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("يرجى تحديد المربع للموافقة.");
+    expect(onLead).not.toHaveBeenCalled();
+  });
 });

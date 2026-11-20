@@ -1,5 +1,6 @@
 "use client";
 
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import { useLayoutEffect, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -104,21 +105,26 @@ export type LandingBundlesProps = {
 };
 
 export function LandingBundles({
-  eyebrow = "Exclusive bundle offers",
-  heading = "Up to 25% off",
-  description = "On your favorite fragrances",
+  eyebrow: eyebrowProp,
+  heading: headingProp,
+  description: descriptionProp,
   desktopImage = "/assets/bundles-hero.jpg",
   mobileImage = "/assets/bundle-mobile-hero.webp",
-  primaryCtaLabel = "Shop Bundles",
+  primaryCtaLabel,
   primaryCtaHref = "/collections/bundles",
-  secondaryCtaLabel = "Shop Gift Sets",
+  secondaryCtaLabel,
   secondaryCtaHref,
   panelEnabled = true,
-  panelTitle = "Shop this bundle",
-  panelCtaLabel = "Shop This Bundle",
+  panelTitle,
+  panelCtaLabel,
   panelCtaHref = "/collections/bundles",
   products: productsProp,
 }: LandingBundlesProps = {}) {
+  const t = useShopCopy();
+  // Not set by the CMS (undefined): the house wording in the page's language.
+  const eyebrow = eyebrowProp === undefined ? t("landing.bundles.eyebrow") : eyebrowProp;
+  const heading = headingProp === undefined ? t("landing.bundles.heading") : headingProp;
+  const description = descriptionProp === undefined ? t("landing.bundles.description") : descriptionProp;
   // Start closed so SSR / first paint never flash a fixed bottom sheet
   // over the hero. Desktop flips open in useLayoutEffect.
   const [open, setOpen] = useState(false);
@@ -168,7 +174,7 @@ export function LandingBundles({
         <img
           className={bundleMedia}
           src={desktopImage || "/assets/bundles-hero.jpg"}
-          alt={heading || "Bundle promotion"}
+          alt={heading || t("landing.bundles.alt")}
           width={2048}
           height={1152}
           loading="lazy"
@@ -185,12 +191,12 @@ export function LandingBundles({
         <div className={bundleActions} data-campaign-actions>
           {primaryCtaHref ? (
             <LocaleLink className={bundlePillSolid} href={primaryCtaHref}>
-              {primaryCtaLabel || "Shop Bundles"}
+              {primaryCtaLabel || t("landing.bundles.primary")}
             </LocaleLink>
           ) : null}
           {secondaryHref ? (
             <LocaleLink className={bundlePillGhost} href={secondaryHref}>
-              {secondaryCtaLabel || "Shop Gift Sets"}
+              {secondaryCtaLabel || t("landing.bundles.secondary")}
             </LocaleLink>
           ) : null}
         </div>
@@ -199,11 +205,11 @@ export function LandingBundles({
       {panelEnabled ? (
       <aside
         className={shopPanel}
-        aria-label={panelTitle || "Shop this bundle"}
+        aria-label={panelTitle || t("landing.bundles.panelTitle")}
         hidden={!open}
       >
         <div className={shopHead}>
-          <span className={shopTitle}>{panelTitle || "Shop this bundle"}</span>
+          <span className={shopTitle}>{panelTitle || t("landing.bundles.panelTitle")}</span>
           <button
             className={shopClose}
             type="button"
@@ -218,7 +224,7 @@ export function LandingBundles({
             >
               <path d="M5 5l10 10M15 5L5 15" />
             </svg>
-            <span className={visuallyHidden}>Dismiss shop this bundle panel</span>
+            <span className={visuallyHidden}>{t("landing.bundles.dismiss")}</span>
           </button>
         </div>
         <ul className={shopList} role="list">
@@ -250,7 +256,7 @@ export function LandingBundles({
           ))}
         </ul>
         <LocaleLink className={shopCta} href={panelCtaHref || "/collections/bundles"}>
-          {panelCtaLabel || "Shop This Bundle"}
+          {panelCtaLabel || t("landing.bundles.panelCta")}
         </LocaleLink>
       </aside>
       ) : null}
@@ -271,7 +277,7 @@ export function LandingBundles({
         >
           <path d="M10 4.5a1.4 1.4 0 1 1 1 2.4L10 8l7 5H3l7-5" />
         </svg>
-        <span className={visuallyHidden}>Show shop this bundle panel</span>
+        <span className={visuallyHidden}>{t("landing.bundles.show")}</span>
       </button>
       ) : null}
     </section>

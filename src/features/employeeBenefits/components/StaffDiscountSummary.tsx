@@ -1,6 +1,8 @@
 "use client";
 
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   isPositiveServerMoney,
   staffAccountingStageLabel,
@@ -37,13 +39,15 @@ function lineCarriesDiscount(status: StaffLineStatus | null): boolean {
 }
 
 function LineRow({ line, currency }: { line: StaffQuoteLineView; currency: string }) {
+  const t = useShopCopy();
+  const name = line.sku ?? t("employee.summary.item");
   const rate = lineCarriesDiscount(line.status) ? rateSuffix(line.percent) : "";
   if (line.status === "INELIGIBLE" || !lineCarriesDiscount(line.status)) {
     return (
       <li className="border-t border-sa-border py-3 first:border-t-0">
-        <p className="text-[13px] font-medium text-sa-primary">{line.sku ?? "Item"}</p>
+        <p className="text-[13px] font-medium text-sa-primary">{name}</p>
         <p className="mt-1 text-[12px] text-sa-secondary">
-          Regular price {money(line.originalUnitPrice, currency)}. No staff agreement on this product.
+          {t("employee.summary.noAgreement", { price: money(line.originalUnitPrice, currency) })}
         </p>
       </li>
     );
@@ -51,10 +55,9 @@ function LineRow({ line, currency }: { line: StaffQuoteLineView; currency: strin
   if (line.status === "BLOCKED_BY_PROMOTION") {
     return (
       <li className="border-t border-sa-border py-3 first:border-t-0">
-        <p className="text-[13px] font-medium text-sa-primary">{line.sku ?? "Item"}</p>
+        <p className="text-[13px] font-medium text-sa-primary">{name}</p>
         <p className="mt-1 text-[12px] text-sa-secondary">
-          Regular price {money(line.originalUnitPrice, currency)}. A promotion applies to this item, so the staff
-          discount{rate} is not combined with it.
+          {t("employee.summary.promotionBlocks", { price: money(line.originalUnitPrice, currency), rate })}
         </p>
       </li>
     );
@@ -62,18 +65,18 @@ function LineRow({ line, currency }: { line: StaffQuoteLineView; currency: strin
   const applied = line.status === "APPLIED";
   return (
     <li className="border-t border-sa-border py-3 first:border-t-0">
-      <p className="text-[13px] font-medium text-sa-primary">{line.sku ?? "Item"}</p>
+      <p className="text-[13px] font-medium text-sa-primary">{name}</p>
       <dl className="mt-2 grid gap-1 text-[12px] text-sa-secondary">
         <div className="flex justify-between gap-3">
-          <dt>Original price, tax included</dt>
+          <dt>{t("employee.summary.originalPrice")}</dt>
           <dd dir="ltr">{money(line.originalUnitPrice, currency)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt>{applied ? `Staff Discount${rate}` : `Quoted Staff Discount${rate}`}</dt>
+          <dt>{applied ? t("employee.summary.lineDiscount", { rate }) : t("employee.summary.lineQuoted", { rate })}</dt>
           <dd dir="ltr">{money(line.staffDiscountAmount, currency)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt>{applied ? "Price after staff discount" : "Preview price after staff discount"}</dt>
+          <dt>{applied ? t("employee.summary.priceAfter") : t("employee.summary.previewPriceAfter")}</dt>
           <dd dir="ltr">{money(line.finalLineTotal, currency)}</dd>
         </div>
       </dl>
@@ -100,28 +103,42 @@ export function StaffDiscountSummary({
   showReference?: boolean;
   surface?: "cart" | "checkout" | "order";
 }) {
+  const t = useShopCopy();
   if (!checkout?.authorized) return null;
+  return <StaffDiscountDetails checkout={checkout} currency={currency} surface={surface} t={t} />;
+}
 
-  const holdLabel = websiteHoldLabel(checkout.allowance?.websiteHold);
-  const stageLabel = staffAccountingStageLabel(checkout.accountingStage);
+function StaffDiscountDetails({
+  checkout,
+  currency,
+  surface,
+  t,
+}: {
+  checkout: EmployeeCheckoutView;
+  currency: string;
+  surface: "cart" | "checkout" | "order";
+  t: Translator;
+}) {
+  const holdLabel = websiteHoldLabel(checkout.allowance?.websiteHold, t);
+  const stageLabel = staffAccountingStageLabel(checkout.accountingStage, t);
   const pricingUnavailable =
     checkout.retailMirror === "UNAVAILABLE" || checkout.allowanceLedger === "UNAVAILABLE";
   const unavailableCopy =
     checkout.retailMirror === "UNAVAILABLE" && checkout.allowanceLedger === "UNAVAILABLE"
-      ? "Staff pricing was not applied. The retail discount offer and website allowance tracking are temporarily unavailable."
+      ? t("employee.summary.unavailableBoth")
       : checkout.allowanceLedger === "UNAVAILABLE"
-        ? "Staff pricing was not applied. Website allowance tracking is temporarily unavailable."
-        : "Staff pricing was not applied. The retail discount offer is temporarily unavailable.";
+        ? t("employee.summary.unavailableLedger")
+        : t("employee.summary.unavailableRetail");
 
   if (!hasApplicableDiscount(checkout)) {
     return (
-      <section className="rounded-lg border border-sa-border px-4 py-4" aria-label="Staff discount">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Staff discount</p>
+      <section className="rounded-lg border border-sa-border px-4 py-4" aria-label={t("employee.summary.title")}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{t("employee.summary.title")}</p>
         {checkout.affiliationName ? (
           <p className="mt-2 text-[14px] font-semibold text-sa-primary">{checkout.affiliationName}</p>
         ) : null}
         <p className="mt-3 text-[13px] text-sa-primary">
-          {pricingUnavailable ? unavailableCopy : "Staff discount is not available on this order."}
+          {pricingUnavailable ? unavailableCopy : t("employee.summary.notAvailable")}
         </p>
         {holdLabel ? (
           <p className="mt-2 text-[13px] text-sa-secondary" role="status">
@@ -141,8 +158,8 @@ export function StaffDiscountSummary({
   const showQuoted = isPositiveServerMoney(breakdown.quotedStaffDiscount) && (!checkout.pricingApplied || appliedIsZero);
 
   return (
-    <section className="rounded-lg border border-sa-border px-4 py-4" aria-label="Staff discount">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Staff discount</p>
+    <section className="rounded-lg border border-sa-border px-4 py-4" aria-label={t("employee.summary.title")}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{t("employee.summary.title")}</p>
       {checkout.affiliationName ? (
         <p className="mt-2 text-[14px] font-semibold text-sa-primary">{checkout.affiliationName}</p>
       ) : null}
@@ -160,11 +177,11 @@ export function StaffDiscountSummary({
         <p className="mt-3 text-[13px] leading-relaxed text-sa-secondary" role="status">
           {pricingUnavailable
             ? unavailableCopy
-            : "Preview only. This is not the amount you pay, and it is not deducted in D365."}
+            : t("employee.summary.previewOnly")}
         </p>
       )}
       {checkout.stacking && checkout.stacking !== "NONE" && checkout.stacking !== "NO_CONFLICT" ? (
-        <p className="mt-2 text-[13px] text-sa-secondary">Promotion status: {checkout.stacking}</p>
+        <p className="mt-2 text-[13px] text-sa-secondary">{t("employee.summary.promotionStatus", { status: checkout.stacking })}</p>
       ) : null}
       {checkout.lines.length > 0 ? (
         <ul className="mt-3">
@@ -175,80 +192,81 @@ export function StaffDiscountSummary({
       ) : null}
       <dl className="mt-4 grid gap-1 text-[12px] text-sa-secondary">
         {breakdown.originalMerchandiseSubtotal ? (
-          <Row label="Original merchandise subtotal" value={money(breakdown.originalMerchandiseSubtotal, currency)} />
+          <Row label={t("employee.summary.originalSubtotal")} value={money(breakdown.originalMerchandiseSubtotal, currency)} />
         ) : null}
         {showQuoted ? (
-          <Row label="Quoted Staff Discount" value={money(breakdown.quotedStaffDiscount, currency)} />
+          <Row label={t("employee.summary.quoted")} value={money(breakdown.quotedStaffDiscount, currency)} />
         ) : null}
         {breakdown.staffDiscount != null && (checkout.pricingApplied || showQuoted) ? (
           <Row
-            label={payable ? "Staff Discount" : appliedIsZero ? "Applied Staff Discount" : "Staff Discount (preview)"}
+            label={payable ? t("employee.summary.discount") : appliedIsZero ? t("employee.summary.applied") : t("employee.summary.discountPreview")}
             value={money(breakdown.staffDiscount, currency)}
           />
         ) : null}
         {isPositiveServerMoney(breakdown.promotionDiscount) ? (
-          <Row label="Other promotions" value={money(breakdown.promotionDiscount, currency)} />
+          <Row label={t("employee.summary.otherPromotions")} value={money(breakdown.promotionDiscount, currency)} />
         ) : null}
         {breakdown.merchandiseAfterDiscounts ? (
-          <Row label="Merchandise total after discounts" value={money(breakdown.merchandiseAfterDiscounts, currency)} />
+          <Row label={t("employee.summary.afterDiscounts")} value={money(breakdown.merchandiseAfterDiscounts, currency)} />
         ) : null}
         {isPositiveServerMoney(breakdown.shipping) ? (
-          <Row label="Shipping" value={money(breakdown.shipping, currency)} />
+          <Row label={t("orders.shipping")} value={money(breakdown.shipping, currency)} />
         ) : null}
         {vatIsIncluded ? (
-          <Row label="Included VAT" value="Included in these prices" />
+          <Row label={t("employee.summary.includedVat")} value={t("employee.summary.vatInPrices")} />
         ) : breakdown.includedVat ? (
-          <Row label="Included VAT" value={money(breakdown.includedVat, currency)} />
+          <Row label={t("employee.summary.includedVat")} value={money(breakdown.includedVat, currency)} />
         ) : null}
         {breakdown.commerceTotal ? (
-          <Row label="Commerce total" value={money(breakdown.commerceTotal, currency)} />
+          <Row label={t("employee.summary.commerceTotal")} value={money(breakdown.commerceTotal, currency)} />
         ) : null}
         {surface !== "cart" && isPositiveServerMoney(breakdown.giftCardApplied) ? (
-          <Row label="Gift card payment" value={money(breakdown.giftCardApplied, currency)} />
+          <Row label={t("employee.summary.giftCard")} value={money(breakdown.giftCardApplied, currency)} />
         ) : null}
         {surface !== "cart" && isPositiveServerMoney(breakdown.loyaltyApplied) ? (
-          <Row label="Loyalty redemption" value={money(breakdown.loyaltyApplied, currency)} />
+          <Row label={t("employee.summary.loyalty")} value={money(breakdown.loyaltyApplied, currency)} />
         ) : null}
         {surface !== "cart" && breakdown.amountPayable ? (
           <Row
-            label={payable ? "Amount still to pay" : "Amount still to pay before this preview"}
+            label={payable ? t("employee.summary.toPay") : t("employee.summary.toPayPreview")}
             value={money(breakdown.amountPayable, currency)}
           />
         ) : null}
       </dl>
       {allowance && (allowance.amountLimit || allowance.amountUsed || allowance.balanceRemaining || showConsumption) ? (
         <dl className="mt-4 grid gap-1 text-[12px] text-sa-secondary">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">D365 balance</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{t("employee.summary.d365Balance")}</p>
           <div className="flex justify-between gap-3">
-            <dt>Amount limit</dt>
+            <dt>{t("employee.copy.limit")}</dt>
             <dd dir="ltr">{money(allowance.amountLimit, currency)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt>Amount used in D365</dt>
+            <dt>{t("employee.copy.used")}</dt>
             <dd dir="ltr">{money(allowance.amountUsed, currency)}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt>
-              Balance remaining
-              {allowance.d365BalancesAreAuthoritative === true ? " (authoritative)" : " in D365"}
+              {allowance.d365BalancesAreAuthoritative === true
+                ? t("employee.summary.balanceAuthoritative")
+                : t("employee.copy.remaining")}
             </dt>
             <dd dir="ltr">{money(allowance.balanceRemaining, currency)}</dd>
           </div>
           {showConsumption ? (
             <>
-              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">Website projection</p>
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{t("employee.summary.projection")}</p>
               {isPositiveServerMoney(allowance.otherProvisionalHolds) ? (
-                <Row label="Other provisional holds" value={money(allowance.otherProvisionalHolds, currency)} />
+                <Row label={t("employee.summary.otherHolds")} value={money(allowance.otherProvisionalHolds, currency)} />
               ) : null}
               <Row
-                label="Estimated consumption for this purchase"
+                label={t("employee.summary.consumption")}
                 value={money(allowance.thisPurchaseConsumption, currency)}
               />
               <Row
                 label={
                   allowance.projectedIsAuthoritative === true
-                    ? "Projected remaining"
-                    : "Projected remaining. Not yet deducted in D365"
+                    ? t("employee.summary.projected")
+                    : t("employee.copy.projectedRemaining")
                 }
                 value={money(allowance.projectedRemaining, currency)}
               />
@@ -257,10 +275,10 @@ export function StaffDiscountSummary({
         </dl>
       ) : null}
       {allowance?.fits === false && checkout.pricingApplied ? (
-        <p className="mt-2 text-[13px] text-sa-primary">The staff allowance does not cover this quote.</p>
+        <p className="mt-2 text-[13px] text-sa-primary">{t("employee.summary.notCovered")}</p>
       ) : null}
       <p className="mt-3 text-[12px] leading-relaxed text-sa-secondary">
-        Staff allowance is not a payment method and is separate from Customer Rewards and gift cards.
+        {t("employee.summary.separate")}
       </p>
     </section>
   );

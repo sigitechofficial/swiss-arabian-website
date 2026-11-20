@@ -80,7 +80,17 @@ export function formatMessage(
     (count === 0 ? entry.zero : undefined) ??
     entry[pluralCategory(locale, count)] ??
     entry.other;
-  return fill(form, values);
+  // A plural's count reads in the page's number format, with Latin digits like prices.
+  const shown = typeof values?.count === "number" ? { ...values, count: formatCount(locale, values.count) } : values;
+  return fill(form, shown);
+}
+
+function formatCount(locale: string, count: number): string {
+  try {
+    return new Intl.NumberFormat(intlLocale(locale), { numberingSystem: "latn" }).format(count);
+  } catch {
+    return String(count);
+  }
 }
 
 export function createTranslator(
