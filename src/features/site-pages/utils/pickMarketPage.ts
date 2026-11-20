@@ -59,7 +59,7 @@ export function fixedPathForPage(
   const pickers: Array<[string, typeof pickFaqPage]> = [
     ["/faq", pickFaqPage],
     ["/our-story", pickStoryPage],
-    ["/stores", pickStoresPage],
+    ["/store-locator", pickStoresPage],
   ];
   for (const [path, pick] of pickers) {
     // A section the brand has switched off (e.g. no store locator) keeps the page at /pages/….

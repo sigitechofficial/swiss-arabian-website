@@ -1,12 +1,11 @@
-import { stripLocalePrefix } from "@/lib/i18n/localePath";
+import { isHomePath } from "./homePath";
 
 /**
- * Pages that render the SEO text block above the footer themselves (so the
- * layout's market block must not render a second one). A collection page shows
- * the collection's own SEO text, else the market's.
+ * Where the market's SEO text block (set for the home page) is shown: on the
+ * home page only. SEO audit p6: every page needs its own text, so other pages
+ * show only their own block (a collection's SEO text) or none, never a copy of
+ * the home page's text.
  */
-export function pageRendersOwnSeoText(pathname: string): boolean {
-  const path = stripLocalePrefix(pathname.replace(/\/+$/, "") || "/");
-  // Page N of a collection is served by …/p/N (same page for the shopper).
-  return /^\/collections\/[^/]+(\/p\/\d+)?$/.test(path);
+export function showsMarketSeoText(pathname: string): boolean {
+  return isHomePath(pathname);
 }

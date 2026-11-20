@@ -19,7 +19,7 @@ export type BrandFeatures = BrandConfig["features"];
 
 /** Route prefixes per feature (locale prefix stripped; a prefix covers its sub-paths). */
 export const FEATURE_ROUTES: Readonly<Record<BrandFeature, readonly string[]>> = {
-  storeLocator: ["/stores"],
+  storeLocator: ["/store-locator"],
   blog: ["/blog"],
   loyalty: ["/account/rewards", "/account/membership"],
   subscriptions: ["/subscriptions", "/account/subscription"],

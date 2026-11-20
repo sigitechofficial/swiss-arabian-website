@@ -1,12 +1,12 @@
-import { FooterSeoText } from "./FooterSeoText";
 import { sectionTitle } from "@/styles/landingChrome";
 import { SeoTextBody } from "./SeoTextBody";
 import { collectionSeoTextView, type CollectionSeoContent } from "./collectionSeoTextView";
 
 /**
  * SEO text above the footer on a collection page: the collection's own text
- * (per market and language, heading as H2) when it has one, else the market's
- * SEO text block. Server-rendered so search engines read it.
+ * (per market and language, heading as H2). Nothing when the collection has
+ * none: the home page's text is not repeated here (SEO audit p6).
+ * Server-rendered so search engines read it.
  */
 export function CollectionSeoText({
   content,
@@ -16,13 +16,7 @@ export function CollectionSeoText({
   fallbackLocale: string;
 }) {
   const text = collectionSeoTextView(content, fallbackLocale);
-  if (!text) {
-    return (
-      <div className="mt-auto">
-        <FooterSeoText />
-      </div>
-    );
-  }
+  if (!text || (!text.heading && !text.bodyHtml)) return null;
   return (
     <section
       aria-label={text.heading || undefined}

@@ -61,7 +61,7 @@ function AreaLinks({ title, areas }: { title: string; areas: Array<{ slug: strin
 
 const PAGE = "mx-auto max-w-[1280px] px-4 pb-16 pt-10 sm:px-6 lg:px-10 lg:pb-20 lg:pt-12";
 
-/** Swiss Arabian `StoreLocatorPageView` (/stores): every shop of the market. */
+/** Swiss Arabian `StoreLocatorPageView` (/store-locator): every shop of the market. */
 export function StoresPageView({ data }: { data: StoreLocatorData }) {
   const t = useShopTranslator();
   const locale = useShopLocale();
@@ -88,7 +88,7 @@ export function StoresPageView({ data }: { data: StoreLocatorData }) {
   );
 }
 
-/** Swiss Arabian `StoreAreaPageView` (/stores/<area>): one emirate / city. */
+/** Swiss Arabian `StoreAreaPageView` (/store-locator/<area>): one emirate / city. */
 export function StoreAreaPageView({ data }: { data: StoreAreaData }) {
   const t = useShopTranslator();
   const locale = useShopLocale();

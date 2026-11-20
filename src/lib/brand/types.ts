@@ -155,7 +155,7 @@ export const brandConfigSchema = z.object({
    * each switch to its routes.
    */
   features: z.object({
-    /** `/stores` */
+    /** `/store-locator` */
     storeLocator: z.boolean(),
     /** `/blog`, `/blog/[slug]` */
     blog: z.boolean(),

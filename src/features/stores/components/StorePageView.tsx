@@ -19,7 +19,7 @@ const PRIMARY = "inline-flex items-center justify-center bg-terra px-6 py-3 text
 const SECONDARY =
   "inline-flex items-center justify-center border border-sa-primary px-6 py-3 text-[13px] font-semibold text-sa-primary transition-colors hover:border-terra hover:text-terra";
 
-/** Swiss Arabian `StorePageView` (/stores/<area>/<store>). */
+/** Swiss Arabian `StorePageView` (/store-locator/<area>/<store>). */
 export function StorePageView({ store }: { store: StoreDetail }) {
   const t = useShopTranslator();
   const locale = useShopLocale();

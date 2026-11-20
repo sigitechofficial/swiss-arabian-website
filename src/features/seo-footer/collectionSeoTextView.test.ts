@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectionSeoTextView } from "./collectionSeoTextView";
-import { pageRendersOwnSeoText } from "./seoTextOwner";
+import { showsMarketSeoText } from "./seoTextOwner";
 
 describe("collectionSeoTextView", () => {
   it("turns plain paragraphs into escaped HTML paragraphs", () => {
@@ -41,14 +41,17 @@ describe("collectionSeoTextView", () => {
   });
 });
 
-describe("pageRendersOwnSeoText", () => {
-  it("is the collection page in both languages only", () => {
-    expect(pageRendersOwnSeoText("/collections/women")).toBe(true);
-    expect(pageRendersOwnSeoText("/ar/collections/women/")).toBe(true);
-    expect(pageRendersOwnSeoText("/collections")).toBe(false);
-    expect(pageRendersOwnSeoText("/")).toBe(false);
-    expect(pageRendersOwnSeoText("/ar")).toBe(false);
-    expect(pageRendersOwnSeoText("/products/ward")).toBe(false);
-    expect(pageRendersOwnSeoText("/categories/women")).toBe(false);
+/** SEO audit p6: the home page's SEO text is not repeated on other pages. */
+describe("showsMarketSeoText", () => {
+  it("is the home page in every language only", () => {
+    expect(showsMarketSeoText("/")).toBe(true);
+    expect(showsMarketSeoText("/ar")).toBe(true);
+    expect(showsMarketSeoText("/ar/")).toBe(true);
+    expect(showsMarketSeoText("/collections/women")).toBe(false);
+    expect(showsMarketSeoText("/collections")).toBe(false);
+    expect(showsMarketSeoText("/products/ward")).toBe(false);
+    expect(showsMarketSeoText("/categories/women")).toBe(false);
+    expect(showsMarketSeoText("/store-locator")).toBe(false);
+    expect(showsMarketSeoText("/pages/contact-us")).toBe(false);
   });
 });

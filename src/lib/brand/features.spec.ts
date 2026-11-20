@@ -67,8 +67,8 @@ describe("brand features", () => {
   });
 
   it("maps paths (any language prefix, query or sub-path) to their feature", () => {
-    expect(featureForPath("/stores")).toBe("storeLocator");
-    expect(featureForPath("/ar/stores?x=1")).toBe("storeLocator");
+    expect(featureForPath("/store-locator")).toBe("storeLocator");
+    expect(featureForPath("/ar/store-locator?x=1")).toBe("storeLocator");
     expect(featureForPath("/blog/a-post")).toBe("blog");
     expect(featureForPath("/account/rewards")).toBe("loyalty");
     expect(featureForPath("/account/membership")).toBe("loyalty");
@@ -78,6 +78,9 @@ describe("brand features", () => {
     expect(featureForPath("/account/employee-benefits")).toBe("employeeBenefits");
     // Neighbours and externals are not owned.
     expect(featureForPath("/storesxyz")).toBeNull();
+    expect(featureForPath("/store-locatorxyz")).toBeNull();
+    // The old dev-only address is no longer the store locator.
+    expect(featureForPath("/stores")).toBeNull();
     expect(featureForPath("/account/orders")).toBeNull();
     expect(featureForPath("/products/blog-perfume")).toBeNull();
     expect(featureForPath("https://example.com/stores")).toBeNull();
@@ -85,7 +88,7 @@ describe("brand features", () => {
   });
 
   it("brandLinkEnabled hides only switched-off sections", () => {
-    expect(brandLinkEnabled("/stores", sapil.features)).toBe(false);
+    expect(brandLinkEnabled("/store-locator", sapil.features)).toBe(false);
     expect(brandLinkEnabled("/account/rewards", sapil.features)).toBe(false);
     expect(brandLinkEnabled("/blog", sapil.features)).toBe(true);
     expect(brandLinkEnabled("/products", sapil.features)).toBe(true);
@@ -123,7 +126,7 @@ describe("brand features", () => {
     });
     const menu = [
       item("shop", "/products"),
-      item("stores", "/stores"),
+      item("stores", "/store-locator"),
       item("help", null, [item("faq", "/faq"), item("rewards", "/account/rewards")]),
       item("club", null, [item("plans", "/subscriptions")]),
     ];
@@ -149,7 +152,7 @@ describe("gated routes", () => {
       "/subscriptions/[planCode]/checkout",
       () => import("@/app/[site]/[locale]/(checkout)/subscriptions/[planCode]/checkout/page"),
     ],
-    ["/stores", () => import("@/app/[site]/[locale]/(shop)/stores/page")],
+    ["/store-locator", () => import("@/app/[site]/[locale]/(shop)/store-locator/page")],
   ];
 
   it.each(ROUTES)("%s answers not found on Sapil", async (_path, load) => {

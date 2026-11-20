@@ -404,8 +404,8 @@ describe("proxy: brand feature switches", () => {
   it("leaves every section to Swiss Arabian", async () => {
     process.env.NEXT_PUBLIC_STOREFRONT_BRAND_CODE = "SWISS_ARABIAN";
     try {
-      const response = await proxy(request("/stores"));
-      expect(response.headers.get("x-middleware-rewrite")).toBe(`http://localhost:3041/${SITE}/en/stores`);
+      const response = await proxy(request("/store-locator"));
+      expect(response.headers.get("x-middleware-rewrite")).toBe(`http://localhost:3041/${SITE}/en/store-locator`);
     } finally {
       restore();
     }
