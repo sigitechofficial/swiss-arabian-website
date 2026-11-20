@@ -77,6 +77,7 @@ export function CheckoutPayment({
   tabbyLang = "en",
   tamaraPrecheck = { state: "idle" },
 }: CheckoutPaymentProps) {
+  const t = useShopCopy();
   const { covered, groups, activeKey, activeRow, selectedOpensHere, formReady, hideSubmit, pick, payNow } =
     usePaymentOptions({
       methods,
@@ -95,27 +96,27 @@ export function CheckoutPayment({
   const tamaraSiteKey = useSiteIntegrations().paymentPromos.tamara?.publicKey ?? "";
 
   const payLabel = submitting
-    ? "Placing order…"
+    ? t("checkout.cta.placing")
     : activeRow?.surface === "apple_pay"
-      ? "Pay with Apple Pay"
+      ? t("checkout.pay.withWallet", { wallet: "Apple Pay" })
       : activeRow?.surface === "google_pay"
-        ? "Pay with Google Pay"
-        : `Pay ${formatMoney(amountPayable, currency)}`;
+        ? t("checkout.pay.withWallet", { wallet: "Google Pay" })
+        : t("checkout.pay.payAmount", { amount: formatMoney(amountPayable, currency) });
 
   return (
     <>
       <div className="flex flex-col gap-3">
         <div>
           <h2 className="m-0 font-[family-name:var(--font-display)] text-[0.82rem] font-medium tracking-[0.02em] text-[var(--ink,#241f1b)] uppercase">
-            Payment
+            {t("checkout.state.payment")}
           </h2>
-          <p className="mt-1 mb-0 text-[0.82rem] text-[var(--ink-2,#5b5148)]">All transactions are secure and encrypted.</p>
+          <p className="mt-1 mb-0 text-[0.82rem] text-[var(--ink-2,#5b5148)]">{t("checkout.pay.secure")}</p>
         </div>
         {covered ? (
-          <p className={payMockNote}>No payment needed — your rewards cover this order.</p>
+          <p className={payMockNote}>{t("checkout.pay.covered")}</p>
         ) : (
           <>
-            <div className="grid gap-5" role="radiogroup" aria-label="Payment method">
+            <div className="grid gap-5" role="radiogroup" aria-label={t("subs.checkout.paymentMethod")}>
               {groups.map((group) => (
                 <div key={group.id}>
                   {group.title ? (
@@ -162,7 +163,7 @@ export function CheckoutPayment({
                                   country={countryCode}
                                 />
                               ) : (
-                                <p className={payMockNote}>Loading secure card form…</p>
+                                <p className={payMockNote}>{t("checkout.pay.loadingCardForm")}</p>
                               )}
                             </div>
                           ) : null}
@@ -195,7 +196,7 @@ export function CheckoutPayment({
             </div>
             {!methods.length ? (
               <p className={payMockNote}>
-                {status === "loading" ? "Loading payment options…" : "No payment options are available right now."}
+                {status === "loading" ? t("checkout.pay.loadingOptions") : t("checkout.pay.noOptions")}
               </p>
             ) : null}
             {selectedOpensHere ? (
@@ -214,7 +215,7 @@ export function CheckoutPayment({
             <>
               {" "}
               <button type="button" className={checkoutLink} onClick={onRetry}>
-                Try again
+                {t("tryAgain")}
               </button>
             </>
           ) : null}

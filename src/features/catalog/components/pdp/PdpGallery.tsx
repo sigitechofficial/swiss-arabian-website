@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { bottle } from "@/styles/landingChrome";
 import {
   pdpBottle,
@@ -43,6 +44,7 @@ export function galleryImageAlt(title: string, index: number, count: number): st
 }
 
 export function PdpGallery({ images, title, resetKey, outOfStock = false, onImageError }: PdpGalleryProps) {
+  const t = useShopCopy();
   const [activeImage, setActiveImage] = useState(0);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const heroSrc = images[activeImage] ?? images[0] ?? null;
@@ -60,7 +62,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
     <div className={pdpStage}>
       {images.length > 1 ? (
         <div className={thumbsCol}>
-          <div ref={thumbsRef} className={thumbs} role="tablist" aria-label="Product images">
+          <div ref={thumbsRef} className={thumbs} role="tablist" aria-label={t("pdp.gallery.images")}>
             {images.map((src, index) => (
               <button
                 key={src}
@@ -84,7 +86,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
           <button
             type="button"
             className={thumbsNext}
-            aria-label="Next product image"
+            aria-label={t("pdp.gallery.next")}
             onClick={() => setActiveImage((current) => (current + 1) % images.length)}
           >
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -118,7 +120,7 @@ export function PdpGallery({ images, title, resetKey, outOfStock = false, onImag
             <span className={bottle} aria-hidden="true" />
           )}
         </div>
-        {outOfStock ? <span className={pdpStockChip}>Out of stock</span> : null}
+        {outOfStock ? <span className={pdpStockChip}>{t("cart.unavailable.OUT_OF_STOCK")}</span> : null}
         <div className={pdpFloor} aria-hidden="true" />
         <div className={pdpMist} aria-hidden="true">
           <span className={puffA} />

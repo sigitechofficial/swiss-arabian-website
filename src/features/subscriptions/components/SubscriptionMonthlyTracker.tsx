@@ -1,6 +1,9 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { Translator } from "@/lib/i18n/messages";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 import type { SubscriptionDetail } from "../types/subscription.types";
 import {
@@ -13,19 +16,19 @@ import {
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 
-function monthStatusChip(row: SubscriptionMonthRow): { label: string; className: string } {
-  if (row.payment === "SKIPPED") return { label: "Skipped", className: "bg-[#F3EEE6] text-[#6E5A50]" };
-  if (row.delivery === "DELIVERED") return { label: "Delivered", className: "bg-[#E3F1E6] text-[#1F5B30]" };
-  if (row.delivery === "SHIPPED") return { label: "Shipped", className: "bg-[#F6E7D4] text-[#7A4B0B]" };
-  if (row.orderNumber) return { label: "Not delivered", className: "bg-[#F6E7D4] text-[#7A4B0B]" };
-  if (row.payment !== "UPCOMING") return { label: TRACKER_PAYMENT_LABEL[row.payment], className: "bg-[#F6E7D4] text-[#7A4B0B]" };
-  return { label: "Upcoming", className: "bg-[#FBF8F2] text-[#6E5A50]" };
+function monthStatusChip(row: SubscriptionMonthRow, t: Translator): { label: string; className: string } {
+  if (row.payment === "SKIPPED") return { label: t("subs.text.skipped"), className: "bg-[#F3EEE6] text-[#6E5A50]" };
+  if (row.delivery === "DELIVERED") return { label: t("subs.text.delivered"), className: "bg-[#E3F1E6] text-[#1F5B30]" };
+  if (row.delivery === "SHIPPED") return { label: t("subs.text.shipped"), className: "bg-[#F6E7D4] text-[#7A4B0B]" };
+  if (row.orderNumber) return { label: t("subs.tracker.notDelivered"), className: "bg-[#F6E7D4] text-[#7A4B0B]" };
+  if (row.payment !== "UPCOMING") return { label: t(TRACKER_PAYMENT_LABEL[row.payment]), className: "bg-[#F6E7D4] text-[#7A4B0B]" };
+  return { label: t("subs.text.upcoming"), className: "bg-[#FBF8F2] text-[#6E5A50]" };
 }
 
-function orderLine(row: SubscriptionMonthRow): string {
+function orderLine(row: SubscriptionMonthRow, t: Translator): string {
   if (row.orderNumber) return row.orderNumber;
-  if (row.payment === "PAID") return "Order reference is not available yet";
-  return TRACKER_DELIVERY_LABEL.NOT_CREATED;
+  if (row.payment === "PAID") return t("subs.tracker.noReference");
+  return t(TRACKER_DELIVERY_LABEL.NOT_CREATED);
 }
 
 export function SubscriptionMonthlyTracker({
@@ -38,11 +41,17 @@ export function SubscriptionMonthlyTracker({
   >;
   cycles?: SubscriptionCycleSnapshot[];
 }) {
+  const t = useShopCopy();
+  const locale = useShopLocale();
   const timeZone = useMarketTimeZone();
-  const months = monthsFromAgreement({
-    ...detail,
-    billingCycles: cycles ?? detail.billingCycles,
-  });
+  const months = monthsFromAgreement(
+    {
+      ...detail,
+      billingCycles: cycles ?? detail.billingCycles,
+    },
+    locale,
+  );
+  const list = (rows: SubscriptionMonthRow[]) => rows.map((row) => row.label).join(t("subs.registered.listSeparator"));
 
   const ordered = months.filter((row) => row.payment === "PAID" || row.payment === "SKIPPED" || row.orderNumber).length;
   const delivered = months.filter((row) => row.delivery === "DELIVERED");
@@ -52,24 +61,26 @@ export function SubscriptionMonthlyTracker({
     <section className="flex flex-col gap-5 rounded-[20px] border border-[#E6DCCB] bg-white p-6" aria-labelledby="subscription-months">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="subscription-months" className="m-0 text-[22px] font-bold text-[#2B1D17]">Your 12-month plan</h2>
-          <span className="text-sm text-[#6E5A50]">{ordered} recorded · {Math.max(0, months.length - ordered)} still open</span>
+          <h2 id="subscription-months" className="m-0 text-[22px] font-bold text-[#2B1D17]">{t("subs.tracker.title")}</h2>
+          <span className="text-sm text-[#6E5A50]">
+            {t("subs.tracker.recorded", { recorded: ordered, open: Math.max(0, months.length - ordered) })}
+          </span>
           <span className="text-sm font-medium text-[#2B1D17]">
-            {delivered.length ? `Delivered: ${delivered.map((row) => row.label).join(", ")}` : "None delivered yet"}
-            {notDelivered.length ? ` · Not delivered: ${notDelivered.map((row) => row.label).join(", ")}` : ""}
+            {delivered.length ? t("subs.tracker.deliveredList", { months: list(delivered) }) : t("subs.tracker.noneDelivered")}
+            {notDelivered.length ? ` · ${t("subs.tracker.notDeliveredList", { months: list(notDelivered) })}` : ""}
           </span>
         </div>
         <div className="flex flex-wrap gap-3.5 text-[13px] text-[#5A463C]">
-          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#2E7D45]" />Delivered</span>
-          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#C9842A]" />Not delivered</span>
-          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full border-2 border-dashed border-[#B9A68F]" />Upcoming</span>
+          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#2E7D45]" />{t("subs.text.delivered")}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#C9842A]" />{t("subs.tracker.notDelivered")}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full border-2 border-dashed border-[#B9A68F]" />{t("subs.text.upcoming")}</span>
         </div>
       </div>
       <ol className="m-0 grid list-none grid-cols-2 gap-3.5 p-0 sm:grid-cols-4">
         {months.map((row) => {
           const chosen = Boolean(row.fragrance);
           const upNext = !chosen && Boolean(row.billingDate);
-          const chip = monthStatusChip(row);
+          const chip = monthStatusChip(row, t);
           const border = row.delivery === "DELIVERED"
             ? "border-2 border-[#2E7D45]"
             : row.orderNumber
@@ -85,32 +96,32 @@ export function SubscriptionMonthlyTracker({
               className={`flex min-w-0 flex-col gap-2.5 rounded-[14px] bg-white p-2.5 ${border}`}
             >
               <div className={`flex aspect-square items-center justify-center overflow-hidden rounded-[10px] ${chosen ? "bg-[#F1E6D6]" : "border-2 border-dashed border-[#D9CBB6] bg-[#FBF8F2] text-[13px] font-semibold text-[#6E5A50]"}`}>
-                {chosen ? (row.imageUrl ? <MediaImage src={row.imageUrl} alt="" width={200} height={200} className="h-full w-full object-contain p-2" /> : <FragranceMark />) : "Not chosen yet"}
+                {chosen ? (row.imageUrl ? <MediaImage src={row.imageUrl} alt="" width={200} height={200} className="h-full w-full object-contain p-2" /> : <FragranceMark />) : t("subs.tracker.notChosen")}
               </div>
               <div className="flex flex-col gap-1 px-0.5">
                 <strong className="text-[15px] font-bold text-[#2B1D17]">{row.label}</strong>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${chip.className}`}>{chip.label}</span>
-                <span className="text-xs text-[#6E5A50]">{row.billingDate ? formatOrderDate(row.billingDate, { timeZone }) : ""}</span>
+                <span className="text-xs text-[#6E5A50]">{row.billingDate ? formatOrderDate(row.billingDate, { timeZone, locale }) : ""}</span>
                 <span className={`flex min-w-0 items-baseline gap-1 text-[13px] ${chosen ? "font-semibold text-[#2B1D17]" : "text-[#6E5A50]"}`}>
                   <span className="min-w-0 truncate" title={row.fragrance ?? undefined}>
-                    {row.fragrance ?? "Fragrance not planned yet"}
+                    {row.fragrance ?? t("subs.tracker.notPlanned")}
                   </span>
-                  {row.payment !== "UPCOMING" ? <span className="shrink-0 font-semibold">{TRACKER_PAYMENT_LABEL[row.payment]}</span> : null}
+                  {row.payment !== "UPCOMING" ? <span className="shrink-0 font-semibold">{t(TRACKER_PAYMENT_LABEL[row.payment])}</span> : null}
                 </span>
                 {row.payment === "SKIPPED" ? null : (
                   <span className="text-xs text-[#6E5A50]">
-                    {row.orderNumber ? row.orderNumber : row.delivery === "ORDER_PENDING" ? TRACKER_DELIVERY_LABEL.ORDER_PENDING : orderLine(row)}
+                    {row.orderNumber ? row.orderNumber : row.delivery === "ORDER_PENDING" ? t(TRACKER_DELIVERY_LABEL.ORDER_PENDING) : orderLine(row, t)}
                     {row.trackingNumber ? ` · ${row.trackingNumber}` : ""}
                     {row.trackHref && row.orderId ? (
                       <>
                         {" · "}
-                        <LocaleLink href={row.trackHref}>Track order</LocaleLink>
+                        <LocaleLink href={row.trackHref}>{t("track.trackOrder")}</LocaleLink>
                       </>
                     ) : null}
                     {row.trackingUrl ? (
                       <>
                         {" · "}
-                        <a href={row.trackingUrl}>Carrier tracking</a>
+                        <a href={row.trackingUrl}>{t("subs.tracker.carrierTracking")}</a>
                       </>
                     ) : null}
                   </span>

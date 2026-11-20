@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import { drawerMetaLabel, faqDrawers, type FaqDrawer, type FaqItem } from "../data/faqContent";
 
@@ -75,6 +76,7 @@ function DrawerButton({
 }
 
 export function FaqCabinet({ initialDrawer }: { initialDrawer?: string }) {
+  const t = useShopCopy();
   const [activeId, setActiveId] = useState(
     faqDrawers.some((d) => d.id === initialDrawer) ? (initialDrawer as string) : "order",
   );
@@ -104,7 +106,7 @@ export function FaqCabinet({ initialDrawer }: { initialDrawer?: string }) {
     <>
       <section className="bg-section-soft py-8 lg:py-10">
         <label className={`${container} relative block`}>
-          <span className="sr-only">Search FAQs</span>
+          <span className="sr-only">{t("faq.search.label")}</span>
           <span className="relative block">
             <svg
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sa-secondary"
@@ -126,18 +128,18 @@ export function FaqCabinet({ initialDrawer }: { initialDrawer?: string }) {
                 setQuery(e.target.value);
                 setOpenId(null);
               }}
-              placeholder={`Search all questions — "delivery", "oud", "samples"…`}
+              placeholder={t("faq.search.placeholder")}
               className="h-[50px] w-full rounded-full border border-sa-input bg-surface py-3 pl-11 pr-5 text-[14.5px] text-sa-primary outline-none placeholder:text-sa-secondary focus:border-terra"
             />
           </span>
         </label>
       </section>
 
-      <section className="bg-page py-10 lg:py-14" aria-label="FAQ categories">
+      <section className="bg-page py-10 lg:py-14" aria-label={t("faq.categories")}>
         <div className={`${container} flex flex-col gap-6 lg:flex-row lg:items-start`}>
           <aside className="rounded-lg border border-sa-border bg-section-soft p-2 lg:sticky lg:top-40 lg:w-[270px] lg:shrink-0">
-            <p className="px-4 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.24em] text-gold">Topics</p>
-            <nav className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col" aria-label="FAQ topics">
+            <p className="px-4 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.24em] text-gold">{t("faq.topics")}</p>
+            <nav className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col" aria-label={t("faq.topicsNav")}>
               {faqDrawers.map((drawer) => (
                 <DrawerButton
                   key={drawer.id}
@@ -155,7 +157,7 @@ export function FaqCabinet({ initialDrawer }: { initialDrawer?: string }) {
 
           <div className="min-w-0 flex-1">
             <h2 className="text-[26px] font-bold text-sa-primary sm:text-[32px]">
-              {isSearching ? "Search results" : activeDrawer.title}
+              {isSearching ? t("faq.searchResults") : activeDrawer.title}
             </h2>
             <p className="mt-1.5 text-[13px] text-sa-secondary">
               {isSearching
@@ -166,7 +168,7 @@ export function FaqCabinet({ initialDrawer }: { initialDrawer?: string }) {
             <div className="mt-6 flex flex-col gap-3">
               {displayItems.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-sa-border px-6 py-10 text-center text-[14px] text-sa-secondary">
-                  No matching questions. Try another keyword or browse a topic.
+                  {t("faq.noMatches")}
                 </p>
               ) : (
                 displayItems.map((item) => (

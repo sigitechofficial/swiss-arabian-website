@@ -1,6 +1,9 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import type { MessageKey } from "@/lib/i18n/messages";
+import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { useCardPaymentSession } from "../hooks/useCardPaymentSession";
@@ -73,10 +76,10 @@ const PIXEL_STYLE = {
   Container_Padding: "0",
 };
 
-const ERROR_TEXT: Record<PaymobPayError, string> = {
-  timeout: "Your payment is taking longer than expected to confirm. Please check your email before trying again.",
-  declined: "Your card was declined. Please start a new payment attempt with another card.",
-  unconfirmed: "We couldn’t confirm your payment. If your card was charged, please contact us before retrying.",
+const ERROR_TEXT: Record<PaymobPayError, MessageKey> = {
+  timeout: "checkout.paymob.error.timeout",
+  declined: "checkout.paymob.error.declined",
+  unconfirmed: "checkout.paymob.error.unconfirmed",
 };
 
 function LockIcon() {
@@ -89,6 +92,7 @@ function LockIcon() {
 }
 
 export function PaymobPaymentFormView() {
+  const t = useShopCopy();
   const session = useCardPaymentSession("paymob");
   const { hydrated, orderId, clientSecret, alreadyPaid } = session;
   const publicKey = session.providerKey;
@@ -102,25 +106,25 @@ export function PaymobPaymentFormView() {
     customStyle: PIXEL_STYLE,
   });
   const { sdkFailed, phase, needsRetry } = card;
-  const errorMsg = card.error ? ERROR_TEXT[card.error] : null;
+  const errorMsg = card.error ? t(ERROR_TEXT[card.error]) : null;
 
   if (!hydrated || alreadyPaid) {
     return (
-      <CheckoutStateShell current="Payment">
-        <CheckoutSpinnerState title="Loading secure payment…" />
+      <CheckoutStateShell current={t("checkout.state.payment")}>
+        <CheckoutSpinnerState title={t("checkout.pay.loadingSecure")} />
       </CheckoutStateShell>
     );
   }
 
   if (!clientSecret || !publicKey || !orderId) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutEmpty}>
-          <p className={stateEyebrow}>Payment</p>
-          <h1 className={collectionTitle}>This payment session has expired.</h1>
-          <p>If you already placed an order, you can finish paying for it from here.</p>
+          <p className={stateEyebrow}>{t("checkout.state.payment")}</p>
+          <h1 className={collectionTitle}>{t("checkout.pay.sessionExpired")}</h1>
+          <p>{t("checkout.pay.sessionExpiredBody")}</p>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
-            <span>Retry payment</span>
+            <span>{t("checkout.state.retryPayment")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
         </section>
@@ -133,17 +137,17 @@ export function PaymobPaymentFormView() {
     : null;
 
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={t("checkout.state.payment")}>
       <header className={checkoutHead}>
-        <h1 className={pageTitle}>Payment</h1>
+        <h1 className={pageTitle}>{t("checkout.state.payment")}</h1>
         <ol className={checkoutSteps}>
           <li>
-            <LocaleLink href="/cart">Bag</LocaleLink>
+            <LocaleLink href="/cart">{t("nav.bag")}</LocaleLink>
           </li>
           <li aria-hidden="true">·</li>
-          <li>Details</li>
+          <li>{t("checkout.pay.detailsStep")}</li>
           <li aria-hidden="true">·</li>
-          <li className={checkoutStepCurrent}>Payment</li>
+          <li className={checkoutStepCurrent}>{t("checkout.state.payment")}</li>
         </ol>
       </header>
 
@@ -154,8 +158,8 @@ export function PaymobPaymentFormView() {
               <span className={`${cboxNum} ${stripePayNum}`}>
                 <LockIcon />
               </span>
-              <h2 id="card-payment-heading">Card details</h2>
-              <span className={stripePayBrands} aria-label="Visa and Mastercard accepted">
+              <h2 id="card-payment-heading">{t("checkout.paymob.title")}</h2>
+              <span className={stripePayBrands} aria-label={t("checkout.paymob.brands")}>
                 Visa · Mastercard
               </span>
             </div>
@@ -163,8 +167,8 @@ export function PaymobPaymentFormView() {
               {phase === "polling" ? (
                 <div className={stripePayState} aria-live="polite" aria-busy="true">
                   <LoaderMark size={84} />
-                  <p className={stripePayStateTitle}>Confirming your payment…</p>
-                  <p className={checkoutNote}>This usually takes a few seconds. Please don’t close this page.</p>
+                  <p className={stripePayStateTitle}>{t("checkout.state.confirmingTitle")}</p>
+                  <p className={checkoutNote}>{t("checkout.pay.confirmingBody")}</p>
                 </div>
               ) : (
                 <>
@@ -175,11 +179,16 @@ export function PaymobPaymentFormView() {
                   ) : null}
                   {sdkFailed ? (
                     <p className={checkoutError} role="alert">
-                      We couldn’t load the secure card form. Please refresh the page or{" "}
-                      <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
-                        choose another way to pay
-                      </LocaleLink>
-                      .
+                      <TextWithLinks
+                        text={t("checkout.pay.formFailed", linkSlots(["other"]))}
+                        links={{
+                          other: (
+                            <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
+                              {t("checkout.pay.otherWay")}
+                            </LocaleLink>
+                          ),
+                        }}
+                      />
                     </p>
                   ) : null}
                   <div id={ELEMENT_ID} className="w-full" />
@@ -190,7 +199,7 @@ export function PaymobPaymentFormView() {
                         <>
                           {" "}
                           <LocaleLink className={checkoutLink} href="/checkout/payment/cancel">
-                            Start a new attempt
+                            {t("checkout.paymob.newAttempt")}
                           </LocaleLink>
                         </>
                       ) : null}
@@ -203,20 +212,27 @@ export function PaymobPaymentFormView() {
                     onClick={card.pay}
                   >
                     <span>
-                      {phase === "confirming" ? "Processing…" : total ? `Pay ${total}` : "Pay now"}
+                      {phase === "confirming"
+                        ? t("subs.checkout.processing")
+                        : total
+                          ? t("checkout.pay.payAmount", { amount: total })
+                          : t("checkout.confirmation.payNow")}
                     </span>
                     <b aria-hidden="true">↗</b>
                   </button>
                   <p className={stripePayTrust}>
                     <LockIcon />
-                    <span>Secured by Paymob — your card details never touch our servers.</span>
+                    <span>{t("checkout.paymob.secured")}</span>
                   </p>
                 </>
               )}
             </div>
           </section>
           <p className={checkoutLegal}>
-            Changed your mind? <LocaleLink href="/checkout/payment/cancel">Cancel payment</LocaleLink> — your order stays saved.
+            <TextWithLinks
+              text={t("checkout.pay.changedMind", linkSlots(["cancel"]))}
+              links={{ cancel: <LocaleLink href="/checkout/payment/cancel">{t("checkout.pay.cancelPayment")}</LocaleLink> }}
+            />
           </p>
         </div>
 

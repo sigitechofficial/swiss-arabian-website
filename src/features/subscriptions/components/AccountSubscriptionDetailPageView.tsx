@@ -8,7 +8,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { knownText } from "@/lib/i18n/formErrors";
 import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -141,7 +140,7 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
       await action();
       await refresh();
     } catch (err) {
-      setError(managementErrorMessage(err));
+      setError(managementErrorMessage(err, t));
       throw err;
     } finally {
       setBusy(false);
@@ -163,9 +162,9 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
     }
   }
 
-  const months = detail.data ? monthsFromAgreement(detail.data) : [];
+  const months = detail.data ? monthsFromAgreement(detail.data, locale) : [];
   const currentMonth = [...months].reverse().find((row) => row.orderId) ?? months.find((row) => row.payment === "PROCESSING") ?? months[0];
-  const price = detail.data ? subscriptionPriceLines(detail.data) : null;
+  const price = detail.data ? subscriptionPriceLines(detail.data, t) : null;
   const completed = months.filter((row) => row.payment === "PAID" || row.payment === "SKIPPED").length;
   const dateTag = locale === "en" ? "en-GB" : intlLocale(locale);
   const longTag = locale === "en" ? "en-AE" : intlLocale(locale);
@@ -448,9 +447,9 @@ function MonthHero({ month }: { month: SubscriptionMonthRow }) {
         <span className="text-xs font-medium tracking-[0.08em] text-[#6E5A50]">{month.orderId ? t("subs.detail.latestShipment") : t("subs.detail.nextFragrance")}{when ? ` · ${when}` : ""}</span>
         <h2 className="m-0 text-[1.7rem] font-semibold">{month.fragrance ?? t("subs.detail.noFragrance")}</h2>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-[#E3F1E6] px-3 py-1 text-[13px] font-medium text-[#1F5B30]">{knownText(t, "subs.text.", TRACKER_PAYMENT_LABEL[month.payment])}</span>
+          <span className="rounded-full bg-[#E3F1E6] px-3 py-1 text-[13px] font-medium text-[#1F5B30]">{t(TRACKER_PAYMENT_LABEL[month.payment])}</span>
           {month.delivery !== "NOT_CREATED" ? (
-            <span className="rounded-full bg-[#F6E7D4] px-3 py-1 text-[13px] font-medium text-[#7A4B0B]">{knownText(t, "subs.text.", TRACKER_DELIVERY_LABEL[month.delivery])}</span>
+            <span className="rounded-full bg-[#F6E7D4] px-3 py-1 text-[13px] font-medium text-[#7A4B0B]">{t(TRACKER_DELIVERY_LABEL[month.delivery])}</span>
           ) : null}
           {month.orderNumber ? <span className="rounded-full bg-[#F3EEE6] px-3 py-1 text-[13px] font-medium text-[#5A463C]">{t("account.orderLabel")} {month.orderNumber}</span> : null}
         </div>

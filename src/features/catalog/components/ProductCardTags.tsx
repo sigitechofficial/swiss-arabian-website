@@ -1,5 +1,6 @@
 import { cardTags, cardTagsNew } from "@/styles/productCard";
-import { badgeForProduct } from "../constants/productBadges";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { badgeForProduct, PRODUCT_BADGE_LABEL } from "../constants/productBadges";
 
 export function ProductCardTags({
   slug,
@@ -11,14 +12,13 @@ export function ProductCardTags({
   /** When set, collection-scoped tags like `cities-best-sellers` only badge that PLP. */
   collectionSlug?: string;
 }) {
+  const t = useShopCopy();
   const badge = badgeForProduct({ slug, tags, collectionSlug });
   if (!badge) return null;
 
-  const kind = badge === "New" ? "new" : "best-seller";
-
   return (
-    <p className={kind === "new" ? `${cardTags} ${cardTagsNew}` : cardTags}>
-      <span>{badge}</span>
+    <p className={badge === "new" ? `${cardTags} ${cardTagsNew}` : cardTags}>
+      <span>{t(PRODUCT_BADGE_LABEL[badge])}</span>
     </p>
   );
 }

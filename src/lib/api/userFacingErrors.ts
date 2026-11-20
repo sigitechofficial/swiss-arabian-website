@@ -1,4 +1,5 @@
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
+import { KeyedError } from "@/lib/i18n/keyedError";
 import type { Translator } from "@/lib/i18n/messages";
 import { ApiClientError, CLIENT_ERROR_CODES } from "./apiError";
 
@@ -50,6 +51,8 @@ function isNetworkFailure(error: unknown): boolean {
  * server's), or null when it has none and the caller's words fit better.
  */
 export function knownErrorMessage(error: unknown, t: Translator = pageTranslator()): string | null {
+  // A rule the browser checked itself: its own message key.
+  if (error instanceof KeyedError) return error.translate(t);
   if (error instanceof ApiClientError) {
     const own = error.code ? SHOP_WORDED_CODES[error.code] : undefined;
     if (own) return own(error, t);

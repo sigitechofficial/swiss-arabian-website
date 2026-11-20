@@ -1,3 +1,6 @@
+"use client";
+
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   eyebrow,
   reviewBody,
@@ -38,12 +41,16 @@ function stars(rating = 5) {
 }
 
 export function LandingReviews({
-  eyebrowText = "Loved worldwide",
-  heading = "What our community says",
+  eyebrowText: eyebrowProp,
+  heading: headingProp,
   summaryLabel,
   items,
   displayLimit = 6,
 }: LandingReviewsProps = {}) {
+  const t = useShopCopy();
+  // Not set by the CMS (undefined): the house wording in the page's language.
+  const eyebrowText = eyebrowProp === undefined ? t("landing.reviews.eyebrow") : eyebrowProp;
+  const heading = headingProp === undefined ? t("landing.reviews.heading") : headingProp;
   const reviews =
     items?.slice(0, displayLimit).map((item) => ({
       id: item.id,
@@ -51,7 +58,7 @@ export function LandingReviews({
       name: item.reviewerName,
       product: [
         item.productLabel,
-        item.verifiedBuyer ? "Verified buyer" : null,
+        item.verifiedBuyer ? t("landing.reviews.verified") : null,
       ]
         .filter(Boolean)
         .join(" · "),
@@ -77,15 +84,6 @@ export function LandingReviews({
               </span>
               <span>{summaryLabel}</span>
             </p>
-          ) : !items ? (
-            <p className={reviewsRating}>
-              <span className={reviewStars} aria-hidden="true">
-                ★★★★★
-              </span>
-              <span>
-                <strong>4.8</strong> · 2,480 verified reviews · 98% recommend
-              </span>
-            </p>
           ) : null}
         </header>
         <ul className={reviewsGrid} role="list">
@@ -97,7 +95,7 @@ export function LandingReviews({
               <span
                 className={reviewStars}
                 role="img"
-                aria-label={`Rated ${review.rating} out of 5`}
+                aria-label={t("landing.reviews.rated", { rating: review.rating })}
               >
                 {stars(review.rating)}
               </span>

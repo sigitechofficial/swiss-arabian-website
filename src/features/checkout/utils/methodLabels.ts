@@ -1,4 +1,6 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import type { DeliveryMethodOption, PaymentMethodOption } from "../types/checkout";
 import { isTabbyPaymentMethod } from "./tabby";
 import { isTamaraPaymentMethod } from "./tamara";
@@ -90,7 +92,8 @@ export function pickDefaultPaymentMethod(
   return pool.find((m) => m.isDefault) ?? pool[0];
 }
 
-export function paymentMethodNote(method: PaymentMethodOption): string {
+export function paymentMethodNote(method: PaymentMethodOption, t: Translator = pageTranslator()): string {
+  // Provider and card scheme names are the same in every language.
   if (isStripePaymentMethod(method)) {
     return "Stripe · Visa, Mastercard, Amex";
   }
@@ -98,7 +101,7 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     return "Paymob · Visa, Mastercard, Amex, Jaywan";
   }
   if (isTelrPaymentMethod(method)) {
-    return "Telr · secure hosted checkout";
+    return t("checkout.method.telrNote");
   }
   if (isTabbyPaymentMethod(method)) {
     // Tabby QA: no plan caption. Tabby offers more plans than Pay in 4 (some
@@ -106,10 +109,10 @@ export function paymentMethodNote(method: PaymentMethodOption): string {
     return "";
   }
   if (isTamaraPaymentMethod(method)) {
-    return "Split in 4, interest-free";
+    return t("checkout.method.tamaraNote");
   }
   if (method.requiresRedirect) {
-    return "Completed on the provider’s secure page";
+    return t("checkout.method.redirectNote");
   }
   return "";
 }
@@ -126,6 +129,7 @@ export interface UpcomingPaymentMethod {
 export function upcomingPaymentMethods(
   countryCode: string | null | undefined,
   methods: PaymentMethodOption[],
+  t: Translator = pageTranslator(),
 ): UpcomingPaymentMethod[] {
   const country = (countryCode || "AE").toUpperCase();
   const paymob = methods.some((method) => method.providerCode?.toLowerCase() === "paymob");
@@ -162,34 +166,34 @@ export function upcomingPaymentMethods(
   // only where the market's checkout offers them (and not for a bag the provider
   // declined), never advertised elsewhere (Tabby QA, Nov 2026).
   if (country === "KW") {
-    rows.push({ id: "knet", title: "KNET", note: "Kuwait debit cards" });
+    rows.push({ id: "knet", title: "KNET", note: t("checkout.method.knetNote") });
   }
   if (country === "OM") {
-    rows.push({ id: "omannet", title: "OmanNet", note: "Oman debit cards" });
+    rows.push({ id: "omannet", title: "OmanNet", note: t("checkout.method.omannetNote") });
   }
   if (country === "QA") {
-    rows.push({ id: "naps", title: "NAPS", note: "Qatar debit cards" });
+    rows.push({ id: "naps", title: "NAPS", note: t("checkout.method.napsNote") });
   }
   const hasCash = methods.some((method) =>
     /cod|cash/i.test(`${method.providerCode ?? ""} ${method.methodCode} ${method.displayName}`),
   );
   if (!hasCash && (country === "AE" || country === "SA" || country === "KW" || country === "OM" || country === "QA")) {
-    rows.push({ id: "cash-on-delivery", title: "Cash on delivery", note: "Pay when your order arrives" });
+    rows.push({ id: "cash-on-delivery", title: t("payments.cod"), note: t("checkout.method.codNote") });
   }
   return rows;
 }
 
 // ─── Delivery ───────────────────────────────────────────────────────────────
 
-export function deliveryEta(method: DeliveryMethodOption): string {
+export function deliveryEta(method: DeliveryMethodOption, t: Translator = pageTranslator()): string {
   const min = method.metadata?.estimatedMinDays;
   const max = method.metadata?.estimatedMaxDays;
   if (typeof min === "number" && typeof max === "number" && min !== max) {
-    return `Arrives in ${min}–${max} working days`;
+    return t("checkout.delivery.etaRange", { min, max });
   }
   const days = typeof max === "number" ? max : min;
   if (typeof days === "number") {
-    return `Arrives in ${days} working ${days === 1 ? "day" : "days"}`;
+    return t("checkout.delivery.etaDays", { count: days });
   }
   return "";
 }
@@ -199,34 +203,40 @@ export function deliveryEta(method: DeliveryMethodOption): string {
  * configured, and then keeps the session's previous shipping amount, so "Free" could be wrong.
  * Only an explicit 0 is labelled "Free"; a missing fee shows no price (the summary shows the real amount).
  */
-export function deliveryFeeLabel(method: DeliveryMethodOption, currency: string): string {
+export function deliveryFeeLabel(
+  method: DeliveryMethodOption,
+  currency: string,
+  t: Translator = pageTranslator(),
+): string {
   if (method.estimatedFee == null || method.estimatedFee.trim() === "") return "";
   const fee = Number(method.estimatedFee);
   if (!Number.isFinite(fee)) return "";
-  return fee > 0 ? formatMoney(fee, currency) : "Free";
+  return fee > 0 ? formatMoney(fee, currency) : t("orders.free");
 }
 
 // ─── Order summaries (confirmation page) ────────────────────────────────────
 
 export function orderPaymentLabel(
   method: { providerCode: string | null; methodCode: string | null; displayName?: string | null } | null,
+  t: Translator = pageTranslator(),
 ): string {
   if (!method) return "—";
   // The backend sends the shopper-facing PaymentMethod.displayName; codes are a fallback only.
   const displayName = method.displayName?.trim();
   if (displayName) return displayName;
   const provider = method.providerCode?.toLowerCase();
-  if (provider === "paymob") return "Card · Paymob";
-  if (provider === "stripe") return "Card · Stripe";
+  if (provider === "paymob") return t("checkout.method.cardVia", { provider: "Paymob" });
+  if (provider === "stripe") return t("checkout.method.cardVia", { provider: "Stripe" });
   return titleCase(method.methodCode ?? method.providerCode ?? "") || "—";
 }
 
 /** `iq_fulfillment` + `iq_standard` → "Standard delivery". */
 export function orderDeliveryLabel(
   method: { partnerCode: string | null; methodCode: string | null } | null,
+  t: Translator = pageTranslator(),
 ): string {
   const code = method?.methodCode ?? "";
-  if (!code) return "Standard delivery";
+  if (!code) return t("checkout.delivery.standard");
   // Drop every leading word the method code shares with the partner code:
   // `sapil_demo_courier` + `sapil_demo_standard` → "standard", `smoke_standard` + `smoke_standard_standard` → "standard".
   const partnerParts = (method?.partnerCode ?? "").toLowerCase().split(/[_-]/).filter(Boolean);
@@ -237,7 +247,8 @@ export function orderDeliveryLabel(
   }
   const trimmed = shared > 0 ? parts.slice(shared).join(" ") : code;
   const label = titleCase(trimmed);
-  return /delivery|shipping|collect/i.test(label) ? label : `${label} delivery`;
+  // The label is built from the method's code (no shopper name was sent).
+  return /delivery|shipping|collect/i.test(label) ? label : t("checkout.delivery.named", { name: label });
 }
 
 /** "iq_fulfillment" -> "Iq Fulfillment"; used only to tell same-named options apart. */

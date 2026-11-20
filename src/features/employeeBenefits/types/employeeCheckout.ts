@@ -1,3 +1,5 @@
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
+
 /**
  * Display-only reader for the Backend public `staffPurchase` contract.
  * Money stays as the server sent it. Authorization is only `authorized: true`.
@@ -89,18 +91,20 @@ const ACCOUNTING_STAGES = new Set<string>([
   "D365_ALLOWANCE_CONFIRMED",
 ]);
 
-export const STAFF_ACCOUNTING_STAGE_LABELS: Record<Exclude<StaffAccountingStage, "NONE">, string> = {
-  QUOTED_NOT_APPLIED: "Staff Discount preview only",
-  PROVISIONAL_HOLD: "Website allowance temporarily reserved",
-  ORDER_PAYMENT_PENDING: "Order awaiting payment",
-  PAYMENT_CONFIRMED: "Payment received. Allowance not yet confirmed in D365",
-  D365_POSTING_PENDING: "Awaiting D365 allowance confirmation",
-  D365_ALLOWANCE_CONFIRMED: "Allowance confirmed",
+/** Message keys for each staff accounting stage. */
+export const STAFF_ACCOUNTING_STAGE_LABELS: Record<Exclude<StaffAccountingStage, "NONE">, MessageKey> = {
+  QUOTED_NOT_APPLIED: "employee.stage.QUOTED_NOT_APPLIED",
+  PROVISIONAL_HOLD: "employee.hold.HELD",
+  ORDER_PAYMENT_PENDING: "employee.stage.ORDER_PAYMENT_PENDING",
+  PAYMENT_CONFIRMED: "employee.stage.PAYMENT_CONFIRMED",
+  D365_POSTING_PENDING: "employee.stage.D365_POSTING_PENDING",
+  D365_ALLOWANCE_CONFIRMED: "employee.stage.D365_ALLOWANCE_CONFIRMED",
 };
 
-export const WEBSITE_HOLD_LABELS: Record<Exclude<WebsiteHoldStatus, "NONE">, string> = {
-  HELD: "Website allowance temporarily reserved",
-  RELEASED: "Website hold released",
+/** Message keys for the website allowance hold. */
+export const WEBSITE_HOLD_LABELS: Record<Exclude<WebsiteHoldStatus, "NONE">, MessageKey> = {
+  HELD: "employee.hold.HELD",
+  RELEASED: "employee.hold.RELEASED",
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -182,14 +186,22 @@ function readAccountingStage(raw: unknown): StaffAccountingStage | null {
   return stage as StaffAccountingStage;
 }
 
-export function staffAccountingStageLabel(stage: StaffAccountingStage | null | undefined): string | null {
+export function staffAccountingStageLabel(
+  stage: StaffAccountingStage | null | undefined,
+  t: Translator = englishTranslator,
+): string | null {
   if (!stage || stage === "NONE") return null;
-  return STAFF_ACCOUNTING_STAGE_LABELS[stage] ?? null;
+  const key = STAFF_ACCOUNTING_STAGE_LABELS[stage];
+  return key ? t(key) : null;
 }
 
-export function websiteHoldLabel(status: WebsiteHoldStatus | null | undefined): string | null {
+export function websiteHoldLabel(
+  status: WebsiteHoldStatus | null | undefined,
+  t: Translator = englishTranslator,
+): string | null {
   if (!status || status === "NONE") return null;
-  return WEBSITE_HOLD_LABELS[status] ?? null;
+  const key = WEBSITE_HOLD_LABELS[status];
+  return key ? t(key) : null;
 }
 
 function readLineStatus(value: unknown): StaffLineStatus | null {

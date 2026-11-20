@@ -2,6 +2,7 @@
 
 import { useRef, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { ProductCardTags } from "@/features/catalog/components/ProductCardTags";
 import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import type { ProductSummary } from "@/features/catalog/types/product";
@@ -51,11 +52,13 @@ export type LandingTrendingProps = {
 
 export function LandingTrending({
   products: productsProp,
-  title = "Trending Now",
+  title: titleProp,
   viewAllHref,
   viewAllLabel,
   collectionSlug = "trending",
 }: LandingTrendingProps = {}) {
+  const t = useShopCopy();
+  const title = titleProp ?? t("landing.trending.title");
   const stripRef = useRef<HTMLUListElement>(null);
   const fetched = useHomeCollectionProducts("trending", 8);
   const fromCms = productsProp !== undefined;
@@ -90,7 +93,7 @@ export function LandingTrending({
                 className={`${linkUnderline} shrink-0 self-center whitespace-nowrap`}
                 href={allHref}
               >
-                {viewAllLabel?.trim() || "View all"}
+                {viewAllLabel?.trim() || t("landing.viewAll")}
               </LocaleLink>
             ) : null}
           </div>
@@ -99,7 +102,7 @@ export function LandingTrending({
           className={productStrip}
           role="list"
           tabIndex={0}
-          aria-label="Trending now, scrollable"
+          aria-label={t("landing.trending.strip")}
           aria-busy={pending}
           ref={stripRef}
         >
@@ -206,7 +209,7 @@ export function LandingTrending({
               >
                 <path d="M15 5l-7 7 7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll trending left</span>
+              <span className={visuallyHidden}>{t("landing.trending.left")}</span>
             </button>
             <button
               className={arrowOutline}
@@ -222,7 +225,7 @@ export function LandingTrending({
               >
                 <path d="M9 5l7 7-7 7" />
               </svg>
-              <span className={visuallyHidden}>Scroll trending right</span>
+              <span className={visuallyHidden}>{t("landing.trending.right")}</span>
             </button>
           </div>
         </div>

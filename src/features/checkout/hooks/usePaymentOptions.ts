@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { PaymentMethodOption } from "../types/checkout";
 import type { InlinePaymentSession } from "../utils/startPayment";
 import { isStripePaymentMethod } from "../utils/methodLabels";
@@ -43,7 +44,8 @@ export function usePaymentOptions(input: {
   const covered = amountPayable === 0;
   const opening = useRef(false);
   const [optionKey, setOptionKey] = useState<string | null>(null);
-  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang, tamaraPrecheck);
+  const t = useShopCopy();
+  const groups = paymentGroups(methods, countryCode, tabbyPrescore, tabbyLang, tamaraPrecheck, t);
   const rows = groups.flatMap((group) => group.rows);
   const selected = methods.find((method) => method.zonePaymentMethodId === selectedId) ?? null;
   const fallbackKey = selected ? defaultRowKey(selected) : null;

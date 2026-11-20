@@ -5,12 +5,12 @@ describe("shopperBadgeFromTags", () => {
   it("maps best sellers over new when both exist", () => {
     expect(
       shopperBadgeFromTags(["New Launch", "best sellers", "perfume"]),
-    ).toBe("Best Seller");
+    ).toBe("bestSeller");
   });
 
   it("maps new-launch variants", () => {
-    expect(shopperBadgeFromTags(["New Launches"])).toBe("New");
-    expect(shopperBadgeFromTags(["new-launch"])).toBe("New");
+    expect(shopperBadgeFromTags(["New Launches"])).toBe("new");
+    expect(shopperBadgeFromTags(["new-launch"])).toBe("new");
   });
 
   it("ignores ops and category tags", () => {
@@ -28,10 +28,10 @@ describe("shopperBadgeFromTags", () => {
   });
 
   it("maps collection-scoped best-seller tags", () => {
-    expect(shopperBadgeFromTags(["perfume-best-sellers"])).toBe("Best Seller");
-    expect(shopperBadgeFromTags(["perfume-best-sellers"], "perfume")).toBe("Best Seller");
+    expect(shopperBadgeFromTags(["perfume-best-sellers"])).toBe("bestSeller");
+    expect(shopperBadgeFromTags(["perfume-best-sellers"], "perfume")).toBe("bestSeller");
     expect(shopperBadgeFromTags(["perfume-best-sellers"], "cities")).toBeNull();
-    expect(shopperBadgeFromTags(["best sellers"], "cities")).toBe("Best Seller");
+    expect(shopperBadgeFromTags(["best sellers"], "cities")).toBe("bestSeller");
   });
 });
 
@@ -41,6 +41,6 @@ describe("badgeForProduct", () => {
   });
 
   it("falls back to static slugs only when tags are omitted", () => {
-    expect(badgeForProduct({ slug: "vanilla-01" })).toBe("New");
+    expect(badgeForProduct({ slug: "vanilla-01" })).toBe("new");
   });
 });

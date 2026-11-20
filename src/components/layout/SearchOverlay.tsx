@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { useHeaderSearch } from "@/features/search/hooks/useHeaderSearch";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -46,6 +47,7 @@ const OVERLAY_LIMIT = 8;
  *  translucent scrim. Submit opens `/search?q=` so the same matcher runs on
  *  a dedicated results URL. */
 export function SearchOverlay() {
+  const t = useShopCopy();
   // Open state, query, live hits and navigation live in the shared hook.
   const {
     open,
@@ -80,7 +82,7 @@ export function SearchOverlay() {
   return (
     <AnimatePresence>
       {open ? (
-        <div id="ai-search" className="pointer-events-auto fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label="Search">
+        <div id="ai-search" className="pointer-events-auto fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label={t("nav.search")}>
           <motion.div
             className="absolute inset-0 bg-[rgba(24,20,17,0.45)] backdrop-blur-[3px]"
             variants={scrimVariants}
@@ -108,7 +110,7 @@ export function SearchOverlay() {
               <button
                 type="button"
                 className="flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-white/8 text-[var(--white)] hover:bg-white/16 [&_svg]:size-3.5"
-                aria-label="Close search"
+                aria-label={t("search.overlay.close")}
                 onClick={() => setOpen(false)}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -116,7 +118,7 @@ export function SearchOverlay() {
                 </svg>
               </button>
               <label className={visuallyHidden} htmlFor="ai-search-input">
-                Search scents
+                {t("search.overlay.label")}
               </label>
               <input
                 ref={inputRef}
@@ -124,7 +126,7 @@ export function SearchOverlay() {
                 type="search"
                 name="q"
                 maxLength={140}
-                placeholder="Search by name, note, or mood"
+                placeholder={t("search.overlay.placeholder")}
                 enterKeyHint="search"
                 autoComplete="off"
                 aria-autocomplete="list"
@@ -153,7 +155,7 @@ export function SearchOverlay() {
                   }
                 }}
               />
-              <button type="submit" className="flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper)] text-[var(--white)] hover:bg-[var(--copper-deep)] [&_svg]:size-3.5" aria-label="Search">
+              <button type="submit" className="flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[var(--copper)] text-[var(--white)] hover:bg-[var(--copper-deep)] [&_svg]:size-3.5" aria-label={t("nav.search")}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m20 20-3.5-3.5" />
@@ -163,7 +165,7 @@ export function SearchOverlay() {
 
             <div className="max-h-[min(62vh,480px)] overflow-y-auto rounded-[20px] border border-[var(--line)] bg-[var(--white)] shadow-[0_16px_48px_rgba(0,0,0,0.14)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <p className="m-0 px-[18px] pt-4 pb-2 text-[11px] tracking-[0.08em] text-[var(--ink-2)] uppercase" hidden={hasQuery && hits.length === 0}>
-                {hasQuery ? "Suggestions" : "Try a note, a name, or a mood"}
+                {hasQuery ? t("search.overlay.suggestions") : t("search.overlay.hint")}
               </p>
               <ul className="m-0 list-none px-2 pt-1 pb-3" id="ai-search-results" role="listbox">
                 {hits.map((product, index) => (
@@ -194,7 +196,7 @@ export function SearchOverlay() {
                 ))}
               </ul>
               <p className="m-0 px-[18px] pt-2 pb-[18px] text-[0.9rem] text-[var(--ink-2)]" hidden={!hasQuery || hits.length > 0}>
-                No matches — try another spelling
+                {t("search.overlay.empty")}
               </p>
             </div>
           </motion.div>

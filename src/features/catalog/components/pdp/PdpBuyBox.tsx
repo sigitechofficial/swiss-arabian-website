@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
@@ -59,6 +60,7 @@ export function PdpBuyBox({
   scentFallback,
   share,
 }: PdpBuyBoxProps) {
+  const t = useShopCopy();
   const [offersOpen, setOffersOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const offerOpenerRef = useRef<HTMLElement | null>(null);
@@ -102,7 +104,7 @@ export function PdpBuyBox({
       ) : null}
 
       {chips.length ? (
-        <ul className={pdpChips} role="list" aria-label="Featured notes">
+        <ul className={pdpChips} role="list" aria-label={t("pdp.buyBox.notes")}>
           {chips.map((chip) => (
             <li className={pdpChip} key={chip}>
               <span className={pdpDot} aria-hidden="true" style={{ backgroundColor: noteDotColor(chip) }} />

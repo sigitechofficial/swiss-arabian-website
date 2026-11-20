@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCheckoutElements } from "@stripe/react-stripe-js/checkout";
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import { toE164Phone } from "@/features/auth/api/auth.service";
 import { clearPaymentState } from "../utils/checkoutSession";
 import { checkoutHref } from "../utils/checkoutLocale";
@@ -53,34 +54,24 @@ export function stripeConfirmError(error: {
   return message ? { code: "message", message } : { code: "failed" };
 }
 
-/** Swiss Arabian's sentences (also the default for any brand without its own). */
-export function stripePayErrorText(error: StripePayError): string {
-  switch (error.code) {
-    case "insufficient_funds":
-      return "Insufficient funds. Please try another card.";
-    case "card_declined":
-      return "Your card was declined. Please try another card.";
-    case "expired_card":
-      return "Your card has expired.";
-    case "incorrect_cvc":
-      return "The security code is incorrect.";
-    case "invalid_number":
-      return "The card number is invalid.";
-    case "processing_error":
-      return "A processing error occurred. Please try again.";
-    case "session_has_email":
-      return "Payment session already has your email. Tap Pay now again, or refresh and try once more.";
-    case "needs_email":
-      return "Enter your email in delivery details, then tap Pay now.";
-    case "needs_phone":
-      return "Enter your phone in delivery details, then tap Pay now.";
-    case "needs_name":
-      return "Enter your name in delivery details, then tap Pay now.";
-    case "message":
-      return error.message;
-    default:
-      return "Payment failed. Please try another card or contact your bank.";
-  }
+const STRIPE_PAY_ERROR: Record<Exclude<StripePayError["code"], "message">, MessageKey> = {
+  insufficient_funds: "checkout.stripe.error.insufficientFunds",
+  card_declined: "checkout.stripe.error.declined",
+  expired_card: "checkout.stripe.error.expired",
+  incorrect_cvc: "checkout.stripe.error.cvc",
+  invalid_number: "checkout.stripe.error.number",
+  processing_error: "checkout.stripe.error.processing",
+  session_has_email: "checkout.stripe.error.sessionEmail",
+  needs_email: "checkout.stripe.error.needsEmail",
+  needs_phone: "checkout.stripe.error.needsPhone",
+  needs_name: "checkout.stripe.error.needsName",
+  failed: "checkout.stripe.error.failed",
+};
+
+/** Swiss Arabian's sentences (also the default for any brand without its own), in the page's language. */
+export function stripePayErrorText(error: StripePayError, t: Translator = englishTranslator): string {
+  if (error.code === "message") return error.message;
+  return t(STRIPE_PAY_ERROR[error.code] ?? "checkout.stripe.error.failed");
 }
 
 function readCheckoutControl(name: string): string {

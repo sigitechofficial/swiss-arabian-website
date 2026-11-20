@@ -1,4 +1,6 @@
 import { formatMoney } from "@/features/home/utils/formatMoney";
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import type { StorefrontShippingPromise } from "../types/pdpShipping";
 
 function asInt(value: unknown): number | null {
@@ -41,30 +43,39 @@ export function parseShippingPromise(raw: unknown): StorefrontShippingPromise | 
   };
 }
 
-export function shippingDaysLine(promise: StorefrontShippingPromise): string | null {
+export function shippingDaysLine(
+  promise: StorefrontShippingPromise,
+  t: Translator = pageTranslator(),
+): string | null {
   const min = promise.estimatedMinDays;
   const max = promise.estimatedMaxDays;
   if (min != null && max != null) {
-    const range = min === max ? String(min) : `${min}–${max}`;
-    return `Order today — delivered in ${range} working days.`;
+    const days = min === max ? String(min) : `${min}–${max}`;
+    return t("pdp.shipping.days", { days });
   }
-  if (min != null) return `Order today — delivered in ${min} working days.`;
-  if (max != null) return `Order today — delivered in ${max} working days.`;
+  if (min != null) return t("pdp.shipping.days", { days: String(min) });
+  if (max != null) return t("pdp.shipping.days", { days: String(max) });
   return null;
 }
 
-export function shippingThresholdLine(promise: StorefrontShippingPromise): string | null {
+export function shippingThresholdLine(
+  promise: StorefrontShippingPromise,
+  t: Translator = pageTranslator(),
+): string | null {
   const raw = promise.freeDeliveryThreshold;
   if (!raw) return null;
   const amount = Number(raw);
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  return `Free shipping over ${formatMoney(amount, promise.currencyCode)} · free returns within 30 days.`;
+  return t("pdp.shipping.freeOver", { amount: formatMoney(amount, promise.currencyCode) });
 }
 
-export function shippingTabCopy(promise: StorefrontShippingPromise | null): string | null {
+export function shippingTabCopy(
+  promise: StorefrontShippingPromise | null,
+  t: Translator = pageTranslator(),
+): string | null {
   if (!promise) return null;
-  const days = shippingDaysLine(promise);
-  const free = shippingThresholdLine(promise);
+  const days = shippingDaysLine(promise, t);
+  const free = shippingThresholdLine(promise, t);
   const parts = [days, free].filter(Boolean);
   return parts.length ? parts.join(" ") : null;
 }

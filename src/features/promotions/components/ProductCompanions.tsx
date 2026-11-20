@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { bottle } from "@/styles/landingChrome";
 import { pageContainer } from "@/styles/siteChrome";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
@@ -69,6 +70,7 @@ export function ProductCompanions({
   /** Merch already renders these groups, so the companion copy is left out. */
   omitGroupIds?: string[];
 }) {
+  const t = useShopCopy();
   // Data, selection, price preview and "add selected": shared with every brand.
   const {
     pending,
@@ -98,7 +100,7 @@ export function ProductCompanions({
             <div className="mb-8 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_[data-heading]]:m-0 [&_[data-heading]]:text-[clamp(1.6rem,3vw,2.2rem)] [&_[data-heading]]:font-medium">
               <div>
                 <p className="m-0 mb-1.5 text-[0.72rem] font-bold tracking-[0.08em] text-copper uppercase">
-                  Often bought together
+                  {t("promotions.companions.eyebrow")}
                 </p>
                 <div data-heading id="companion-heading">{bundle.heading}</div>
               </div>
@@ -177,7 +179,7 @@ export function ProductCompanions({
                 })}
               </ul>
               <aside className={cartSummary}>
-                <p className={cartSummaryTitle}>Summary</p>
+                <p className={cartSummaryTitle}>{t("promotions.companions.summary")}</p>
                 {subtotal != null && total != null && discount != null ? (
                   <MoneySummary
                     className={cartTotals}

@@ -10,7 +10,8 @@ const api = vi.hoisted(() => ({
 vi.mock("@/lib/seo/requestMarket", () => ({
   resolveRequestCatalogMarket: async () => ({ locale: "en", zoneCode: "UAE" }),
 }));
-vi.mock("@/lib/i18n/messages", () => ({
+vi.mock("@/lib/i18n/messages", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/i18n/messages")>()),
   getTranslator: async () => (key: string) => (key === "home" ? "Home" : "Contact details"),
 }));
 vi.mock("@/features/catalog/components/CatalogJsonLd", () => ({

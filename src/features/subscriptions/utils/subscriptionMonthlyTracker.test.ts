@@ -28,14 +28,14 @@ describe("subscription monthly tracker", () => {
     const rules = readFileSync(resolve("src/features/subscriptions/utils/subscriptionMonthlyTracker.ts"), "utf8");
     expect(success).toContain("ocHero");
     expect(success).toContain("ocTitle");
-    expect(success).toContain("Track first order");
-    expect(rules).toContain("Not confirmed on this page");
-    expect(rules).toContain("Payment successful — Order processing");
+    expect(success).toContain("subs.success.trackFirst");
+    expect(rules).toContain("subs.success.orderNotConfirmed");
+    expect(rules).toContain("subs.success.orderProcessing");
     expect(success).not.toContain("PaymentElement");
     expect(checkout).toContain("SubscriptionCheckoutSuccess");
     expect(checkout).toContain("subscriptionCheckoutSucceeded");
     expect(checkout).not.toContain("OrderConfirmationView");
-    expect(retail).toContain("Track order");
+    expect(retail).toContain("track.trackOrder");
     expect(retail).not.toContain("SubscriptionCheckoutSuccess");
   });
 

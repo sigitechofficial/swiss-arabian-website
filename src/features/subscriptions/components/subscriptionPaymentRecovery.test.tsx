@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiClientError } from "@/lib/api/apiError";
+import { englishTranslator } from "@/lib/i18n/messages";
 import { useUiStore } from "@/stores/useUiStore";
 import { AccountSubscriptionDetailPageView } from "./AccountSubscriptionDetailPageView";
 import { PAYMENT_RETRY_UNCONFIRMED } from "../utils/subscriptionManagement";
@@ -239,7 +240,7 @@ describe("subscription payment recovery", () => {
     renderPage();
     const getsBefore = apiGet.mock.calls.length;
     await confirmRetry();
-    expect(await screen.findByRole("alert")).toHaveTextContent(PAYMENT_RETRY_UNCONFIRMED);
+    expect(await screen.findByRole("alert")).toHaveTextContent(englishTranslator(PAYMENT_RETRY_UNCONFIRMED));
     expect(screen.getByRole("alert")).not.toHaveTextContent(/charge failed/i);
     await waitFor(() => expect(apiGet.mock.calls.length).toBeGreaterThan(getsBefore));
     expect(apiPost).toHaveBeenCalledTimes(1);

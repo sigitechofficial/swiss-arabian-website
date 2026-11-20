@@ -1,4 +1,5 @@
-import { englishTranslator, type Translator } from "@/lib/i18n/messages";
+import { KeyedError } from "@/lib/i18n/keyedError";
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import type {
   PlanProduct,
   PublicSubscriptionConsent,
@@ -18,8 +19,19 @@ export const CONSENT_REFRESH_CODES = new Set([
 /** Storefront queue length. The API still accepts 20; that gap is not raised here. */
 export const QUEUE_CLIENT_LIMIT = 12;
 
-export const SCHEDULE_UNAVAILABLE_MESSAGE =
-  "No published Surprise schedule is available for this audience. Surprise registration stays closed until one is published.";
+/** Message key: no published Surprise schedule for the chosen audience. */
+export const SCHEDULE_UNAVAILABLE_MESSAGE: MessageKey = "subs.schedule.unavailable";
+
+/**
+ * A subscription rule the browser checks before calling the server (queue
+ * size, audience…). Shown through the translator like any other failure.
+ */
+export class SubscriptionRuleError extends KeyedError {
+  constructor(messageKey: MessageKey) {
+    super(messageKey);
+    this.name = "SubscriptionRuleError";
+  }
+}
 
 export function isSubscriptionAudience(value: unknown): value is SubscriptionAudience {
   return value === "MEN" || value === "WOMEN";
@@ -41,10 +53,9 @@ export function retainAudienceSelections(
   return { selected: next, removed: selected.length - next.length };
 }
 
-export function audienceChangeNotice(removed: number): string | null {
+export function audienceChangeNotice(removed: number, t: Translator = englishTranslator): string | null {
   if (removed < 1) return null;
-  const picks = removed === 1 ? "pick was" : "picks were";
-  return `${removed} ${picks} removed because they are not available for this audience.`;
+  return t("subs.audienceRemoved", { count: removed });
 }
 
 /** Only an explicit published agreement can be shown or submitted. */
@@ -57,9 +68,16 @@ export function activeRegistrationConsent(
   return { version: value.version, text: value.text, publishedAt: value.publishedAt };
 }
 
-export function planFeeLabel(amount: string, currencyCode: string, intervalUnit: string): string {
-  const cadence = intervalUnit === "MONTH" ? "month" : intervalUnit.toLowerCase();
-  return `${currencyCode} ${amount} / ${cadence}`;
+export function planFeeLabel(
+  amount: string,
+  currencyCode: string,
+  intervalUnit: string,
+  t: Translator = englishTranslator,
+): string {
+  const price = `${currencyCode} ${amount}`;
+  return intervalUnit === "MONTH"
+    ? t("subs.price.perMonth", { amount: price })
+    : t("subs.price.perInterval", { amount: price, interval: intervalUnit.toLowerCase() });
 }
 
 const MONEY = /^\d+\.\d{2}$/;
@@ -78,17 +96,21 @@ export type SubscriptionPriceLines =
  * Display copy for a server price snapshot.
  * monthlyTotal is used as given. A missing total falls back only when shipping is included and zero.
  */
-export function subscriptionPriceLines(input: {
-  amount?: string | null;
-  currencyCode?: string | null;
-  shippingMode?: string | null;
-  shippingAmount?: string | null;
-  monthlyTotal?: string | null;
-}): SubscriptionPriceLines {
+export function subscriptionPriceLines(
+  input: {
+    amount?: string | null;
+    currencyCode?: string | null;
+    shippingMode?: string | null;
+    shippingAmount?: string | null;
+    monthlyTotal?: string | null;
+  },
+  t: Translator = englishTranslator,
+): SubscriptionPriceLines {
+  const unavailable = { available: false as const, message: t("subs.price.unavailable") };
   const currency = input.currencyCode?.trim().toUpperCase() ?? "";
   const amount = input.amount?.trim() ?? "";
   if (!currency || !MONEY.test(amount)) {
-    return { available: false, message: "Subscription pricing is unavailable." };
+    return unavailable;
   }
   const mode = input.shippingMode === "EXTRA_FIXED" ? "EXTRA_FIXED" : input.shippingMode ?? "INCLUDED";
   const shippingAmount = input.shippingAmount?.trim() || "0.00";
@@ -96,30 +118,33 @@ export function subscriptionPriceLines(input: {
   const includedZero =
     mode === "INCLUDED" && (input.shippingAmount == null || shippingAmount === "0.00" || shippingAmount === "0");
   if (mode !== "INCLUDED" && mode !== "EXTRA_FIXED") {
-    return { available: false, message: "Subscription pricing is unavailable." };
+    return unavailable;
   }
   if (mode === "EXTRA_FIXED" && !MONEY.test(shippingAmount)) {
-    return { available: false, message: "Subscription pricing is unavailable." };
+    return unavailable;
   }
   if (MONEY.test(serverTotal)) {
     return {
       available: true,
-      subscription: `Subscription ${currency} ${amount}/month`,
-      shipping: mode === "EXTRA_FIXED" ? `Shipping ${currency} ${shippingAmount}/month` : "Shipping included",
-      total: `Total ${currency} ${serverTotal}/month`,
+      subscription: t("subs.price.subscription", { amount: `${currency} ${amount}` }),
+      shipping:
+        mode === "EXTRA_FIXED"
+          ? t("subs.price.shipping", { amount: `${currency} ${shippingAmount}` })
+          : t("subs.price.shippingIncluded"),
+      total: t("subs.price.total", { amount: `${currency} ${serverTotal}` }),
       totalAmount: serverTotal,
     };
   }
   if (includedZero) {
     return {
       available: true,
-      subscription: `Subscription ${currency} ${amount}/month`,
-      shipping: "Shipping included",
-      total: `Total ${currency} ${amount}/month`,
+      subscription: t("subs.price.subscription", { amount: `${currency} ${amount}` }),
+      shipping: t("subs.price.shippingIncluded"),
+      total: t("subs.price.total", { amount: `${currency} ${amount}` }),
       totalAmount: amount,
     };
   }
-  return { available: false, message: "Subscription pricing is unavailable." };
+  return unavailable;
 }
 
 /** Eligible products are exactly the API rows. Retail price is never a filter. */
@@ -145,13 +170,13 @@ export function selectVariant(
   allowed: ReadonlySet<string>,
 ): string[] {
   if (!allowed.has(variantId)) {
-    throw new Error("That fragrance is not on this plan.");
+    throw new SubscriptionRuleError("subs.rule.notOnPlan");
   }
   if (mode === "SURPRISE") return [];
   if (mode === "REPLENISHMENT") return [variantId];
   if (selected.includes(variantId)) return selected;
   if (selected.length >= QUEUE_CLIENT_LIMIT) {
-    throw new Error("A queue can hold 12 fragrances.");
+    throw new SubscriptionRuleError("subs.detail.queueLimit");
   }
   return [...selected, variantId];
 }
@@ -182,24 +207,24 @@ export function buildRegisterBody(input: {
   allowedVariantIds: readonly string[];
 }): RegisterSubscriptionBody {
   if (!isSubscriptionAudience(input.audience)) {
-    throw new Error("Choose Men or Women.");
+    throw new SubscriptionRuleError("subs.rule.chooseAudience");
   }
   const allowed = new Set(input.allowedVariantIds);
   const ordered = input.variantIds.filter((id, index) => input.variantIds.indexOf(id) === index);
   if (input.mode !== "SURPRISE" && ordered.some((id) => !allowed.has(id))) {
-    throw new Error("That fragrance is not on this plan.");
+    throw new SubscriptionRuleError("subs.rule.notOnPlan");
   }
   if (input.mode === "REPLENISHMENT" && ordered.length !== 1) {
-    throw new Error("Choose one fragrance.");
+    throw new SubscriptionRuleError("subs.rule.chooseOne");
   }
   if (input.mode === "QUEUE" && ordered.length < 1) {
-    throw new Error("Add at least one fragrance.");
+    throw new SubscriptionRuleError("subs.rule.addOne");
   }
   if (input.mode === "QUEUE" && ordered.length > QUEUE_CLIENT_LIMIT) {
-    throw new Error("A queue can hold 12 fragrances.");
+    throw new SubscriptionRuleError("subs.detail.queueLimit");
   }
   if (input.mode === "SURPRISE" && ordered.length > 0) {
-    throw new Error("Surprise Me does not take a fragrance list.");
+    throw new SubscriptionRuleError("subs.rule.surpriseNoList");
   }
   const body: RegisterSubscriptionBody = {
     zoneCode: input.zoneCode,
@@ -264,6 +289,7 @@ export function modeLabel(mode: SubscriptionSelectionMode, t: Translator = engli
   return t("subs.mode.surprise");
 }
 
+/** English billing promises a pending registration must never show (checked in tests). */
 const FORBIDDEN_COPY = [
   "payment successful",
   "order confirmed",
@@ -273,32 +299,44 @@ const FORBIDDEN_COPY = [
   "active subscription",
 ];
 
-export function registrationSuccessCopy(input: {
-  planName: string;
-  amount: string;
-  currencyCode: string;
-  shippingMode?: string | null;
-  shippingAmount?: string | null;
-  monthlyTotal?: string | null;
-  mode: SubscriptionSelectionMode;
-  fragranceNames: string[];
-}): string[] {
-  const price = subscriptionPriceLines(input);
+export function registrationSuccessCopy(
+  input: {
+    planName: string;
+    amount: string;
+    currencyCode: string;
+    shippingMode?: string | null;
+    shippingAmount?: string | null;
+    monthlyTotal?: string | null;
+    mode: SubscriptionSelectionMode;
+    fragranceNames: string[];
+  },
+  t: Translator = englishTranslator,
+): string[] {
+  const price = subscriptionPriceLines(input, t);
   const lines = [
-    "Registration saved.",
+    t("subs.registered.saved"),
     ...(price.available
-      ? [`${input.planName}.`, price.subscription, price.shipping, price.total]
-      : [`${input.planName} — ${planFeeLabel(input.amount, input.currencyCode, "MONTH")}.`]),
-    `Selection: ${modeLabel(input.mode)}.`,
-    "Status: Pending activation.",
-    "No payment has been collected.",
-    "No order has been created.",
-    "This subscription is not active and does not renew.",
+      ? [t("subs.registered.plan", { plan: input.planName }), price.subscription, price.shipping, price.total]
+      : [
+          t("subs.registered.planFee", {
+            plan: input.planName,
+            fee: planFeeLabel(input.amount, input.currencyCode, "MONTH", t),
+          }),
+        ]),
+    t("subs.registered.selection", { mode: modeLabel(input.mode, t) }),
+    t("subs.registered.status"),
+    t("subs.registered.noPayment"),
+    t("subs.registered.noOrder"),
+    t("subs.registered.notActive"),
   ];
   if (input.mode === "SURPRISE") {
-    lines.push("No fragrance has been allocated.");
+    lines.push(t("subs.registered.noFragrance"));
   } else if (input.fragranceNames.length) {
-    lines.push(`Saved fragrances: ${input.fragranceNames.join(", ")}.`);
+    lines.push(
+      t("subs.registered.fragrances", {
+        names: input.fragranceNames.join(t("subs.registered.listSeparator")),
+      }),
+    );
   }
   return lines;
 }

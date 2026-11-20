@@ -25,7 +25,7 @@ type ListFilter = "all" | "active" | "pending";
 
 export function AgreementPrice({ item }: { item: Pick<SubscriptionSummary, "amount" | "currencyCode" | "shippingMode" | "shippingAmount" | "monthlyTotal"> }) {
   const t = useShopCopy();
-  const price = subscriptionPriceLines(item);
+  const price = subscriptionPriceLines(item, t);
   if (!price.available) {
     return <p className="mt-2">{t("subs.accepted.unavailable")}</p>;
   }
@@ -76,12 +76,12 @@ export function AccountSubscriptionsPageView() {
   const visible = filter === "active" ? active : filter === "pending" ? pending : items;
   const monthly = useMemo(() => {
     const totals = active
-      .map((item) => subscriptionPriceLines(item))
+      .map((item) => subscriptionPriceLines(item, t))
       .filter((price) => price.available);
     if (totals.length === 0 || !active[0]) return null;
     const sum = totals.reduce((total, price) => total + Number(price.totalAmount), 0);
     return `${active[0].currencyCode} ${sum.toFixed(2)}`;
-  }, [active]);
+  }, [active, t]);
 
   return (
     <AccountPageShell>
@@ -120,7 +120,7 @@ export function AccountSubscriptionsPageView() {
             ) : (
               <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-5 p-0">
                 {visible.map((item) => {
-                  const price = subscriptionPriceLines(item);
+                  const price = subscriptionPriceLines(item, t);
                   const pendingCard = item.status === "PENDING_ACTIVATION";
                   return (
                     <li key={item.id} className="flex flex-col overflow-hidden rounded-[20px] border border-[#E6DCCB] bg-white">

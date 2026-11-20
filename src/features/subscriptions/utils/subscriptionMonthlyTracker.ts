@@ -3,6 +3,8 @@ import type {
   SubscriptionQueueItem,
   SubscriptionSelectionMode,
 } from "../types/subscription.types";
+import { DEFAULT_LOCALE, intlLocale } from "@/lib/i18n/locales";
+import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import { queueRows } from "./subscriptionRules";
 
 export type TrackerPaymentStatus =
@@ -51,23 +53,25 @@ export type SubscriptionMonthRow = {
   trackingUrl: string | null;
 };
 
-export const TRACKER_PAYMENT_LABEL: Record<TrackerPaymentStatus, string> = {
-  UPCOMING: "Upcoming",
-  PROCESSING: "Processing",
-  PAID: "Paid",
-  FAILED: "Payment failed",
-  ACTION_REQUIRED: "Action required",
-  RECONCILIATION_REQUIRED: "Needs review",
-  SKIPPED: "Skipped",
+/** Message keys for each month's payment state (`t(TRACKER_PAYMENT_LABEL[status])`). */
+export const TRACKER_PAYMENT_LABEL: Record<TrackerPaymentStatus, MessageKey> = {
+  UPCOMING: "subs.text.upcoming",
+  PROCESSING: "subs.text.processing",
+  PAID: "subs.text.paid",
+  FAILED: "subs.text.paymentFailed",
+  ACTION_REQUIRED: "subs.text.actionRequired",
+  RECONCILIATION_REQUIRED: "subs.text.needsReview",
+  SKIPPED: "subs.text.skipped",
 };
 
-export const TRACKER_DELIVERY_LABEL: Record<TrackerDeliveryStatus, string> = {
-  NOT_CREATED: "Order not created yet",
-  ORDER_PENDING: "Order pending",
-  MANUAL_REVIEW: "Under review",
-  PROCESSING: "Processing",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
+/** Message keys for each month's delivery state. */
+export const TRACKER_DELIVERY_LABEL: Record<TrackerDeliveryStatus, MessageKey> = {
+  NOT_CREATED: "subs.text.orderNotCreated",
+  ORDER_PENDING: "subs.text.orderPending",
+  MANUAL_REVIEW: "subs.text.underReview",
+  PROCESSING: "subs.text.processing",
+  SHIPPED: "subs.text.shipped",
+  DELIVERED: "subs.text.delivered",
 };
 
 const PAYMENT_FROM_CYCLE: Record<string, TrackerPaymentStatus> = {
@@ -88,22 +92,25 @@ export function subscriptionOrderTrackHref(input: {
   return `/account/orders/${encodeURIComponent(orderId)}#tracking`;
 }
 
-export function subscriptionCheckoutOrderPresentation(input: {
-  orderState?: "CONFIRMED" | "PENDING" | "NONE" | null;
-  orderId?: string | null;
-  orderNumber?: string | null;
-  orderStatus?: string | null;
-  fulfillmentStatus?: string | null;
-  shipmentStatus?: string | null;
-}): { orderLabel: string; fulfillmentLabel: string | null; trackHref: string | null } {
+export function subscriptionCheckoutOrderPresentation(
+  input: {
+    orderState?: "CONFIRMED" | "PENDING" | "NONE" | null;
+    orderId?: string | null;
+    orderNumber?: string | null;
+    orderStatus?: string | null;
+    fulfillmentStatus?: string | null;
+    shipmentStatus?: string | null;
+  },
+  t: Translator = englishTranslator,
+): { orderLabel: string; fulfillmentLabel: string | null; trackHref: string | null } {
   const state = input.orderState ?? "NONE";
   if (state === "PENDING") {
-    return { orderLabel: "Payment successful — Order processing", fulfillmentLabel: null, trackHref: null };
+    return { orderLabel: t("subs.success.orderProcessing"), fulfillmentLabel: null, trackHref: null };
   }
   const orderNumber = input.orderNumber?.trim() || "";
   const orderId = input.orderId?.trim() || "";
   if (state !== "CONFIRMED" || !orderNumber) {
-    return { orderLabel: "Not confirmed on this page", fulfillmentLabel: null, trackHref: null };
+    return { orderLabel: t("subs.success.orderNotConfirmed"), fulfillmentLabel: null, trackHref: null };
   }
   const delivery = deliveryFromCycle({
     cycleNumber: 1,
@@ -116,7 +123,7 @@ export function subscriptionCheckoutOrderPresentation(input: {
   });
   return {
     orderLabel: orderNumber,
-    fulfillmentLabel: TRACKER_DELIVERY_LABEL[delivery],
+    fulfillmentLabel: t(TRACKER_DELIVERY_LABEL[delivery]),
     trackHref: orderId ? subscriptionOrderTrackHref({ orderId }) : null,
   };
 }
@@ -128,13 +135,18 @@ export function subscriptionCheckoutShowsPaymentForm(view: {
   return !(view.paymentState === "SUCCESS" && view.status === "ACTIVE");
 }
 
-const CALENDAR_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-export function subscriptionMonthName(registeredAt: string | null | undefined, shipment: number): string {
+/** The calendar month a shipment falls in ("March"), named in the page's language. */
+export function subscriptionMonthName(
+  registeredAt: string | null | undefined,
+  shipment: number,
+  locale: string = DEFAULT_LOCALE,
+): string {
   const start = registeredAt ? new Date(registeredAt) : null;
   const base = start && !Number.isNaN(start.getTime()) ? start.getUTCMonth() : 0;
   const index = (base + Math.max(1, shipment) - 1) % 12;
-  return CALENDAR_MONTHS[index] ?? "January";
+  return new Intl.DateTimeFormat(intlLocale(locale), { month: "long", timeZone: "UTC" }).format(
+    new Date(Date.UTC(2000, index, 1)),
+  );
 }
 
 function fragranceName(item: SubscriptionQueueItem | undefined): string | null {
@@ -200,6 +212,8 @@ export function buildSubscriptionMonths(input: {
   queue: SubscriptionQueueItem[];
   surpriseSchedule?: SubscriptionDetail["surpriseSchedule"];
   cycles?: SubscriptionCycleSnapshot[];
+  /** The page's locale, for month names. */
+  locale?: string;
 }): SubscriptionMonthRow[] {
   const cycles = new Map((input.cycles ?? []).map((cycle) => [cycle.cycleNumber, cycle]));
   let nextOpenMonth = 0;
@@ -219,7 +233,7 @@ export function buildSubscriptionMonths(input: {
     const planned = plannedMonth(input.mode, input.queue, input.surpriseSchedule, month);
     return {
       month,
-      label: subscriptionMonthName(input.registeredAt, month),
+      label: subscriptionMonthName(input.registeredAt, month, input.locale),
       fragrance: planned.fragrance || cycle?.sku?.trim() || null,
       imageUrl: planned.imageUrl,
       billingDate: !skipped && payment !== "PAID" && month === nextOpenMonth ? input.nextBillingAt : null,
@@ -240,6 +254,7 @@ export function monthsFromAgreement(
     SubscriptionDetail,
     "selectionMode" | "status" | "billingEnabled" | "nextBillingAt" | "registeredAt" | "queue" | "surpriseSchedule" | "billingCycles"
   >,
+  locale: string = DEFAULT_LOCALE,
 ): SubscriptionMonthRow[] {
   return buildSubscriptionMonths({
     mode: detail.selectionMode,
@@ -250,5 +265,6 @@ export function monthsFromAgreement(
     queue: queueRows(detail.queue),
     surpriseSchedule: detail.surpriseSchedule,
     cycles: detail.billingCycles,
+    locale,
   });
 }

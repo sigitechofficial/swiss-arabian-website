@@ -4,6 +4,7 @@ import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { getStripe } from "@/lib/stripe/getStripe";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 
 import { accountPanel, accountPanelBody, accountPrimaryCta } from "@/styles/accountChrome";
 
@@ -68,6 +69,7 @@ function CardConfirm({
   paying: boolean;
   onPhase: (phase: CardSetupPhase | "active", instrumentId: string | null) => void;
 }) {
+  const t = useShopCopy();
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -104,13 +106,14 @@ function CardConfirm({
     <div className="mt-4 flex flex-col gap-3">
       <PaymentElement />
       <button type="button" className={accountPrimaryCta} disabled={!stripe || !elements || busy || paying} onClick={() => void confirm()}>
-        {busy ? "Saving card…" : "Save card"}
+        {busy ? t("subs.card.saving") : t("subs.cardSetup.save")}
       </button>
     </div>
   );
 }
 
 export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, returnPath, subscriptionId }: Props) {
+  const t = useShopCopy();
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -143,13 +146,13 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
         start: startFirstPayment,
         confirmAction: confirmPaymentAction,
       });
-      setMessage(firstPaymentMessage(view));
+      setMessage(firstPaymentMessage(view, t));
     } catch (err) {
-      setMessage(getUserFacingErrorMessage(err, "The subscription payment could not be confirmed."));
+      setMessage(getUserFacingErrorMessage(err, t("subs.cardSetup.paymentFailed"), t));
     } finally {
       setPaying(false);
     }
-  }, [confirmPaymentAction, subscriptionId, zoneCode]);
+  }, [confirmPaymentAction, subscriptionId, t, zoneCode]);
 
   useEffect(() => {
     if (!subscriptionId) return;
@@ -172,12 +175,12 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
     if (!instrumentId) return;
     let cancelled = false;
     void waitForInstrument(zoneCode, instrumentId).then((settled) => {
-      if (!cancelled) setMessage(CARD_SETUP_COPY[settled === "active" ? "active" : returned]);
+      if (!cancelled) setMessage(t(CARD_SETUP_COPY[settled === "active" ? "active" : returned]));
     });
     return () => {
       cancelled = true;
     };
-  }, [returned, zoneCode]);
+  }, [returned, t, zoneCode]);
 
   async function start() {
     const body = buildSetupSessionBody({
@@ -193,7 +196,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
       const publishableKey = selectTestPublishableKey(created.publishableKey);
       const setupIntentId = setupIntentIdFromClientSecret(created.clientSecret);
       if (created.status !== "PENDING_SETUP" || !publishableKey || !setupIntentId || !created.clientSecret) {
-        setMessage(CARD_SETUP_COPY.unavailable);
+        setMessage(t(CARD_SETUP_COPY.unavailable));
         return;
       }
       rememberInstrument(setupIntentId, created.instrumentId);
@@ -203,7 +206,7 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
       }
       setSession({ instrumentId: created.instrumentId, clientSecret: created.clientSecret, publishableKey });
     } catch (err) {
-      setMessage(getUserFacingErrorMessage(err, CARD_SETUP_COPY.declined));
+      setMessage(getUserFacingErrorMessage(err, t(CARD_SETUP_COPY.declined), t));
     } finally {
       setBusy(false);
     }
@@ -217,14 +220,14 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
   return (
     <div className={`${accountPanel} mt-4`}>
       <div className={accountPanelBody}>
-        <h2 className="m-0 text-[1rem] font-semibold">Authorize a saved card</h2>
+        <h2 className="m-0 text-[1rem] font-semibold">{t("subs.cardSetup.title")}</h2>
         <p className="mt-2 text-[0.9rem]">
-          Confirm this card to pay the saved monthly total. No order is placed from this page.
+          {t("subs.cardSetup.intro")}
         </p>
         <p className="mt-3 text-[0.9rem]">{consentText}</p>
         {returned && !session ? (
           <p className="mt-3" role="status">
-            {CARD_SETUP_COPY[returned]}
+            {t(CARD_SETUP_COPY[returned])}
           </p>
         ) : null}
         {message ? (
@@ -241,10 +244,10 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
                 checked={accepted}
                 onChange={(event) => setAccepted(event.target.checked)}
               />
-              <span>I accept recurring card use under agreement {consentVersion}.</span>
+              <span>{t("subs.cardSetup.accept", { version: consentVersion })}</span>
             </label>
             <button type="button" className={`${accountPrimaryCta} mt-4`} disabled={!accepted || busy || paying} onClick={() => void start()}>
-              {busy ? "Starting card setup…" : "Continue to card"}
+              {busy ? t("subs.cardSetup.starting") : t("subs.cardSetup.continue")}
             </button>
           </>
         ) : null}
@@ -257,11 +260,11 @@ export function SubscriptionCardSetup({ zoneCode, consentVersion, consentText, r
               paying={paying}
               onPhase={(phase, instrumentId) => {
                 if (phase === "active" && instrumentId && subscriptionId) {
-                  setMessage("The saved card is active. Starting the subscription payment.");
+                  setMessage(t("subs.cardSetup.activeStarting"));
                   void payWithInstrument(instrumentId);
                   return;
                 }
-                setMessage(CARD_SETUP_COPY[phase]);
+                setMessage(t(CARD_SETUP_COPY[phase]));
               }}
             />
           </Elements>

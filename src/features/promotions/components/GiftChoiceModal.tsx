@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useGiftChoiceDialog } from "../hooks/useGiftChoiceDialog";
 import type { PromotionGiftAward } from "../types/promotions";
 import { giftErrorMessage } from "../utils/giftWithPurchase";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {
   cartHint,
   giftChoiceBackdrop,
@@ -28,9 +29,10 @@ export type GiftChoiceModalProps = {
 
 /** Swiss Arabian's free-gift choice dialog (logic in `useGiftChoiceDialog`). */
 export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalProps) {
+  const t = useShopCopy();
   const titleId = useId();
   const dialog = useGiftChoiceDialog(award, onClose);
-  const error = dialog.error ? giftErrorMessage(dialog.error.code, dialog.error.message) : null;
+  const error = dialog.error ? giftErrorMessage(dialog.error.code, dialog.error.message, t) : null;
   // Portal target (document.body) exists only after hydration.
   const mounted = useHydrated();
 
@@ -54,7 +56,7 @@ export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalPr
       <button
         type="button"
         className={giftChoiceBackdrop}
-        aria-label="Close gift choices"
+        aria-label={t("promotions.gift.close")}
         onClick={onClose}
       />
       <div
@@ -63,12 +65,12 @@ export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalPr
         aria-labelledby={titleId}
         className={`${giftChoiceDialog} ${celebrate ? giftChoiceReveal : ""}`}
       >
-        <p className={giftChoiceKicker}>Free gift</p>
-        <h2 id={titleId}>A gift is yours</h2>
+        <p className={giftChoiceKicker}>{t("checkout.confirmation.freeGift")}</p>
+        <h2 id={titleId}>{t("promotions.gift.yours")}</h2>
         <p className={giftChoiceLede}>
-          Choose one. You can change it before checkout.
+          {t("promotions.gift.chooseOne")}
         </p>
-        <ul className={giftChoiceList} aria-label="Free gift choices">
+        <ul className={giftChoiceList} aria-label={t("promotions.gift.choices")}>
           {dialog.gifts.map((gift, index) => {
             const { title, image } = gift;
             return (
@@ -93,7 +95,7 @@ export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalPr
                   disabled={dialog.pending}
                   onClick={() => void dialog.select(gift.sku)}
                 >
-                  Select
+                  {t("subs.plan.select")}
                 </button>
               </li>
             );
@@ -105,7 +107,7 @@ export function GiftChoiceModal({ award, celebrate, onClose }: GiftChoiceModalPr
           </p>
         ) : null}
         <button type="button" className={giftChoiceLater} onClick={onClose}>
-          Not now
+          {t("promotions.gift.notNow")}
         </button>
       </div>
     </div>,

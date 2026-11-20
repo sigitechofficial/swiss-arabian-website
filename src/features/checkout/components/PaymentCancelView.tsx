@@ -6,6 +6,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { storedOrderIdIf, usePaymentRetry } from "../hooks/usePaymentReturn";
 import { CheckoutStateShell } from "./CheckoutStateShell";
+import { EM_SLOT, EmphasisCopy } from "./EmphasisCopy";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
   checkoutCta,
@@ -42,13 +43,13 @@ export function PaymentCancelView() {
 
   if (hydrated && !orderId) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={copy("checkout.state.payment")}>
         <section className={checkoutEmpty}>
-          <p className={stateEyebrow}>Payment</p>
-          <h1 className={collectionTitle}>This payment session has ended.</h1>
-          <p>Start again from your bag to place a new order.</p>
+          <p className={stateEyebrow}>{copy("checkout.state.payment")}</p>
+          <h1 className={collectionTitle}>{copy("checkout.state.sessionEnded")}</h1>
+          <p>{copy("checkout.state.sessionEndedBody")}</p>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/cart">
-            <span>Back to bag</span>
+            <span>{copy("checkout.orderChanged.backToBag")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
         </section>
@@ -57,15 +58,17 @@ export function PaymentCancelView() {
   }
 
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={copy("checkout.state.payment")}>
       <section className={checkoutDone}>
-        <p className={stateEyebrow}>Payment not completed</p>
+        <p className={stateEyebrow}>{copy("checkout.state.notCompleted")}</p>
         <h1 className={doneTitle}>
-          Your order is <em className={doneEm}>saved</em>.
+          <EmphasisCopy text={copy("checkout.state.savedTitle", EM_SLOT)} em={copy("checkout.state.savedEm")} className={doneEm} />
         </h1>
         <p className={stateIntro}>
-          {orderNumber ? `Order ${orderNumber} is waiting for payment. ` : "Your order is waiting for payment. "}
-          You can finish paying now, or come back to it later.
+          {orderNumber
+            ? copy("checkout.state.waitingNumbered", { number: orderNumber })
+            : copy("checkout.state.waiting")}{" "}
+          {copy("checkout.state.finishLater")}
         </p>
         {error ? (
           <p className={checkoutError} role="alert">
@@ -79,11 +82,11 @@ export function PaymentCancelView() {
             onClick={() => void retry()}
             disabled={retrying || !hydrated}
           >
-            <span>{retrying ? "Opening payment…" : "Retry payment"}</span>
+            <span>{retrying ? copy("checkout.state.openingPayment") : copy("checkout.state.retryPayment")}</span>
             <b aria-hidden="true">↗</b>
           </button>
           <LocaleLink className={checkoutLink} href="/">
-            Return home
+            {copy("checkout.state.returnHome")}
           </LocaleLink>
         </div>
       </section>

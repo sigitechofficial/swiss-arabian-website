@@ -1,3 +1,5 @@
+import type { Translator } from "@/lib/i18n/messages";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import { providerTextIn } from "./providerText";
 import type { TabbyPrescore } from "../hooks/useTabbyPrescore";
 import type { TamaraPrecheck } from "../hooks/useTamaraPrecheck";
@@ -52,6 +54,7 @@ export function paymentGroups(
   tabbyPrescore: TabbyPrescore,
   tabbyLang: TabbyLang,
   tamaraPrecheck: TamaraPrecheck = { state: "idle" },
+  t: Translator = pageTranslator(),
 ): PayGroup[] {
   const country = (countryCode || "AE").toUpperCase();
   const stripeFirst = !["SA", "EG", "PK"].includes(country);
@@ -88,7 +91,7 @@ export function paymentGroups(
           {
             key: "card@stripe",
             kind: "card",
-            title: "Credit or debit card",
+            title: t("checkout.pay.card"),
             sub: "Visa, Mastercard, Amex",
             marks: ["visa", "mc", "amex"],
             zoneId: stripe.zonePaymentMethodId,
@@ -107,7 +110,7 @@ export function paymentGroups(
           {
             key: "card@paymob",
             kind: "card",
-            title: "Credit or debit card",
+            title: t("checkout.pay.card"),
             sub: "Visa, Mastercard",
             marks: ["visa", "mc"],
             zoneId: paymob.zonePaymentMethodId,
@@ -127,13 +130,13 @@ export function paymentGroups(
   if (others.length) {
     groups.push({
       id: "other",
-      title: "Other",
+      title: t("checkout.pay.other"),
       rows: others.map((method) => {
         const row: PayRow = {
           key: method.zonePaymentMethodId,
           kind: "method",
           title: method.displayName,
-          sub: paymentMethodNote(method) || undefined,
+          sub: paymentMethodNote(method, t) || undefined,
           zoneId: method.zonePaymentMethodId,
           method,
         };
@@ -146,7 +149,7 @@ export function paymentGroups(
             row.sub = providerTextIn(tamaraPrecheck.message, tabbyLang);
             row.tamaraMessage = providerTextIn(tamaraPrecheck.message, tabbyLang);
           } else if (tamaraPrecheck.state === "checking") {
-            row.sub = "Checking eligibility…";
+            row.sub = t("checkout.pay.checkingEligibility");
           }
           return row;
         }
@@ -161,27 +164,27 @@ export function paymentGroups(
           row.sub = providerTextIn(tabbyPrescore.message, tabbyLang);
           row.tabbyMessage = providerTextIn(tabbyPrescore.message, tabbyLang);
         } else if (tabbyPrescore.state === "checking") {
-          row.sub = "Checking eligibility…";
+          row.sub = t("checkout.pay.checkingEligibility");
         }
         return row;
       }),
     });
   }
 
-  const more = (methods.length ? upcomingPaymentMethods(countryCode, methods) : []).filter(
+  const more = (methods.length ? upcomingPaymentMethods(countryCode, methods, t) : []).filter(
     (method) =>
       method.selectsProvider !== "stripe" && method.id !== "paymob-apple-pay" && method.id !== "paymob-google-pay",
   );
   if (more.length) {
     groups.push({
       id: "more",
-      title: "More ways to pay",
+      title: t("checkout.pay.more"),
       rows: more.map((method) => ({
         key: method.id,
         kind: "upcoming",
         title: method.title,
         sub: method.note,
-        badge: "Coming soon",
+        badge: t("checkout.pay.comingSoon"),
         disabled: true,
       })),
     });

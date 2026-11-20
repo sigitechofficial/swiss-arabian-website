@@ -1,9 +1,11 @@
 "use client";
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useHydrated } from "@/hooks/useHydrated";
 import { storedOrderIdIf, useSettlePayment } from "../hooks/usePaymentReturn";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";
+import { EM_SLOT, EmphasisCopy } from "./EmphasisCopy";
 import { collectionTitle, doneEm, doneTitle, stateEyebrow, stateIntro } from "@/styles/shopChrome";
 import {
   checkoutCta,
@@ -19,17 +21,18 @@ import {
  * itself proves nothing — the provider webhook decides — so poll the backend.
  */
 export function PaymentSuccessView() {
+  const t = useShopCopy();
   const hydrated = useHydrated();
   const orderId = storedOrderIdIf(hydrated);
   const outcome = useSettlePayment(orderId);
 
   if (!hydrated || (orderId && (!outcome || outcome.kind === "paid"))) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <CheckoutSpinnerState
-          eyebrow="Payment"
-          title="Confirming your payment…"
-          body="This usually takes a few seconds. Please don’t close or refresh this page."
+          eyebrow={t("checkout.state.payment")}
+          title={t("checkout.state.confirmingTitle")}
+          body={t("checkout.state.confirmingBody")}
         />
       </CheckoutStateShell>
     );
@@ -37,13 +40,13 @@ export function PaymentSuccessView() {
 
   if (!orderId) {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutEmpty}>
-          <p className={stateEyebrow}>Payment</p>
-          <h1 className={collectionTitle}>We couldn’t find your order.</h1>
-          <p>If you completed a payment, your confirmation email has the details.</p>
+          <p className={stateEyebrow}>{t("checkout.state.payment")}</p>
+          <h1 className={collectionTitle}>{t("checkout.state.orderNotFound")}</h1>
+          <p>{t("checkout.state.noOrderBody")}</p>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/">
-            <span>Return home</span>
+            <span>{t("checkout.state.returnHome")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
         </section>
@@ -53,22 +56,22 @@ export function PaymentSuccessView() {
 
   if (outcome?.kind === "timeout") {
     return (
-      <CheckoutStateShell current="Payment">
+      <CheckoutStateShell current={t("checkout.state.payment")}>
         <section className={checkoutDone}>
-          <p className={stateEyebrow}>Still processing</p>
+          <p className={stateEyebrow}>{t("checkout.state.stillProcessing")}</p>
           <h1 className={doneTitle}>
-            Your payment is taking <em className={doneEm}>a little longer</em>.
+            <EmphasisCopy text={t("checkout.state.slowTitle", EM_SLOT)} em={t("checkout.state.slowEm")} className={doneEm} />
           </h1>
           <p className={stateIntro}>
-            We’ll email you as soon as it’s confirmed — there’s no need to pay again.
+            {t("checkout.state.slowBody")}
           </p>
           <div className={checkoutDoneActions}>
             <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href={`/order-confirmation/${orderId}?verify=1`}>
-              <span>Check order status</span>
+              <span>{t("checkout.state.orderStatus")}</span>
               <b aria-hidden="true">↗</b>
             </LocaleLink>
             <LocaleLink className={checkoutLink} href="/">
-              Return home
+              {t("checkout.state.returnHome")}
             </LocaleLink>
           </div>
         </section>
@@ -78,24 +81,24 @@ export function PaymentSuccessView() {
 
   const declined = outcome?.kind === "failed" && outcome.status === "DECLINED";
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={t("checkout.state.payment")}>
       <section className={checkoutDone}>
-        <p className={stateEyebrow}>Payment unsuccessful</p>
+        <p className={stateEyebrow}>{t("checkout.state.unsuccessful")}</p>
         <h1 className={doneTitle}>
-          Your payment <em className={doneEm}>didn’t go through</em>.
+          <EmphasisCopy text={t("checkout.state.failedTitle", EM_SLOT)} em={t("checkout.state.failedEm")} className={doneEm} />
         </h1>
         <p className={stateIntro}>
           {declined
-            ? "Your card was declined by the issuer. Your order is saved — you can try another card."
-            : "We couldn’t process your payment. Your order is saved — you can try again."}
+            ? t("checkout.state.cardDeclinedBody")
+            : t("checkout.state.processFailedBody")}
         </p>
         <div className={checkoutDoneActions}>
           <LocaleLink className={`${checkoutCta} ${checkoutCtaInline}`} href="/checkout/payment/cancel">
-            <span>Try again</span>
+            <span>{t("tryAgain")}</span>
             <b aria-hidden="true">↗</b>
           </LocaleLink>
           <LocaleLink className={checkoutLink} href="/">
-            Return home
+            {t("checkout.state.returnHome")}
           </LocaleLink>
         </div>
       </section>

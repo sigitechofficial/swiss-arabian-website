@@ -1,3 +1,4 @@
+import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 import type { BeginSubscriptionCheckoutBody, SubscriptionCheckoutView } from "../api/subscription.api";
 import { selectTestPublishableKey } from "./cardSetup";
 
@@ -47,17 +48,20 @@ export function subscriptionCheckoutSucceeded(view: {
   return view.paymentState === "SUCCESS" && view.status === "ACTIVE";
 }
 
-export function subscriptionPayToday(view: {
-  currencyCode: string;
-  amount: string;
-  shippingAmount: string;
-  monthlyTotal: string;
-}): { subscription: string; shipping: string; payToday: string } {
+export function subscriptionPayToday(
+  view: {
+    currencyCode: string;
+    amount: string;
+    shippingAmount: string;
+    monthlyTotal: string;
+  },
+  t: Translator = englishTranslator,
+): { subscription: string; shipping: string; payToday: string } {
   const currency = view.currencyCode.trim().toUpperCase();
   const shippingAmount = Number(view.shippingAmount);
   return {
     subscription: `${currency} ${view.amount}`,
-    shipping: Number.isFinite(shippingAmount) && shippingAmount > 0 ? `${currency} ${view.shippingAmount}` : "Included",
+    shipping: Number.isFinite(shippingAmount) && shippingAmount > 0 ? `${currency} ${view.shippingAmount}` : t("subs.included"),
     payToday: `${currency} ${view.monthlyTotal}`,
   };
 }
@@ -74,22 +78,19 @@ export function subscriptionCheckoutTestKey(publishableKey: string | null | unde
   return selectTestPublishableKey(publishableKey);
 }
 
-export function subscriptionCheckoutResultCopy(view: {
-  paymentState: string;
-  status: string;
-}): string {
-  if (subscriptionCheckoutSucceeded(view)) {
-    return "Subscription activated. Fulfillment is not confirmed from this page.";
-  }
-  if (view.paymentState === "SUCCESS") {
-    return "Payment received. Future billing is not active yet, and no further charge was started.";
-  }
+export function subscriptionCheckoutResultCopy(
+  view: {
+    paymentState: string;
+    status: string;
+  },
+  t: Translator = englishTranslator,
+): string {
+  if (subscriptionCheckoutSucceeded(view)) return t("subs.checkout.result.activated");
+  if (view.paymentState === "SUCCESS") return t("subs.checkout.result.received");
   if (view.paymentState === "PROCESSING" || view.paymentState === "REQUIRES_CUSTOMER_ACTION") {
-    return "Payment is still processing. This page will not start another charge.";
+    return t("subs.checkout.result.processing");
   }
-  if (view.paymentState === "FAILED") return "Payment failed. No subscription charge was repeated.";
-  if (view.paymentState === "RECONCILIATION_REQUIRED") {
-    return "Payment needs support review. No further charge was started.";
-  }
-  return "Confirm the card to pay the saved monthly total.";
+  if (view.paymentState === "FAILED") return t("subs.checkout.result.failed");
+  if (view.paymentState === "RECONCILIATION_REQUIRED") return t("subs.checkout.result.review");
+  return t("subs.checkout.result.confirmCard");
 }

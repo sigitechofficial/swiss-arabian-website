@@ -2,6 +2,7 @@
 
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import {
@@ -36,6 +37,7 @@ import { CheckoutSummary } from "./checkout/CheckoutSummary";
 import { useCheckoutForm } from "../hooks/useCheckoutForm";
 
 export function CheckoutPageView() {
+  const t = useShopCopy();
   const router = useLocaleRouter();
   const {
     checkout,
@@ -89,10 +91,10 @@ export function CheckoutPageView() {
   } = useCheckoutForm();
   const ctaLabel =
     ctaKind === "submitting"
-      ? "Placing order…"
+      ? t("checkout.cta.placing")
       : ctaKind === "continue"
-        ? "Continue to payment"
-        : "Place order";
+        ? t("checkout.cta.continue")
+        : t("checkout.cta.place");
 
   return (
     <div>
@@ -101,28 +103,28 @@ export function CheckoutPageView() {
         aria-labelledby="checkout-heading"
       >
         <div className={pageContainer}>
-          <nav className={crumbs} aria-label="Breadcrumb">
+          <nav className={crumbs} aria-label={t("account.breadcrumbNav")}>
             <ol className={checkoutCrumbsList} role="list">
               <li>
-                <LocaleLink href="/">Home</LocaleLink>
+                <LocaleLink href="/">{t("home")}</LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/cart">Bag</LocaleLink>
+                <LocaleLink href="/cart">{t("nav.bag")}</LocaleLink>
               </li>
-              <li aria-current="page">Checkout</li>
+              <li aria-current="page">{t("pages.title.checkout")}</li>
             </ol>
           </nav>
 
           <header className={checkoutHead}>
             <h1 className={pageTitle} id="checkout-heading">
-              Checkout
+              {t("pages.title.checkout")}
             </h1>
             <ol className={checkoutSteps}>
               <li>
-                <LocaleLink href="/cart">Bag</LocaleLink>
+                <LocaleLink href="/cart">{t("nav.bag")}</LocaleLink>
               </li>
               <li aria-hidden="true">·</li>
-              <li className={checkoutStepCurrent}>Details &amp; payment</li>
+              <li className={checkoutStepCurrent}>{t("subs.checkout.detailsStep")}</li>
             </ol>
           </header>
 
@@ -135,7 +137,7 @@ export function CheckoutPageView() {
                 aria-controls="checkout-summary"
                 onClick={() => setSummaryOpen((v) => !v)}
               >
-                <span>Order summary</span>
+                <span>{t("orders.summary")}</span>
                 <span className={checkoutSummaryToggleTotal} dir="ltr">
                   {formatMoney(amountPayable ?? total, currency)}
                   <i className={checkoutSummaryChevron} aria-hidden="true" />
@@ -175,13 +177,13 @@ export function CheckoutPageView() {
                     beforeFields={
                       testData ? (
                         <div className="col-span-full flex items-center justify-between gap-3 rounded-md border border-dashed border-[var(--line,#d9ccb4)] px-3 py-2 text-[0.8rem] text-[var(--ink-2,#5b5148)]">
-                          <span>Test site: fill this form with test details.</span>
+                          <span>{t("checkout.testData.note")}</span>
                           <button
                             type="button"
                             className="shrink-0 rounded-full border border-copper px-3 py-1 font-medium text-copper hover:bg-[rgba(140,68,53,0.06)]"
                             onClick={fillTestData}
                           >
-                            Fill test data
+                            {t("checkout.testData.fill")}
                           </button>
                         </div>
                       ) : null
@@ -259,14 +261,14 @@ export function CheckoutPageView() {
 
           {hasUnavailable ? (
             <section className={checkoutEmpty}>
-              <p className={stateEyebrow}>Can’t check out yet</p>
-              <h2 className={doneTitle}>An item in your bag is unavailable.</h2>
-              <p>Remove it from your bag, then continue.</p>
+              <p className={stateEyebrow}>{t("checkout.blocked.eyebrow")}</p>
+              <h2 className={doneTitle}>{t("checkout.blocked.unavailable")}</h2>
+              <p>{t("checkout.blocked.unavailableBody")}</p>
               <LocaleLink
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href="/cart"
               >
-                <span>Back to bag</span>
+                <span>{t("checkout.orderChanged.backToBag")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             </section>
@@ -274,19 +276,18 @@ export function CheckoutPageView() {
 
           {nothingOrderable ? (
             <section className={checkoutEmpty}>
-              <p className={stateEyebrow}>Can’t check out yet</p>
+              <p className={stateEyebrow}>{t("checkout.blocked.eyebrow")}</p>
               <h2 className={doneTitle}>
-                These items can’t be ordered online.
+                {t("checkout.blocked.notOnline")}
               </h2>
               <p>
-                Please return to your bag and add them again from the
-                collection.
+                {t("checkout.blocked.notOnlineBody")}
               </p>
               <LocaleLink
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href="/cart"
               >
-                <span>Back to bag</span>
+                <span>{t("checkout.orderChanged.backToBag")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             </section>
@@ -294,13 +295,13 @@ export function CheckoutPageView() {
 
           {isEmpty ? (
             <section className={checkoutEmpty} id="checkout-empty">
-              <p className={stateEyebrow}>Empty bag</p>
-              <h2 className={doneTitle}>Nothing to check out yet.</h2>
+              <p className={stateEyebrow}>{t("checkout.empty.eyebrow")}</p>
+              <h2 className={doneTitle}>{t("checkout.empty.title")}</h2>
               <LocaleLink
                 className={`${checkoutCta} ${checkoutCtaInline}`}
                 href="/products"
               >
-                <span>Explore the collection</span>
+                <span>{t("checkout.empty.explore")}</span>
                 <b aria-hidden="true">↗</b>
               </LocaleLink>
             </section>

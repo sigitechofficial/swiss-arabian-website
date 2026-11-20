@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { SetupSessionBody } from "../api/paymentInstrument.api";
 
 export type CardSetupPhase =
@@ -65,12 +66,13 @@ export function setupReturnPhase(search: string): CardSetupPhase | null {
   return "declined";
 }
 
-export const CARD_SETUP_COPY: Record<CardSetupPhase | "active" | "unavailable", string> = {
-  validation_error: "Check the card details and try again. Nothing was charged.",
-  declined: "The card could not be saved. Nothing was charged.",
-  authentication_required: "Your bank needs to confirm this card. Complete that prompt. The card stays pending until it succeeds.",
-  processing: "The bank is still processing this card. Nothing is charged, and the card is not active yet.",
-  webhook_pending: "The card was submitted. It stays pending until confirmation arrives. This page does not mark it active.",
-  active: "The saved card is active. The subscription payment has not been started.",
-  unavailable: "Card setup is unavailable for this market.",
+/** Message keys for each card setup outcome (`t(CARD_SETUP_COPY[phase])`). */
+export const CARD_SETUP_COPY: Record<CardSetupPhase | "active" | "unavailable", MessageKey> = {
+  validation_error: "subs.cardSetup.validationError",
+  declined: "subs.cardSetup.declined",
+  authentication_required: "subs.cardSetup.authenticationRequired",
+  processing: "subs.cardSetup.processing",
+  webhook_pending: "subs.cardSetup.webhookPending",
+  active: "subs.cardSetup.active",
+  unavailable: "subs.cardSetup.unavailable",
 };

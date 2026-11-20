@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
 import { formatMoney } from "@/features/home/utils/formatMoney";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
@@ -73,6 +74,7 @@ export function CatalogProductCard({
   /** Catalog grids use the tighter name/price scale. Related strips do not. */
   dense?: boolean;
 }) {
+  const t = useShopCopy();
   // Live catalog media 404s for some products, which would otherwise render a
   // broken-image icon and its alt text. Fall back to the same bottle
   // placeholder the card already uses when a product has no image at all.
@@ -100,7 +102,7 @@ export function CatalogProductCard({
       <div className={cardTagStack}>
         {waiting && product.price != null ? (
           <p className={cardStockChip}>
-            <span>Out of stock</span>
+            <span>{t("cart.unavailable.OUT_OF_STOCK")}</span>
           </p>
         ) : null}
         <ProductCardTags slug={product.slug} tags={product.tags ?? []} collectionSlug={collectionSlug} />
@@ -145,7 +147,7 @@ export function CatalogProductCard({
       <div>
         <p className={dense ? cardNameDense : relatedName}>{product.title}</p>
         <p className={dense ? cardPriceDense : relatedPrice}>
-          {product.price == null ? "Unavailable" : formatMoney(product.price, product.currency)}
+          {product.price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}
         </p>
         {note ? <p className={cardNote}>{note}</p> : null}
       </div>

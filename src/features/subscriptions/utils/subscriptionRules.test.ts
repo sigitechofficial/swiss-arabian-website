@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
+import { getTranslator } from "@/lib/i18n/messages";
+
 import type { PlanProduct } from "../types/subscription.types";
 import {
   assertNoBillingCopy,
@@ -17,6 +20,7 @@ import {
   activeRegistrationConsent,
   selectableProducts,
   selectVariant,
+  SubscriptionRuleError,
 } from "./subscriptionRules";
 
 const products: PlanProduct[] = [
@@ -261,5 +265,45 @@ describe("subscription rules", () => {
         publishedAt: null,
       }),
     ).toBeNull();
+  });
+
+  it("throws keyed rule errors that read in the page's language", async () => {
+    const allowed = new Set(["a"]);
+    let caught: unknown;
+    try {
+      selectVariant("QUEUE", [], "missing", allowed);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(SubscriptionRuleError);
+    expect((caught as SubscriptionRuleError).messageKey).toBe("subs.rule.notOnPlan");
+    const ar = await getTranslator("ar");
+    expect(getUserFacingErrorMessage(caught, "fallback", ar)).toBe(ar("subs.rule.notOnPlan"));
+    expect(getUserFacingErrorMessage(caught, "fallback", ar)).not.toMatch(/[A-Za-z]/);
+
+    const body = {
+      zoneCode: "UAE",
+      planCode: "MONTHLY_65",
+      mode: "QUEUE" as const,
+      variantIds: [],
+      customerAddressId: "addr",
+      consentTextVersion: "v1",
+      allowedVariantIds: [],
+    };
+    for (const [input, key] of [
+      [{ ...body, audience: "ANY" as never }, "subs.rule.chooseAudience"],
+      [{ ...body, audience: "MEN" as const }, "subs.rule.addOne"],
+      [{ ...body, audience: "MEN" as const, mode: "REPLENISHMENT" as const }, "subs.rule.chooseOne"],
+    ] as const) {
+      expect(() => buildRegisterBody(input)).toThrow(expect.objectContaining({ messageKey: key }));
+    }
+  });
+
+  it("words prices and notices in the page's language", async () => {
+    const ar = await getTranslator("ar");
+    const lines = subscriptionPriceLines({ amount: "65.00", currencyCode: "AED", monthlyTotal: "65.00" }, ar);
+    expect(lines).toMatchObject({ available: true, shipping: ar("subs.price.shippingIncluded") });
+    expect(audienceChangeNotice(2, ar)).toBe(ar("subs.audienceRemoved", { count: 2 }));
+    expect(audienceChangeNotice(2)).toBe("2 picks were removed because they are not available for this audience.");
   });
 });
