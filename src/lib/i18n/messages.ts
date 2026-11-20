@@ -38,12 +38,24 @@ async function importMessages(locale: string): Promise<MessageDictionary> {
   }
 }
 
-/** The locale's messages over the English ones (missing keys read English). */
+/**
+ * The message files a locale reads, least specific first, each over the one
+ * before and all over English: "fr-ca" → ["fr", "fr-ca"]; "ar" → ["ar"]. The
+ * same order as the backend's wording (exact, then base language, then English).
+ */
+export function messageFilesFor(locale: string): string[] {
+  const base = locale.split("-")[0];
+  return base && base !== locale ? [base, locale] : [locale];
+}
+
+/** The locale's messages over its base language's, over English (key by key). */
 export function loadMessages(locale: ShopLocale): Promise<MessageDictionary> {
   const code = isLocale(locale) ? locale : DEFAULT_LOCALE;
   let pending = loaded.get(code);
   if (!pending) {
-    pending = importMessages(code).then((own) => ({ ...ENGLISH, ...own }) as MessageDictionary);
+    pending = Promise.all(messageFilesFor(code).map(importMessages)).then(
+      (files) => Object.assign({}, ENGLISH, ...files) as MessageDictionary,
+    );
     loaded.set(code, pending);
   }
   return pending;

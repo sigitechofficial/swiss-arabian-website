@@ -8,6 +8,7 @@ import {
   formatMessage,
   getTranslator,
   loadMessages,
+  messageFilesFor,
 } from "./messages";
 
 /** Every language file next to English (`src/messages/<locale>.json`). */
@@ -112,6 +113,12 @@ describe("loading and formatting", () => {
     const t = await getTranslator("ar");
     expect(t("catalog.productCount", { count: 3 })).toBe("3 منتجات");
     expect(t("catalog.productCount", { count: 1234 })).not.toMatch(/[٠-٩]/);
+  });
+
+  it("reads a regional language over its base language", () => {
+    expect(messageFilesFor("fr-ca")).toEqual(["fr", "fr-ca"]);
+    expect(messageFilesFor("pt-br")).toEqual(["pt", "pt-br"]);
+    expect(messageFilesFor("ar")).toEqual(["ar"]);
   });
 
   it("falls back to English, then to the key", () => {
