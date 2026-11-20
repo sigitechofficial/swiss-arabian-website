@@ -13,6 +13,7 @@ import { formatPoints } from "@/features/loyalty/types/loyalty";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+import { AcceptInvitationForm } from "./AcceptInvitationForm";
 import { useEmployeeBenefitsCopy } from "./useEmployeeBenefitsCopy";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useEmployeeBenefitsAccount } from "../hooks/useEmployeeBenefitsAccount";
@@ -214,6 +215,7 @@ function Unavailable({ status }: { status: string }) {
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-sa-muted">{status}</p>
       <p className="mt-3 max-w-[520px] text-[14px] leading-relaxed text-sa-primary">{copy.unavailable}</p>
       <p className="mt-3 max-w-[520px] text-[13px] leading-relaxed text-sa-secondary">{copy.support}</p>
+      <AcceptInvitationForm />
     </Card>
   );
 }
@@ -226,6 +228,7 @@ function AdminLinkNote() {
       <LocaleLink href="/account/rewards" className="mt-4 inline-block text-[13px] font-semibold text-terra hover:underline">
         {copy.rewardsSeparate}
       </LocaleLink>
+      <AcceptInvitationForm />
     </Card>
   );
 }
