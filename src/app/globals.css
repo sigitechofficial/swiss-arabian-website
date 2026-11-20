@@ -438,11 +438,16 @@ html:has([data-navbar][data-topbar-hidden="true"]) .bundle-dock {
     letter-spacing: 0.01em;
   }
 
-  html[dir="rtl"] body,
-  html[dir="rtl"] button,
-  html[dir="rtl"] input,
-  html[dir="rtl"] textarea {
-    font-family: "GE SS", "GE SS", sans-serif;
+  /* The typeface follows the script, not the direction: Arabic-script languages
+     (Arabic, Persian, Urdu, Pashto, Sindhi, Uyghur, Kurdish Sorani) use the Arabic
+     typeface. Other scripts the site font lacks fall back per letter to the system font. */
+  html:is(:lang(ar), :lang(fa), :lang(ur), :lang(ps), :lang(sd), :lang(ug), :lang(ckb))
+    :is(body, button, input, textarea) {
+    font-family: "GE SS", sans-serif;
+  }
+
+  /* Letters join in right-to-left scripts: no added spacing. */
+  html[dir="rtl"] :is(body, button, input, textarea) {
     letter-spacing: 0;
   }
 
