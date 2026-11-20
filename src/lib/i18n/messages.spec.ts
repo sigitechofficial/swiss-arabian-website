@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
-import ar from "@/messages/ar.json";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import {
   createTranslator,
   englishTranslator,
@@ -9,23 +10,62 @@ import {
   loadMessages,
 } from "./messages";
 
+/** Every language file next to English (`src/messages/<locale>.json`). */
+const MESSAGE_DIR = path.resolve(__dirname, "../../messages");
+const LANGUAGE_FILES = readdirSync(MESSAGE_DIR)
+  .filter((name) => name.endsWith(".json") && name !== "en.json")
+  .map((name) => ({
+    locale: name.replace(/\.json$/, ""),
+    messages: JSON.parse(readFileSync(path.join(MESSAGE_DIR, name), "utf8")) as Record<string, unknown>,
+  }));
+
+/**
+ * English keys a language may leave out on purpose (it then reads English),
+ * by locale, each with its reason.
+ */
+const ENGLISH_ON_PURPOSE: Record<string, string[]> = {
+  ar: [
+    // The FAQ page description stays English as before the move to message files.
+    "pages.faq.description",
+    // "{amount} to go" is shown inside a progress bar whose Arabic wording is still to be approved.
+    "promo.toGo",
+  ],
+};
+
+const slotNames = (value: unknown) =>
+  [...new Set([...JSON.stringify(value).matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
+
 describe("message files", () => {
-  it("translate every English key into Arabic (or fall back on purpose)", () => {
-    const missing = Object.keys(en).filter((key) => !(key in ar));
-    // Keys whose Arabic wording is English on purpose (same as before the move).
-    expect(missing.sort()).toEqual(["pages.faq.description", "promo.toGo"]);
-    // No Arabic key that English does not define.
-    expect(Object.keys(ar).filter((key) => !(key in en))).toEqual([]);
+  it("finds the language files", () => {
+    expect(LANGUAGE_FILES.map((file) => file.locale)).toContain("ar");
   });
 
-  it("use the same placeholders in every language", () => {
-    const names = (value: unknown) =>
-      [...JSON.stringify(value).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
-    for (const [key, value] of Object.entries(ar)) {
-      const english = names((en as Record<string, unknown>)[key]);
-      for (const name of names(value)) {
-        if (key === "promo.viewAllBenefits" && name === "label") continue;
-        expect(english, `${key} {${name}}`).toContain(name);
+  it.each(LANGUAGE_FILES)("$locale.json has every English key (or leaves it out on purpose)", ({ locale, messages }) => {
+    const missing = Object.keys(en).filter((key) => !(key in messages));
+    expect(missing.sort()).toEqual([...(ENGLISH_ON_PURPOSE[locale] ?? [])].sort());
+    // No key that English does not define.
+    expect(Object.keys(messages).filter((key) => !(key in en))).toEqual([]);
+  });
+
+  it.each(LANGUAGE_FILES)("$locale.json uses the same {slots} as English", ({ locale, messages }) => {
+    const english = en as Record<string, unknown>;
+    for (const [key, value] of Object.entries(messages)) {
+      if (!(key in english)) continue;
+      const own = slotNames(value);
+      const reference = slotNames(english[key]);
+      // A plural form may say the number in words ("منتج واحد"): {count} is optional there.
+      const plural = typeof value === "object" && value !== null;
+      const comparable = (names: string[]) => (plural ? names.filter((name) => name !== "count") : names);
+      // promo.viewAllBenefits: the Arabic wording names the link itself ({label}).
+      if (key === "promo.viewAllBenefits" && locale === "ar") continue;
+      expect(comparable(own), `${locale}: ${key}`).toEqual(comparable(reference));
+    }
+  });
+
+  it.each(LANGUAGE_FILES)("$locale.json plural entries have an `other` form", ({ locale, messages }) => {
+    for (const [key, value] of Object.entries(messages)) {
+      if (typeof value === "object" && value !== null) {
+        expect((value as Record<string, unknown>).other, `${locale}: ${key}`).toEqual(expect.any(String));
       }
     }
   });
@@ -65,6 +105,13 @@ describe("loading and formatting", () => {
     expect(t("catalog.productCount", { count: 3 })).toBe("3 منتجات");
     expect(t("catalog.productCount", { count: 11 })).toBe("11 منتجًا");
     expect(t("catalog.productCount", { count: 100 })).toBe("100 منتج");
+  });
+
+  it("writes a plural's count in the page's number format with Latin digits", async () => {
+    expect(englishTranslator("catalog.productCount", { count: 1234 })).toBe("1,234 products");
+    const t = await getTranslator("ar");
+    expect(t("catalog.productCount", { count: 3 })).toBe("3 منتجات");
+    expect(t("catalog.productCount", { count: 1234 })).not.toMatch(/[٠-٩]/);
   });
 
   it("falls back to English, then to the key", () => {

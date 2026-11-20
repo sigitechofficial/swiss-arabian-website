@@ -117,10 +117,10 @@ export function awardedGiftLines(snapshot: unknown): PromotionGiftLine[] {
   });
 }
 
-export function giftDisplayName(line: PromotionGiftLine): string {
+export function giftDisplayName(line: PromotionGiftLine, t: Translator = pageTranslator()): string {
   const name = line.name?.trim();
   if (name && !name.includes(":")) return name;
-  if (line.sku.includes(":")) return "Free gift";
+  if (line.sku.includes(":")) return t("checkout.confirmation.freeGift");
   return name || line.sku;
 }
 

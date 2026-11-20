@@ -5,6 +5,7 @@ import { ApiClientError } from "@/lib/api/apiError";
 import { knownErrorMessage } from "@/lib/api/userFacingErrors";
 import type { PromotionGiftAward } from "../types/promotions";
 import { giftDisplayName } from "../utils/giftWithPurchase";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useGiftCatalogMap } from "./useGiftCatalog";
 import { useGiftChoice } from "./useGiftChoice";
 
@@ -16,6 +17,7 @@ export type GiftChoiceError = { code: string | null; message: string | null };
  * cart accepts it; an error is kept for the view to word).
  */
 export function useGiftChoiceDialog(award: PromotionGiftAward, onClose: () => void) {
+  const t = useShopCopy();
   const choice = useGiftChoice();
   const catalog = useGiftCatalogMap(award.choices.map((gift) => gift.sku));
   const [error, setError] = useState<GiftChoiceError | null>(null);
@@ -24,7 +26,7 @@ export function useGiftChoiceDialog(award: PromotionGiftAward, onClose: () => vo
     const product = catalog.get(gift.sku);
     return {
       sku: gift.sku,
-      title: product?.title || giftDisplayName(gift),
+      title: product?.title || giftDisplayName(gift, t),
       image: product?.imageUrl || gift.imageUrl || null,
       /** A readable SKU is shown under the name; generated ids are not. */
       showSku: !gift.sku.includes(":") && gift.sku.length <= 48,
