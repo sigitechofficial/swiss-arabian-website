@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import type { Metadata } from "next";
 import { faqPageJsonLd, ORGANIZATION_ID, WEBSITE_ID } from "@/features/catalog/components/CatalogJsonLd";
 import { loadHomeFaq, seoFaqView } from "@/features/seo-faq/seoFaq";
@@ -36,11 +37,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
+  const localeConfig = await serverLocaleConfig();
   const { t } = await routeTranslator();
   const { locale, seo } = await loadPublishedPageSeo("/");
   const adminJsonLd = await pageJsonLd("/");
   const brand = await loadRequestBrandIdentity();
-  const home = withLocalePrefix("/", locale);
+  const home = withLocalePrefix("/", locale, localeConfig);
   // One H1 per page: the market's SEO text heading (above the footer) when there is
   // one, else this one. The hero title is not a heading (SEO audit).
   const market = await resolveServerCatalogMarket();
@@ -86,7 +88,7 @@ export default async function HomePage() {
             // Google needs a full address here ("url" fields are made absolute for us).
             target: {
               "@type": "EntryPoint",
-              url: `${withLocalePrefix("/search", locale)}?q={search_term_string}`,
+              url: `${withLocalePrefix("/search", locale, localeConfig)}?q={search_term_string}`,
             },
             "query-input": "required name=search_term_string",
           },

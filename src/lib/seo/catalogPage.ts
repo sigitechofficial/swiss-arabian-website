@@ -23,10 +23,10 @@ import { ApiClientError } from "@/lib/api/apiError";
 import type { StorefrontContextInput } from "@/lib/storefront/context";
 import {
   catalogAlternates,
-  localeFromPathname,
   withLocalePrefix,
 } from "@/lib/i18n/localePath";
-import { LOCALES, type ShopLocale } from "@/lib/i18n/locales";
+import type { LocaleConfig, ShopLocale } from "@/lib/i18n/locales";
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { routeLocale } from "@/lib/i18n/routeLocale";
 import {
   englishTranslator,
@@ -268,6 +268,7 @@ export async function catalogMetadata(
     brand,
     countryCode: "countryCode" in market ? market.countryCode : null,
     t: await getTranslator(input.locale),
+    localeConfig: await serverLocaleConfig(),
   });
   // On a market website: hreflang across the brand's market websites.
   const languages = await crossMarketLanguages(input.path);
@@ -299,9 +300,11 @@ export function buildCatalogMetadata(
     countryCode?: string | null;
     /** Wording in the page's language (default listing description). */
     t?: Translator;
+    /** The market's languages (hreflang, Open Graph alternates). */
+    localeConfig: LocaleConfig;
   },
 ): Metadata {
-  const alternates = catalogAlternates(input.path, input.locale);
+  const alternates = catalogAlternates(input.path, input.locale, context.localeConfig);
   // Link previews: the page's own image, else the market's default share
   // image (Shopify: Preferences → social sharing image), else the brand logo.
   // Served as a JPEG at a fixed size (see shareImage.ts). Alt text: the title.
@@ -324,7 +327,7 @@ export function buildCatalogMetadata(
         },
       ]
     : undefined;
-  const otherLocales = LOCALES.filter((code) => code !== input.locale);
+  const otherLocales = context.localeConfig.locales.filter((code) => code !== input.locale);
   const description =
     metaDescriptionText(input.description) ??
     (input.listing
@@ -358,10 +361,6 @@ export function buildCatalogMetadata(
   };
 }
 
-export function canonicalCatalogPath(pathname: string, locale: ShopLocale) {
-  return withLocalePrefix(pathname, locale);
-}
-
-export function localeOfRequestPath(pathname: string): ShopLocale {
-  return localeFromPathname(pathname);
+export function canonicalCatalogPath(pathname: string, locale: ShopLocale, config: LocaleConfig) {
+  return withLocalePrefix(pathname, locale, config);
 }

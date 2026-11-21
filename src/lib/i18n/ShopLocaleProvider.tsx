@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useMemo, type ReactNode } from "r
 import { usePathname } from "next/navigation";
 import { localeFromPathname } from "./localePath";
 import { setPageTranslator } from "./pageTranslator";
-import type { ShopLocale } from "./locales";
+import { setActiveLocaleConfig } from "./activeLocaleConfig";
+import { fallbackLocaleConfig, type LocaleConfig, type ShopLocale } from "./locales";
 import {
   createTranslator,
   englishTranslator,
@@ -12,27 +13,38 @@ import {
   type Translator,
 } from "./messages";
 
-type ShopLocaleContextValue = { locale: ShopLocale; t: Translator };
+type ShopLocaleContextValue = { locale: ShopLocale; t: Translator; localeConfig: LocaleConfig };
 
 const ShopLocaleContext = createContext<ShopLocaleContextValue | null>(null);
 
 /**
- * The page's language and its messages, from the `[locale]` route (server).
- * Client components read them with `useShopCopy()` / `useShopLocale()`.
+ * The page's language and its messages, from the `[locale]` route (server), and
+ * the languages of the page's market (admin: Markets → languages).
+ * Client components read them with `useShopCopy()` / `useShopLocale()` /
+ * `useLocaleConfig()`.
  */
 export function ShopLocaleProvider({
   locale,
   messages,
+  localeConfig,
   children,
 }: {
   locale: ShopLocale;
   messages: MessageDictionary;
+  /** The page market's languages; the build fallback only where no market is known (tests). */
+  localeConfig?: LocaleConfig;
   children: ReactNode;
 }) {
   const value = useMemo(
-    () => ({ locale, t: createTranslator(locale, messages) }),
-    [locale, messages],
+    () => ({
+      locale,
+      t: createTranslator(locale, messages),
+      localeConfig: localeConfig ?? fallbackLocaleConfig(),
+    }),
+    [locale, messages, localeConfig],
   );
+  // Browser code outside render (event handlers) reads the market languages too.
+  setActiveLocaleConfig(value.localeConfig);
   // Error toasts and background bag sync speak the page's language too.
   useEffect(() => setPageTranslator(value.t), [value.t]);
   return <ShopLocaleContext.Provider value={value}>{children}</ShopLocaleContext.Provider>;
@@ -42,7 +54,12 @@ export function ShopLocaleProvider({
 export function useShopLocale(): ShopLocale {
   const context = useContext(ShopLocaleContext);
   const pathname = usePathname() || "/";
-  return context?.locale ?? localeFromPathname(pathname);
+  return context?.locale ?? localeFromPathname(pathname, fallbackLocaleConfig());
+}
+
+/** The languages of the page's market, its default (unprefixed) first. */
+export function useLocaleConfig(): LocaleConfig {
+  return useContext(ShopLocaleContext)?.localeConfig ?? fallbackLocaleConfig();
 }
 
 /** `t(key, values?)` in the page's language (English outside the provider). */

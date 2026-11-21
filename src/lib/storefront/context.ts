@@ -1,3 +1,5 @@
+import { activeLocaleConfig } from "@/lib/i18n/activeLocaleConfig";
+import { fallbackLocaleConfig } from "@/lib/i18n/locales";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -40,7 +42,13 @@ export function getPersistedCatalogContext(): StorefrontContextInput {
   if (typeof window === "undefined") return {};
   const saved = useUiStore.getState().catalogContext;
   if (!saved) return {};
-  return { ...saved, languageCode: localeFromPathname(window.location.pathname) };
+  return {
+    ...saved,
+    languageCode: localeFromPathname(
+      window.location.pathname,
+      activeLocaleConfig() ?? fallbackLocaleConfig(),
+    ),
+  };
 }
 
 function trimmed(value?: string | null): string {

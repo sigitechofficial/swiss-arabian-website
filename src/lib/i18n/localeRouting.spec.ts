@@ -1,28 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { isLocaleSwitchablePath } from "./localePath";
 import { listingPageParam, localeRouting, publicPathname } from "./localeRouting";
+import type { LocaleConfig } from "./locales";
+
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
 describe("publicPathname", () => {
   it("turns internal route paths into the public address", () => {
-    expect(publicPathname("/en/products")).toBe("/products");
-    expect(publicPathname("/en")).toBe("/");
-    expect(publicPathname("/en/collections/oud/p/3")).toBe("/collections/oud");
-    expect(publicPathname("/ar/products/p/2")).toBe("/ar/products");
+    expect(publicPathname("/en/products", EN_AR)).toBe("/products");
+    expect(publicPathname("/en", EN_AR)).toBe("/");
+    expect(publicPathname("/en/collections/oud/p/3", EN_AR)).toBe("/collections/oud");
+    expect(publicPathname("/ar/products/p/2", EN_AR)).toBe("/ar/products");
   });
 
   it("keeps public addresses as they are", () => {
-    expect(publicPathname("/products")).toBe("/products");
-    expect(publicPathname("/ar/collections/oud")).toBe("/ar/collections/oud");
-    expect(publicPathname("/")).toBe("/");
+    expect(publicPathname("/products", EN_AR)).toBe("/products");
+    expect(publicPathname("/ar/collections/oud", EN_AR)).toBe("/ar/collections/oud");
+    expect(publicPathname("/", EN_AR)).toBe("/");
   });
 });
 
-function route(address: string) {
+function route(address: string, config: LocaleConfig = EN_AR) {
   const url = new URL(address, "https://shop.example");
   return localeRouting({
     pathname: url.pathname,
     searchParams: url.searchParams,
     switchable: isLocaleSwitchablePath(url.pathname),
+    config,
   });
 }
 
@@ -39,7 +43,37 @@ describe("locale routing (proxy)", () => {
   });
 
   it("an unknown language segment is a page of the default locale (a 404 there)", () => {
-    expect(route("/fr/products")).toEqual({ type: "rewrite", pathname: "/en/fr/products" });
+    expect(route("/de/products")).toEqual({ type: "rewrite", pathname: "/en/de/products" });
+  });
+
+  it("sends a language the market does not serve to its default language (temporary)", () => {
+    expect(route("/fr/products?sort=new")).toEqual({
+      type: "redirect",
+      pathname: "/products",
+      search: "?sort=new",
+      temporary: true,
+    });
+  });
+
+  it("serves the market's own languages and default (no rebuild for a new language)", () => {
+    const withFrench: LocaleConfig = { locales: ["en", "ar", "fr"], defaultLocale: "en" };
+    expect(route("/fr/products", withFrench)).toEqual({ type: "next", pathname: "/fr/products" });
+    const arabicFirst: LocaleConfig = { locales: ["ar", "en"], defaultLocale: "ar" };
+    expect(route("/products", arabicFirst)).toEqual({ type: "rewrite", pathname: "/ar/products" });
+    expect(route("/ar/products", arabicFirst)).toEqual({ type: "redirect", pathname: "/products" });
+    expect(route("/en/products", arabicFirst)).toEqual({ type: "next", pathname: "/en/products" });
+    expect(route("/products?languageCode=en", arabicFirst)).toEqual({
+      type: "redirect",
+      pathname: "/en/products",
+      search: "",
+    });
+  });
+
+  it("a payment return in a language the market does not serve opens in its default", () => {
+    expect(route("/payments/tabby/return?lang=fr")).toEqual({
+      type: "rewrite",
+      pathname: "/en/payments/tabby/return",
+    });
   });
 
   it("redirects the default locale's prefix to the bare address", () => {

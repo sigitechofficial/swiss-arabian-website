@@ -1,15 +1,19 @@
 "use client";
 
-import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useLocaleConfig, useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { usePathname } from "next/navigation";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
-import { isLocale } from "@/lib/i18n/locales";
+import { servesLocale, type LocaleConfig } from "@/lib/i18n/locales";
 
 /** Where switching to `id` goes from `pathname` (same page, other language); null when it stays put. */
-export function languageSwitchPath(pathname: string, id: string): string | null {
-  if (!isLocale(id)) return null;
+export function languageSwitchPath(
+  pathname: string,
+  id: string,
+  config: LocaleConfig,
+): string | null {
+  if (!servesLocale(config, id)) return null;
   const current = pathname || "/";
-  const nextPath = withLocalePrefix(current, id);
+  const nextPath = withLocalePrefix(current, id, config);
   return nextPath === current ? null : nextPath;
 }
 
@@ -18,8 +22,9 @@ export function useLanguageSwitch() {
   const pathname = usePathname();
   // The page's language (route), also on unprefixed payment return addresses.
   const languageId = useShopLocale();
+  const localeConfig = useLocaleConfig();
   const setLanguageId = (id: string) => {
-    const nextPath = languageSwitchPath(pathname || "/", id);
+    const nextPath = languageSwitchPath(pathname || "/", id, localeConfig);
     if (!nextPath) return;
     // A client navigation follows the rewritten page and stays on the English
     // address. A full load keeps the language prefix (/ar) in the address bar.

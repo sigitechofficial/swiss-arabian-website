@@ -1,6 +1,8 @@
 "use client";
 
-import { TOPBAR_LANGUAGES, TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
+import { configuredLanguageOptions } from "@/features/markets/utils/marketLanguageOptions";
+import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pageContainer, topbar, topbarBoutique, topbarInner, topbarInnerBoutique, topbarSep, topbarSpacer, topbarUtils } from "@/styles/siteChrome";
 import { TopbarMenu } from "../TopbarMenu";
@@ -28,9 +30,10 @@ export function NavbarTopbar({
             countryCode,
           }))
         : TOPBAR_REGIONS;
+  const localeConfig = useLocaleConfig();
   const languages = chrome.languageOptions.length
     ? chrome.languageOptions
-    : TOPBAR_LANGUAGES;
+    : configuredLanguageOptions(localeConfig);
   const languageOptions = boutique
     ? languages.map((option) => ({
         ...option,

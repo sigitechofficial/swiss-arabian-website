@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { answerText } from "@/features/seo-faq/seoFaqText";
 import { getTranslator } from "@/lib/i18n/messages";
 import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
@@ -261,10 +262,11 @@ export async function pageBreadcrumbJsonLd(
   locale: ShopLocale,
   page: { name: string; path: string },
 ) {
+  const localeConfig = await serverLocaleConfig();
   const t = await getTranslator(locale);
   return breadcrumbJsonLd([
-    { name: t("home"), url: withLocalePrefix("/", locale) },
-    { name: page.name, url: withLocalePrefix(page.path, locale) },
+    { name: t("home"), url: withLocalePrefix("/", locale, localeConfig) },
+    { name: page.name, url: withLocalePrefix(page.path, locale, localeConfig) },
   ]);
 }
 

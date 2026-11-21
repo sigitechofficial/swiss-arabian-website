@@ -13,7 +13,7 @@ import { CountryMarketPrompt } from "@/features/markets/components/CountryMarket
 import { StorefrontHostProvider } from "@/lib/storefront/StorefrontHostProvider";
 import { MarketTimeZoneProvider } from "@/lib/storefront/MarketTimeZoneProvider";
 import { ShopLocaleProvider } from "@/lib/i18n/ShopLocaleProvider";
-import type { ShopLocale } from "@/lib/i18n/locales";
+import type { LocaleConfig, ShopLocale } from "@/lib/i18n/locales";
 import type { MessageDictionary } from "@/lib/i18n/messages";
 import { SiteIntegrationsProvider } from "@/lib/site/SiteIntegrationsProvider";
 import type { SiteIntegrations } from "@/lib/site/siteIntegrations.types";
@@ -23,6 +23,7 @@ export function AppProviders({
   storefrontHost,
   locale,
   messages,
+  localeConfig,
   integrations,
   marketTimeZone,
 }: {
@@ -32,6 +33,8 @@ export function AppProviders({
   /** The `[locale]` route segment and its UI messages. */
   locale: ShopLocale;
   messages: MessageDictionary;
+  /** The languages of the page's market (admin: Markets → languages). */
+  localeConfig: LocaleConfig;
   /** What this address may load (ADR-005 phase E), read by the root layout. */
   integrations: SiteIntegrations;
   /** The page market's time zone, decided by the server: dates read the same on both renders. */
@@ -39,7 +42,7 @@ export function AppProviders({
 }) {
   return (
     <SiteIntegrationsProvider value={integrations}>
-    <ShopLocaleProvider locale={locale} messages={messages}>
+    <ShopLocaleProvider locale={locale} messages={messages} localeConfig={localeConfig}>
     <StorefrontHostProvider host={storefrontHost}>
     <MarketTimeZoneProvider timeZone={marketTimeZone}>
       <ThemeProvider>

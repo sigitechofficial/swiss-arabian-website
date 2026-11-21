@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
   productMetaDescription,
@@ -32,13 +33,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const localeConfig = await serverLocaleConfig();
   const { locale, product, missing, market } = await loadCatalogDocument(
     "product",
     slug,
   );
   if (missing) notFound();
   const handle = product?.slug || slug;
-  const path = canonicalCatalogPath(`/products/${handle}`, locale);
+  const path = canonicalCatalogPath(`/products/${handle}`, locale, localeConfig);
   // Admin product SEO for this market wins; listing SEO fields, then the product, are the fallback.
   const seo = effectiveProductSeo(product?.seo, market.zoneId);
   const title = seo?.title || product?.seoTitle || product?.title || slug;
@@ -116,6 +118,7 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const localeConfig = await serverLocaleConfig();
   const { locale, product, missing, market, zoneCode } = await loadCatalogDocument(
     "product",
     slug,
@@ -123,10 +126,10 @@ export default async function ProductDetailPage({
   if (missing) notFound();
   const t = await getTranslator(locale);
   if (product?.slug && product.slug !== slug) {
-    permanentRedirect(withLocalePrefix(`/products/${product.slug}`, locale));
+    permanentRedirect(withLocalePrefix(`/products/${product.slug}`, locale, localeConfig));
   }
   const handle = product?.slug || slug;
-  const path = canonicalCatalogPath(`/products/${handle}`, locale);
+  const path = canonicalCatalogPath(`/products/${handle}`, locale, localeConfig);
   const name = product?.title || slug;
   const seo = effectiveProductSeo(product?.seo, market.zoneId);
   const schemaOverride = parseSchemaOverride(seo?.schemaOverride);
@@ -211,7 +214,7 @@ export default async function ProductDetailPage({
         data={breadcrumbJsonLd([
           {
             name: t("home"),
-            url: withLocalePrefix("/", locale),
+            url: withLocalePrefix("/", locale, localeConfig),
           },
           { name, url: path },
         ])}

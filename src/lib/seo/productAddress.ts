@@ -1,5 +1,5 @@
 import { env } from "@/lib/config/env";
-import { localePrefixOf, withLocalePrefix } from "@/lib/i18n/localePath";
+import { localePrefixOf, internalLocalePath } from "@/lib/i18n/localePath";
 
 /**
  * Old product addresses (a SKU such as `/products/SOTO098501`, or a former handle)
@@ -118,5 +118,5 @@ export async function productAddressRedirect(input: {
   }
   if (!entry.canonical || entry.canonical === slug) return null;
   const target = `/products/${encodeURIComponent(entry.canonical)}`;
-  return prefix ? withLocalePrefix(target, prefix) : target;
+  return prefix ? internalLocalePath(target, prefix) : target;
 }

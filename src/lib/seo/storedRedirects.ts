@@ -1,7 +1,7 @@
 import {
   localePrefixOf,
   stripLocalePrefix,
-  withLocalePrefix,
+  internalLocalePath,
 } from "@/lib/i18n/localePath";
 import { env } from "@/lib/config/env";
 import {
@@ -71,7 +71,7 @@ export function matchRedirect(
     const target = map.get(stripLocalePrefix(path));
     if (!target) return null;
     if (!isSitePath(target) || localePrefixOf(target)) return target;
-    return withLocalePrefix(target, prefix);
+    return internalLocalePath(target, prefix);
   }
   return null;
 }

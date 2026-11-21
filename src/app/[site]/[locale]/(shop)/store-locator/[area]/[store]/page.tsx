@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { breadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
@@ -29,18 +30,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function StorePage({ params }: Params) {
+  const localeConfig = await serverLocaleConfig();
   requireBrandFeature("storeLocator");
   const { area, store: slug } = await params;
   const { locale, store } = await loadStore(slug);
   if (!store) notFound();
   // Closed for good over 90 days ago: send visitors (and search engines) to the area page.
-  if (store.gone) permanentRedirect(withLocalePrefix(storeAreaPath(store.areaSlug), locale));
+  if (store.gone) permanentRedirect(withLocalePrefix(storeAreaPath(store.areaSlug), locale, localeConfig));
   // The store moved to another area (or the address was typed wrong): one address per store.
-  if (store.areaSlug !== area) permanentRedirect(withLocalePrefix(storePath(store), locale));
+  if (store.areaSlug !== area) permanentRedirect(withLocalePrefix(storePath(store), locale, localeConfig));
 
   const { t, brandName } = await routeTranslator();
   const origin = await requestOrigin();
-  const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale));
+  const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale, localeConfig));
   return (
     <>
       <CatalogJsonLd

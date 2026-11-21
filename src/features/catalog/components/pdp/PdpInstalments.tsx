@@ -1,4 +1,5 @@
 "use client";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -216,7 +217,7 @@ function CustomInstalments({ price, currency }: { price: number; currency: strin
   const plan = useInstalmentPlan(price);
   const { open, close } = plan;
   const each = formatMoney(plan.each, currency);
-  const locale = localeFromPathname(usePathname() || "/");
+  const locale = useShopLocale();
   const tamara = useSiteIntegrations().paymentPromos.tamara;
   const tamaraKey = tamara?.publicKey ?? "";
   const tamaraWidget = usesTamaraWidget(currency, Boolean(tamara), tamaraKey);

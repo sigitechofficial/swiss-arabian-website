@@ -8,6 +8,9 @@ import {
 } from "@/features/catalog/components/CatalogJsonLd";
 import { buildCatalogMetadata } from "./catalogPage";
 import { absoluteUrl, originFromHeaders } from "./requestOrigin";
+import type { LocaleConfig } from "@/lib/i18n/locales";
+
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
 const headersOf = (values: Record<string, string>) => (name: string) =>
   values[name] ?? null;
@@ -95,7 +98,7 @@ describe("SEO addresses and product data", () => {
         title: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE",
         image: "https://blob/a.webp",
       },
-      { brand, countryCode: "AE" },
+      { localeConfig: EN_AR, brand, countryCode: "AE" },
     );
     expect(meta.title).toEqual({
       absolute: "Leather & Oud – Citrus Leather Oud EDP | Swiss Arabian UAE",
@@ -109,13 +112,13 @@ describe("SEO addresses and product data", () => {
     expect(
       buildCatalogMetadata(
         { locale: "en", path: "/collections/men", title: "Men" },
-        { brand },
+        { localeConfig: EN_AR, brand },
       ).title,
     ).toBe("Men");
     expect(
       buildCatalogMetadata(
         { locale: "ar", path: "/collections/men", title: "رجال | سويس أرابيان" },
-        { brand, countryCode: "QA" },
+        { localeConfig: EN_AR, brand, countryCode: "QA" },
       ),
     ).toMatchObject({
       title: { absolute: "رجال | سويس أرابيان" },
@@ -126,7 +129,7 @@ describe("SEO addresses and product data", () => {
   it("adds the market name unless the title has the full market name (as Shopify)", () => {
     const brand = { name: "Swiss Arabian UAE", names: ["Swiss Arabian UAE", "Swiss Arabian"] };
     const title = (t: string) =>
-      buildCatalogMetadata({ locale: "en", path: "/products/x", title: t }, { brand }).title;
+      buildCatalogMetadata({ locale: "en", path: "/products/x", title: t }, { localeConfig: EN_AR, brand }).title;
     // Shopify: "Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian – Swiss Arabian UAE"
     expect(title("Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian")).toBe(
       "Shumoukh Al Ghutra Eau De Perfume 100ml - Swiss Arabian",

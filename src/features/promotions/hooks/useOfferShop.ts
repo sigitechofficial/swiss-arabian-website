@@ -1,4 +1,5 @@
 "use client";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -137,7 +138,7 @@ export function useOfferShop(code: string) {
   const [adding, setAdding] = useState(false);
   const [addFailed, setAddFailed] = useState(false);
   const opened = useRef(false);
-  const locale = localeFromPathname(usePathname() || "/");
+  const locale = useShopLocale();
   const setCartFromApi = useCartStore((state) => state.setCartFromApi);
   const cartId = useCartStore((state) => state.cartId);
   const setCartOpen = useUiStore((state) => state.setCartOpen);

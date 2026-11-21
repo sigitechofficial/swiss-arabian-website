@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildCatalogMetadata } from "./catalogPage";
 import { isAllowedShareSource, shareImageFor } from "./shareImage";
+import type { LocaleConfig } from "@/lib/i18n/locales";
+
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
 const BLOB =
   "https://stswissarabiandev.blob.core.windows.net/catalog-images/products/x/1.webp";
@@ -38,6 +41,7 @@ describe("share images (link previews)", () => {
       title: "Privacy",
     };
     const withShare = buildCatalogMetadata(page, {
+      localeConfig: EN_AR,
       brand: { ...brand, shareImage: BLOB },
     });
     const og = withShare.openGraph as {
@@ -46,7 +50,7 @@ describe("share images (link previews)", () => {
     expect(og.images[0].url).toContain(encodeURIComponent(BLOB));
     expect(og.images[0].width).toBe(1200);
 
-    const logoOnly = buildCatalogMetadata(page, { brand });
+    const logoOnly = buildCatalogMetadata(page, { localeConfig: EN_AR, brand });
     const ogLogo = logoOnly.openGraph as { images: Array<{ url: string }> };
     expect(ogLogo.images[0].url).toContain(encodeURIComponent("/assets/"));
     expect((logoOnly.twitter as { card: string }).card).toBe(
@@ -63,7 +67,7 @@ describe("share images (link previews)", () => {
         image: BLOB,
         ogType: "product",
       },
-      { brand: { name: "S", names: ["S"] } },
+      { localeConfig: EN_AR, brand: { name: "S", names: ["S"] } },
     );
     const og = meta.openGraph as {
       images: Array<{ height: number; type: string }>;

@@ -18,7 +18,7 @@ const KSA: MarketSite = {
   countryCode: "SA",
   origin: "https://ksa.swissarabian.com",
   host: "ksa.swissarabian.com",
-  languages: ["ar", "en"],
+  languages: ["en", "ar"],
 };
 
 describe("hreflang across market websites", () => {
@@ -98,5 +98,25 @@ describe("sitemap XML", () => {
       '<xhtml:link rel="alternate" hreflang="en-SA" href="https://ksa.swissarabian.com/products/a&amp;b" />',
     );
     expect(xml).toContain("<lastmod>2026-11-01T00:00:00.000Z</lastmod>");
+  });
+});
+
+describe("hreflang when a market website's default language is not English", () => {
+  it("leaves that market's default unprefixed and prefixes its other languages", () => {
+    const arabicKsa: MarketSite = { ...KSA, languages: ["ar", "en"] };
+    const languages = buildMarketHreflang({
+      path: "/products/oud",
+      ownZoneCode: "URD1",
+      defaultZoneCode: "KSA",
+      sites: [UAE, arabicKsa],
+      catalogPaths: new Map([["KSA", new Set(["/products/oud"])]]),
+    });
+    expect(languages).toEqual({
+      "en-AE": "/products/oud",
+      "ar-AE": "/ar/products/oud",
+      "ar-SA": "https://ksa.swissarabian.com/products/oud",
+      "en-SA": "https://ksa.swissarabian.com/en/products/oud",
+      "x-default": "https://ksa.swissarabian.com/products/oud",
+    });
   });
 });

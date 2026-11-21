@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { fetchCatalogSitemap } from "@/features/catalog/api/catalog.service";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
-import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
+import { marketLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { sitemapAlternates } from "@/lib/seo/sitemapEntries";
 import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
@@ -65,7 +66,7 @@ async function crossMarketFor(origin: string) {
 /**
  * The sitemap of the website being served (run inside `withSiteHost`): fixed
  * pages plus every product, collection and category visible in its market, in
- * every configured language, with last-updated dates and hreflang (languages,
+ * every language the market serves, with last-updated dates and hreflang (languages,
  * and other market websites where the page exists). A root domain without a
  * market of its own lists nothing while market websites exist (it redirects).
  */
@@ -76,6 +77,8 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
 
   const entries: Array<{ path: string; lastModified?: string }> = STATIC_PATHS.map((path) => ({ path }));
   const resolved = await resolveCatalogMarketFor(DEFAULT_LOCALE);
+  // The market's languages (admin: Markets → languages), its default unprefixed.
+  const localeConfig = marketLocaleConfig(resolved.languages);
   // Addresses the admin publishes as noindex (SEO Management): left out wherever they come from.
   let noindex = new Set<string>();
 
@@ -125,11 +128,11 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
   // Journal posts exist in one language each: list them only at that language's address.
   const blogEntries: MetadataRoute.Sitemap = [];
   if (brandFeatureEnabled("blog")) try {
-    for (const language of LOCALES) {
+    for (const language of localeConfig.locales) {
       const posts = await fetchBlogSlugs({ zoneCode: resolved.zoneCode, languageCode: language });
       for (const post of posts) {
         if (noindex.has(`/blog/${post.slug}`)) continue;
-        const url = withLocalePrefix(`/blog/${post.slug}`, language);
+        const url = withLocalePrefix(`/blog/${post.slug}`, language, localeConfig);
         blogEntries.push({ url: origin ? absolute(origin, url) : url, lastModified: post.updatedAt });
       }
     }
@@ -141,7 +144,7 @@ export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
   const crossMarket = await crossMarketFor(origin);
   const listed = entries.filter((entry) => !noindex.has(entry.path));
   return [
-    ...sitemapAlternates(listed, origin, LOCALES, DEFAULT_LOCALE, crossMarket),
+    ...sitemapAlternates(listed, origin, localeConfig.locales, localeConfig.defaultLocale, crossMarket),
     ...blogEntries,
   ];
 }

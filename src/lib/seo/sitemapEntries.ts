@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { stripLocalePrefix } from "@/lib/i18n/localePath";
-import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 
 /** A bare path in a language: the default has no prefix. */
 function inLanguage(path: string, code: string, defaultLocale: string): string {
@@ -14,15 +13,16 @@ function absolute(origin: string, path: string) {
 }
 
 /**
- * One sitemap entry per page and configured language, each listing every
+ * One sitemap entry per page and language the market serves, each listing every
  * language's address (hreflang) plus x-default (the default language).
  * Paths are bare (no language prefix); duplicates are listed once.
  */
 export function sitemapAlternates(
   entries: ReadonlyArray<{ path: string; lastModified?: string }>,
   origin: string,
-  locales: readonly string[] = LOCALES,
-  defaultLocale: string = DEFAULT_LOCALE,
+  /** The market's languages, default first (admin: Markets → languages). */
+  locales: readonly string[],
+  defaultLocale: string,
   /**
    * hreflang for a page across market websites (absolute addresses), or null to
    * list this website's languages only.

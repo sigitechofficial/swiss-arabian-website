@@ -83,7 +83,9 @@ When a switch is off:
    - `NEXT_PUBLIC_STOREFRONT_BRAND_CODE`
    - `NEXT_PUBLIC_STOREFRONT_HOST`
    - the brand's integration IDs
-   - `NEXT_PUBLIC_SHOP_LOCALES`
+
+   Languages are not a build setting: each market's languages come from the admin
+   (Markets → languages), limited to the languages with a `src/messages/<lang>.json` file.
 
    Run `npm run check:brand` before `npm run build`.
 4. **Pages:** replace pages one by one in the brand's `brand-ui.ts`. Build them with the brand's design system on top of the shared hooks; never call the API from a brand component.

@@ -12,6 +12,8 @@ describe("sitemap entries", () => {
         { path: "/products/oud" },
       ],
       ORIGIN,
+      ["en", "ar"],
+      "en",
     );
     expect(out.map((entry) => entry.url)).toEqual([
       ORIGIN,
@@ -49,7 +51,7 @@ describe("sitemap entries", () => {
   });
 
   it("keeps relative addresses when the origin is unknown", () => {
-    const out = sitemapAlternates([{ path: "/faq" }], "");
+    const out = sitemapAlternates([{ path: "/faq" }], "", ["en", "ar"], "en");
     expect(out).toEqual([
       { url: "/faq", alternates: undefined },
       { url: "/ar/faq", alternates: undefined },

@@ -1,5 +1,5 @@
 import { seoIndexingEnabled } from "@/lib/config/runtime";
-import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
+import { LOCALES } from "@/lib/i18n/locales";
 import { requestOrigin } from "@/lib/seo/requestOrigin";
 import { loadServerMarkets } from "@/lib/seo/serverMarket";
 import { marketSites } from "@/lib/seo/marketAlternates";
@@ -46,7 +46,8 @@ export async function siteRobotsTxt(): Promise<string> {
         : [];
   const disallow = PRIVATE_PATHS.flatMap((path) => [
     path,
-    ...LOCALES.filter((code) => code !== DEFAULT_LOCALE).map((code) => `/${code}${path}`),
+    // Every language prefix the website knows (any market's default may differ).
+    ...LOCALES.map((code) => `/${code}${path}`),
   ]);
   return [
     "User-agent: *",

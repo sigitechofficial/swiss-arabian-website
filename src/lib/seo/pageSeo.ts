@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
@@ -116,11 +117,12 @@ export async function pageMetadata(input: {
   listing?: boolean;
 }): Promise<Metadata> {
   const { locale, seo } = await loadPublishedPageSeo(input.path);
+  const localeConfig = await serverLocaleConfig();
   const fallbackTitle = input.title;
   const fallbackDescription = input.description;
   const base = await catalogMetadata({
     locale,
-    path: withLocalePrefix(input.path, locale),
+    path: withLocalePrefix(input.path, locale, localeConfig),
     title: seo?.title || fallbackTitle,
     description: seo?.description || fallbackDescription,
     image: seo?.ogImage || null,

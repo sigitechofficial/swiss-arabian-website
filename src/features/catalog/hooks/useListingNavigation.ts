@@ -1,4 +1,5 @@
 "use client";
+import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,8 +21,9 @@ export function useListingNavigation(
   keep?: Record<string, string>,
 ) {
   const router = useRouter();
+  const localeConfig = useLocaleConfig();
   // Public address: a prerendered listing sees its internal `/en/...` path.
-  const pathname = publicPathname(usePathname() || "/");
+  const pathname = publicPathname(usePathname() || "/", localeConfig);
   const keepKey = keep ? new URLSearchParams(keep).toString() : "";
 
   /** Go to exactly this filter state. */

@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import type { ComponentType } from "react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -51,6 +52,7 @@ async function load(
   preview?: SitePagePreviewParams | null,
 ) {
   const { locale, zoneCode } = await resolveRequestCatalogMarket();
+  const localeConfig = await serverLocaleConfig();
   if (preview) {
     // A saved version from an admin preview link: its own text, never indexed.
     const page = await fetchSitePagePreview(preview, locale);
@@ -60,7 +62,7 @@ async function load(
     // The market's FAQ / story / store page has one address: /faq, /our-story, /stores.
     const pages = await fetchSitePages(zoneCode).catch(() => []);
     const fixedPath = fixedPathForPage(pages, handle);
-    if (fixedPath) permanentRedirect(withLocalePrefix(fixedPath, locale));
+    if (fixedPath) permanentRedirect(withLocalePrefix(fixedPath, locale, localeConfig));
   }
   const page = await fetchSitePage(kind, handle, locale, zoneCode);
   return { locale, zoneCode, page, preview: null };
@@ -72,6 +74,7 @@ export async function sitePageMetadata(
   previewParams?: SitePagePreviewParams | null,
 ): Promise<Metadata> {
   const { locale, page, preview } = await load(kind, handle, previewParams);
+  const localeConfig = await serverLocaleConfig();
   if (!page) notFound();
   if (preview) {
     return {
@@ -84,7 +87,7 @@ export async function sitePageMetadata(
   return applySeoOverrides(
     await catalogMetadata({
       locale,
-      path: withLocalePrefix(page.path, locale),
+      path: withLocalePrefix(page.path, locale, localeConfig),
       title: seo?.title || page.seoTitle || page.title,
       description: seo?.description || page.seoDescription || undefined,
       image: seo?.ogImage || null,
@@ -109,6 +112,7 @@ export async function SitePageRouteBase({
     handle,
     previewParams,
   );
+  const localeConfig = await serverLocaleConfig();
   if (!page) notFound();
   const contactDetails = page.templateSuffix?.includes("contact")
     ? await fetchSitePage(
@@ -125,9 +129,9 @@ export async function SitePageRouteBase({
         data={breadcrumbJsonLd([
           {
             name: (await getTranslator(locale))("home"),
-            url: withLocalePrefix("/", locale),
+            url: withLocalePrefix("/", locale, localeConfig),
           },
-          { name: page.title, url: withLocalePrefix(page.path, locale) },
+          { name: page.title, url: withLocalePrefix(page.path, locale, localeConfig) },
         ])}
       />
       <View

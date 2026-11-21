@@ -9,27 +9,32 @@ import {
   stripLocalePrefix,
   withLocalePrefix,
 } from "./localePath";
+import type { LocaleConfig } from "./locales";
+
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
 describe("locale paths", () => {
   it("keeps the handle and only adds the Arabic prefix", () => {
-    expect(withLocalePrefix("/products/vanilla-01", "ar")).toBe("/ar/products/vanilla-01");
-    expect(withLocalePrefix("/ar/products/vanilla-01", "en")).toBe("/products/vanilla-01");
-    expect(withLocalePrefix("/", "ar")).toBe("/ar");
+    expect(withLocalePrefix("/products/vanilla-01", "ar", EN_AR)).toBe("/ar/products/vanilla-01");
+    expect(withLocalePrefix("/ar/products/vanilla-01", "en", EN_AR)).toBe("/products/vanilla-01");
+    expect(withLocalePrefix("/", "ar", EN_AR)).toBe("/ar");
     expect(stripLocalePrefix("/ar")).toBe("/");
   });
 
   it("reads the language from the address (default locale: no prefix)", () => {
-    expect(localeFromPathname("/ar/products")).toBe("ar");
-    expect(localeFromPathname("/products")).toBe("en");
+    expect(localeFromPathname("/ar/products", EN_AR)).toBe("ar");
+    expect(localeFromPathname("/products", EN_AR)).toBe("en");
     // Only whole segments count.
-    expect(localeFromPathname("/arabica")).toBe("en");
-    expect(localePrefixOf("/fr/products")).toBeNull();
+    expect(localeFromPathname("/arabica", EN_AR)).toBe("en");
+    // Any language the website can show is a prefix; whether a market serves it is the proxy's call.
+    expect(localePrefixOf("/fr/products")).toBe("fr");
+    expect(localePrefixOf("/de/products")).toBeNull();
   });
 
   it("treats the internal default-locale route (/en/…) as the bare address", () => {
-    expect(localeFromPathname("/en/products")).toBe("en");
+    expect(localeFromPathname("/en/products", EN_AR)).toBe("en");
     expect(stripLocalePrefix("/en/products")).toBe("/products");
-    expect(withLocalePrefix("/en/products", "ar")).toBe("/ar/products");
+    expect(withLocalePrefix("/en/products", "ar", EN_AR)).toBe("/ar/products");
     expect(internalLocalePath("/products", "en")).toBe("/en/products");
     expect(internalLocalePath("/", "ar")).toBe("/ar");
   });
@@ -44,7 +49,7 @@ describe("locale paths", () => {
   });
 
   it("lists every configured language and x-default in the alternates", () => {
-    expect(catalogAlternates("/ar/products/vanilla-01", "ar")).toEqual({
+    expect(catalogAlternates("/ar/products/vanilla-01", "ar", EN_AR)).toEqual({
       canonical: "/ar/products/vanilla-01",
       languages: {
         en: "/products/vanilla-01",
@@ -52,7 +57,7 @@ describe("locale paths", () => {
         "x-default": "/products/vanilla-01",
       },
     });
-    expect(catalogAlternates("/", "en")).toEqual({
+    expect(catalogAlternates("/", "en", EN_AR)).toEqual({
       canonical: "/",
       languages: { en: "/", ar: "/ar", "x-default": "/" },
     });
@@ -87,5 +92,23 @@ describe("locale paths", () => {
     expect(isLocaleSwitchablePath("/products/vanilla-01")).toBe(true);
     expect(isLocaleSwitchablePath("/subscriptions")).toBe(true);
     expect(isLocaleSwitchablePath("/account/orders")).toBe(true);
+  });
+
+  it("follows each market's languages and default (admin: Markets → languages)", () => {
+    const arabicFirst: LocaleConfig = { locales: ["ar", "en", "fr"], defaultLocale: "ar" };
+    expect(withLocalePrefix("/products", "ar", arabicFirst)).toBe("/products");
+    expect(withLocalePrefix("/products", "en", arabicFirst)).toBe("/en/products");
+    expect(localeFromPathname("/products", arabicFirst)).toBe("ar");
+    expect(localizeHref("/faq", "/en/products", arabicFirst)).toBe("/en/faq");
+    expect(localizeHref("/faq", "/products", arabicFirst)).toBe("/faq");
+    expect(catalogAlternates("/faq", "fr", arabicFirst)).toEqual({
+      canonical: "/fr/faq",
+      languages: { ar: "/faq", en: "/en/faq", fr: "/fr/faq", "x-default": "/faq" },
+    });
+  });
+
+  it("without the market's languages keeps the address's own prefix", () => {
+    expect(localizeHref("/faq", "/ar/products")).toBe("/ar/faq");
+    expect(localizeHref("/faq", "/products")).toBe("/faq");
   });
 });

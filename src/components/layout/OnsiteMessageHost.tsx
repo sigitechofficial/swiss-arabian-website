@@ -1,4 +1,5 @@
 "use client";
+import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useConsentFor } from "@/lib/consent/useConsent";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -37,6 +38,7 @@ function previewTokenFromUrl(): string | null {
  */
 export function OnsiteMessageHost() {
   const pathname = usePathname();
+  const localeConfig = useLocaleConfig();
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const [message, setMessage] = useState<OnsiteMessage | null>(null);
   // Popups and banners are personalised marketing and need a stored visitor id for their
@@ -58,7 +60,7 @@ export function OnsiteMessageHost() {
     if (!token) return;
     let cancelled = false;
     const path = window.location.pathname;
-    void fetchOnsitePreview({ path, locale: localeFromPathname(path), zoneCode }, token)
+    void fetchOnsitePreview({ path, locale: localeFromPathname(path, localeConfig), zoneCode }, token)
       .then((found) => {
         if (cancelled) return;
         if (!found) {
@@ -82,7 +84,7 @@ export function OnsiteMessageHost() {
 
     const context: OnsiteContext = {
       path: window.location.pathname,
-      locale: localeFromPathname(window.location.pathname),
+      locale: localeFromPathname(window.location.pathname, localeConfig),
       zoneCode,
       visitorId: getVisitorId(),
       sessionId: getSessionId(),
@@ -155,7 +157,7 @@ export function OnsiteMessageHost() {
         const path = window.location.pathname;
         const context = contextRef.current ?? {
           path,
-          locale: localeFromPathname(path),
+          locale: localeFromPathname(path, localeConfig),
           zoneCode,
           visitorId: getVisitorId(),
           sessionId: getSessionId(),

@@ -2,6 +2,7 @@
 
 import { intlLocale } from "@/lib/i18n/locales";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toaster";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
@@ -106,6 +107,7 @@ function ProductReviewCard({
   initialRating: number;
   onDone: () => void;
 }) {
+  const localeConfig = useLocaleConfig();
   const t = useReviewsCopy();
   const form = useReviewRequestCard({ token, product, displayName, initialRating, onDone });
   const { rating, setRating, title, setTitle, body, setBody, name, setName, saving } = form;
@@ -129,7 +131,7 @@ function ProductReviewCard({
         ) : null}
         <div className="min-w-0">
           {product.slug ? (
-            <Link href={withLocalePrefix(`/products/${product.slug}`, t.locale)} className="text-[0.85rem] tracking-[0.08em] uppercase">
+            <Link href={withLocalePrefix(`/products/${product.slug}`, t.locale, localeConfig)} className="text-[0.85rem] tracking-[0.08em] uppercase">
               {product.name}
             </Link>
           ) : (

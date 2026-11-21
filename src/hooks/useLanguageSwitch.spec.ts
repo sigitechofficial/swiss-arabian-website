@@ -1,17 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
+import type { LocaleConfig } from "@/lib/i18n/locales";
 import { languageSwitchPath } from "./useLanguageSwitch";
 
-describe("languageSwitchPath", () => {
-  const other = LOCALES.find((code) => code !== DEFAULT_LOCALE);
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
-  it("ignores unknown languages and the current one", () => {
-    expect(languageSwitchPath("/blog", "xx")).toBeNull();
-    expect(languageSwitchPath("/blog", DEFAULT_LOCALE)).toBeNull();
+describe("languageSwitchPath", () => {
+  it("ignores languages the market does not serve and the current one", () => {
+    expect(languageSwitchPath("/blog", "xx", EN_AR)).toBeNull();
+    expect(languageSwitchPath("/blog", "fr", EN_AR)).toBeNull();
+    expect(languageSwitchPath("/blog", "en", EN_AR)).toBeNull();
   });
 
-  it.runIf(Boolean(other))("prefixes the same page with the other language", () => {
-    expect(languageSwitchPath("/blog", other!)).toBe(`/${other}/blog`);
-    expect(languageSwitchPath(`/${other}/blog`, DEFAULT_LOCALE)).toBe("/blog");
+  it("prefixes the same page with the other language", () => {
+    expect(languageSwitchPath("/blog", "ar", EN_AR)).toBe("/ar/blog");
+    expect(languageSwitchPath("/ar/blog", "en", EN_AR)).toBe("/blog");
+  });
+
+  it("follows a market whose default is Arabic", () => {
+    const arabicFirst: LocaleConfig = { locales: ["ar", "en"], defaultLocale: "ar" };
+    expect(languageSwitchPath("/blog", "en", arabicFirst)).toBe("/en/blog");
+    expect(languageSwitchPath("/en/blog", "ar", arabicFirst)).toBe("/blog");
   });
 });

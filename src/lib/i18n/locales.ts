@@ -3,13 +3,17 @@
  * each one is written (direction, `Intl` tag, name). Everything else asks here
  * (`isRtl`, `dir`, `intlLocale`, …) instead of comparing with a language code.
  *
- * The list is a build-time setting so a deployment can add a language without
- * code changes:
+ * Two lists:
+ * - `LOCALES`: the languages this website can show (a message file per language in
+ *   `src/messages/{locale}.json`). Addresses are read against it (`/ar/…`).
+ * - Per market (`LocaleConfig`): the market's languages from the admin (Markets →
+ *   languages, served by `GET /storefront/site` and the market list), limited to
+ *   `LOCALES`, its default language first. That decides which languages a market
+ *   website serves, which one has no URL prefix, the language picker, hreflang and
+ *   the sitemap. Adding a language to a market needs no rebuild.
  *
- *   NEXT_PUBLIC_SHOP_LOCALES=en,ar,fr     (the first default when unset: "en,ar")
- *   NEXT_PUBLIC_DEFAULT_LOCALE=en         (no URL prefix; others get /{locale})
- *
- * plus a message file per language in `src/messages/{locale}.json`.
+ * `NEXT_PUBLIC_SHOP_LOCALES` / `NEXT_PUBLIC_DEFAULT_LOCALE` (build settings) are read
+ * only when a market's languages cannot be read (one release, then retired).
  */
 
 /** A configured shop locale, e.g. "en" or "ar" (lowercase, as in the URL). */
@@ -66,24 +70,83 @@ export function resolveLocaleConfig(
   };
 }
 
+/**
+ * Languages the website has message files for (`src/messages/*.json`; checked by
+ * locales.spec). A market language outside this list is not served.
+ */
+export const MESSAGE_LOCALES: readonly ShopLocale[] = ["en", "ar", "fr"];
+
 // NEXT_PUBLIC_* values must be read as static property paths to be inlined.
-const CONFIG = resolveLocaleConfig(
+const BUILD_FALLBACK = resolveLocaleConfig(
   process.env.NEXT_PUBLIC_SHOP_LOCALES,
   process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
 );
 
-/** Every configured locale, default first. */
-export const LOCALES: readonly ShopLocale[] = CONFIG.locales;
+/** Every language the website can show (addresses are read against it). */
+export const LOCALES: readonly ShopLocale[] = MESSAGE_LOCALES;
 
-/** The locale served without a URL prefix. */
-export const DEFAULT_LOCALE: ShopLocale = CONFIG.defaultLocale;
+/**
+ * The fallback language: used where no market is known (route handlers outside a
+ * page tree, a message file that is missing). Pages use their market's default.
+ */
+export const DEFAULT_LOCALE: ShopLocale = MESSAGE_LOCALES.includes(BUILD_FALLBACK.defaultLocale)
+  ? BUILD_FALLBACK.defaultLocale
+  : "en";
+
+/** The languages one market website serves, its default (unprefixed) language first. */
+export type LocaleConfig = {
+  locales: readonly ShopLocale[];
+  defaultLocale: ShopLocale;
+};
+
+/**
+ * Used when the market's languages cannot be read (backend not reachable, or a
+ * market with none of the website's languages): the old build settings, limited to
+ * the languages the website can show; else English.
+ */
+export function fallbackLocaleConfig(): LocaleConfig {
+  const locales = BUILD_FALLBACK.locales.filter((code) => MESSAGE_LOCALES.includes(code));
+  const defaultLocale = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : (locales[0] ?? "en");
+  return {
+    locales: locales.length ? [defaultLocale, ...locales.filter((c) => c !== defaultLocale)] : ["en"],
+    defaultLocale: locales.length ? defaultLocale : "en",
+  };
+}
+
+/**
+ * A market's languages (codes as the backend lists them, default first: "en",
+ * "ar-AE", "fr-CA") → the website languages it serves. Matched by base language
+ * against `LOCALES`; the market's default stays first and has no URL prefix.
+ * None usable → `fallbackLocaleConfig()`.
+ */
+export function localeConfigFromMarket(
+  languages: ReadonlyArray<string | null | undefined> | null | undefined,
+): LocaleConfig {
+  const locales: ShopLocale[] = [];
+  for (const raw of languages ?? []) {
+    const code = matchLocale(raw);
+    if (code && !locales.includes(code)) locales.push(code);
+  }
+  if (!locales.length) return fallbackLocaleConfig();
+  return { locales, defaultLocale: locales[0]! };
+}
+
+/** Whether a market website serves the language. */
+export function servesLocale(config: LocaleConfig, locale: string | null | undefined): boolean {
+  return typeof locale === "string" && config.locales.includes(locale);
+}
+
+/** A language the market serves for a code from anywhere ("ar-SA", "AR"); null when none. */
+export function matchServedLocale(
+  config: LocaleConfig,
+  value: string | null | undefined,
+): ShopLocale | null {
+  const code = matchLocale(value);
+  return code && config.locales.includes(code) ? code : null;
+}
 
 export function isLocale(value: string | null | undefined): value is ShopLocale {
   return typeof value === "string" && LOCALES.includes(value);
-}
-
-export function isDefaultLocale(locale: string | null | undefined): boolean {
-  return locale === DEFAULT_LOCALE;
 }
 
 /** A configured locale, else the default. */

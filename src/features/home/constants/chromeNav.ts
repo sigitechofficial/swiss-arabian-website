@@ -1,4 +1,3 @@
-import { configuredLanguageOptions } from "@/features/markets/utils/marketLanguageOptions";
 
 export type ChromeLink = { label: string; href: string };
 
@@ -29,7 +28,6 @@ export const TOPBAR_REGIONS = [
 ] as const;
 
 /** Every configured shop language; the picker uses the market's languages once known. */
-export const TOPBAR_LANGUAGES = configuredLanguageOptions();
 
 export const TOPBAR_CURRENCIES = [
   { id: "AED", label: "AED" },

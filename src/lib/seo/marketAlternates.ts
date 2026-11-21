@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/config/env";
 import { stripLocalePrefix, withLocalePrefix } from "@/lib/i18n/localePath";
-import { LOCALES } from "@/lib/i18n/locales";
+import { LOCALES, type LocaleConfig } from "@/lib/i18n/locales";
 import type { StorefrontMarket, StorefrontMarketListResponse } from "@/features/markets/types/market";
 
 /**
@@ -23,9 +23,15 @@ export type MarketSite = {
   countryCode: string;
   origin: string;
   host: string;
-  /** Configured shop languages the market publishes, default first. */
+  /** Website languages the market publishes, default first (its default has no prefix). */
   languages: string[];
 };
+
+/** A market website's own languages and default (they differ per market). */
+function siteLocaleConfig(site: MarketSite): LocaleConfig {
+  const locales = site.languages.length ? site.languages : ["en"];
+  return { locales, defaultLocale: locales[0]! };
+}
 
 function marketLanguages(market: StorefrontMarket): string[] {
   const codes = market.languages
@@ -119,7 +125,7 @@ export function buildMarketHreflang(input: {
     const isOwn = site.zoneCode === own.zoneCode;
     if (!isOwn && !pathExistsIn(bare, input.catalogPaths.get(site.zoneCode) ?? null)) continue;
     for (const code of site.languages) {
-      const localized = withLocalePrefix(bare, code);
+      const localized = withLocalePrefix(bare, code, siteLocaleConfig(site));
       languages[`${code}-${site.countryCode}`] = isOwn
         ? localized
         : `${site.origin}${localized === "/" ? "" : localized}`;
@@ -129,7 +135,8 @@ export function buildMarketHreflang(input: {
     input.sites.find((site) => site.zoneCode === input.defaultZoneCode) ?? own;
   const fallbackIsOwn = fallback.zoneCode === own.zoneCode;
   if (fallbackIsOwn || pathExistsIn(bare, input.catalogPaths.get(fallback.zoneCode) ?? null)) {
-    const localized = withLocalePrefix(bare, fallback.languages[0] ?? LOCALES[0]);
+    const config = siteLocaleConfig(fallback);
+    const localized = withLocalePrefix(bare, config.defaultLocale, config);
     languages["x-default"] = fallbackIsOwn
       ? localized
       : `${fallback.origin}${localized === "/" ? "" : localized}`;

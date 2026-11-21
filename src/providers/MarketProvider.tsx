@@ -1,6 +1,6 @@
 "use client";
 
-import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
+import { useLocaleConfig, useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { toast } from "@/components/ui/Toaster";
 import {
   createContext,
@@ -100,6 +100,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   // (`/payments/tabby/return?lang=ar`) the address has no prefix, but the page
   // is served in the shopper's language and must stay in it.
   const pathLanguage = useShopLocale();
+  const localeConfig = useLocaleConfig();
   const marketId = useUiStore((s) => s.selectedMarketId);
   const router = useRouter();
   /**
@@ -388,8 +389,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
 
   const languageOptions = useMemo(() => {
     const selected = shoppable.find((market) => market.zoneCode === marketId);
-    return marketLanguageOptions(selected?.languages, pathLanguage);
-  }, [marketId, pathLanguage, shoppable]);
+    return marketLanguageOptions(selected?.languages, pathLanguage, localeConfig);
+  }, [marketId, pathLanguage, shoppable, localeConfig]);
 
   const value = useMemo(
     () => ({

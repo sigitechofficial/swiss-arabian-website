@@ -1,4 +1,5 @@
 "use client";
+import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 
 import { usePathname } from "next/navigation";
 import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
@@ -15,7 +16,7 @@ import { pdpPayMarkTamara } from "@/styles/pdpChrome";
  * currency is covered.
  */
 export function CartTamaraPromo({ amount, currency }: { amount: number; currency: string }) {
-  const lang = tamaraLang(localeFromPathname(usePathname() || "/"));
+  const lang = tamaraLang(useShopLocale());
 
   const tamara = useSiteIntegrations().paymentPromos.tamara;
 

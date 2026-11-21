@@ -4,6 +4,9 @@ vi.mock("next/headers", () => ({ cookies: vi.fn(), headers: vi.fn() }));
 
 import { buildCatalogMetadata, listingMetaDescription, metaDescriptionText } from "./catalogPage";
 import { englishTranslator, getTranslator } from "@/lib/i18n/messages";
+import type { LocaleConfig } from "@/lib/i18n/locales";
+
+const EN_AR: LocaleConfig = { locales: ["en", "ar"], defaultLocale: "en" };
 
 const brand = { name: "Swiss Arabian UAE", names: ["Swiss Arabian UAE"] };
 
@@ -31,7 +34,7 @@ describe("listing descriptions", () => {
   it("gives a listing without a description a default naming it and the brand", () => {
     const meta = buildCatalogMetadata(
       { locale: "en", path: "/collections/flash-sale", title: "Flash Sale", listing: true },
-      { brand },
+      { localeConfig: EN_AR, brand },
     );
     expect(meta.description).toBe(listingMetaDescription(englishTranslator, "Flash Sale", "Swiss Arabian UAE"));
     expect(meta.openGraph?.description).toBe(meta.description);
@@ -40,13 +43,13 @@ describe("listing descriptions", () => {
   it("keeps the listing's own description", () => {
     const meta = buildCatalogMetadata(
       { locale: "en", path: "/collections/oud", title: "Oud", description: "<p>Our oud.</p>", listing: true },
-      { brand },
+      { localeConfig: EN_AR, brand },
     );
     expect(meta.description).toBe("Our oud.");
   });
 
   it("does not invent a description for other pages", () => {
-    const meta = buildCatalogMetadata({ locale: "en", path: "/faq", title: "FAQ" }, { brand });
+    const meta = buildCatalogMetadata({ locale: "en", path: "/faq", title: "FAQ" }, { localeConfig: EN_AR, brand });
     expect(meta.description).toBeUndefined();
   });
 

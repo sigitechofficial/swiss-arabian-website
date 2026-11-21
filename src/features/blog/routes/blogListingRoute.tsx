@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/pageSeo";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
@@ -21,6 +22,7 @@ async function load(page: number) {
 }
 
 export async function blogListingMetadata(page: number): Promise<Metadata> {
+  const localeConfig = await serverLocaleConfig();
   requireBrandFeature("blog");
   const { locale, t } = await routeTranslator();
   const metadata = await pageMetadata({
@@ -31,7 +33,7 @@ export async function blogListingMetadata(page: number): Promise<Metadata> {
   if (page > 1) {
     // Page 2+ is its own page for search engines (self-canonical), not a copy of page 1.
     const canonical = metadata.alternates?.canonical;
-    const base = typeof canonical === "string" ? canonical : withLocalePrefix("/blog", locale);
+    const base = typeof canonical === "string" ? canonical : withLocalePrefix("/blog", locale, localeConfig);
     metadata.alternates = { ...metadata.alternates, canonical: `${base}?page=${page}` };
   }
   // Kept out of search until there is at least one live post.
@@ -41,12 +43,13 @@ export async function blogListingMetadata(page: number): Promise<Metadata> {
 
 /** Home › Journal, for search engines (SEO audit p16: breadcrumbs on every page). */
 export async function blogBreadcrumbs(article?: { title: string; slug: string }) {
+  const localeConfig = await serverLocaleConfig();
   const { locale, t } = await routeTranslator();
   const items = [
-    { name: t("home"), url: withLocalePrefix("/", locale) },
-    { name: t("pages.blog.title"), url: withLocalePrefix("/blog", locale) },
+    { name: t("home"), url: withLocalePrefix("/", locale, localeConfig) },
+    { name: t("pages.blog.title"), url: withLocalePrefix("/blog", locale, localeConfig) },
   ];
-  if (article) items.push({ name: article.title, url: withLocalePrefix(`/blog/${article.slug}`, locale) });
+  if (article) items.push({ name: article.title, url: withLocalePrefix(`/blog/${article.slug}`, locale, localeConfig) });
   return breadcrumbJsonLd(items);
 }
 

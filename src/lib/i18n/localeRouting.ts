@@ -5,7 +5,7 @@ import {
   stripLocalePrefix,
   withLocalePrefix,
 } from "./localePath";
-import { DEFAULT_LOCALE, matchLocale } from "./locales";
+import { matchServedLocale, servesLocale, type LocaleConfig } from "./locales";
 
 /**
  * How the proxy maps a public address onto the `[locale]` route tree.
@@ -17,11 +17,15 @@ import { DEFAULT_LOCALE, matchLocale } from "./locales";
  *   /collections/x?page=3  → rewrite  /en/collections/x/p/3 (listing page N is its own
  *                                      static page; the address keeps ?page=3)
  *   /collections/x/p/3     → redirect /collections/x?page=3 (internal shape is not public)
+ *   /fr/products           → redirect /products     when the market does not serve French
+ *                                      (temporary: the market may add it later)
+ *
+ * Which languages and which default: the market's (`LocaleConfig`, from the admin).
  */
 export type LocaleRouting =
   | { type: "next"; pathname: string; search?: string }
   | { type: "rewrite"; pathname: string; search?: string }
-  | { type: "redirect"; pathname: string; search?: string };
+  | { type: "redirect"; pathname: string; search?: string; temporary?: boolean };
 
 /** Listing addresses whose page 2+ is served by a `/p/[page]` route. */
 const LISTING = /^\/(?:products|blog|collections\/[^/]+|categories\/[^/]+)$/;
@@ -31,6 +35,8 @@ export const LISTING_PAGE_SEGMENT = "p";
 
 /** Request header with the address's language (read by app/global-not-found.tsx). */
 export const SHOP_LOCALE_HEADER = "x-shop-locale";
+/** Request header with the market's languages, default first ("en,ar"), for the same page. */
+export const SHOP_LOCALES_HEADER = "x-shop-locales";
 /**
  * Set on the proxy's own rewrites. If the server runs the proxy again on the
  * rewritten `/en/...` path (`next dev --hostname 127.0.0.1` treats the rewrite
@@ -53,11 +59,11 @@ export function isListingPath(bare: string): boolean {
  * path (`/en/products`, `/en/collections/x/p/3`); links built from it must use
  * the public one (`/products`, `/collections/x`), or every click is a 301.
  */
-export function publicPathname(pathname: string): string {
-  const locale = localeFromPathname(pathname || "/");
+export function publicPathname(pathname: string, config: LocaleConfig): string {
+  const locale = localeFromPathname(pathname || "/", config);
   const bare = stripLocalePrefix(pathname || "/");
   const internal = INTERNAL_PAGE.exec(bare);
-  return withLocalePrefix(internal ? internal[1]! : bare, locale);
+  return withLocalePrefix(internal ? internal[1]! : bare, locale, config);
 }
 
 function searchWith(params: URLSearchParams, changes: Record<string, string | null>): string {
@@ -75,31 +81,39 @@ export function localeRouting(input: {
   searchParams: URLSearchParams;
   /** False for transactional addresses (checkout, sign in…), which stay unprefixed. */
   switchable: boolean;
+  /** The market website's languages and default (admin: Markets → languages). */
+  config: LocaleConfig;
 }): LocaleRouting {
-  const { pathname, searchParams } = input;
+  const { pathname, searchParams, config } = input;
   const prefix = localePrefixOf(pathname);
-  const locale = prefix ?? DEFAULT_LOCALE;
   const bare = stripLocalePrefix(pathname);
+
+  // A language the website knows but this market does not serve: the same page in
+  // the market's default language. Temporary, as the market may add the language.
+  if (prefix && !servesLocale(config, prefix)) {
+    return { type: "redirect", pathname: bare, search: searchWith(searchParams, {}), temporary: true };
+  }
+  const locale = prefix ?? config.defaultLocale;
 
   const internal = INTERNAL_PAGE.exec(bare);
   if (internal) {
     return {
       type: "redirect",
-      pathname: withLocalePrefix(internal[1]!, locale),
+      pathname: withLocalePrefix(internal[1]!, locale, config),
       search: searchWith(searchParams, { page: internal[2]! }),
     };
   }
 
-  if (prefix === DEFAULT_LOCALE) {
+  if (prefix === config.defaultLocale) {
     return { type: "redirect", pathname: bare };
   }
 
   if (!prefix && input.switchable) {
-    const wanted = matchLocale(searchParams.get("languageCode"));
-    if (wanted && wanted !== DEFAULT_LOCALE) {
+    const wanted = matchServedLocale(config, searchParams.get("languageCode"));
+    if (wanted && wanted !== config.defaultLocale) {
       return {
         type: "redirect",
-        pathname: withLocalePrefix(bare, wanted),
+        pathname: withLocalePrefix(bare, wanted, config),
         search: searchWith(searchParams, { languageCode: null }),
       };
     }
@@ -119,8 +133,8 @@ export function localeRouting(input: {
     // as `?lang=`, so the page is served in that language while the address
     // stays the one agreed with the backend (Tabby QA, Nov 2026: Arabic shoppers
     // must read Tabby's Arabic messages).
-    const returnLocale = input.switchable ? null : matchLocale(searchParams.get("lang"));
-    return { type: "rewrite", pathname: internalLocalePath(bare, returnLocale ?? DEFAULT_LOCALE) };
+    const returnLocale = input.switchable ? null : matchServedLocale(config, searchParams.get("lang"));
+    return { type: "rewrite", pathname: internalLocalePath(bare, returnLocale ?? config.defaultLocale) };
   }
   return { type: "next", pathname };
 }

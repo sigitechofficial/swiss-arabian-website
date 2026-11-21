@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isLocaleSwitchablePath, localeFromPathname } from "@/lib/i18n/localePath";
+import { isLocaleSwitchablePath, localePrefixOf } from "@/lib/i18n/localePath";
+import { DEFAULT_LOCALE, localeConfigFromMarket, type LocaleConfig } from "@/lib/i18n/locales";
 import {
   INTERNAL_REWRITE_HEADER,
   SHOP_LOCALE_HEADER,
+  SHOP_LOCALES_HEADER,
   localeRouting,
 } from "@/lib/i18n/localeRouting";
 import {
@@ -249,20 +251,30 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Languages: the default one has no prefix (served from its `[locale]`
-  // segment), the others keep `/{locale}/…`.
+  // Languages: the market's own (admin: Markets → languages). Its default has no
+  // prefix (served from its `[locale]` segment), the others keep `/{locale}/…`.
+  const pageMarketCode =
+    site.siteMarketCode ?? offered(zoneCookie) ?? offered(site.defaultMarketCode);
+  const pageMarket = site.markets.find((market) => market.zoneCode === pageMarketCode);
+  const localeConfig = localeConfigFromMarket(pageMarket?.languages);
   const decision = localeRouting({
     pathname,
     searchParams: request.nextUrl.searchParams,
     switchable: isLocaleSwitchablePath(pathname),
+    config: localeConfig,
   });
   const url = request.nextUrl.clone();
   if (decision.type === "redirect") {
     url.pathname = decision.pathname;
     if (decision.search !== undefined) url.search = decision.search;
+    if (decision.temporary) {
+      const response = NextResponse.redirect(url, 307);
+      response.headers.set("cache-control", "private, no-store");
+      return response;
+    }
     return NextResponse.redirect(url, 301);
   }
-  const forwarded = withLocale(request, decision.pathname);
+  const forwarded = withLocale(request, decision.pathname, localeConfig);
   forwarded.set(INTERNAL_REWRITE_HEADER, "1");
   if (startMarket) withRequestCookie(forwarded, ZONE_COOKIE, startMarket);
   if (decision.search !== undefined) url.search = decision.search;
@@ -270,7 +282,7 @@ export async function proxy(request: NextRequest) {
   // 404 (app/global-not-found.tsx: the brand's chrome, status 404), also for
   // sign-in-only pages whose own notFound() would only show after sign-in.
   if (!brandLinkEnabled(pathname)) {
-    url.pathname = `/${treeKey}/${localeFromPathname(decision.pathname)}/${FEATURE_OFF_SEGMENT}`;
+    url.pathname = `/${treeKey}/${routeLocaleOf(decision.pathname)}/${FEATURE_OFF_SEGMENT}`;
     url.search = "";
     return withMarketCookies(NextResponse.rewrite(url, { request: { headers: forwarded } }), markets);
   }
@@ -329,10 +341,17 @@ function requestIsHttps(request: NextRequest): boolean {
   return (proto || request.nextUrl.protocol.replace(/:$/, "")) === "https";
 }
 
-/** Request headers plus the address's language, for app/global-not-found.tsx. */
-function withLocale(request: NextRequest, routePath: string): Headers {
+/** The language of an internal route path (always prefixed: `/ar/…`, `/en/…`). */
+function routeLocaleOf(routePath: string): string {
+  return localePrefixOf(routePath) ?? DEFAULT_LOCALE;
+}
+
+/** Request headers plus the address's language (and its market's), for app/global-not-found.tsx. */
+function withLocale(request: NextRequest, routePath: string, config?: LocaleConfig): Headers {
   const headers = new Headers(request.headers);
-  headers.set(SHOP_LOCALE_HEADER, localeFromPathname(routePath));
+  headers.set(SHOP_LOCALE_HEADER, routeLocaleOf(routePath));
+  if (config) headers.set(SHOP_LOCALES_HEADER, config.locales.join(","));
+  else headers.delete(SHOP_LOCALES_HEADER);
   return headers;
 }
 

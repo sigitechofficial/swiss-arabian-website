@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { catalogMetadata } from "@/lib/seo/catalogPage";
@@ -44,10 +45,11 @@ export async function marketFixedPageMetadata(
   page: SitePage,
 ): Promise<Metadata> {
   const { seo } = await loadPublishedPageSeo(path);
+  const localeConfig = await serverLocaleConfig();
   return applySeoOverrides(
     await catalogMetadata({
       locale,
-      path: withLocalePrefix(path, locale),
+      path: withLocalePrefix(path, locale, localeConfig),
       title: seo?.title || page.seoTitle || page.title,
       description: seo?.description || page.seoDescription || undefined,
     }),

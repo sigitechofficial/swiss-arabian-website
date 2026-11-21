@@ -1,4 +1,5 @@
 "use client";
+import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -18,6 +19,7 @@ const HIDDEN_ON = /\/(checkout|payment)(\/|$)/;
  */
 export function AssistantHost() {
   const pathname = usePathname() || "/";
+  const localeConfig = useLocaleConfig();
   const zoneCode = useUiStore((state) => state.catalogContext?.zoneCode) ?? "";
   const [enabled, setEnabled] = useState(false);
 
@@ -33,5 +35,5 @@ export function AssistantHost() {
   }, [zoneCode]);
 
   if (!enabled || !zoneCode || HIDDEN_ON.test(pathname)) return null;
-  return <AssistantWidget zoneCode={zoneCode} locale={localeFromPathname(pathname)} />;
+  return <AssistantWidget zoneCode={zoneCode} locale={localeFromPathname(pathname, localeConfig)} />;
 }

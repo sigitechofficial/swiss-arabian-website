@@ -1,7 +1,7 @@
 import {
   localePrefixOf,
   stripLocalePrefix,
-  withLocalePrefix,
+  internalLocalePath,
 } from "@/lib/i18n/localePath";
 import { getBrandConfig } from "@/lib/brand";
 
@@ -180,5 +180,5 @@ export function shopifyLegacyRedirect(
   const target = rewriteBare(bare, storeRedirectsFor(brandCode));
   if (!target || target === bare) return null;
   if (!prefix) return target;
-  return withLocalePrefix(target, prefix);
+  return internalLocalePath(target, prefix);
 }

@@ -18,7 +18,8 @@ import { loadSiteIntegrations } from "@/lib/site/siteIntegrations";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { parseSiteKey } from "@/lib/site/siteKey";
 import { runtimeConfigScript, seoIndexingEnabled } from "@/lib/config/runtime";
-import { DEFAULT_LOCALE, dir, isLocale, LOCALES } from "@/lib/i18n/locales";
+import { dir, isLocale, servesLocale, type LocaleConfig } from "@/lib/i18n/locales";
+import { marketLocaleConfig, serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
 import { AppProviders } from "@/app/providers";
@@ -61,8 +62,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const origin = await requestOrigin();
+  const localeConfig = await serverLocaleConfig();
   // Site name in the page's language and the storefront's market (SEO Management → Brand identity).
-  const brand = await loadRequestBrandIdentity(isLocale(locale) ? locale : DEFAULT_LOCALE);
+  const brand = await loadRequestBrandIdentity(
+    servesLocale(localeConfig, locale) ? locale : localeConfig.defaultLocale,
+  );
   const site = getBrand(await siteHost());
   return {
     ...(origin ? { metadataBase: new URL(origin) } : {}),
@@ -88,12 +92,22 @@ const themeInitScript = `(function(){try{var t=localStorage.getItem('sa-color-mo
  */
 const insiderQueueBootScriptTemplate = `(function(){try{window.__SA_INSIDER_ON__=true;window.InsiderQueue=window.InsiderQueue||[];if(!window.InsiderQueue.__saLogged){var rawPush=window.InsiderQueue.push.bind(window.InsiderQueue);window.InsiderQueue.push=function(){for(var i=0;i<arguments.length;i++){var row=arguments[i]||{};console.log("[Insider]",row.type,row.value!==undefined?row.value:"");}return rawPush.apply(window.InsiderQueue,arguments);};window.InsiderQueue.__saLogged=true;}function uuid(){var id=null;try{id=localStorage.getItem("sa_insider_uuid");}catch(e){}if(id)return id;id=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():("anon-"+Date.now());try{localStorage.setItem("sa_insider_uuid",id);}catch(e){}return id;}function cart(){var items=[],total=0,currency="AED";try{var raw=localStorage.getItem("sa-cart-v2");if(raw){var parsed=JSON.parse(raw);var lines=(parsed&&parsed.state&&parsed.state.lines)||[];for(var i=0;i<lines.length;i++){var L=lines[i]||{};var q=Number(L.quantity);if(!isFinite(q)||q<1)q=1;var price=Number(L.unitPrice);if(!isFinite(price))price=0;total+=price*q;if(L.currency)currency=String(L.currency);var item={id:L.variantId||L.sku||String(i),name:L.title||"",taxonomy:L.category?[L.category]:["Shop"],unit_price:price,unit_sale_price:price,quantity:q,url:(location.origin||"")+"/products/"+encodeURIComponent(L.slug||""),product_image_url:L.imageUrl||"",stock:L.isSellable===false?0:1,color:""};if(L.sizeLabel)item.size=L.sizeLabel;if(L.productId||L.variantId)item.groupcode=L.productId||L.variantId;items.push(item);}}}catch(e){}return{total:total,items:items,currency:currency};}function ctx(skipCart){var c=cart();var items=c.items;var tot=c.total;var ship=items.length?25:0;var u={uuid:uuid(),language:"en_US",gdpr_optin:true};try{var ur=localStorage.getItem("sa_insider_user");if(ur){var parsed=JSON.parse(ur);if(parsed&&typeof parsed==="object"&&parsed.uuid){if(!parsed.language)parsed.language="en_US";if(typeof parsed.gdpr_optin!=="boolean")parsed.gdpr_optin=true;u=parsed;}}}catch(e){}window.InsiderQueue.push({type:"user",value:u});window.InsiderQueue.push({type:"currency",value:c.currency||"AED"});window.InsiderQueue.push({type:"language",value:(u&&u.language)||"en_US"});if(!skipCart)window.InsiderQueue.push({type:"cart",value:{total:tot+ship,shipping_cost:ship,items:items}});window.__SA_INSIDER_HEAD_CONTEXT__=true;}var p=location.pathname||"/";var s=p.split("/").filter(Boolean);if(__SA_LOCALE_PREFIXES__.indexOf(s[0])>=0)s.shift();function hasTok(){try{return !!(localStorage.getItem("sa_store_access_token")||localStorage.getItem("sa_store_refresh_token"));}catch(e){return false;}}function identified(){try{var ur=localStorage.getItem("sa_insider_user");if(!ur)return false;var parsed=JSON.parse(ur);return !!(parsed&&parsed.uuid&&(parsed.email||parsed.phone_number));}catch(e){return false;}}function endPage(){if(hasTok()&&!identified()){window.__SA_INSIDER_WAIT_AUTH__=true;return;}window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;}var pdp=s.length===2&&s[0]==="products";var listing=s[0]==="search"||s[0]==="collections"||(s[0]==="products"&&s.length===1);ctx(!(s.length===1&&s[0]==="cart"));if(pdp){if(hasTok())window.__SA_INSIDER_WAIT_AUTH__=true;window.InsiderQueue.push({type:"init"});window.__SA_INSIDER_HEAD_PATH__=p;return;}if(p.indexOf("/order-confirmation")>=0||p.indexOf("/checkout/payment/success")>=0){window.InsiderQueue.push({type:"other",value:{name:"Order confirmation"}});endPage();return;}if(s.length===1&&s[0]==="cart"){endPage();return;}var t="other";if(p==="/"||p==="")t="home";else if(s[0]==="products"||s[0]==="search"||s[0]==="collections")t="category";if(t==="home")window.InsiderQueue.push({type:"home"});else if(t==="category"){var crumb=["Shop"];if(s[0]==="search")crumb=["Search"];else if(s[0]==="collections")crumb=s[1]?["Collections",decodeURIComponent(s[1])]:["Collections"];window.InsiderQueue.push({type:"category",value:{breadcrumb:crumb}});}else{var n=s[0]||"Page";if(n==="checkout")n="Checkout";window.InsiderQueue.push({type:"other",value:{name:n}});}endPage();}catch(e){}})();`;
 
-/** Language prefixes in addresses (`/ar/...`), stripped before reading the page type. */
-const insiderQueueBootBody = insiderQueueBootScriptTemplate
-  .replace("__SA_LOCALE_PREFIXES__", JSON.stringify(LOCALES.filter((code) => code !== DEFAULT_LOCALE)))
-  // The template is an immediately-run function; keep only its body to run on demand.
-  .replace(/^\(function\(\)\{/, "")
-  .replace(/\}\)\(\);$/, "");
+/**
+ * The boot script for a market: its language prefixes in addresses (`/ar/...`,
+ * every language but its default) are stripped before reading the page type.
+ */
+function insiderQueueBootBody(localeConfig: LocaleConfig): string {
+  return (
+    insiderQueueBootScriptTemplate
+      .replace(
+        "__SA_LOCALE_PREFIXES__",
+        JSON.stringify(localeConfig.locales.filter((code) => code !== localeConfig.defaultLocale)),
+      )
+      // The template is an immediately-run function; keep only its body to run on demand.
+      .replace(/^\(function\(\)\{/, "")
+      .replace(/\}\)\(\);$/, "")
+  );
+}
 
 /**
  * Insider is a marketing tool, so it starts only with marketing consent from the cookie banner.
@@ -101,8 +115,8 @@ const insiderQueueBootBody = insiderQueueBootScriptTemplate
  * init exactly as before) and runs it at once when consent is already stored. Otherwise nothing is
  * queued, stored or loaded, and the banner calls the same function when the shopper accepts.
  */
-function insiderHeadScript(scriptSrc: string): string {
-  return `(function(){window.__SA_INSIDER_ON__=true;window.__saInsiderBoot=function(){if(window.__saInsiderBooted)return;window.__saInsiderBooted=true;try{var js=document.createElement("script");js.async=true;js.src=${JSON.stringify(scriptSrc)};document.head.appendChild(js);}catch(e){}${insiderQueueBootBody}};try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)})||"null");if(c&&c.version===${CONSENT_VERSION}&&c.marketing===true)window.__saInsiderBoot();}catch(e){}})();`;
+function insiderHeadScript(scriptSrc: string, localeConfig: LocaleConfig): string {
+  return `(function(){window.__SA_INSIDER_ON__=true;window.__saInsiderBoot=function(){if(window.__saInsiderBooted)return;window.__saInsiderBooted=true;try{var js=document.createElement("script");js.async=true;js.src=${JSON.stringify(scriptSrc)};document.head.appendChild(js);}catch(e){}${insiderQueueBootBody(localeConfig)}};try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)})||"null");if(c&&c.version===${CONSENT_VERSION}&&c.marketing===true)window.__saInsiderBoot();}catch(e){}})();`;
 }
 
 export default async function RootLayout({
@@ -128,6 +142,10 @@ export default async function RootLayout({
   // A market page tree (`swissarabian.com~KSA`) only for one of the address's
   // markets: anything else is a hand-made internal path (never a cached page).
   if (siteKey.marketCode && catalogMarket.zoneCode !== siteKey.marketCode) notFound();
+  // The market's languages (admin: Markets → languages): one it does not serve is a 404
+  // (the proxy sends shoppers to the default language before they get here).
+  const localeConfig = marketLocaleConfig(catalogMarket.languages);
+  if (!servesLocale(localeConfig, locale)) notFound();
   // On an address that serves several markets: that of this page tree.
   const integrations = await loadSiteIntegrations(registeredHost, siteKey.marketCode);
   const { insiderTag } = integrations;
@@ -157,6 +175,7 @@ export default async function RootLayout({
           <ServerInlineScript
             html={insiderHeadScript(
               `https://${insiderTag.scriptHost}/ins.js?id=${encodeURIComponent(insiderTag.accountId)}`,
+              localeConfig,
             )}
           />
         ) : null}
@@ -167,6 +186,7 @@ export default async function RootLayout({
           storefrontHost={storefrontHost}
           locale={locale}
           messages={messages}
+          localeConfig={localeConfig}
           integrations={integrations}
           marketTimeZone={marketTimeZone(analyticsContext.country)}
         >

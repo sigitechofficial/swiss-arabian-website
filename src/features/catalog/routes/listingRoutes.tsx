@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { Suspense, type ComponentProps, type ComponentType } from "react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -102,6 +103,7 @@ function withPageCanonical(metadata: Metadata, path: string, page: number): Meta
 /* ---------------------------------------------------------------- products */
 
 export async function productsMetadata(page: number): Promise<Metadata> {
+  const localeConfig = await serverLocaleConfig();
   const { locale, t } = await routeTranslator();
   const title = t("allProducts");
   const metadata = await pageMetadata({
@@ -111,7 +113,7 @@ export async function productsMetadata(page: number): Promise<Metadata> {
   });
   const canonical = metadata.alternates?.canonical;
   const base =
-    typeof canonical === "string" ? canonical : withLocalePrefix("/products", locale);
+    typeof canonical === "string" ? canonical : withLocalePrefix("/products", locale, localeConfig);
   return withPageCanonical(metadata, base, page);
 }
 
@@ -136,6 +138,7 @@ export async function ProductsListing({
 /* ------------------------------------------------------------- collections */
 
 export async function collectionMetadata(slug: string, page: number): Promise<Metadata> {
+  const localeConfig = await serverLocaleConfig();
   const { locale, collection, missing } = await loadCatalogDocument("collection", slug);
   if (missing) notFound();
   const { t } = await routeTranslator();
@@ -149,7 +152,7 @@ export async function collectionMetadata(slug: string, page: number): Promise<Me
     collection?.seoDescription?.trim() ||
     collection?.description ||
     undefined;
-  const path = canonicalCatalogPath(`/collections/${handle}`, locale);
+  const path = canonicalCatalogPath(`/collections/${handle}`, locale, localeConfig);
   const metadata = applySeoOverrides(
     await catalogMetadata({
       locale,
@@ -179,18 +182,19 @@ export async function CollectionListing({
   };
 }) {
   const { View, FromUrl, SeoText, SeoFaq } = view;
+  const localeConfig = await serverLocaleConfig();
   // Page 2+ included, so search engines get the product links without running JavaScript.
   const loaded = await loadCatalogDocument("collection", slug, page);
   const { locale, collection, listing, zoneCode } = loaded;
   // The collection does not exist in this market: a real 404, not a crash.
   if (loaded.missing) notFound();
   if (collection?.slug && collection.slug !== slug) {
-    const target = withLocalePrefix(`/collections/${collection.slug}`, locale);
+    const target = withLocalePrefix(`/collections/${collection.slug}`, locale, localeConfig);
     permanentRedirect(page > 1 ? `${target}?page=${page}` : target);
   }
   const { t } = await routeTranslator();
   const handle = collection?.slug || slug;
-  const path = canonicalCatalogPath(`/collections/${handle}`, locale);
+  const path = canonicalCatalogPath(`/collections/${handle}`, locale, localeConfig);
   const name = collection?.name || slug;
   const faq = page > 1 ? null : seoFaqView(collection?.faq, locale);
   const props = {
@@ -209,14 +213,14 @@ export async function CollectionListing({
           data={itemListJsonLd(
             name,
             listing.products.map((p) =>
-              withLocalePrefix(`/products/${p.slug}`, locale),
+              withLocalePrefix(`/products/${p.slug}`, locale, localeConfig),
             ),
           )}
         />
       ) : null}
       <CatalogJsonLd
         data={breadcrumbJsonLd([
-          { name: t("home"), url: withLocalePrefix("/", locale) },
+          { name: t("home"), url: withLocalePrefix("/", locale, localeConfig) },
           { name, url: path },
         ])}
       />
@@ -242,6 +246,7 @@ export async function CollectionListing({
 /* -------------------------------------------------------------- categories */
 
 export async function categoryMetadata(slug: string, page: number): Promise<Metadata> {
+  const localeConfig = await serverLocaleConfig();
   const { locale, category, missing } = await loadCatalogDocument("category", slug);
   if (missing) notFound();
   const { t } = await routeTranslator();
@@ -250,7 +255,7 @@ export async function categoryMetadata(slug: string, page: number): Promise<Meta
   const { seo } = await loadPublishedPageSeo(`/categories/${handle}`);
   const title =
     seo?.title || category?.seoTitle?.trim() || category?.name || slug;
-  const path = canonicalCatalogPath(`/categories/${handle}`, locale);
+  const path = canonicalCatalogPath(`/categories/${handle}`, locale, localeConfig);
   const metadata = applySeoOverrides(
     await catalogMetadata({
       locale,
@@ -281,16 +286,17 @@ export async function CategoryListing({
   view?: ListingViewPair<CategoryListingViewProps>;
 }) {
   const { View, FromUrl } = view;
+  const localeConfig = await serverLocaleConfig();
   const { locale, category, missing } = await loadCatalogDocument("category", slug);
   if (missing) notFound();
   if (category?.slug && category.slug !== slug) {
-    const target = withLocalePrefix(`/categories/${category.slug}`, locale);
+    const target = withLocalePrefix(`/categories/${category.slug}`, locale, localeConfig);
     permanentRedirect(page > 1 ? `${target}?page=${page}` : target);
   }
   const { t } = await routeTranslator();
   const handle = category?.slug || slug;
   const { listing, zoneCode } = await loadServerListing("category", handle, page);
-  const path = canonicalCatalogPath(`/categories/${handle}`, locale);
+  const path = canonicalCatalogPath(`/categories/${handle}`, locale, localeConfig);
   const name = category?.name || slug;
   const props = {
     slug: handle,
@@ -302,7 +308,7 @@ export async function CategoryListing({
     <>
       <CatalogJsonLd
         data={breadcrumbJsonLd([
-          { name: t("home"), url: withLocalePrefix("/", locale) },
+          { name: t("home"), url: withLocalePrefix("/", locale, localeConfig) },
           { name, url: path },
         ])}
       />

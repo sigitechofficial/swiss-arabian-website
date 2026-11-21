@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { AnalyticsScripts } from "@/components/layout/AnalyticsScripts";
 import { getBrandConfig, localized } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
-import { SHOP_LOCALE_HEADER } from "@/lib/i18n/localeRouting";
-import { dir, toLocale } from "@/lib/i18n/locales";
+import { SHOP_LOCALE_HEADER, SHOP_LOCALES_HEADER } from "@/lib/i18n/localeRouting";
+import { dir, localeConfigFromMarket, toLocale } from "@/lib/i18n/locales";
 import { getTranslator, loadMessages } from "@/lib/i18n/messages";
 import { BrandHead } from "@brand-ui";
 import { NotFoundView, StorefrontShell } from "@brand-ui/client";
@@ -44,7 +44,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function GlobalNotFound() {
-  const locale = toLocale((await headers()).get(SHOP_LOCALE_HEADER));
+  const requestHeaders = await headers();
+  const locale = toLocale(requestHeaders.get(SHOP_LOCALE_HEADER));
+  // The market's languages, set by the proxy (default first).
+  const localeConfig = localeConfigFromMarket(
+    (requestHeaders.get(SHOP_LOCALES_HEADER) ?? "").split(","),
+  );
   const [messages, integrations] = await Promise.all([
     loadMessages(locale),
     // The address's analytics still count a missing page (ADR-005 phase E).
@@ -61,6 +66,7 @@ export default async function GlobalNotFound() {
           storefrontHost={null}
           locale={locale}
           messages={messages}
+          localeConfig={localeConfig}
           integrations={integrations}
           // No market on a 404: the home market's zone (the page shows no dates).
           marketTimeZone={DEFAULT_MARKET_TIME_ZONE}

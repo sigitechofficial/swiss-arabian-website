@@ -1,3 +1,4 @@
+import { serverLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import type { Metadata } from "next";
 import { breadcrumbJsonLd, pageBreadcrumbJsonLd } from "@/features/catalog/components/CatalogJsonLd";
 import {
@@ -34,13 +35,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StoresPage() {
+  const localeConfig = await serverLocaleConfig();
   requireBrandFeature("storeLocator");
   const { locale, data } = await loadStoreLocator();
   const { t, brandName } = await routeTranslator();
 
   if (data.stores.length) {
     const origin = await requestOrigin();
-    const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale));
+    const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale, localeConfig));
     return (
       <>
         <CatalogJsonLd
