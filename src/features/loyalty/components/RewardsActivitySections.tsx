@@ -94,9 +94,9 @@ function OnlineActivity({
                   <p className="break-words text-[13px] font-medium text-sa-primary">
                     {knownText(t, "loyalty.text.", row.label)}
                   </p>
-                  {row.detail ? (
+                  {activityDetailText(t, row) ? (
                     <p className="mt-0.5 text-[12px] text-sa-muted">
-                      {row.detail}
+                      {activityDetailText(t, row)}
                     </p>
                   ) : null}
                   {row.state ? (
@@ -341,4 +341,17 @@ export function RewardsActivitySections({
       ) : null}
     </div>
   );
+}
+
+/** The line under an activity: the server's own text, else "Order {number} · AED 1.20". */
+function activityDetailText(
+  t: Translator,
+  row: Pick<LoyaltyTransactionView, "detail" | "orderNumber" | "amount">,
+): string | null {
+  if (row.detail) return row.detail;
+  const parts = [
+    row.orderNumber ? t("loyalty.activity.order", { number: row.orderNumber }) : null,
+    row.amount,
+  ].filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join(" · ") : null;
 }

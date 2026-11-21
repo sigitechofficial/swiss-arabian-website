@@ -57,9 +57,8 @@ export function CmsHeroSlider({ data, linkContext }: Props) {
         data.eyebrow?.trim() || first?.eyebrow?.trim() || undefined
       }
       title={
-        data.heading?.trim() ||
-        first?.heading?.trim() ||
-        "East Meets West"
+        // No heading written: the hero's own title in the page's language.
+        data.heading?.trim() || first?.heading?.trim() || undefined
       }
       lead={
         data.subheading?.trim() ||

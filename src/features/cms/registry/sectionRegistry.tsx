@@ -147,10 +147,11 @@ export function renderCmsSection(
       case "TRENDING_PRODUCTS": {
         const products = mapCmsProducts(data.products);
         if (!products.length) return null;
+        // No heading written: the strip's own title in the page's language.
         const heading =
           typeof data.heading === "string" && data.heading.trim()
             ? data.heading.trim()
-            : "Trending Now";
+            : undefined;
         const viewAllHref =
           resolveCmsLink(asLink(data.link), linkContext) || "/products";
         return (

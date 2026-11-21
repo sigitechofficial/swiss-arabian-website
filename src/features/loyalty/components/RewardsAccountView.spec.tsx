@@ -161,7 +161,9 @@ describe("rewards account", () => {
       {
         id: "tx-1",
         label: "Order earned",
-        detail: "Order 10842",
+        detail: null,
+        orderNumber: "10842",
+        amount: null,
         points: 150,
         occurredAt: "2026-07-24T00:00:00.000Z",
         state: null,

@@ -22,7 +22,7 @@ const FILTERS: { value: PaymentFilter; label: MessageKey }[] = [
   { value: "refunded", label: "payments.filter.refunded" },
 ];
 
-function paymentDisplay(status: string): { label: MessageKey | null; tone: AccountStatusTone; kind: PaymentFilter } {
+function paymentDisplay(status: string): { label: MessageKey; tone: AccountStatusTone; kind: PaymentFilter } {
   switch (status.toUpperCase()) {
     case "PAID":
     case "AUTHORIZED":
@@ -37,8 +37,11 @@ function paymentDisplay(status: string): { label: MessageKey | null; tone: Accou
       return { label: "payments.status.partlyRefunded", tone: "muted", kind: "refunded" };
     case "NOT_REQUIRED":
       return { label: "payments.status.notRequired", tone: "muted", kind: "paid" };
+    case "CANCELLED":
+      return { label: "payments.status.cancelled", tone: "muted", kind: "all" };
     default:
-      return { label: null, tone: "muted", kind: "all" };
+      // Never a raw status code: an unknown state reads "Being checked".
+      return { label: "payments.status.other", tone: "muted", kind: "all" };
   }
 }
 
@@ -102,7 +105,7 @@ function PaymentHistory() {
       ) : (
         rows.map((order) => {
           const { label: labelKey, tone, kind } = paymentDisplay(order.paymentStatus);
-          const label = labelKey ? t(labelKey) : order.paymentStatus;
+          const label = t(labelKey);
           const detailHref = `/account/orders/${order.orderId}`;
           return (
             <div

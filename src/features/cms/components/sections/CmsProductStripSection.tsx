@@ -7,7 +7,8 @@ import type { ProductSummary } from "@/features/catalog/types/product";
 export type CmsProductStripVariant = "productsBand" | "trending";
 
 type Props = {
-  title: string;
+  /** Undefined: the strip's own title in the page's language. */
+  title?: string;
   products: ProductSummary[];
   viewAllHref?: string | null;
   viewAllLabel?: string | null;

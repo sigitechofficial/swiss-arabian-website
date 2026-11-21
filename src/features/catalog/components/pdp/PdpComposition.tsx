@@ -7,6 +7,13 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
+
+/** The fragrance pyramid tiers, worded per language. */
+const NOTE_LEVEL = {
+  Top: "pdp.notes.level.Top",
+  Heart: "pdp.notes.level.Heart",
+  Base: "pdp.notes.level.Base",
+} as const;
 import { pageContainer } from "@/styles/siteChrome";
 import {
   compAccBtn,
@@ -218,7 +225,7 @@ export function PdpComposition({
                   <ul className={notes} role="list">
                     {notesRows.map((row) => (
                       <li className={notesRow} key={row.level}>
-                        <p className={notesLevel}>{row.level}</p>
+                        <p className={notesLevel}>{row.level in NOTE_LEVEL ? t(NOTE_LEVEL[row.level as keyof typeof NOTE_LEVEL]) : row.level}</p>
                         <p className={notesNames}>{row.names}</p>
                         {showLongevityBars && row.bar != null ? (
                           <div

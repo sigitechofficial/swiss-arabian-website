@@ -82,7 +82,12 @@ export type LoyaltyTransactionView = {
   id: string;
   occurredAt: string | null;
   label: string;
+  /** The server's own detail text, when it sends one. */
   detail: string | null;
+  /** The order the activity belongs to (the page words "Order {number}"). */
+  orderNumber: string | null;
+  /** Money value of redeemed points, e.g. "AED 1.20". */
+  amount: string | null;
   points: number | null;
   state: LoyaltyActivityState | null;
 };
@@ -519,21 +524,20 @@ function transactionList(raw: unknown): unknown[] {
   return [];
 }
 
+/** Facts under an activity line; the page words them in its language. */
 function activityDetail(
   row: Record<string, unknown>,
   presentationKey: string,
-): string | null {
+): { detail: string | null; orderNumber: string | null; amount: string | null } {
   const explicit = readText(row, ["detail", "subtitle", "note"]);
-  if (explicit) return explicit;
-  const orderNumber = readText(row, ["orderNumber"]);
-  const parts: string[] = [];
-  if (orderNumber) parts.push(`Order ${orderNumber}`);
+  if (explicit) return { detail: explicit, orderNumber: null, amount: null };
+  let amount: string | null = null;
   if (presentationKey === "POINTS_REDEEMED") {
     const money = readText(row, ["moneyEquivalent"]);
     const currency = readText(row, ["currencyCode"]);
-    if (money && currency) parts.push(`${currency} ${money}`);
+    if (money && currency) amount = `${currency} ${money}`;
   }
-  return parts.length > 0 ? parts.join(" · ") : null;
+  return { detail: null, orderNumber: readText(row, ["orderNumber"]), amount };
 }
 
 function activityCopy(presentationKey: string, points: number | null): string | null {
@@ -632,7 +636,7 @@ export function readLoyaltyTransactions(raw: unknown): LoyaltyTransactionView[] 
         occurredAt:
           readText(row, ["occurredAt", "createdAt", "postedAt", "displayDate", "date"]) ?? null,
         label,
-        detail: activityDetail(row, presentationKey),
+        ...activityDetail(row, presentationKey),
         points,
         state: ACTIVITY_STATE_COPY[stateKey] ?? null,
       },

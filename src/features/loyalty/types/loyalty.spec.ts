@@ -226,7 +226,12 @@ describe("live backend contract", () => {
         },
       ],
     });
-    expect(rows[0]?.detail).toBe("Order UAE-MV50EEHH-3BCD38 · AED 1.20");
+    // Facts only: the page words "Order …" in its own language.
+    expect(rows[0]).toMatchObject({
+      detail: null,
+      orderNumber: "UAE-MV50EEHH-3BCD38",
+      amount: "AED 1.20",
+    });
   });
 
   it("returns an empty live history for a new wallet", () => {
