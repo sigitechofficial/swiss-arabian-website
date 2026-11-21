@@ -451,6 +451,19 @@ html:has([data-navbar][data-topbar-hidden="true"]) .bundle-dock {
     letter-spacing: 0;
   }
 
+  /* Emails, phone numbers and web addresses are written left to right in every language:
+     typed text reads from its start (a long address is no longer cut at the front on
+     right-to-left pages). The box keeps the page's alignment. */
+  :where(input[type="email"], input[type="tel"], input[type="url"]) {
+    direction: ltr;
+  }
+  html[dir="rtl"] :where(input[type="email"], input[type="tel"], input[type="url"]) {
+    text-align: right;
+  }
+  html[dir="rtl"] :where(input[type="email"], input[type="tel"], input[type="url"]):not(:placeholder-shown) {
+    text-align: left;
+  }
+
   /* Password fields have their own show/hide button; hide Edge's built-in one. */
   input[type="password"]::-ms-reveal,
   input[type="password"]::-ms-clear {

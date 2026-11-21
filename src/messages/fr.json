@@ -556,6 +556,7 @@
   "loadingLabel.redirecting": "Redirection…",
   "loadingLabel.savedItems": "Chargement des articles enregistrés…",
   "loadingLabel.wishlist": "Chargement de la liste d’envies…",
+  "loadingLabel.bag": "Chargement de votre panier…",
   "loadingLabel.order": "Chargement de votre commande…",
   "loadingLabel.orderLookup": "Recherche de votre commande…",
   "phone.label": "Numéro de mobile",

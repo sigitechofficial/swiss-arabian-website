@@ -298,7 +298,7 @@ export function CartSideSheet() {
                           )}
                         </div>
                         {showsDistinctSize(line.title, line.sizeLabel) ? (
-                          <p className={drawerLineMeta}>{line.sizeLabel}</p>
+                          <p className={drawerLineMeta}><bdi>{line.sizeLabel}</bdi></p>
                         ) : null}
                         {bundle ? (
                           <p className={drawerLineNote}>

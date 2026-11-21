@@ -105,7 +105,9 @@ export function PhoneNumberField({
         </label>
       ) : null}
 
-      <div className="flex w-full items-center gap-2">
+      {/* A phone number reads "+code number" in every language, so the row keeps that order on
+          right-to-left pages; the country list itself stays in the page's direction. */}
+      <div className="flex w-full items-center gap-2 rtl:flex-row-reverse">
         <div className="relative shrink-0" ref={rootRef}>
           <button
             type="button"
@@ -123,7 +125,7 @@ export function PhoneNumberField({
           </button>
 
           {open ? (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-30 w-[268px] overflow-hidden rounded-md border border-sa-border bg-white text-left shadow-[0_12px_32px_-12px_rgba(36,31,27,0.35)]">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-30 w-[268px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-md border border-sa-border bg-white text-start shadow-[0_12px_32px_-12px_rgba(36,31,27,0.35)]">
               <div className="border-b border-sa-border p-2">
                 <input
                   autoFocus

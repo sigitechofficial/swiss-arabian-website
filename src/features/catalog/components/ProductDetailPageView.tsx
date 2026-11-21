@@ -137,7 +137,7 @@ export function ProductDetailPageView({
   const formatLabel =
     metafields?.size?.trim() ||
     (product.concentration ? CONCENTRATION_LABELS[product.concentration] : "");
-  const notesHeading = notesSectionTitle(metafields);
+  const notesHeading = notesSectionTitle(metafields, copy("pdp.composition.tab.notes"));
   const notesRows = livePyramid;
 
   return (

@@ -555,6 +555,7 @@
   "loadingLabel.redirecting": "Redirecting…",
   "loadingLabel.savedItems": "Loading saved items…",
   "loadingLabel.wishlist": "Loading wishlist…",
+  "loadingLabel.bag": "Loading your bag…",
   "loadingLabel.order": "Loading your order…",
   "loadingLabel.orderLookup": "Looking up your order…",
   "phone.label": "Mobile number",

@@ -63,7 +63,8 @@ describe("pdpMetafields", () => {
       "Fruity",
       "Woody",
     ]);
-    expect(notesSectionTitle({})).toBe("Notes");
-    expect(notesSectionTitle({ ingredient_heading: "Notes" })).toBe("Notes");
+    expect(notesSectionTitle({}, "المكونات العطرية")).toBe("المكونات العطرية");
+    expect(notesSectionTitle(null, "Notes")).toBe("Notes");
+    expect(notesSectionTitle({ ingredient_heading: "Accords" }, "Notes")).toBe("Accords");
   });
 });

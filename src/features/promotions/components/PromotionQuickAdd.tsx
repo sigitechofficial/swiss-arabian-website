@@ -58,7 +58,7 @@ export function PromotionQuickAdd({
                 />
               ) : null}
             </span>
-            <div className="flex min-w-0 flex-1 flex-col justify-center pr-11">
+            <div className="flex min-w-0 flex-1 flex-col justify-center pe-11">
               {product.slug ? (
                 <LocaleLink
                   href={`/products/${product.slug}`}
@@ -79,7 +79,7 @@ export function PromotionQuickAdd({
             </div>
             <button
               type="button"
-              className="absolute top-1/2 right-3 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50"
+              className="absolute top-1/2 inset-e-3 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50"
               disabled={busy === product.sku}
               aria-label={`${addLabel} ${product.title}`}
               onClick={() => add(product)}

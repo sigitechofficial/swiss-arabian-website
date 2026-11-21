@@ -86,8 +86,10 @@ export function pyramidNoteChips(
   return chosen;
 }
 
+/** The product's own heading for its notes, else `fallback` (the page's word for "Notes"). */
 export function notesSectionTitle(
   metafields: StorefrontPdpMetafields | null | undefined,
+  fallback: string,
 ): string {
-  return text(metafields?.ingredient_heading) ?? "Notes";
+  return text(metafields?.ingredient_heading) ?? fallback;
 }

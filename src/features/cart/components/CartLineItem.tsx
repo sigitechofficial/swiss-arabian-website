@@ -61,7 +61,7 @@ export function CartLineItem({
               </p>
             )}
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-sa-muted">
-              {line.sizeLabel ? <span>{line.sizeLabel}</span> : null}
+              {line.sizeLabel ? <span><bdi>{line.sizeLabel}</bdi></span> : null}
               {line.sizeLabel && notes ? (
                 <span className="text-sa-border" aria-hidden>
                   ·

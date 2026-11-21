@@ -135,7 +135,7 @@ export function CheckoutSummary({
                   />
                 </div>
                 {showsDistinctSize(line.title, line.sizeLabel) ? (
-                  <p className={colineMeta}>{line.sizeLabel}</p>
+                  <p className={colineMeta}><bdi>{line.sizeLabel}</bdi></p>
                 ) : null}
                 {bundle ? (
                   <p className={colineTags}>

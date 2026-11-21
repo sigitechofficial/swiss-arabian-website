@@ -180,7 +180,7 @@ export type SelectFieldProps = FieldShell &
 
 // chevron as an inline style: a data-URL inside a class name would also reach the host
 // app's Tailwind build (it scans this folder) and break its CSS url() resolution.
-const SELECT_ARROW = "appearance-none bg-no-repeat bg-[position:right_14px_center] bg-[length:18px] pr-[40px]";
+const SELECT_ARROW = "appearance-none bg-no-repeat bg-[position:right_14px_center] rtl:bg-[position:left_14px_center] bg-[length:18px] pe-[40px]";
 const SELECT_ARROW_IMAGE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e1b18' stroke-width='1.6'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E\")";
 

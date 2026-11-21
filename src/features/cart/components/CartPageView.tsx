@@ -1,5 +1,6 @@
 "use client";
 
+import { PageLoading } from "@/components/ui/PageLoading";
 import { useRef, useState } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
@@ -102,6 +103,7 @@ export function CartPageView() {
     setLineQuantity,
     removeLine,
     isEmpty,
+    ready,
     itemCount,
     subtotal,
     currency,
@@ -188,7 +190,7 @@ export function CartPageView() {
             <h1 className={pageTitle} id="cart-heading">
               {copy("cart.page.title")}
             </h1>
-            {!isEmpty ? (
+            {ready && !isEmpty ? (
               <span className={cartPageCount}>{copy("cart.page.items", { count: itemCount })}</span>
             ) : null}
           </header>
@@ -196,7 +198,9 @@ export function CartPageView() {
           <CartPaymentConfirmingNotice />
           <CartUnavailableItems />
 
-          {!isEmpty ? (
+          {!ready ? (
+            <PageLoading label={copy("loadingLabel.bag")} />
+          ) : !isEmpty ? (
             <div className={cartLayout} id="cart-page-layout">
               <div
                 className={cartItemsCol}
@@ -251,7 +255,7 @@ export function CartPageView() {
                             )}
                           </div>
                           {showsDistinctSize(line.title, line.sizeLabel) ? (
-                            <p className={cartRowMeta}>{line.sizeLabel}</p>
+                            <p className={cartRowMeta}><bdi>{line.sizeLabel}</bdi></p>
                           ) : null}
                           {bundle ? (
                             <p className={cartRowTags}>

@@ -53,7 +53,7 @@ export const fldCheck =
 export const fldHint =
   "text-[0.75rem] font-normal tracking-normal text-[var(--ink-2,#5b5148)] normal-case";
 
-export const fldSelect = "relative [&_select]:w-full [&_select]:cursor-pointer [&_select]:appearance-none [&_select]:pr-9 [&_b]:pointer-events-none [&_b]:absolute [&_b]:top-1/2 [&_b]:right-3.5 [&_b]:-translate-y-1/2 [&_b]:text-[var(--ink-2,#5b5148)]";
+export const fldSelect = "relative [&_select]:w-full [&_select]:cursor-pointer [&_select]:appearance-none [&_select]:pe-9 [&_b]:pointer-events-none [&_b]:absolute [&_b]:top-1/2 [&_b]:inset-e-3.5 [&_b]:-translate-y-1/2 [&_b]:text-[var(--ink-2,#5b5148)]";
 
 /** Country trigger — a button, so color and font beat `.landing button`. */
 export const phoneCc =
@@ -114,7 +114,7 @@ export const coline =
   "grid min-w-0 grid-cols-[76px_minmax(0,1fr)] items-start gap-3.5 border-b border-[rgb(33_33_33/0.06)] py-4 last:border-b-0";
 
 export const colineMedia =
-  "relative grid size-[76px] place-items-center overflow-visible rounded-[12px] bg-[var(--cream-2,#f3ebda)] [&_img]:block [&_img]:size-full [&_img]:rounded-[12px] [&_img]:object-contain [&_b]:absolute [&_b]:-top-1.5 [&_b]:-right-1.5 [&_b]:z-[1] [&_b]:grid [&_b]:h-[18px] [&_b]:min-w-[18px] [&_b]:place-items-center [&_b]:rounded-full [&_b]:bg-copper [&_b]:px-1 [&_b]:text-[0.65rem] [&_b]:font-medium [&_b]:text-white [&_b]:shadow-[0_0_0_1.5px_#fff]";
+  "relative grid size-[76px] place-items-center overflow-visible rounded-[12px] bg-[var(--cream-2,#f3ebda)] [&_img]:block [&_img]:size-full [&_img]:rounded-[12px] [&_img]:object-contain [&_b]:absolute [&_b]:-top-1.5 [&_b]:-inset-e-1.5 [&_b]:z-[1] [&_b]:grid [&_b]:h-[18px] [&_b]:min-w-[18px] [&_b]:place-items-center [&_b]:rounded-full [&_b]:bg-copper [&_b]:px-1 [&_b]:text-[0.65rem] [&_b]:font-medium [&_b]:text-white [&_b]:shadow-[0_0_0_1.5px_#fff]";
 
 export const colineBody = "flex min-w-0 flex-col gap-1.5";
 
@@ -248,7 +248,7 @@ export const ocSteps =
   "m-0 grid list-none grid-cols-5 p-0 max-[640px]:grid-cols-1 max-[640px]:gap-3.5";
 
 export const ocStep =
-  "group/step relative flex flex-col items-center gap-1 px-1 text-center before:absolute before:top-2 before:right-1/2 before:h-0.5 before:w-full before:bg-[var(--line,#d9ccb4)] before:content-[''] first:before:hidden data-[status=current]:before:bg-copper data-[status=done]:before:bg-copper max-[640px]:grid max-[640px]:grid-cols-[18px_1fr] max-[640px]:items-center max-[640px]:gap-x-3 max-[640px]:text-left max-[640px]:before:top-auto max-[640px]:before:bottom-1/2 max-[640px]:before:left-2 max-[640px]:before:h-[calc(100%+14px)] max-[640px]:before:w-0.5";
+  "group/step relative flex flex-col items-center gap-1 px-1 text-center before:absolute before:top-2 before:inset-e-1/2 before:h-0.5 before:w-full before:bg-[var(--line,#d9ccb4)] before:content-[''] first:before:hidden data-[status=current]:before:bg-copper data-[status=done]:before:bg-copper max-[640px]:grid max-[640px]:grid-cols-[18px_1fr] max-[640px]:items-center max-[640px]:gap-x-3 max-[640px]:text-start max-[640px]:before:top-auto max-[640px]:before:bottom-1/2 max-[640px]:before:inset-s-2 max-[640px]:before:h-[calc(100%+14px)] max-[640px]:before:w-0.5";
 
 export const ocStepDot =
   "relative z-[1] mb-1.5 size-[18px] rounded-full border-2 border-[var(--line,#d9ccb4)] bg-white group-data-[status=current]/step:border-copper group-data-[status=current]/step:shadow-[0_0_0_4px_rgba(140,68,53,0.14)] group-data-[status=current]/step:after:absolute group-data-[status=current]/step:after:inset-[3px] group-data-[status=current]/step:after:rounded-full group-data-[status=current]/step:after:bg-copper group-data-[status=current]/step:after:content-[''] group-data-[status=done]/step:border-copper group-data-[status=done]/step:bg-copper group-data-[status=done]/step:bg-[length:12px] group-data-[status=done]/step:bg-center group-data-[status=done]/step:bg-no-repeat group-data-[status=done]/step:bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_viewBox=%270_0_16_16%27_fill=%27none%27_stroke=%27white%27_stroke-width=%272.4%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27M4_8.5l2.5_2.5L12_5.5%27/%3E%3C/svg%3E')] max-[640px]:row-span-2 max-[640px]:m-0";

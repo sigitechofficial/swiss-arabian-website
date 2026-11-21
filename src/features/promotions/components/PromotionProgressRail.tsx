@@ -268,11 +268,11 @@ function RewardRange({
   return (
     <div className="relative mt-3.5 font-sans">
       <span
-        className="absolute top-3 right-0 left-0 h-0.5 -translate-y-1/2 rounded-full bg-[#eadfd2]"
+        className="absolute top-3 inset-x-0 h-0.5 -translate-y-1/2 rounded-full bg-[#eadfd2]"
         aria-hidden="true"
       />
       <span
-        className="absolute top-3 left-0 h-0.5 -translate-y-1/2 rounded-full bg-[#8c4435] transition-[width] duration-500 ease-out"
+        className="absolute top-3 inset-s-0 h-0.5 -translate-y-1/2 rounded-full bg-[#8c4435] transition-[width] duration-500 ease-out"
         style={{ width: `${fill}%` }}
         aria-hidden="true"
       />

@@ -54,7 +54,7 @@ export const cardAddPlus = "group-aria-pressed/add:hidden";
 export const cardAddCheck = "hidden group-aria-pressed/add:inline";
 
 export const cardAction =
-  "absolute top-[10px] right-[10px] z-[6] [&_button]:border-[var(--line,#d9ccb4)]! [&_button]:bg-[rgba(255,255,255,0.92)]! [&_button]:text-[var(--ink-2,#5b5148)]! [&_button:hover]:border-[var(--copper,#8c4435)]! [&_button:hover]:text-[var(--copper,#8c4435)]! [&_button[aria-pressed=true]]:border-[var(--copper,#8c4435)]! [&_button[aria-pressed=true]]:text-[var(--copper,#8c4435)]!";
+  "absolute top-[10px] inset-e-[10px] z-[6] [&_button]:border-[var(--line,#d9ccb4)]! [&_button]:bg-[rgba(255,255,255,0.92)]! [&_button]:text-[var(--ink-2,#5b5148)]! [&_button:hover]:border-[var(--copper,#8c4435)]! [&_button:hover]:text-[var(--copper,#8c4435)]! [&_button[aria-pressed=true]]:border-[var(--copper,#8c4435)]! [&_button[aria-pressed=true]]:text-[var(--copper,#8c4435)]!";
 
 export const cardTags =
   "pointer-events-none absolute top-3 z-[5] m-0 text-[0.56rem] inset-s-3 [&>span]:inline-block [&>span]:rounded-full [&>span]:bg-copper [&>span]:px-[0.72em] [&>span]:py-[0.34em] [&>span]:leading-[1.2] [&>span]:font-normal [&>span]:tracking-[0.12em] [&>span]:text-white [&>span]:uppercase";

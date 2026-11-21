@@ -116,8 +116,8 @@ export function ProductCard({
       <span
         className={`absolute z-[1] bg-gold font-bold uppercase tracking-[0.12em] text-paper ${
           compact
-            ? "left-2 top-2 px-1.5 py-0.5 text-[8px]"
-            : "left-3 top-3 px-[11px] py-[6px] text-[10px]"
+            ? "inset-s-2 top-2 px-1.5 py-0.5 text-[8px]"
+            : "inset-s-3 top-3 px-[11px] py-[6px] text-[10px]"
         }`}
       >
         New
@@ -126,8 +126,8 @@ export function ProductCard({
       <span
         className={`absolute z-[1] bg-terra font-bold uppercase tracking-[0.12em] text-paper ${
           compact
-            ? "left-2 top-2 px-1.5 py-0.5 text-[8px]"
-            : "left-3 top-3 px-[11px] py-[6px] text-[10px]"
+            ? "inset-s-2 top-2 px-1.5 py-0.5 text-[8px]"
+            : "inset-s-3 top-3 px-[11px] py-[6px] text-[10px]"
         }`}
       >
         ↗ Trending
@@ -142,7 +142,7 @@ export function ProductCard({
     >
       {isProductUuid(product.id) ? (
         <div
-          className={`absolute z-[2] ${compact ? "right-1.5 top-1.5" : "right-3 top-3"}`}
+          className={`absolute z-[2] ${compact ? "inset-e-1.5 top-1.5" : "inset-e-3 top-3"}`}
         >
           <WishlistHeartButton productId={product.id} size="card" />
         </div>

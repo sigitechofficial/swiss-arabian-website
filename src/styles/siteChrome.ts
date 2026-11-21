@@ -105,7 +105,7 @@ export const navUtils = "flex shrink-0 items-center gap-0 [&_[data-icon-btn]]:m-
 export const navUtilsSearch = "max-[1200px]:hidden";
 
 export const bagCount =
-  "absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full bg-copper px-1 text-[0.6rem] font-semibold text-white";
+  "absolute top-1 inset-e-1 grid h-4 min-w-4 place-items-center rounded-full bg-copper px-1 text-[0.6rem] font-semibold text-white";
 
 export const bagCountOnTool =
   "top-[-7px] right-[-8px] text-[0.52rem] leading-none";

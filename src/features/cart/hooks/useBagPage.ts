@@ -131,6 +131,8 @@ export function useBagPage() {
     bundleLabel: bag.bundleLabel,
     setLineQuantity: bag.setLineQuantity,
     removeLine: bag.removeLine,
+    /** False until the browser-kept bag is read: show loading then, never "empty". */
+    ready: mounted,
     isEmpty: lines.length === 0,
     itemCount,
     subtotal,

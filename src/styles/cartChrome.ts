@@ -123,11 +123,11 @@ export const emptyBagName =
   "m-0 line-clamp-2 text-[0.68rem] leading-[1.3] font-medium tracking-[0.04em] text-[var(--ink,#1a1512)] uppercase";
 
 export const emptyBagAdd =
-  "absolute top-1/2 right-2.5 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50";
+  "absolute top-1/2 inset-e-2.5 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-[var(--ink,#241f1b)] bg-white p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! disabled:cursor-wait disabled:opacity-50";
 
 export const cartRecPh = "block size-[92px] self-center rounded-none bg-[#f3ebe0]";
 
-export const cartRecCopy = "flex min-w-0 flex-col pr-[52px]";
+export const cartRecCopy = "flex min-w-0 flex-col pe-[52px]";
 
 export const cartRecName =
   "m-0 text-[0.68rem] leading-[1.3] font-medium tracking-[0.04em] text-[var(--ink,#1a1512)] uppercase";
@@ -138,7 +138,7 @@ export const cartRecSize =
   "mt-auto pt-2 text-[0.62rem] tracking-[0.08em] text-[rgb(33_33_33/0.55)] uppercase";
 
 export const cartRecAdd =
-  "absolute right-2 bottom-2 grid size-11 cursor-pointer place-items-center border border-[var(--ink,#241f1b)] bg-transparent p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! aria-pressed:border-[var(--copper,#8c4435)] aria-pressed:bg-[var(--copper,#8c4435)]! aria-pressed:text-white!";
+  "absolute inset-e-2 bottom-2 grid size-11 cursor-pointer place-items-center border border-[var(--ink,#241f1b)] bg-transparent p-0 text-[var(--ink,#241f1b)]! hover:bg-[var(--ink,#241f1b)]! hover:text-white! aria-pressed:border-[var(--copper,#8c4435)] aria-pressed:bg-[var(--copper,#8c4435)]! aria-pressed:text-white!";
 
 export const drawerFoot =
   "shrink-0 border-t border-[rgb(33_33_33/0.08)] bg-[var(--cream,#faf6ee)] px-[22px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))]";
@@ -189,7 +189,7 @@ export const cartRowName =
   "m-0 min-w-0 text-[0.85rem] leading-[1.35] font-semibold text-[var(--ink,#1a1512)] [&_a]:text-inherit [&_a]:no-underline [&_a:hover]:text-[var(--copper,#8c4435)]";
 
 export const cartRowPrice =
-  "m-0 shrink-0 text-right text-[0.95rem] leading-tight font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
+  "m-0 shrink-0 text-end text-[0.95rem] leading-tight font-semibold whitespace-nowrap text-[var(--copper,#8c4435)]";
 
 export const cartRowMeta = "col-span-2 m-0 text-[0.75rem] leading-snug text-[rgb(33_33_33/0.55)]";
 
@@ -205,7 +205,7 @@ export const cartQtyLimit =
   "col-span-2 m-0 text-[0.75rem] leading-snug text-[var(--copper-deep,#6d3428)]";
 
 export const cartRowRemove =
-  "mt-1 ml-3 cursor-pointer justify-self-start border-0 bg-transparent p-0 text-[0.78rem] text-[rgb(33_33_33/0.55)] underline [font:inherit] hover:text-[var(--ink,#1a1512)]";
+  "mt-1 cursor-pointer justify-self-end border-0 bg-transparent p-0 text-[0.78rem] text-[rgb(33_33_33/0.55)] underline [font:inherit] hover:text-[var(--ink,#1a1512)]";
 
 export const cartMiss = "mb-[18px]";
 
