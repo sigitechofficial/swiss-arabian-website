@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   baseLanguage,
   DEFAULT_LOCALE,
@@ -41,7 +41,15 @@ describe("locale configuration", () => {
     });
     // A default that is not in the list falls back to the first entry.
     expect(resolveLocaleConfig("ar,en", "de")).toEqual({ locales: ["ar", "en"], defaultLocale: "ar" });
-    expect(resolveLocaleConfig("", "")).toEqual({ locales: ["en", "ar"], defaultLocale: "en" });
+    // Nothing configured: every language the website has message files for, no fixed pair.
+    expect(resolveLocaleConfig("", "")).toEqual({
+      locales: [...MESSAGE_LOCALES],
+      defaultLocale: MESSAGE_LOCALES[0],
+    });
+    expect(resolveLocaleConfig("", "fr")).toEqual({
+      locales: ["fr", ...MESSAGE_LOCALES.filter((code) => code !== "fr")],
+      defaultLocale: "fr",
+    });
   });
 
   it("validates codes against the configured list", () => {
@@ -72,10 +80,46 @@ describe("a market's languages (admin: Markets → languages)", () => {
     });
   });
 
-  it("falls back to the old build settings, else English, when none can be used", () => {
+  it("falls back to the old build settings when none can be used", () => {
     expect(localeConfigFromMarket([])).toEqual(fallbackLocaleConfig());
     expect(localeConfigFromMarket(["de"])).toEqual(fallbackLocaleConfig());
-    expect(fallbackLocaleConfig().defaultLocale).toBe("en");
+    for (const code of fallbackLocaleConfig().locales) {
+      expect(MESSAGE_LOCALES).toContain(code);
+    }
+  });
+
+  describe("outage fallback without usable build settings", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    });
+
+    async function freshLocales(locales: string, defaultLocale: string) {
+      vi.resetModules();
+      vi.stubEnv("NEXT_PUBLIC_SHOP_LOCALES", locales);
+      vi.stubEnv("NEXT_PUBLIC_DEFAULT_LOCALE", defaultLocale);
+      return import("./locales");
+    }
+
+    it("no build settings: every language the website can show, not English/Arabic only", async () => {
+      const mod = await freshLocales("", "");
+      expect([...mod.fallbackLocaleConfig().locales].sort()).toEqual(
+        [...mod.MESSAGE_LOCALES].sort(),
+      );
+    });
+
+    it("build settings naming none of the website's languages: every website language", async () => {
+      const mod = await freshLocales("de,it", "de");
+      expect([...mod.fallbackLocaleConfig().locales].sort()).toEqual(
+        [...mod.MESSAGE_LOCALES].sort(),
+      );
+    });
+
+    it("a French build default stays the fallback default", async () => {
+      const mod = await freshLocales("fr,en", "fr");
+      expect(mod.fallbackLocaleConfig()).toEqual({ locales: ["fr", "en"], defaultLocale: "fr" });
+      expect(mod.DEFAULT_LOCALE).toBe("fr");
+    });
   });
 
   it("answers which languages a market serves", () => {

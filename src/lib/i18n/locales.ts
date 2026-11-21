@@ -55,12 +55,22 @@ export function parseLocaleList(raw: string | null | undefined): string[] {
   return out;
 }
 
+/**
+ * Languages the website has message files for (`src/messages/*.json`; checked by
+ * locales.spec). A market language outside this list is not served.
+ */
+export const MESSAGE_LOCALES: readonly ShopLocale[] = ["en", "ar", "fr"];
+
+/**
+ * Build settings → languages. Nothing set: every language the website has message
+ * files for (no fixed language pair), the first one as default.
+ */
 export function resolveLocaleConfig(
   rawLocales: string | null | undefined,
   rawDefault: string | null | undefined,
 ): { locales: readonly string[]; defaultLocale: string } {
   const listed = parseLocaleList(rawLocales);
-  const locales = listed.length ? listed : ["en", "ar"];
+  const locales = listed.length ? listed : [...MESSAGE_LOCALES];
   const wanted = normalizeLocale(rawDefault);
   const defaultLocale = wanted && locales.includes(wanted) ? wanted : locales[0]!;
   // The default locale comes first (sitemaps, language pickers, x-default).
@@ -69,12 +79,6 @@ export function resolveLocaleConfig(
     defaultLocale,
   };
 }
-
-/**
- * Languages the website has message files for (`src/messages/*.json`; checked by
- * locales.spec). A market language outside this list is not served.
- */
-export const MESSAGE_LOCALES: readonly ShopLocale[] = ["en", "ar", "fr"];
 
 // NEXT_PUBLIC_* values must be read as static property paths to be inlined.
 const BUILD_FALLBACK = resolveLocaleConfig(
@@ -91,7 +95,7 @@ export const LOCALES: readonly ShopLocale[] = MESSAGE_LOCALES;
  */
 export const DEFAULT_LOCALE: ShopLocale = MESSAGE_LOCALES.includes(BUILD_FALLBACK.defaultLocale)
   ? BUILD_FALLBACK.defaultLocale
-  : "en";
+  : MESSAGE_LOCALES[0]!;
 
 /** The languages one market website serves, its default (unprefixed) language first. */
 export type LocaleConfig = {
@@ -102,14 +106,16 @@ export type LocaleConfig = {
 /**
  * Used when the market's languages cannot be read (backend not reachable, or a
  * market with none of the website's languages): the old build settings, limited to
- * the languages the website can show; else English.
+ * the languages the website can show; else every language the website can show.
  */
 export function fallbackLocaleConfig(): LocaleConfig {
-  const locales = BUILD_FALLBACK.locales.filter((code) => MESSAGE_LOCALES.includes(code));
-  const defaultLocale = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : (locales[0] ?? "en");
+  const configured = BUILD_FALLBACK.locales.filter((code) => MESSAGE_LOCALES.includes(code));
+  // Build settings name none of the website's languages: every message-file language.
+  const locales = configured.length ? configured : [...MESSAGE_LOCALES];
+  const defaultLocale = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0]!;
   return {
-    locales: locales.length ? [defaultLocale, ...locales.filter((c) => c !== defaultLocale)] : ["en"],
-    defaultLocale: locales.length ? defaultLocale : "en",
+    locales: [defaultLocale, ...locales.filter((c) => c !== defaultLocale)],
+    defaultLocale,
   };
 }
 

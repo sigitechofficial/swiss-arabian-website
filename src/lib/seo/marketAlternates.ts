@@ -1,7 +1,11 @@
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/config/env";
 import { stripLocalePrefix, withLocalePrefix } from "@/lib/i18n/localePath";
-import { LOCALES, type LocaleConfig } from "@/lib/i18n/locales";
+import {
+  fallbackLocaleConfig,
+  localeConfigFromMarket,
+  type LocaleConfig,
+} from "@/lib/i18n/locales";
 import type { StorefrontMarket, StorefrontMarketListResponse } from "@/features/markets/types/market";
 
 /**
@@ -29,17 +33,21 @@ export type MarketSite = {
 
 /** A market website's own languages and default (they differ per market). */
 function siteLocaleConfig(site: MarketSite): LocaleConfig {
-  const locales = site.languages.length ? site.languages : ["en"];
-  return { locales, defaultLocale: locales[0]! };
+  if (!site.languages.length) return fallbackLocaleConfig();
+  return { locales: site.languages, defaultLocale: site.languages[0]! };
 }
 
+/**
+ * The website languages a market serves, its default first — the same rule the
+ * market's own website uses (`localeConfigFromMarket`), including its fallback when
+ * the market has none of the website's languages.
+ */
 function marketLanguages(market: StorefrontMarket): string[] {
   const codes = market.languages
     .slice()
     .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
-    .map((l) => (l.languageCode || l.locale || "").slice(0, 2).toLowerCase())
-    .filter((code) => (LOCALES as readonly string[]).includes(code));
-  return [...new Set(codes)];
+    .map((l) => l.locale || l.languageCode);
+  return [...localeConfigFromMarket(codes).locales];
 }
 
 /** The brand's market websites (markets with an address of their own). */

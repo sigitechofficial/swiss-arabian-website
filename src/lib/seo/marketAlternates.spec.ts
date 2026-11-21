@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
 
+import { fallbackLocaleConfig } from "@/lib/i18n/locales";
 import { buildMarketHreflang, marketSites, pathExistsIn, type MarketSite } from "./marketAlternates";
 import { sitemapXml } from "./siteSitemap";
 import type { StorefrontMarketListResponse } from "@/features/markets/types/market";
@@ -118,5 +119,28 @@ describe("hreflang when a market website's default language is not English", () 
       "en-SA": "https://ksa.swissarabian.com/en/products/oud",
       "x-default": "https://ksa.swissarabian.com/products/oud",
     });
+  });
+});
+
+describe("market website languages follow each market (any language)", () => {
+  const market = (zoneCode: string, languages: Array<{ locale: string; isDefault: boolean }>) => ({
+    zoneCode,
+    countryCode: "fr",
+    storefrontUrl: `https://${zoneCode.toLowerCase()}.example.com`,
+    languages: languages.map((l) => ({ ...l, languageCode: l.locale.split("-")[0], displayName: null })),
+  });
+
+  it("a French-default market is published in French first, not English", () => {
+    const list = {
+      markets: [market("FRA", [{ locale: "en", isDefault: false }, { locale: "fr-FR", isDefault: true }])],
+    } as unknown as StorefrontMarketListResponse;
+    expect(marketSites(list)[0]!.languages).toEqual(["fr", "en"]);
+  });
+
+  it("a market with none of the website's languages uses the website fallback, not a fixed English", () => {
+    const list = {
+      markets: [market("DEU", [{ locale: "de", isDefault: true }])],
+    } as unknown as StorefrontMarketListResponse;
+    expect(marketSites(list)[0]!.languages).toEqual([...fallbackLocaleConfig().locales]);
   });
 });
