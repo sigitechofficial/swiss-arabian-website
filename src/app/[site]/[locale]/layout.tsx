@@ -142,10 +142,17 @@ export default async function RootLayout({
   // A market page tree (`swissarabian.com~KSA`) only for one of the address's
   // markets: anything else is a hand-made internal path (never a cached page).
   if (siteKey.marketCode && catalogMarket.zoneCode !== siteKey.marketCode) notFound();
-  // The market's languages (admin: Markets → languages): one it does not serve is a 404
-  // (the proxy sends shoppers to the default language before they get here).
-  const localeConfig = marketLocaleConfig(catalogMarket.languages);
-  if (!servesLocale(localeConfig, locale)) notFound();
+  // The market's languages (admin: Markets → languages). The proxy sends shoppers of a
+  // language the market does not serve to its default language (307) before they get
+  // here. It reads the market's languages from its own copy (refreshed every minute),
+  // this page reads them live: for that minute after a language is switched off or on
+  // the two disagree. A 404 then (and a 404 cached with the page until it revalidates)
+  // would break a language that was, or is about to be, served; the page is drawn in
+  // that website language instead and the proxy redirects as soon as its copy catches up.
+  const marketConfig = marketLocaleConfig(catalogMarket.languages);
+  const localeConfig: LocaleConfig = servesLocale(marketConfig, locale)
+    ? marketConfig
+    : { ...marketConfig, locales: [...marketConfig.locales, locale] };
   // On an address that serves several markets: that of this page tree.
   const integrations = await loadSiteIntegrations(registeredHost, siteKey.marketCode);
   const { insiderTag } = integrations;
