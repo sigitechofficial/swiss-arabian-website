@@ -1,4 +1,5 @@
 import { routeTranslator } from "@/lib/i18n/routeLocale";
+import type { Translator } from "@/lib/i18n/messages";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CheckoutSpinnerState, CheckoutStateShell, TelrReturnView } from "@brand-ui";
@@ -11,22 +12,24 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function TelrReturnFallback() {
+/** Shown while the page loads, in the page's language (from `?lang=`). */
+function TelrReturnFallback({ t }: { t: Translator }) {
   return (
-    <CheckoutStateShell current="Payment">
+    <CheckoutStateShell current={t("checkout.state.payment")}>
       <CheckoutSpinnerState
-        eyebrow="Verification pending"
-        title="Payment submitted — we’re confirming with the bank."
-        body="Don’t close this page."
+        eyebrow={t("checkout.state.verificationPending")}
+        title={t("checkout.telr.submitted")}
+        body={t("checkout.state.dontClose")}
       />
     </CheckoutStateShell>
   );
 }
 
 /** Telr HPP browser return — path locked with BE: `/payments/telr/return`. */
-export default function TelrReturnPage() {
+export default async function TelrReturnPage() {
+  const { t } = await routeTranslator();
   return (
-    <Suspense fallback={<TelrReturnFallback />}>
+    <Suspense fallback={<TelrReturnFallback t={t} />}>
       <TelrReturnView />
     </Suspense>
   );
