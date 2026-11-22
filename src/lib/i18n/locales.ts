@@ -12,14 +12,12 @@
  *   website serves, which one has no URL prefix, the language picker, hreflang and
  *   the sitemap. Adding a language to a market needs no rebuild.
  *
- * `NEXT_PUBLIC_SHOP_LOCALES` / `NEXT_PUBLIC_DEFAULT_LOCALE` (build settings) are read
- * only when a market's languages cannot be read (one release, then retired).
+ * When a market's languages cannot be read (backend not reachable), every language the
+ * website can show is served, English first. There is no build setting for languages.
  */
 
 /** A configured shop locale, e.g. "en" or "ar" (lowercase, as in the URL). */
 export type ShopLocale = string;
-
-const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/;
 
 /** Languages written right to left (by base language). */
 const RTL_LANGUAGES = new Set([
@@ -45,46 +43,11 @@ export function normalizeLocale(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/_/g, "-");
 }
 
-/** Comma-separated locale list → validated, de-duplicated codes. */
-export function parseLocaleList(raw: string | null | undefined): string[] {
-  const out: string[] = [];
-  for (const part of (raw ?? "").split(",")) {
-    const code = normalizeLocale(part);
-    if (code && LOCALE_PATTERN.test(code) && !out.includes(code)) out.push(code);
-  }
-  return out;
-}
-
 /**
  * Languages the website has message files for (`src/messages/*.json`; checked by
  * locales.spec). A market language outside this list is not served.
  */
 export const MESSAGE_LOCALES: readonly ShopLocale[] = ["en", "ar", "fr"];
-
-/**
- * Build settings → languages. Nothing set: every language the website has message
- * files for (no fixed language pair), the first one as default.
- */
-export function resolveLocaleConfig(
-  rawLocales: string | null | undefined,
-  rawDefault: string | null | undefined,
-): { locales: readonly string[]; defaultLocale: string } {
-  const listed = parseLocaleList(rawLocales);
-  const locales = listed.length ? listed : [...MESSAGE_LOCALES];
-  const wanted = normalizeLocale(rawDefault);
-  const defaultLocale = wanted && locales.includes(wanted) ? wanted : locales[0]!;
-  // The default locale comes first (sitemaps, language pickers, x-default).
-  return {
-    locales: [defaultLocale, ...locales.filter((code) => code !== defaultLocale)],
-    defaultLocale,
-  };
-}
-
-// NEXT_PUBLIC_* values must be read as static property paths to be inlined.
-const BUILD_FALLBACK = resolveLocaleConfig(
-  process.env.NEXT_PUBLIC_SHOP_LOCALES,
-  process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
-);
 
 /** Every language the website can show (addresses are read against it). */
 export const LOCALES: readonly ShopLocale[] = MESSAGE_LOCALES;
@@ -93,9 +56,7 @@ export const LOCALES: readonly ShopLocale[] = MESSAGE_LOCALES;
  * The fallback language: used where no market is known (route handlers outside a
  * page tree, a message file that is missing). Pages use their market's default.
  */
-export const DEFAULT_LOCALE: ShopLocale = MESSAGE_LOCALES.includes(BUILD_FALLBACK.defaultLocale)
-  ? BUILD_FALLBACK.defaultLocale
-  : MESSAGE_LOCALES[0]!;
+export const DEFAULT_LOCALE: ShopLocale = MESSAGE_LOCALES[0]!;
 
 /** The languages one market website serves, its default (unprefixed) language first. */
 export type LocaleConfig = {
@@ -105,17 +66,13 @@ export type LocaleConfig = {
 
 /**
  * Used when the market's languages cannot be read (backend not reachable, or a
- * market with none of the website's languages): the old build settings, limited to
- * the languages the website can show; else every language the website can show.
+ * market with none of the website's languages): every language the website can show,
+ * DEFAULT_LOCALE first.
  */
 export function fallbackLocaleConfig(): LocaleConfig {
-  const configured = BUILD_FALLBACK.locales.filter((code) => MESSAGE_LOCALES.includes(code));
-  // Build settings name none of the website's languages: every message-file language.
-  const locales = configured.length ? configured : [...MESSAGE_LOCALES];
-  const defaultLocale = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0]!;
   return {
-    locales: [defaultLocale, ...locales.filter((c) => c !== defaultLocale)],
-    defaultLocale,
+    locales: [DEFAULT_LOCALE, ...MESSAGE_LOCALES.filter((c) => c !== DEFAULT_LOCALE)],
+    defaultLocale: DEFAULT_LOCALE,
   };
 }
 

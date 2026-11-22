@@ -10,8 +10,6 @@ import {
   localeMeta,
   LOCALES,
   matchLocale,
-  parseLocaleList,
-  resolveLocaleConfig,
   toLocale,
   MESSAGE_LOCALES,
   localeConfigFromMarket,
@@ -31,25 +29,6 @@ describe("locale configuration", () => {
       .map((name) => name.replace(/\.json$/, ""))
       .sort();
     expect([...MESSAGE_LOCALES].sort()).toEqual(files);
-  });
-
-  it("reads a configured list, default first, ignoring junk and duplicates", () => {
-    expect(parseLocaleList(" EN, ar ,fr_FR, ../x, ar,")).toEqual(["en", "ar", "fr-fr"]);
-    expect(resolveLocaleConfig("en,ar,fr", "fr")).toEqual({
-      locales: ["fr", "en", "ar"],
-      defaultLocale: "fr",
-    });
-    // A default that is not in the list falls back to the first entry.
-    expect(resolveLocaleConfig("ar,en", "de")).toEqual({ locales: ["ar", "en"], defaultLocale: "ar" });
-    // Nothing configured: every language the website has message files for, no fixed pair.
-    expect(resolveLocaleConfig("", "")).toEqual({
-      locales: [...MESSAGE_LOCALES],
-      defaultLocale: MESSAGE_LOCALES[0],
-    });
-    expect(resolveLocaleConfig("", "fr")).toEqual({
-      locales: ["fr", ...MESSAGE_LOCALES.filter((code) => code !== "fr")],
-      defaultLocale: "fr",
-    });
   });
 
   it("validates codes against the configured list", () => {
@@ -88,37 +67,22 @@ describe("a market's languages (admin: Markets → languages)", () => {
     }
   });
 
-  describe("outage fallback without usable build settings", () => {
+  describe("outage fallback (no build setting for languages)", () => {
     afterEach(() => {
       vi.unstubAllEnvs();
       vi.resetModules();
     });
 
-    async function freshLocales(locales: string, defaultLocale: string) {
+    it("every language the website can show, English first; the retired build settings are ignored", async () => {
       vi.resetModules();
-      vi.stubEnv("NEXT_PUBLIC_SHOP_LOCALES", locales);
-      vi.stubEnv("NEXT_PUBLIC_DEFAULT_LOCALE", defaultLocale);
-      return import("./locales");
-    }
-
-    it("no build settings: every language the website can show, not English/Arabic only", async () => {
-      const mod = await freshLocales("", "");
-      expect([...mod.fallbackLocaleConfig().locales].sort()).toEqual(
-        [...mod.MESSAGE_LOCALES].sort(),
-      );
-    });
-
-    it("build settings naming none of the website's languages: every website language", async () => {
-      const mod = await freshLocales("de,it", "de");
-      expect([...mod.fallbackLocaleConfig().locales].sort()).toEqual(
-        [...mod.MESSAGE_LOCALES].sort(),
-      );
-    });
-
-    it("a French build default stays the fallback default", async () => {
-      const mod = await freshLocales("fr,en", "fr");
-      expect(mod.fallbackLocaleConfig()).toEqual({ locales: ["fr", "en"], defaultLocale: "fr" });
-      expect(mod.DEFAULT_LOCALE).toBe("fr");
+      vi.stubEnv("NEXT_PUBLIC_SHOP_LOCALES", "fr,en");
+      vi.stubEnv("NEXT_PUBLIC_DEFAULT_LOCALE", "fr");
+      const mod = await import("./locales");
+      expect(mod.fallbackLocaleConfig()).toEqual({
+        locales: ["en", ...mod.MESSAGE_LOCALES.filter((code) => code !== "en")],
+        defaultLocale: "en",
+      });
+      expect(mod.DEFAULT_LOCALE).toBe("en");
     });
   });
 
