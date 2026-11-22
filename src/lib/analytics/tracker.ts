@@ -142,18 +142,27 @@ function cleanProperties(input: TrackProperties): Record<string, string | number
 
 /**
  * First-party tracking for this website's market, from the admin switchboard (settings phase 11;
- * was NEXT_PUBLIC_TRACKING_ENABLED). Set by PlatformTracker from the site integrations; off until
- * then and whenever the backend cannot say (fail-closed).
+ * was NEXT_PUBLIC_TRACKING_ENABLED). Set by PlatformTracker from the site integrations.
+ * - null: not known yet (the first render). Events of an analytics-consented shopper wait in
+ *   memory and are NOT sent; they go out once the switch is known to be on, and are dropped if it
+ *   is off.
+ * - false: off (also whenever the backend cannot say: fail-closed). Nothing is queued or sent.
  */
-let firstPartyTracking = false;
+let firstPartyTracking: boolean | null = null;
 
 export function setFirstPartyTracking(on: boolean): void {
   firstPartyTracking = on === true;
+  if (!firstPartyTracking) {
+    // Switched off (or unknown → off): what was waiting is dropped, never sent.
+    queue = [];
+    return;
+  }
+  if (queue.length > 0) scheduleFlush();
 }
 
 /** Tracking must never break a page, so anything unknown simply means "off". */
 function trackingEnabled(): boolean {
-  return firstPartyTracking;
+  return firstPartyTracking !== false;
 }
 
 export type TrackOptions = {
@@ -231,6 +240,16 @@ export async function flushNow(): Promise<void> {
     clearTimeout(flushTimer);
     flushTimer = null;
   }
+  // Checked again at send time: the switch may be unknown or off by now, or analytics refused
+  // since the events were queued (the banner, another tab). Nothing leaves without both.
+  if (firstPartyTracking !== true) {
+    if (firstPartyTracking === false) queue = [];
+    return;
+  }
+  if (getTrackingConsent() !== "GRANTED") {
+    queue = [];
+    return;
+  }
   while (queue.length > 0) {
     const batch = queue.splice(0, BATCH_SIZE);
     const outcome = await sendBatch(batch);
@@ -281,7 +300,7 @@ async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
 }
 
 export function resetTrackerForTests(): void {
-  firstPartyTracking = false;
+  firstPartyTracking = null;
   queue = [];
   sequence = 0;
   recentSignatures.clear();

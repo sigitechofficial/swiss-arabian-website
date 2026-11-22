@@ -50,6 +50,44 @@ describe("tracker", () => {
     vi.unstubAllGlobals();
   });
 
+  it("switch not known yet: events wait in memory and are sent only once it is on", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: 202 });
+    vi.stubGlobal("fetch", fetchMock);
+    resetTrackerForTests();
+    expect(track("page_viewed")).toBe(true);
+    await flushNow();
+    expect(fetchMock).not.toHaveBeenCalled();
+    setFirstPartyTracking(true);
+    await flushNow();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("switch turns out off (or flips off): waiting events are dropped, never sent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: 202 });
+    vi.stubGlobal("fetch", fetchMock);
+    resetTrackerForTests();
+    track("page_viewed");
+    setFirstPartyTracking(false);
+    expect(queuedEventsForTests()).toHaveLength(0);
+    expect(track("page_viewed")).toBe(false);
+    setFirstPartyTracking(true);
+    track("page_viewed");
+    setFirstPartyTracking(false);
+    await flushNow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("analytics refused after queuing (another tab, the banner): nothing is sent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: 202 });
+    vi.stubGlobal("fetch", fetchMock);
+    track("page_viewed");
+    localStorage.clear();
+    resetConsentCacheForTests();
+    await flushNow();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(queuedEventsForTests()).toHaveLength(0);
+  });
+
   it("generates RFC 4122 v4 ids the backend accepts", () => {
     expect(uuidv4()).toMatch(UUID_V4);
     expect(uuidv4()).not.toBe(uuidv4());
