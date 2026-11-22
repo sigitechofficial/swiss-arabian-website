@@ -110,6 +110,12 @@ Malformed values are dropped at runtime. Removed in phase E (`REMOVED_ENV_KEYS`)
 only put Paymob first at checkout; the market's default method and order in
 the admin decide that now.
 
+Removed with the settings fallbacks (`feat/env-fallback-removal`): `NEXT_PUBLIC_SHOP_LOCALES`,
+`_DEFAULT_LOCALE` (each market's languages come from Markets → languages; when the backend
+cannot say, every language the website has, English first), `_ASSISTANT_ENABLED`,
+`_ONSITE_ENABLED`, `_TRACKING_ENABLED` (per brand + market in the admin). A build that still
+sets one fails `npm run check:brand`: drop them from every build config before deploying.
+
 ## Build-time check: `npm run check:brand`
 
 Loads env the same way `next build` does (`process.env`, then
@@ -121,8 +127,8 @@ brand and exits 1 on any error:
 - A value is malformed (hostname with a scheme, return URL not http(s),
   booleans other than `true` / `false`).
 - Production: a setting in the brand's `requiredInProduction` is empty.
-- Any env: a setting that moved to the integrations switchboard is still set
-  (it would do nothing; the value is never printed).
+- Any env: a setting that moved to the integrations switchboard or the admin
+  (`REMOVED_ENV_KEYS`) is still set (it would do nothing; the value is never printed).
 - Any env: storefront host or return URL host listed under another brand.
 - Production: brand has no `hosts.production`; storefront host or production
   return URL host not in the brand's production hosts. Staging: storefront

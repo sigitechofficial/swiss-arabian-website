@@ -46,7 +46,7 @@ describe("message files", () => {
   });
 
   it("French (draft) reads its own wording with French plural rules", () => {
-    // "fr" is not an enabled shop locale in tests (NEXT_PUBLIC_SHOP_LOCALES), so read the file directly.
+    // Read the French file directly: which languages a market serves comes from the backend.
     const fr = LANGUAGE_FILES.find((file) => file.locale === "fr")!.messages;
     const t = createTranslator("fr", fr as Parameters<typeof createTranslator>[1]);
     expect(t("home")).toBe("Accueil");

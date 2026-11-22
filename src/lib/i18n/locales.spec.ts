@@ -59,7 +59,7 @@ describe("a market's languages (admin: Markets → languages)", () => {
     });
   });
 
-  it("falls back to the old build settings when none can be used", () => {
+  it("serves every language the website has when the market names none it can show", () => {
     expect(localeConfigFromMarket([])).toEqual(fallbackLocaleConfig());
     expect(localeConfigFromMarket(["de"])).toEqual(fallbackLocaleConfig());
     for (const code of fallbackLocaleConfig().locales) {
