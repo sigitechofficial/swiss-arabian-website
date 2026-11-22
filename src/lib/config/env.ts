@@ -74,10 +74,6 @@ export const env = {
   onsite: {
     enabled: readPublic(process.env.NEXT_PUBLIC_ONSITE_ENABLED, "true") !== "false",
   },
-  /** Shopping assistant chat. Shown only when the backend switches it on for this brand. */
-  assistant: {
-    enabled: readPublic(process.env.NEXT_PUBLIC_ASSISTANT_ENABLED, "true") !== "false",
-  },
   tracking: {
     enabled: readPublic(process.env.NEXT_PUBLIC_TRACKING_ENABLED, "false") === "true",
     /** Seconds of visible time on one page before `engagement_threshold_reached`. */

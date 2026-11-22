@@ -21,10 +21,14 @@ export type AssistantHandoffInput = {
   transcript?: Array<{ role: "user" | "assistant"; text: string }>;
 };
 
-/** Whether the backend has the assistant switched on for this brand. Any failure means "no". */
-export async function fetchAssistantEnabled(): Promise<boolean> {
+/**
+ * Whether the assistant is switched on for this brand and market (admin: Settings → Shopping
+ * assistant). Any failure means "no".
+ */
+export async function fetchAssistantEnabled(zoneCode: string): Promise<boolean> {
   try {
-    const data = await apiGet<{ enabled?: boolean }>("/storefront/assistant/status");
+    const params = new URLSearchParams({ zoneCode });
+    const data = await apiGet<{ enabled?: boolean }>(`/storefront/assistant/status?${params}`);
     return data.enabled === true;
   } catch {
     return false;

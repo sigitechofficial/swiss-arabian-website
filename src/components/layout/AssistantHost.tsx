@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { fetchAssistantEnabled } from "@/features/assistant/api/assistant.service";
 import { AssistantWidget } from "@/features/assistant/components/AssistantWidget";
-import { env } from "@/lib/config/env";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -13,7 +12,8 @@ import { useUiStore } from "@/stores/useUiStore";
 const HIDDEN_ON = /\/(checkout|payment)(\/|$)/;
 
 /**
- * Shows the shopping assistant window when the backend has switched it on for this brand. The
+ * Shows the shopping assistant window when the backend has switched it on for this brand and market
+ * (admin: Settings → Shopping assistant; no website build setting). The
  * window is opened by the shopper, so nothing is sent before they write. A guest's chat is not saved
  * anywhere and nothing identifies them; a signed-in customer's chat is saved and comes back.
  */
@@ -24,9 +24,9 @@ export function AssistantHost() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    if (!env.assistant.enabled || !zoneCode) return;
+    if (!zoneCode) return;
     let cancelled = false;
-    void fetchAssistantEnabled().then((value) => {
+    void fetchAssistantEnabled(zoneCode).then((value) => {
       if (!cancelled) setEnabled(value);
     });
     return () => {
