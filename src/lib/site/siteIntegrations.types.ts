@@ -29,6 +29,16 @@ export type SiteIntegrations = {
    * the code screen. The backend is the only source (no build setting).
    */
   accountVerification: boolean;
+  /**
+   * The website's own pop-ups and banners are on for this market (admin switchboard
+   * "On-site messages"; was NEXT_PUBLIC_ONSITE_ENABLED). Shown only after marketing consent.
+   */
+  onsiteMessages: boolean;
+  /**
+   * First-party page-view / engagement events are on for this market (admin switchboard
+   * "First-party tracking"; was NEXT_PUBLIC_TRACKING_ENABLED). Sent only after analytics consent.
+   */
+  firstPartyTracking: boolean;
 };
 
 /** Everything off: no answer from the backend never means "use some default". */
@@ -40,6 +50,8 @@ export const SITE_INTEGRATIONS_OFF: SiteIntegrations = {
   googleMaps: null,
   signIn: { google: null, apple: null },
   accountVerification: false,
+  onsiteMessages: false,
+  firstPartyTracking: false,
 };
 
 /** Cache tag of an address's settings; the backend's refresh call names the address. */

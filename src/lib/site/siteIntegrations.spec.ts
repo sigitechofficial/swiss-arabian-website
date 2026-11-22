@@ -26,6 +26,8 @@ const full = {
   googleMaps: { browserKey: "AIzaSyTestKeyForSpecs-123", mapId: null },
   signIn: { google: { clientId: "123-abc.apps.googleusercontent.com" }, apple: null },
   accountVerification: true,
+  onsiteMessages: true,
+  firstPartyTracking: false,
 };
 
 describe("parseSiteIntegrations (backend answer → what the page may load)", () => {
@@ -182,5 +184,18 @@ describe("Refresh call from the backend (POST /api/site-config/revalidate)", () 
     expect(refused.status).toBe(401);
     expect(revalidateTag).not.toHaveBeenCalled();
     vi.unstubAllEnvs();
+  });
+});
+
+describe("on-site messages and first-party tracking (settings phase 11)", () => {
+  it("follow the backend per market and are off when missing or malformed (fail-closed)", () => {
+    expect(parseSiteIntegrations({ ...full, firstPartyTracking: true })).toMatchObject({
+      onsiteMessages: true,
+      firstPartyTracking: true,
+    });
+    const { onsiteMessages: _o, firstPartyTracking: _t, ...older } = full;
+    expect(parseSiteIntegrations(older)).toMatchObject({ onsiteMessages: false, firstPartyTracking: false });
+    expect(parseSiteIntegrations({ ...full, firstPartyTracking: "true" }).firstPartyTracking).toBe(false);
+    expect(SITE_INTEGRATIONS_OFF).toMatchObject({ onsiteMessages: false, firstPartyTracking: false });
   });
 });

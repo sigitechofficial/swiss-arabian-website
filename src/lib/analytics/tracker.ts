@@ -7,7 +7,8 @@ import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
 /**
  * First-party behavior tracker. Sends browser events to our own backend
  * (POST /storefront/analytics/events, contract behavior_event_v1) so our history never depends on a
- * third-party SDK. Off unless NEXT_PUBLIC_TRACKING_ENABLED=true; the backend applies its own
+ * third-party SDK. Off unless "First-party tracking" is on for the market in the admin switchboard (settings
+ * phase 11; was NEXT_PUBLIC_TRACKING_ENABLED); the backend applies its own
  * enable flag and consent policy on top.
  *
  * Privacy: only the pathname is sent (never the query string or full URL), no e-mail/phone/name, and
@@ -139,13 +140,20 @@ function cleanProperties(input: TrackProperties): Record<string, string | number
   return out;
 }
 
-/** Tracking must never break a page, so a missing or broken config simply means "off". */
+/**
+ * First-party tracking for this website's market, from the admin switchboard (settings phase 11;
+ * was NEXT_PUBLIC_TRACKING_ENABLED). Set by PlatformTracker from the site integrations; off until
+ * then and whenever the backend cannot say (fail-closed).
+ */
+let firstPartyTracking = false;
+
+export function setFirstPartyTracking(on: boolean): void {
+  firstPartyTracking = on === true;
+}
+
+/** Tracking must never break a page, so anything unknown simply means "off". */
 function trackingEnabled(): boolean {
-  try {
-    return env.tracking.enabled === true;
-  } catch {
-    return false;
-  }
+  return firstPartyTracking;
 }
 
 export type TrackOptions = {
@@ -273,6 +281,7 @@ async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
 }
 
 export function resetTrackerForTests(): void {
+  firstPartyTracking = false;
   queue = [];
   sequence = 0;
   recentSignatures.clear();

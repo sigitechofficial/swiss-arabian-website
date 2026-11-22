@@ -1,4 +1,3 @@
-import { env } from "@/lib/config/env";
 import type { SiteIntegrations } from "@/lib/site/siteIntegrations.types";
 
 /**
@@ -150,12 +149,16 @@ export function subscribeConsentOpen(onOpen: () => void): () => void {
 }
 
 /** What a website address loads, as the integrations switchboard says (ADR-005 phase E). */
-export type ConsentIntegrations = Pick<SiteIntegrations, "analytics" | "insiderTag">;
+export type ConsentIntegrations = Pick<
+  SiteIntegrations,
+  "analytics" | "insiderTag" | "onsiteMessages" | "firstPartyTracking"
+>;
 
 /**
  * Which optional categories this address actually uses; the banner only offers those.
  * Analytics: our first-party tracker, or GA4 / GTM on for the address's market.
  * Marketing: Insider's website tag on for the market, or personalised on-site messages.
+ * All four come from the admin switchboard per brand + market (no build settings).
  */
 export function consentCategoriesInUse(
   integrations: ConsentIntegrations,
@@ -164,9 +167,9 @@ export function consentCategoriesInUse(
   let marketing = false;
   try {
     analytics =
-      env.tracking.enabled === true ||
+      integrations.firstPartyTracking === true ||
       Boolean(integrations.analytics?.gtmContainerId || integrations.analytics?.ga4MeasurementId);
-    marketing = Boolean(integrations.insiderTag) || env.onsite.enabled === true;
+    marketing = Boolean(integrations.insiderTag) || integrations.onsiteMessages === true;
   } catch {
     // a broken config means nothing optional runs
   }

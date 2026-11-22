@@ -22,7 +22,7 @@ Flow per page:
 
 **Journey pop-ups** (for example "You left 2 items in your cart") need no storefront code of their own. For a signed-in customer the backend answers the `page_view` hint when a journey step is due and returns the finished text (name, item count and product already filled in). The browser cannot claim a journey step: only the backend's own rechecked events count. The request carries the customer's access token (`apiClient` adds `Authorization`), so a signed-out visitor never sees a journey pop-up.
 
-Guardrails (all enforced by the backend): never on checkout, payment, account or sign-in pages; one message per session; frequency caps; cooldown after dismiss; stable hold-back group. Failures are silent: on-site messages never disturb the page. Disable all with `NEXT_PUBLIC_ONSITE_ENABLED=false`.
+Guardrails (all enforced by the backend): never on checkout, payment, account or sign-in pages; one message per session; frequency caps; cooldown after dismiss; stable hold-back group. Failures are silent: on-site messages never disturb the page. Switch them on or off per brand + market in the admin (Settings → Integrations → "On-site messages"; settings phase 11 — was `NEXT_PUBLIC_ONSITE_ENABLED`).
 
 Content is managed in the admin ("On-site messages", trigger "journey step"). Link buttons use paths like `/cart`, which the locale link layer prefixes.
 
@@ -92,8 +92,8 @@ Earlier on-site and journey files (`OnsiteMessageHost`, `OnsiteMessageView`, `fe
 
 | Variable | Default | Effect |
 |---|---|---|
-| `NEXT_PUBLIC_ONSITE_ENABLED` | on | `false` disables pop-ups and banners |
-| `NEXT_PUBLIC_TRACKING_ENABLED` | off | `true` enables the tracker and shows the consent banner |
+| ~~`NEXT_PUBLIC_ONSITE_ENABLED`~~ | retired | Admin switchboard "On-site messages" per brand + market (off when the backend cannot say) |
+| ~~`NEXT_PUBLIC_TRACKING_ENABLED`~~ | retired | Admin switchboard "First-party tracking" per brand + market (off when the backend cannot say) |
 | `NEXT_PUBLIC_INSIDER_ENABLED` | on | `false` disables Insider and the journey poller |
 | `NEXT_PUBLIC_JOURNEY_POLL_MS` | 60000 | poll interval for testing (min 2000) |
 

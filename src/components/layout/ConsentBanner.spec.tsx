@@ -7,20 +7,15 @@ let trackingEnabled = true;
 let insiderEnabled = true;
 
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
-vi.mock("@/lib/config/env", () => ({
-  env: {
-    get tracking() {
-      return { enabled: trackingEnabled };
-    },
-    onsite: { enabled: false },
-  },
-}));
-// What the address loads comes from the switchboard (ADR-005 phase E): no Google tags here,
-// Insider's tag on or off per test.
+// What the address loads comes from the switchboard (ADR-005 phase E; first-party tracking and
+// on-site messages since settings phase 11): no Google tags here, our tracker and Insider's tag on
+// or off per test, on-site messages off.
 vi.mock("@/lib/site/SiteIntegrationsProvider", () => ({
   useSiteIntegrations: () => ({
     analytics: null,
     insiderTag: insiderEnabled ? { accountId: "acc", scriptHost: "x" } : null,
+    firstPartyTracking: trackingEnabled,
+    onsiteMessages: false,
   }),
 }));
 

@@ -2,6 +2,7 @@
 import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 
 import { useConsentFor } from "@/lib/consent/useConsent";
+import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -16,7 +17,6 @@ import { OnsiteMessageView } from "@/features/onsite/components/OnsiteMessageVie
 import { watchOnsiteTriggers } from "@/features/onsite/lib/watchTriggers";
 import { ASSISTANT_LINK, ASSISTANT_OPEN_EVENT, type OnsiteMessage } from "@/features/onsite/types";
 import { getSessionId, getVisitorId } from "@/lib/analytics/tracker";
-import { env } from "@/lib/config/env";
 import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -44,6 +44,8 @@ export function OnsiteMessageHost() {
   // Popups and banners are personalised marketing and need a stored visitor id for their
   // frequency limits, so they appear only after the shopper allowed marketing.
   const marketing = useConsentFor("marketing");
+  // On for this market in the admin switchboard (settings phase 11; was NEXT_PUBLIC_ONSITE_ENABLED).
+  const onsiteOn = useSiteIntegrations().onsiteMessages === true;
   const contextRef = useRef<OnsiteContext | null>(null);
   // Read when an idle nudge asks for a bag with items; kept in a ref so the timers never restart.
   const cartItems = useCartStore((state) => state.itemCount());
@@ -77,7 +79,7 @@ export function OnsiteMessageHost() {
   }, [pathname, zoneCode]);
 
   useEffect(() => {
-    if (!env.onsite.enabled || !marketing || previewTokenFromUrl()) return;
+    if (!onsiteOn || !marketing || previewTokenFromUrl()) return;
     if (typeof window === "undefined") return;
     let cancelled = false;
     let stop: () => void = () => undefined;
@@ -122,7 +124,7 @@ export function OnsiteMessageHost() {
       showing.current = false;
       setMessage(null);
     };
-  }, [pathname, zoneCode, marketing]);
+  }, [pathname, zoneCode, marketing, onsiteOn]);
 
   const report = useCallback((type: "CLICKED" | "DISMISSED", ruleId: string) => {
     if (previewTokenFromUrl()) return;

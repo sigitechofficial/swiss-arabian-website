@@ -65,17 +65,12 @@ export const env = {
     readPublic(process.env.NEXT_PUBLIC_CMS_HOME_LEGACY_FALLBACK, "true") !==
     "false",
   /**
-   * First-party behavior tracking: sends browser events to our own backend
-   * (POST /storefront/analytics/events) so history never depends on a third-party SDK.
-   * Off unless NEXT_PUBLIC_TRACKING_ENABLED=true. The backend still applies its own
-   * enable flag and consent policy.
+   * First-party behavior tracking tuning. Whether tracking and on-site messages are on is no
+   * longer a build setting (NEXT_PUBLIC_TRACKING_ENABLED / NEXT_PUBLIC_ONSITE_ENABLED retired in
+   * settings phase 11): it comes per brand + market from the admin switchboard through the site
+   * integrations (`firstPartyTracking`, `onsiteMessages`), off when unknown.
    */
-  /** On-site popups and banners decided by the backend. On unless NEXT_PUBLIC_ONSITE_ENABLED=false. */
-  onsite: {
-    enabled: readPublic(process.env.NEXT_PUBLIC_ONSITE_ENABLED, "true") !== "false",
-  },
   tracking: {
-    enabled: readPublic(process.env.NEXT_PUBLIC_TRACKING_ENABLED, "false") === "true",
     /** Seconds of visible time on one page before `engagement_threshold_reached`. */
     engagementSeconds:
       Number.parseInt(

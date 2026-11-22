@@ -6,9 +6,6 @@ vi.mock("@/lib/config/env", () => ({
   env: {
     apiBaseUrl: "http://api.test",
     tracking: {
-      get enabled() {
-        return state.enabled;
-      },
       engagementSeconds: 10,
     },
   },
@@ -25,6 +22,7 @@ import {
   getVisitorId,
   queuedEventsForTests,
   resetTrackerForTests,
+  setFirstPartyTracking,
   setTrackingConsent,
   track,
   uuidv4,
@@ -36,6 +34,8 @@ describe("tracker", () => {
   beforeEach(() => {
     state.enabled = true;
     resetTrackerForTests();
+    // The market's switch (admin switchboard, settings phase 11), as PlatformTracker sets it.
+    setFirstPartyTracking(state.enabled);
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
@@ -80,6 +80,7 @@ describe("tracker", () => {
 
   it("does nothing when tracking is switched off", () => {
     state.enabled = false;
+    setFirstPartyTracking(state.enabled);
     expect(track("page_viewed")).toBe(false);
     expect(queuedEventsForTests()).toHaveLength(0);
   });
