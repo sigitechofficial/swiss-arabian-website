@@ -39,6 +39,10 @@ const FROM_BACKEND =
   "customer email verification follows the backend (CUSTOMER_VERIFICATION_ENABLED), which the website reads from /storefront/site/integrations, so the two can never disagree";
 const RETURN_FROM_SITE =
   "payment returns go to the market website the shopper is on (checked by the backend)";
+const MARKET_LANGUAGES =
+  "each market's languages and default language come from the admin (Markets → languages) through /storefront/site";
+const FROM_ADMIN_PER_MARKET =
+  "the shopping assistant, on-site messages and first-party tracking are switched per brand + market in the admin (Settings → Shopping assistant, Settings → Integrations) and read from the backend";
 
 /**
  * Settings this website no longer reads, and why. The build check refuses them
@@ -74,6 +78,11 @@ export const REMOVED_ENV_SETTINGS = {
   NEXT_PUBLIC_STAGING_RETURN_URL: RETURN_FROM_SITE,
   NEXT_PUBLIC_PRODUCTION_RETURN_URL: RETURN_FROM_SITE,
   NEXT_PUBLIC_CUSTOMER_VERIFICATION_UI: FROM_BACKEND,
+  NEXT_PUBLIC_SHOP_LOCALES: MARKET_LANGUAGES,
+  NEXT_PUBLIC_DEFAULT_LOCALE: MARKET_LANGUAGES,
+  NEXT_PUBLIC_ASSISTANT_ENABLED: FROM_ADMIN_PER_MARKET,
+  NEXT_PUBLIC_ONSITE_ENABLED: FROM_ADMIN_PER_MARKET,
+  NEXT_PUBLIC_TRACKING_ENABLED: FROM_ADMIN_PER_MARKET,
 } as const;
 export const REMOVED_ENV_KEYS = Object.keys(REMOVED_ENV_SETTINGS) as Array<
   keyof typeof REMOVED_ENV_SETTINGS
