@@ -36,6 +36,8 @@ export type AssistantReply = {
   /** A person at customer care should follow up. */
   handoff: boolean;
   actions?: AssistantAction[];
+  /** A shop page that lists every product of the group the cards come from. */
+  seeAllHref?: string;
 };
 
 export type AssistantChatResponse = {
@@ -59,6 +61,7 @@ export type AssistantBubble = {
   role: "user" | "assistant";
   text: string;
   cards?: AssistantCard[];
+  seeAllHref?: string;
   quickReplies?: string[];
   actions?: AssistantAction[];
   /** The shopper has answered the actions of this bubble (confirmed, cancelled or sent). */

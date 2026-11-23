@@ -128,44 +128,85 @@ function ReplyText({ text }: { text: string }) {
   );
 }
 
-function ProductCard({ card }: { card: AssistantCard }) {
+function ProductCard({
+  card,
+  onAdd,
+}: {
+  card: AssistantCard;
+  /** Adds this product to the bag. Resolves false when it could not. Without it the card has no button. */
+  onAdd?: (card: AssistantCard) => Promise<boolean>;
+}) {
   const copy = useShopCopy();
+  const [state, setState] = useState<"idle" | "adding" | "added">("idle");
   const image = resolveCatalogImageUrl(card.image);
   const price = Number(card.priceSummary?.price);
   const compareAt = Number(card.priceSummary?.compareAtPrice);
   const currency = card.priceSummary?.currencyCode?.trim() || "AED";
   const showPrice = card.priceSummary?.hasValidPrice !== false && Number.isFinite(price) && price > 0;
+  const onSale = showPrice && Number.isFinite(compareAt) && compareAt > price;
+  const percentOff = onSale ? Math.round((1 - price / compareAt) * 100) : 0;
+  const canAdd = Boolean(onAdd && card.slug && showPrice);
+
+  const add = async () => {
+    if (!onAdd || state === "adding") return;
+    setState("adding");
+    const ok = await onAdd(card);
+    setState(ok ? "added" : "idle");
+  };
+
   const body = (
     <>
-      <span className="flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-black/5">
-        {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
+      {image ? (
+        <span className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-black/5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image} alt="" loading="lazy" className="h-full w-full object-contain" />
-        ) : null}
-      </span>
+          {percentOff >= 1 ? (
+            <span data-assistant-badge className="absolute start-1 top-1 rounded-full bg-red-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
+              {copy("assistant.percentOff", { percent: String(percentOff) })}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       <span className="mt-2 line-clamp-2 text-xs font-medium leading-snug">{card.name}</span>
       {showPrice ? (
         <span className="mt-1 text-xs">
-          {Number.isFinite(compareAt) && compareAt > price ? (
-            <s className="me-1 opacity-60">{formatMoney(compareAt, currency)}</s>
-          ) : null}
+          {onSale ? <s className="me-1 opacity-60">{formatMoney(compareAt, currency)}</s> : null}
           {formatMoney(price, currency)}
+          {!image && percentOff >= 1 ? (
+            <span data-assistant-badge className="ms-1 text-red-700">
+              {copy("assistant.percentOff", { percent: String(percentOff) })}
+            </span>
+          ) : null}
         </span>
       ) : null}
     </>
   );
-  const className =
-    "flex w-36 shrink-0 flex-col rounded-xl border border-black/10 bg-white p-2 text-start text-sa-primary no-underline";
-  return card.slug ? (
-    <LocaleLink
-      href={`/products/${card.slug}`}
-      className={className}
-      aria-label={copy("assistant.viewProduct", { name: card.name })}
-    >
-      {body}
-    </LocaleLink>
-  ) : (
-    <div className={className}>{body}</div>
+  const linkClass = "flex flex-col text-start text-sa-primary no-underline";
+  return (
+    <div className="flex w-36 shrink-0 flex-col rounded-xl border border-black/10 bg-white p-2 text-start text-sa-primary">
+      {card.slug ? (
+        <LocaleLink
+          href={`/products/${card.slug}`}
+          className={linkClass}
+          aria-label={copy("assistant.viewProduct", { name: card.name })}
+        >
+          {body}
+        </LocaleLink>
+      ) : (
+        <div className={linkClass}>{body}</div>
+      )}
+      {canAdd ? (
+        <button
+          type="button"
+          data-assistant-add
+          onClick={() => void add()}
+          disabled={state === "adding"}
+          className="mt-2 cursor-pointer rounded-full border border-black/20 bg-white px-2 py-1 text-xs font-medium hover:bg-black/5 disabled:cursor-default disabled:opacity-60"
+        >
+          {copy(state === "adding" ? "assistant.adding" : state === "added" ? "assistant.addedShort" : "assistant.add")}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -296,6 +337,20 @@ export function AssistantWidget({
     say(copy(added ? "assistant.added" : "assistant.addFailed"), !added);
   };
 
+  /** The shopper tapped "Add" on a card: the shop's normal cart adds it, in this browser. */
+  const addCardToBag = async (card: AssistantCard): Promise<boolean> => {
+    if (!card.slug) return false;
+    const price = Number(card.priceSummary?.price);
+    const added = await addToBag({
+      slug: card.slug,
+      name: card.name,
+      imageUrl: card.image ?? undefined,
+      price: Number.isFinite(price) && price > 0 ? price : undefined,
+    });
+    if (!added) say(copy("assistant.addFailed"), true);
+    return added;
+  };
+
   const declineAdd = (bubble: AssistantBubble) => {
     finishActions(bubble.id);
     say(copy("assistant.addDeclined"));
@@ -351,6 +406,7 @@ export function AssistantWidget({
             role: "assistant",
             text: result.reply.text,
             cards: result.reply.cards,
+            seeAllHref: result.reply.seeAllHref,
             quickReplies: result.reply.quickReplies,
             actions: result.reply.actions,
           },
@@ -437,8 +493,17 @@ export function AssistantWidget({
                   {bubble.cards && bubble.cards.length > 0 ? (
                     <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" data-assistant-cards>
                       {bubble.cards.map((card) => (
-                        <ProductCard key={card.productId} card={card} />
+                        <ProductCard key={card.productId} card={card} onAdd={addCardToBag} />
                       ))}
+                      {bubble.seeAllHref ? (
+                        <LocaleLink
+                          href={bubble.seeAllHref}
+                          data-assistant-see-all
+                          className="flex w-24 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white p-2 text-center text-xs font-medium text-sa-primary no-underline"
+                        >
+                          {copy("assistant.seeAll")}
+                        </LocaleLink>
+                      ) : null}
                     </div>
                   ) : null}
                   {bubble.actions && bubble.actions.length > 0 && !bubble.actionsDone

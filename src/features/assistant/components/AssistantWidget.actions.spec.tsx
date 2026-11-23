@@ -82,6 +82,24 @@ const type = async (user: ReturnType<typeof userEvent.setup>, text: string) => {
 };
 
 describe("assistant actions", () => {
+  it("a card has its own Add button and shows how much is off", async () => {
+    const sale = {
+      ...card,
+      image: "https://cdn.example.com/oud.webp",
+      priceSummary: { price: 50, compareAtPrice: 100, currencyCode: "AED", hasValidPrice: true },
+    };
+    const send = vi.fn().mockResolvedValue(reply({ text: "Try this.", cards: [sale] }));
+    const { addToBag, user } = setup({ send });
+    await openChat(user);
+    await type(user, "oil");
+    await screen.findByText("Oud Malaki");
+    expect(screen.getByText("50% off")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(addToBag).toHaveBeenCalledTimes(1));
+    expect(addToBag).toHaveBeenCalledWith(expect.objectContaining({ slug: "oud-malaki", price: 50 }));
+    expect(await screen.findByRole("button", { name: "Added" })).toBeDisabled;
+  });
+
   it("adds to the bag only after the shopper confirms", async () => {
     const send = vi
       .fn()
