@@ -17,7 +17,7 @@ import { CatalogJsonLd, FaqPageView, SitePageView } from "@brand-ui";
  * written in the admin). The built-in FAQ is only the fallback for a market
  * that has none: its answers are written for the UAE.
  */
-const loadMarketFaq = () => loadMarketFixedPage("faq", pickFaqPage);
+const loadMarketFaq = () => loadMarketFixedPage("/faq", pickFaqPage);
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, page } = await loadMarketFaq();

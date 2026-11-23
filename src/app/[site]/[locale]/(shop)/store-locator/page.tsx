@@ -16,7 +16,7 @@ import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { CatalogJsonLd, FeaturePlaceholder, SitePageView, StoreLocatorPageView } from "@brand-ui";
 import { requireBrandFeature } from "@/lib/brand/featureGate";
 
-const loadCmsStoresPage = () => loadMarketFixedPage("stores", pickStoresPage);
+const loadCmsStoresPage = () => loadMarketFixedPage("/store-locator", pickStoresPage);
 
 export async function generateMetadata(): Promise<Metadata> {
   requireBrandFeature("storeLocator");
