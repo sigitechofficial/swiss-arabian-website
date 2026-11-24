@@ -5,6 +5,7 @@ import { loadHomeFaq, seoFaqView } from "@/features/seo-faq/seoFaq";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { loadPublishedPageSeo, pageJsonLd, pageMetadata } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { showInDefaultLanguage } from "@/lib/i18n/defaultLanguageSwitch";
 import {
   loadRequestBrandIdentity,
   loadServerHome,
@@ -51,6 +52,11 @@ export default async function HomePage() {
     loadServerHome(),
     loadHomeFaq(market.locale, market.zoneCode),
   ]);
+  // No homepage published in this language (the market's other language may have one): the
+  // home in the market's default language. A failed request (null) is not "unpublished".
+  if (initialHome && !(initialHome.data.page && initialHome.data.sections.length > 0)) {
+    showInDefaultLanguage("/", locale, localeConfig);
+  }
   // Questions shown on the page, and the same questions as FAQPage schema (SEO audit p19).
   const faq = seoFaqView(homeFaq, locale);
   // Search engines get Organization + WebSite unless the admin publishes their own.

@@ -7,7 +7,7 @@ import {
 import { pickStoryPage } from "@/features/site-pages/utils/pickMarketPage";
 import { CatalogJsonLd, OurStoryFallbackView, SitePageView } from "@brand-ui";
 
-const loadStory = () => loadMarketFixedPage("our-story", pickStoryPage);
+const loadStory = () => loadMarketFixedPage("/our-story", pickStoryPage);
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, page } = await loadStory();

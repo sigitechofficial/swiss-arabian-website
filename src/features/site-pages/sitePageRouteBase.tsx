@@ -6,6 +6,7 @@ import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 import { catalogMetadata } from "@/lib/seo/catalogPage";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { isPublishedIn, showInDefaultLanguage } from "@/lib/i18n/defaultLanguageSwitch";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import {
   breadcrumbJsonLd,
@@ -65,6 +66,9 @@ async function load(
     if (fixedPath) permanentRedirect(withLocalePrefix(fixedPath, locale, localeConfig));
   }
   const page = await fetchSitePage(kind, handle, locale, zoneCode);
+  // Not published in this language (the backend answers with another language's version):
+  // the page in the market's default language, at its own address.
+  if (page && !isPublishedIn(page.locale, locale)) showInDefaultLanguage(page.path, locale, localeConfig);
   return { locale, zoneCode, page, preview: null };
 }
 

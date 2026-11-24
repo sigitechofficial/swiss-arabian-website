@@ -6,6 +6,7 @@ import { resolveRequestCatalogMarket } from "@/lib/seo/requestMarket";
 import type { ShopLocale } from "@/lib/i18n/locales";
 import { applySeoOverrides, loadPublishedPageSeo } from "@/lib/seo/pageSeo";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { isPublishedIn, showInDefaultLanguage } from "@/lib/i18n/defaultLanguageSwitch";
 import {
   fetchSitePage,
   fetchSitePages,
@@ -18,11 +19,13 @@ type Picker = (pages: readonly SitePageListItem[]) => SitePageListItem | null;
 /**
  * A fixed site address (/faq, /our-story, /stores) shows the market's own page
  * from Pages & policies when one is published; null otherwise (the address
- * then shows its built-in fallback).
+ * then shows its built-in fallback). A page not published in the language being
+ * viewed is shown in the market's default language, at that language's address.
  */
 export const loadMarketFixedPage = cache(
   async (
-    key: string,
+    /** The fixed address: "/faq", "/our-story", "/store-locator". */
+    path: string,
     pick: Picker,
   ): Promise<{ locale: ShopLocale; page: SitePage | null }> => {
     const { locale, zoneCode } = await resolveRequestCatalogMarket();
@@ -34,6 +37,9 @@ export const loadMarketFixedPage = cache(
           () => null,
         )
       : null;
+    if (page && !isPublishedIn(page.locale, locale)) {
+      showInDefaultLanguage(path, locale, await serverLocaleConfig());
+    }
     return { locale, page };
   },
 );
