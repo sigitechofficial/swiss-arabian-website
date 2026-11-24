@@ -1,5 +1,6 @@
 "use client";
 
+import { RecommendationSection } from "@/components/shared/RecommendationSection";
 import { CartPaymentConfirmingNotice } from "./CartPaymentConfirmingNotice";
 import { CartTabbyPromo } from "./CartTabbyPromo";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -367,10 +368,10 @@ export function CartSideSheet() {
           ) : null}
 
           {lines.length > 0 && promotionRecs.length === 0 && recs.length ? (
-            <div className={cartRecs}>
+            <RecommendationSection as="div" surface="cart_drawer" products={recs} className={cartRecs}>
               <h3 className={cartRecsTitle}>{copy("cart.drawer.layer")}</h3>
               <div className={cartRecsSwiper} role="list">
-                {recs.map((product) => {
+                {recs.map((product, recIndex) => {
                   const canAdd = Boolean(product.variantId || product.sku);
                   const pressed = addedRecs.has(product.id);
                   return (
@@ -378,6 +379,7 @@ export function CartSideSheet() {
                       className={cartRec}
                       key={product.id}
                       role="listitem"
+                      data-rec-index={recIndex}
                     >
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -427,7 +429,7 @@ export function CartSideSheet() {
                   );
                 })}
               </div>
-            </div>
+            </RecommendationSection>
           ) : null}
         </div>
 

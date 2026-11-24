@@ -218,6 +218,7 @@ export function ProductDetailPageView({
       {youMayAlsoLike.length ? (
         <PdpRelatedRail
           id="also-like-heading"
+          surface="pdp_also_like"
           heading={
             <TextWithLinks
               text={copy("pdp.related.alsoLike", linkSlots(["em"]))}
@@ -231,6 +232,7 @@ export function ProductDetailPageView({
       {related.length && moreFromCollection ? (
         <PdpRelatedRail
           id="related-heading"
+          surface="pdp_more_from_collection"
           heading={copy("pdp.related.moreFrom", { collection: moreFromHeading })}
           seeAllHref={`/collections/${moreFromCollection.slug}`}
           products={related}

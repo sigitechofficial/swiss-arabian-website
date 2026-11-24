@@ -1,5 +1,6 @@
 "use client";
 
+import { RecommendationSection } from "@/components/shared/RecommendationSection";
 import type { ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -7,7 +8,7 @@ import { bottle } from "@/styles/landingChrome";
 import { pageContainer } from "@/styles/siteChrome";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { MoneySummary } from "./MoneySummary";
-import { companionCard, useProductCompanions } from "../hooks/useProductCompanions";
+import { companionCard, companionRef, useProductCompanions } from "../hooks/useProductCompanions";
 import {
   cartCta,
   cartCtaDisabled,
@@ -95,7 +96,12 @@ export function ProductCompanions({
   return (
     <>
       {bundle && pieces.length > 0 ? (
-        <section className="bg-warm py-16" aria-labelledby="companion-heading">
+        <RecommendationSection
+          surface="pdp_bought_together"
+          products={pieces.filter((p) => p.sku !== data.current?.sku).map(companionRef)}
+          className="bg-warm py-16"
+          aria-labelledby="companion-heading"
+        >
           <div className={pageContainer}>
             <div className="mb-8 flex items-end justify-between gap-6 max-[900px]:grid max-[900px]:grid-cols-1 [&_[data-heading]]:m-0 [&_[data-heading]]:text-[clamp(1.6rem,3vw,2.2rem)] [&_[data-heading]]:font-medium">
               <div>
@@ -204,10 +210,15 @@ export function ProductCompanions({
               </aside>
             </div>
           </div>
-        </section>
+        </RecommendationSection>
       ) : null}
       {later.map((group) => (
-        <section className={related} key={group.id}>
+        <RecommendationSection
+          surface="pdp_companions"
+          products={group.products.map(companionRef)}
+          className={related}
+          key={group.id}
+        >
           <div className={pageContainer}>
             <div className={relatedHead}>
               <p className={relatedTitle}>{group.heading}</p>
@@ -232,7 +243,7 @@ export function ProductCompanions({
               })}
             </ul>
           </div>
-        </section>
+        </RecommendationSection>
       ))}
     </>
   );

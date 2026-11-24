@@ -9,6 +9,7 @@ import { JourneyEventsPoller } from "@/components/layout/JourneyEventsPoller";
 import { AssistantHost } from "@/components/layout/AssistantHost";
 import { OnsiteMessageHost } from "@/components/layout/OnsiteMessageHost";
 import { PlatformTracker } from "@/components/layout/PlatformTracker";
+import { WebVitalsTracker } from "@/components/layout/WebVitalsTracker";
 import { getBrand } from "@/lib/brand";
 import { loadRequestBrandIdentity } from "@/lib/seo/catalogPage";
 import { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
@@ -204,6 +205,7 @@ export default async function RootLayout({
               providers so the banner speaks the page's language). */}
           <JourneyEventsPoller />
           <PlatformTracker />
+          <WebVitalsTracker />
           <OnsiteMessageHost />
           <AssistantHost />
           <ConsentBanner />

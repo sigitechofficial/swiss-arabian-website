@@ -111,3 +111,130 @@ export function trackEngagementThreshold(seconds: number): void {
 export function trackScrollDepth(percent: number): void {
   track("scroll_depth_reached", { scrollDepthPercent: percent }, { dedupeKey: String(percent) });
 }
+
+const PAGE_PAGES = new Set([
+  "pages",
+  "policies",
+  "faq",
+  "our-story",
+  "return-terms",
+  "gift-box",
+  "gift-cards",
+  "store-locator",
+  "lp",
+]);
+const CHECKOUT_PAGES = new Set(["checkout", "order-confirmation", "payments", "subscriptions"]);
+
+/**
+ * Shopify's page type for the web performance reports (Index, Product, Collection, …). `path` is
+ * the route without a language prefix. These are report labels, not shopper wording.
+ */
+export function pageTypeForPath(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length === 0) return "Index";
+  const [first, second] = parts;
+  if (first === "products") return second && second !== "p" ? "Product" : "Collection";
+  if (first === "collections") return second ? "Collection" : "List collections";
+  if (first === "categories") return "Collection";
+  if (first === "cart") return "Cart";
+  if (first === "search") return "Search";
+  if (first === "blog") return second && second !== "p" ? "Article" : "Blog";
+  if (PAGE_PAGES.has(first)) return "Page";
+  if (CHECKOUT_PAGES.has(first)) return "Checkout";
+  if (first === "account") return "Account";
+  return "Other";
+}
+
+/** The Core Web Vitals Shopify reports on. */
+export const REPORTED_WEB_VITALS = new Set(["LCP", "INP", "CLS"]);
+
+export type WebVitalMetric = {
+  id: string;
+  name: string;
+  value: number;
+  rating?: string;
+  navigationType?: string;
+};
+
+// Next can report a metric more than once, even under a new id (development re-mounts, a callback
+// registered again). Each metric is measured once per page load, so its first report is recorded.
+// This module lives as long as the page load (client navigations are not measured again).
+const sentWebVitals = new Set<string>();
+
+/**
+ * One Core Web Vital of this page load (Largest Contentful Paint, Interaction to Next Paint,
+ * Cumulative Layout Shift). `path` is the page the load started on (without a language prefix).
+ */
+export function trackWebVital(metric: WebVitalMetric, path: string): void {
+  if (!REPORTED_WEB_VITALS.has(metric.name) || !Number.isFinite(metric.value)) return;
+  const once = metric.name;
+  if (sentWebVitals.has(once)) return;
+  const value =
+    metric.name === "CLS" ? Math.round(metric.value * 10_000) / 10_000 : Math.round(metric.value);
+  const sent = track(
+    "web_vital_recorded",
+    {
+      metric: metric.name,
+      value,
+      rating: metric.rating,
+      navigationType: metric.navigationType,
+      pageType: pageTypeForPath(path),
+      pagePath: path,
+    },
+    { dedupeKey: once },
+  );
+  if (sent) sentWebVitals.add(once);
+}
+
+/** A product shown in a recommendation section ("You may also like", companions, the bag drawer). */
+export type RecommendedProduct = {
+  id?: string | null;
+  variantId?: string | null;
+  sku?: string | null;
+  slug?: string | null;
+};
+
+function recommendationProperties(surface: string, product: RecommendedProduct, position: number) {
+  return {
+    productId: product.id,
+    variantId: product.variantId,
+    sku: product.sku,
+    surface,
+    position,
+  };
+}
+
+// A section that renders again (new data, new order) does not show its products again.
+const shownRecommendations = new Set<string>();
+
+/** The shopper saw this recommended product (its section came into view), once per page. */
+export function trackRecommendationImpression(
+  surface: string,
+  product: RecommendedProduct,
+  position: number,
+): void {
+  const page = typeof window === "undefined" ? "" : window.location.pathname;
+  const once = `${page}|${surface}|${product.id ?? product.slug ?? position}`;
+  if (shownRecommendations.has(once)) return;
+  const sent = track("product_recommendation_impression", recommendationProperties(surface, product, position), {
+    dedupeKey: `${surface}:${product.id ?? product.slug ?? position}`,
+  });
+  if (sent) shownRecommendations.add(once);
+}
+
+/** Tests only. */
+export function resetRecommendationEventsForTests(): void {
+  shownRecommendations.clear();
+  sentWebVitals.clear();
+}
+
+/** The shopper clicked a recommended product (its page, add to bag, or select). */
+export function trackRecommendationClicked(
+  surface: string,
+  product: RecommendedProduct,
+  position: number,
+): void {
+  track("product_recommendation_clicked", recommendationProperties(surface, product, position), {
+    dedupeKey: `${surface}:${product.id ?? product.slug ?? position}`,
+  });
+}

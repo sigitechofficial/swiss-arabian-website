@@ -1,5 +1,7 @@
 "use client";
 
+import { trackCartItemAdded, trackRecommendationClicked } from "@/lib/analytics/siteEvents";
+import { useRecommendationTracking } from "@/lib/analytics/useRecommendationTracking";
 import { toast } from "@/components/ui/Toaster";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -56,6 +58,10 @@ export function usePromotionQuickAdd({ surface = "cart", holdPosition = false }:
   });
 
   const products = recommendations?.products ?? [];
+  // Product recommendation reports: these picks are recommendations shown in the bag.
+  const recommendationSurface = `bag_picks_${surface}`;
+  const recommended = products.map((p) => ({ id: p.productId, sku: p.sku, slug: p.slug }));
+  useRecommendationTracking(recommendationSurface, recommended, rootRef);
   const tracking = {
     campaignCode: data?.progress?.primary?.campaignCode,
     mechanic: data?.progress?.primary?.mechanic,
@@ -66,6 +72,8 @@ export function usePromotionQuickAdd({ surface = "cart", holdPosition = false }:
   const add = (product: (typeof products)[number]) => {
     if (busy) return;
     setBusy(product.sku);
+    const position = products.findIndex((p) => p.sku === product.sku) + 1;
+    trackRecommendationClicked(recommendationSurface, { id: product.productId, sku: product.sku, slug: product.slug }, position);
     const root = rootRef.current;
     const scroller = holdPosition && root ? scrollParent(root) : null;
     if (root && scroller) {
@@ -81,6 +89,8 @@ export function usePromotionQuickAdd({ surface = "cart", holdPosition = false }:
       .then((cart) => {
         setCartFromApi(cart);
         trackPromotion("promotion_recommendation_added", tracking);
+        // Added straight through the cart API, so the bag's own add event is sent here.
+        trackCartItemAdded({ productId: product.productId, sku: product.sku, quantity: 1 });
       })
       .catch(() => toast(t("promotions.addFailed"), "error"))
       .finally(() => {

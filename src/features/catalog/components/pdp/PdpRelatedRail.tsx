@@ -1,5 +1,6 @@
 "use client";
 
+import { RecommendationSection } from "@/components/shared/RecommendationSection";
 import type { ReactNode } from "react";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
@@ -14,6 +15,8 @@ type PdpRelatedRailProps = {
   seeAllHref: string;
   products: CatalogProduct[];
   collectionSlug?: string;
+  /** Report value for this rail (product recommendation reports). */
+  surface: string;
 };
 
 export function PdpRelatedRail({
@@ -22,12 +25,13 @@ export function PdpRelatedRail({
   seeAllHref,
   products,
   collectionSlug,
+  surface,
 }: PdpRelatedRailProps) {
   const t = useShopCopy();
   if (!products.length) return null;
 
   return (
-    <section className={relatedSection} aria-labelledby={id}>
+    <RecommendationSection surface={surface} products={products} className={relatedSection} aria-labelledby={id}>
       <div className={pageContainer}>
         <div className={relatedHead}>
           <p className={relatedTitle} id={id}>
@@ -43,6 +47,6 @@ export function PdpRelatedRail({
           ))}
         </ul>
       </div>
-    </section>
+    </RecommendationSection>
   );
 }

@@ -19,6 +19,11 @@ export function companionAmount(value: string | null | undefined): number | null
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** A companion as a recommended product (product recommendation reports). */
+export function companionRef(product: CompanionProduct) {
+  return { id: product.productId, sku: product.sku, slug: product.slug };
+}
+
 /** A companion as a shared catalog product (for a brand's product card). */
 export function companionCard(product: CompanionProduct, currency: string): CatalogProduct | null {
   if (!product.slug) return null;

@@ -1,5 +1,6 @@
 "use client";
 
+import { RecommendationSection } from "@/components/shared/RecommendationSection";
 import { useRef } from "react";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
@@ -17,7 +18,12 @@ export function PdpRelatedRail({ products }: { products: ProductSummary[] }) {
   const railRef = useRef<HTMLDivElement>(null);
   if (!products.length) return null;
   return (
-    <section aria-labelledby="related-heading" className="bg-sapil-white pt-[64px] pb-[80px] max-900:pt-[48px] max-900:pb-[56px]">
+    <RecommendationSection
+      surface="pdp_also_like"
+      products={products}
+      aria-labelledby="related-heading"
+      className="bg-sapil-white pt-[64px] pb-[80px] max-900:pt-[48px] max-900:pb-[56px]"
+    >
       <Wrap>
         <SectionHead
           // Product pages: headings only for the product's own content (SEO audit p12).
@@ -39,6 +45,6 @@ export function PdpRelatedRail({ products }: { products: ProductSummary[] }) {
           </div>
         </WishlistStatusScope>
       </Wrap>
-    </section>
+    </RecommendationSection>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
+import { RecommendationSection } from "@/components/shared/RecommendationSection";
 import { useRef } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
-import { companionCard, useProductCompanions } from "@/features/promotions/hooks/useProductCompanions";
+import { companionCard, companionRef, useProductCompanions } from "@/features/promotions/hooks/useProductCompanions";
+import type { RecommendedProduct } from "@/lib/analytics/siteEvents";
 import { WishlistStatusScope } from "@/features/wishlist/components/WishlistStatusScope";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { SectionHead, SummaryRow, Wrap, buttonClass, cx } from "../../ui";
@@ -38,7 +40,12 @@ export function PdpCompanions({
   return (
     <>
       {c.bundle && c.pieces.length > 0 ? (
-        <section aria-labelledby="companion-heading" className="bg-sapil-white pt-[64px] pb-[72px] max-900:pt-[48px] max-900:pb-[56px]">
+        <RecommendationSection
+          surface="pdp_bought_together"
+          products={c.pieces.filter((p) => p.sku !== data.current?.sku).map(companionRef)}
+          aria-labelledby="companion-heading"
+          className="bg-sapil-white pt-[64px] pb-[72px] max-900:pt-[48px] max-900:pb-[56px]"
+        >
           <Wrap>
             <SectionHead
               // Product pages: headings only for the product's own content (SEO audit p12).
@@ -106,10 +113,10 @@ export function PdpCompanions({
               </aside>
             </div>
           </Wrap>
-        </section>
+        </RecommendationSection>
       ) : null}
       {c.later.map((group) => (
-        <CompanionRail key={group.id} heading={group.heading} seeAllPath={group.seeAllPath} seeAll={data.copy.seeAll}>
+        <CompanionRail key={group.id} products={group.products.map(companionRef)} heading={group.heading} seeAllPath={group.seeAllPath} seeAll={data.copy.seeAll}>
           {group.products.map((product) => {
             const card = companionCard(product, c.currency);
             return card ? <SapilProductCard key={product.sku} product={card} imageSizes={RAIL_SIZES} /> : null;
@@ -124,8 +131,10 @@ function CompanionRail({
   heading,
   seeAllPath,
   seeAll,
+  products,
   children,
 }: {
+  products: RecommendedProduct[];
   heading: string;
   seeAllPath: string | null;
   seeAll: string;
@@ -134,7 +143,7 @@ function CompanionRail({
   const t = useSapilCopy();
   const railRef = useRef<HTMLDivElement>(null);
   return (
-    <section className="pt-[56px] pb-[64px]">
+    <RecommendationSection surface="pdp_companions" products={products} className="pt-[56px] pb-[64px]">
       <Wrap>
         <SectionHead
           as="p"
@@ -159,6 +168,6 @@ function CompanionRail({
           </div>
         </WishlistStatusScope>
       </Wrap>
-    </section>
+    </RecommendationSection>
   );
 }

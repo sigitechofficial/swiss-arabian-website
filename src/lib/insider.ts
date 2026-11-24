@@ -638,8 +638,9 @@ export function insiderProductViewed(product: InsiderProductPayload): void {
  */
 export function insiderAddToCart(item: InsiderCartItemPayload): void {
   trackCartItemAdded({
-    productId: item.id,
-    sku: item.sku,
+    productId: item.groupcode || item.id,
+    variantId: item.id,
+    sku: item.sku && item.sku !== item.id ? item.sku : undefined,
     currencyCode: item.currency,
     quantity: item.quantity,
   });
@@ -658,8 +659,9 @@ export function insiderAddToCart(item: InsiderCartItemPayload): void {
  */
 export function insiderRemoveFromCart(item: InsiderCartItemPayload): void {
   trackCartItemRemoved({
-    productId: item.id,
-    sku: item.sku,
+    productId: item.groupcode || item.id,
+    variantId: item.id,
+    sku: item.sku && item.sku !== item.id ? item.sku : undefined,
     currencyCode: item.currency,
     quantity: item.quantity,
   });
