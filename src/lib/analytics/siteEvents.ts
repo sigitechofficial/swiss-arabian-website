@@ -238,3 +238,21 @@ export function trackRecommendationClicked(
     dedupeKey: `${surface}:${product.id ?? product.slug ?? position}`,
   });
 }
+
+/**
+ * The search page showed results for a search (Shopify search reports). `searchId` ties the clicks
+ * on its results to it. The words are kept only where the platform is set to keep them, and only
+ * for shoppers who allowed analytics.
+ */
+export function trackSearchResultsViewed(searchId: string, searchTerm: string, resultCount: number): void {
+  track("search_results_viewed", { searchId, searchTerm, resultCount }, { dedupeKey: searchId });
+}
+
+/** The shopper clicked one of a search's results (its page, add to bag, or wishlist). */
+export function trackSearchResultClicked(searchId: string, product: RecommendedProduct, position: number): void {
+  track(
+    "search_result_clicked",
+    { searchId, productId: product.id, variantId: product.variantId, sku: product.sku, position },
+    { dedupeKey: `${searchId}:${product.id ?? product.slug ?? position}` },
+  );
+}

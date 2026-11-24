@@ -7,7 +7,10 @@ import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { usePathname, useRouter } from "next/navigation";
 import { localizeHref } from "@/lib/i18n/localePath";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { trackSearchResultClicked, trackSearchResultsViewed } from "@/lib/analytics/siteEvents";
+import { uuidv4 } from "@/lib/analytics/tracker";
+import { recommendationIndexForClick } from "@/lib/analytics/useRecommendationTracking";
 import { CatalogProductCard } from "@/features/catalog/components/catalog/CatalogProductCard";
 import { CatalogInfiniteSentinel } from "@/features/catalog/components/CatalogInfiniteSentinel";
 import { toCatalogProducts } from "@/features/catalog/utils/toCatalogProduct";
@@ -81,6 +84,15 @@ export function SearchPageView({
   useEffect(() => {
     if (trimmed.length >= SEARCH_MIN_QUERY_LENGTH) rememberSearchQuery(trimmed);
   }, [trimmed]);
+
+  // Search reports: one search per query shown, with its result count; clicks on its results carry its id.
+  const searchRef = useRef<{ query: string; id: string } | null>(null);
+  useEffect(() => {
+    if (!hasQuery || tooShortQuery || isLoading || isError) return;
+    if (searchRef.current?.query === trimmed) return;
+    searchRef.current = { query: trimmed, id: uuidv4() };
+    trackSearchResultsViewed(searchRef.current.id, trimmed, total);
+  }, [trimmed, hasQuery, tooShortQuery, isLoading, isError, total]);
 
   // The page's number format with Latin digits, like prices across the site.
   const numbers = new Intl.NumberFormat(intlLocale(locale), { numberingSystem: "latn" });
@@ -190,7 +202,17 @@ export function SearchPageView({
             {t("search.searchingCatalog")}
           </p>
         ) : cards.length ? (
-          <section className={productsBand} aria-labelledby="search-heading">
+          <section
+            className={productsBand}
+            aria-labelledby="search-heading"
+            onClickCapture={(event) => {
+              const search = searchRef.current;
+              const target = event.target instanceof Element ? event.target : null;
+              if (!search || !target) return;
+              const index = recommendationIndexForClick(target, event.currentTarget, cards);
+              if (index >= 0) trackSearchResultClicked(search.id, cards[index], index + 1);
+            }}
+          >
             <WishlistStatusScope>
               <ul className={searchProductGrid} role="list">
                 {cards.map((product) => (

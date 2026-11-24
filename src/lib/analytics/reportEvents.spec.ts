@@ -13,6 +13,8 @@ import {
   resetRecommendationEventsForTests,
   trackRecommendationClicked,
   trackRecommendationImpression,
+  trackSearchResultClicked,
+  trackSearchResultsViewed,
   trackWebVital,
 } from "./siteEvents";
 import {
@@ -131,5 +133,17 @@ describe("recommendation events", () => {
     expect(productSlugFromHref("/ar/products/%D8%B9%D9%88%D8%AF")).toBe("عود");
     expect(productSlugFromHref("/products/rose-01#reviews")).toBe("rose-01");
     expect(productSlugFromHref("/collections/oud")).toBeNull();
+  });
+});
+
+describe("search events", () => {
+  it("records a search with its words and result count, and clicks on its results with the same id", () => {
+    trackSearchResultsViewed("q1", "oud royal", 12);
+    trackSearchResultClicked("q1", { id: "p1", variantId: "v1", sku: "SKU1", slug: "oud-royal" }, 3);
+    const [search, click] = queuedEventsForTests();
+    expect(search.eventName).toBe("search_results_viewed");
+    expect(search.properties).toMatchObject({ searchId: "q1", searchTerm: "oud royal", resultCount: 12 });
+    expect(click.eventName).toBe("search_result_clicked");
+    expect(click.properties).toMatchObject({ searchId: "q1", productId: "p1", variantId: "v1", sku: "SKU1", position: 3 });
   });
 });
