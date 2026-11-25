@@ -5,6 +5,7 @@ import {
   formatMoneyParts,
   fromMinorUnits,
   isDecimalAmount,
+  ISO_4217_MINOR_UNITS,
   parseMoney,
   roundMoney,
   toDecimalString,
@@ -16,10 +17,27 @@ afterEach(() => {
 });
 
 describe("currencyDigits", () => {
-  it("reads ISO 4217 minor units from the platform", () => {
-    for (const code of ["KWD", "BHD", "OMR"]) expect(currencyDigits(code)).toBe(3);
-    for (const code of ["AED", "USD", "QAR", "SAR"]) expect(currencyDigits(code)).toBe(2);
+  it("uses ISO 4217 minor units", () => {
+    for (const code of ["KWD", "BHD", "OMR", "JOD", "IQD", "LYD", "TND"]) expect(currencyDigits(code)).toBe(3);
+    for (const code of ["AED", "USD", "QAR", "SAR", "EGP"]) expect(currencyDigits(code)).toBe(2);
     expect(currencyDigits("JPY")).toBe(0);
+    expect(currencyDigits("CLF")).toBe(4);
+  });
+
+  it("keeps the real minor units where Intl's display digits drop them (IQD)", () => {
+    expect(new Intl.NumberFormat("en", { style: "currency", currency: "IQD" }).resolvedOptions().maximumFractionDigits).toBe(0);
+    expect(currencyDigits("IQD")).toBe(3);
+    expect(formatMoney("10.125", "IQD")).toBe("IQD 10.125");
+  });
+
+  it("is the same table as the backend (src/common/money/currency-minor-units.ts)", () => {
+    // Keep in step with the backend's ISO_4217_ZERO/THREE/FOUR_DECIMAL sets; both follow ISO 4217.
+    expect(ISO_4217_MINOR_UNITS).toEqual({
+      BHD: 3, IQD: 3, JOD: 3, KWD: 3, LYD: 3, OMR: 3, TND: 3,
+      BIF: 0, CLP: 0, DJF: 0, GNF: 0, ISK: 0, JPY: 0, KMF: 0, KRW: 0, PYG: 0, RWF: 0, UGX: 0, UYI: 0, VND: 0, VUV: 0,
+      XAF: 0, XOF: 0, XPF: 0,
+      CLF: 4, UYW: 4,
+    });
   });
 
   it("accepts any case and spacing", () => {

@@ -3,9 +3,9 @@
  * and how an amount is written. Every price, total, threshold and payment amount
  * the storefront shows or sends goes through here (both brands).
  *
- * - A currency's minor units (decimals) come from the platform's own ISO 4217 data
- *   (`Intl`), never from a hand-written list: KWD/BHD/OMR have 3 ("KWD 10.120"),
- *   AED/USD/SAR 2, JPY 0.
+ * - A currency's minor units (decimals) are ISO 4217's, the same as the backend's
+ *   (`ISO_4217_MINOR_UNITS`): KWD/BHD/OMR/IQD have 3 ("KWD 10.120"), AED/USD/SAR 2,
+ *   JPY 0. `Intl` only lays out the localized form, with these digits.
  * - Amounts arrive from the API as strings ("10.120") or numbers; both are accepted.
  * - Text is the same on the server and in the browser: the locale is the page's
  *   (`intlLocale`), never the device's, so hydration matches.
@@ -57,24 +57,62 @@ function reportInvalidCurrency(code: string): void {
   console.warn(`[money] unreadable currency code ${JSON.stringify(code)}; showing ${FALLBACK_DIGITS} decimals`);
 }
 
-/** The digits for a valid code, or null when there is no code or `Intl` cannot read it. */
+/**
+ * ISO 4217 minor units (List One, "Minor unit" column) for every currency that does not
+ * have 2. This is the standard itself, the same table as the backend's
+ * `src/common/money/currency-minor-units.ts`, which rounds and sends every amount with it;
+ * a test in each repository pins the list, so the website never rounds a total differently
+ * from the cart, the payment or D365.
+ *
+ * Not `Intl`'s own digits: those are CLDR's display habits, which drop real minor units for
+ * some currencies (IQD shown with 0 decimals though it has 3).
+ */
+export const ISO_4217_MINOR_UNITS: Readonly<Record<string, number>> = Object.freeze({
+  BHD: 3,
+  IQD: 3,
+  JOD: 3,
+  KWD: 3,
+  LYD: 3,
+  OMR: 3,
+  TND: 3,
+  BIF: 0,
+  CLP: 0,
+  DJF: 0,
+  GNF: 0,
+  ISK: 0,
+  JPY: 0,
+  KMF: 0,
+  KRW: 0,
+  PYG: 0,
+  RWF: 0,
+  UGX: 0,
+  UYI: 0,
+  VND: 0,
+  VUV: 0,
+  XAF: 0,
+  XOF: 0,
+  XPF: 0,
+  CLF: 4,
+  UYW: 4,
+});
+
+const ISO_CODE = /^[A-Z]{3}$/;
+
+/** The digits for a valid ISO 4217 code, or null when there is no code or it is not one. */
 function readDigits(code: string): number | null {
   if (!code) return null;
   const cached = digitsByCurrency.get(code);
   if (cached != null) return cached;
-  try {
-    const digits = new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions()
-      .maximumFractionDigits;
-    if (digits == null) return null;
-    digitsByCurrency.set(code, digits);
-    return digits;
-  } catch {
+  if (!ISO_CODE.test(code)) {
     reportInvalidCurrency(code);
     return null;
   }
+  const digits = ISO_4217_MINOR_UNITS[code] ?? 2;
+  digitsByCurrency.set(code, digits);
+  return digits;
 }
 
-/** The currency's minor units (ISO 4217, from `Intl`): KWD 3, AED 2, JPY 0; 2 for an unreadable code. */
+/** The currency's minor units (ISO 4217): KWD 3, AED 2, JPY 0; 2 for an unreadable code. */
 export function currencyDigits(currency: string | null | undefined): number {
   return readDigits(normalizeCurrency(currency)) ?? FALLBACK_DIGITS;
 }
