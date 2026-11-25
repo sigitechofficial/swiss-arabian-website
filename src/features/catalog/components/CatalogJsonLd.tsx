@@ -4,6 +4,7 @@ import { getTranslator } from "@/lib/i18n/messages";
 import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
 import type { OpeningHoursSpecification } from "@/lib/seo/openingHours";
 import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
+import { toDecimalString } from "@/lib/format/money";
 
 const URL_KEYS = new Set(["url", "item", "image", "logo", "@id"]);
 
@@ -108,7 +109,7 @@ export function productJsonLd(input: {
           "@type": "Offer",
           url: input.url,
           ...(input.sku ? { sku: input.sku } : {}),
-          price: input.price!.toFixed(2),
+          price: toDecimalString(input.price!, input.currency),
           priceCurrency: input.currency,
           availability:
             input.inStock === false
@@ -164,7 +165,7 @@ export function offerShippingDetails(
   const max = shipping?.maxDays ?? min;
   return {
     "@type": "OfferShippingDetails",
-    shippingRate: { "@type": "MonetaryAmount", value: rate.toFixed(2), currency },
+    shippingRate: { "@type": "MonetaryAmount", value: toDecimalString(rate, currency), currency },
     shippingDestination: { "@type": "DefinedRegion", addressCountry: country },
     ...(min != null && max != null
       ? {
@@ -221,7 +222,7 @@ export function merchantReturnPolicy(
     ...(charged && currency
       ? {
           returnFees: "https://schema.org/ReturnShippingFees",
-          returnShippingFeesAmount: { "@type": "MonetaryAmount", value: feeAmount.toFixed(2), currency },
+          returnShippingFeesAmount: { "@type": "MonetaryAmount", value: toDecimalString(feeAmount, currency), currency },
         }
       : shippingFee?.variant === "FREE"
         ? { returnFees: "https://schema.org/FreeReturn" }

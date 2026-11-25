@@ -77,6 +77,24 @@ describe("subscription rules", () => {
     });
   });
 
+  it("accepts and shows three-decimal currencies to the fils", () => {
+    const lines = subscriptionPriceLines({
+      amount: "10.120",
+      currencyCode: "KWD",
+      shippingMode: "EXTRA_FIXED",
+      shippingAmount: "1.500",
+      monthlyTotal: "11.620",
+    });
+    expect(lines).toMatchObject({
+      available: true,
+      subscription: "Subscription KWD 10.120/month",
+      shipping: "Shipping KWD 1.500/month",
+      total: "Total KWD 11.620/month",
+      totalAmount: "11.620",
+    });
+    expect(subscriptionPriceLines({ amount: "65.001", currencyCode: "AED" })).toMatchObject({ available: false });
+  });
+
   it("falls back only when shipping is included and zero", () => {
     expect(
       subscriptionPriceLines({ amount: "65.00", currencyCode: "AED" }).available,

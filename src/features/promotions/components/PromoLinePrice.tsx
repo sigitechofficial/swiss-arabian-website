@@ -1,4 +1,4 @@
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { PromotionSnapshotV1 } from "../types/promotions";
 import {
   lineMerchandiseDiscount,
@@ -30,9 +30,9 @@ export function PromoLinePrice({
 }: PromoLinePriceProps) {
   const listTotal = line.unitPrice * line.quantity;
   const discount =
-    lineMerchandiseDiscount(snapshot, line) ||
-    lineMerchandiseDiscount(fallbackSnapshot, line);
-  const prices = linePrices(listTotal, discount);
+    lineMerchandiseDiscount(snapshot, line, line.currency) ||
+    lineMerchandiseDiscount(fallbackSnapshot, line, line.currency);
+  const prices = linePrices(listTotal, discount, line.currency);
 
   return (
     <p className={`${className} m-0 flex flex-col items-end gap-1`} dir="ltr">

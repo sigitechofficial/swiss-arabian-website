@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type CSSProperties } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useAddToCart } from "@/features/cart";
 import { useCatalogPlp } from "@/features/catalog/hooks/useCatalogPlp";
-import { parseAmount } from "../shared/money";
+import { parseMoney } from "@/lib/format/money";
 import { useSapilCopy } from "../../i18n/SapilCopy";
 import { Button, EYEBROW, cx, tintValue } from "../../ui";
 import { PlusIcon } from "../shared/icons";
@@ -32,7 +32,7 @@ function useCatalogStats() {
   const price = listing.facets?.price ?? null;
   return {
     total: listing.pagination?.total ?? null,
-    from: parseAmount(price?.min),
+    from: parseMoney(price?.min),
     currency: price?.currencyCode ?? null,
   };
 }

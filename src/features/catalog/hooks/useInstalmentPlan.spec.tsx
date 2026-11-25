@@ -22,13 +22,13 @@ function TabbyMarket({ children }: { children: ReactNode }) {
 
 describe("useInstalmentPlan", () => {
   it("splits the price into four payments that add up", () => {
-    const { result } = renderHook(() => useInstalmentPlan(100.01));
+    const { result } = renderHook(() => useInstalmentPlan(100.01, "AED"));
     expect(result.current.payments).toEqual([25, 25, 25, 25.01]);
     expect(result.current.each).toBe(25);
   });
 
   it("never lists Tabby: Tabby has its official snippet (Tabby QA)", () => {
-    const { result } = renderHook(() => useInstalmentPlan(100), { wrapper: TabbyMarket });
+    const { result } = renderHook(() => useInstalmentPlan(100, "AED"), { wrapper: TabbyMarket });
     expect(result.current.providers).toEqual([]);
     expect(result.current.available).toBe(false);
   });
@@ -43,7 +43,7 @@ describe("useInstalmentPlan", () => {
         </SiteIntegrationsProvider>
       );
     }
-    const { result } = renderHook(() => useInstalmentPlan(100), { wrapper: TamaraMarket });
+    const { result } = renderHook(() => useInstalmentPlan(100, "AED"), { wrapper: TamaraMarket });
     expect(result.current.providers.map((p) => p.id)).toEqual(["tamara"]);
     expect(result.current.available).toBe(true);
     act(() => result.current.openProvider("tamara"));
@@ -53,7 +53,7 @@ describe("useInstalmentPlan", () => {
   });
 
   it("offers nothing when the market has no pay-in-4 at checkout", () => {
-    const { result } = renderHook(() => useInstalmentPlan(100));
+    const { result } = renderHook(() => useInstalmentPlan(100, "AED"));
     expect(result.current.providers).toEqual([]);
     expect(result.current.available).toBe(false);
   });

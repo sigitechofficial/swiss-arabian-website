@@ -10,7 +10,7 @@ import { AccountPageShell } from "@/features/account/components/AccountPageShell
 import { AccountPageTitle } from "@/features/account/components/AccountPageTitle";
 import { AccountStatusLabel, type AccountStatusTone } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 

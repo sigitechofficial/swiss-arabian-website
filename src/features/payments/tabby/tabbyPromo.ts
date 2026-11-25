@@ -46,8 +46,3 @@ export function tabbyPromoConfig(
   if (!scriptBase) return null;
   return { publicKey: tabby.publicKey, merchantCode: tabby.merchantCode, currency: code, scriptBase };
 }
-
-/** Tabby price format: decimal string in major units (KWD has 3 decimals). */
-export function tabbyPromoPrice(amount: number, currency: string): string {
-  return amount.toFixed(currency.toUpperCase() === "KWD" ? 3 : 2);
-}

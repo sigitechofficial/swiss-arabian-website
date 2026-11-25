@@ -9,7 +9,7 @@ import {
 } from "react";
 import { PackageCheck, PartyPopper, Truck } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
-import { formatMoney } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/lib/format/money";
 import { FREE_SHIPPING_THRESHOLD } from "../data/cartContent";
 
 const TERRA = "#B46E57";

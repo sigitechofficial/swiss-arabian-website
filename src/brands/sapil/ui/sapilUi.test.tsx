@@ -11,7 +11,6 @@ import {
   Drawer,
   Field,
   Fieldset,
-  formatAED,
   IconButton,
   Price,
   ProductCard,
@@ -26,11 +25,6 @@ import {
 } from "./index";
 
 describe("Sapil UI kit", () => {
-  it("formats prices like v9", () => {
-    expect(formatAED(63)).toBe("AED 63");
-    expect(formatAED(19.75)).toBe("AED 19.75");
-  });
-
   it("Button renders a button or a link", () => {
     const onClick = vi.fn();
     render(

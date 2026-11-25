@@ -4,7 +4,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import {
   checkoutCrumbsList,
   collectionHeadFlush,

@@ -5,7 +5,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { useHeaderSearch } from "@/features/search/hooks/useHeaderSearch";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { visuallyHidden } from "@/styles/siteChrome";
 import { MediaImage } from "@/components/ui/MediaImage";
 

@@ -10,7 +10,7 @@ import { Button, EYEBROW, Serif, Wrap, cx } from "../../ui";
 import { ArrowIcon } from "../shared/icons";
 import { SapilLink } from "../shared/SapilLink";
 import { useSapilPrice } from "../shared/useSapilPrice";
-import { parseAmount } from "../shared/money";
+import { parseMoney } from "@/lib/format/money";
 import { featuredPriceTier } from "../shell/shellData";
 import type { PriceEditCopy } from "./cmsSections";
 import { HomeSection, TitleParts } from "./HomeParts";
@@ -73,7 +73,7 @@ export function PriceEditShelf({ copy }: { copy?: PriceEditCopy } = {}) {
   if (tier == null || !currency || !products.length) return null;
 
   const total = listing.pagination?.total ?? products.length;
-  const from = parseAmount(listing.facets?.price?.min) ?? Math.min(...products.map((p) => p.price as number));
+  const from = parseMoney(listing.facets?.price?.min) ?? Math.min(...products.map((p) => p.price as number));
   const prices = products.map((p) => p.price as number);
   // Counts are exact only when every product under the ceiling is loaded.
   const bands = total <= products.length ? priceBands(prices, tier) : [];

@@ -69,8 +69,8 @@ export function SapilBagDrawer() {
   // Free delivery: the market's threshold (GET /storefront/markets → delivery), else a
   // free-shipping promotion's. Checkout's delivery methods stay the authority on the fee.
   const market = useMarketDelivery();
-  const marketFree = freeDeliveryProgress(market.freeDeliveryThreshold, subtotalNet);
   const freeCurrency = market.currency ?? bag.currency;
+  const marketFree = freeDeliveryProgress(market.freeDeliveryThreshold, subtotalNet, freeCurrency);
   const unlocked = ship.unlocked || Boolean(marketFree?.reached);
 
   return (

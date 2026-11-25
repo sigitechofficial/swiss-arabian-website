@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
-import { formatMoney } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/lib/format/money";
 import type { CartLine } from "@/stores/useCartStore";
 
 type CartLineItemProps = {

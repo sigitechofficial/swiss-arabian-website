@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { toDecimalString } from "@/lib/format/money";
 import { tamaraCountry, type TamaraLang } from "../utils/tamara";
 
 /** Tamara's official widget v2. Configured once per page through `window.tamaraWidgetConfig`. */
@@ -82,9 +83,11 @@ export function TamaraWidget({
   className?: string;
 }) {
   const country = tamaraCountry(currency);
+  // Major units with the currency's decimals ("10.120" for KWD), as Tamara reads it.
+  const price = toDecimalString(amount, currency);
   const key =
     country && publicKey && amount > 0
-      ? `${country}|${publicKey}|${lang}|${amount.toFixed(2)}|${inlineType}`
+      ? `${country}|${publicKey}|${lang}|${price}|${inlineType}`
       : null;
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -99,7 +102,7 @@ export function TamaraWidget({
         // The widget owns its element; React only owns the host around it.
         const widget = document.createElement("tamara-widget");
         widget.setAttribute("type", "tamara-summary");
-        widget.setAttribute("amount", amount.toFixed(2));
+        widget.setAttribute("amount", price);
         widget.setAttribute("inline-type", String(inlineType));
         host.replaceChildren(widget);
         window.TamaraWidgetV2?.refresh?.();
@@ -110,7 +113,7 @@ export function TamaraWidget({
     return () => {
       cancelled = true;
     };
-  }, [key, country, lang, publicKey, amount, inlineType]);
+  }, [key, country, lang, publicKey, price, inlineType]);
 
   if (!key || failedKey === key) return <>{fallback}</>;
   return <div ref={hostRef} className={className} dir={lang === "ar" ? "rtl" : "ltr"} data-tamara-host="" />;
