@@ -13,7 +13,7 @@ import type { CmsLink, CmsProductCard, CmsSection } from "@/features/cms/types/c
 import { mapCmsProduct } from "@/features/cms/utils/mapCmsProduct";
 import { resolveCmsLink, type CmsLinkContext } from "@/features/cms/utils/resolveCmsLink";
 import { SAPIL_PASTELS, type SapilPastel } from "../../ui/shared";
-import { parseAmount } from "../shared/money";
+import { parseMoney } from "@/lib/format/money";
 
 /* ——— primitives ——— */
 
@@ -61,7 +61,7 @@ export function homeProduct(raw: unknown): HomeProduct | null {
   if (!r) return null;
   const product = mapCmsProduct(r as unknown as CmsProductCard);
   if (!product) return null;
-  const was = parseAmount(rec(r.priceSummary)?.compareAtPrice);
+  const was = parseMoney(rec(r.priceSummary)?.compareAtPrice);
   const tileColor = pastel(r.tileColor);
   const wasPrice = was != null && product.price != null && was > product.price ? was : null;
   return {
@@ -298,7 +298,7 @@ export function parseCollectionShowcase(
         .map(rec)
         .flatMap((im) => (im && str(im.url) ? [{ url: str(im.url)!, name: str(im.name) ?? "", tile: pastel(im.tileColor) }] : []));
       const href = str(t.href) ?? resolveCmsLink(link(t.link), ctx) ?? "/collections";
-      const count = summary ? parseAmount(summary.productCount) : null;
+      const count = summary ? parseMoney(summary.productCount) : null;
       return [
         {
           id: str(t.id) ?? String(i),
@@ -307,7 +307,7 @@ export function parseCollectionShowcase(
           href,
           color: images[0]?.tile ?? SAPIL_PASTELS[i % SAPIL_PASTELS.length],
           count,
-          fromPrice: summary ? parseAmount(summary.minPrice) : null,
+          fromPrice: summary ? parseMoney(summary.minPrice) : null,
           currency: str(summary?.currencyCode),
           images: images.slice(0, 3).map(({ url, name }) => ({ url, name })),
         },

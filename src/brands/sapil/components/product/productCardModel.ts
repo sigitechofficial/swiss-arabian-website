@@ -1,29 +1,11 @@
-import { intlLocale, type ShopLocale } from "@/lib/i18n/locales";
+import type { ShopLocale } from "@/lib/i18n/locales";
 import type { ProductSummary } from "@/features/catalog/types/product";
-import { formatAED, SAPIL_PASTELS, type SapilPastel } from "../../ui/shared";
+import { SAPIL_PASTELS, type SapilPastel } from "../../ui/shared";
+import { formatSapilPrice } from "../shared/money";
 import type { SapilTranslator } from "../../i18n/SapilCopy";
 
 /** Tile when the API has no colour for a product (v9's neutral "beige" tile). */
 export const DEFAULT_TILE: SapilPastel = "sand";
-
-/**
- * "AED 63" / "AED 19.75" in English (v9's format); `Intl` currency format in
- * every other language (Arabic digits and order).
- */
-export function formatSapilPrice(amount: number, currency: string, locale: ShopLocale): string {
-  if (locale === "en") return formatAED(amount, currency);
-  try {
-    const whole = Math.round(amount * 100) % 100 === 0;
-    return new Intl.NumberFormat(intlLocale(locale), {
-      style: "currency",
-      currency,
-      minimumFractionDigits: whole ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return formatAED(amount, currency);
-  }
-}
 
 /** The product's pastel: the API's `tileColor` when it is one of the nine, else the neutral tile. */
 export function productTile(product: Pick<ProductSummary, "tileColor">): SapilPastel {

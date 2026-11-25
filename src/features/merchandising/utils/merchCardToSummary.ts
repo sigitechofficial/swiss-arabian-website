@@ -1,12 +1,7 @@
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import type { StorefrontProductCard } from "../types/merch";
-
-function parseMoney(value: unknown): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "number" ? value : Number(String(value).trim());
-  return Number.isFinite(n) ? n : null;
-}
+import { parseMoney } from "@/lib/format/money";
 
 export function merchCardToSummary(
   card: StorefrontProductCard,

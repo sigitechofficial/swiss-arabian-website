@@ -8,7 +8,7 @@ import {
   CheckoutSpinnerState,
   CheckoutStateShell,
 } from "@/features/checkout/components/CheckoutStateShell";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { formatOrderDate, orderStatusDisplay, trackingUnitCount } from "@/features/orders/utils/orderStatus";
 import { checkoutEyebrow, pageTitle } from "@/styles/shopChrome";
 import {

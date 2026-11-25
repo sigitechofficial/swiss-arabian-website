@@ -9,7 +9,7 @@ import { AccountPageTitle } from "@/features/account/components/AccountPageTitle
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import type { OrderSummaryApi } from "@/features/account/api/customerOrders.service";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import {
   formatOrderDate,
   orderPrimaryAction,

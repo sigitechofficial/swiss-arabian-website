@@ -1,7 +1,7 @@
 "use client";
 
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { historicalLineDiscount } from "../utils/historicalLineDiscount";
 
 /** Already included in the line total and the order Discount row. */

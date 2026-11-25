@@ -2,7 +2,7 @@
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import Link from "next/link";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useUiStore } from "@/stores/useUiStore";
 import { useLoyaltyRedemption } from "../hooks/useLoyaltyRedemption";

@@ -20,6 +20,7 @@ import type { SubscriptionSummary } from "../types/subscription.types";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 import { formatMarketDate } from "@/lib/format/marketDate";
+import { formatMoney } from "@/lib/format/money";
 
 type ListFilter = "all" | "active" | "pending";
 
@@ -31,19 +32,19 @@ export function AgreementPrice({ item }: { item: Pick<SubscriptionSummary, "amou
   }
   return (
     <div className="mt-2">
-      <p>{t("subs.accepted.subscription", { amount: `${item.currencyCode} ${item.amount}` })}</p>
+      <p>{t("subs.accepted.subscription", { amount: formatMoney(item.amount, item.currencyCode) })}</p>
       <p>
         {t("subs.accepted.shipping", {
-          amount: item.shippingMode === "EXTRA_FIXED" ? `${item.currencyCode} ${item.shippingAmount}` : t("subs.includedLower"),
+          amount: item.shippingMode === "EXTRA_FIXED" ? formatMoney(item.shippingAmount ?? "", item.currencyCode) : t("subs.includedLower"),
         })}
       </p>
-      <p>{t("subs.accepted.total", { amount: `${item.currencyCode} ${price.totalAmount}` })}</p>
+      <p>{t("subs.accepted.total", { amount: formatMoney(price.totalAmount, item.currencyCode) })}</p>
     </div>
   );
 }
 
 function money(currency: string, amount: string) {
-  return `${currency} ${amount}`;
+  return formatMoney(amount, currency);
 }
 
 function billingNote(item: SubscriptionSummary, t: Translator, locale: string, timeZone: string) {
@@ -80,7 +81,7 @@ export function AccountSubscriptionsPageView() {
       .filter((price) => price.available);
     if (totals.length === 0 || !active[0]) return null;
     const sum = totals.reduce((total, price) => total + Number(price.totalAmount), 0);
-    return `${active[0].currencyCode} ${sum.toFixed(2)}`;
+    return formatMoney(sum, active[0].currencyCode);
   }, [active, t]);
 
   return (
@@ -146,7 +147,7 @@ export function AccountSubscriptionsPageView() {
                         </div>
                         <dl className="m-0 flex flex-col gap-2 rounded-xl bg-[#F8F4EC] p-3.5 text-sm">
                           <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("subs.fragrance")}</dt><dd className="m-0 font-medium">{item.currencyCode} {item.amount}</dd></div>
-                          <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("orders.shipping")}</dt><dd className={`m-0 font-medium ${item.shippingMode === "EXTRA_FIXED" ? "text-[#2B1D17]" : "text-[#1F5B30]"}`}>{item.shippingMode === "EXTRA_FIXED" ? `${item.currencyCode} ${item.shippingAmount}` : t("subs.included")}</dd></div>
+                          <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("orders.shipping")}</dt><dd className={`m-0 font-medium ${item.shippingMode === "EXTRA_FIXED" ? "text-[#2B1D17]" : "text-[#1F5B30]"}`}>{item.shippingMode === "EXTRA_FIXED" ? formatMoney(item.shippingAmount ?? "", item.currencyCode) : t("subs.included")}</dd></div>
                           <div className="flex justify-between gap-3"><dt className="text-[#6E5A50]">{t("subs.picksFrom")}</dt><dd className="m-0 font-medium">{item.audience ? audienceLabel(item.audience, t) : t("subs.thisPlan")}</dd></div>
                         </dl>
                         <p className={`m-0 text-[13px] ${pendingCard ? "text-[#7A4B0B]" : "text-[#5A463C]"}`}>{billingNote(item, t, locale, timeZone)}</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useCartStore } from "@/stores/useCartStore";
 import type { PromotionSnapshotV1 } from "../types/promotions";

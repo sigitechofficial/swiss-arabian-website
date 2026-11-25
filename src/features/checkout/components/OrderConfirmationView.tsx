@@ -6,7 +6,7 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEffect, useState } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
 import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";

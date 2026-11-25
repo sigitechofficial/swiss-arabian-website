@@ -4,7 +4,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { bottle } from "@/styles/landingChrome";
 import {

@@ -4,7 +4,7 @@ import type {
   CustomerRefundState,
 } from "@/features/account/api/customerOrders.service";
 import type { AccountStatusTone } from "@/features/account/components/AccountStatus";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import type { OrderRefundView } from "./orderAftercare";
 

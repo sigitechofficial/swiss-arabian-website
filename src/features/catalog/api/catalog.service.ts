@@ -25,6 +25,7 @@ import { parsePdpReviews } from "../utils/pdpReviews";
 import { parseShippingPromise } from "../utils/pdpShipping";
 import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
+import { parseMoney } from "@/lib/format/money";
 
 export const CATALOG_PAGE_SIZE = 24;
 
@@ -222,12 +223,6 @@ type ApiProductListData = {
   };
   facets?: unknown;
 };
-
-function parseMoney(value: number | string | null | undefined): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "number" ? value : Number(String(value).trim());
-  return Number.isFinite(n) ? n : null;
-}
 
 /** The struck-out full price, only when it is really above the selling price. */
 function compareAtPrice(

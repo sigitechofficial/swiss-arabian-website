@@ -8,7 +8,7 @@ import { useLoadedImages } from "@/features/catalog/hooks/useLoadedImages";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
 import { HomeStripSkeleton } from "./HomeStripSkeleton";
-import { formatMoney } from "../../utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { AddToBagButton } from "./AddToBagButton";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { hoverImageUrl, STRIP_IMAGE_SIZES } from "../../utils/stripImages";
@@ -185,7 +185,7 @@ export function LandingTrending({
                 <div className={trendBody}>
                   <p className={cardName}>{product.title}</p>
                   <p className={cardPrice}>
-                    {formatMoney(product.price, product.currency)}
+                    {product.price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}
                   </p>
                 </div>
               </li>

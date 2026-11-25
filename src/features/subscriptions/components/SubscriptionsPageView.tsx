@@ -22,6 +22,7 @@ import {
   subscriptionPriceLines,
 } from "../utils/subscriptionRules";
 import { subscriptionCheckoutPath } from "../utils/subscriptionCheckout";
+import { formatMoney } from "@/lib/format/money";
 
 const QUEUE_LIMIT = 12;
 const SECTION_SCROLL = "scroll-mt-[calc(var(--site-header-h,9.25rem)+1rem)]";
@@ -239,7 +240,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
   }
 
   const activePrice = active ? subscriptionPriceLines(active, t) : null;
-  const price = active && activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "";
+  const price = active && activePrice?.available ? formatMoney(activePrice.totalAmount, active.currencyCode) : "";
 
   function continueWithPlan() {
     if (!active || !activePrice?.available) return;
@@ -435,7 +436,7 @@ export function SubscriptionsPageView({ lockedPlanCode }: { lockedPlanCode?: str
                 <span className="rounded-full border border-white/20 px-3 py-1.5 text-[length:var(--fs-eyebrow)]">{genderLabel}</span>
               </div>
               <div className="flex items-baseline gap-2 whitespace-nowrap">
-                <span className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none whitespace-nowrap">{activePrice?.available ? `${active.currencyCode} ${activePrice.totalAmount}` : "—"}</span>
+                <span className="font-[family-name:var(--font-display)] text-[length:var(--fs-h1)] leading-none whitespace-nowrap">{activePrice?.available ? formatMoney(activePrice.totalAmount, active.currencyCode) : "—"}</span>
                 <span className="text-[length:var(--fs-body)] whitespace-nowrap text-[var(--sand,#ece0c9)]">{t("subs.perMonth")}</span>
               </div>
               <p className="m-0 text-[length:var(--fs-body)] text-[var(--sand,#ece0c9)]">{active.name}</p>

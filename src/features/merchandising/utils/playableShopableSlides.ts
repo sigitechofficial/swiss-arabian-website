@@ -1,3 +1,4 @@
+import { parseMoney } from "@/lib/format/money";
 import type { ShopableVideoSlide, ShopableVideoView } from "../types/merch";
 
 function isHttpsVideoUrl(url: string | null | undefined): boolean {
@@ -25,6 +26,5 @@ export function parseShopablePrice(
   if (!summary || summary.hasValidPrice === false) {
     return { price: null, currency };
   }
-  const n = Number(String(summary.price ?? "").trim());
-  return { price: Number.isFinite(n) ? n : null, currency };
+  return { price: parseMoney(summary.price), currency };
 }

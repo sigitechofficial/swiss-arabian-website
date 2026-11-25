@@ -1,19 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { freeDeliveryProgress } from "@/features/markets/hooks/useMarketDelivery";
-import { formatAED } from "../../ui/shared";
+import { formatSapilPrice } from "../shared/money";
 import { toFreeDelivery } from "./bagData";
 import { SapilBagDrawerView } from "./SapilBagDrawerView";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
-const money = (amount: number | null | undefined, currency: string) => formatAED(amount ?? 0, currency);
+const money = (amount: number | null | undefined, currency: string) => formatSapilPrice(amount ?? 0, currency, "en");
 
 describe("free delivery", () => {
   it("measures the bag against the market threshold", () => {
-    expect(freeDeliveryProgress(100, 63)).toEqual({ threshold: 100, progress: 0.63, remaining: 37, reached: false });
-    expect(freeDeliveryProgress(100, 120)?.reached).toBe(true);
-    expect(freeDeliveryProgress(null, 63)).toBeNull();
+    expect(freeDeliveryProgress(100, 63, "AED")).toEqual({ threshold: 100, progress: 0.63, remaining: 37, reached: false });
+    expect(freeDeliveryProgress(100, 120, "AED")?.reached).toBe(true);
+    expect(freeDeliveryProgress(null, 63, "AED")).toBeNull();
   });
 
   it("maps progress to the v9 card states", () => {

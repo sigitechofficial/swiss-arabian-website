@@ -353,20 +353,3 @@ export const homeReviews: HomeReview[] = [
     meta: "✓ Verified · London",
   },
 ];
-
-export function formatMoney(price: number, currency = "USD") {
-  try {
-    return new Intl.NumberFormat("en", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(price);
-  } catch {
-    return `${currency} ${price.toFixed(2)}`;
-  }
-}
-
-export function formatUsd(price: number) {
-  return formatMoney(price, "USD");
-}

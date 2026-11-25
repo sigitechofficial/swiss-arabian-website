@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   EmptyBagRecovery,
@@ -390,7 +390,7 @@ export function CartSideSheet() {
                       <div className={cartRecCopy}>
                         <p className={cartRecName}>{product.title}</p>
                         <p className={cartRecPrice}>
-                          {formatMoney(product.price, product.currency)}
+                          {product.price == null ? copy("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}
                         </p>
                         <p className={cartRecSize}>{copy("cart.drawer.recSize")}</p>
                       </div>

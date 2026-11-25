@@ -5,7 +5,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useEffect, useRef, useState } from "react";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { useAddToCart } from "@/features/cart/hooks/useAddToCart";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { isProductUuid } from "@/features/wishlist/utils/productId";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import type { HomeProductBadge } from "@/features/home/types/home";

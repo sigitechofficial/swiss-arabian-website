@@ -2,12 +2,7 @@ import type { ProductSummary } from "@/features/catalog/types/product";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { CmsProductCard } from "../types/cmsHome.types";
-
-function parseMoney(value: number | string | null | undefined): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "number" ? value : Number(String(value).trim());
-  return Number.isFinite(n) ? n : null;
-}
+import { parseMoney } from "@/lib/format/money";
 
 function galleryUrls(raw: CmsProductCard): string[] {
   const fromGallery = (raw.images ?? [])
