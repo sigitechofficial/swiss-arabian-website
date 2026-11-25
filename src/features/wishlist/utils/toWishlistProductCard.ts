@@ -6,7 +6,7 @@ import {
 import { toCatalogProduct } from "@/features/catalog/utils/toCatalogProduct";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import type { StorefrontWishlistProductSummaryView } from "../types/wishlist";
-import { parseMoney } from "@/lib/format/money";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 export function wishlistPrice(product: StorefrontWishlistProductSummaryView): {
   price: number | null;
@@ -17,8 +17,7 @@ export function wishlistPrice(product: StorefrontWishlistProductSummaryView): {
     (typeof summary?.currencyCode === "string" && summary.currencyCode.trim()) ||
     product.currency?.trim() ||
     "AED";
-  const hasValidPrice = summary?.hasValidPrice !== false;
-  const price = hasValidPrice ? parseMoney(summary?.price) : null;
+  const price = readSellingPrice(summary);
   return { price, currency };
 }
 

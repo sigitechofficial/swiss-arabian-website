@@ -1,5 +1,5 @@
-import { parseMoney } from "@/lib/format/money";
 import type { ShopableVideoSlide, ShopableVideoView } from "../types/merch";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 function isHttpsVideoUrl(url: string | null | undefined): boolean {
   const trimmed = url?.trim() ?? "";
@@ -23,8 +23,5 @@ export function parseShopablePrice(
 ): { price: number | null; currency: string } {
   const summary = slide.priceSummary;
   const currency = summary?.currencyCode?.trim() || "AED";
-  if (!summary || summary.hasValidPrice === false) {
-    return { price: null, currency };
-  }
-  return { price: parseMoney(summary.price), currency };
+  return { price: readSellingPrice(summary), currency };
 }

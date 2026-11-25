@@ -3,6 +3,7 @@ import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogI
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { CmsProductCard } from "../types/cmsHome.types";
 import { parseMoney } from "@/lib/format/money";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 function galleryUrls(raw: CmsProductCard): string[] {
   const fromGallery = (raw.images ?? [])
@@ -27,8 +28,7 @@ export function mapCmsProduct(raw: CmsProductCard): ProductSummary | null {
   if (!raw?.productId || !raw.slug?.trim()) return null;
 
   const currency = raw.priceSummary?.currencyCode?.trim() || "AED";
-  const hasValidPrice = raw.priceSummary?.hasValidPrice !== false;
-  const price = hasValidPrice ? parseMoney(raw.priceSummary?.price) : null;
+  const price = readSellingPrice(raw.priceSummary);
   const availableQty = parseMoney(raw.inventorySummary?.availableQty);
   const inStock =
     raw.inventorySummary?.hasAvailableInventory === true ||

@@ -1,7 +1,7 @@
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import type { StorefrontProductCard } from "../types/merch";
-import { parseMoney } from "@/lib/format/money";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 export function merchCardToSummary(
   card: StorefrontProductCard,
@@ -11,10 +11,10 @@ export function merchCardToSummary(
   if (!slug) return null;
 
   const summary = card.priceSummary ?? {};
-  const hasValidPrice = summary.hasValidPrice !== false;
-  const price = hasValidPrice
-    ? parseMoney(summary.price ?? summary.amount ?? summary.unitPrice)
-    : null;
+  const price = readSellingPrice(
+    summary,
+    summary.price ?? summary.amount ?? summary.unitPrice,
+  );
   const currency =
     (typeof summary.currencyCode === "string" && summary.currencyCode.trim()) ||
     currencyFallback;

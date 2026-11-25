@@ -24,6 +24,7 @@ import type {
   AssistantChatResponse,
   AssistantHistory,
 } from "../types";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 type Props = {
   zoneCode: string;
@@ -139,10 +140,10 @@ function ProductCard({
   const copy = useShopCopy();
   const [state, setState] = useState<"idle" | "adding" | "added">("idle");
   const image = resolveCatalogImageUrl(card.image);
-  const price = Number(card.priceSummary?.price);
+  const price = readSellingPrice(card.priceSummary) ?? Number.NaN;
   const compareAt = Number(card.priceSummary?.compareAtPrice);
   const currency = card.priceSummary?.currencyCode?.trim() || "AED";
-  const showPrice = card.priceSummary?.hasValidPrice !== false && Number.isFinite(price) && price > 0;
+  const showPrice = Number.isFinite(price);
   const onSale = showPrice && Number.isFinite(compareAt) && compareAt > price;
   const percentOff = onSale ? Math.round((1 - price / compareAt) * 100) : 0;
   const canAdd = Boolean(onAdd && card.slug && showPrice);
