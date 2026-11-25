@@ -2321,6 +2321,7 @@
   "promotions.summary.shippingDiscount": "Remise sur la livraison",
   "promotions.summary.taxIncluded": "Dont {tax}",
   "promotions.summary.giftCardCode": "Carte cadeau ({code})",
+  "promotions.summary.rounding": "Arrondi",
   "promotions.summary.amountDue": "Montant dû",
   "promotions.gift.close": "Fermer le choix des cadeaux",
   "promotions.gift.yours": "Un cadeau vous attend",

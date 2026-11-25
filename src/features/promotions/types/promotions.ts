@@ -107,6 +107,8 @@ export type PromotionSnapshotV1 = {
     discountTotal: string;
     shippingDiscount?: string;
     amountPayable?: string;
+    /** amountPayable minus the exact amount left to pay (≤ 0): the market's payable rounding. */
+    payableRounding?: string;
   };
   rejected: PromotionRejected[];
   /** Tender — not merchandise discount. */
@@ -386,6 +388,24 @@ export function amountPayableFrom(
   return null;
 }
 
+/**
+ * The payable rounding the server applied (a negative amount: KWD 10.125 is paid as 10.120 →
+ * −0.005), or null when there is none. Read from the server, never computed on the client
+ * (docs/payments/THREE_DECIMAL_PAYABLE_ROUNDING.md in the backend).
+ */
+export function payableRoundingFrom(
+  snapshot: PromotionSnapshotV1 | null | undefined,
+  extras: Array<string | null | undefined> = [],
+): number | null {
+  const candidates = [...extras, snapshot?.totals?.payableRounding];
+  for (const value of candidates) {
+    if (value == null || value === "") continue;
+    const amount = Number(value);
+    if (Number.isFinite(amount)) return amount < 0 ? amount : null;
+  }
+  return null;
+}
+
 /** Checkout quote first. A cart snapshot is only used before a checkout session exists. */
 export function checkoutQuoteSnapshot(
   session:
@@ -449,6 +469,7 @@ export function readPromotionSnapshot(raw: unknown): PromotionSnapshotV1 | null 
       discountTotal: asString(totals.discountTotal) ?? "0",
       shippingDiscount: asString(totals.shippingDiscount) ?? undefined,
       amountPayable: asString(totals.amountPayable) ?? undefined,
+      payableRounding: asString(totals.payableRounding) ?? undefined,
     },
     rejected: Array.isArray(row.rejected) ? (row.rejected as PromotionRejected[]) : [],
     gifts: readGiftAwards(row),

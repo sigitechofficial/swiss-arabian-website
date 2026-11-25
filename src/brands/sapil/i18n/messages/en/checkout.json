@@ -127,6 +127,7 @@
   "pointsReason_CART_NOT_QUALIFIED": "Reward points can’t be used on this bag yet.",
   "pointsReason_PRICING_CHANGED": "Prices changed, so your points were updated. Check them and apply again.",
   "total": "Total",
+  "rounding": "Rounding",
   "toPay": "To pay",
   "taxIncluded": "Includes {amount} {label}",
   "freeGift": "Free gift",

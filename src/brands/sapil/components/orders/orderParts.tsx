@@ -26,6 +26,8 @@ type OrderTotals = {
   giftCardApplied?: string | null;
   loyaltyApplied?: string | null;
   amountPayable?: string | null;
+  /** The market's payable rounding (≤ 0): the total was paid rounded down. */
+  payableRounding?: string | null;
 };
 
 /**
@@ -42,11 +44,15 @@ export function orderTenders(
 ): { rows: OrderTotalRow[]; charged: number | null } {
   const giftCard = Number(totals.giftCardApplied ?? 0);
   const points = Number(totals.loyaltyApplied ?? 0);
-  if (totals.amountPayable == null || (giftCard <= 0 && points <= 0)) return { rows: [], charged: null };
+  const rounding = Number(totals.payableRounding ?? 0);
+  if (totals.amountPayable == null || (giftCard <= 0 && points <= 0 && !(rounding < 0))) {
+    return { rows: [], charged: null };
+  }
   const charged = Number(totals.amountPayable);
   const rows: OrderTotalRow[] = [];
   if (giftCard > 0) rows.push({ key: "gc", label: t("account.odPaidGiftCard"), value: `−${money(giftCard, currency)}`, tone: "save" });
   if (points > 0) rows.push({ key: "points", label: t("account.odPaidPoints"), value: `−${money(points, currency)}`, tone: "save" });
+  if (rounding < 0) rows.push({ key: "rounding", label: t("account.odRounding"), value: `−${money(Math.abs(rounding), currency)}` });
   rows.push({ key: "charged", label: paymentLabel, value: money(charged, currency) });
   return { rows, charged };
 }

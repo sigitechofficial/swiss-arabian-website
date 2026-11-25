@@ -437,6 +437,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                   <dd dir="ltr">−{formatMoney(Number(totals.loyaltyApplied), currency)}</dd>
                 </div>
               ) : null}
+              {Number(totals.payableRounding ?? 0) < 0 ? (
+                <div>
+                  <dt>{t("promotions.summary.rounding")}</dt>
+                  <dd dir="ltr">−{formatMoney(Math.abs(Number(totals.payableRounding)), currency)}</dd>
+                </div>
+              ) : null}
               {paidByOtherTenders ? (
                 <div className={checkoutTotalsLine}>
                   <dt>{orderPaymentLabel(order.selectedPaymentMethod, t, locale)}</dt>

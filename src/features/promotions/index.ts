@@ -13,6 +13,7 @@ export {
   visibleGiftCards,
   giftCardSignature,
   amountPayableFrom,
+  payableRoundingFrom,
   checkoutQuoteSnapshot,
 } from "./types/promotions";
 export { couponErrorMessage } from "./utils/couponErrors";
