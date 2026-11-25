@@ -130,7 +130,7 @@ export function SapilBagDrawer() {
       // suggestions in an empty bag, and the return terms line.
       afterLines={<SapilQuickAdd surface="drawer" holdPosition />}
       applied={<SapilAppliedOffers />}
-      emptyExtra={<SapilEmptyBagPicks surface="empty-drawer" />}
+      emptyExtra={<SapilEmptyBagPicks surface="empty-drawer" active={open} />}
       termsNote={
         <ReturnTermsNote
           className="text-[12px] leading-[1.5] text-sapil-muted text-center mt-[10px]"
