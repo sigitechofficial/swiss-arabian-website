@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
-import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { toCatalogProduct } from "@/features/catalog/utils/toCatalogProduct";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
@@ -12,11 +11,6 @@ import { merchKeys } from "../api/merch.keys";
 import { fetchMerchCollectionRail } from "../api/merch.service";
 import { isRailCardShown } from "../utils/isRailCardShown";
 import { merchCardToSummary } from "../utils/merchCardToSummary";
-
-function retryUnless404(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiClientError && error.status === 404) return false;
-  return failureCount < 1;
-}
 
 export function useMerchRail(
   slug: string,
@@ -35,7 +29,6 @@ export function useMerchRail(
       enabled: enabled && Boolean(slug && zoneCode),
       staleTime: 60_000,
       placeholderData: keepPreviousData,
-      retry: retryUnless404,
     },
   );
 

@@ -18,7 +18,7 @@ export function useCollectionSummaries({ enabled = true }: { enabled?: boolean }
   const query = useApiQuery(
     merchKeys.collectionSummaries(context?.zoneCode, context?.currencyCode, context?.languageCode),
     () => fetchCollectionSummaries(),
-    { enabled: enabled && Boolean(context?.zoneCode), staleTime: 5 * 60 * 1000, retry: 1 },
+    { enabled: enabled && Boolean(context?.zoneCode), staleTime: 5 * 60 * 1000 },
   );
   return { collections: query.data, isLoading: query.isLoading };
 }
