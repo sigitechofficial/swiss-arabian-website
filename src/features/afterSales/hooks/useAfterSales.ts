@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/useDebounce";
-import { ApiClientError } from "@/lib/api/apiError";
+import { retryTransientFailures } from "@/lib/api/queryRetry";
 import { useApiMutation, useApiQuery } from "@/lib/api/queryHooks";
 import { afterSalesKeys, isEstimateKey } from "../api/afterSales.keys";
 import {
@@ -43,10 +43,8 @@ import type {
   ReturnEstimateDto,
 } from "../types/afterSales";
 
-function retryUnlessNotFound(failureCount: number, error: Error) {
-  if (error instanceof ApiClientError && error.status === 404) return false;
-  return failureCount < 2;
-}
+/** Up to two retries, for transient failures only: a 4xx (not found, forbidden) is final. */
+const retryTransientTwice = retryTransientFailures(2);
 
 export function useCustomerReturnsFeed(
   status?: string | null,
@@ -66,7 +64,7 @@ export function useCustomerReturnsFeed(
       const next = (lastPage.offset ?? 0) + lastPage.items.length;
       return next < lastPage.total ? next : undefined;
     },
-    retry: retryUnlessNotFound,
+    retry: retryTransientTwice,
   });
 }
 
@@ -88,7 +86,7 @@ export function useCustomerExchangesFeed(
       const next = (lastPage.offset ?? 0) + lastPage.items.length;
       return next < lastPage.total ? next : undefined;
     },
-    retry: retryUnlessNotFound,
+    retry: retryTransientTwice,
   });
 }
 
@@ -98,7 +96,7 @@ export function useCustomerReturnDetail(returnRequestId: string | null) {
     () => getCustomerReturn(returnRequestId!),
     {
       enabled: Boolean(returnRequestId),
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
     },
   );
 }
@@ -109,7 +107,7 @@ export function useCustomerExchangeDetail(exchangeRequestId: string | null) {
     () => getCustomerExchange(exchangeRequestId!),
     {
       enabled: Boolean(exchangeRequestId),
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
     },
   );
 }
@@ -120,7 +118,7 @@ export function useGuestReturns(orderNumber: string, orderAccessToken: string | 
     () => listGuestReturns(orderNumber, orderAccessToken!),
     {
       enabled: Boolean(orderNumber && orderAccessToken),
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
     },
   );
 }
@@ -134,7 +132,7 @@ export function useGuestExchanges(
     () => listGuestExchanges(orderNumber, orderAccessToken!),
     {
       enabled: Boolean(orderNumber && orderAccessToken),
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
     },
   );
 }
@@ -144,7 +142,7 @@ export function useCustomerAfterSalesOptions(orderId: string, enabled = true) {
   return useApiQuery(
     afterSalesKeys.customerOptions(orderId),
     () => getCustomerAfterSalesOptions(orderId),
-    { enabled: Boolean(orderId) && enabled, retry: retryUnlessNotFound },
+    { enabled: Boolean(orderId) && enabled, retry: retryTransientTwice },
   );
 }
 
@@ -158,7 +156,7 @@ export function useGuestAfterSalesOptions(
     () => getGuestAfterSalesOptions(orderNumber, orderAccessToken!),
     {
       enabled: Boolean(orderNumber && orderAccessToken) && enabled,
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
     },
   );
 }
@@ -295,7 +293,7 @@ export function useReturnsPolicy(source: ReturnsPolicySource, enabled = true) {
           : getMarketReturnsPolicy(source.zoneCode),
     {
       enabled: ready && enabled,
-      retry: retryUnlessNotFound,
+      retry: retryTransientTwice,
       staleTime: 5 * 60_000,
     },
   );
@@ -322,7 +320,7 @@ export function useAfterSalesEligibility(
       target.mode === "customer"
         ? getCustomerEligibility(target.orderId, kind!)
         : getGuestEligibility(target.orderNumber, target.orderAccessToken, kind!),
-    { enabled: targetReady(target) && Boolean(kind), retry: retryUnlessNotFound },
+    { enabled: targetReady(target) && Boolean(kind), retry: retryTransientTwice },
   );
 }
 
@@ -338,7 +336,7 @@ export function useExchangeOptions(
       target.mode === "customer"
         ? getCustomerExchangeOptions(target.orderId, locale)
         : getGuestExchangeOptions(target.orderNumber, target.orderAccessToken, locale),
-    { enabled: targetReady(target) && enabled, retry: retryUnlessNotFound, staleTime: 60_000 },
+    { enabled: targetReady(target) && enabled, retry: retryTransientTwice, staleTime: 60_000 },
   );
 }
 

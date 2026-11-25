@@ -1,6 +1,5 @@
 "use client";
 
-import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
@@ -32,10 +31,6 @@ export function useApplicablePromotions() {
           return undefined;
         }
         return previousData;
-      },
-      retry: (count, error) => {
-        if (error instanceof ApiClientError && error.status === 404) return false;
-        return count < 1;
       },
     },
   );

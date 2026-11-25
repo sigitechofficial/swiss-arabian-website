@@ -151,6 +151,43 @@ describe("useEmptyBagRecovery", () => {
   });
 });
 
+describe("useEmptyBagRecovery waits for the market", () => {
+  it("asks nothing before the shopper's market is known (the server answers 400 without it)", async () => {
+    useUiStore.setState({ catalogContext: null });
+    api.fetchEmptyBag.mockResolvedValue({ groups: [], addLabel: "Add" });
+    renderHook(() => useEmptyBagRecovery("empty-drawer"), { wrapper });
+    await act(async () => {});
+    expect(api.fetchEmptyBag).not.toHaveBeenCalled();
+
+    // The market provider resolves the market: now, and only now, it asks.
+    act(() => useUiStore.setState({ catalogContext: { zoneCode: "AE", currencyCode: "AED", languageCode: "en" } as never }));
+    await waitFor(() => expect(api.fetchEmptyBag).toHaveBeenCalledTimes(1));
+  });
+
+  it("holds the request while disabled (a closed bag drawer)", async () => {
+    api.fetchEmptyBag.mockResolvedValue({ groups: [], addLabel: "Add" });
+    const { rerender } = renderHook(({ open }) => useEmptyBagRecovery("empty-drawer", { enabled: open }), {
+      wrapper,
+      initialProps: { open: false },
+    });
+    await act(async () => {});
+    expect(api.fetchEmptyBag).not.toHaveBeenCalled();
+
+    rerender({ open: true });
+    await waitFor(() => expect(api.fetchEmptyBag).toHaveBeenCalledTimes(1));
+  });
+
+  it("asks again in the shopper's new language (headings are translated)", async () => {
+    useUiStore.setState({ catalogContext: { zoneCode: "AE", currencyCode: "AED", languageCode: "en" } as never });
+    api.fetchEmptyBag.mockResolvedValue({ groups: [], addLabel: "Add" });
+    renderHook(() => useEmptyBagRecovery("empty-cart"), { wrapper });
+    await waitFor(() => expect(api.fetchEmptyBag).toHaveBeenCalledTimes(1));
+
+    act(() => useUiStore.setState({ catalogContext: { zoneCode: "AE", currencyCode: "AED", languageCode: "ar" } as never }));
+    await waitFor(() => expect(api.fetchEmptyBag).toHaveBeenCalledTimes(2));
+  });
+});
+
 describe("useRecentlyViewedProducts", () => {
   it("asks for this browser's history without the product on screen", async () => {
     api.viewed = ["p1", "p2", "p3"];

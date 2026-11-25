@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
-import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import type { ProductSummary } from "@/features/catalog/types/product";
 import { merchKeys } from "@/features/merchandising/api/merch.keys";
@@ -10,11 +9,6 @@ import { fetchMerchCollectionRail } from "@/features/merchandising/api/merch.ser
 import { merchCardToSummary } from "@/features/merchandising/utils/merchCardToSummary";
 import { useUiStore } from "@/stores/useUiStore";
 import { SEARCH_NEW_IN_LIMIT, SEARCH_NEW_IN_SLUG } from "../constants";
-
-function retryUnless404(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiClientError && error.status === 404) return false;
-  return failureCount < 1;
-}
 
 /** Idle search rail — merchandised new launches, not a blank catalog dump. */
 export function useNewLaunchesPreview(enabled = true, limit = SEARCH_NEW_IN_LIMIT): ProductSummary[] {
@@ -28,7 +22,6 @@ export function useNewLaunchesPreview(enabled = true, limit = SEARCH_NEW_IN_LIMI
       enabled,
       staleTime: 60_000,
       placeholderData: keepPreviousData,
-      retry: retryUnless404,
     },
   );
 

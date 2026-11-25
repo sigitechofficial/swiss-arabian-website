@@ -1,14 +1,18 @@
 "use client";
 
 import { QueryClient } from "@tanstack/react-query";
+import { retryTransientFailure } from "./queryRetry";
 
-function makeQueryClient() {
+/** A query client with the storefront's defaults (exported for tests). */
+export function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 2 * 60 * 1000,
         refetchOnWindowFocus: false,
-        retry: 1,
+        // One retry, and only when asking again can help: a 404 or a missing
+        // market is the server's answer, not a failure to repeat.
+        retry: retryTransientFailure,
       },
     },
   });

@@ -1,18 +1,10 @@
 "use client";
 
-import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { useUiStore } from "@/stores/useUiStore";
 import { merchKeys } from "../api/merch.keys";
 import { fetchFragranceNotes } from "../api/merch.service";
 import { visibleFragranceNoteTiles } from "../utils/visibleFragranceNoteTiles";
-
-function retryUnlessClientError(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiClientError && error.status >= 400 && error.status < 500) {
-    return false;
-  }
-  return failureCount < 1;
-}
 
 export function useFragranceNotes() {
   const zoneCode = useUiStore((s) => s.catalogContext?.zoneCode);
@@ -28,7 +20,6 @@ export function useFragranceNotes() {
       enabled: Boolean(zoneCode && salesChannelCode),
       staleTime: 45_000,
       gcTime: 60_000,
-      retry: retryUnlessClientError,
     },
   );
 

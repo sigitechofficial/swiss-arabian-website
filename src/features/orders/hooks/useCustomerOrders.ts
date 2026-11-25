@@ -107,7 +107,6 @@ export function useCustomerOrderDetail(orderId: string) {
   const detailQuery = useQuery({
     queryKey: ["customer-order-detail", orderId],
     queryFn: () => getCustomerOrderDetail(orderId),
-    retry: 1,
   });
   const orderNumber = detailQuery.data?.order.orderNumber ?? null;
 

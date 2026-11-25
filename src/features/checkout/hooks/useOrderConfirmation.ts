@@ -79,7 +79,6 @@ export function useOrderConfirmation(orderId: string) {
   const orderQuery = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrder(orderId),
-    retry: 1,
   });
 
   const loadedOrder = orderQuery.data;
