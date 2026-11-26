@@ -25,6 +25,8 @@ import { parsePdpReviews } from "../utils/pdpReviews";
 import { parseShippingPromise } from "../utils/pdpShipping";
 import { sanitizeCatalogHtml, stripHtml } from "../utils/catalogHtml";
 import { resolveCatalogImageUrl } from "../utils/resolveCatalogImageUrl";
+import { parseMoney } from "@/lib/format/money";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 export const CATALOG_PAGE_SIZE = 24;
 
@@ -223,12 +225,6 @@ type ApiProductListData = {
   facets?: unknown;
 };
 
-function parseMoney(value: number | string | null | undefined): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "number" ? value : Number(String(value).trim());
-  return Number.isFinite(n) ? n : null;
-}
-
 /** The struck-out full price, only when it is really above the selling price. */
 function compareAtPrice(
   summary: ApiPriceSummary | null | undefined,
@@ -267,8 +263,8 @@ function mapGalleryUrls(
 
 function mapProduct(raw: ApiCatalogProduct): ProductDetail {
   const currency = raw.priceSummary?.currencyCode?.trim() || "AED";
-  const hasValidPrice = raw.priceSummary?.hasValidPrice !== false;
-  const price = hasValidPrice ? parseMoney(raw.priceSummary?.price) : null;
+  // Same price rule as the backend's cart and checkout: no valid flag, no price.
+  const price = readSellingPrice(raw.priceSummary);
   const availableQty = parseMoney(raw.inventorySummary?.availableQty);
   const sellabilityStatus = raw.sellabilityStatus ?? undefined;
   const inStock =
@@ -358,8 +354,8 @@ function mapProductDetail(raw: ApiProductDetailData): ProductDetail | null {
   const priceSummary = variant?.priceSummary ?? raw.priceSummary;
   const inventorySummary = variant?.inventorySummary ?? raw.inventorySummary;
   const currency = priceSummary?.currencyCode?.trim() || "AED";
-  const hasValidPrice = priceSummary?.hasValidPrice !== false;
-  const price = hasValidPrice ? parseMoney(priceSummary?.price) : null;
+  // Same price rule as the backend's cart and checkout: no valid flag, no price.
+  const price = readSellingPrice(priceSummary);
   const availableQty = parseMoney(inventorySummary?.availableQty);
   const isSellableRoot = raw.isSellable ?? variant?.isSellable;
   const sellabilityStatus = variant?.sellabilityStatus ?? undefined;

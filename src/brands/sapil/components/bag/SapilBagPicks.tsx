@@ -89,9 +89,13 @@ export function SapilQuickAdd({ surface, holdPosition = false, className }: { su
   );
 }
 
-/** Suggestions in an empty bag (shared `useEmptyBagRecovery`, as on Swiss Arabian). */
-export function SapilEmptyBagPicks({ surface }: { surface: string }) {
-  const e = useEmptyBagRecovery(surface);
+/**
+ * Suggestions in an empty bag (shared `useEmptyBagRecovery`, as on Swiss Arabian).
+ * `active: false` holds the request: the bag drawer stays mounted on every page
+ * (for its slide-in), so it asks only once it is opened.
+ */
+export function SapilEmptyBagPicks({ surface, active = true }: { surface: string; active?: boolean }) {
+  const e = useEmptyBagRecovery(surface, { enabled: active });
   if (!e.groups.length) return null;
   return (
     <>

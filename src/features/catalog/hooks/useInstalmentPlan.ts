@@ -20,10 +20,10 @@ import {
 /** Providers our own pay-in-4 block can list (Tabby has its official snippet). */
 export type CustomInstalmentProvider = Exclude<InstalmentProvider, "tabby">;
 
-export function useInstalmentPlan(price: number) {
+export function useInstalmentPlan(price: number, currency: string) {
   const [open, setOpen] = useState<CustomInstalmentProvider | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
-  const payments = useMemo(() => payInFour(price), [price]);
+  const payments = useMemo(() => payInFour(price, currency), [price, currency]);
   const promos = useSiteIntegrations().paymentPromos;
   const live = instalmentProviders(promos);
 

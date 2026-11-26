@@ -3,7 +3,8 @@
 import { useState, type CSSProperties } from "react";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { AddToBagButton } from "@/features/home/components/landing/AddToBagButton";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { bottle } from "@/styles/landingChrome";
 import {
   cardAddSlot,
@@ -32,6 +33,7 @@ export function PdpRelatedCard({
   product: CatalogProduct;
   collectionSlug?: string;
 }) {
+  const t = useShopCopy();
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(product.imageUrl) && !imageFailed;
 
@@ -76,7 +78,7 @@ export function PdpRelatedCard({
       </div>
       <div>
         <p className={relatedName}>{product.title}</p>
-        <p className={relatedPrice}>{formatMoney(product.price, product.currency)}</p>
+        <p className={relatedPrice}>{product.price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}</p>
       </div>
     </li>
   );

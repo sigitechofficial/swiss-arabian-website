@@ -3,6 +3,7 @@ import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
 import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
+import { toDecimalString } from "@/lib/format/money";
 
 /**
  * Tabby (pay in 4) helpers. Backend contract: `docs/storefront/TABBY_CHECKOUT.md`.
@@ -129,8 +130,7 @@ export function canPrescoreTabby(email: string, phone: string): boolean {
  * The amount is their formula: `total × 1.015 / 4`.
  */
 export function tabbyFallbackText(total: number, currency: string, lang: TabbyLang): string {
-  const decimals = currency.toUpperCase() === "KWD" ? 3 : 2;
-  const each = ((total * 1.015) / 4).toFixed(decimals);
+  const each = toDecimalString((total * 1.015) / 4, currency);
   const text: TabbyMessage = {
     en: `4 payments of ${currency} ${each}/mo or up to 12 months.`,
     ar: `4 دفعات بقيمة ${each} ${currency} شهريًا أو حتى 12 شهرًا.`,
@@ -138,7 +138,3 @@ export function tabbyFallbackText(total: number, currency: string, lang: TabbyLa
   return text[lang];
 }
 
-/** Tabby price format: decimal string in major units. */
-export function tabbyPrice(total: number, currency: string): string {
-  return total.toFixed(currency.toUpperCase() === "KWD" ? 3 : 2);
-}

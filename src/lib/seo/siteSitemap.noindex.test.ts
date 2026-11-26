@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/seo/requestOrigin", () => ({ requestOrigin: async () => "https://uae.sapil.com" }));
+vi.mock("@/lib/seo/requestOrigin", () => ({
+  requestOrigin: async () => "https://uae.sapil.com",
+  requestSiteBase: async () => "https://uae.sapil.com",
+}));
 vi.mock("@/lib/seo/serverMarket", () => ({
   loadServerMarkets: async () => null,
+  pageOwnMarketCode: async () => null,
   resolveCatalogMarketFor: async () => ({ zoneCode: "AE", market: null }),
 }));
 vi.mock("@/lib/brand/features", () => ({

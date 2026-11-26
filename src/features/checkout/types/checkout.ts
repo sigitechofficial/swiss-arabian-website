@@ -96,6 +96,8 @@ export interface CheckoutTotalsEstimate {
   tax: string;
   total: string;
   amountPayable?: string | null;
+  /** The market's payable rounding (≤ 0): amountPayable minus the exact amount left to pay. */
+  payableRounding?: string | null;
 }
 
 export interface CheckoutSessionResponse {
@@ -231,6 +233,8 @@ export interface OrderTotals {
   giftCardApplied?: string | null;
   /** What the selected payment method actually collects. */
   amountPayable?: string | null;
+  /** The market's payable rounding (≤ 0): the order total was paid rounded down. */
+  payableRounding?: string | null;
 }
 
 export interface OrderTimelineEvent {

@@ -10,7 +10,7 @@ import { loadStoreLocator } from "@/features/stores/routes/storeRouteData";
 import { storeListJsonLd } from "@/features/stores/utils/storeJsonLd";
 import { storePath, storesPath } from "@/features/stores/utils/storeLinks";
 import { pageMetadata } from "@/lib/seo/pageSeo";
-import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
+import { absoluteUrl, requestSiteBase } from "@/lib/seo/requestOrigin";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { CatalogJsonLd, FeaturePlaceholder, SitePageView, StoreLocatorPageView } from "@brand-ui";
@@ -41,7 +41,7 @@ export default async function StoresPage() {
   const { t, brandName } = await routeTranslator();
 
   if (data.stores.length) {
-    const origin = await requestOrigin();
+    const origin = await requestSiteBase();
     const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale, localeConfig));
     return (
       <>

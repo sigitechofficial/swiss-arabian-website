@@ -1,6 +1,5 @@
 "use client";
 
-import { TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
 import { configuredLanguageOptions } from "@/features/markets/utils/marketLanguageOptions";
 import { useLocaleConfig } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -19,17 +18,10 @@ export function NavbarTopbar({
   boutique?: boolean;
 }) {
   const copy = useShopCopy();
-  const regionOptions =
-    chrome.regionOptions.length > 0
-      ? chrome.regionOptions
-      : boutique
-        ? TOPBAR_REGIONS.map(({ id, label, flag, countryCode }) => ({
-            id,
-            label,
-            flag,
-            countryCode,
-          }))
-        : TOPBAR_REGIONS;
+  // Markets come from the backend only (admin: Markets). Until it lists some, there is
+  // no market picker — never a built-in list of markets that may not exist.
+  const regionOptions = chrome.regionOptions;
+  const showRegions = regionOptions.length > 0;
   const localeConfig = useLocaleConfig();
   const languages = chrome.languageOptions.length
     ? chrome.languageOptions
@@ -48,15 +40,19 @@ export function NavbarTopbar({
         <TopbarTicker />
         {hideUtils ? null : (
           <div className={topbarUtils} data-topbar-utils>
-            <TopbarMenu
-              label={copy("shipTo")}
-              value={chrome.regionId}
-              options={regionOptions}
-              open={chrome.openUtil === "region"}
-              onOpenChange={(open) => chrome.setOpenUtil(open ? "region" : null)}
-              onChange={chrome.setMarketId}
-            />
-            <span className={topbarSep} aria-hidden="true" />
+            {showRegions ? (
+              <>
+                <TopbarMenu
+                  label={copy("shipTo")}
+                  value={chrome.regionId}
+                  options={regionOptions}
+                  open={chrome.openUtil === "region"}
+                  onOpenChange={(open) => chrome.setOpenUtil(open ? "region" : null)}
+                  onChange={chrome.setMarketId}
+                />
+                <span className={topbarSep} aria-hidden="true" />
+              </>
+            ) : null}
             <TopbarMenu
               label={copy("language")}
               value={chrome.languageId}

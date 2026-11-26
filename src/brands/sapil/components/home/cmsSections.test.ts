@@ -61,15 +61,15 @@ describe("planHome", () => {
 
 describe("homeProduct", () => {
   it("keeps the market was-price only when above the price", () => {
-    const card = { ...FIXTURE_PRODUCTS[0], priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "90" } };
+    const card = { ...FIXTURE_PRODUCTS[0], priceSummary: { price: "63", currencyCode: "AED", hasValidPrice: true, compareAtPrice: "90" } };
     expect(homeProduct(card)?.wasPrice).toBe(90);
-    expect(homeProduct({ ...card, priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "50" } })?.wasPrice).toBeNull();
+    expect(homeProduct({ ...card, priceSummary: { price: "63", currencyCode: "AED", hasValidPrice: true, compareAtPrice: "50" } })?.wasPrice).toBeNull();
     expect(homeProduct(FIXTURE_PRODUCTS[0])?.wasPrice).toBeNull();
     expect(homeProduct({ name: "no slug" })).toBeNull();
   });
 
   it("puts the tile and was-price on the product, for the shared SapilProductCard", () => {
-    const card = { ...FIXTURE_PRODUCTS[0], tileColor: "mint", priceSummary: { price: "63", currencyCode: "AED", compareAtPrice: "90" } };
+    const card = { ...FIXTURE_PRODUCTS[0], tileColor: "mint", priceSummary: { price: "63", currencyCode: "AED", hasValidPrice: true, compareAtPrice: "90" } };
     const product = homeProduct(card)?.product;
     expect(product?.tileColor).toBe("mint");
     expect(product?.compareAtPrice).toBe(90);

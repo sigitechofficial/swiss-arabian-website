@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { CheckoutElementsProvider, PaymentElement } from "@stripe/react-stripe-js/checkout";
-import type { StripeCheckoutSession } from "@stripe/stripe-js";
+import { stripeSessionPayable } from "@/lib/stripe/sessionPayable";
 import type { OrderResponse } from "@/features/checkout/types/checkout";
 import { useCardPaymentSession } from "@/features/checkout/hooks/useCardPaymentSession";
 import { usePaymobCardForm, type PaymobPayError } from "@/features/checkout/hooks/usePaymobCardForm";
@@ -174,11 +174,6 @@ function ExpiredSession() {
 
 /* ------------------------------------------------------------------ Stripe */
 
-function sessionPayable(session: StripeCheckoutSession): { amount: number; currency: string } {
-  const divisor = session.minorUnitsAmountDivisor || 100;
-  return { amount: session.total.total.minorUnitsAmount / divisor, currency: session.currency.toUpperCase() };
-}
-
 function SapilStripeForm({ orderId, order }: { orderId: string; order: OrderResponse | undefined }) {
   const t = useSapilCopy();
   const shipping = order?.addresses?.find((a) => a.addressType === "SHIPPING");
@@ -189,7 +184,7 @@ function SapilStripeForm({ orderId, order }: { orderId: string; order: OrderResp
     phone: typeof order?.metadata?.customerPhone === "string" ? order.metadata.customerPhone : null,
     country: shipping?.countryCode,
   });
-  const payable = pay.checkoutState.type === "success" ? sessionPayable(pay.checkoutState.checkout) : null;
+  const payable = pay.checkoutState.type === "success" ? stripeSessionPayable(pay.checkoutState.checkout) : null;
   const money = useSapilMoney();
   const busy = pay.phase === "confirming";
 

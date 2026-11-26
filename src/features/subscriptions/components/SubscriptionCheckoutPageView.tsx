@@ -13,7 +13,7 @@ import { CheckoutDelivery } from "@/features/checkout/components/checkout/Checko
 import { CheckoutShippingMethod } from "@/features/checkout/components/checkout/CheckoutShippingMethod";
 import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
 import type { AddressFields } from "@/features/checkout/utils/addressSnapshot";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { ApiClientError } from "@/lib/api/apiError";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";

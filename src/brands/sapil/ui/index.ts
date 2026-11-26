@@ -56,7 +56,6 @@ export {
 export { BagLine, type BagLineProps } from "./BagLine";
 export {
   cx,
-  formatAED,
   tintValue,
   SAPIL_PASTELS,
   type SapilPastel,

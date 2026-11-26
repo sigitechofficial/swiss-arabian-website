@@ -34,6 +34,42 @@ export const loadServerMarkets = cache(async () => {
 });
 
 /**
+ * Whether the shared address of this market list (no market of its own) serves
+ * `zoneCode` at `/~CODE`: a market without a website of its own (backend
+ * `onSharedAddress`). False on a market website.
+ */
+export function servedOnSharedAddress(
+  list: { siteMarketCode?: string | null; markets: StorefrontMarket[] } | null,
+  zoneCode: string | null | undefined,
+): boolean {
+  // The page tree's market (`~CODE`) is only served where the proxy allowed it: the
+  // shared address, which may be a market's own website too (swissarabian.com).
+  if (!list || !zoneCode || zoneCode === list.siteMarketCode) return false;
+  const market = list.markets.find((m) => m.zoneCode === zoneCode);
+  return Boolean(market && market.onSharedAddress && !market.storefrontUrl);
+}
+
+/**
+ * The page's market when the shared address serves it at `/~CODE` (page tree
+ * `swissarabian.com~KWT`); null on a market website and elsewhere.
+ */
+export async function sharedAddressMarketCode(): Promise<string | null> {
+  const code = await currentSiteMarketCode();
+  if (!code) return null;
+  return servedOnSharedAddress(await loadServerMarkets(), code) ? code : null;
+}
+
+/**
+ * The market a page's own addresses are for (hreflang, sitemap): the address's own
+ * market (a market website), else the shared address's market of this page; null
+ * on a root domain page that is no market's.
+ */
+export async function pageOwnMarketCode(): Promise<string | null> {
+  const list = await loadServerMarkets();
+  return (await sharedAddressMarketCode()) ?? list?.siteMarketCode ?? null;
+}
+
+/**
  * A market in a language. A market address (`ksa.swissarabian.com`) always
  * gets its own market; elsewhere `zoneCode` when given, else the page tree's
  * market (`swissarabian.com~KSA`, chosen by the proxy), when it is one of the
@@ -49,8 +85,14 @@ export async function resolveCatalogMarketFor(
   if (list) {
     const ready = list.markets.filter((market) => market.isCatalogReady);
     const pool = ready.length ? ready : list.markets;
+    // A page under `/~CODE` is that market's, also on an address that is another
+    // market's own website (swissarabian.com: Global's, and NEW's at /~NEW).
+    const treeMarket = await currentSiteMarketCode();
     const wanted =
-      list.siteMarketCode?.trim() || zoneCode?.trim() || (await currentSiteMarketCode());
+      (treeMarket && servedOnSharedAddress(list, treeMarket) ? treeMarket : null) ||
+      list.siteMarketCode?.trim() ||
+      zoneCode?.trim() ||
+      treeMarket;
     chosen =
       (wanted ? pool.find((market) => market.zoneCode === wanted) : null) ??
       list.defaultMarket ??

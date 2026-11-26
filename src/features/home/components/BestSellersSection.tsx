@@ -4,8 +4,8 @@ import Image from "next/image";
 import {
   bestSellerFeatured,
   bestSellers,
-  formatUsd,
 } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/lib/format/money";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { ProductCard } from "./ProductCard";
@@ -49,7 +49,7 @@ export function BestSellersSection() {
               </h3>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <p className="font-sans text-[17px] font-bold">
-                  {formatUsd(featured.price)}
+                  {formatMoney(featured.price, "USD")}
                 </p>
                 <button
                   type="button"

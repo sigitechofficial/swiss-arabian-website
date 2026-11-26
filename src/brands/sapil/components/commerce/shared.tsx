@@ -5,7 +5,9 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { intlLocale } from "@/lib/i18n/locales";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
-import { formatAED, type SapilLinkProps } from "../../ui/shared";
+import type { MoneyParts } from "@/lib/format/money";
+import type { SapilLinkProps } from "../../ui/shared";
+import { formatSapilPrice, formatSapilPriceParts } from "../shared/money";
 
 /** The kit's link slot, rendered as a locale-aware Next link. */
 export function SapilLink({ href, ...rest }: SapilLinkProps) {
@@ -15,61 +17,27 @@ export function SapilLink({ href, ...rest }: SapilLinkProps) {
 export type SapilMoney = (amount: number | null | undefined, currency: string) => string;
 
 /**
- * Prices in the page's language. English keeps the v9 format ("AED 63",
- * "AED 19.75"); other languages use Intl for the market's currency.
+ * Prices in the page's language, with the currency's own decimals (see
+ * `sapilMoneyOptions`): "AED 63", "AED 19.75", "KWD 10.120" in English; `Intl`
+ * currency format in other languages. Empty for a missing amount.
  */
 export function useSapilMoney(): SapilMoney {
   const locale = useShopLocale();
   return useCallback<SapilMoney>(
-    (amount, currency) => {
-      if (amount == null || !Number.isFinite(amount)) return "";
-      if (locale === "en") return formatAED(amount, currency);
-      try {
-        const whole = Math.round(amount * 100) % 100 === 0;
-        return new Intl.NumberFormat(intlLocale(locale), {
-          style: "currency",
-          currency,
-          minimumFractionDigits: whole ? 0 : 2,
-          maximumFractionDigits: 2,
-        }).format(amount);
-      } catch {
-        return formatAED(amount, currency);
-      }
-    },
+    (amount, currency) => (amount == null ? "" : formatSapilPrice(amount, currency, locale)),
     [locale],
   );
 }
 
-/** A total split for the v9 grand-total row: `<small>AED</small> 105`. */
+/**
+ * A total split for the v9 grand-total row: `<small>AED</small> 105` in English; the
+ * language's own currency sign elsewhere ("د.إ." in Arabic).
+ */
 export function useSapilMoneyParts() {
   const locale = useShopLocale();
   return useCallback(
-    (amount: number, currency: string) => {
-      const whole = Math.round(amount * 100) % 100 === 0;
-      let number: string;
-      try {
-        number = new Intl.NumberFormat(locale === "en" ? "en-US" : intlLocale(locale), {
-          minimumFractionDigits: whole ? 0 : 2,
-          maximumFractionDigits: 2,
-          useGrouping: locale !== "en",
-        }).format(amount);
-      } catch {
-        number = amount.toFixed(whole ? 0 : 2);
-      }
-      // v9's "AED 79" in English; the language's own currency sign elsewhere ("د.إ." in Arabic).
-      let sign = currency;
-      if (locale !== "en") {
-        try {
-          sign =
-            new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency })
-              .formatToParts(amount)
-              .find((p) => p.type === "currency")?.value ?? currency;
-        } catch {
-          sign = currency;
-        }
-      }
-      return { currency: sign, amount: number };
-    },
+    (amount: number, currency: string): MoneyParts =>
+      formatSapilPriceParts(amount, currency, locale) ?? { currency, amount: "" },
     [locale],
   );
 }

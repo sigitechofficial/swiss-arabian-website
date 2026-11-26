@@ -16,6 +16,15 @@ export const registerSchema = z.object({
     .min(1, "Mobile number is required")
     .refine((value) => isValidPhoneNumber(value), "Enter a valid mobile number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  /** Sent with the sign-up (stored as the customer's email / SMS consent). */
+  marketingConsent: z.boolean(),
+  smsConsent: z.boolean(),
+});
+
+/** The two sign-up codes (each optional once its own code was confirmed). */
+export const signupCodesSchema = z.object({
+  emailCode: z.string().trim(),
+  phoneCode: z.string().trim(),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -30,5 +39,6 @@ export const resetPasswordSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type SignupCodesFormValues = z.infer<typeof signupCodesSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;

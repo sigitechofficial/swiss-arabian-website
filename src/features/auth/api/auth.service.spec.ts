@@ -17,6 +17,8 @@ import {
   confirmEmailVerification,
   loginCustomer,
   registerCustomer,
+  confirmSignup,
+  confirmPhoneLoginCode,
 } from "./auth.service";
 
 function sentBody() {
@@ -39,8 +41,17 @@ describe("sign-in requests carry the guest cart token", () => {
     expect(sentBody().guestToken).toBe("guest-1");
   });
 
-  it("sign-up sends it", async () => {
-    await registerCustomer({ zoneCode: "UAE", email: "a@b.com", password: "x", verifyEmailFirst: true });
+  it("sign-up start creates nothing, so it carries no bag; the confirm that signs in does", async () => {
+    await registerCustomer({ zoneCode: "URD1", email: "a@b.com", phone: "+971501234567", password: "x" });
+    expect(sentBody().guestToken).toBeUndefined();
+
+    apiPost.mockClear();
+    await confirmSignup({ signupId: "s-1", emailCode: "111111", phoneCode: "222222" });
+    expect(sentBody()).toEqual({ signupId: "s-1", emailCode: "111111", phoneCode: "222222", guestToken: "guest-1" });
+  });
+
+  it("phone-code sign-in sends the bag too", async () => {
+    await confirmPhoneLoginCode({ phone: "+971501234567", code: "123456" });
     expect(sentBody().guestToken).toBe("guest-1");
   });
 

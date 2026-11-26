@@ -10,7 +10,10 @@ import type {
   LoginPayload,
   OtpPurpose,
   PasswordLoginResult,
+  PhoneCodeChannel,
   RegisterPayload,
+  SignupConfirmResult,
+  SignupPending,
 } from "../types/auth";
 
 export const authKeys = {
@@ -55,12 +58,48 @@ export function withGuestToken<T extends { guestToken?: string }>(payload: T): T
   return guestToken ? { ...payload, guestToken } : payload;
 }
 
-/** With `verifyEmailFirst` the answer may be EMAIL_VERIFICATION_REQUIRED and no tokens. */
-export async function registerCustomer(
-  payload: RegisterPayload,
-): Promise<PasswordLoginResult> {
-  return apiPost<PasswordLoginResult>(
-    "/storefront/auth/register",
+/** Starts a sign-up: a code goes to the email and to the mobile; nothing is created yet. */
+export async function registerCustomer(payload: RegisterPayload): Promise<SignupPending> {
+  return apiPost<SignupPending>("/storefront/auth/register", payload, { skipAuth: true });
+}
+
+/** Confirms one or both sign-up codes; with both the account exists and the session starts. */
+export async function confirmSignup(payload: {
+  signupId: string;
+  emailCode?: string;
+  phoneCode?: string;
+}): Promise<SignupConfirmResult> {
+  return apiPost<SignupConfirmResult>(
+    "/storefront/auth/register/confirm",
+    withGuestToken<typeof payload & { guestToken?: string }>(payload),
+    { skipAuth: true },
+  );
+}
+
+export async function resendSignupCode(payload: {
+  signupId: string;
+  target: "EMAIL" | "PHONE";
+  phoneChannel?: PhoneCodeChannel;
+}): Promise<SignupPending> {
+  return apiPost<SignupPending>("/storefront/auth/register/resend", payload, { skipAuth: true });
+}
+
+/** Sign-in code by mobile: only a number the customer verified receives it. */
+export async function requestPhoneLoginCode(phone: string, channel?: PhoneCodeChannel) {
+  return apiPost<{ success: boolean; message: string }>(
+    "/storefront/auth/login/phone-code/request",
+    { phone, ...(channel ? { channel } : {}) },
+    { skipAuth: true },
+  );
+}
+
+export async function confirmPhoneLoginCode(payload: {
+  phone: string;
+  code: string;
+  guestToken?: string;
+}): Promise<AuthResult> {
+  return apiPost<AuthResult>(
+    "/storefront/auth/login/phone-code/confirm",
     withGuestToken(payload),
     { skipAuth: true },
   );
@@ -165,20 +204,16 @@ export async function confirmEmailVerification(
   );
 }
 
-export async function requestPhoneVerification(phone: string) {
-  return apiPost<{ success: boolean; message: string }>(
-    "/storefront/auth/verify-phone/request",
-    { phone },
-    { skipAuth: true },
-  );
+/** Signed in: sends a code to one of your own numbers (it is verified on your account only). */
+export async function requestPhoneVerification(phone: string, channel?: PhoneCodeChannel) {
+  return apiPost<{ success: boolean }>("/storefront/auth/verify-phone/request", {
+    phone,
+    ...(channel ? { channel } : {}),
+  });
 }
 
 export async function confirmPhoneVerification(phone: string, code: string) {
-  return apiPost<{ success: boolean }>(
-    "/storefront/auth/verify-phone/confirm",
-    { phone, code },
-    { skipAuth: true },
-  );
+  return apiPost<{ success: boolean }>("/storefront/auth/verify-phone/confirm", { phone, code });
 }
 
 export async function forgotPassword(identifier: string) {

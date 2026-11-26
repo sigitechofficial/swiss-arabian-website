@@ -1,4 +1,4 @@
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { Translator } from "@/lib/i18n/messages";
 import type { ReturnEstimate } from "../types/afterSales";
 import { afterSalesCopyText } from "./afterSalesCopy";

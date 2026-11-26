@@ -17,7 +17,7 @@ import { AccountPageShell } from "@/features/account/components/AccountPageShell
 import { AccountStatusPill } from "@/features/account/components/AccountStatus";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { orderDeliveryLabel, orderPaymentLabel } from "@/features/checkout/utils/methodLabels";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { OrderTrackingPanel } from "@/features/tracking/components/OrderTrackingPanel";
 import { formatOrderDate, needsPayment, orderStatusDisplay } from "../utils/orderStatus";
 import { AppliedCampaigns } from "@/features/promotions/components/AppliedCampaigns";

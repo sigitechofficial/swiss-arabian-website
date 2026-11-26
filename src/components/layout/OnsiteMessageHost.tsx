@@ -18,6 +18,7 @@ import { watchOnsiteTriggers } from "@/features/onsite/lib/watchTriggers";
 import { ASSISTANT_LINK, ASSISTANT_OPEN_EVENT, type OnsiteMessage } from "@/features/onsite/types";
 import { getSessionId, getVisitorId } from "@/lib/analytics/tracker";
 import { localeFromPathname } from "@/lib/i18n/localePath";
+import { withoutMarketSegment } from "@/lib/site/marketLink";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 
@@ -61,7 +62,8 @@ export function OnsiteMessageHost() {
     const token = previewTokenFromUrl();
     if (!token) return;
     let cancelled = false;
-    const path = window.location.pathname;
+    // Rules target the page, without a market's segment on the shared address (`/~KWT/x` → `/x`).
+    const path = withoutMarketSegment(window.location.pathname);
     void fetchOnsitePreview({ path, locale: localeFromPathname(path, localeConfig), zoneCode }, token)
       .then((found) => {
         if (cancelled) return;
@@ -85,7 +87,7 @@ export function OnsiteMessageHost() {
     let stop: () => void = () => undefined;
 
     const context: OnsiteContext = {
-      path: window.location.pathname,
+      path: withoutMarketSegment(window.location.pathname),
       locale: localeFromPathname(window.location.pathname, localeConfig),
       zoneCode,
       visitorId: getVisitorId(),
@@ -156,7 +158,7 @@ export function OnsiteMessageHost() {
       }}
       onCta={() => report("CLICKED", message.ruleId)}
       onLead={(payload) => {
-        const path = window.location.pathname;
+        const path = withoutMarketSegment(window.location.pathname);
         const context = contextRef.current ?? {
           path,
           locale: localeFromPathname(path, localeConfig),

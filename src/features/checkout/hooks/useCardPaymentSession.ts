@@ -54,7 +54,6 @@ export function useCardPaymentSession(provider: "stripe" | "paymob") {
     queryKey: ["order", orderId],
     queryFn: () => getOrder(orderId as string),
     enabled: Boolean(orderId && clientSecret),
-    retry: 1,
     staleTime: 60_000,
   });
 

@@ -11,6 +11,7 @@ import { useApiQuery } from "@/lib/api/queryHooks";
 import { useUiStore } from "@/stores/useUiStore";
 
 import type { CmsLinkContext } from "../../utils/resolveCmsLink";
+import { formatMoney } from "@/lib/format/money";
 
 export type CmsSubscriptionPlansData = {
   eyebrow?: string | null;
@@ -47,7 +48,7 @@ export function toLandingPlanCards(plans: PublicSubscriptionPlan[]): LandingPlan
     return {
       id: plan.planCode,
       name: plan.name,
-      displayPrice: `${plan.currencyCode} ${plan.amount}`,
+      displayPrice: formatMoney(plan.amount, plan.currencyCode),
       billingIntervalLabel: intervalLabel(plan.intervalUnit),
       description: plan.description,
       featured,

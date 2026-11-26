@@ -3,6 +3,7 @@ import type { PaymentMethodOption } from "../types/checkout";
 import { baseLanguage } from "@/lib/i18n/locales";
 import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
+import { fromMinorUnits, toDecimalString, toMinorUnits } from "@/lib/format/money";
 
 /**
  * Tamara (BNPL) helpers. Backend contract: provider `tamara`, method
@@ -159,8 +160,7 @@ export function canPrecheckTamara(email: string, phone: string): boolean {
 
 /** Plain wording under the Tamara option when the widget can't be shown. */
 export function tamaraFallbackText(total: number, currency: string, lang: TamaraLang): string {
-  const cents = Math.round(total * 100);
-  const each = (Math.floor(cents / 4) / 100).toFixed(2);
+  const each = toDecimalString(fromMinorUnits(Math.floor(toMinorUnits(total, currency) / 4), currency), currency);
   return lang === "ar"
     ? `قسّمها على 4 دفعات بقيمة ${each} ${currency} بدون فوائد مع تمارا.`
     : `Split into 4 interest-free payments of ${currency} ${each} with Tamara.`;

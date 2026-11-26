@@ -33,7 +33,11 @@ import {
   getTranslator,
   type Translator,
 } from "@/lib/i18n/messages";
-import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
+import {
+  loadServerMarkets,
+  pageOwnMarketCode,
+  resolveCatalogMarketFor,
+} from "@/lib/seo/serverMarket";
 import { buildMarketHreflang, catalogPathsFor, marketSites } from "@/lib/seo/marketAlternates";
 
 export { resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
@@ -279,7 +283,8 @@ export async function catalogMetadata(
 /** hreflang across market websites for this page, or null (language-only alternates stay). */
 async function crossMarketLanguages(path: string): Promise<Record<string, string> | null> {
   const list = await loadServerMarkets();
-  const ownZoneCode = list?.siteMarketCode;
+  // A market website's market, or the market of a page under `/~CODE` on the shared address.
+  const ownZoneCode = await pageOwnMarketCode();
   if (!ownZoneCode) return null;
   const sites = marketSites(list);
   if (sites.length < 2) return null;

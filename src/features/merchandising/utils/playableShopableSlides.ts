@@ -1,4 +1,5 @@
 import type { ShopableVideoSlide, ShopableVideoView } from "../types/merch";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 function isHttpsVideoUrl(url: string | null | undefined): boolean {
   const trimmed = url?.trim() ?? "";
@@ -22,9 +23,5 @@ export function parseShopablePrice(
 ): { price: number | null; currency: string } {
   const summary = slide.priceSummary;
   const currency = summary?.currencyCode?.trim() || "AED";
-  if (!summary || summary.hasValidPrice === false) {
-    return { price: null, currency };
-  }
-  const n = Number(String(summary.price ?? "").trim());
-  return { price: Number.isFinite(n) ? n : null, currency };
+  return { price: readSellingPrice(summary), currency };
 }

@@ -1,4 +1,4 @@
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import type { StorefrontShippingPromise } from "../types/pdpShipping";

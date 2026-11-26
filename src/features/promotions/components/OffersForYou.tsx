@@ -6,7 +6,7 @@ import { dir as textDirection, type ShopLocale } from "@/lib/i18n/locales";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import { usePromotionDiscovery } from "../hooks/usePromotionDiscovery";
 import type { OfferContext, OfferIcon, PdpOffer } from "../types/offerVoucher";

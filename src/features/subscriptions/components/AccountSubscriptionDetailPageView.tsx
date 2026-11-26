@@ -55,6 +55,7 @@ import {
 import { MediaImage } from "@/components/ui/MediaImage";
 import { useMarketTimeZone } from "@/lib/storefront/MarketTimeZoneProvider";
 import { formatMarketDate } from "@/lib/format/marketDate";
+import { formatMoney } from "@/lib/format/money";
 
 type Props = { id: string };
 
@@ -205,12 +206,12 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
             <section aria-label={t("subs.detail.summary")} className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
               <Summary
                 label={t("subs.detail.monthlyTotalCaps")}
-                value={price?.available ? `${detail.data.currencyCode} ${price.totalAmount}` : "—"}
+                value={price?.available ? formatMoney(price.totalAmount, detail.data.currencyCode) : "—"}
                 hint={t("subs.detail.totalHint", {
-                  fragrance: `${detail.data.currencyCode} ${detail.data.amount}`,
+                  fragrance: formatMoney(detail.data.amount, detail.data.currencyCode),
                   shipping:
                     detail.data.shippingMode === "EXTRA_FIXED"
-                      ? t("subs.detail.shippingAmount", { amount: `${detail.data.currencyCode} ${detail.data.shippingAmount}` })
+                      ? t("subs.detail.shippingAmount", { amount: formatMoney(detail.data.shippingAmount ?? "", detail.data.currencyCode) })
                       : t("subs.detail.shippingIncluded"),
                 })}
               />
@@ -252,9 +253,9 @@ export function AccountSubscriptionDetailPageView({ id }: Props) {
                   <h2 className="m-0 text-lg font-semibold">{t("subs.detail.billing")}</h2>
                   <dl className="m-0 flex flex-col gap-2.5 text-sm">
                     <div className="flex justify-between"><dt className="text-[#6E5A50]">{t("subs.fragrance")}</dt><dd className="m-0 font-semibold">{detail.data.currencyCode} {detail.data.amount}</dd></div>
-                    <div className="flex justify-between"><dt className="text-[#6E5A50]">{t("orders.shipping")}</dt><dd className="m-0 font-semibold">{detail.data.shippingMode === "EXTRA_FIXED" ? `${detail.data.currencyCode} ${detail.data.shippingAmount}` : t("subs.included")}</dd></div>
+                    <div className="flex justify-between"><dt className="text-[#6E5A50]">{t("orders.shipping")}</dt><dd className="m-0 font-semibold">{detail.data.shippingMode === "EXTRA_FIXED" ? formatMoney(detail.data.shippingAmount ?? "", detail.data.currencyCode) : t("subs.included")}</dd></div>
                     <div className="h-px bg-[#EDE4D6]" />
-                    <div className="flex justify-between text-base"><dt className="font-semibold">{t("subs.detail.monthlyTotal")}</dt><dd className="m-0 font-semibold">{price?.available ? `${detail.data.currencyCode} ${price.totalAmount}` : "—"}</dd></div>
+                    <div className="flex justify-between text-base"><dt className="font-semibold">{t("subs.detail.monthlyTotal")}</dt><dd className="m-0 font-semibold">{price?.available ? formatMoney(price.totalAmount, detail.data.currencyCode) : "—"}</dd></div>
                   </dl>
                   {detail.data.paymentMethod || detail.data.actions?.canReplacePaymentMethod ? (
                     <SubscriptionPaymentMethodSection

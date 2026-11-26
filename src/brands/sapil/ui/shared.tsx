@@ -57,12 +57,6 @@ export function DefaultLink(props: SapilLinkProps) {
   return <a {...props} />;
 }
 
-/** "AED 63", "AED 19.75": the v9 price format (S.fmt). */
-export function formatAED(n: number, currency = "AED"): string {
-  const rounded = Math.round(n * 100) / 100;
-  return `${currency} ${rounded.toFixed(rounded % 1 ? 2 : 0)}`;
-}
-
 /* icons used across the kit (v9 inline SVGs) */
 export function PlusIcon() {
   return (

@@ -127,6 +127,7 @@
   "pointsReason_CART_NOT_QUALIFIED": "لا يمكن استخدام نقاط المكافآت في هذه الحقيبة بعد.",
   "pointsReason_PRICING_CHANGED": "تغيّرت الأسعار فحدّثنا نقاطك. راجعها واستخدمها مرة أخرى.",
   "total": "الإجمالي",
+  "rounding": "التقريب",
   "toPay": "المبلغ المستحق",
   "taxIncluded": "يشمل {amount} {label}",
   "freeGift": "هدية مجانية",

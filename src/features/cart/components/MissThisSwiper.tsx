@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { CatalogProduct } from "@/features/catalog/constants/catalogProducts";
 import {

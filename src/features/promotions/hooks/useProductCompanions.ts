@@ -12,6 +12,7 @@ import { useUiStore } from "@/stores/useUiStore";
 import { fetchProductCompanions, previewProductCompanions } from "../api/promotions.service";
 import type { CompanionProduct } from "../types/companions";
 import { trackPromotion } from "../utils/promotionAnalytics";
+import { roundMoney } from "@/lib/format/money";
 
 export function companionAmount(value: string | null | undefined): number | null {
   if (!value) return null;
@@ -164,7 +165,7 @@ export function useProductCompanions({
   ];
   const subtotal = companionAmount(fresh?.before);
   const total = companionAmount(fresh?.total);
-  const discount = subtotal != null && total != null ? Math.max(0, Number((subtotal - total).toFixed(2))) : null;
+  const discount = subtotal != null && total != null ? Math.max(0, roundMoney(subtotal - total, currency)) : null;
   const ready = Boolean(fresh?.ready) && !busy && chosen.length > 0;
 
   function addSelected() {

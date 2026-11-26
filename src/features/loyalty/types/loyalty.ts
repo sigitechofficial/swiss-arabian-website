@@ -8,6 +8,7 @@ import {
   type ExternalLoyaltyActivityView,
   type LoyaltyPageInfoView,
 } from "./omnichannel";
+import { formatMoney } from "@/lib/format/money";
 
 /** Customer rewards facts returned by Backend L1. Display only. */
 
@@ -535,7 +536,7 @@ function activityDetail(
   if (presentationKey === "POINTS_REDEEMED") {
     const money = readText(row, ["moneyEquivalent"]);
     const currency = readText(row, ["currencyCode"]);
-    if (money && currency) amount = `${currency} ${money}`;
+    if (money && currency) amount = formatMoney(money, currency);
   }
   return { detail: null, orderNumber: readText(row, ["orderNumber"]), amount };
 }

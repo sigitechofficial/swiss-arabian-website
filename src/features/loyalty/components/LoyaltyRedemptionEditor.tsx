@@ -2,7 +2,7 @@
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
 import { useState, type FormEvent } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { Translator } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {

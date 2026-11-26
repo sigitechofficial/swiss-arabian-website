@@ -1,4 +1,4 @@
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { intlLocale } from "@/lib/i18n/locales";
 import {
   englishTranslator,

@@ -3,6 +3,7 @@
 import { useLocaleConfig, useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { usePathname } from "next/navigation";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
+import { marketPrefixOf } from "@/lib/site/marketLink";
 import { servesLocale, type LocaleConfig } from "@/lib/i18n/locales";
 
 /** Where switching to `id` goes from `pathname` (same page, other language); null when it stays put. */
@@ -13,7 +14,10 @@ export function languageSwitchPath(
 ): string | null {
   if (!servesLocale(config, id)) return null;
   const current = pathname || "/";
-  const nextPath = withLocalePrefix(current, id, config);
+  // A market on the shared address keeps its segment (`/~KWT/ar/x` → `/~KWT/x`).
+  const market = marketPrefixOf(current);
+  const page = withLocalePrefix(current, id, config);
+  const nextPath = market ? `${market}${page === "/" ? "" : page}` : page;
   return nextPath === current ? null : nextPath;
 }
 

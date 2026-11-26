@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { nameInLanguage } from "@/lib/i18n/nameByLanguage";
@@ -21,6 +21,7 @@ export function MoneySummary({
   taxIncluded = false,
   total,
   amountPayable,
+  payableRounding = null,
   loyalty = null,
   giftCards = [],
   freeGifts = [],
@@ -42,6 +43,11 @@ export function MoneySummary({
   taxIncluded?: boolean;
   total: number;
   amountPayable?: number | null;
+  /**
+   * The server's payable rounding (negative, e.g. −0.005 KWD): the amount due is the rest
+   * rounded down to the market's step. Shown just before the amount due.
+   */
+  payableRounding?: number | null;
   /** Server loyalty tender. Shown after Total and before gift cards. */
   loyalty?: { points: number; amount: number; currency?: string | null } | null;
   giftCards?: GiftCardTender[];
@@ -134,6 +140,12 @@ export function MoneySummary({
           </div>
         );
       })}
+      {showPayable && payableRounding != null && payableRounding < 0 ? (
+        <div>
+          <dt>{t("promotions.summary.rounding")}</dt>
+          <dd dir="ltr">−{formatMoney(Math.abs(payableRounding), currency)}</dd>
+        </div>
+      ) : null}
       {showPayable ? (
         <div className={totalsLine}>
           <dt>{t("promotions.summary.amountDue")}</dt>

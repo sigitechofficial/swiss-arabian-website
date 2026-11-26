@@ -6,7 +6,7 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { useEffect, useState } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { hasOrderLoyaltySection, OrderRewardNote } from "@/features/loyalty/components/OrderRewardNote";
 import { useOrderReward } from "@/features/loyalty/hooks/useOrderReward";
 import { collectionTitle, ocEm, ocEyebrow, ocTitle, stateEyebrow } from "@/styles/shopChrome";
@@ -435,6 +435,12 @@ export function OrderConfirmationView({ orderId }: { orderId: string }) {
                 <div>
                   <dt>{t("checkout.confirmation.paidPoints")}</dt>
                   <dd dir="ltr">−{formatMoney(Number(totals.loyaltyApplied), currency)}</dd>
+                </div>
+              ) : null}
+              {Number(totals.payableRounding ?? 0) < 0 ? (
+                <div>
+                  <dt>{t("promotions.summary.rounding")}</dt>
+                  <dd dir="ltr">−{formatMoney(Math.abs(Number(totals.payableRounding)), currency)}</dd>
                 </div>
               ) : null}
               {paidByOtherTenders ? (

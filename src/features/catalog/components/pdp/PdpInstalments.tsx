@@ -4,7 +4,7 @@ import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, X } from "lucide-react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { usePathname } from "next/navigation";
 import { TamaraWidget } from "@/features/checkout/components/TamaraWidget";
 import { tamaraCountry, tamaraLang } from "@/features/checkout/utils/tamara";
@@ -143,7 +143,7 @@ function PayDialog({
   const { live } = useLiveProviders()[provider];
   const titleId = useId();
   const closeRef = useDialogChrome(onClose);
-  const payments = payInFour(price);
+  const payments = payInFour(price, currency);
 
   return createPortal(
     <div className={giftChoiceRoot}>
@@ -214,7 +214,7 @@ export function PdpInstalments({ price, currency }: { price: number; currency: s
 
 function CustomInstalments({ price, currency }: { price: number; currency: string }) {
   const t = useShopCopy();
-  const plan = useInstalmentPlan(price);
+  const plan = useInstalmentPlan(price, currency);
   const { open, close } = plan;
   const each = formatMoney(plan.each, currency);
   const locale = useShopLocale();

@@ -69,8 +69,8 @@ export function SapilBagDrawer() {
   // Free delivery: the market's threshold (GET /storefront/markets → delivery), else a
   // free-shipping promotion's. Checkout's delivery methods stay the authority on the fee.
   const market = useMarketDelivery();
-  const marketFree = freeDeliveryProgress(market.freeDeliveryThreshold, subtotalNet);
   const freeCurrency = market.currency ?? bag.currency;
+  const marketFree = freeDeliveryProgress(market.freeDeliveryThreshold, subtotalNet, freeCurrency);
   const unlocked = ship.unlocked || Boolean(marketFree?.reached);
 
   return (
@@ -130,7 +130,7 @@ export function SapilBagDrawer() {
       // suggestions in an empty bag, and the return terms line.
       afterLines={<SapilQuickAdd surface="drawer" holdPosition />}
       applied={<SapilAppliedOffers />}
-      emptyExtra={<SapilEmptyBagPicks surface="empty-drawer" />}
+      emptyExtra={<SapilEmptyBagPicks surface="empty-drawer" active={open} />}
       termsNote={
         <ReturnTermsNote
           className="text-[12px] leading-[1.5] text-sapil-muted text-center mt-[10px]"

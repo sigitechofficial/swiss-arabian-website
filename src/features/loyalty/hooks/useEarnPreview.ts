@@ -7,6 +7,7 @@ import { useUiStore } from "@/stores/useUiStore";
 import { fetchEarnPreview, fetchProductEarnPreview } from "../api/loyalty.service";
 import { loyaltyKeys } from "../api/loyalty.keys";
 import type { LoyaltyEarnPreviewView } from "../types/loyalty";
+import { toDecimalString } from "@/lib/format/money";
 
 const GUEST: LoyaltyEarnPreviewView = { enabled: false, earningDisabled: false };
 
@@ -75,7 +76,7 @@ export function useProductEarnPreview(input: {
   const { zoneCode, currencyCode, ready } = useLoyaltyContext();
   const unitPrice =
     input.unitPrice != null && Number.isFinite(input.unitPrice) && input.unitPrice > 0
-      ? input.unitPrice.toFixed(2)
+      ? toDecimalString(input.unitPrice, currencyCode)
       : null;
   const quantity = input.quantity && input.quantity > 0 ? input.quantity : 1;
 
