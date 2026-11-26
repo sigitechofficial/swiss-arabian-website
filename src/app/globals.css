@@ -558,3 +558,51 @@ html:has([data-navbar][data-topbar-hidden="true"]) .bundle-dock {
 .site-page-body th,
 .site-page-body td { border: 1px solid rgba(0, 0, 0, 0.12); padding: 0.5em 0.75em; text-align: start; vertical-align: top; }
 .site-page-body hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); }
+
+/* Shopping assistant: the window opens with a short rise, and each message eases in. */
+@keyframes sa-assistant-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sa-assistant-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.sa-assistant-pop {
+  animation: sa-assistant-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: bottom right;
+}
+.sa-assistant-rise {
+  animation: sa-assistant-rise 0.26s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sa-assistant-pop,
+  .sa-assistant-rise {
+    animation: none;
+  }
+}
+
+/* Shopping assistant: it speaks in the shop's own typeface (the brand's font, and the Arabic face for Arabic-script
+   languages), so it looks like part of the site. Only the spacing is kept calm for reading. */
+.sa-assistant-font {
+  letter-spacing: 0;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.sa-assistant-font :where(button, input, textarea) {
+  font-family: inherit;
+  letter-spacing: 0;
+}

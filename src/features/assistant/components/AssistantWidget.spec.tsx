@@ -63,7 +63,7 @@ describe("AssistantWidget", () => {
     const { user } = setup();
     expect(screen.queryByRole("dialog")).toBeNull();
     await open(user);
-    const panel = screen.getByRole("dialog", { name: "Shopping assistant" });
+    const panel = screen.getByRole("dialog", { name: "Fragrance Concierge" });
     expect(await within(panel).findByText(/I can help you find a fragrance/i)).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Suggest me something" })).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Track my order" })).toBeInTheDocument();
@@ -140,12 +140,14 @@ describe("AssistantWidget", () => {
     const { user } = setup({ send });
     await open(user);
     await user.click(await screen.findByRole("button", { name: "Track my order" }));
-    expect(await screen.findByRole("link", { name: "/policies/refund-policy" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Read more" })).toHaveAttribute(
       "href",
       "/policies/refund-policy",
     );
     expect(screen.getByRole("link", { name: "https://example.com/help" })).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getAllByRole("link")).toHaveLength(2);
+    // The page address itself is never printed.
+    expect(screen.queryByText("/policies/refund-policy", { exact: false })).not.toBeInTheDocument();
   });
 
   it("shows a friendly message when something fails, and a different one when rate limited", async () => {

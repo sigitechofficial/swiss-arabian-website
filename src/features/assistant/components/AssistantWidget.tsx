@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { getBrandConfig } from "@/lib/brand";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiClientError } from "@/lib/api/apiError";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
 import { formatMoney } from "@/features/home/utils/formatMoney";
@@ -13,15 +14,22 @@ import {
   fetchAssistantHistory,
   sendAssistantHandoff,
   sendAssistantMessage,
+  assistantReturnFlowApi,
   type AssistantHandoffInput,
+  type AssistantReturnFlowApi,
   type AssistantSendInput,
 } from "../api/assistant.service";
-import { splitLinks } from "../lib/linkify";
+import { AfterSalesCards } from "./AfterSalesCards";
+import { AssistantAvatar, SuggestionIcon } from "./AssistantAvatar";
+import { ReplyText } from "./ReplyText";
+import { AssistantReturnFlow } from "./AssistantReturnFlow";
 import type {
   AssistantAction,
   AssistantBubble,
   AssistantCard,
   AssistantChatResponse,
+  AssistantFlowAction,
+  AssistantFlowView,
   AssistantHistory,
 } from "../types";
 
@@ -33,11 +41,20 @@ type Props = {
   loadHistory?: (zoneCode: string) => Promise<AssistantHistory>;
   clearHistory?: (zoneCode: string) => Promise<void>;
   handoff?: (input: AssistantHandoffInput) => Promise<{ ticketNumber: string }>;
+  /** The return the customer works through in the chat. Replaceable in tests. */
+  returnFlow?: AssistantReturnFlowApi;
   /** Adds a product to the bag through the shop's normal cart. Resolves false when it could not. */
   addToBag?: (product: { slug: string; name: string; imageUrl?: string; price?: number }) => Promise<boolean>;
 };
 
+/** The least time the typing dots show, in milliseconds. */
+const TYPING_MIN_MS = 450;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Our own policy and page paths: the only paths a button may open. */
+const OWN_PAGE = /^\/(?:(?:policies|pages)\/[a-z0-9][a-z0-9-]*|track)$/i;
+const isOwnPagePath = (path: string) => OWN_PAGE.test(path);
 
 type HandoffValues = { name: string; email: string; phone: string; note: string };
 
@@ -101,30 +118,6 @@ function HandoffForm({
         </button>
       </div>
     </form>
-  );
-}
-
-function ReplyText({ text }: { text: string }) {
-  return (
-    <p className="m-0 whitespace-pre-line break-words">
-      {splitLinks(text).map((part, index) => {
-        if (part.kind === "path") {
-          return (
-            <LocaleLink key={index} href={part.value} className="underline">
-              {part.value}
-            </LocaleLink>
-          );
-        }
-        if (part.kind === "url") {
-          return (
-            <a key={index} href={part.value} target="_blank" rel="noopener noreferrer" className="underline">
-              {part.value}
-            </a>
-          );
-        }
-        return <span key={index}>{part.value}</span>;
-      })}
-    </p>
   );
 }
 
@@ -222,12 +215,18 @@ export function AssistantWidget({
   loadHistory = fetchAssistantHistory,
   clearHistory = clearAssistantHistory,
   handoff = sendAssistantHandoff,
+  returnFlow = assistantReturnFlowApi,
   addToBag: addToBagProp,
 }: Props) {
   const copy = useShopCopy();
+  const firstName = useAuthStore((state) => state.user?.firstName?.trim() || null);
   const addCatalogProduct = useAddCatalogProduct();
   const addToBag = addToBagProp ?? ((product) => addCatalogProduct({ ...product, title: product.name }));
   const [handoffOpenFor, setHandoffOpenFor] = useState<string | null>(null);
+  // The return in the chat: held by the server, this is only what to draw.
+  const [flow, setFlow] = useState<AssistantFlowView | null>(null);
+  const [flowBusy, setFlowBusy] = useState(false);
+  const [flowProblem, setFlowProblem] = useState<string | null>(null);
   const panelId = useId();
   const [open, setOpen] = useState(false);
   // A pop-up rule's "chat with us" button asks the widget to open.
@@ -255,7 +254,8 @@ export function AssistantWidget({
   const welcomeBubble = (): AssistantBubble => ({
     id: nextId(),
     role: "assistant",
-    text: copy("assistant.welcome"),
+    text: firstName ? copy("assistant.welcomeNamed", { name: firstName }) : copy("assistant.welcome"),
+    welcome: true,
     quickReplies: [
       copy("assistant.quick.suggest"),
       copy("assistant.quick.bestsellers"),
@@ -312,15 +312,79 @@ export function AssistantWidget({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Keeping the view steady: a new message from the shopper scrolls down to it; a new answer scrolls to the
+  // START of the answer (so it is read from the top), or to the bottom when it is short. Smooth, unless the
+  // device asks for less motion. This also stops the jump that happened when buttons were removed and the
+  // typing dots and the answer arrived one after the other.
   useEffect(() => {
-    listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight });
-  }, [bubbles, busy]);
+    const list = listRef.current;
+    if (!list || typeof list.scrollTo !== "function") return;
+    const behavior: ScrollBehavior = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth";
+    const last = bubbles[bubbles.length - 1];
+    if (last?.role === "assistant" && !busy) {
+      const row = list.querySelector<HTMLElement>(`[data-bubble-id="${last.id}"]`);
+      if (row && row.offsetHeight > list.clientHeight - 24) {
+        const delta = row.getBoundingClientRect().top - list.getBoundingClientRect().top;
+        list.scrollTo({ top: Math.max(0, list.scrollTop + delta - 12), behavior });
+        return;
+      }
+    }
+    list.scrollTo({ top: list.scrollHeight, behavior });
+  }, [bubbles, busy, flow]);
 
   const finishActions = (bubbleId: string) =>
     setBubbles((current) => current.map((b) => (b.id === bubbleId ? { ...b, actionsDone: true } : b)));
 
   const say = (text: string, isError = false) =>
     setBubbles((current) => [...current, { id: nextId(), role: "assistant", text, isError }]);
+
+  const flowScope = { zoneCode, locale };
+
+  /** Runs one flow request: the server answers with what to draw next. A failure can be retried. */
+  const runFlow = async (request: () => Promise<AssistantFlowView | null>) => {
+    if (flowBusy) return;
+    setFlowBusy(true);
+    setFlowProblem(null);
+    try {
+      const next = await request();
+      setFlow(next);
+    } catch {
+      setFlowProblem(copy("assistant.returnFlow.problem"));
+      // The flow may have moved on (another tab): look again so the card shows the truth.
+      try {
+        const current = await returnFlow.active(flowScope);
+        if (current) setFlow(current);
+      } catch {
+        /* the message above stays */
+      }
+    } finally {
+      setFlowBusy(false);
+    }
+  };
+  const startFlow = (kind: "RETURN" | "EXCHANGE", orderId?: string) =>
+    flow ? undefined : void runFlow(() => returnFlow.start(flowScope, kind, orderId));
+  const stepReturn = (action: AssistantFlowAction) =>
+    flow?.flowId ? void runFlow(() => returnFlow.step(flowScope, flow.flowId as string, action)) : undefined;
+  const confirmReturn = (token: string) =>
+    flow?.flowId ? void runFlow(() => returnFlow.confirm(flowScope, flow.flowId as string, token)) : undefined;
+  const cancelReturn = () =>
+    flow?.flowId ? void runFlow(() => returnFlow.cancel(flowScope, flow.flowId as string)) : undefined;
+
+  // A signed-in customer who left in the middle of a return finds it where they stopped.
+  useEffect(() => {
+    if (!open || !historyLoaded || !signedIn) return;
+    let cancelled = false;
+    returnFlow
+      .active({ zoneCode, locale })
+      .then((current) => {
+        if (!cancelled && current) setFlow((existing) => existing ?? current);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, historyLoaded, signedIn, zoneCode, locale]);
 
   /** The shopper tapped "Yes, add to bag": the add runs here, through the normal cart. */
   const confirmAdd = async (bubble: AssistantBubble, action: Extract<AssistantAction, { type: "ADD_TO_BAG" }>) => {
@@ -398,7 +462,11 @@ export function AssistantWidget({
       ]);
       setBusy(true);
       try {
-        const result = await send({ message: text, zoneCode, locale, recentProductIds: recentProductIds().length ? recentProductIds() : undefined });
+        const [result] = await Promise.all([
+          send({ message: text, zoneCode, locale, recentProductIds: recentProductIds().length ? recentProductIds() : undefined }),
+          // The dots stay for a moment even when the answer is quick, so the page does not flash.
+          new Promise((resolve) => setTimeout(resolve, TYPING_MIN_MS)),
+        ]);
         setBubbles((current) => [
           ...current,
           {
@@ -406,6 +474,7 @@ export function AssistantWidget({
             role: "assistant",
             text: result.reply.text,
             cards: result.reply.cards,
+            afterSales: result.reply.afterSales,
             seeAllHref: result.reply.seeAllHref,
             quickReplies: result.reply.quickReplies,
             actions: result.reply.actions,
@@ -445,51 +514,78 @@ export function AssistantWidget({
           aria-label={copy("assistant.title")}
           data-assistant-panel
           // Above the fixed site header (z-200), below on-site pop-ups (z-210/220).
-          className="fixed bottom-20 end-4 z-[205] flex h-[min(70vh,34rem)] w-[min(92vw,23rem)] flex-col overflow-hidden rounded-2xl border border-black/10 bg-page text-sa-primary shadow-xl"
+          className="fixed inset-x-0 bottom-0 z-[205] flex h-[88dvh] flex-col overflow-hidden rounded-t-2xl border border-black/10 bg-white text-sa-primary shadow-[0_24px_64px_-16px_rgba(0,0,0,0.3)] sm:inset-x-auto sm:bottom-[4.75rem] sm:end-4 sm:h-[min(calc(100dvh-6.5rem),46rem)] sm:w-[25rem] sm:rounded-2xl sa-assistant-pop sa-assistant-font"
         >
-          <header className={`flex items-center justify-between px-4 py-3 text-white ${accent}`}>
-            <h2 className="m-0 text-base font-medium">{copy("assistant.title")}</h2>
-            <div className="flex items-center gap-1">
+          <header className={`flex items-center gap-3 px-4 py-3.5 text-white ${accent}`}>
+            <AssistantAvatar size={40} accent="bg-white/25" online ring />
+            <div className="min-w-0 flex-1">
+              <h2 className="m-0 truncate text-[15px] font-semibold leading-tight">{copy("assistant.title")}</h2>
+              <p className="m-0 mt-0.5 flex items-center gap-1.5 truncate text-[11.5px] leading-tight text-white/85">
+                <span className="size-1.5 shrink-0 rounded-full bg-emerald-300" aria-hidden="true" />
+                <span className="truncate">{copy("assistant.status")}</span>
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
               {signedIn && bubbles.some((bubble) => bubble.role === "user") ? (
                 <button
                   type="button"
                   onClick={() => void clearChat()}
-                  className="cursor-pointer rounded-full px-2.5 py-1 text-xs hover:bg-white/15"
+                  aria-label={copy("assistant.clear")}
+                  title={copy("assistant.clear")}
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-md text-white/90 transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
                 >
-                  {copy("assistant.clear")}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               ) : null}
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={copy("assistant.close")}
-                className="flex size-8 cursor-pointer items-center justify-center rounded-full text-xl leading-none hover:bg-white/15"
+                className="flex size-8 cursor-pointer items-center justify-center rounded-md text-white/90 transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
               >
-                ×
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
           </header>
 
           {historyLoaded && !signedIn ? (
-            <p className="m-0 border-b border-black/10 bg-black/5 px-3 py-1.5 text-xs opacity-80" data-assistant-guest-note>
+            <p className="m-0 border-b border-black/10 bg-black/[0.03] px-4 py-2 text-[11.5px] leading-snug text-sa-primary/70" data-assistant-guest-note>
               {copy("assistant.guestNote")}
             </p>
           ) : null}
 
-          <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3 text-sm" aria-live="polite">
+          <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto bg-[#faf8f5] px-4 py-4 text-[13px] leading-relaxed" aria-live="polite">
             {bubbles.map((bubble) => (
-              <div key={bubble.id} className={bubble.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                <div className="max-w-[88%] space-y-2">
+              <div
+                key={bubble.id}
+                data-bubble-id={bubble.id}
+                className={bubble.role === "user" ? "sa-assistant-rise flex justify-end" : "sa-assistant-rise flex items-start justify-start gap-2"}
+              >
+                {bubble.role === "assistant" ? <AssistantAvatar size={26} accent={accent} /> : null}
+                <div className={bubble.role === "user" ? "max-w-[88%] space-y-2.5" : "min-w-0 max-w-[calc(100%-2rem)] space-y-2.5"}>
                   <div
                     data-bubble={bubble.role}
                     className={
                       bubble.role === "user"
-                        ? `rounded-2xl rounded-ee-sm px-3 py-2 text-white ${accent}`
-                        : `rounded-2xl rounded-es-sm px-3 py-2 ${bubble.isError ? "bg-red-50 text-red-800" : "bg-black/5"}`
+                        ? `rounded-2xl rounded-ee-md px-3.5 py-2.5 text-white shadow-sm ${accent}`
+                        : `rounded-2xl rounded-es-md border px-3.5 py-2.5 shadow-sm ${bubble.isError ? "border-red-200 bg-red-50 text-red-800" : "border-black/10 bg-white"}`
                     }
                   >
                     <ReplyText text={bubble.text} />
                   </div>
+                  {bubble.afterSales ? (
+                    <AfterSalesCards view={bubble.afterSales} accent={accent} onStart={flow || flowBusy ? undefined : startFlow} />
+                  ) : null}
                   {bubble.cards && bubble.cards.length > 0 ? (
                     <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" data-assistant-cards>
                       {bubble.cards.map((card) => (
@@ -525,68 +621,157 @@ export function AssistantWidget({
                               {action.cancelLabel}
                             </button>
                           </div>
-                        ) : handoffOpenFor === bubble.id ? (
-                          <HandoffForm
-                            key="handoff-form"
-                            signedIn={signedIn}
-                            onSend={(values) => sendHandoff(bubble, values)}
-                            onCancel={() => setHandoffOpenFor(null)}
-                          />
-                        ) : (
-                          <button
-                            key="handoff-button"
-                            type="button"
-                            data-assistant-handoff-button
-                            onClick={() => setHandoffOpenFor(bubble.id)}
-                            className="cursor-pointer rounded-full border border-black/20 bg-white px-3 py-1.5 text-xs hover:bg-black/5"
-                          >
-                            {action.label}
-                          </button>
-                        ),
+                        ) : action.type === "HANDOFF" ? (
+                          handoffOpenFor === bubble.id ? (
+                            <HandoffForm
+                              key="handoff-form"
+                              signedIn={signedIn}
+                              onSend={(values) => sendHandoff(bubble, values)}
+                              onCancel={() => setHandoffOpenFor(null)}
+                            />
+                          ) : (
+                            <button
+                              key="handoff-button"
+                              type="button"
+                              data-assistant-handoff-button
+                              onClick={() => setHandoffOpenFor(bubble.id)}
+                              className="cursor-pointer rounded-full border border-black/20 bg-white px-3 py-1.5 text-xs hover:bg-black/5"
+                            >
+                              {action.label}
+                            </button>
+                          )
+                        ) : action.type === "OPEN_PAGE" ? (
+                          // Only our own policy and page paths become a button, whatever the server sends.
+                          isOwnPagePath(action.path) ? (
+                            <LocaleLink
+                              key={`page-${action.path}`}
+                              href={action.path}
+                              data-assistant-open-page
+                              className="block w-fit rounded-full border border-black/15 bg-white px-3.5 py-1.5 text-xs font-medium text-sa-primary no-underline transition hover:border-black/40 hover:bg-black/[0.03]"
+                            >
+                              {action.label}
+                            </LocaleLink>
+                          ) : null
+                        ) : // An action type this website does not know (a newer server): drawn as nothing, never as a hand-off button.
+                        null,
                       )
                     : null}
                   {bubble.quickReplies && bubble.quickReplies.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {bubble.quickReplies.map((label) => (
-                        <button
-                          key={label}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void submit(label)}
-                          className="cursor-pointer rounded-full border border-black/20 bg-white px-3 py-1.5 text-xs hover:bg-black/5 disabled:opacity-50"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+                    bubble.welcome ? (
+                      <div className="grid gap-2" data-assistant-suggestions>
+                        {bubble.quickReplies.map((label, index) => (
+                          <button
+                            key={label}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void submit(label)}
+                            className="group flex cursor-pointer items-center gap-3 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-start text-[13px] font-medium text-sa-primary shadow-sm transition hover:-translate-y-px hover:border-black/30 hover:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-black/40 disabled:opacity-50"
+                          >
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/[0.04] text-sa-primary/80 transition group-hover:bg-black/[0.07]">
+                              <SuggestionIcon index={index} />
+                            </span>
+                            <span className="min-w-0 flex-1">{label}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 opacity-40 rtl:-scale-x-100">
+                              <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {bubble.quickReplies.map((label) => (
+                          <button
+                            key={label}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void submit(label)}
+                            className="cursor-pointer rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-medium text-sa-primary transition hover:border-black/40 hover:bg-black/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-black/40 disabled:opacity-50"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )
                   ) : null}
                 </div>
               </div>
             ))}
+            {flow ? (
+              <div className="sa-assistant-rise flex items-start gap-2">
+                <AssistantAvatar size={26} accent={accent} />
+                <div className="min-w-0 flex-1">
+                  <AssistantReturnFlow
+                    view={flow}
+                    busy={flowBusy}
+                    problem={flowProblem}
+                    locale={locale}
+                    accent={accent}
+                    onStep={stepReturn}
+                    onConfirm={confirmReturn}
+                    onCancel={cancelReturn}
+                    onClose={() => {
+                      setFlow(null);
+                      setFlowProblem(null);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
             {busy || loadingHistory ? (
-              <div className="flex justify-start" role="status">
-                <div className="rounded-2xl rounded-es-sm bg-black/5 px-3 py-2 opacity-70">{copy("assistant.typing")}</div>
+              <div className="flex items-start gap-2" role="status">
+                <AssistantAvatar size={26} accent={accent} />
+                <div className="inline-flex items-center gap-2 rounded-2xl rounded-es-md border border-black/10 bg-white px-3.5 py-3 shadow-sm">
+                  <span className="sr-only">{copy("assistant.typing")}</span>
+                  <span className="inline-flex gap-1" aria-hidden="true">
+                    {[0, 150, 300].map((delay) => (
+                      <i
+                        key={delay}
+                        className="size-1.5 animate-bounce rounded-full bg-current opacity-40"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
+                  </span>
+                </div>
               </div>
             ) : null}
           </div>
 
-          <form onSubmit={onSubmit} className="flex gap-2 border-t border-black/10 bg-white p-2">
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              maxLength={1000}
-              aria-label={copy("assistant.inputLabel")}
-              placeholder={copy("assistant.placeholder")}
-              className="min-w-0 flex-1 rounded-full border border-black/20 px-3 py-2 text-sm outline-none focus:border-black/50"
-            />
-            <button
-              type="submit"
-              disabled={busy || draft.trim().length === 0}
-              className={`cursor-pointer rounded-full px-4 py-2 text-sm text-white disabled:opacity-50 ${accent}`}
-            >
-              {copy("assistant.send")}
-            </button>
+          <form onSubmit={onSubmit} className="border-t border-black/10 bg-white px-3 py-3">
+            <div className="relative">
+              <input
+                ref={inputRef}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                maxLength={1000}
+                aria-label={copy("assistant.inputLabel")}
+                placeholder={copy("assistant.placeholder")}
+                className="h-11 w-full min-w-0 rounded-xl border border-black/15 bg-white ps-3.5 pe-12 text-sm outline-none transition placeholder:text-sa-primary/45 focus:border-black/40 focus:ring-2 focus:ring-black/10"
+              />
+              <button
+                type="submit"
+                disabled={busy || draft.trim().length === 0}
+                aria-label={copy("assistant.send")}
+                title={copy("assistant.send")}
+                className={`absolute end-1.5 top-1/2 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-white transition hover:brightness-95 disabled:cursor-default disabled:opacity-40 ${accent}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="rtl:-scale-x-100">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-2 flex items-start justify-between gap-3 text-[10.5px] leading-snug text-sa-primary/60">
+              <p className="m-0" data-assistant-disclaimer>
+                {copy("assistant.disclaimer")}
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void submit(copy("assistant.talkToCare"))}
+                className="shrink-0 cursor-pointer rounded-md px-1.5 py-0.5 font-medium text-sa-primary/80 underline underline-offset-2 transition hover:bg-black/[0.04] hover:text-sa-primary disabled:opacity-50"
+              >
+                {copy("assistant.careShort")}
+              </button>
+            </div>
           </form>
         </section>
       ) : null}
@@ -598,7 +783,7 @@ export function AssistantWidget({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         data-assistant-launcher
-        className={`fixed bottom-4 end-4 z-[205] flex size-14 cursor-pointer items-center justify-center rounded-full text-white shadow-lg ${accent}`}
+        className={`fixed bottom-3 end-4 z-[205] flex size-14 cursor-pointer items-center justify-center rounded-full text-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.4)] transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/50 ${accent}`}
       >
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -608,6 +793,7 @@ export function AssistantWidget({
             strokeLinejoin="round"
           />
         </svg>
+        <span className="absolute end-0.5 top-0.5 size-3 rounded-full bg-emerald-400 ring-2 ring-white" aria-hidden="true" />
       </button>
     </>
   );

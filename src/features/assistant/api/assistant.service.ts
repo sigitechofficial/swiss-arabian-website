@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
-import type { AssistantChatResponse, AssistantHistory } from "../types";
+import type { AssistantChatResponse, AssistantFlowAction, AssistantFlowView, AssistantHistory } from "../types";
 
 export type AssistantSendInput = {
   message: string;
@@ -65,3 +65,33 @@ export async function clearAssistantHistory(zoneCode: string): Promise<void> {
   const params = new URLSearchParams({ zoneCode });
   await apiDelete(`/storefront/assistant/history?${params}`);
 }
+
+/**
+ * A return the signed-in customer works through in the chat. The server holds the whole flow: only its
+ * id travels, and every choice is checked there against what it offered.
+ */
+export type AssistantReturnFlowApi = {
+  start: (scope: AssistantFlowScope, kind?: "RETURN" | "EXCHANGE", orderId?: string) => Promise<AssistantFlowView>;
+  active: (scope: AssistantFlowScope) => Promise<AssistantFlowView | null>;
+  step: (scope: AssistantFlowScope, flowId: string, action: AssistantFlowAction) => Promise<AssistantFlowView>;
+  confirm: (scope: AssistantFlowScope, flowId: string, reviewToken: string) => Promise<AssistantFlowView>;
+  cancel: (scope: AssistantFlowScope, flowId: string) => Promise<AssistantFlowView>;
+};
+
+export type AssistantFlowScope = { zoneCode: string; locale: string };
+
+const FLOW = "/storefront/assistant/after-sales";
+
+export const assistantReturnFlowApi: AssistantReturnFlowApi = {
+  start: (scope, kind = "RETURN", orderId) =>
+    apiPost<AssistantFlowView>(`${FLOW}/start`, { ...scope, kind, ...(orderId ? { orderId } : {}) }),
+  active: async (scope) => {
+    const params = new URLSearchParams(scope);
+    const data = await apiGet<{ flow: AssistantFlowView | null }>(`${FLOW}/active?${params}`);
+    return data.flow;
+  },
+  step: (scope, flowId, action) => apiPost<AssistantFlowView>(`${FLOW}/${flowId}/step`, { ...scope, ...action }),
+  confirm: (scope, flowId, reviewToken) =>
+    apiPost<AssistantFlowView>(`${FLOW}/${flowId}/confirm`, { ...scope, reviewToken }),
+  cancel: (scope, flowId) => apiPost<AssistantFlowView>(`${FLOW}/${flowId}/cancel`, scope),
+};
