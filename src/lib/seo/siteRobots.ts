@@ -40,11 +40,16 @@ export async function siteRobotsTxt(): Promise<string> {
   const origin = await requestOrigin();
   const list = await loadServerMarkets();
   const sites = marketSites(list ?? null);
+  // Markets this address serves at `/~CODE` (also when it is a market's own website).
+  const servedHere = sites.filter((site) => site.basePath && site.origin === origin);
   const sitemaps =
     list && !list.siteMarketCode && sites.length > 0
       ? sites.map((site) => `${site.origin}${site.basePath}/sitemap.xml`)
       : origin
-        ? [`${origin}/sitemap.xml`]
+        ? [
+            `${origin}/sitemap.xml`,
+            ...servedHere.map((site) => `${site.origin}${site.basePath}/sitemap.xml`),
+          ]
         : [];
   const disallow = PRIVATE_PATHS.flatMap((path) => [
     path,

@@ -30,6 +30,12 @@ export type SiteInfo = {
    * without a website of their own are served; null when none (older backends omit it).
    */
   sharedSiteUrl?: string | null;
+  /**
+   * What the brand's main address does with a visitor of another market when it is
+   * a market's own website (swissarabian.com for Global): REDIRECT, SUGGEST (the
+   * country banner) or STAY. Admin → Brands; older backends omit it (SUGGEST).
+   */
+  mainAddressVisitors?: "REDIRECT" | "SUGGEST" | "STAY";
   /** The address's own market; null when the address serves no single market. */
   siteMarketCode: string | null;
   defaultMarketCode: string | null;
@@ -117,17 +123,54 @@ export function siteMarketFor(
   return zoneCode ? site.markets.find((market) => sameCode(market.zoneCode, zoneCode)) : undefined;
 }
 
+/** The host of an address (`https://swissarabian.com` → `swissarabian.com`), lower-case. */
+function hostOf(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).host.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Whether this address opens `zoneCode` itself: an address with no market of its
- * own (the brand's shared address) serving a market that has no website of its own.
+ * Whether this address is the brand's shared address (where the markets without
+ * a website of their own live, at `/~CODE`): one with no market of its own, or
+ * the brand's main address when it is a market's own website (swissarabian.com
+ * for Global, the backend's `sharedSiteUrl`).
+ */
+export function isSharedAddress(
+  site: Pick<SiteInfo, "siteMarketCode" | "host" | "sharedSiteUrl">,
+): boolean {
+  if (!site.siteMarketCode) return true;
+  return hostOf(site.sharedSiteUrl) === site.host.trim().toLowerCase();
+}
+
+/**
+ * Whether this address opens `zoneCode` itself at `/~CODE`: the brand's shared
+ * address (isSharedAddress) serving a market that has no website of its own.
  */
 export function servedHere(
-  site: Pick<SiteInfo, "siteMarketCode" | "markets">,
+  site: Pick<SiteInfo, "siteMarketCode" | "markets" | "host" | "sharedSiteUrl">,
   zoneCode: string | null | undefined,
 ): boolean {
-  if (site.siteMarketCode) return false;
+  if (!isSharedAddress(site)) return false;
   const market = siteMarketFor(site, zoneCode);
-  return Boolean(market && !market.storefrontUrl && market.onSharedAddress);
+  return Boolean(
+    market && !market.storefrontUrl && market.onSharedAddress && market.zoneCode !== site.siteMarketCode,
+  );
+}
+
+/**
+ * Whether this address is the brand's main address and a market's own website at
+ * once (swissarabian.com for Global): its rule for visitors of other markets
+ * (`mainAddressVisitors`) applies.
+ */
+export function isMainMarketAddress(
+  site: Pick<SiteInfo, "siteMarketCode" | "host" | "brandDomain">,
+): boolean {
+  const domain = site.brandDomain?.trim().toLowerCase();
+  return Boolean(site.siteMarketCode && domain && domain === site.host.trim().toLowerCase());
 }
 
 /**
@@ -144,7 +187,7 @@ export function marketForVisitor(
   site: SiteInfo,
   visitor: { zoneCode?: string | null; country?: string | null },
 ): SiteMarket | null {
-  if (site.siteMarketCode) return null;
+  if (site.siteMarketCode) return mainAddressVisitorMarket(site, visitor);
   const reachable = (market: SiteMarket | undefined) =>
     market && (market.storefrontUrl || servedHere(site, market.zoneCode)) ? market : undefined;
   const candidates = site.markets.filter((market) => reachable(market));
@@ -158,6 +201,30 @@ export function marketForVisitor(
     candidates[0] ??
     null
   );
+}
+
+/**
+ * On the brand's main address that is a market's own website (swissarabian.com for
+ * Global), with the brand's rule REDIRECT: the visitor's market (their choice, else
+ * their country) when it is another one that can be reached (its website, or its
+ * `/~CODE` address here). Null keeps them on this market's pages: the rule is
+ * SUGGEST (the country banner) or STAY, their market is this one, or none applies.
+ */
+function mainAddressVisitorMarket(
+  site: SiteInfo,
+  visitor: { zoneCode?: string | null; country?: string | null },
+): SiteMarket | null {
+  if (!isMainMarketAddress(site) || site.mainAddressVisitors !== "REDIRECT") return null;
+  const reachable = (market: SiteMarket | undefined) =>
+    market && (market.storefrontUrl || servedHere(site, market.zoneCode)) ? market : undefined;
+  const country = visitor.country?.trim().toUpperCase();
+  const pick =
+    siteMarketFor(site, visitor.zoneCode) ??
+    (country ? site.markets.find((m) => m.countryCode.trim().toUpperCase() === country) : undefined);
+  if (!pick || pick.zoneCode === site.siteMarketCode) return null;
+  const target = reachable(pick);
+  // Its own website is this address (a stale address table): stay.
+  return target && hostOf(target.storefrontUrl) !== site.host.trim().toLowerCase() ? target : null;
 }
 
 /** The market website a root domain sends the visitor to (see marketForVisitor); null keeps them here. */
@@ -176,10 +243,19 @@ export function marketSiteForVisitor(
  * (the country is not one of the brand's markets).
  */
 export function marketForCountry(
-  site: Pick<SiteInfo, "siteMarketCode" | "markets" | "sharedSiteUrl">,
+  site: Pick<SiteInfo, "siteMarketCode" | "markets" | "sharedSiteUrl"> &
+    Partial<Pick<SiteInfo, "host" | "brandDomain" | "mainAddressVisitors">>,
   country: string | null,
 ): string | null {
   if (!country) return null;
+  // The main address with the rule STAY suggests nothing (the client's choice).
+  if (
+    site.mainAddressVisitors === "STAY" &&
+    site.host &&
+    isMainMarketAddress({ siteMarketCode: site.siteMarketCode, host: site.host, brandDomain: site.brandDomain })
+  ) {
+    return null;
+  }
   // On a market website: its own market, the markets with a website of their own
   // and those the brand's shared address serves (switching goes there).
   const offered = site.siteMarketCode

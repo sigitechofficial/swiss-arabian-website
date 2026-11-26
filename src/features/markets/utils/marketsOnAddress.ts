@@ -54,19 +54,24 @@ export function choiceServedHere(
 
 /**
  * The market of a page under `/~KWT` on the shared address (the address decides,
- * as the proxy does): one the shared address serves. Null elsewhere.
+ * as the proxy does): one the shared address serves, also when that address is
+ * another market's own website (swissarabian.com: Global's, NEW at /~NEW). Null
+ * elsewhere.
  */
 export function marketOfAddress(
   markets: MarketFacts[],
   address: Address,
   pathname: string,
 ): string | null {
-  if (address.siteMarketCode) return null;
   const code = parseMarketLink(pathname || "/")?.zoneCode;
   if (!code) return null;
   return (
     markets.find(
-      (market) => market.zoneCode === code && market.onSharedAddress && !market.storefrontUrl,
+      (market) =>
+        market.zoneCode === code &&
+        market.zoneCode !== address.siteMarketCode &&
+        market.onSharedAddress &&
+        !market.storefrontUrl,
     )?.zoneCode ?? null
   );
 }

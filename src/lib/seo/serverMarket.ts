@@ -42,7 +42,9 @@ export function servedOnSharedAddress(
   list: { siteMarketCode?: string | null; markets: StorefrontMarket[] } | null,
   zoneCode: string | null | undefined,
 ): boolean {
-  if (!list || list.siteMarketCode || !zoneCode) return false;
+  // The page tree's market (`~CODE`) is only served where the proxy allowed it: the
+  // shared address, which may be a market's own website too (swissarabian.com).
+  if (!list || !zoneCode || zoneCode === list.siteMarketCode) return false;
   const market = list.markets.find((m) => m.zoneCode === zoneCode);
   return Boolean(market && market.onSharedAddress && !market.storefrontUrl);
 }
@@ -64,7 +66,7 @@ export async function sharedAddressMarketCode(): Promise<string | null> {
  */
 export async function pageOwnMarketCode(): Promise<string | null> {
   const list = await loadServerMarkets();
-  return list?.siteMarketCode ?? (await sharedAddressMarketCode());
+  return (await sharedAddressMarketCode()) ?? list?.siteMarketCode ?? null;
 }
 
 /**
@@ -83,8 +85,14 @@ export async function resolveCatalogMarketFor(
   if (list) {
     const ready = list.markets.filter((market) => market.isCatalogReady);
     const pool = ready.length ? ready : list.markets;
+    // A page under `/~CODE` is that market's, also on an address that is another
+    // market's own website (swissarabian.com: Global's, and NEW's at /~NEW).
+    const treeMarket = await currentSiteMarketCode();
     const wanted =
-      list.siteMarketCode?.trim() || zoneCode?.trim() || (await currentSiteMarketCode());
+      (treeMarket && servedOnSharedAddress(list, treeMarket) ? treeMarket : null) ||
+      list.siteMarketCode?.trim() ||
+      zoneCode?.trim() ||
+      treeMarket;
     chosen =
       (wanted ? pool.find((market) => market.zoneCode === wanted) : null) ??
       list.defaultMarket ??

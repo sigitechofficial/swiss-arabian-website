@@ -1,6 +1,6 @@
 import { internalLocalePath, localePrefixOf, stripLocalePrefix } from "@/lib/i18n/localePath";
 import { localSiteUrl } from "@/lib/storefront/localStorefront";
-import { marketLinkUrl } from "@/lib/site/marketLink";
+import { marketLinkUrl, marketPrefixOf } from "@/lib/site/marketLink";
 import type { StorefrontMarket } from "../types/market";
 
 /** Pages that belong to one market's bag or order: switching market lands on the bag. */
@@ -45,7 +45,9 @@ export function marketSiteUrl(
   } catch {
     return null;
   }
-  if (target.origin === current.origin) return null;
+  // This website already, unless the page is another market's `/~CODE` page here
+  // (swissarabian.com/~NEW → swissarabian.com, Global's own pages).
+  if (target.origin === current.origin && !marketPrefixOf(current.pathname || "/")) return null;
   const page = samePageFor(current);
   target.pathname = page.pathname;
   target.search = page.search;

@@ -90,12 +90,15 @@ describe("which markets the shared address serves", () => {
     ...over,
   });
 
-  it("serves a market without a website of its own; never on a market website", () => {
+  it("serves a market without a website of its own; on a market website only when it is the main address", () => {
     expect(servedHere(site(), "kwt")).toBe(true);
     expect(servedHere(site(), "URD1")).toBe(false);
     // An older backend (no onSharedAddress) or a market whose own address is pending.
     expect(servedHere(site(), "QAT")).toBe(false);
-    expect(servedHere(site({ siteMarketCode: "URD1" }), "KWT")).toBe(false);
+    // Another market's website (uae.): never.
+    expect(servedHere(site({ host: "uae.swissarabian.com", siteMarketCode: "URD1" }), "KWT")).toBe(false);
+    // The main address that is a market's own website (swissarabian.com for GLOBAL): yes.
+    expect(servedHere(site({ siteMarketCode: "GLOBAL" }), "KWT")).toBe(true);
   });
 
   it("keeps such a market's visitors here and sends the rest on", () => {

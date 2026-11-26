@@ -274,9 +274,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const siteMarket = marketsQuery.data.siteMarketCode;
     // On the shared address, a page under `/~KWT` is that market's: the address
     // decides, as on a market website (the proxy drew it for that market).
-    const addressMarket = siteMarket
-      ? null
-      : marketOfAddress(shoppable, marketsQuery.data, window.location.pathname);
+    const addressMarket = marketOfAddress(
+      shoppable,
+      marketsQuery.data,
+      window.location.pathname,
+    );
     // Else a choice of a market it serves (the picker here), as the proxy reads it.
     const choiceHere = choiceServedHere(
       shoppable,
@@ -284,8 +286,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       siteMarket ? null : readMarketChoice(),
     );
     const stored =
-      siteMarket ||
       addressMarket ||
+      siteMarket ||
       choiceHere ||
       storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
     const pick =

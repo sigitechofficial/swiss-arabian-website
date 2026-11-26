@@ -239,8 +239,20 @@ export async function proxy(request: NextRequest) {
     code && site.markets.some((market) => market.zoneCode === code) ? code : null;
   const treeKey = siteTreeKey(
     liveHost,
-    site.siteMarketCode ? null : (offered(zoneCookie) ?? offered(site.defaultMarketCode)),
+    pageMarketHere
+      ? pageMarketHere.zoneCode
+      : site.siteMarketCode
+        ? null
+        : (offered(zoneCookie) ?? offered(site.defaultMarketCode)),
   );
+  // The market this page is drawn for: the market of its `/~CODE` address, the
+  // address's own market, else the visitor's or the default (an address that
+  // serves several markets).
+  const pageMarketCode =
+    pageMarketHere?.zoneCode ??
+    site.siteMarketCode ??
+    offered(zoneCookie) ??
+    offered(site.defaultMarketCode);
   const markets: MarketCookies = {
     saveMarket,
     // A market's address keeps its market as the choice on the brand's domain too,
@@ -264,9 +276,11 @@ export async function proxy(request: NextRequest) {
   // A brand's root domain (no market of its own) sends the visitor to their
   // market's address: the market they chose before, else their country's, else
   // the default. A market with a website of its own: that website; a market this
-  // address serves: its `/~CODE` address here. Temporary (307, not cached): the
-  // choice depends on the visitor.
-  if (!segment && !site.siteMarketCode) {
+  // address serves: its `/~CODE` address here. The main address that is a market's
+  // own website (swissarabian.com for Global) does so only when the brand's rule is
+  // REDIRECT (else the country banner, or nothing). Temporary (307, not cached):
+  // the choice depends on the visitor.
+  if (!segment) {
     const visit = marketForVisitor(site, { zoneCode: marketChoice ?? savedZone, country });
     const target = visit?.storefrontUrl
       ? new URL(`${page}${request.nextUrl.search}`, visit.storefrontUrl)
@@ -283,7 +297,7 @@ export async function proxy(request: NextRequest) {
   // URL redirects from the admin (imported from Shopify or added by hand), for
   // the website's market: a market address decides it, else the market cookie.
   if (storefrontHost) {
-    const zone = site.siteMarketCode ? null : zoneCookie;
+    const zone = segment ? pageMarketCode : site.siteMarketCode ? null : zoneCookie;
     const target = matchRedirect(await redirectsFor(storefrontHost, zone), page);
     if (target) {
       const location = redirectLocation(target, request.nextUrl);
@@ -308,7 +322,7 @@ export async function proxy(request: NextRequest) {
     const productTarget = await productAddressRedirect({
       pathname: page,
       storefrontHost,
-      zoneCode: site.siteMarketCode ?? offered(zoneCookie) ?? offered(site.defaultMarketCode),
+      zoneCode: pageMarketCode,
     });
     if (productTarget) {
       const url = request.nextUrl.clone();
@@ -319,8 +333,6 @@ export async function proxy(request: NextRequest) {
 
   // Languages: the market's own (admin: Markets → languages). Its default has no
   // prefix (served from its `[locale]` segment), the others keep `/{locale}/…`.
-  const pageMarketCode =
-    site.siteMarketCode ?? offered(zoneCookie) ?? offered(site.defaultMarketCode);
   const pageMarket = site.markets.find((market) => market.zoneCode === pageMarketCode);
   const localeConfig = localeConfigFromMarket(pageMarket?.languages);
   const decision = localeRouting({
@@ -387,10 +399,15 @@ function leaveMarketLink(
   return response;
 }
 
-/** Whether `marketCode` is one of the markets of an address that serves several. */
+/**
+ * Whether `marketCode` has a page tree on this address: one of the markets of an
+ * address that serves several, or a market served at `/~CODE` on the brand's main
+ * address that is a market's own website.
+ */
 async function isMarketTreeOf(host: string, marketCode: string): Promise<boolean> {
   const lookup = await lookupSite(host);
-  if (lookup.status !== "known" || lookup.site.siteMarketCode) return false;
+  if (lookup.status !== "known") return false;
+  if (lookup.site.siteMarketCode) return servedHere(lookup.site, marketCode);
   return lookup.site.markets.some((market) => market.zoneCode === marketCode);
 }
 

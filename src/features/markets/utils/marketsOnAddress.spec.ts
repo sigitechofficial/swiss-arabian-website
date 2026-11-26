@@ -43,6 +43,11 @@ describe("the market of a page under /~CODE on the shared address", () => {
     expect(marketOfAddress([URD1, KWT, QAT], {}, "/~KWT/ar/products/oud")).toBe("KWT");
     expect(marketOfAddress([URD1, KWT, QAT], {}, "/~QAT/products")).toBeNull();
     expect(marketOfAddress([URD1, KWT], {}, "/ar/products/oud")).toBeNull();
-    expect(marketOfAddress([URD1, KWT], { siteMarketCode: "URD1" }, "/~KWT")).toBeNull();
+    // On the main address that is a market's own website (only there does the proxy
+    // serve /~KWT); never the address's own market.
+    expect(marketOfAddress([URD1, KWT], { siteMarketCode: "GLOBAL" }, "/~KWT")).toBe("KWT");
+    expect(
+      marketOfAddress([{ ...KWT, zoneCode: "GLOBAL" }], { siteMarketCode: "GLOBAL" }, "/~GLOBAL"),
+    ).toBeNull();
   });
 });
