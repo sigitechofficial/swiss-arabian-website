@@ -22,8 +22,9 @@ export function linePriceParts(
   snapshot: PromotionSnapshotV1 | null | undefined,
   fallback?: PromotionSnapshotV1 | null,
 ) {
-  const discount = lineMerchandiseDiscount(snapshot, line) || lineMerchandiseDiscount(fallback, line);
-  return linePrices(line.unitPrice * line.quantity, discount);
+  const discount =
+    lineMerchandiseDiscount(snapshot, line, line.currency) || lineMerchandiseDiscount(fallback, line, line.currency);
+  return linePrices(line.unitPrice * line.quantity, discount, line.currency);
 }
 
 /** Cart lines → the drawer / bag page rows. Every price comes from the cart API. */

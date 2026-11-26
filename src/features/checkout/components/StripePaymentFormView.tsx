@@ -4,10 +4,10 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { CheckoutElementsProvider, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
-import type { StripeCheckoutSession } from "@stripe/stripe-js";
+import { stripeSessionPayable } from "@/lib/stripe/sessionPayable";
 import { LoaderMark } from "@/components/ui/PageLoading";
 import { showsDistinctSize } from "@/features/cart/utils/showsDistinctSize";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { OrderResponse } from "../types/checkout";
 import { useCardPaymentSession } from "../hooks/useCardPaymentSession";
 import { useStripePromise, useStripeSessionOptions } from "../hooks/useStripeSessionOptions";
@@ -48,14 +48,6 @@ import {
   stripePaySummaryState,
 } from "@/styles/checkoutChrome";
 import { StripeCardPaymentForm, StripePayLockIcon } from "./StripeCardPaymentForm";
-
-function sessionPayable(session: StripeCheckoutSession): { amount: number; currency: string } {
-  const divisor = session.minorUnitsAmountDivisor || 100;
-  return {
-    amount: session.total.total.minorUnitsAmount / divisor,
-    currency: session.currency.toUpperCase(),
-  };
-}
 
 export function OrderSummary({
   order,
@@ -168,7 +160,7 @@ function StripeCheckoutLayout({
 }) {
   const t = useShopCopy();
   const checkoutState = useCheckoutElements();
-  const payable = checkoutState.type === "success" ? sessionPayable(checkoutState.checkout) : null;
+  const payable = checkoutState.type === "success" ? stripeSessionPayable(checkoutState.checkout) : null;
 
   return (
     <div className={checkoutLayout}>

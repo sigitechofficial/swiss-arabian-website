@@ -1,4 +1,5 @@
 import type { SiteIntegrations } from "@/lib/site/siteIntegrations.types";
+import { fromMinorUnits, toMinorUnits } from "@/lib/format/money";
 
 export type InstalmentProvider = "tamara" | "tabby";
 
@@ -21,10 +22,13 @@ export function instalmentProviders(
   };
 }
 
-/** Four payments to the cent. The last one carries whatever rounding left over, so they add up to the price. */
-export function payInFour(price: number): number[] {
-  const cents = Math.round(price * 100);
-  const each = Math.floor(cents / 4);
-  return [each, each, each, cents - each * 3].map((value) => value / 100);
+/**
+ * Four payments to the currency's smallest unit (fils, cents). The last one carries whatever
+ * rounding left over, so they add up to the price.
+ */
+export function payInFour(price: number, currency: string): number[] {
+  const minor = toMinorUnits(price, currency);
+  const each = Math.floor(minor / 4);
+  return [each, each, each, minor - each * 3].map((value) => fromMinorUnits(value, currency));
 }
 

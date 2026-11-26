@@ -12,7 +12,6 @@
   "remove": "Remove",
   "showPassword": "Show password",
   "hidePassword": "Hide password",
-
   "authHomeLink": "Sapil home",
   "authEmailOrPhone": "Email or phone",
   "authEmailOrPhonePlaceholder": "you@email.com or +{dial}…",
@@ -101,7 +100,6 @@
   "noticeEmailVerifiedSignIn": "Email verified. Please sign in.",
   "noticeResetCodeSent": "If an account exists, a reset code has been sent.",
   "noticePasswordUpdated": "Password updated. Please sign in.",
-
   "navLabel": "Account sections",
   "navOverview": "Overview",
   "navOrders": "Orders",
@@ -138,7 +136,6 @@
   "tileReturns": "Returns and exchanges",
   "tilePayments": "Payment history",
   "tileSecurity": "Password and sign-in",
-
   "profileTitle": "Profile",
   "profileLede": "Your name, email and phone.",
   "profileName": "Name",
@@ -158,7 +155,6 @@
   "consentSMS": "Offers by text message",
   "consentWHATSAPP": "Offers on WhatsApp",
   "consentPUSH": "Offers in app notifications",
-
   "addressesTitle": "Addresses",
   "addressesLede": "Saved addresses fill in checkout for you.",
   "addressesAdd": "Add an address",
@@ -177,7 +173,6 @@
   "addressesRegion": "Emirate or region",
   "addressesPhone": "Phone",
   "addressesPostal": "Postal code",
-
   "securityTitle": "Security",
   "securityLede": "Change the password you use to sign in.",
   "securityChange": "Change password",
@@ -193,9 +188,11 @@
   "securityDone": "Password updated. Please sign in again.",
   "securityForgot": "Forgotten your current password? {link}.",
   "securityForgotLink": "Reset it by email",
-
   "wishlistTitle": "Wishlist",
-  "wishlistCount": { "one": "{count} saved fragrance", "other": "{count} saved fragrances" },
+  "wishlistCount": {
+    "one": "{count} saved fragrance",
+    "other": "{count} saved fragrances"
+  },
   "wishlistEmpty": "Save fragrances from the shop to find them here later.",
   "wishlistClear": "Clear wishlist",
   "wishlistClearConfirm": "Remove every fragrance from your wishlist?",
@@ -207,7 +204,6 @@
   "wishlistPrev": "Previous page",
   "wishlistNext": "Next page",
   "wishlistPage": "Page {page} of {pages}",
-
   "reviewsTitle": "Your reviews",
   "reviewsLede": "Reviews you’ve written for Sapil fragrances.",
   "reviewsAll": "All",
@@ -220,7 +216,6 @@
   "reviewsDeleting": "Deleting…",
   "reviewsMore": "Show more",
   "reviewsRating": "{rating} out of 5",
-
   "returnsTitle": "Returns and exchanges",
   "returnsLede": "Requests you’ve made for delivered orders.",
   "returnsReturns": "Returns",
@@ -229,9 +224,11 @@
   "returnsStart": "To start a return, open the order in {link}.",
   "returnsOrdersLink": "Your orders",
   "returnsRequested": "Requested {date}",
-  "returnsItems": { "one": "{count} item", "other": "{count} items" },
+  "returnsItems": {
+    "one": "{count} item",
+    "other": "{count} items"
+  },
   "returnsMore": "Show more",
-
   "paymentsTitle": "Payments",
   "paymentsLede": "Payments for your orders. Card details are never stored by Sapil.",
   "paymentsAll": "All",
@@ -248,14 +245,16 @@
   "payREFUNDED": "Refunded",
   "payPARTIALLY_REFUNDED": "Partly refunded",
   "payNOT_REQUIRED": "No payment due",
-
   "ordersTitle": "Your orders",
   "ordersActive": "Active",
   "ordersPast": "Past orders",
   "ordersEmptyTitle": "No orders yet.",
   "ordersEmptyBody": "Your orders will show here once you’ve placed one.",
   "ordersEmptyCta": "Shop all perfume",
-  "ordersItems": { "one": "{count} item", "other": "{count} items" },
+  "ordersItems": {
+    "one": "{count} item",
+    "other": "{count} items"
+  },
   "ordersPrev": "Previous",
   "ordersNext": "Next",
   "ordersPage": "Page {page} of {pages}",
@@ -263,7 +262,6 @@
   "ordersGuestLink": "Track it here",
   "ordersPay": "Complete payment",
   "ordersOpen": "Order {number}",
-
   "odEyebrow": "Order {number} · placed {date}",
   "odThanks": "Thank you, {name}.",
   "odThanksNoName": "Thank you.",
@@ -291,7 +289,10 @@
   "stepPreparingHint": "Packed with care",
   "stepShippedHint": "On its way to you",
   "stepDeliveredHint": "Enjoy your fragrance",
-  "odItems": { "one": "{count} item", "other": "{count} items" },
+  "odItems": {
+    "one": "{count} item",
+    "other": "{count} items"
+  },
   "odQty": "Qty {count}",
   "odFreeGift": "Free gift",
   "odFree": "Free",
@@ -307,6 +308,7 @@
   "odPaid": "Paid {amount}",
   "odPaidGiftCard": "Paid by gift card",
   "odPaidPoints": "Paid with reward points",
+  "odRounding": "Rounding",
   "odPayCash": "Have {amount} ready for the courier, in cash or by card.",
   "odPayPending": "Payment of {amount} is processing.",
   "odPayFailed": "Payment of {amount} wasn’t completed.",
@@ -364,7 +366,6 @@
   "odCarrierLink": "Track with the courier",
   "odTrackingNumber": "Tracking number {number}",
   "odHistory": "Tracking history",
-
   "trackEyebrow": "Order tracking",
   "trackTitle": "Track your",
   "trackAccent": "order.",
@@ -387,7 +388,6 @@
   "trackNotInAccount": "This order isn’t in your account. If it was placed as a guest, use its tracking token.",
   "trackPlaced": "Placed {date} · {items} · {total}",
   "trackFullOrder": "View full order",
-
   "statusDRAFT": "Draft",
   "statusPAYMENT_PENDING": "Awaiting payment",
   "statusPAYMENT_AUTHORIZED": "Authorised",
@@ -402,5 +402,25 @@
   "statusREFUND_PENDING": "Refund pending",
   "statusREFUNDED": "Refunded",
   "statusMANUAL_REVIEW": "Under review",
-  "statusFAILED": "Failed"
+  "statusFAILED": "Failed",
+  "noticeSignupCodesSent": "We sent a code to your email and one to your mobile.",
+  "noticeAccountFound": "We found your account. Enter the codes we sent to finish.",
+  "noticeSignedUp": "Your account is ready. You're signed in.",
+  "registerMarketingConsent": "Email me offers and news.",
+  "registerSmsConsent": "Send me offers by SMS.",
+  "registerCodesTitle": "Check your",
+  "registerCodesAccent": "email and mobile",
+  "registerCodesLede": "Enter the code we sent to {email} and the code we sent to your mobile ending in {digits}.",
+  "registerAccountFoundLede": "We found your account. Enter the code we sent to {email} and the code we sent to your mobile ending in {digits} to finish.",
+  "registerEmailCode": "Code from the email",
+  "registerPhoneCode": "Code from the mobile",
+  "registerEmailConfirmed": "Email confirmed.",
+  "registerPhoneConfirmed": "Mobile number confirmed.",
+  "registerConfirm": "Confirm and create account",
+  "registerConfirming": "Confirming…",
+  "registerResendEmail": "Send the email code again",
+  "registerResendSms": "Send the mobile code again by SMS",
+  "registerResendWhatsApp": "Send the mobile code by WhatsApp",
+  "registerStartOver": "Change my details",
+  "authErrEmailOrPhone": "Enter a valid email or mobile number"
 }

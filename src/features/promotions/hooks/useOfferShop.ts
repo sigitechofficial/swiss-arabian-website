@@ -9,7 +9,7 @@ import { localeFromPathname } from "@/lib/i18n/localePath";
 import { useResetOnChange } from "@/hooks/useResetOnChange";
 import { apiGet, apiPost } from "@/lib/api/apiClient";
 import { addCartItems, storefrontCartQuery } from "@/features/cart/api/cart.service";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { promotionKeys } from "../api/promotions.keys";

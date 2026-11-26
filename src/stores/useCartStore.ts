@@ -53,6 +53,8 @@ type CartTotals = {
   taxLabels?: Readonly<Record<string, string>> | null;
   taxIncluded?: boolean;
   amountPayable: number | null;
+  /** The server's payable rounding (≤ 0): what is due was rounded down to the market's step. */
+  payableRounding?: number | null;
   currency: string;
   itemCount: number;
   totalQty: number;
@@ -238,6 +240,13 @@ export const useCartStore = create<CartState>()(
             amountPayable: (() => {
               const raw =
                 cart.amountPayable ?? cart.promotions?.totals?.amountPayable ?? null;
+              if (raw == null || raw === "") return null;
+              const parsed = Number(raw);
+              return Number.isFinite(parsed) ? parsed : null;
+            })(),
+            payableRounding: (() => {
+              const raw =
+                cart.payableRounding ?? cart.promotions?.totals?.payableRounding ?? null;
               if (raw == null || raw === "") return null;
               const parsed = Number(raw);
               return Number.isFinite(parsed) ? parsed : null;

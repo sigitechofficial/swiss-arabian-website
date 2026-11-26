@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";

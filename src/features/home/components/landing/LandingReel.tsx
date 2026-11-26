@@ -6,7 +6,8 @@ import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogI
 import { useShopableVideo } from "@/features/merchandising";
 import type { ShopableVideoSlide } from "@/features/merchandising/types/merch";
 import { parseShopablePrice } from "@/features/merchandising/utils/playableShopableSlides";
-import { formatMoney } from "../../utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
+import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { pageContainer } from "@/styles/siteChrome";
 import { useResetOnChange } from "@/hooks/useResetOnChange";
 
@@ -68,6 +69,7 @@ export type LandingReelProps = {
 };
 
 export function LandingReel({ heading }: LandingReelProps = {}) {
+  const t = useShopCopy();
   const { slides, sectionTitle, isReady } = useShopableVideo();
   const title = heading?.trim() || sectionTitle;
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -276,7 +278,7 @@ export function LandingReel({ heading }: LandingReelProps = {}) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className={reelProductTitle}>{slide.name}</span>
-                    <span className={reelProductPrice}>{formatMoney(price, currency)}</span>
+                    <span className={reelProductPrice}>{price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(price, currency)}</span>
                   </span>
                 </>
               );

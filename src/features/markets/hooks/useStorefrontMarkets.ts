@@ -10,7 +10,6 @@ export function useStorefrontMarkets() {
   const pathname = usePathname();
   return useApiQuery(marketsKeys.list(), fetchStorefrontMarkets, {
     staleTime: 5 * 60 * 1000,
-    retry: 1,
     enabled: !isShopUnavailablePath(pathname),
   });
 }

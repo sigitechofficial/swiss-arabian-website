@@ -42,8 +42,6 @@ export function useAccountDashboard(options: { onLogoutError?: (error: unknown) 
     queryKey: ["customer-orders", "recent"],
     queryFn: () => listOrders({ limit: 1, offset: 0 }),
     staleTime: 60_000,
-    // One retry: a rejected request should not hold this panel on "Loading" for long.
-    retry: 1,
   });
   // Shares the address book's cache, so edits there update this panel.
   const addresses = useApiQuery(customerAccountKeys.addresses(), listCustomerAddresses);

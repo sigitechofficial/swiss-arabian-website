@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { fullLineMessage } from "@/features/cart/utils/stockLimit";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { WishlistHeartButton } from "@/features/wishlist/components/WishlistHeartButton";
 import { StockAlertButton } from "./StockAlertButton";

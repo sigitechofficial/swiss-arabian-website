@@ -4,7 +4,7 @@ import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { MissThisSwiper } from "@/features/cart/components/MissThisSwiper";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import {
   checkoutCrumbsList,
   collectionHeadFlush,
@@ -71,6 +71,7 @@ export function CheckoutPageView() {
     shipDiscount,
     giftCards,
     amountPayable,
+    payableRounding,
     warnings,
     earnPreview,
     submitting,
@@ -252,6 +253,7 @@ export function CheckoutPageView() {
                 tax={tax}
                 total={total}
                 amountPayable={amountPayable}
+                payableRounding={payableRounding}
                 giftCards={giftCards}
                 warnings={warnings}
                 earnPreview={earnPreview.preview}

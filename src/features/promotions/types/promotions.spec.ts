@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import {
   amountPayableFrom,
   checkoutQuoteSnapshot,
@@ -26,9 +26,10 @@ const snapshot = {
 
 describe("server money formatting", () => {
   it("renders decimal strings through currency formatting", () => {
-    expect(formatMoney(Number("0.00"))).toBe("AED 0.00");
-    expect(formatMoney(Number("20.00"))).toBe("AED 20.00");
-    expect(formatMoney(Number("100.50"))).toBe("AED 100.50");
+    expect(formatMoney("0.00", "AED")).toBe("AED 0.00");
+    expect(formatMoney("20.00", "AED")).toBe("AED 20.00");
+    expect(formatMoney("100.50", "AED")).toBe("AED 100.50");
+    expect(formatMoney("10.120", "KWD")).toBe("KWD 10.120");
   });
 });
 

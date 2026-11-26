@@ -8,7 +8,8 @@ import { imagesSettled, useLoadedImages } from "@/features/catalog/hooks/useLoad
 import { stripHtml } from "@/features/catalog/utils/catalogHtml";
 import type { ChromeMega } from "@/features/home/constants/chromeNav";
 import type { MegaProduct } from "@/features/home/constants/megaProducts";
-import { cardEyebrow, formatMoney } from "@/features/home/utils/formatMoney";
+import { cardEyebrow } from "@/features/home/utils/cardEyebrow";
+import { formatMoney } from "@/lib/format/money";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   megaProd,

@@ -1,3 +1,4 @@
+import { roundMoney } from "@/lib/format/money";
 import type { PromotionSnapshotV1 } from "../types/promotions";
 
 type DiscountLine = {
@@ -9,6 +10,7 @@ type DiscountLine = {
 export function lineMerchandiseDiscount(
   snapshot: PromotionSnapshotV1 | null | undefined,
   line: DiscountLine,
+  currency: string,
 ): number {
   let total = 0;
   for (const row of snapshot?.lineAllocations ?? []) {
@@ -19,16 +21,17 @@ export function lineMerchandiseDiscount(
       : Boolean(line.sku && row.sku && row.sku === line.sku);
     if (matched) total += amount;
   }
-  return Math.round(total * 100) / 100;
+  return roundMoney(total, currency);
 }
 
 export function linePrices(
   listTotal: number,
   discount: number,
+  currency: string,
 ): { list: number; sale: number | null } {
-  const list = Math.round(listTotal * 100) / 100;
+  const list = roundMoney(listTotal, currency);
   if (!Number.isFinite(list) || list <= 0 || discount <= 0) return { list, sale: null };
-  const sale = Math.round((list - discount) * 100) / 100;
+  const sale = roundMoney(list - discount, currency);
   if (sale >= list) return { list, sale: null };
   return { list, sale: Math.max(0, sale) };
 }

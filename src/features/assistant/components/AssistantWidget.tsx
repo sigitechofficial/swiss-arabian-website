@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { getBrandConfig } from "@/lib/brand";
 import { ApiClientError } from "@/lib/api/apiError";
 import { resolveCatalogImageUrl } from "@/features/catalog/utils/resolveCatalogImageUrl";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -24,6 +24,7 @@ import type {
   AssistantChatResponse,
   AssistantHistory,
 } from "../types";
+import { readSellingPrice } from "@/features/catalog/utils/priceSummary";
 
 type Props = {
   zoneCode: string;
@@ -139,10 +140,10 @@ function ProductCard({
   const copy = useShopCopy();
   const [state, setState] = useState<"idle" | "adding" | "added">("idle");
   const image = resolveCatalogImageUrl(card.image);
-  const price = Number(card.priceSummary?.price);
+  const price = readSellingPrice(card.priceSummary) ?? Number.NaN;
   const compareAt = Number(card.priceSummary?.compareAtPrice);
   const currency = card.priceSummary?.currencyCode?.trim() || "AED";
-  const showPrice = card.priceSummary?.hasValidPrice !== false && Number.isFinite(price) && price > 0;
+  const showPrice = Number.isFinite(price);
   const onSale = showPrice && Number.isFinite(compareAt) && compareAt > price;
   const percentOff = onSale ? Math.round((1 - price / compareAt) * 100) : 0;
   const canAdd = Boolean(onAdd && card.slug && showPrice);

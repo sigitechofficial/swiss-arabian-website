@@ -16,7 +16,7 @@ import {
   catalogKeys,
   fetchCatalogSearch,
 } from "@/features/catalog/api/catalog.service";
-import { formatMoney } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/lib/format/money";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
 import { SEARCH_MIN_QUERY_LENGTH } from "../constants";

@@ -13,7 +13,7 @@ import {
 import type { CheckoutStatus } from "../../hooks/useCheckout";
 import type { PaymentMethodOption } from "../../types/checkout";
 import type { InlinePaymentSession } from "../../utils/startPayment";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { InlineMethodPayment } from "./InlineMethodPayment";
 import { TabbyCheckoutCard } from "./TabbyCheckoutCard";
 import type { TabbyPrescore } from "../../hooks/useTabbyPrescore";
@@ -101,7 +101,9 @@ export function CheckoutPayment({
       ? t("checkout.pay.withWallet", { wallet: "Apple Pay" })
       : activeRow?.surface === "google_pay"
         ? t("checkout.pay.withWallet", { wallet: "Google Pay" })
-        : t("checkout.pay.payAmount", { amount: formatMoney(amountPayable, currency) });
+        : amountPayable == null
+          ? t("checkout.cta.place")
+          : t("checkout.pay.payAmount", { amount: formatMoney(amountPayable, currency) });
 
   return (
     <>

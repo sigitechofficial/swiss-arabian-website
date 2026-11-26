@@ -22,7 +22,7 @@ export function PdpInstalments({
   money: (n: number) => string;
 }) {
   const t = useSapilCopy();
-  const plan = useInstalmentPlan(price);
+  const plan = useInstalmentPlan(price, currency);
   const provider = plan.providers.find((p) => p.id === plan.open);
   const when = [
     t("product.payToday"),

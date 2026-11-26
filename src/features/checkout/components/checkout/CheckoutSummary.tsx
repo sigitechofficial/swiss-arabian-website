@@ -62,6 +62,8 @@ type CheckoutSummaryProps = {
   tax: number;
   total: number;
   amountPayable: number | null;
+  /** Server payable rounding (≤ 0), shown before the amount due. */
+  payableRounding?: number | null;
   giftCards: ReturnType<typeof visibleGiftCards>;
   warnings: string[];
   earnPreview?: LoyaltyEarnPreviewView | null;
@@ -82,6 +84,7 @@ export function CheckoutSummary({
   tax,
   total,
   amountPayable,
+  payableRounding = null,
   giftCards,
   warnings,
   earnPreview,
@@ -191,6 +194,7 @@ export function CheckoutSummary({
         taxIncluded={session?.context?.taxDisplay?.pricesIncludeTax === true}
         total={total}
         amountPayable={amountPayable}
+        payableRounding={payableRounding}
         loyalty={loyaltyLineFromQuote(loyaltyQuote)}
         giftCards={giftCards}
       />

@@ -18,26 +18,6 @@ export type ChromeNavItem =
 
 export const TOPBAR_CATS: ChromeLink[] = [];
 
-export const TOPBAR_REGIONS = [
-  { id: "UAE", label: "UAE", flag: "🇦🇪", countryCode: "AE" },
-  { id: "KSA", label: "KSA", flag: "🇸🇦", countryCode: "SA" },
-  { id: "KWT", label: "Kuwait", flag: "🇰🇼", countryCode: "KW" },
-  { id: "QAT", label: "Qatar", flag: "🇶🇦", countryCode: "QA" },
-  { id: "BHR", label: "Bahrain", flag: "🇧🇭", countryCode: "BH" },
-  { id: "OMN", label: "Oman", flag: "🇴🇲", countryCode: "OM" },
-] as const;
-
-/** Every configured shop language; the picker uses the market's languages once known. */
-
-export const TOPBAR_CURRENCIES = [
-  { id: "AED", label: "AED" },
-  { id: "SAR", label: "SAR" },
-  { id: "KWD", label: "KWD" },
-  { id: "QAR", label: "QAR" },
-  { id: "BHD", label: "BHD" },
-  { id: "OMR", label: "OMR" },
-] as const;
-
 export const PRIMARY_NAV: ChromeNavItem[] = [
   { type: "link", label: "New Launches", href: "/collections/new-launches" },
   {

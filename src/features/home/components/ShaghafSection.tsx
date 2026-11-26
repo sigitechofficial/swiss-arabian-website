@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  formatUsd,
   shaghafSpotlight,
 } from "@/features/home/data/homeContent";
+import { formatMoney } from "@/lib/format/money";
 import { homeAssets } from "@/features/home/constants/homeAssets";
 import { useAddCatalogProduct } from "@/features/cart/hooks/useAddCatalogProduct";
 
@@ -60,7 +60,7 @@ export function ShaghafSection() {
                   </div>
                   <div className="ml-auto flex shrink-0 items-center gap-3">
                     <p className="font-sans text-[17px] font-bold text-sa-primary">
-                      {formatUsd(item.price)}
+                      {formatMoney(item.price, "USD")}
                     </p>
                     <button
                       type="button"

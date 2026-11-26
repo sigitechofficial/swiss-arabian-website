@@ -130,10 +130,9 @@ export function LoginPageView() {
         >
           <AuthField
             id="code-email"
-            label={t("email")}
-            placeholder="you@example.com"
-            autoComplete="email"
-            inputMode="email"
+            label={t("auth.login.emailOrPhone")}
+            placeholder={t("auth.login.emailOrPhonePlaceholder")}
+            autoComplete="username"
             {...emailForm.register("email")}
             error={formErrorText(t, emailForm.formState.errors.email?.message)}
           />

@@ -6,6 +6,7 @@ import { useLocaleRouter } from "@/lib/i18n/useLocaleRouter";
 import { useSelectedCatalogMarket } from "@/features/markets/hooks/useSelectedCatalogMarket";
 import {
   amountPayableFrom,
+  payableRoundingFrom,
   shippingDiscountAmount,
   useApplicablePromotions,
   visibleGiftCards,
@@ -99,6 +100,14 @@ export function useBagPage() {
     totals && quotedShip > 0 && shipping != null ? Math.max(0, shipping - totals.shipping) : 0;
   const amountPayable =
     payable != null && extraShipping > 0 ? payable + extraShipping : payable;
+  // The server's rounding of what is due. When the bag adds a delivery estimate on top of the
+  // quote, the quote's rounding no longer applies: checkout shows the rounded amount then.
+  const payableRounding =
+    extraShipping > 0
+      ? null
+      : payableRoundingFrom(promotions, [
+          totals?.payableRounding != null ? String(totals.payableRounding) : null,
+        ]);
 
   /**
    * Guide: always re-validate before checkout, and block the button when the
@@ -149,6 +158,7 @@ export function useBagPage() {
     giftCards,
     total,
     amountPayable,
+    payableRounding,
     blockingErrors,
     priceChanged,
     hasUnavailable,

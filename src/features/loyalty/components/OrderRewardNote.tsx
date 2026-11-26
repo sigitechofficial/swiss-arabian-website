@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { formatPoints, type LoyaltyOrderRewardView } from "../types/loyalty";

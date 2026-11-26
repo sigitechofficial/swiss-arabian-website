@@ -5,7 +5,7 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { linkSlots, TextWithLinks } from "@/lib/i18n/TextWithLinks";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LoaderMark } from "@/components/ui/PageLoading";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useCardPaymentSession } from "../hooks/useCardPaymentSession";
 import { usePaymobCardForm, type PaymobPayError } from "../hooks/usePaymobCardForm";
 import { CheckoutSpinnerState, CheckoutStateShell } from "./CheckoutStateShell";

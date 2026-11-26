@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ApiClientError } from "@/lib/api/apiError";
+import { retryTransientFailures } from "@/lib/api/queryRetry";
 import { useApiQuery } from "@/lib/api/queryHooks";
 import { DEFAULT_ZONE_CODE } from "@/lib/storefront/context";
 import { useMarket } from "@/providers/MarketProvider";
@@ -16,10 +16,8 @@ import {
 } from "../api/reviews.service";
 import type { ReviewSort } from "../types/reviews";
 
-function retryUnlessNotFound(failureCount: number, error: Error) {
-  if (error instanceof ApiClientError && error.status === 404) return false;
-  return failureCount < 2;
-}
+/** Up to two retries, for transient failures only: a 4xx (not found, forbidden) is final. */
+const retryTransientTwice = retryTransientFailures(2);
 
 export function useReviewZoneCode() {
   const { marketId } = useMarket();
@@ -34,7 +32,7 @@ export function useProductReviewSummary(
   return useApiQuery(
     reviewsKeys.summary(productKey, zoneCode),
     () => fetchReviewSummary(productKey, zoneCode),
-    { enabled: enabled && Boolean(productKey), retry: retryUnlessNotFound },
+    { enabled: enabled && Boolean(productKey), retry: retryTransientTwice },
   );
 }
 
@@ -59,7 +57,7 @@ export function useProductReviewFeed(
       return next < lastPage.total ? next : undefined;
     },
     enabled: enabled && Boolean(productKey),
-    retry: retryUnlessNotFound,
+    retry: retryTransientTwice,
   });
 }
 

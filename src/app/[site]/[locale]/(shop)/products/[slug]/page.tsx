@@ -18,6 +18,7 @@ import { applySeoOverrides } from "@/lib/seo/pageSeo";
 import { effectiveProductSeo, parseSchemaOverride } from "@/lib/seo/productSeo";
 import { absoluteUrl, requestOrigin, requestSiteBase } from "@/lib/seo/requestOrigin";
 import { storefrontLogo } from "@/lib/storefront/brand";
+import { toDecimalString } from "@/lib/format/money";
 import { CatalogJsonLd, ProductDetailPageView } from "@brand-ui";
 
 /** Prerendered per language on first visit and revalidated (ISR). */
@@ -92,7 +93,7 @@ function ProductOpenGraphTags({
   sku: string | null | undefined;
 }) {
   const hasPrice = price != null && Number.isFinite(price) && Boolean(currency);
-  const amount = hasPrice ? price!.toFixed(2) : null;
+  const amount = hasPrice ? toDecimalString(price!, currency) : null;
   return (
     <>
       <meta property="og:type" content="product" />

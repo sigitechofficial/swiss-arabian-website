@@ -1,6 +1,7 @@
 import { englishTranslator, type Translator } from "@/lib/i18n/messages";
 import type { BeginSubscriptionCheckoutBody, SubscriptionCheckoutView } from "../api/subscription.api";
 import { selectTestPublishableKey } from "./cardSetup";
+import { formatMoney } from "@/lib/format/money";
 
 export function subscriptionCheckoutPath(planCode: string): string {
   return `/subscriptions/${encodeURIComponent(planCode)}/checkout`;
@@ -60,9 +61,9 @@ export function subscriptionPayToday(
   const currency = view.currencyCode.trim().toUpperCase();
   const shippingAmount = Number(view.shippingAmount);
   return {
-    subscription: `${currency} ${view.amount}`,
-    shipping: Number.isFinite(shippingAmount) && shippingAmount > 0 ? `${currency} ${view.shippingAmount}` : t("subs.included"),
-    payToday: `${currency} ${view.monthlyTotal}`,
+    subscription: formatMoney(view.amount, currency),
+    shipping: Number.isFinite(shippingAmount) && shippingAmount > 0 ? formatMoney(view.shippingAmount, currency) : t("subs.included"),
+    payToday: formatMoney(view.monthlyTotal, currency),
   };
 }
 
