@@ -57,6 +57,9 @@ export const CodeField = forwardRef<HTMLInputElement, InputProps & { id: string;
 const NOTICE_KEYS: Record<Exclude<AuthNotice, "chooseCountry">, SapilCopyKey> = {
   codeSent: "account.noticeCodeSent",
   codeResent: "account.noticeCodeResent",
+  signupCodesSent: "account.noticeSignupCodesSent",
+  accountFound: "account.noticeAccountFound",
+  signedUp: "account.noticeSignedUp",
   signedIn: "account.noticeSignedIn",
   emailVerifiedSignedIn: "account.noticeEmailVerifiedSignedIn",
   emailVerifiedSignIn: "account.noticeEmailVerifiedSignIn",

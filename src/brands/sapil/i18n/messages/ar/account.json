@@ -12,7 +12,6 @@
   "remove": "إزالة",
   "showPassword": "إظهار كلمة المرور",
   "hidePassword": "إخفاء كلمة المرور",
-
   "authHomeLink": "الصفحة الرئيسية لسابيل",
   "authEmailOrPhone": "البريد الإلكتروني أو الجوال",
   "authEmailOrPhonePlaceholder": "you@email.com أو ‎+{dial}…",
@@ -100,7 +99,6 @@
   "noticeEmailVerifiedSignIn": "تم التحقق من البريد. سجّل الدخول من فضلك.",
   "noticeResetCodeSent": "إن كان الحساب موجودًا، فقد أرسلنا رمز إعادة التعيين.",
   "noticePasswordUpdated": "تم تحديث كلمة المرور. سجّل الدخول من فضلك.",
-
   "navLabel": "أقسام الحساب",
   "navOverview": "نظرة عامة",
   "navOrders": "الطلبات",
@@ -136,7 +134,6 @@
   "tileReturns": "الإرجاع والاستبدال",
   "tilePayments": "سجل المدفوعات",
   "tileSecurity": "كلمة المرور وتسجيل الدخول",
-
   "profileTitle": "الملف الشخصي",
   "profileLede": "اسمك وبريدك ورقم جوالك.",
   "profileName": "الاسم",
@@ -154,7 +151,6 @@
   "consentSMS": "العروض عبر الرسائل النصية",
   "consentWHATSAPP": "العروض عبر واتساب",
   "consentPUSH": "العروض عبر إشعارات التطبيق",
-
   "addressesTitle": "العناوين",
   "addressesLede": "العناوين المحفوظة تملأ صفحة الدفع تلقائيًا.",
   "addressesAdd": "إضافة عنوان",
@@ -172,7 +168,6 @@
   "addressesApartment": "الشقة أو الفيلا",
   "addressesRegion": "الإمارة أو المنطقة",
   "addressesPhone": "الجوال",
-
   "securityTitle": "الأمان",
   "securityLede": "غيّر كلمة المرور التي تستخدمها للدخول.",
   "securityChange": "تغيير كلمة المرور",
@@ -188,9 +183,13 @@
   "securityDone": "تم تحديث كلمة المرور. سجّل الدخول مجددًا من فضلك.",
   "securityForgot": "نسيت كلمة المرور الحالية؟ {link}.",
   "securityForgotLink": "أعد تعيينها عبر البريد",
-
   "wishlistTitle": "المفضلة",
-  "wishlistCount": { "one": "عطر محفوظ واحد", "two": "عطران محفوظان", "few": "{count} عطور محفوظة", "other": "{count} عطرًا محفوظًا" },
+  "wishlistCount": {
+    "one": "عطر محفوظ واحد",
+    "two": "عطران محفوظان",
+    "few": "{count} عطور محفوظة",
+    "other": "{count} عطرًا محفوظًا"
+  },
   "wishlistEmpty": "احفظ العطور من المتجر لتجدها هنا لاحقًا.",
   "wishlistClear": "مسح المفضلة",
   "wishlistClearConfirm": "إزالة كل العطور من المفضلة؟",
@@ -201,7 +200,6 @@
   "wishlistPrev": "الصفحة السابقة",
   "wishlistNext": "الصفحة التالية",
   "wishlistPage": "صفحة {page} من {pages}",
-
   "reviewsTitle": "تقييماتك",
   "reviewsLede": "التقييمات التي كتبتها لعطور سابيل.",
   "reviewsAll": "الكل",
@@ -213,7 +211,6 @@
   "reviewsDelete": "حذف",
   "reviewsDeleting": "جارٍ الحذف…",
   "reviewsMore": "عرض المزيد",
-
   "returnsTitle": "الإرجاع والاستبدال",
   "returnsLede": "الطلبات التي قدّمتها لطلبات تم توصيلها.",
   "returnsReturns": "الإرجاع",
@@ -222,9 +219,13 @@
   "returnsStart": "لبدء الإرجاع، افتح الطلب في {link}.",
   "returnsOrdersLink": "طلباتك",
   "returnsRequested": "قُدّم في {date}",
-  "returnsItems": { "one": "منتج واحد", "two": "منتجان", "few": "{count} منتجات", "other": "{count} منتج" },
+  "returnsItems": {
+    "one": "منتج واحد",
+    "two": "منتجان",
+    "few": "{count} منتجات",
+    "other": "{count} منتج"
+  },
   "returnsMore": "عرض المزيد",
-
   "paymentsTitle": "المدفوعات",
   "paymentsLede": "مدفوعات طلباتك. لا تحفظ سابيل بيانات بطاقتك.",
   "paymentsAll": "الكل",
@@ -241,14 +242,18 @@
   "payREFUNDED": "مسترد",
   "payPARTIALLY_REFUNDED": "مسترد جزئيًا",
   "payNOT_REQUIRED": "لا دفع مستحق",
-
   "ordersTitle": "طلباتك",
   "ordersActive": "الحالية",
   "ordersPast": "الطلبات السابقة",
   "ordersEmptyTitle": "لا طلبات بعد.",
   "ordersEmptyBody": "ستظهر طلباتك هنا بعد أن تطلب.",
   "ordersEmptyCta": "تسوّق كل العطور",
-  "ordersItems": { "one": "منتج واحد", "two": "منتجان", "few": "{count} منتجات", "other": "{count} منتج" },
+  "ordersItems": {
+    "one": "منتج واحد",
+    "two": "منتجان",
+    "few": "{count} منتجات",
+    "other": "{count} منتج"
+  },
   "ordersPrev": "السابق",
   "ordersNext": "التالي",
   "ordersPage": "صفحة {page} من {pages}",
@@ -256,7 +261,6 @@
   "ordersGuestLink": "تتبّعه من هنا",
   "ordersPay": "إكمال الدفع",
   "ordersOpen": "الطلب {number}",
-
   "odEyebrow": "الطلب {number} · بتاريخ {date}",
   "odThanks": "شكرًا لك يا {name}.",
   "odThanksNoName": "شكرًا لك.",
@@ -283,7 +287,12 @@
   "stepPreparingHint": "يُغلّف بعناية",
   "stepShippedHint": "في الطريق إليك",
   "stepDeliveredHint": "استمتع بعطرك",
-  "odItems": { "one": "منتج واحد", "two": "منتجان", "few": "{count} منتجات", "other": "{count} منتج" },
+  "odItems": {
+    "one": "منتج واحد",
+    "two": "منتجان",
+    "few": "{count} منتجات",
+    "other": "{count} منتج"
+  },
   "odQty": "الكمية {count}",
   "odFreeGift": "هدية مجانية",
   "odFree": "مجاني",
@@ -357,7 +366,6 @@
   "odCarrierLink": "التتبّع لدى شركة الشحن",
   "odTrackingNumber": "رقم التتبّع {number}",
   "odHistory": "سجل التتبّع",
-
   "trackEyebrow": "تتبّع الطلب",
   "trackTitle": "تتبّع",
   "trackAccent": "طلبك.",
@@ -379,7 +387,6 @@
   "trackNotInAccount": "هذا الطلب ليس في حسابك. إن طلبته كزائر، استخدم رمز التتبّع.",
   "trackPlaced": "بتاريخ {date} · {items} · {total}",
   "trackFullOrder": "عرض الطلب كاملًا",
-
   "statusDRAFT": "مسودة",
   "statusPAYMENT_PENDING": "بانتظار الدفع",
   "statusPAYMENT_AUTHORIZED": "مُصرّح",
@@ -394,5 +401,25 @@
   "statusREFUND_PENDING": "الاسترداد قيد المعالجة",
   "statusREFUNDED": "مسترد",
   "statusMANUAL_REVIEW": "قيد المراجعة",
-  "statusFAILED": "فشل"
+  "statusFAILED": "فشل",
+  "noticeSignupCodesSent": "أرسلنا رمزًا إلى بريدك الإلكتروني ورمزًا آخر إلى هاتفك المحمول.",
+  "noticeAccountFound": "وجدنا حسابك. أدخل الرمزين اللذين أرسلناهما لإكمال التسجيل.",
+  "noticeSignedUp": "حسابك جاهز، وقد سجّلت الدخول.",
+  "registerMarketingConsent": "أرسلوا لي العروض والأخبار عبر البريد الإلكتروني.",
+  "registerSmsConsent": "أرسلوا لي العروض عبر الرسائل النصية.",
+  "registerCodesTitle": "تحقّق من",
+  "registerCodesAccent": "بريدك وهاتفك",
+  "registerCodesLede": "أدخل الرمز الذي أرسلناه إلى {email} والرمز الذي أرسلناه إلى هاتفك المحمول المنتهي بـ {digits}.",
+  "registerAccountFoundLede": "وجدنا حسابك. أدخل الرمز الذي أرسلناه إلى {email} والرمز الذي أرسلناه إلى هاتفك المحمول المنتهي بـ {digits} لإكمال التسجيل.",
+  "registerEmailCode": "الرمز المرسل إلى البريد الإلكتروني",
+  "registerPhoneCode": "الرمز المرسل إلى الهاتف المحمول",
+  "registerEmailConfirmed": "تم تأكيد البريد الإلكتروني.",
+  "registerPhoneConfirmed": "تم تأكيد رقم الهاتف المحمول.",
+  "registerConfirm": "تأكيد وإنشاء الحساب",
+  "registerConfirming": "جارٍ التأكيد…",
+  "registerResendEmail": "إعادة إرسال رمز البريد الإلكتروني",
+  "registerResendSms": "إعادة إرسال رمز الهاتف برسالة نصية",
+  "registerResendWhatsApp": "إرسال رمز الهاتف عبر واتساب",
+  "registerStartOver": "تعديل بياناتي",
+  "authErrEmailOrPhone": "أدخل بريدًا إلكترونيًا أو رقم هاتف محمول صالحًا"
 }

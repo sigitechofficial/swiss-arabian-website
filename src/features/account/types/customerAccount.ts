@@ -59,7 +59,10 @@ export type StorefrontCustomerPhoneView = {
   countryCode: string | null;
   usage: string;
   isPrimary: boolean;
+  /** True only after you entered the code sent to the number. */
   isVerified: boolean;
+  /** Where the number came from (SIGN_UP, ACCOUNT, SHOPIFY_ACCOUNT, ADMIN, ...). */
+  source?: string | null;
 };
 
 export type CreateCustomerPhoneDto = {

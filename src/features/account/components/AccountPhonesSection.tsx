@@ -20,12 +20,67 @@ import {
   type PhoneBookFormValues,
 } from "../schemas/phoneBook.schema";
 import { formatPhoneNumber } from "@/components/ui/phone/usePhoneNumberField";
+import { AuthOtpField } from "@/features/auth/components/AuthOtpField";
+import {
+  confirmPhoneVerification,
+  requestPhoneVerification,
+} from "@/features/auth/api/auth.service";
+import type { PhoneCodeChannel } from "@/features/auth/types/auth";
+
+type VerifyState = {
+  phoneId: string;
+  phoneE164: string;
+  code: string;
+  busy: boolean;
+  error: string | null;
+};
+
+/**
+ * A number is yours (sign-in, reset, staff benefits) only after you enter the
+ * code we send to it. The code is checked for your account only.
+ */
+function usePhoneVerification(onVerified: () => void) {
+  const [state, setState] = useState<VerifyState | null>(null);
+
+  async function send(phone: { id: string; phoneE164: string }, channel?: PhoneCodeChannel) {
+    setState({ phoneId: phone.id, phoneE164: phone.phoneE164, code: "", busy: true, error: null });
+    try {
+      await requestPhoneVerification(phone.phoneE164, channel);
+      setState((current) => (current ? { ...current, busy: false } : current));
+    } catch (error) {
+      setState((current) =>
+        current ? { ...current, busy: false, error: getUserFacingErrorMessage(error) } : current,
+      );
+    }
+  }
+
+  async function confirm() {
+    if (!state || !/^\d{6}$/.test(state.code)) return;
+    setState({ ...state, busy: true, error: null });
+    try {
+      await confirmPhoneVerification(state.phoneE164, state.code);
+      setState(null);
+      onVerified();
+    } catch (error) {
+      setState({ ...state, busy: false, error: getUserFacingErrorMessage(error) });
+    }
+  }
+
+  return {
+    state,
+    send,
+    confirm,
+    setCode: (code: string) => setState((current) => (current ? { ...current, code } : current)),
+    cancel: () => setState(null),
+  };
+}
 
 export function AccountPhonesSection() {
   const t = useShopCopy();
   const user = useCurrentUser();
   const { list, create, remove, setPrimary } = useCustomerPhones();
   const [adding, setAdding] = useState(false);
+  const verification = usePhoneVerification(() => void list.refetch());
 
   const {
     register,
@@ -68,8 +123,53 @@ export function AccountPhonesSection() {
                 {phone.isPrimary ? (
                   <p className="text-[12px] font-semibold text-terra">{t("account.primary")}</p>
                 ) : null}
+                <p className="text-[12px] text-sa-secondary">
+                  {phone.isVerified ? t("account.phoneVerified") : t("account.phoneNotVerified")}
+                </p>
+                {verification.state?.phoneId === phone.id ? (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <AuthOtpField
+                      id={`verify-${phone.id}`}
+                      label={t("account.verifyPhoneCode")}
+                      value={verification.state.code}
+                      onChange={verification.setCode}
+                      error={verification.state.error ?? undefined}
+                    />
+                    <div className="flex flex-wrap gap-3 text-[12px] font-semibold">
+                      <button
+                        type="button"
+                        className="text-terra hover:underline disabled:opacity-50"
+                        disabled={verification.state.busy}
+                        onClick={() => void verification.confirm()}
+                      >
+                        {t("account.verifyPhoneConfirm")}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-sa-secondary hover:underline disabled:opacity-50"
+                        disabled={verification.state.busy}
+                        onClick={() => void verification.send(phone, "WHATSAPP")}
+                      >
+                        {t("account.verifyPhoneByWhatsApp")}
+                      </button>
+                      <button type="button" className="text-sa-secondary hover:underline" onClick={verification.cancel}>
+                        {t("account.cancel")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="flex gap-3 text-[12px] font-semibold">
+                {!phone.isVerified && verification.state?.phoneId !== phone.id ? (
+                  <button
+                    type="button"
+                    className="text-terra hover:underline disabled:opacity-50"
+                    disabled={busy}
+                    onClick={() => void verification.send(phone)}
+                  >
+                    {t("account.verifyPhone")}
+                  </button>
+                ) : null}
                 {!phone.isPrimary ? (
                   <button
                     type="button"

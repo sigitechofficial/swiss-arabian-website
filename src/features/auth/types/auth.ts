@@ -38,19 +38,50 @@ export type EmailLoginCodeConfirmPayload = {
   guestToken?: string;
 };
 
+/** Where a mobile code goes. */
+export type PhoneCodeChannel = "SMS" | "WHATSAPP";
+
+/**
+ * Sign-up: nothing is created until the code sent to the email AND the code sent
+ * to the mobile are entered (`register/confirm`).
+ */
 export type RegisterPayload = {
   zoneCode: string;
-  email?: string;
-  phone?: string;
+  email: string;
+  phone: string;
+  phoneChannel?: PhoneCodeChannel;
   password: string;
   firstName?: string;
   lastName?: string;
   salesChannelCode?: string;
-  /** Create the account but hold the session until the emailed code is confirmed. */
-  verifyEmailFirst?: boolean;
-  /** Guest cart token, so the guest bag follows the shopper into the account. */
-  guestToken?: string;
+  marketingConsent?: boolean;
+  smsConsent?: boolean;
 };
+
+/** `register` / `register/resend` / an unfinished `register/confirm`. */
+export type SignupPending = {
+  status: "VERIFICATION_REQUIRED";
+  signupId: string;
+  email: string;
+  /** Last two digits of the mobile, for "we sent a code to …12". */
+  phoneHint: string;
+  phoneChannel: PhoneCodeChannel;
+  emailConfirmed: boolean;
+  phoneConfirmed: boolean;
+  /** The email belongs to a record we already have: "we found your account". */
+  existingAccount: boolean;
+};
+
+export type SignupCompleted = AuthResult & {
+  status: "AUTHENTICATED";
+  claimedExistingAccount: boolean;
+};
+
+export type SignupConfirmResult = SignupPending | SignupCompleted;
+
+export function isSignupCompleted(result: SignupConfirmResult): result is SignupCompleted {
+  return result.status === "AUTHENTICATED";
+}
 
 /** Tokens come back only when sign-in was asked for and the backend supports it. */
 export type EmailVerificationConfirmResult = { success: boolean } & Partial<AuthResult>;
