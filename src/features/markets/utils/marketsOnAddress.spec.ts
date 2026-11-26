@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { choiceServedHere, marketsOnAddress } from "./marketsOnAddress";
+import { choiceServedHere, marketOfAddress, marketsOnAddress } from "./marketsOnAddress";
 
 const URD1 = { zoneCode: "URD1", storefrontUrl: "https://uae.swissarabian.com", onSharedAddress: false };
 const KWT = { zoneCode: "KWT", storefrontUrl: null, onSharedAddress: true };
@@ -35,5 +35,14 @@ describe("a market choice on the shared address", () => {
     expect(choiceServedHere([URD1, KWT, QAT], {}, "QAT")).toBeNull();
     expect(choiceServedHere([URD1, KWT], { siteMarketCode: "URD1" }, "KWT")).toBeNull();
     expect(choiceServedHere([URD1, KWT], {}, null)).toBeNull();
+  });
+});
+
+describe("the market of a page under /~CODE on the shared address", () => {
+  it("is that market when the shared address serves it, and only there", () => {
+    expect(marketOfAddress([URD1, KWT, QAT], {}, "/~KWT/ar/products/oud")).toBe("KWT");
+    expect(marketOfAddress([URD1, KWT, QAT], {}, "/~QAT/products")).toBeNull();
+    expect(marketOfAddress([URD1, KWT], {}, "/ar/products/oud")).toBeNull();
+    expect(marketOfAddress([URD1, KWT], { siteMarketCode: "URD1" }, "/~KWT")).toBeNull();
   });
 });

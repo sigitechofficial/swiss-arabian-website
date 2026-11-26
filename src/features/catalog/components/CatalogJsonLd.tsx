@@ -3,9 +3,12 @@ import { answerText } from "@/features/seo-faq/seoFaqText";
 import { getTranslator } from "@/lib/i18n/messages";
 import { type ShopLocale, withLocalePrefix } from "@/lib/i18n/localePath";
 import type { OpeningHoursSpecification } from "@/lib/seo/openingHours";
-import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
+import { absoluteUrl, requestOrigin, requestSiteBase } from "@/lib/seo/requestOrigin";
 
-const URL_KEYS = new Set(["url", "item", "image", "logo", "@id"]);
+/** Page addresses: on the market's own base (`/~KWT` on the shared address). */
+const PAGE_URL_KEYS = new Set(["url", "item", "@id"]);
+/** Files: on the website's origin. */
+const FILE_URL_KEYS = new Set(["image", "logo"]);
 
 /** One id per page for the store's Organization, so products can name it as seller. */
 export const ORGANIZATION_ID = "/#organization";
@@ -25,13 +28,25 @@ export function plainSchemaText(value: string | null | undefined): string | unde
   return text || undefined;
 }
 
-/** Site paths in url/item/image fields become absolute addresses on this market's domain. */
-export function absolutizeJsonLd(value: unknown, origin: string | null, key = ""): unknown {
-  if (typeof value === "string") return URL_KEYS.has(key) ? absoluteUrl(origin, value) : value;
-  if (Array.isArray(value)) return value.map((v) => absolutizeJsonLd(v, origin, key));
+/**
+ * Site paths in url/item/@id fields become absolute addresses of this market's pages
+ * (`base`: the origin, plus `/~KWT` for a market the shared address serves);
+ * image/logo paths become absolute files on the website's origin.
+ */
+export function absolutizeJsonLd(
+  value: unknown,
+  origin: string | null,
+  key = "",
+  base: string | null = origin,
+): unknown {
+  if (typeof value === "string") {
+    if (PAGE_URL_KEYS.has(key)) return absoluteUrl(base, value);
+    return FILE_URL_KEYS.has(key) ? absoluteUrl(origin, value) : value;
+  }
+  if (Array.isArray(value)) return value.map((v) => absolutizeJsonLd(v, origin, key, base));
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, absolutizeJsonLd(v, origin, k)]),
+      Object.entries(value).map(([k, v]) => [k, absolutizeJsonLd(v, origin, k, base)]),
     );
   }
   return value;
@@ -39,7 +54,8 @@ export function absolutizeJsonLd(value: unknown, origin: string | null, key = ""
 
 export async function CatalogJsonLd({ data }: { data: Record<string, unknown> }) {
   const origin = await requestOrigin();
-  const json = JSON.stringify(absolutizeJsonLd(data, origin)).replace(/</g, "\\u003c");
+  const base = await requestSiteBase();
+  const json = JSON.stringify(absolutizeJsonLd(data, origin, "", base)).replace(/</g, "\\u003c");
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />;
 }
 

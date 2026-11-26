@@ -2,6 +2,7 @@ import { resolveBrand } from "@/lib/brand/registry";
 import { buildBrandCode } from "@/lib/brand/publicEnv";
 import { localStorefrontHost } from "@/lib/config/runtime";
 import { localStorefrontForHost } from "./localStorefront";
+import { withoutMarketSegment } from "@/lib/site/marketLink";
 
 export const STOREFRONT_HOST_HEADER = "X-Storefront-Host";
 export const STOREFRONT_CLIENT_ID_HEADER = "X-Storefront-Client-Id";
@@ -69,9 +70,9 @@ export function resolveStorefrontHost(host?: string | null): string {
 }
 
 export function isShopUnavailablePath(pathname?: string): boolean {
-  const path =
-    pathname ??
-    (typeof window !== "undefined" ? window.location.pathname : "");
+  const path = withoutMarketSegment(
+    pathname ?? (typeof window !== "undefined" ? window.location.pathname : ""),
+  );
   return path === SHOP_UNAVAILABLE_PATH || path.startsWith(`${SHOP_UNAVAILABLE_PATH}/`);
 }
 

@@ -42,8 +42,16 @@ describe("switching to a market the brand's shared address serves", () => {
     expect(marketPageUrl(kwt, SHARED, here("/checkout"))).toBe("https://swissarabian.com/~KWT/cart");
   });
 
-  it("on the shared address itself, or with no shared address, the switch happens on the page", () => {
-    expect(marketPageUrl(kwt, SHARED, { ...here("/"), origin: SHARED })).toBeNull();
+  it("on the shared address, another market's page goes to this market's /~CODE address", () => {
+    const onShared = (pathname: string) => ({ ...here(pathname), origin: SHARED });
+    expect(marketPageUrl(kwt, SHARED, onShared("/~QAT/ar/collections"))).toBe(
+      "https://swissarabian.com/~KWT/ar/collections",
+    );
+    // Already this market's address: nothing to switch.
+    expect(marketPageUrl(kwt, SHARED, onShared("/~KWT/ar/collections"))).toBeNull();
+  });
+
+  it("with no shared address, or a market it does not serve, the switch happens on the page", () => {
     expect(marketPageUrl(kwt, null, here("/"))).toBeNull();
     expect(marketPageUrl({ ...kwt, onSharedAddress: false }, SHARED, here("/"))).toBeNull();
   });

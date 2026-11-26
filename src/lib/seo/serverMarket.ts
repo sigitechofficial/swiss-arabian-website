@@ -34,6 +34,40 @@ export const loadServerMarkets = cache(async () => {
 });
 
 /**
+ * Whether the shared address of this market list (no market of its own) serves
+ * `zoneCode` at `/~CODE`: a market without a website of its own (backend
+ * `onSharedAddress`). False on a market website.
+ */
+export function servedOnSharedAddress(
+  list: { siteMarketCode?: string | null; markets: StorefrontMarket[] } | null,
+  zoneCode: string | null | undefined,
+): boolean {
+  if (!list || list.siteMarketCode || !zoneCode) return false;
+  const market = list.markets.find((m) => m.zoneCode === zoneCode);
+  return Boolean(market && market.onSharedAddress && !market.storefrontUrl);
+}
+
+/**
+ * The page's market when the shared address serves it at `/~CODE` (page tree
+ * `swissarabian.com~KWT`); null on a market website and elsewhere.
+ */
+export async function sharedAddressMarketCode(): Promise<string | null> {
+  const code = await currentSiteMarketCode();
+  if (!code) return null;
+  return servedOnSharedAddress(await loadServerMarkets(), code) ? code : null;
+}
+
+/**
+ * The market a page's own addresses are for (hreflang, sitemap): the address's own
+ * market (a market website), else the shared address's market of this page; null
+ * on a root domain page that is no market's.
+ */
+export async function pageOwnMarketCode(): Promise<string | null> {
+  const list = await loadServerMarkets();
+  return list?.siteMarketCode ?? (await sharedAddressMarketCode());
+}
+
+/**
  * A market in a language. A market address (`ksa.swissarabian.com`) always
  * gets its own market; elsewhere `zoneCode` when given, else the page tree's
  * market (`swissarabian.com~KSA`, chosen by the proxy), when it is one of the

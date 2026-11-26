@@ -1,4 +1,5 @@
 import { getAccessToken } from "@/lib/auth/token";
+import { withoutMarketSegment } from "@/lib/site/marketLink";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { env } from "@/lib/config/env";
 import { storefrontContextQuery } from "@/lib/storefront/context";
@@ -203,7 +204,8 @@ export function track(
     sessionId: getSessionId(now),
     sequence,
     properties: cleanProperties({
-      pagePath: window.location.pathname,
+      // A market on the shared address (`/~KWT/x`) reports `/x`: the market is its own field.
+      pagePath: withoutMarketSegment(window.location.pathname),
       captureSource: "browser",
       ...properties,
     }),

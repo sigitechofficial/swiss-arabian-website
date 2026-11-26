@@ -1,4 +1,5 @@
 import type { StorefrontMarket } from "../types/market";
+import { parseMarketLink } from "@/lib/site/marketLink";
 
 type Address = {
   /** The address's own market (a market website); null on the shared address. */
@@ -47,6 +48,25 @@ export function choiceServedHere(
   return (
     markets.find(
       (market) => market.zoneCode === choice && market.onSharedAddress && !market.storefrontUrl,
+    )?.zoneCode ?? null
+  );
+}
+
+/**
+ * The market of a page under `/~KWT` on the shared address (the address decides,
+ * as the proxy does): one the shared address serves. Null elsewhere.
+ */
+export function marketOfAddress(
+  markets: MarketFacts[],
+  address: Address,
+  pathname: string,
+): string | null {
+  if (address.siteMarketCode) return null;
+  const code = parseMarketLink(pathname || "/")?.zoneCode;
+  if (!code) return null;
+  return (
+    markets.find(
+      (market) => market.zoneCode === code && market.onSharedAddress && !market.storefrontUrl,
     )?.zoneCode ?? null
   );
 }

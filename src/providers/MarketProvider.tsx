@@ -46,6 +46,7 @@ import type { StorefrontMarket } from "@/features/markets/types/market";
 import { marketPageUrl } from "@/features/markets/utils/marketSiteUrl";
 import {
   choiceServedHere,
+  marketOfAddress,
   marketsOnAddress,
 } from "@/features/markets/utils/marketsOnAddress";
 import { employeeBenefitsKeys } from "@/features/employeeBenefits/api/employeeBenefits.keys";
@@ -169,101 +170,6 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     });
   }, [marketsQuery.data, marketsQuery.isError, shoppable]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-
-    const saved = useUiStore.getState().selectedMarketId || readZoneCookie();
-
-    if (!marketsQuery.data) {
-      // Before the brand's markets are known, only this site's own store (per
-      // origin) is trusted: a cookie can come from another brand served on the
-      // same host (another port locally, a sibling deployment on staging).
-      const own = useUiStore.getState().selectedMarketId;
-      if (own && !useUiStore.getState().catalogContext) {
-        selectMarket(own, {
-          ...fallbackCatalogContext(own),
-          languageCode: pathLanguage,
-        });
-        writeZoneCookie(own);
-      }
-      return;
-    }
-
-    if (!shoppable.length) {
-      return;
-    }
-
-    // A market website's own market always wins (no saved choice overrides
-    // the address); elsewhere a stored zone counts only if it is one of this
-    // brand's markets.
-    const siteMarket = marketsQuery.data.siteMarketCode;
-    // On the shared address, a choice of a market it serves (a market link, the
-    // picker here) is the market, as the proxy drew the page (src/proxy.ts).
-    const choiceHere = choiceServedHere(
-      shoppable,
-      marketsQuery.data,
-      siteMarket ? null : readMarketChoice(),
-    );
-    const stored =
-      siteMarket ||
-      choiceHere ||
-      storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
-    const pick =
-      shoppable.find((market) => market.zoneCode === stored) ??
-      marketsQuery.data.defaultMarket ??
-      shoppable[0];
-
-    if (!pick) return;
-
-    const current = useUiStore.getState();
-    const nextCtx = contextFromMarket(pick, pathLanguage);
-    // The server drew this page for the market in the cookie. When the saved
-    // choice differs (cookie cleared or stale), redraw it for the chosen market.
-    const serverMarket = readZoneCookie();
-    const syncServer = () => {
-      writeZoneCookie(pick.zoneCode);
-      if (serverMarket && serverMarket !== pick.zoneCode) redrawForMarket();
-    };
-    if (
-      current.selectedMarketId === pick.zoneCode &&
-      current.catalogContext?.zoneCode === nextCtx.zoneCode &&
-      current.catalogContext?.currencyCode === nextCtx.currencyCode &&
-      current.catalogContext?.salesChannelCode === nextCtx.salesChannelCode &&
-      current.catalogContext?.legalEntityCode === nextCtx.legalEntityCode
-    ) {
-      if (
-        current.catalogContext?.languageCode !== pathLanguage &&
-        current.catalogContext
-      ) {
-        selectMarket(pick.zoneCode, {
-          ...current.catalogContext,
-          languageCode: pathLanguage,
-        });
-      }
-      syncServer();
-      return;
-    }
-
-    selectMarket(pick.zoneCode, nextCtx);
-    syncServer();
-  }, [
-    hydrated,
-    marketsQuery.data,
-    pathLanguage,
-    redrawForMarket,
-    shoppable,
-    selectMarket,
-  ]);
-
-  // The server sets lang and dir on a full load only. Moving between an Arabic page
-  // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
-  useEffect(() => {
-    const root = document.documentElement;
-    const dir = textDirection(pathLanguage);
-    if (root.lang !== pathLanguage) root.lang = pathLanguage;
-    if (root.dir !== dir) root.dir = dir;
-  }, [pathLanguage]);
-
   const refreshMarketScopedData = useCallback(
     (previous?: { marketName: string; itemCount: number }) => {
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
@@ -338,6 +244,118 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const saved = useUiStore.getState().selectedMarketId || readZoneCookie();
+
+    if (!marketsQuery.data) {
+      // Before the brand's markets are known, only this site's own store (per
+      // origin) is trusted: a cookie can come from another brand served on the
+      // same host (another port locally, a sibling deployment on staging).
+      const own = useUiStore.getState().selectedMarketId;
+      if (own && !useUiStore.getState().catalogContext) {
+        selectMarket(own, {
+          ...fallbackCatalogContext(own),
+          languageCode: pathLanguage,
+        });
+        writeZoneCookie(own);
+      }
+      return;
+    }
+
+    if (!shoppable.length) {
+      return;
+    }
+
+    // A market website's own market always wins (no saved choice overrides
+    // the address); elsewhere a stored zone counts only if it is one of this
+    // brand's markets.
+    const siteMarket = marketsQuery.data.siteMarketCode;
+    // On the shared address, a page under `/~KWT` is that market's: the address
+    // decides, as on a market website (the proxy drew it for that market).
+    const addressMarket = siteMarket
+      ? null
+      : marketOfAddress(shoppable, marketsQuery.data, window.location.pathname);
+    // Else a choice of a market it serves (the picker here), as the proxy reads it.
+    const choiceHere = choiceServedHere(
+      shoppable,
+      marketsQuery.data,
+      siteMarket ? null : readMarketChoice(),
+    );
+    const stored =
+      siteMarket ||
+      addressMarket ||
+      choiceHere ||
+      storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
+    const pick =
+      shoppable.find((market) => market.zoneCode === stored) ??
+      marketsQuery.data.defaultMarket ??
+      shoppable[0];
+
+    if (!pick) return;
+
+    const current = useUiStore.getState();
+    const nextCtx = contextFromMarket(pick, pathLanguage);
+    // The server drew this page for the market in the cookie. When the saved
+    // choice differs (cookie cleared or stale), redraw it for the chosen market.
+    const serverMarket = readZoneCookie();
+    const syncServer = () => {
+      writeZoneCookie(pick.zoneCode);
+      if (serverMarket && serverMarket !== pick.zoneCode) redrawForMarket();
+    };
+    if (
+      current.selectedMarketId === pick.zoneCode &&
+      current.catalogContext?.zoneCode === nextCtx.zoneCode &&
+      current.catalogContext?.currencyCode === nextCtx.currencyCode &&
+      current.catalogContext?.salesChannelCode === nextCtx.salesChannelCode &&
+      current.catalogContext?.legalEntityCode === nextCtx.legalEntityCode
+    ) {
+      if (
+        current.catalogContext?.languageCode !== pathLanguage &&
+        current.catalogContext
+      ) {
+        selectMarket(pick.zoneCode, {
+          ...current.catalogContext,
+          languageCode: pathLanguage,
+        });
+      }
+      syncServer();
+      return;
+    }
+
+    // The page is another market's than the one this browser was in (several
+    // markets share the shared address's storage): its bag and market data follow.
+    const previous = current.selectedMarketId
+      ? shoppable.find((market) => market.zoneCode === current.selectedMarketId)
+      : undefined;
+    selectMarket(pick.zoneCode, nextCtx);
+    if (current.selectedMarketId && current.selectedMarketId !== pick.zoneCode) {
+      refreshMarketScopedData({
+        marketName: previous?.name?.trim() || current.selectedMarketId,
+        itemCount: useCartStore.getState().lines.length,
+      });
+    }
+    syncServer();
+  }, [
+    hydrated,
+    marketsQuery.data,
+    pathLanguage,
+    redrawForMarket,
+    refreshMarketScopedData,
+    shoppable,
+    selectMarket,
+  ]);
+
+  // The server sets lang and dir on a full load only. Moving between an Arabic page
+  // and an English-only one (sign in, checkout) is a client navigation, so follow it here.
+  useEffect(() => {
+    const root = document.documentElement;
+    const dir = textDirection(pathLanguage);
+    if (root.lang !== pathLanguage) root.lang = pathLanguage;
+    if (root.dir !== dir) root.dir = dir;
+  }, [pathLanguage]);
+
   const setMarketId = useCallback(
     (id: string | null) => {
       if (!id || id === marketId) return;
@@ -345,8 +363,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       answerCountrySuggestion(id);
       const market = shoppable.find((item) => item.zoneCode === id);
       // A market with its own website, or one the brand's shared address serves
-      // (from a market website): go there, same page and language. Its bag,
-      // prices and sign-in belong to that website.
+      // (its `/~CODE` address): go there, same page and language. Its bag, prices
+      // and sign-in belong to that address.
       const elsewhere = market
         ? marketPageUrl(market, marketsQuery.data?.sharedSiteUrl, {
             origin: window.location.origin,

@@ -1,13 +1,15 @@
 /**
- * A link that opens one market on the brand's shared address (the address with no
+ * The address of a market on the brand's shared address (the address with no
  * market of its own, e.g. `swissarabian.com`): the first path segment is `~` and
- * the market code, `/~KWT/ar/account/orders/123`.
+ * the market code, `/~KWT/ar/products/oud`. Like a market subfolder, every page of
+ * a market the shared address serves lives under it, for everyone (shoppers and
+ * search engines alike): the market comes from the address, never from a cookie,
+ * so the same address always shows the same market, its prices and its language.
  *
  * The backend writes these for markets without a website of their own (email
  * links, product feeds: `MarketStorefrontUrlsService.marketOnSharedAddress`, same
- * rule), and other markets' pickers link to them. The proxy keeps that market for
- * the shopper and sends them on to the same page without the segment, so every
- * page stays at one address and is cached per market as before.
+ * rule). The proxy serves them in that market's page tree; a plain address on the
+ * shared address is sent to the visitor's market's one.
  */
 export const MARKET_LINK_PREFIX = "~";
 
@@ -28,6 +30,23 @@ export function parseMarketLink(pathname: string): MarketLink | null {
   return { zoneCode: match[1], path: match[2] || "/" };
 }
 
+/** `/~KWT` for `/~KWT/ar/x`, else "" (the segment a path is in, to keep it on links). */
+export function marketPrefixOf(pathname: string): string {
+  const link = parseMarketLink(pathname || "/");
+  return link ? `/${MARKET_LINK_PREFIX}${link.zoneCode}` : "";
+}
+
+/** The page without its market segment: `/~KWT/ar/x` → `/ar/x`; other paths unchanged. */
+export function withoutMarketSegment(pathname: string): string {
+  return parseMarketLink(pathname || "/")?.path ?? (pathname || "/");
+}
+
+/** `/~KWT` + page (`/` → `/~KWT`): a page of a market on the shared address. */
+export function marketPagePath(zoneCode: string, path: string): string {
+  const page = path.startsWith("/") ? path : `/${path}`;
+  return `/${MARKET_LINK_PREFIX}${encodeURIComponent(zoneCode.trim())}${page === "/" ? "" : page}`;
+}
+
 /**
  * The link that opens `zoneCode` on the shared address at `path` (`/ar/products/oud`):
  * `https://swissarabian.com/~KWT/ar/products/oud`. Query and hash are kept.
@@ -38,8 +57,7 @@ export function marketLinkUrl(
   page: { pathname: string; search?: string; hash?: string } = { pathname: "/" },
 ): string {
   const target = new URL(sharedSiteUrl);
-  const path = page.pathname.startsWith("/") ? page.pathname : `/${page.pathname}`;
-  target.pathname = `/${MARKET_LINK_PREFIX}${encodeURIComponent(zoneCode.trim())}${path === "/" ? "" : path}`;
+  target.pathname = marketPagePath(zoneCode, page.pathname);
   target.search = page.search ?? "";
   target.hash = page.hash ?? "";
   return target.toString();

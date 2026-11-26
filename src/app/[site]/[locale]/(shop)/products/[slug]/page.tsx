@@ -16,7 +16,7 @@ import { loadBrandIdentityFor } from "@/lib/seo/brandIdentity";
 import { loadMarketReturnTerms } from "@/lib/seo/marketReturnTerms";
 import { applySeoOverrides } from "@/lib/seo/pageSeo";
 import { effectiveProductSeo, parseSchemaOverride } from "@/lib/seo/productSeo";
-import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
+import { absoluteUrl, requestOrigin, requestSiteBase } from "@/lib/seo/requestOrigin";
 import { storefrontLogo } from "@/lib/storefront/brand";
 import { CatalogJsonLd, ProductDetailPageView } from "@brand-ui";
 
@@ -139,8 +139,9 @@ export default async function ProductDetailPage({
   ]);
   // Share buttons point at the same canonical address as the page head.
   const origin = await requestOrigin();
+  const base = await requestSiteBase();
   const share = {
-    url: absoluteUrl(origin, seo?.canonicalUrl || path),
+    url: absoluteUrl(base, seo?.canonicalUrl || path),
     image: product?.imageUrl ? absoluteUrl(origin, product.imageUrl) : null,
   };
   const inStock = product

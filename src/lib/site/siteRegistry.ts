@@ -131,29 +131,41 @@ export function servedHere(
 }
 
 /**
- * Where a root domain sends the visitor: the market they chose before (market
- * cookie), else the market of their country, else the brand's default market.
- * A market with a website of its own sends them there; a market this address
- * serves (no website of its own) keeps them here (null). Markets that are neither
- * (an own address not live yet) are passed over. Null also keeps the root domain
- * serving pages itself when no market has a website yet (e.g. locally).
+ * The market a root domain (no market of its own) opens for a visitor: the market
+ * they chose before (market cookie), else the market of their country, else the
+ * brand's default market. Only markets that can be reached count: one with a
+ * website of its own (the visitor is sent there) or one this address serves
+ * (no website of its own: its `/~CODE` address here). A market that is neither
+ * (an own address not live yet) is passed over. Null on a market website, and
+ * when no market can be reached (older backends without `onSharedAddress` and no
+ * market website: the address serves pages itself, e.g. locally).
  */
+export function marketForVisitor(
+  site: SiteInfo,
+  visitor: { zoneCode?: string | null; country?: string | null },
+): SiteMarket | null {
+  if (site.siteMarketCode) return null;
+  const reachable = (market: SiteMarket | undefined) =>
+    market && (market.storefrontUrl || servedHere(site, market.zoneCode)) ? market : undefined;
+  const candidates = site.markets.filter((market) => reachable(market));
+  if (!candidates.length) return null;
+  const country = visitor.country?.trim().toUpperCase();
+  return (
+    reachable(siteMarketFor(site, visitor.zoneCode)) ??
+    reachable(country ? site.markets.find((m) => m.countryCode.trim().toUpperCase() === country) : undefined) ??
+    reachable(siteMarketFor(site, site.defaultMarketCode)) ??
+    candidates.find((market) => market.storefrontUrl) ??
+    candidates[0] ??
+    null
+  );
+}
+
+/** The market website a root domain sends the visitor to (see marketForVisitor); null keeps them here. */
 export function marketSiteForVisitor(
   site: SiteInfo,
   visitor: { zoneCode?: string | null; country?: string | null },
 ): string | null {
-  if (site.siteMarketCode) return null;
-  const withSite = site.markets.filter((market) => market.storefrontUrl);
-  if (!withSite.length) return null;
-  const routed = (market: SiteMarket | undefined) =>
-    market && (market.storefrontUrl || market.onSharedAddress) ? market : undefined;
-  const country = visitor.country?.trim().toUpperCase();
-  const pick =
-    routed(siteMarketFor(site, visitor.zoneCode)) ??
-    routed(country ? site.markets.find((m) => m.countryCode.trim().toUpperCase() === country) : undefined) ??
-    routed(siteMarketFor(site, site.defaultMarketCode)) ??
-    withSite[0];
-  return pick.storefrontUrl ?? null;
+  return marketForVisitor(site, visitor)?.storefrontUrl ?? null;
 }
 
 /**

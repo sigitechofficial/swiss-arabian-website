@@ -54,11 +54,11 @@ export function marketSiteUrl(
 }
 
 /**
- * Where switching to `market` goes, from another website: its own website (see
- * marketSiteUrl), else — a market the brand's shared address serves — that address
- * opened in the market (`https://swissarabian.com/~KWT/ar/products/oud`). Null when
- * the switch happens on this page (this is that website, or this is the shared
- * address and it serves the market).
+ * Where switching to `market` goes: its own website (see marketSiteUrl), else — a
+ * market the brand's shared address serves — its address there
+ * (`https://swissarabian.com/~KWT/ar/products/oud`, also from another market's
+ * page on the shared address). Null when the switch happens on this page (this is
+ * that website, or the market has neither).
  */
 export function marketPageUrl(
   market: Pick<StorefrontMarket, "storefrontUrl" | "onSharedAddress" | "zoneCode">,
@@ -73,6 +73,7 @@ export function marketPageUrl(
   } catch {
     return null;
   }
-  if (shared.origin === current.origin) return null;
-  return marketLinkUrl(shared.toString(), market.zoneCode, samePageFor(current));
+  const target = marketLinkUrl(shared.toString(), market.zoneCode, samePageFor(current));
+  // Already this market's address: nothing to switch.
+  return new URL(target).pathname === new URL(current.pathname, shared).pathname ? null : target;
 }

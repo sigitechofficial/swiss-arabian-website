@@ -269,9 +269,9 @@ describe("proxy: a brand's root domain sends visitors to a market website", () =
   });
 });
 
-describe("proxy: the shared address serves the markets without a website of their own", () => {
-  // KWT has no address of its own: swissarabian.com serves it. QAT's own address is
-  // registered but not live (still on Shopify): it is not served here meanwhile.
+describe("proxy: a market without a website of its own lives at /~CODE on the shared address", () => {
+  // KWT has no address of its own: swissarabian.com serves it at /~KWT. QAT's own
+  // address is registered but not live (still on Shopify): not served here meanwhile.
   const root = () =>
     site({
       host: "swissarabian.com",
@@ -287,57 +287,85 @@ describe("proxy: the shared address serves the markets without a website of thei
     });
   const BASE = "https://swissarabian.com";
   const tree = (response: Response) => new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname;
+  const setCookies = (response: Response) => response.headers.getSetCookie();
 
-  it("a market link keeps the market for the shopper and opens the same page without it", async () => {
+  it("serves /~KWT pages in KWT's tree for everyone, whatever their cookies or country (no redirect)", async () => {
     registry.lookup = root();
-    const response = await proxy(
-      request("/~KWT/ar/account/orders/12?paid=1", { cookie: "sa-market-choice=URD1" }, BASE),
+    const shopper = await proxy(
+      request("/~KWT/ar/collections", { cookie: "sa-market-choice=URD1; sa-zone-code=URD1", "x-client-country": "AE" }, BASE),
     );
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("https://swissarabian.com/ar/account/orders/12?paid=1");
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
-    const cookies = response.headers.getSetCookie();
+    expect(shopper.headers.get("location")).toBeNull();
+    expect(tree(shopper)).toBe("/swissarabian.com~KWT/ar/collections");
+    expect(forwarded(shopper, SHOP_LOCALE_HEADER)).toBe("ar");
+    // A search engine: no cookies, any country, the same page.
+    const crawler = await proxy(request("/~KWT/products/oud", { "x-client-country": "US" }, BASE));
+    expect(crawler.headers.get("location")).toBeNull();
+    expect(tree(crawler)).toBe("/swissarabian.com~KWT/en/products/oud");
+  });
+
+  it("keeps the market for the shopper (this address and the brand's domain), and writes nothing when unchanged", async () => {
+    registry.lookup = root();
+    const first = await proxy(request("/~KWT/collections", { cookie: "sa-market-choice=URD1" }, BASE));
+    const cookies = setCookies(first);
     expect(cookies.find((c) => c.startsWith("sa-zone-code=KWT"))).toMatch(/Max-Age=31536000/i);
-    // Kept on the brand's domain too, over the earlier choice (the root reads it first).
     expect(cookies.find((c) => c.startsWith("sa-market-choice=KWT"))).toMatch(/Domain=swissarabian\.com/i);
-  });
-
-  it("serves that market here afterwards, from its own page tree", async () => {
-    registry.lookup = root();
-    const response = await proxy(
-      request("/ar/account", { cookie: "sa-market-choice=KWT; sa-zone-code=URD1", "x-client-country": "AE" }, BASE),
+    const again = await proxy(
+      request("/~KWT/collections", { cookie: "sa-market-choice=KWT; sa-zone-code=KWT; sa-country-market=" }, BASE),
     );
-    expect(response.headers.get("location")).toBeNull();
-    expect(tree(response)).toBe("/swissarabian.com~KWT/ar/account");
-    // The address's own market cookie follows the choice.
-    expect(response.headers.getSetCookie().some((c) => c.startsWith("sa-zone-code=KWT"))).toBe(true);
+    expect(setCookies(again).filter((c) => !c.startsWith("sa-country-market="))).toEqual([]);
   });
 
-  it("a first visit from that market's country stays here, in it", async () => {
+  it("sends a plain address to the visitor's market's address: /~KWT here, or a market website", async () => {
     registry.lookup = root();
-    const response = await proxy(request("/collections", { "x-client-country": "KW" }, BASE));
-    expect(response.headers.get("location")).toBeNull();
-    expect(tree(response)).toBe("/swissarabian.com~KWT/en/collections");
-  });
-
-  it("still sends the other markets' visitors to their websites, and passes over a market not live yet", async () => {
-    registry.lookup = root();
+    const chosen = await proxy(request("/ar/account?x=1", { cookie: "sa-market-choice=KWT" }, BASE));
+    expect(chosen.status).toBe(307);
+    expect(chosen.headers.get("location")).toBe("https://swissarabian.com/~KWT/ar/account?x=1");
+    expect(chosen.headers.get("cache-control")).toBe("private, no-store");
+    const kuwait = await proxy(request("/collections", { "x-client-country": "KW" }, BASE));
+    expect(kuwait.headers.get("location")).toBe("https://swissarabian.com/~KWT/collections");
+    const home = await proxy(request("/", { "x-client-country": "KW" }, BASE));
+    expect(home.headers.get("location")).toBe("https://swissarabian.com/~KWT");
     const uae = await proxy(request("/", { "x-client-country": "AE" }, BASE));
     expect(uae.headers.get("location")).toBe("https://uae.swissarabian.com/");
+  });
+
+  it("passes over a market whose own address is not live yet", async () => {
+    registry.lookup = root();
     const qatar = await proxy(request("/", { "x-client-country": "QA" }, BASE));
     expect(qatar.headers.get("location")).toBe("https://uae.swissarabian.com/");
     const qatarLink = await proxy(request("/~QAT/products", {}, BASE));
     expect(qatarLink.headers.get("location")).toBe("https://swissarabian.com/products");
-    expect(qatarLink.headers.getSetCookie()).toEqual([]);
+    expect(setCookies(qatarLink)).toEqual([]);
   });
 
-  it("a link for a market with a website of its own opens there; an unknown market just drops the segment", async () => {
+  it("a segment for a market with a website of its own opens there; one address per market code; unknown ones are dropped", async () => {
     registry.lookup = root();
-    const own = await proxy(request("/~urd1/ar/products/oud?ref=x", {}, BASE));
+    const own = await proxy(request("/~URD1/ar/products/oud?ref=x", {}, BASE));
     expect(own.headers.get("location")).toBe("https://uae.swissarabian.com/ar/products/oud?ref=x");
+    const lower = await proxy(request("/~kwt/ar/products/oud", {}, BASE));
+    expect(lower.status).toBe(308);
+    expect(lower.headers.get("location")).toBe("https://swissarabian.com/~KWT/ar/products/oud");
     const unknown = await proxy(request("/~NOPE", {}, BASE));
     expect(unknown.headers.get("location")).toBe("https://swissarabian.com/");
-    expect(unknown.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("its own redirects stay in the market's segment (a typed default language)", async () => {
+    registry.lookup = root();
+    const response = await proxy(request("/~KWT/en/collections", {}, BASE));
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://swissarabian.com/~KWT/collections");
+  });
+
+  it("serves files and API calls under a segment as without it, and the market's own sitemap", async () => {
+    registry.lookup = root();
+    const file = await proxy(request("/~KWT/images/logo.png", {}, BASE));
+    expect(new URL(file.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/images/logo.png");
+    const media = await proxy(request("/~KWT/catalog/media/abc.jpg", {}, BASE));
+    expect(media.headers.get("x-middleware-rewrite")).toBe("http://api.test/catalog/media/abc.jpg");
+    const sitemap = await proxy(request("/~KWT/sitemap.xml", {}, BASE));
+    expect(tree(sitemap)).toBe("/swissarabian.com~KWT/sitemap.xml");
+    const rootSitemap = await proxy(request("/sitemap.xml", {}, BASE));
+    expect(tree(rootSitemap)).toBe("/swissarabian.com/sitemap.xml");
   });
 });
 

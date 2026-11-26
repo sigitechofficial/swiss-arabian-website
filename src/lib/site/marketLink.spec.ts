@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { marketLinkUrl, parseMarketLink } from "./marketLink";
+import {
+  marketLinkUrl,
+  marketPagePath,
+  marketPrefixOf,
+  parseMarketLink,
+  withoutMarketSegment,
+} from "./marketLink";
+import { localePrefixOf, localizeHref, stripLocalePrefix } from "@/lib/i18n/localePath";
+import { languageSwitchPath } from "@/hooks/useLanguageSwitch";
+import { fallbackLocaleConfig } from "@/lib/i18n/locales";
 import { marketForCountry, marketSiteForVisitor, servedHere, type SiteInfo } from "./siteRegistry";
 
 describe("market links on the shared address (/~KWT/…)", () => {
@@ -29,6 +38,39 @@ describe("market links on the shared address (/~KWT/…)", () => {
         hash: "#reviews",
       }),
     ).toBe("https://swissarabian.com/~KWT/ar/products/oud?size=50#reviews");
+  });
+});
+
+describe("pages of a market on the shared address keep its segment", () => {
+  const config = fallbackLocaleConfig();
+
+  it("reads the segment, the language after it, and the bare page", () => {
+    expect(marketPrefixOf("/~KWT/ar/x")).toBe("/~KWT");
+    expect(marketPrefixOf("/ar/x")).toBe("");
+    expect(withoutMarketSegment("/~KWT/ar/x")).toBe("/ar/x");
+    expect(localePrefixOf("/~KWT/ar/x")).toBe("ar");
+    expect(stripLocalePrefix("/~KWT/ar/products/oud")).toBe("/products/oud");
+    expect(marketPagePath("KWT", "/")).toBe("/~KWT");
+    expect(marketPagePath("KWT", "/ar/cart")).toBe("/~KWT/ar/cart");
+  });
+
+  it("links keep the market's segment and the page's language", () => {
+    expect(localizeHref("/collections", "/~KWT/ar/products/oud", config)).toBe("/~KWT/ar/collections");
+    expect(localizeHref("/cart?x=1#top", "/~KWT/products/oud", config)).toBe("/~KWT/cart?x=1#top");
+    expect(localizeHref("/", "/~KWT/ar", config)).toBe("/~KWT/ar");
+    // Payment returns stay unprefixed in language, never leave the market.
+    expect(localizeHref("/payments/tabby/return", "/~KWT/ar/checkout", config)).toBe(
+      "/~KWT/payments/tabby/return",
+    );
+    // Already another market's address, or a page outside the shared address: as given.
+    expect(localizeHref("/~QAT/collections", "/~KWT/ar", config)).toBe("/~QAT/collections");
+    expect(localizeHref("/collections", "/ar/products/oud", config)).toBe("/ar/collections");
+  });
+
+  it("switching language stays in the market", () => {
+    expect(languageSwitchPath("/~KWT/ar/products/oud", "en", config)).toBe("/~KWT/products/oud");
+    expect(languageSwitchPath("/~KWT/products/oud", "ar", config)).toBe("/~KWT/ar/products/oud");
+    expect(languageSwitchPath("/~KWT/products/oud", "en", config)).toBeNull();
   });
 });
 
