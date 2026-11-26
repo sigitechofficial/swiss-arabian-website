@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "@/components/ui/Toaster";
+import { pageTranslator } from "@/lib/i18n/pageTranslator";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { addItemOptimistic } from "../api/optimisticCart";
@@ -25,7 +27,11 @@ export function useAddToCart() {
   return {
     /** The API sync is still running — the bag already shows the change. */
     isPending: syncing,
-    /** Resolves immediately: the line is added locally and the drawer opens now. */
+    /**
+     * Resolves immediately: the line is added locally and an "Added to your bag" message with a
+     * "View bag" button is shown. The bag itself stays closed so shoppers can keep browsing; if it
+     * is already open, the new line simply appears in it.
+     */
     addToCart: async (opts: AddToCartInput) => {
       const quantity = opts.quantity ?? 1;
 
@@ -58,7 +64,9 @@ export function useAddToCart() {
         });
       }
 
-      setCartOpen(true);
+      if (useUiStore.getState().cartOpen) return;
+      const t = pageTranslator();
+      toast(t("cart.added"), "success", { label: t("cart.drawer.viewBag"), onClick: () => setCartOpen(true) });
     },
   };
 }

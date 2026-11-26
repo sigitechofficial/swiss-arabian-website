@@ -2374,6 +2374,7 @@
   "cart.drawer.recSize": "50 ml",
   "cart.drawer.updating": "Updating…",
   "cart.drawer.viewBag": "View bag",
+  "cart.added": "Added to your bag",
   "employee.stage.QUOTED_NOT_APPLIED": "Staff Discount preview only",
   "employee.stage.ORDER_PAYMENT_PENDING": "Order awaiting payment",
   "employee.stage.PAYMENT_CONFIRMED": "Payment received. Allowance not yet confirmed in D365",

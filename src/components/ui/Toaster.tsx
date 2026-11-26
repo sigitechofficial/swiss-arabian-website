@@ -12,22 +12,26 @@ import {
 
 type ToastTone = "success" | "error" | "info" | "warning";
 
+/** One button on the toast, e.g. "View bag". Clicking it closes the toast first. */
+export type ToastAction = { label: string; onClick: () => void };
+
 type ToastState = {
   open: boolean;
   message: string;
   tone: ToastTone;
+  action?: ToastAction;
 };
 
 type ToastApi = {
-  toast: (message: string, tone?: ToastTone) => void;
+  toast: (message: string, tone?: ToastTone, action?: ToastAction) => void;
 };
 
 const ToastContext = createContext<ToastApi | null>(null);
 
-const toastListeners = new Set<(message: string, tone: ToastTone) => void>();
+const toastListeners = new Set<(message: string, tone: ToastTone, action?: ToastAction) => void>();
 
-export function toast(message: string, tone: ToastTone = "info") {
-  toastListeners.forEach((listener) => listener(message, tone));
+export function toast(message: string, tone: ToastTone = "info", action?: ToastAction) {
+  toastListeners.forEach((listener) => listener(message, tone, action));
 }
 
 /* A brand shell can show toasts in its own design: while one is mounted, the default Toaster draws nothing. */
@@ -53,7 +57,8 @@ export type ToastFeed = ToastState & { dismiss: () => void };
 export function useToastFeed(): ToastFeed {
   const [state, setState] = useState<ToastState>({ open: false, message: "", tone: "info" });
   useEffect(() => {
-    const show = (message: string, tone: ToastTone) => setState({ open: true, message, tone });
+    const show = (message: string, tone: ToastTone, action?: ToastAction) =>
+      setState({ open: true, message, tone, action });
     toastListeners.add(show);
     brandHosts += 1;
     hostListeners.forEach((l) => l());
@@ -80,8 +85,8 @@ export function Toaster() {
     tone: "info",
   });
 
-  const show = useCallback((message: string, tone: ToastTone = "info") => {
-    setState({ open: true, message, tone });
+  const show = useCallback((message: string, tone: ToastTone = "info", action?: ToastAction) => {
+    setState({ open: true, message, tone, action });
   }, []);
 
   useEffect(() => {
@@ -116,6 +121,19 @@ export function Toaster() {
             role="status"
           >
             <p className="m-0">{state.message}</p>
+            {state.action ? (
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-white underline underline-offset-2"
+                onClick={() => {
+                  const action = state.action;
+                  setState((prev) => ({ ...prev, open: false }));
+                  action?.onClick();
+                }}
+              >
+                {state.action.label}
+              </button>
+            ) : null}
             <button
               type="button"
               className="cursor-pointer border-0 bg-transparent p-0 text-white/80"
