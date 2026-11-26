@@ -13,6 +13,7 @@ import {
   MARKET_CHOICE_COOKIE,
   ZONE_COOKIE,
   ZONE_COOKIE_MAX_AGE,
+  choiceCookieDomain,
 } from "@/features/markets/utils/zoneCookie";
 import { brandLinkEnabled } from "@/lib/brand/features";
 import { getBrandConfig } from "@/lib/brand";
@@ -33,7 +34,11 @@ import {
   lookupSite,
   marketForCountry,
   marketSiteForVisitor,
+  servedHere,
+  siteMarketFor,
+  type SiteInfo,
 } from "@/lib/site/siteRegistry";
+import { parseMarketLink, type MarketLink } from "@/lib/site/marketLink";
 import { edgeCheck, visitorCountry } from "@/lib/site/edge";
 
 /** An address no route matches: rewriting to it renders the global 404. */
@@ -166,7 +171,20 @@ export async function proxy(request: NextRequest) {
   // though the backend knows it (a misrouted DNS record or a forged Host must
   // never render another brand's data in this brand's design, or cache it).
   if (site.brandCode.trim().toUpperCase() !== getBrandConfig(liveHost).code) return unknownSite();
-  const savedZone = redirectZone(request.cookies.get(ZONE_COOKIE)?.value);
+  // A link that opens one market here (`/~KWT/ar/account`: emails, other markets'
+  // pickers): the market is kept for the shopper, then the same page without it.
+  const marketLink = parseMarketLink(pathname);
+  if (marketLink) return openMarketLink(request, site, marketLink, liveHost);
+  const sentZone = redirectZone(request.cookies.get(ZONE_COOKIE)?.value);
+  // The choice made with the picker on a market website (kept on the brand's
+  // domain), else a choice made on this address itself.
+  const marketChoice = redirectZone(request.cookies.get(MARKET_CHOICE_COOKIE)?.value);
+  // A choice of a market this address serves (a market link, the picker here) is
+  // the shopper's market here, over a market saved on this address earlier.
+  const choiceHere = servedHere(site, marketChoice)
+    ? (siteMarketFor(site, marketChoice)?.zoneCode ?? null)
+    : null;
+  const savedZone = choiceHere ?? sentZone;
   const country = visitorCountry(request.headers);
   const countryMarket = marketForCountry(site, country);
   // A first visit to an address that serves several markets starts in the
@@ -174,6 +192,8 @@ export async function proxy(request: NextRequest) {
   // choice (the shopper can switch; their saved market always wins afterwards).
   const startMarket = firstVisitMarket(site, { savedZone, countryMarket });
   const zoneCookie = savedZone ?? startMarket;
+  // The market to save on this address: a first visit's, or a choice made for it.
+  const saveMarket = startMarket ?? (choiceHere && choiceHere !== sentZone ? choiceHere : null);
   // The page tree: an address that serves several markets has one per market
   // (the shopper's market, else the default), so its pages are cached per market
   // and read the market from the route, never from the request.
@@ -184,7 +204,7 @@ export async function proxy(request: NextRequest) {
     site.siteMarketCode ? null : (offered(zoneCookie) ?? offered(site.defaultMarketCode)),
   );
   const markets: MarketCookies = {
-    startMarket,
+    saveMarket,
     countryMarket,
     sentCountryMarket: request.cookies.get(COUNTRY_MARKET_COOKIE)?.value ?? null,
     secure: requestIsHttps(request),
@@ -200,10 +220,8 @@ export async function proxy(request: NextRequest) {
 
   // A brand's root domain (no market of its own) sends the visitor to a market
   // website: the market they chose before, else their country's, else the default.
+  // A market it serves itself (no website of its own) stays here.
   // Temporary (307, not cached): the choice depends on the visitor.
-  // The choice made with the picker on a market website (kept on the brand's
-  // domain), else a choice made on this address itself.
-  const marketChoice = redirectZone(request.cookies.get(MARKET_CHOICE_COOKIE)?.value);
   const marketSite = marketSiteForVisitor(site, {
     zoneCode: marketChoice ?? savedZone,
     country,
@@ -276,7 +294,7 @@ export async function proxy(request: NextRequest) {
   }
   const forwarded = withLocale(request, decision.pathname, localeConfig);
   forwarded.set(INTERNAL_REWRITE_HEADER, "1");
-  if (startMarket) withRequestCookie(forwarded, ZONE_COOKIE, startMarket);
+  if (saveMarket) withRequestCookie(forwarded, ZONE_COOKIE, saveMarket);
   if (decision.search !== undefined) url.search = decision.search;
   // A section this brand has switched off (brand `features`): the server-rendered
   // 404 (app/global-not-found.tsx: the brand's chrome, status 404), also for
@@ -300,8 +318,11 @@ async function isMarketTreeOf(host: string, marketCode: string): Promise<boolean
 }
 
 type MarketCookies = {
-  /** The first-visit market to save (null: the visitor has a market, or none fits). */
-  startMarket: string | null;
+  /**
+   * The market to save on this address: a first visit's, or a market chosen for it
+   * on the brand's domain (null: the visitor's saved market stands, or none fits).
+   */
+  saveMarket: string | null;
   /** The market of the visitor's current country on this address (null: none). */
   countryMarket: string | null;
   /** The country market cookie the browser sent. */
@@ -316,12 +337,54 @@ type MarketCookies = {
  */
 function withMarketCookies(response: NextResponse, cookies: MarketCookies): NextResponse {
   const base = { path: "/", sameSite: "lax" as const, secure: cookies.secure };
-  if (cookies.startMarket) {
-    response.cookies.set(ZONE_COOKIE, cookies.startMarket, { ...base, maxAge: ZONE_COOKIE_MAX_AGE });
+  if (cookies.saveMarket) {
+    response.cookies.set(ZONE_COOKIE, cookies.saveMarket, { ...base, maxAge: ZONE_COOKIE_MAX_AGE });
   }
   if ((cookies.sentCountryMarket || null) !== cookies.countryMarket) {
     if (cookies.countryMarket) response.cookies.set(COUNTRY_MARKET_COOKIE, cookies.countryMarket, base);
     else response.cookies.delete({ name: COUNTRY_MARKET_COOKIE, path: "/" });
+  }
+  return response;
+}
+
+/**
+ * A market link (`/~KWT/ar/account?x=1`, see src/lib/site/marketLink.ts). On an
+ * address serving several markets, one it serves is kept for the shopper (this
+ * address's market cookie, and the choice on the brand's domain, which the root
+ * redirect reads first) and the same page opens without the segment. A market with
+ * a website of its own opens there. Anything else (a market website, an unknown
+ * market) just drops the segment. Temporary and not cached: it depends on the link.
+ */
+function openMarketLink(
+  request: NextRequest,
+  site: SiteInfo,
+  link: MarketLink,
+  pageHost: string,
+): NextResponse {
+  const market = siteMarketFor(site, link.zoneCode);
+  const page = `${link.path}${request.nextUrl.search}`;
+  const ownSite = market?.zoneCode !== site.siteMarketCode ? market?.storefrontUrl : null;
+  let target: URL = request.nextUrl.clone();
+  target.pathname = link.path;
+  if (ownSite) {
+    try {
+      target = new URL(page, ownSite);
+    } catch {
+      // A malformed address from the table: stay on this address.
+    }
+  }
+  const response = NextResponse.redirect(target, 307);
+  response.headers.set("cache-control", "private, no-store");
+  if (!ownSite && market && servedHere(site, market.zoneCode)) {
+    const base = {
+      path: "/",
+      sameSite: "lax" as const,
+      secure: requestIsHttps(request),
+      maxAge: ZONE_COOKIE_MAX_AGE,
+    };
+    response.cookies.set(ZONE_COOKIE, market.zoneCode, base);
+    const domain = choiceCookieDomain(site.brandDomain, pageHost);
+    response.cookies.set(MARKET_CHOICE_COOKIE, market.zoneCode, domain ? { ...base, domain } : base);
   }
   return response;
 }

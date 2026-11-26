@@ -269,6 +269,78 @@ describe("proxy: a brand's root domain sends visitors to a market website", () =
   });
 });
 
+describe("proxy: the shared address serves the markets without a website of their own", () => {
+  // KWT has no address of its own: swissarabian.com serves it. QAT's own address is
+  // registered but not live (still on Shopify): it is not served here meanwhile.
+  const root = () =>
+    site({
+      host: "swissarabian.com",
+      brandDomain: "swissarabian.com",
+      sharedSiteUrl: "https://swissarabian.com",
+      siteMarketCode: null,
+      defaultMarketCode: "URD1",
+      markets: [
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: "https://uae.swissarabian.com", languages: ["en", "ar"] },
+        { zoneCode: "KWT", countryCode: "KW", storefrontUrl: null, onSharedAddress: true, languages: ["en", "ar"] },
+        { zoneCode: "QAT", countryCode: "QA", storefrontUrl: null, onSharedAddress: false, languages: ["en"] },
+      ],
+    });
+  const BASE = "https://swissarabian.com";
+  const tree = (response: Response) => new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname;
+
+  it("a market link keeps the market for the shopper and opens the same page without it", async () => {
+    registry.lookup = root();
+    const response = await proxy(
+      request("/~KWT/ar/account/orders/12?paid=1", { cookie: "sa-market-choice=URD1" }, BASE),
+    );
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://swissarabian.com/ar/account/orders/12?paid=1");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const cookies = response.headers.getSetCookie();
+    expect(cookies.find((c) => c.startsWith("sa-zone-code=KWT"))).toMatch(/Max-Age=31536000/i);
+    // Kept on the brand's domain too, over the earlier choice (the root reads it first).
+    expect(cookies.find((c) => c.startsWith("sa-market-choice=KWT"))).toMatch(/Domain=swissarabian\.com/i);
+  });
+
+  it("serves that market here afterwards, from its own page tree", async () => {
+    registry.lookup = root();
+    const response = await proxy(
+      request("/ar/account", { cookie: "sa-market-choice=KWT; sa-zone-code=URD1", "x-client-country": "AE" }, BASE),
+    );
+    expect(response.headers.get("location")).toBeNull();
+    expect(tree(response)).toBe("/swissarabian.com~KWT/ar/account");
+    // The address's own market cookie follows the choice.
+    expect(response.headers.getSetCookie().some((c) => c.startsWith("sa-zone-code=KWT"))).toBe(true);
+  });
+
+  it("a first visit from that market's country stays here, in it", async () => {
+    registry.lookup = root();
+    const response = await proxy(request("/collections", { "x-client-country": "KW" }, BASE));
+    expect(response.headers.get("location")).toBeNull();
+    expect(tree(response)).toBe("/swissarabian.com~KWT/en/collections");
+  });
+
+  it("still sends the other markets' visitors to their websites, and passes over a market not live yet", async () => {
+    registry.lookup = root();
+    const uae = await proxy(request("/", { "x-client-country": "AE" }, BASE));
+    expect(uae.headers.get("location")).toBe("https://uae.swissarabian.com/");
+    const qatar = await proxy(request("/", { "x-client-country": "QA" }, BASE));
+    expect(qatar.headers.get("location")).toBe("https://uae.swissarabian.com/");
+    const qatarLink = await proxy(request("/~QAT/products", {}, BASE));
+    expect(qatarLink.headers.get("location")).toBe("https://swissarabian.com/products");
+    expect(qatarLink.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("a link for a market with a website of its own opens there; an unknown market just drops the segment", async () => {
+    registry.lookup = root();
+    const own = await proxy(request("/~urd1/ar/products/oud?ref=x", {}, BASE));
+    expect(own.headers.get("location")).toBe("https://uae.swissarabian.com/ar/products/oud?ref=x");
+    const unknown = await proxy(request("/~NOPE", {}, BASE));
+    expect(unknown.headers.get("location")).toBe("https://swissarabian.com/");
+    expect(unknown.headers.getSetCookie()).toEqual([]);
+  });
+});
+
 describe("proxy: one address for all of a brand's markets (first visit by country)", () => {
   const brandSite = () =>
     site({

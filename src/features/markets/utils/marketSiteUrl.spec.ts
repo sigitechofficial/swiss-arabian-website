@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyticsSiteFields } from "@/components/layout/AnalyticsScripts";
-import { marketSiteUrl } from "./marketSiteUrl";
+import { marketPageUrl, marketSiteUrl } from "./marketSiteUrl";
 
 const here = (pathname: string, search = "", hash = "") => ({
   origin: "https://uae.swissarabian.com",
@@ -28,6 +28,30 @@ describe("switching market goes to that market's website", () => {
     expect(marketSiteUrl({ storefrontUrl: "https://uae.swissarabian.com" }, here("/"))).toBeNull();
     expect(marketSiteUrl({ storefrontUrl: null }, here("/"))).toBeNull();
     expect(marketSiteUrl({ storefrontUrl: "not a url" }, here("/"))).toBeNull();
+  });
+});
+
+describe("switching to a market the brand's shared address serves", () => {
+  const kwt = { zoneCode: "KWT", storefrontUrl: null, onSharedAddress: true };
+  const SHARED = "https://swissarabian.com";
+
+  it("from a market website: the shared address opened in that market, same page", () => {
+    expect(marketPageUrl(kwt, SHARED, here("/ar/products/oud", "?size=50"))).toBe(
+      "https://swissarabian.com/~KWT/ar/products/oud?size=50",
+    );
+    expect(marketPageUrl(kwt, SHARED, here("/checkout"))).toBe("https://swissarabian.com/~KWT/cart");
+  });
+
+  it("on the shared address itself, or with no shared address, the switch happens on the page", () => {
+    expect(marketPageUrl(kwt, SHARED, { ...here("/"), origin: SHARED })).toBeNull();
+    expect(marketPageUrl(kwt, null, here("/"))).toBeNull();
+    expect(marketPageUrl({ ...kwt, onSharedAddress: false }, SHARED, here("/"))).toBeNull();
+  });
+
+  it("a market with a website of its own still goes there", () => {
+    expect(
+      marketPageUrl({ zoneCode: "KSA", storefrontUrl: "https://ksa.swissarabian.com" }, SHARED, here("/")),
+    ).toBe("https://ksa.swissarabian.com/");
   });
 });
 

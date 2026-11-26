@@ -36,13 +36,18 @@ import {
 } from "@/features/markets/utils/flagForMarket";
 import {
   answerCountrySuggestion,
+  readMarketChoice,
   readZoneCookie,
   storedZoneFor,
   writeMarketChoice,
   writeZoneCookie,
 } from "@/features/markets/utils/zoneCookie";
 import type { StorefrontMarket } from "@/features/markets/types/market";
-import { marketSiteUrl } from "@/features/markets/utils/marketSiteUrl";
+import { marketPageUrl } from "@/features/markets/utils/marketSiteUrl";
+import {
+  choiceServedHere,
+  marketsOnAddress,
+} from "@/features/markets/utils/marketsOnAddress";
 import { employeeBenefitsKeys } from "@/features/employeeBenefits/api/employeeBenefits.keys";
 import { loyaltyKeys } from "@/features/loyalty/api/loyalty.keys";
 import { promotionKeys } from "@/features/promotions/api/promotions.keys";
@@ -138,14 +143,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     const pool = ready.length ? ready : list;
     const filtered = filterMarketsForTenant(pool, storefrontHost);
     const markets = filtered.length ? filtered : pool;
-    // On a market website the address decides the market: the picker offers the
-    // markets that have a website of their own (choosing one goes there).
-    const siteMarket = marketsQuery.data?.siteMarketCode;
-    if (!siteMarket) return markets;
-    const withSite = markets.filter(
-      (market) => market.zoneCode === siteMarket || market.storefrontUrl,
-    );
-    return withSite.length ? withSite : markets;
+    // On a market website the address decides the market (the picker offers
+    // the markets reached from it); the shared address offers the ones it serves.
+    return marketsOnAddress(markets, marketsQuery.data ?? {});
   }, [marketsQuery.data, storefrontHost]);
 
   const regionOptions = useMemo<RegionOption[]>(() => {
@@ -197,7 +197,17 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     // the address); elsewhere a stored zone counts only if it is one of this
     // brand's markets.
     const siteMarket = marketsQuery.data.siteMarketCode;
-    const stored = siteMarket || storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
+    // On the shared address, a choice of a market it serves (a market link, the
+    // picker here) is the market, as the proxy drew the page (src/proxy.ts).
+    const choiceHere = choiceServedHere(
+      shoppable,
+      marketsQuery.data,
+      siteMarket ? null : readMarketChoice(),
+    );
+    const stored =
+      siteMarket ||
+      choiceHere ||
+      storedZoneFor(saved, shoppable.map((market) => market.zoneCode));
     const pick =
       shoppable.find((market) => market.zoneCode === stored) ??
       marketsQuery.data.defaultMarket ??
@@ -334,10 +344,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       // The shopper's own choice: the country suggestion is answered.
       answerCountrySuggestion(id);
       const market = shoppable.find((item) => item.zoneCode === id);
-      // A market with its own website: go there, same page and language. Its
-      // bag, prices and sign-in belong to that website.
+      // A market with its own website, or one the brand's shared address serves
+      // (from a market website): go there, same page and language. Its bag,
+      // prices and sign-in belong to that website.
       const elsewhere = market
-        ? marketSiteUrl(market, {
+        ? marketPageUrl(market, marketsQuery.data?.sharedSiteUrl, {
             origin: window.location.origin,
             pathname: window.location.pathname,
             search: window.location.search,
@@ -357,6 +368,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       };
       selectMarket(id, next);
       writeZoneCookie(id);
+      // On the shared address the choice is kept on the brand's domain too: the
+      // root domain reads it first (a market link may have left another there).
+      if (!marketsQuery.data?.siteMarketCode) {
+        writeMarketChoice(id, marketsQuery.data?.brandDomain);
+      }
       const previousMarket = shoppable.find(
         (item) => item.zoneCode === marketId,
       );
@@ -369,6 +385,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     [
       marketId,
       marketsQuery.data?.brandDomain,
+      marketsQuery.data?.sharedSiteUrl,
+      marketsQuery.data?.siteMarketCode,
       pathLanguage,
       redrawForMarket,
       refreshMarketScopedData,

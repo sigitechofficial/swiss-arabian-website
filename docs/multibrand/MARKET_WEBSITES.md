@@ -12,7 +12,8 @@ ksa.swissarabian.com/ar/products/oud
   → proxy (src/proxy.ts)
       1. checks the address with the backend (GET /storefront/site, cached 60 s)
          unknown → 404 · backend unreachable on first sight → 503
-      2. root domain (no market of its own) → 307 to a market website
+      2. root domain (no market of its own) → 307 to a market website, unless it
+         serves the visitor's market itself (no website of its own, see below)
       3. rewrites to /ksa.swissarabian.com/ar/products/oud   (shoppers never see it)
   → app/[site]/[locale]/… : its own prerendered / cached pages per address
 ```
@@ -45,6 +46,42 @@ market websites, the proxy sends visitors (307, `private, no-store`) to: the mar
 they chose before (market cookie) → the market of their country (Front Door's
 `x-client-country`, see `src/lib/site/edge.ts`) → the brand's default market. Page, language and query are kept. With no market
 websites yet (e.g. locally) it serves pages itself as before.
+
+### Markets without a website of their own
+
+A market with no address of its own (Brands → Domains) is served on the brand's
+shared address (the root domain), in its own page tree (`swissarabian.com~KWT`), the
+same way as "one address for all markets" below. The backend says which:
+`onSharedAddress` per market and `sharedSiteUrl` on `/storefront/site` and
+`/storefront/markets` (`MarketStorefrontUrlsService.servedOnSharedAddress`). A market
+whose own address is registered but not live yet (still on Shopify) is not served
+there meanwhile: its visitors are sent on as before.
+
+- **Root redirect.** In the order above, a market the root serves keeps the
+  visitor here (it is drawn for them); one with a website of its own sends them
+  there; one that is neither is passed over (`marketSiteForVisitor`).
+- **Market links** (`src/lib/site/marketLink.ts`). Links for such a market — emails,
+  exchange payment returns, product feeds, Insider — are
+  `https://swissarabian.com/~KWT/ar/account/orders/12`: the first segment `~` + the
+  market code (backend `marketOnSharedAddress`, same rule). The proxy saves the market
+  (this address's market cookie and the choice on the brand's domain, which the root
+  reads first) and sends the shopper on (307) to the same page without the segment,
+  so pages keep one address and their cache per market. A link for a market with a
+  website of its own goes there; an unknown market just drops the segment.
+- **Picker.** On a market website it also lists the markets the shared address
+  serves; choosing one opens the shared address in that market (`marketPageUrl`).
+  On the shared address the picker lists the markets it serves and the market
+  websites; a choice is also kept on the brand's domain (`marketsOnAddress`,
+  `choiceServedHere`: the browser follows the same rule as the proxy).
+- **Country suggestion.** A market website suggests such a market for visitors from
+  its country too (switching goes to the shared address).
+- **Payments** return to the shared address (its origin: providers check the
+  origin); the return page carries the market (`zone=`).
+- **Not covered yet:** hreflang and the root domain's sitemap list market websites
+  only, so these markets' pages are not in search engines' market alternates.
+  Google Merchant product links go through the market link (a redirect that keeps
+  the market in a cookie); a feed checked by a crawler without cookies may see the
+  default market's price. Give a market its own address for Merchant listings.
 
 ## One address for all of a brand's markets (e.g. the Azure address, no market subdomains)
 

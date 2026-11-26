@@ -34,6 +34,11 @@ export type StorefrontMarket = {
    * none yet. Older backends omit it.
    */
   storefrontUrl?: string | null;
+  /**
+   * The brand's shared address (`sharedSiteUrl`) serves this market: it has no
+   * website of its own. Older backends omit it.
+   */
+  onSharedAddress?: boolean;
   name: string;
   countryCode: string;
   defaultCurrencyCode: string | null;
@@ -97,4 +102,10 @@ export type StorefrontMarketListResponse = {
    * root domain. Null when under none (local aliases). Older backends omit it.
    */
   brandDomain?: string | null;
+  /**
+   * The brand's live shared address (`https://swissarabian.com`), where the
+   * markets without a website of their own are served (`onSharedAddress`).
+   * Null when none; older backends omit it.
+   */
+  sharedSiteUrl?: string | null;
 };

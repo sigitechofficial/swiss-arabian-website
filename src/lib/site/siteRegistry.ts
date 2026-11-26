@@ -10,6 +10,12 @@ export type SiteMarket = {
   zoneCode: string;
   countryCode: string;
   storefrontUrl: string | null;
+  /**
+   * The brand's shared address serves this market (it has no website of its own):
+   * the shared address opens it instead of sending the visitor on. Older backends
+   * omit it (then only markets with a website of their own are routed to).
+   */
+  onSharedAddress?: boolean;
   languages: string[];
 };
 
@@ -19,6 +25,11 @@ export type SiteInfo = {
   storefrontCode: string | null;
   /** The brand's root domain this address sits under (address table); null when under none. */
   brandDomain?: string | null;
+  /**
+   * The brand's live shared address (`https://swissarabian.com`), where the markets
+   * without a website of their own are served; null when none (older backends omit it).
+   */
+  sharedSiteUrl?: string | null;
   /** The address's own market; null when the address serves no single market. */
   siteMarketCode: string | null;
   defaultMarketCode: string | null;
@@ -92,11 +103,40 @@ export function clearSiteCache() {
   cache.clear();
 }
 
+/** Market codes are compared without case (a link may carry `kwt`). */
+function sameCode(a: string | null | undefined, b: string | null | undefined): boolean {
+  const code = a?.trim().toUpperCase();
+  return Boolean(code) && code === b?.trim().toUpperCase();
+}
+
+/** The address's market with this code (codes compared without case). */
+export function siteMarketFor(
+  site: Pick<SiteInfo, "markets">,
+  zoneCode: string | null | undefined,
+): SiteMarket | undefined {
+  return zoneCode ? site.markets.find((market) => sameCode(market.zoneCode, zoneCode)) : undefined;
+}
+
+/**
+ * Whether this address opens `zoneCode` itself: an address with no market of its
+ * own (the brand's shared address) serving a market that has no website of its own.
+ */
+export function servedHere(
+  site: Pick<SiteInfo, "siteMarketCode" | "markets">,
+  zoneCode: string | null | undefined,
+): boolean {
+  if (site.siteMarketCode) return false;
+  const market = siteMarketFor(site, zoneCode);
+  return Boolean(market && !market.storefrontUrl && market.onSharedAddress);
+}
+
 /**
  * Where a root domain sends the visitor: the market they chose before (market
  * cookie), else the market of their country, else the brand's default market.
- * Only markets with a website of their own count; null keeps the root domain
- * serving pages itself (no market websites yet, e.g. locally).
+ * A market with a website of its own sends them there; a market this address
+ * serves (no website of its own) keeps them here (null). Markets that are neither
+ * (an own address not live yet) are passed over. Null also keeps the root domain
+ * serving pages itself when no market has a website yet (e.g. locally).
  */
 export function marketSiteForVisitor(
   site: SiteInfo,
@@ -105,12 +145,15 @@ export function marketSiteForVisitor(
   if (site.siteMarketCode) return null;
   const withSite = site.markets.filter((market) => market.storefrontUrl);
   if (!withSite.length) return null;
+  const routed = (market: SiteMarket | undefined) =>
+    market && (market.storefrontUrl || market.onSharedAddress) ? market : undefined;
+  const country = visitor.country?.trim().toUpperCase();
   const pick =
-    (visitor.zoneCode ? withSite.find((m) => m.zoneCode === visitor.zoneCode) : undefined) ??
-    (visitor.country ? withSite.find((m) => m.countryCode.toUpperCase() === visitor.country) : undefined) ??
-    (site.defaultMarketCode ? withSite.find((m) => m.zoneCode === site.defaultMarketCode) : undefined) ??
+    routed(siteMarketFor(site, visitor.zoneCode)) ??
+    routed(country ? site.markets.find((m) => m.countryCode.trim().toUpperCase() === country) : undefined) ??
+    routed(siteMarketFor(site, site.defaultMarketCode)) ??
     withSite[0];
-  return pick?.storefrontUrl ?? null;
+  return pick.storefrontUrl ?? null;
 }
 
 /**
@@ -121,12 +164,19 @@ export function marketSiteForVisitor(
  * (the country is not one of the brand's markets).
  */
 export function marketForCountry(
-  site: Pick<SiteInfo, "siteMarketCode" | "markets">,
+  site: Pick<SiteInfo, "siteMarketCode" | "markets" | "sharedSiteUrl">,
   country: string | null,
 ): string | null {
   if (!country) return null;
+  // On a market website: its own market, the markets with a website of their own
+  // and those the brand's shared address serves (switching goes there).
   const offered = site.siteMarketCode
-    ? site.markets.filter((m) => m.zoneCode === site.siteMarketCode || m.storefrontUrl)
+    ? site.markets.filter(
+        (m) =>
+          m.zoneCode === site.siteMarketCode ||
+          m.storefrontUrl ||
+          (m.onSharedAddress && site.sharedSiteUrl),
+      )
     : site.markets;
   return offered.find((m) => m.countryCode.trim().toUpperCase() === country)?.zoneCode ?? null;
 }
