@@ -7,14 +7,17 @@ import {
   type LocaleConfig,
 } from "@/lib/i18n/locales";
 import type { StorefrontMarket, StorefrontMarketListResponse } from "@/features/markets/types/market";
+import { marketPagePath } from "@/lib/site/marketLink";
 
 /**
- * hreflang between a brand's market websites: the same page on
- * `uae.swissarabian.com` (en-AE, ar-AE) and `ksa.swissarabian.com` (en-SA,
- * ar-SA), with x-default on the brand's default market. A market is only named
- * for a page that exists there: catalog pages are checked against that market's
- * catalog (its own sitemap), fixed pages exist in every market, and anything
- * else (CMS pages, Journal posts) is linked within its own website only.
+ * hreflang between a brand's markets: the same page on `uae.swissarabian.com`
+ * (en-AE, ar-AE), `ksa.swissarabian.com` (en-SA, ar-SA) and, for a market without
+ * a website of its own, its address on the shared address
+ * (`swissarabian.com/~KWT`, en-KW, ar-KW), with x-default on the brand's default
+ * market. A market is only named for a page that exists there: catalog pages are
+ * checked against that market's catalog (its own sitemap), fixed pages exist in
+ * every market, and anything else (CMS pages, Journal posts) is linked within its
+ * own website only.
  */
 export const MARKET_PATHS_REVALIDATE_SECONDS = 3600;
 
@@ -27,6 +30,8 @@ export type MarketSite = {
   countryCode: string;
   origin: string;
   host: string;
+  /** "" on a market website; `/~KWT` for a market the shared address serves. */
+  basePath: string;
   /** Website languages the market publishes, default first (its default has no prefix). */
   languages: string[];
 };
@@ -50,19 +55,25 @@ function marketLanguages(market: StorefrontMarket): string[] {
   return [...localeConfigFromMarket(codes).locales];
 }
 
-/** The brand's market websites (markets with an address of their own). */
+/**
+ * Where each market of the brand lives: its own website, or — a market without
+ * one that the shared address serves — that address under `/~CODE`.
+ */
 export function marketSites(list: StorefrontMarketListResponse | null): MarketSite[] {
   if (!list) return [];
   const sites: MarketSite[] = [];
   for (const market of list.markets) {
-    if (!market.storefrontUrl) continue;
+    const onShared = !market.storefrontUrl && market.onSharedAddress && list.sharedSiteUrl;
+    const address = market.storefrontUrl || (onShared ? list.sharedSiteUrl : null);
+    if (!address) continue;
     try {
-      const url = new URL(market.storefrontUrl);
+      const url = new URL(address);
       sites.push({
         zoneCode: market.zoneCode,
         countryCode: market.countryCode.toUpperCase(),
         origin: url.origin,
         host: url.host,
+        basePath: onShared ? marketPagePath(market.zoneCode, "/") : "",
         languages: marketLanguages(market),
       });
     } catch {
@@ -70,6 +81,11 @@ export function marketSites(list: StorefrontMarketListResponse | null): MarketSi
     }
   }
   return sites;
+}
+
+/** The absolute address of a (language-prefixed) page on a market's site. */
+function siteUrl(site: MarketSite, localized: string): string {
+  return `${site.origin}${site.basePath}${localized === "/" ? "" : localized}`;
 }
 
 /**
@@ -134,9 +150,8 @@ export function buildMarketHreflang(input: {
     if (!isOwn && !pathExistsIn(bare, input.catalogPaths.get(site.zoneCode) ?? null)) continue;
     for (const code of site.languages) {
       const localized = withLocalePrefix(bare, code, siteLocaleConfig(site));
-      languages[`${code}-${site.countryCode}`] = isOwn
-        ? localized
-        : `${site.origin}${localized === "/" ? "" : localized}`;
+      // Own addresses stay relative: metadataBase carries the market's base.
+      languages[`${code}-${site.countryCode}`] = isOwn ? localized : siteUrl(site, localized);
     }
   }
   const fallback =
@@ -145,9 +160,7 @@ export function buildMarketHreflang(input: {
   if (fallbackIsOwn || pathExistsIn(bare, input.catalogPaths.get(fallback.zoneCode) ?? null)) {
     const config = siteLocaleConfig(fallback);
     const localized = withLocalePrefix(bare, config.defaultLocale, config);
-    languages["x-default"] = fallbackIsOwn
-      ? localized
-      : `${fallback.origin}${localized === "/" ? "" : localized}`;
+    languages["x-default"] = fallbackIsOwn ? localized : siteUrl(fallback, localized);
   }
   return Object.keys(languages).length > 1 ? languages : null;
 }

@@ -4,8 +4,12 @@ import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 import { marketLocaleConfig } from "@/lib/i18n/serverLocaleConfig";
 import { sitemapAlternates } from "@/lib/seo/sitemapEntries";
-import { loadServerMarkets, resolveCatalogMarketFor } from "@/lib/seo/serverMarket";
-import { requestOrigin } from "@/lib/seo/requestOrigin";
+import {
+  loadServerMarkets,
+  pageOwnMarketCode,
+  resolveCatalogMarketFor,
+} from "@/lib/seo/serverMarket";
+import { requestSiteBase } from "@/lib/seo/requestOrigin";
 import { shopifyLegacyRedirect } from "@/lib/seo/shopifyLegacyRedirects";
 import {
   buildMarketHreflang,
@@ -28,13 +32,13 @@ function absolute(origin: string, path: string) {
 }
 
 /**
- * hreflang across the brand's market websites for each page of this one (only
- * markets where the page exists), or null when this address is not a market
- * website or the brand has no other.
+ * hreflang across the brand's markets for each page of this one (only markets
+ * where the page exists), or null when this sitemap is no market's (a root
+ * domain) or the brand has no other market.
  */
 async function crossMarketFor(origin: string) {
   const list = await loadServerMarkets();
-  const ownZoneCode = list?.siteMarketCode;
+  const ownZoneCode = await pageOwnMarketCode();
   const sites = marketSites(list ?? null);
   if (!ownZoneCode || sites.length < 2 || !origin) return undefined;
   const catalogPaths = new Map(
@@ -67,13 +71,16 @@ async function crossMarketFor(origin: string) {
  * The sitemap of the website being served (run inside `withSiteHost`): fixed
  * pages plus every product, collection and category visible in its market, in
  * every language the market serves, with last-updated dates and hreflang (languages,
- * and other market websites where the page exists). A root domain without a
- * market of its own lists nothing while market websites exist (it redirects).
+ * and other markets where the page exists). A market the shared address serves
+ * has its own sitemap there (`/~KWT/sitemap.xml`, addresses under `/~KWT`). The
+ * shared address's own sitemap lists nothing while its markets have addresses
+ * (it redirects to them).
  */
 export async function siteSitemap(): Promise<MetadataRoute.Sitemap> {
-  const origin = (await requestOrigin()) ?? "";
+  // The market's base: `https://swissarabian.com/~KWT` for a market the shared address serves.
+  const origin = (await requestSiteBase()) ?? "";
   const list = await loadServerMarkets();
-  if (list && !list.siteMarketCode && marketSites(list).length > 0) return [];
+  if (list && !(await pageOwnMarketCode()) && marketSites(list).length > 0) return [];
 
   const entries: Array<{ path: string; lastModified?: string }> = STATIC_PATHS.map((path) => ({ path }));
   const resolved = await resolveCatalogMarketFor(DEFAULT_LOCALE);
