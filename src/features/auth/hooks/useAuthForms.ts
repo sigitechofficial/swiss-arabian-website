@@ -19,18 +19,22 @@ import { useUiStore } from "@/stores/useUiStore";
 import {
   confirmEmailLoginCode,
   confirmEmailVerification,
+  confirmPhoneLoginCode,
+  confirmSignup,
   forgotPassword,
   loginCustomer,
   registerCustomer,
   requestEmailLoginCode,
   requestEmailVerification,
+  requestPhoneLoginCode,
   resendOtp,
+  resendSignupCode,
   resetPassword,
   splitFullName,
+  toE164Phone,
   toLoginIdentifier,
 } from "../api/auth.service";
 import { applyAuthResult } from "../lib/applyAuthSession";
-import { confirmStoredPhoneWithSameCode } from "../lib/confirmStoredPhone";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -40,8 +44,15 @@ import {
   type LoginFormValues,
   type RegisterFormValues,
   type ResetPasswordFormValues,
+  type SignupCodesFormValues,
 } from "../schemas/auth.schema";
-import { isAuthResult, isEmailVerificationRequired } from "../types/auth";
+import {
+  isAuthResult,
+  isEmailVerificationRequired,
+  isSignupCompleted,
+  type PhoneCodeChannel,
+  type SignupPending,
+} from "../types/auth";
 import { markNewAccount } from "../utils/newAccountGreeting";
 import { clearResetIdentifier, readResetIdentifier, storeResetIdentifier } from "../utils/resetIdentifier";
 import { safeReturnPath } from "../utils/safeReturnPath";
@@ -54,6 +65,9 @@ import { safeReturnPath } from "../utils/safeReturnPath";
 export type AuthNotice =
   | "codeSent"
   | "codeResent"
+  | "signupCodesSent"
+  | "accountFound"
+  | "signedUp"
   | "signedIn"
   | "emailVerifiedSignedIn"
   | "emailVerifiedSignIn"
@@ -70,6 +84,9 @@ export type AuthFeedback = {
 const DEFAULT_NOTICES: Record<Exclude<AuthNotice, "chooseCountry">, MessageKey> = {
   codeSent: "auth.notice.codeSent",
   codeResent: "auth.notice.codeResent",
+  signupCodesSent: "auth.notice.signupCodesSent",
+  accountFound: "auth.notice.accountFound",
+  signedUp: "auth.notice.signedUp",
   signedIn: "auth.notice.signedIn",
   emailVerifiedSignedIn: "auth.notice.emailVerifiedSignedIn",
   emailVerifiedSignIn: "auth.notice.emailVerifiedSignIn",
@@ -98,9 +115,26 @@ function useReturnTo(fallbackWhenMissing = "/account") {
 /** Seconds before "Resend code" becomes available again. */
 export const RESEND_SECONDS = 30;
 
+/** Code sign-in: an email, or a mobile number the customer verified. */
 const emailOnlySchema = z.object({
-  email: z.string().trim().min(1, "Enter your email").email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Enter your email or mobile number")
+    .refine(
+      (value) =>
+        value.includes("@")
+          ? z.string().email().safeParse(value).success
+          : value.replace(/\D/g, "").length >= 7,
+      "Enter a valid email or mobile number",
+    ),
 });
+
+/** Email codes go to the inbox; anything else is a mobile number in E.164. */
+function codeIdentifier(value: string): { kind: "email" | "phone"; value: string } {
+  const trimmed = value.trim();
+  return trimmed.includes("@") ? { kind: "email", value: trimmed } : { kind: "phone", value: toE164Phone(trimmed) };
+}
 type EmailOnlyValues = z.infer<typeof emailOnlySchema>;
 
 const codeSchema = z.object({
@@ -213,9 +247,11 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   }
 
   async function onRequestCode(values: EmailOnlyValues) {
-    const email = values.email.trim();
+    const target = codeIdentifier(values.email);
+    const email = target.value;
     try {
-      await requestEmailLoginCode(email);
+      if (target.kind === "email") await requestEmailLoginCode(email);
+      else await requestPhoneLoginCode(email);
       codeForm.reset({ code: "" });
       setResendSeconds(RESEND_SECONDS);
       setStep({ kind: "email-code-confirm", email });
@@ -229,7 +265,11 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   async function onConfirmCode(values: CodeValues) {
     if (step.kind !== "email-code-confirm") return;
     try {
-      const result = await confirmEmailLoginCode({ email: step.email, code: values.code.trim() });
+      const code = values.code.trim();
+      const result =
+        codeIdentifier(step.email).kind === "email"
+          ? await confirmEmailLoginCode({ email: step.email, code })
+          : await confirmPhoneLoginCode({ phone: step.email, code });
       applyAuthResult(result);
       say.notice("signedIn");
       finishLogin();
@@ -241,7 +281,8 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   async function onResend() {
     if (step.kind !== "email-code-confirm" || resendSeconds > 0) return;
     try {
-      await resendOtp(step.email, "LOGIN");
+      if (codeIdentifier(step.email).kind === "email") await resendOtp(step.email, "LOGIN");
+      else await requestPhoneLoginCode(step.email);
       setResendSeconds(RESEND_SECONDS);
       say.notice("codeResent");
     } catch (error) {
@@ -270,7 +311,16 @@ export function useLoginFlow(feedback?: AuthFeedback) {
   };
 }
 
-/** Create an account in the selected market; with verification on, the emailed code finishes it. */
+export type SignupStep = { kind: "details" } | { kind: "codes"; pending: SignupPending };
+
+const SIX_DIGITS = /^\d{6}$/;
+
+/**
+ * Create an account in the selected market. Nothing exists until the code sent
+ * to the email AND the code sent to the mobile are entered (the backend enforces
+ * it). When the email belongs to a record we already have (an earlier store
+ * account, a guest order), the same codes claim it: "we found your account".
+ */
 export function useRegisterForm(feedback?: AuthFeedback) {
   // Social sign-in is offered where it is on for this website's market (ADR-005 phase G).
   const site = useSiteIntegrations();
@@ -279,10 +329,30 @@ export function useRegisterForm(feedback?: AuthFeedback) {
   const router = useLocaleRouter();
   const say = useFeedback(feedback);
   const returnTo = useReturnTo();
+  const [step, setStep] = useState<SignupStep>({ kind: "details" });
+  const [resendSeconds, setResendSeconds] = useState(0);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: "", email: "", phone: "", password: "" },
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      password: "",
+      marketingConsent: false,
+      smsConsent: false,
+    },
   });
+  const codesForm = useForm<SignupCodesFormValues>({
+    defaultValues: { emailCode: "", phoneCode: "" },
+  });
+  const emailCode = useWatch({ control: codesForm.control, name: "emailCode" });
+  const phoneCode = useWatch({ control: codesForm.control, name: "phoneCode" });
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const id = window.setTimeout(() => setResendSeconds((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [resendSeconds]);
 
   async function onSubmit(values: RegisterFormValues) {
     try {
@@ -294,36 +364,102 @@ export function useRegisterForm(feedback?: AuthFeedback) {
         return;
       }
       const context = resolveStorefrontContext({ zoneCode });
-      const result = await registerCustomer({
+      const pending = await registerCustomer({
         zoneCode: context.zoneCode || zoneCode,
         salesChannelCode: context.salesChannelCode || undefined,
         email: values.email,
         // Already E.164 from the phone field.
         phone: values.phone,
+        phoneChannel: "SMS",
         password: values.password,
         firstName,
         lastName,
-        // Without the code screen there is nowhere to finish, so only ask when it is on.
-        verifyEmailFirst: site.accountVerification,
+        marketingConsent: values.marketingConsent,
+        smsConsent: values.smsConsent,
       });
-      // The first dashboard visit says "Welcome", not "Welcome back".
-      markNewAccount(values.email);
-      if (isEmailVerificationRequired(result)) {
-        // The account exists; the emailed code finishes the sign-up and signs in.
-        const query = new URLSearchParams({ email: result.email, returnTo });
-        router.push(`/verify?${query.toString()}`);
-        return;
-      }
-      if (isAuthResult(result)) {
-        applyAuthResult(result);
-        router.push(returnTo);
-      }
+      codesForm.reset({ emailCode: "", phoneCode: "" });
+      setResendSeconds(RESEND_SECONDS);
+      setStep({ kind: "codes", pending });
+      say.notice(pending.existingAccount ? "accountFound" : "signupCodesSent");
     } catch (error) {
       say.error(error);
     }
   }
 
-  return { form, oauthEnabled: signInOn, submit: form.handleSubmit(onSubmit) };
+  async function onConfirm(values: SignupCodesFormValues) {
+    if (step.kind !== "codes") return;
+    const { pending } = step;
+    const needEmail = !pending.emailConfirmed;
+    const needPhone = !pending.phoneConfirmed;
+    let invalid = false;
+    if (needEmail && !SIX_DIGITS.test(values.emailCode)) {
+      codesForm.setError("emailCode", { message: "Enter the 6-digit code we sent you" });
+      invalid = true;
+    }
+    if (needPhone && !SIX_DIGITS.test(values.phoneCode)) {
+      codesForm.setError("phoneCode", { message: "Enter the 6-digit code we sent you" });
+      invalid = true;
+    }
+    if (invalid) return;
+    try {
+      const result = await confirmSignup({
+        signupId: pending.signupId,
+        ...(needEmail ? { emailCode: values.emailCode } : {}),
+        ...(needPhone ? { phoneCode: values.phoneCode } : {}),
+      });
+      if (isSignupCompleted(result)) {
+        // The first dashboard visit says "Welcome", not "Welcome back" (a new account).
+        if (!result.claimedExistingAccount) markNewAccount(pending.email);
+        applyAuthResult({ token: result.token, customer: result.customer });
+        refreshCustomerScopedCaches();
+        say.notice("signedUp");
+        router.push(returnTo);
+        return;
+      }
+      setStep({ kind: "codes", pending: result });
+    } catch (error) {
+      say.error(error);
+    }
+  }
+
+  async function onResend(target: "EMAIL" | "PHONE", phoneChannel?: PhoneCodeChannel) {
+    if (step.kind !== "codes" || resendSeconds > 0) return;
+    try {
+      const pending = await resendSignupCode({
+        signupId: step.pending.signupId,
+        target,
+        ...(phoneChannel ? { phoneChannel } : {}),
+      });
+      setStep({ kind: "codes", pending });
+      setResendSeconds(RESEND_SECONDS);
+      say.notice("codeResent");
+    } catch (error) {
+      say.error(error);
+    }
+  }
+
+  return {
+    form,
+    oauthEnabled: signInOn,
+    submit: form.handleSubmit(onSubmit),
+    step,
+    codesForm,
+    emailCode,
+    phoneCode,
+    // Typing a code clears its error, so the next confirm is tried again.
+    setEmailCode: (code: string) => {
+      codesForm.clearErrors("emailCode");
+      codesForm.setValue("emailCode", code, { shouldDirty: true });
+    },
+    setPhoneCode: (code: string) => {
+      codesForm.clearErrors("phoneCode");
+      codesForm.setValue("phoneCode", code, { shouldDirty: true });
+    },
+    submitCodes: codesForm.handleSubmit(onConfirm),
+    resend: onResend,
+    resendSeconds,
+    startOver: () => setStep({ kind: "details" }),
+  };
 }
 
 const verifySchema = z.object({
@@ -360,11 +496,6 @@ export function useVerifyForm(feedback?: AuthFeedback) {
       const result = await confirmEmailVerification(email, values.code, { signIn: true });
       if (result.token && result.customer) {
         applyAuthResult({ token: result.token, customer: result.customer });
-        try {
-          await confirmStoredPhoneWithSameCode({ phoneE164: result.customer.phoneE164, code: values.code });
-        } catch {
-          // Email ownership is already confirmed. Phone proof is optional here.
-        }
         refreshCustomerScopedCaches();
         say.notice("emailVerifiedSignedIn");
         router.push(returnTo);

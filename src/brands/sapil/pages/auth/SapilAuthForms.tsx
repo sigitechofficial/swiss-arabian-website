@@ -57,13 +57,11 @@ export function SapilLoginForm() {
         <form onSubmit={flow.submitCodeRequest} noValidate className="flex flex-col gap-[14px]">
           <Field
             id="code-email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            label={t("account.authEmail")}
-            placeholder={t("account.authEmailPlaceholder")}
+            autoComplete="username"
+            label={t("account.authEmailOrPhone")}
+            placeholder={t("account.authEmailOrPhonePlaceholder")}
             {...flow.emailForm.register("email")}
-            error={flow.emailForm.formState.errors.email ? t("account.authErrEmail") : undefined}
+            error={flow.emailForm.formState.errors.email ? t("account.authErrEmailOrPhone") : undefined}
           />
           <Button type="submit" className="w-full mt-[6px]" disabled={flow.emailForm.formState.isSubmitting}>
             {flow.emailForm.formState.isSubmitting ? t("account.loginCodeSending") : t("account.loginCodeSend")}
@@ -172,12 +170,89 @@ export function SapilLoginForm() {
   );
 }
 
-/** `/register`: create an account in the selected market. */
+/** `/register`: create an account in the selected market (a code to the email and to the mobile). */
 export function SapilRegisterForm() {
   const t = useSapilCopy();
   const messages = useAuthMessages();
-  const { form, submit } = useRegisterForm(messages.feedback);
+  const register = useRegisterForm(messages.feedback);
+  const { form, submit, step } = register;
   const errors = form.formState.errors;
+
+  if (step.kind === "codes") {
+    const { pending } = step;
+    const codeErrors = register.codesForm.formState.errors;
+    const busy = register.codesForm.formState.isSubmitting;
+    return (
+      <FormCard
+        eyebrow={t("account.registerEyebrow")}
+        title={t("account.registerCodesTitle")}
+        accent={t("account.registerCodesAccent")}
+        lede={t(pending.existingAccount ? "account.registerAccountFoundLede" : "account.registerCodesLede", {
+          email: pending.email,
+          digits: pending.phoneHint,
+        })}
+        footer={
+          <button type="button" className={linkButton} onClick={register.startOver}>
+            {t("account.registerStartOver")}
+          </button>
+        }
+      >
+        {messages.message ? <FormMessage tone={messages.message.tone}>{messages.message.text}</FormMessage> : null}
+        <form onSubmit={register.submitCodes} noValidate className="flex flex-col gap-[14px]">
+          {pending.emailConfirmed ? (
+            <p className="text-[14px] text-sapil-ink-2">{t("account.registerEmailConfirmed")}</p>
+          ) : (
+            <CodeField
+              id="signup-email-code"
+              autoFocus
+              label={t("account.registerEmailCode")}
+              value={register.emailCode}
+              onChange={(event) => register.setEmailCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              error={codeErrors.emailCode ? t("account.authErrCode") : undefined}
+            />
+          )}
+          {pending.phoneConfirmed ? (
+            <p className="text-[14px] text-sapil-ink-2">{t("account.registerPhoneConfirmed")}</p>
+          ) : (
+            <CodeField
+              id="signup-phone-code"
+              label={t("account.registerPhoneCode")}
+              value={register.phoneCode}
+              onChange={(event) => register.setPhoneCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              error={codeErrors.phoneCode ? t("account.authErrCode") : undefined}
+            />
+          )}
+          <Button type="submit" className="w-full mt-[6px]" disabled={busy}>
+            {busy ? t("account.registerConfirming") : t("account.registerConfirm")}
+          </Button>
+          {register.resendSeconds > 0 ? (
+            <p className="text-center text-[14px] font-[600] text-sapil-ink-2" aria-live="polite">
+              {t("account.loginResendIn", { seconds: String(register.resendSeconds).padStart(2, "0") })}
+            </p>
+          ) : (
+            <div className="flex flex-col items-center gap-1">
+              {!pending.emailConfirmed ? (
+                <button type="button" className={linkButton} onClick={() => void register.resend("EMAIL")}>
+                  {t("account.registerResendEmail")}
+                </button>
+              ) : null}
+              {!pending.phoneConfirmed ? (
+                <>
+                  <button type="button" className={linkButton} onClick={() => void register.resend("PHONE", "SMS")}>
+                    {t("account.registerResendSms")}
+                  </button>
+                  <button type="button" className={linkButton} onClick={() => void register.resend("PHONE", "WHATSAPP")}>
+                    {t("account.registerResendWhatsApp")}
+                  </button>
+                </>
+              ) : null}
+            </div>
+          )}
+        </form>
+      </FormCard>
+    );
+  }
+
   return (
     <FormCard
       eyebrow={t("account.registerEyebrow")}
@@ -234,6 +309,8 @@ export function SapilRegisterForm() {
           {...form.register("password")}
           error={errors.password ? t("account.authErrNewPassword") : undefined}
         />
+        <Checkbox {...form.register("marketingConsent")}>{t("account.registerMarketingConsent")}</Checkbox>
+        <Checkbox {...form.register("smsConsent")}>{t("account.registerSmsConsent")}</Checkbox>
         <Button type="submit" className="w-full mt-[6px]" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? t("account.registerSubmitting") : t("account.registerSubmit")}
         </Button>
