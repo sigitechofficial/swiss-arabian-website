@@ -2424,6 +2424,7 @@
   "promotions.summary.taxIncluded": "يشمل {tax}",
   "promotions.summary.giftCardCode": "بطاقة هدايا ({code})",
   "promotions.summary.amountDue": "المبلغ المستحق",
+  "promotions.summary.rounding": "التقريب",
   "promotions.gift.close": "إغلاق خيارات الهدايا",
   "promotions.gift.yours": "هدية بانتظارك",
   "promotions.gift.chooseOne": "اختر واحدة. يمكنك تغييرها قبل الدفع.",

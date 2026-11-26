@@ -299,6 +299,7 @@
   "odPaid": "تم دفع {amount}",
   "odPaidGiftCard": "المدفوع ببطاقة الهدية",
   "odPaidPoints": "المدفوع بنقاط المكافآت",
+  "odRounding": "التقريب",
   "odPayCash": "جهّز {amount} للمندوب، نقدًا أو بالبطاقة.",
   "odPayPending": "دفعة {amount} قيد المعالجة.",
   "odPayFailed": "لم تكتمل دفعة {amount}.",

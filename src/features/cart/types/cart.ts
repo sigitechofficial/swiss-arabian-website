@@ -114,6 +114,8 @@ export type ApiCart = {
   shippingEstimate: string;
   totalEstimate: string;
   amountPayable?: string | null;
+  /** The market's payable rounding (≤ 0): amountPayable minus the exact amount left to pay. */
+  payableRounding?: string | null;
   currency: string;
   promotions?: PromotionSnapshotV1 | null;
   /** Server redemption quote. Display only — never priced in the browser. */

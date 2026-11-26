@@ -71,6 +71,7 @@ export function CheckoutPageView() {
     shipDiscount,
     giftCards,
     amountPayable,
+    payableRounding,
     warnings,
     earnPreview,
     submitting,
@@ -252,6 +253,7 @@ export function CheckoutPageView() {
                 tax={tax}
                 total={total}
                 amountPayable={amountPayable}
+                payableRounding={payableRounding}
                 giftCards={giftCards}
                 warnings={warnings}
                 earnPreview={earnPreview.preview}

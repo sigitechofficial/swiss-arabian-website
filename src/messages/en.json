@@ -2321,6 +2321,7 @@
   "promotions.summary.taxIncluded": "Includes {tax}",
   "promotions.summary.giftCardCode": "Gift card ({code})",
   "promotions.summary.amountDue": "Amount due",
+  "promotions.summary.rounding": "Rounding",
   "promotions.gift.close": "Close gift choices",
   "promotions.gift.yours": "A gift is yours",
   "promotions.gift.chooseOne": "Choose one. You can change it before checkout.",

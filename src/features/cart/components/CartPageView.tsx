@@ -119,6 +119,7 @@ export function CartPageView() {
     giftCards,
     total,
     amountPayable,
+    payableRounding,
     blockingErrors,
     priceChanged,
     validating,
@@ -370,6 +371,7 @@ export function CartPageView() {
                     taxIncluded={totals?.taxIncluded}
                     total={total}
                     amountPayable={amountPayable}
+                    payableRounding={payableRounding}
                     loyalty={loyaltyLineFromQuote(loyaltyRedemption)}
                     giftCards={giftCards}
                   />
