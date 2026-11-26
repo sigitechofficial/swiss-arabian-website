@@ -47,6 +47,22 @@ they chose before (market cookie) → the market of their country (Front Door's
 `x-client-country`, see `src/lib/site/edge.ts`) → the brand's default market. Page, language and query are kept. With no market
 websites yet (e.g. locally) it serves pages itself as before.
 
+### The main address as a market's own website (swissarabian.com for Global)
+
+When the brand's main address is linked to a market (Brands → Domains), it is that
+market's website at its plain addresses (Global keeps its Shopify addresses), and still
+the brand's main address:
+
+- Markets with no address of their own still live there at `/~CODE`, in their own page
+  trees (`isSharedAddress`, `servedHere`); a `/~CODE` page is that market's on the server
+  (`resolveCatalogMarketFor`, `sharedAddressMarketCode`) and in the browser
+  (`marketOfAddress`); switching from it to the address's own market drops the segment.
+- Visitors of other markets follow the brand's rule (`mainAddressVisitors`, admin →
+  Brands): `SUGGEST` (default, the country banner), `REDIRECT` (their choice, else their
+  country: that market's website or `/~CODE` here; their own market, none, or a market not
+  live yet: stay), `STAY` (no banner). Other market websites are not affected.
+- Its robots.txt lists its own sitemap and those of its `/~CODE` markets.
+
 ### Markets without a website of their own: `/~CODE` on the shared address
 
 A market with no address of its own (Brands → Domains) lives on the brand's shared
