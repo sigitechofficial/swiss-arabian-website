@@ -43,6 +43,23 @@ describe("SEO addresses and product data", () => {
     expect(absoluteUrl(origin, "https://cdn.example/a.jpg")).toBe(
       "https://cdn.example/a.jpg",
     );
+    // A market's base on the shared address: its home without a trailing slash.
+    const kwt = "https://swissarabian.com/~KWT";
+    expect(absoluteUrl(kwt, "/")).toBe(kwt);
+    expect(absoluteUrl(kwt, "/products/x")).toBe("https://swissarabian.com/~KWT/products/x");
+    expect(absoluteUrl(origin, "/")).toBe("https://uae.swissarabian.com/");
+    // Pages on the market's base; files on the website's origin.
+    expect(
+      absolutizeJsonLd(
+        { url: "/products/x", image: "/catalog/media/a.jpg" },
+        "https://swissarabian.com",
+        "",
+        kwt,
+      ),
+    ).toEqual({
+      url: "https://swissarabian.com/~KWT/products/x",
+      image: "https://swissarabian.com/catalog/media/a.jpg",
+    });
     expect(
       absolutizeJsonLd(
         {

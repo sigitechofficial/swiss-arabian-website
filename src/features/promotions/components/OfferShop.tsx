@@ -2,7 +2,7 @@
 
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { offerProductPrice as productPrice, useOfferShop } from "../hooks/useOfferShop";
 

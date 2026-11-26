@@ -34,7 +34,8 @@ import { PriceEditHero, TierTabs } from "../../components/catalog/PriceEditHero"
 import { GridMessage, ProductGrid } from "../../components/catalog/ProductGrid";
 import { ShopHero } from "../../components/catalog/ShopHero";
 import { useSapilListing } from "../../components/catalog/useSapilListing";
-import { formatSapilPrice, productTile } from "../../components/product/productCardModel";
+import { productTile } from "../../components/product/productCardModel";
+import { formatSapilPrice } from "../../components/shared/money";
 import { SapilLocaleLink } from "../../components/product/SapilLocaleLink";
 
 type ListingProps = {

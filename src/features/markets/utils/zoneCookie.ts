@@ -133,6 +133,11 @@ function readCookie(name: string): string | null {
   return value || null;
 }
 
+/** The market choice kept on the brand's domain (see marketChoiceCookieName). */
+export function readMarketChoice(): string | null {
+  return readCookie(MARKET_CHOICE_COOKIE);
+}
+
 export function readCountryMarket(): string | null {
   return readCookie(COUNTRY_MARKET_COOKIE);
 }

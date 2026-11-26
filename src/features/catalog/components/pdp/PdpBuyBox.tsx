@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { EarnPreviewNote } from "@/features/loyalty/components/EarnPreviewNote";
 import { useProductEarnPreview } from "@/features/loyalty/hooks/useEarnPreview";
 import { OffersForYou } from "@/features/promotions/components/OffersForYou";
@@ -115,7 +115,7 @@ export function PdpBuyBox({
       ) : null}
 
       <p className="m-0 text-[1.75rem] font-semibold tracking-[-0.01em] text-[#2a201a]">
-        {formatMoney(product.price, product.currency)}
+        {product.price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}
       </p>
       {product.price != null && product.price > 0 ? (
         <PdpInstalments price={product.price} currency={product.currency} />

@@ -3,10 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
   tabbyFallbackText,
-  tabbyPrice,
   type TabbyLang,
   type TabbySnippetConfig,
 } from "../utils/tabby";
+import { toDecimalString } from "@/lib/format/money";
 
 type TabbyCardOptions = {
   selector: string;
@@ -84,7 +84,7 @@ export function useTabbyCheckoutCard({
 }) {
   // Tabby: the container id must not be "TabbyCard" (it would shadow their constructor).
   const slotId = `tabby-card-slot-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const price = tabbyPrice(total, currency);
+  const price = toDecimalString(total, currency);
   // Primitives, not the config object: it is rebuilt on every render, and the
   // snippet must only be rebuilt when one of these values really changes.
   const scriptBase = config?.snippetScriptBase ?? null;

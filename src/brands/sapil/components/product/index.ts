@@ -18,7 +18,6 @@ export { SapilQuickView } from "./SapilQuickView";
 export { SapilLocaleLink } from "./SapilLocaleLink";
 export {
   toSapilCardModel,
-  formatSapilPrice,
   productTile,
   productTags,
   productGender,

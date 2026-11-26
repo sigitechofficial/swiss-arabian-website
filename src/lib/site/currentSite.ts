@@ -1,5 +1,5 @@
 import { parseSiteKey } from "./siteKey";
-import { scopedSiteHost } from "./siteScope";
+import { scopedSiteHost, scopedSiteMarketCode } from "./siteScope";
 
 type SiteParamReader = () => Promise<string>;
 
@@ -36,6 +36,8 @@ export async function currentSiteHost(): Promise<string | null> {
  * outside the page tree. A root param, so pages stay static per market.
  */
 export async function currentSiteMarketCode(): Promise<string | null> {
+  const scoped = scopedSiteMarketCode();
+  if (scoped !== undefined) return scoped;
   return (await currentSiteKey())?.marketCode ?? null;
 }
 

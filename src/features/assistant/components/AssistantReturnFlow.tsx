@@ -5,7 +5,7 @@ import { useLastDayFormat, useRequestDate } from "@/features/afterSales/hooks/us
 import { afterSalesOptionLabel } from "@/features/afterSales/utils/eligibility";
 import { unitDifferenceText } from "@/features/afterSales/utils/afterSalesFlowCopy";
 import { returnEstimateView } from "@/features/afterSales/utils/returnEstimateView";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type {

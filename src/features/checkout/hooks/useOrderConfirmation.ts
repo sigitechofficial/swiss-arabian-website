@@ -63,7 +63,10 @@ export function orderConfirmationDetails(order: OrderResponse, state: OrderPayme
     /** Part of the total was paid by gift card or reward points: show how the rest was paid. */
     paidByOtherTenders:
       order.totals?.amountPayable != null &&
-      (Number(order.totals?.giftCardApplied ?? 0) > 0 || Number(order.totals?.loyaltyApplied ?? 0) > 0),
+      (Number(order.totals?.giftCardApplied ?? 0) > 0 ||
+        Number(order.totals?.loyaltyApplied ?? 0) > 0 ||
+        // The total was paid rounded down (KWD 10.125 → 10.120): show what was collected.
+        Number(order.totals?.payableRounding ?? 0) < 0),
   };
 }
 
@@ -79,7 +82,6 @@ export function useOrderConfirmation(orderId: string) {
   const orderQuery = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrder(orderId),
-    retry: 1,
   });
 
   const loadedOrder = orderQuery.data;

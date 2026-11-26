@@ -5,7 +5,8 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
 import { tabbyLang } from "@/features/checkout/utils/tabby";
-import { tabbyPromoConfig, tabbyPromoPrice, type TabbyPromoSource } from "./tabbyPromo";
+import { tabbyPromoConfig, type TabbyPromoSource } from "./tabbyPromo";
+import { toDecimalString } from "@/lib/format/money";
 
 type TabbyPromoOptions = {
   selector: string;
@@ -83,7 +84,8 @@ export function TabbyPromoSnippet({
   const config = tabbyPromoConfig(useSiteIntegrations().paymentPromos.tabby, amount, currency);
   const id = `tabby-promo-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [failed, setFailed] = useState(false);
-  const price = tabbyPromoPrice(amount, currency);
+  // Tabby takes a decimal string in major units with the currency's decimals ("9.500" KWD).
+  const price = toDecimalString(amount, currency);
   const publicKey = config?.publicKey;
   const merchantCode = config?.merchantCode;
   const scriptBase = config?.scriptBase;

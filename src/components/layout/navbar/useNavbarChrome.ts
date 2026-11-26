@@ -6,7 +6,6 @@ import { useLanguageSwitch } from "@/hooks/useLanguageSwitch";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
-import { TOPBAR_REGIONS } from "@/features/home/constants/chromeNav";
 import { useMarket } from "@/providers/MarketProvider";
 import { useHydrated } from "@/hooks/useHydrated";
 
@@ -36,10 +35,7 @@ export function useNavbarChrome() {
   }
   const [openUtil, setOpenUtil] = useState<"region" | "lang" | null>(null);
   const { marketId, setMarketId, regionOptions, languageOptions } = useMarket();
-  const regionId =
-    marketId ||
-    regionOptions[0]?.id ||
-    TOPBAR_REGIONS[0].id;
+  const regionId = marketId || regionOptions[0]?.id || "";
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

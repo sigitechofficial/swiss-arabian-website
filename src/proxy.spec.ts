@@ -269,6 +269,213 @@ describe("proxy: a brand's root domain sends visitors to a market website", () =
   });
 });
 
+describe("proxy: a market without a website of its own lives at /~CODE on the shared address", () => {
+  // KWT has no address of its own: swissarabian.com serves it at /~KWT. QAT's own
+  // address is registered but not live (still on Shopify): not served here meanwhile.
+  const root = () =>
+    site({
+      host: "swissarabian.com",
+      brandDomain: "swissarabian.com",
+      sharedSiteUrl: "https://swissarabian.com",
+      siteMarketCode: null,
+      defaultMarketCode: "URD1",
+      markets: [
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: "https://uae.swissarabian.com", languages: ["en", "ar"] },
+        { zoneCode: "KWT", countryCode: "KW", storefrontUrl: null, onSharedAddress: true, languages: ["en", "ar"] },
+        { zoneCode: "QAT", countryCode: "QA", storefrontUrl: null, onSharedAddress: false, languages: ["en"] },
+      ],
+    });
+  const BASE = "https://swissarabian.com";
+  const tree = (response: Response) => new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname;
+  const setCookies = (response: Response) => response.headers.getSetCookie();
+
+  it("serves /~KWT pages in KWT's tree for everyone, whatever their cookies or country (no redirect)", async () => {
+    registry.lookup = root();
+    const shopper = await proxy(
+      request("/~KWT/ar/collections", { cookie: "sa-market-choice=URD1; sa-zone-code=URD1", "x-client-country": "AE" }, BASE),
+    );
+    expect(shopper.headers.get("location")).toBeNull();
+    expect(tree(shopper)).toBe("/swissarabian.com~KWT/ar/collections");
+    expect(forwarded(shopper, SHOP_LOCALE_HEADER)).toBe("ar");
+    // A search engine: no cookies, any country, the same page.
+    const crawler = await proxy(request("/~KWT/products/oud", { "x-client-country": "US" }, BASE));
+    expect(crawler.headers.get("location")).toBeNull();
+    expect(tree(crawler)).toBe("/swissarabian.com~KWT/en/products/oud");
+  });
+
+  it("keeps the market for the shopper (this address and the brand's domain), and writes nothing when unchanged", async () => {
+    registry.lookup = root();
+    const first = await proxy(request("/~KWT/collections", { cookie: "sa-market-choice=URD1" }, BASE));
+    const cookies = setCookies(first);
+    expect(cookies.find((c) => c.startsWith("sa-zone-code=KWT"))).toMatch(/Max-Age=31536000/i);
+    expect(cookies.find((c) => c.startsWith("sa-market-choice=KWT"))).toMatch(/Domain=swissarabian\.com/i);
+    const again = await proxy(
+      request("/~KWT/collections", { cookie: "sa-market-choice=KWT; sa-zone-code=KWT; sa-country-market=" }, BASE),
+    );
+    expect(setCookies(again).filter((c) => !c.startsWith("sa-country-market="))).toEqual([]);
+  });
+
+  it("sends a plain address to the visitor's market's address: /~KWT here, or a market website", async () => {
+    registry.lookup = root();
+    const chosen = await proxy(request("/ar/account?x=1", { cookie: "sa-market-choice=KWT" }, BASE));
+    expect(chosen.status).toBe(307);
+    expect(chosen.headers.get("location")).toBe("https://swissarabian.com/~KWT/ar/account?x=1");
+    expect(chosen.headers.get("cache-control")).toBe("private, no-store");
+    const kuwait = await proxy(request("/collections", { "x-client-country": "KW" }, BASE));
+    expect(kuwait.headers.get("location")).toBe("https://swissarabian.com/~KWT/collections");
+    const home = await proxy(request("/", { "x-client-country": "KW" }, BASE));
+    expect(home.headers.get("location")).toBe("https://swissarabian.com/~KWT");
+    const uae = await proxy(request("/", { "x-client-country": "AE" }, BASE));
+    expect(uae.headers.get("location")).toBe("https://uae.swissarabian.com/");
+  });
+
+  it("passes over a market whose own address is not live yet", async () => {
+    registry.lookup = root();
+    const qatar = await proxy(request("/", { "x-client-country": "QA" }, BASE));
+    expect(qatar.headers.get("location")).toBe("https://uae.swissarabian.com/");
+    const qatarLink = await proxy(request("/~QAT/products", {}, BASE));
+    expect(qatarLink.headers.get("location")).toBe("https://swissarabian.com/products");
+    expect(setCookies(qatarLink)).toEqual([]);
+  });
+
+  it("a segment for a market with a website of its own opens there; one address per market code; unknown ones are dropped", async () => {
+    registry.lookup = root();
+    const own = await proxy(request("/~URD1/ar/products/oud?ref=x", {}, BASE));
+    expect(own.headers.get("location")).toBe("https://uae.swissarabian.com/ar/products/oud?ref=x");
+    const lower = await proxy(request("/~kwt/ar/products/oud", {}, BASE));
+    expect(lower.status).toBe(308);
+    expect(lower.headers.get("location")).toBe("https://swissarabian.com/~KWT/ar/products/oud");
+    const unknown = await proxy(request("/~NOPE", {}, BASE));
+    expect(unknown.headers.get("location")).toBe("https://swissarabian.com/");
+  });
+
+  it("its own redirects stay in the market's segment (a typed default language)", async () => {
+    registry.lookup = root();
+    const response = await proxy(request("/~KWT/en/collections", {}, BASE));
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://swissarabian.com/~KWT/collections");
+  });
+
+  it("serves files and API calls under a segment as without it, and the market's own sitemap", async () => {
+    registry.lookup = root();
+    const file = await proxy(request("/~KWT/images/logo.png", {}, BASE));
+    expect(new URL(file.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/images/logo.png");
+    const media = await proxy(request("/~KWT/catalog/media/abc.jpg", {}, BASE));
+    expect(media.headers.get("x-middleware-rewrite")).toBe("http://api.test/catalog/media/abc.jpg");
+    const sitemap = await proxy(request("/~KWT/sitemap.xml", {}, BASE));
+    expect(tree(sitemap)).toBe("/swissarabian.com~KWT/sitemap.xml");
+    const rootSitemap = await proxy(request("/sitemap.xml", {}, BASE));
+    expect(tree(rootSitemap)).toBe("/swissarabian.com/sitemap.xml");
+  });
+});
+
+describe("proxy: the main address is Global's own website (swissarabian.com)", () => {
+  // swissarabian.com is GLOBAL's address and the brand's main address; UAE has its
+  // own; NEW has none (served at swissarabian.com/~NEW); QAT's own address is pending.
+  const main = (rule?: "REDIRECT" | "SUGGEST" | "STAY") =>
+    site({
+      host: "swissarabian.com",
+      brandDomain: "swissarabian.com",
+      sharedSiteUrl: "https://swissarabian.com",
+      siteMarketCode: "GLOBAL",
+      defaultMarketCode: "URD1",
+      ...(rule ? { mainAddressVisitors: rule } : {}),
+      markets: [
+        { zoneCode: "GLOBAL", countryCode: "US", storefrontUrl: "https://swissarabian.com", languages: ["en", "ar"] },
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: "https://uae.swissarabian.com", languages: ["en", "ar"] },
+        { zoneCode: "NEW", countryCode: "KW", storefrontUrl: null, onSharedAddress: true, languages: ["en", "ar"] },
+        { zoneCode: "QAT", countryCode: "QA", storefrontUrl: null, onSharedAddress: false, languages: ["en"] },
+      ],
+    });
+  const BASE = "https://swissarabian.com";
+  const tree = (response: Response) => new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname;
+  const setCookies = (response: Response) => response.headers.getSetCookie();
+
+  it("serves Global's pages at their plain addresses (as on Shopify), in its own tree", async () => {
+    registry.lookup = main();
+    const product = await proxy(request("/products/oud", {}, BASE));
+    expect(product.headers.get("location")).toBeNull();
+    expect(tree(product)).toBe("/swissarabian.com/en/products/oud");
+    const arabic = await proxy(request("/ar/collections", {}, BASE));
+    expect(tree(arabic)).toBe("/swissarabian.com/ar/collections");
+  });
+
+  it("SUGGEST (the default): a Gulf visitor stays on Global and is offered their market by the banner", async () => {
+    registry.lookup = main();
+    const response = await proxy(request("/products/oud", { "x-client-country": "AE" }, BASE));
+    expect(response.headers.get("location")).toBeNull();
+    expect(tree(response)).toBe("/swissarabian.com/en/products/oud");
+    expect(setCookies(response).some((c) => c.startsWith("sa-country-market=URD1"))).toBe(true);
+  });
+
+  it("REDIRECT: a visitor of another market goes there (choice first, then country); Global's own stay", async () => {
+    registry.lookup = main("REDIRECT");
+    const uae = await proxy(request("/ar/products/oud?x=1", { "x-client-country": "AE" }, BASE));
+    expect(uae.status).toBe(307);
+    expect(uae.headers.get("location")).toBe("https://uae.swissarabian.com/ar/products/oud?x=1");
+    const chosen = await proxy(request("/collections", { cookie: "sa-market-choice=NEW", "x-client-country": "AE" }, BASE));
+    expect(chosen.headers.get("location")).toBe("https://swissarabian.com/~NEW/collections");
+    const stays = await proxy(request("/collections", { cookie: "sa-market-choice=GLOBAL", "x-client-country": "AE" }, BASE));
+    expect(stays.headers.get("location")).toBeNull();
+    const us = await proxy(request("/collections", { "x-client-country": "US" }, BASE));
+    expect(us.headers.get("location")).toBeNull();
+    // A market whose own address is not live yet: stay on Global.
+    const qatar = await proxy(request("/collections", { "x-client-country": "QA" }, BASE));
+    expect(qatar.headers.get("location")).toBeNull();
+  });
+
+  it("STAY: no redirect and no suggestion", async () => {
+    registry.lookup = main("STAY");
+    const response = await proxy(request("/", { "x-client-country": "AE", cookie: "sa-country-market=URD1" }, BASE));
+    expect(response.headers.get("location")).toBeNull();
+    const cleared = setCookies(response).find((c) => c.startsWith("sa-country-market="));
+    expect(cleared).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
+  });
+
+  it("serves a market without an address of its own at /~NEW, in its own tree; drops other segments", async () => {
+    registry.lookup = main("REDIRECT");
+    const page = await proxy(request("/~NEW/ar/products/oud", { "x-client-country": "AE" }, BASE));
+    expect(page.headers.get("location")).toBeNull();
+    expect(tree(page)).toBe("/swissarabian.com~NEW/ar/products/oud");
+    const cookies = setCookies(page);
+    expect(cookies.find((c) => c.startsWith("sa-market-choice=NEW"))).toMatch(/Domain=swissarabian\.com/i);
+    const own = await proxy(request("/~GLOBAL/products/oud", {}, BASE));
+    expect(own.headers.get("location")).toBe("https://swissarabian.com/products/oud");
+    const uae = await proxy(request("/~URD1/products/oud", {}, BASE));
+    expect(uae.headers.get("location")).toBe("https://uae.swissarabian.com/products/oud");
+    const pending = await proxy(request("/~QAT/products", {}, BASE));
+    expect(pending.headers.get("location")).toBe("https://swissarabian.com/products");
+  });
+
+  it("serves /~NEW's own tree on the second pass, and refuses made-up markets", async () => {
+    registry.lookup = main();
+    const own = await proxy(request("/swissarabian.com~NEW/en/collections", { [INTERNAL_REWRITE_HEADER]: "1" }, BASE));
+    expect(own.headers.get("x-middleware-next")).toBe("1");
+    const global = await proxy(request("/swissarabian.com~GLOBAL/en/collections", { [INTERNAL_REWRITE_HEADER]: "1" }, BASE));
+    expect(global.status).toBe(404);
+  });
+
+  it("other market websites are unchanged: no /~CODE there, no visitor rule", async () => {
+    registry.lookup = site({
+      host: "uae.swissarabian.com",
+      brandDomain: "swissarabian.com",
+      sharedSiteUrl: "https://swissarabian.com",
+      siteMarketCode: "URD1",
+      mainAddressVisitors: "REDIRECT",
+      markets: [
+        { zoneCode: "GLOBAL", countryCode: "US", storefrontUrl: "https://swissarabian.com", languages: ["en"] },
+        { zoneCode: "URD1", countryCode: "AE", storefrontUrl: "https://uae.swissarabian.com", languages: ["en", "ar"] },
+        { zoneCode: "NEW", countryCode: "KW", storefrontUrl: null, onSharedAddress: true, languages: ["en"] },
+      ],
+    });
+    const us = await proxy(request("/products/oud", { "x-client-country": "US" }, "https://uae.swissarabian.com"));
+    expect(us.headers.get("location")).toBeNull();
+    expect(tree(us)).toBe("/uae.swissarabian.com/en/products/oud");
+    const segment = await proxy(request("/~NEW/products/oud", {}, "https://uae.swissarabian.com"));
+    expect(segment.headers.get("location")).toBe("https://uae.swissarabian.com/products/oud");
+  });
+});
+
 describe("proxy: one address for all of a brand's markets (first visit by country)", () => {
   const brandSite = () =>
     site({

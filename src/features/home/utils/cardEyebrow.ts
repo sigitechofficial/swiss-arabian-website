@@ -3,11 +3,3 @@ export function cardEyebrow(subtitle?: string | null): string {
   const trimmed = subtitle.replace(/\s+/g, " ").trim();
   return trimmed.length > 42 ? `${trimmed.slice(0, 41).trimEnd()}…` : trimmed;
 }
-
-export function formatMoney(
-  price: number | null | undefined,
-  currency = "AED",
-): string {
-  if (price == null) return "Unavailable";
-  return `${currency} ${price.toFixed(2)}`;
-}

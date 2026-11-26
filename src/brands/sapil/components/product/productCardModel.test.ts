@@ -5,11 +5,11 @@ import { ENGLISH } from "../../i18n/catalog";
 import type { SapilTranslator } from "../../i18n/SapilCopy";
 import {
   discountPercent,
-  formatSapilPrice,
   productGender,
   productTile,
   toSapilCardModel,
 } from "./productCardModel";
+import { formatSapilPrice } from "../shared/money";
 
 const messages = Object.fromEntries(
   Object.entries(ENGLISH).flatMap(([area, entries]) => Object.entries(entries).map(([k, v]) => [`${area}.${k}`, v])),
@@ -34,6 +34,8 @@ describe("productCardModel", () => {
     expect(formatSapilPrice(63, "AED", "en")).toBe("AED 63");
     expect(formatSapilPrice(19.75, "AED", "en")).toBe("AED 19.75");
     expect(formatSapilPrice(63, "AED", "ar")).toMatch(/٦٣|63/);
+    expect(formatSapilPrice(10.12, "KWD", "en")).toBe("KWD 10.120");
+    expect(formatSapilPrice("10.000", "KWD", "en")).toBe("KWD 10");
   });
 
   it("uses the API tile colour, else the neutral sand tile", () => {

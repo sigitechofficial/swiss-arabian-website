@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import type { Translator } from "@/lib/i18n/messages";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import {

@@ -1,3 +1,4 @@
+import { formatMoney, isDecimalAmount, parseMoney } from "@/lib/format/money";
 import { KeyedError } from "@/lib/i18n/keyedError";
 import { englishTranslator, type MessageKey, type Translator } from "@/lib/i18n/messages";
 import type {
@@ -74,13 +75,11 @@ export function planFeeLabel(
   intervalUnit: string,
   t: Translator = englishTranslator,
 ): string {
-  const price = `${currencyCode} ${amount}`;
+  const price = formatMoney(amount, currencyCode);
   return intervalUnit === "MONTH"
     ? t("subs.price.perMonth", { amount: price })
     : t("subs.price.perInterval", { amount: price, interval: intervalUnit.toLowerCase() });
 }
-
-const MONEY = /^\d+\.\d{2}$/;
 
 export type SubscriptionPriceLines =
   | {
@@ -109,38 +108,38 @@ export function subscriptionPriceLines(
   const unavailable = { available: false as const, message: t("subs.price.unavailable") };
   const currency = input.currencyCode?.trim().toUpperCase() ?? "";
   const amount = input.amount?.trim() ?? "";
-  if (!currency || !MONEY.test(amount)) {
+  if (!currency || !isDecimalAmount(amount, currency)) {
     return unavailable;
   }
   const mode = input.shippingMode === "EXTRA_FIXED" ? "EXTRA_FIXED" : input.shippingMode ?? "INCLUDED";
-  const shippingAmount = input.shippingAmount?.trim() || "0.00";
+  const shippingAmount = input.shippingAmount?.trim() || "0";
   const serverTotal = input.monthlyTotal?.trim() ?? "";
   const includedZero =
-    mode === "INCLUDED" && (input.shippingAmount == null || shippingAmount === "0.00" || shippingAmount === "0");
+    mode === "INCLUDED" && (input.shippingAmount == null || parseMoney(shippingAmount) === 0);
   if (mode !== "INCLUDED" && mode !== "EXTRA_FIXED") {
     return unavailable;
   }
-  if (mode === "EXTRA_FIXED" && !MONEY.test(shippingAmount)) {
+  if (mode === "EXTRA_FIXED" && !isDecimalAmount(shippingAmount, currency)) {
     return unavailable;
   }
-  if (MONEY.test(serverTotal)) {
+  if (isDecimalAmount(serverTotal, currency)) {
     return {
       available: true,
-      subscription: t("subs.price.subscription", { amount: `${currency} ${amount}` }),
+      subscription: t("subs.price.subscription", { amount: formatMoney(amount, currency) }),
       shipping:
         mode === "EXTRA_FIXED"
-          ? t("subs.price.shipping", { amount: `${currency} ${shippingAmount}` })
+          ? t("subs.price.shipping", { amount: formatMoney(shippingAmount, currency) })
           : t("subs.price.shippingIncluded"),
-      total: t("subs.price.total", { amount: `${currency} ${serverTotal}` }),
+      total: t("subs.price.total", { amount: formatMoney(serverTotal, currency) }),
       totalAmount: serverTotal,
     };
   }
   if (includedZero) {
     return {
       available: true,
-      subscription: t("subs.price.subscription", { amount: `${currency} ${amount}` }),
+      subscription: t("subs.price.subscription", { amount: formatMoney(amount, currency) }),
       shipping: t("subs.price.shippingIncluded"),
-      total: t("subs.price.total", { amount: `${currency} ${amount}` }),
+      total: t("subs.price.total", { amount: formatMoney(amount, currency) }),
       totalAmount: amount,
     };
   }

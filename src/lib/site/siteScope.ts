@@ -9,20 +9,34 @@ import { AsyncLocalStorage } from "node:async_hooks";
  */
 const SCOPE = Symbol.for("swissarabian.siteHostScope");
 
-type ScopeGlobal = typeof globalThis & { [SCOPE]?: AsyncLocalStorage<string> };
+type SiteScope = { host: string; marketCode: string | null };
+type ScopeGlobal = typeof globalThis & { [SCOPE]?: AsyncLocalStorage<SiteScope> };
 
-function storage(): AsyncLocalStorage<string> {
+function storage(): AsyncLocalStorage<SiteScope> {
   const g = globalThis as ScopeGlobal;
-  if (!g[SCOPE]) g[SCOPE] = new AsyncLocalStorage<string>();
+  if (!g[SCOPE]) g[SCOPE] = new AsyncLocalStorage<SiteScope>();
   return g[SCOPE];
 }
 
-/** Runs `fn` with `host` as the current website address. */
-export function withSiteHost<T>(host: string, fn: () => Promise<T>): Promise<T> {
-  return storage().run(host, fn);
+/**
+ * Runs `fn` with `host` as the current website address, and `marketCode` as its
+ * market on an address that serves several (`/~KWT/sitemap.xml` on the shared address).
+ */
+export function withSiteHost<T>(
+  host: string,
+  fn: () => Promise<T>,
+  marketCode: string | null = null,
+): Promise<T> {
+  return storage().run({ host, marketCode }, fn);
 }
 
 /** The address set by `withSiteHost`, if any. */
 export function scopedSiteHost(): string | null {
-  return storage().getStore() ?? null;
+  return storage().getStore()?.host ?? null;
+}
+
+/** The market set by `withSiteHost`: undefined outside a scope, null for none. */
+export function scopedSiteMarketCode(): string | null | undefined {
+  const scope = storage().getStore();
+  return scope ? scope.marketCode : undefined;
 }

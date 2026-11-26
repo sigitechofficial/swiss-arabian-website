@@ -9,7 +9,7 @@ import type { CatalogListingQuery, CatalogListingSort } from "@/features/catalog
 import { useMarketMerchSettings } from "@/features/markets/hooks/useMarketMerchSettings";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";
 import { useSapilCopy } from "../../i18n/SapilCopy";
-import { formatSapilPrice } from "../product/productCardModel";
+import { formatSapilPrice } from "../shared/money";
 import type { ListingToolbarProps } from "./ListingToolbar";
 import {
   bandsInRange,

@@ -12,6 +12,7 @@ const UAE: MarketSite = {
   countryCode: "AE",
   origin: "https://uae.swissarabian.com",
   host: "uae.swissarabian.com",
+  basePath: "",
   languages: ["en", "ar"],
 };
 const KSA: MarketSite = {
@@ -19,6 +20,16 @@ const KSA: MarketSite = {
   countryCode: "SA",
   origin: "https://ksa.swissarabian.com",
   host: "ksa.swissarabian.com",
+  basePath: "",
+  languages: ["en", "ar"],
+};
+/** A market without a website of its own, served by the shared address at /~KWT. */
+const KWT: MarketSite = {
+  zoneCode: "KWT",
+  countryCode: "KW",
+  origin: "https://swissarabian.com",
+  host: "swissarabian.com",
+  basePath: "/~KWT",
   languages: ["en", "ar"],
 };
 
@@ -81,6 +92,57 @@ describe("hreflang across market websites", () => {
       ],
     } as unknown as StorefrontMarketListResponse;
     expect(marketSites(list)).toEqual([{ ...KSA, languages: ["ar", "en"] }]);
+  });
+
+  it("a market the shared address serves is at its /~CODE address there; one whose own address is pending is not", () => {
+    const list = {
+      sharedSiteUrl: "https://swissarabian.com",
+      markets: [
+        { zoneCode: "KWT", countryCode: "kw", storefrontUrl: null, onSharedAddress: true, languages: [] },
+        { zoneCode: "QTR", countryCode: "QA", storefrontUrl: null, onSharedAddress: false, languages: [] },
+      ],
+    } as unknown as StorefrontMarketListResponse;
+    expect(marketSites(list)).toEqual([
+      { ...KWT, languages: [...fallbackLocaleConfig().locales] },
+    ]);
+    // Without a live shared address it cannot be linked.
+    expect(marketSites({ ...list, sharedSiteUrl: null })).toEqual([]);
+  });
+});
+
+describe("hreflang with markets on the shared address (/~CODE)", () => {
+  it("market websites name the shared address's markets at their /~CODE addresses", () => {
+    const languages = buildMarketHreflang({
+      path: "/ar/products/oud",
+      ownZoneCode: "URD1",
+      defaultZoneCode: "URD1",
+      sites: [UAE, KWT],
+      catalogPaths: new Map([["KWT", new Set(["/products/oud"])]]),
+    });
+    expect(languages).toEqual({
+      "en-AE": "/products/oud",
+      "ar-AE": "/ar/products/oud",
+      "en-KW": "https://swissarabian.com/~KWT/products/oud",
+      "ar-KW": "https://swissarabian.com/~KWT/ar/products/oud",
+      "x-default": "/products/oud",
+    });
+  });
+
+  it("a page under /~KWT keeps its own addresses relative (metadataBase carries /~KWT) and names the others", () => {
+    const languages = buildMarketHreflang({
+      path: "/",
+      ownZoneCode: "KWT",
+      defaultZoneCode: "URD1",
+      sites: [UAE, KWT],
+      catalogPaths: new Map(),
+    });
+    expect(languages).toEqual({
+      "en-AE": "https://uae.swissarabian.com",
+      "ar-AE": "https://uae.swissarabian.com/ar",
+      "en-KW": "/",
+      "ar-KW": "/ar",
+      "x-default": "https://uae.swissarabian.com",
+    });
   });
 });
 

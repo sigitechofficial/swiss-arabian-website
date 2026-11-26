@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { currentSiteHost } from "@/lib/site/currentSite";
 import { siteOriginFor } from "@/lib/site/siteKey";
+import { marketPagePath } from "@/lib/site/marketLink";
+import { sharedAddressMarketCode } from "@/lib/seo/serverMarket";
 import {
   configuredStorefrontHost,
   isLoopbackHost,
@@ -55,8 +57,25 @@ export async function requestOrigin(): Promise<string | null> {
   return siteOrigin();
 }
 
-/** `/products/x` → `https://host/products/x`; absolute or empty values pass through. */
+/**
+ * Where this page's own addresses start (canonical, hreflang, og:url, sitemap
+ * entries, page links in structured data): the origin, plus the market's segment
+ * for a market the shared address serves (`https://swissarabian.com/~KWT`, see
+ * src/lib/site/marketLink.ts). Files (images, logos) keep requestOrigin().
+ */
+export async function requestSiteBase(): Promise<string | null> {
+  const origin = await requestOrigin();
+  if (!origin) return null;
+  const market = await sharedAddressMarketCode();
+  return market ? `${origin}${marketPagePath(market, "/")}` : origin;
+}
+
+/**
+ * `/products/x` → `https://host/products/x`; absolute or empty values pass through.
+ * On a market's base (`https://host/~KWT`) its home is the base itself, as its canonical.
+ */
 export function absoluteUrl(origin: string | null, value: string): string {
   if (!origin || !value.startsWith("/") || value.startsWith("//")) return value;
+  if (value === "/" && /^[a-z]+:\/\/[^/]+\/./i.test(origin)) return origin;
   return `${origin}${value}`;
 }

@@ -307,6 +307,10 @@ export function SapilCheckoutPage() {
       });
     }
   }
+  // The server rounded what is due down to the market's step (KWD 10.125 -> 10.120).
+  if (showPayable && f.payableRounding != null && f.payableRounding < 0) {
+    rows.push({ key: "rounding", label: t("checkout.rounding"), value: `−${money(Math.abs(f.payableRounding), currency)}` });
+  }
   const grandParts = moneyParts(payable, currency);
   const trust = [t("checkout.trustSecure")];
   const freeOver = marketDelivery.freeDeliveryThreshold ?? ship.threshold;

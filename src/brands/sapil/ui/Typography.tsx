@@ -57,7 +57,7 @@ export function SectionHead({ eyebrow, title, accent, description, actions, as: 
 }
 
 export type PriceProps = {
-  /** formatted price, e.g. "AED 63" (see formatAED) */
+  /** formatted price, e.g. "AED 63" (see formatSapilPrice) */
   value: ReactNode;
   /** struck-out full price */
   was?: ReactNode;

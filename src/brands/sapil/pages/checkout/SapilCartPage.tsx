@@ -130,6 +130,10 @@ export function SapilCartPage() {
     }
   }
 
+  // The server rounded what is due down to the market's step (KWD 10.125 -> 10.120).
+  if (showPayable && bag.payableRounding != null && bag.payableRounding < 0) {
+    rows.push({ key: "rounding", label: t("checkout.rounding"), value: `−${money(Math.abs(bag.payableRounding), bag.currency)}` });
+  }
   return (
     <Wrap className="w-full pt-[32px] pb-[88px] max-900:pt-[20px] max-900:pb-[56px] min-h-[70vh]">
       <Breadcrumbs label={t("content.breadcrumb")} items={crumbs} LinkComponent={SapilLink} />

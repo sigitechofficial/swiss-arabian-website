@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import type { OrderChanges } from "../utils/orderChanges";
 

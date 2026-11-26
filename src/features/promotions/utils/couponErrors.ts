@@ -1,5 +1,5 @@
 import { ApiClientError } from "@/lib/api/apiError";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { getUserFacingErrorMessage } from "@/lib/api/userFacingErrors";
 import type { Translator } from "@/lib/i18n/messages";
 import { pageTranslator } from "@/lib/i18n/pageTranslator";

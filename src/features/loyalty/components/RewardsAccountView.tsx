@@ -5,7 +5,7 @@ import { PageLoading } from "@/components/ui/PageLoading";
 import { accountContainer } from "@/features/account/constants/accountLayout";
 import { AccountBreadcrumb } from "@/features/account/components/AccountBreadcrumb";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useLoyaltyAccount } from "../hooks/useLoyaltyAccount";
 import { useOmnichannelRefresh } from "../hooks/useOmnichannelRefresh";
 import {

@@ -1,5 +1,6 @@
 import { isLocale, type LocaleConfig, type ShopLocale } from "./locales";
 import { activeLocaleConfig } from "./activeLocaleConfig";
+import { marketPrefixOf, withoutMarketSegment } from "@/lib/site/marketLink";
 
 export type { LocaleConfig, ShopLocale } from "./locales";
 
@@ -17,7 +18,8 @@ const UNSWITCHABLE = [/^\/payments(\/|$)/];
  * market (whether that market serves it is the proxy's decision).
  */
 export function localePrefixOf(pathname: string): ShopLocale | null {
-  const first = (pathname || "/").split("/")[1] ?? "";
+  // A market on the shared address (`/~KWT/ar/x`): the language follows its segment.
+  const first = withoutMarketSegment(pathname || "/").split("/")[1] ?? "";
   return isLocale(first) ? first : null;
 }
 
@@ -30,11 +32,12 @@ export function localeFromPathname(pathname: string, config: LocaleConfig): Shop
   return localePrefixOf(pathname) ?? config.defaultLocale;
 }
 
-/** "/ar/products" → "/products"; "/ar" → "/". */
+/** "/ar/products" → "/products"; "/ar" → "/"; a market segment goes too ("/~KWT/ar/x" → "/x"). */
 export function stripLocalePrefix(pathname: string): string {
-  const prefix = localePrefixOf(pathname);
-  if (!prefix) return pathname || "/";
-  const rest = pathname.slice(prefix.length + 1);
+  const path = withoutMarketSegment(pathname || "/");
+  const prefix = localePrefixOf(path);
+  if (!prefix) return path || "/";
+  const rest = path.slice(prefix.length + 1);
   if (!rest) return "/";
   return rest.startsWith("/") ? rest : `/${rest}`;
 }
@@ -64,20 +67,24 @@ export function isLocaleSwitchablePath(pathname: string): boolean {
  */
 export function localizeHref(href: string, pathname: string, config?: LocaleConfig): string {
   if (!href.startsWith("/") || href.startsWith("//")) return href;
+  // Already a market's address on the shared address: as given.
+  if (marketPrefixOf(href.split(/[?#]/)[0] || "/")) return href;
+  // A page of a market on the shared address (`/~KWT/…`) keeps its market segment.
+  const market = marketPrefixOf(pathname);
+  const inMarket = (value: string) => (market ? `${market}${value === "/" ? "" : value}` : value);
   const hash = href.includes("#") ? href.slice(href.indexOf("#")) : "";
   const withoutHash = hash ? href.slice(0, href.indexOf("#")) : href;
   const query = withoutHash.includes("?") ? withoutHash.slice(withoutHash.indexOf("?")) : "";
   const path = withoutHash.split("?")[0] || "/";
-  if (localePrefixOf(path)) return href;
-  if (!isLocaleSwitchablePath(path)) return href;
+  if (localePrefixOf(path) || !isLocaleSwitchablePath(path)) return `${inMarket(path)}${query}${hash}`;
   const languages = config ?? activeLocaleConfig();
   if (!languages) {
     // No market languages known (server code that passed none): keep the
     // address's own prefix, which is never the default language's.
     const prefix = localePrefixOf(pathname);
-    return prefix ? `${internalLocalePath(path, prefix)}${query}${hash}` : href;
+    return `${inMarket(prefix ? internalLocalePath(path, prefix) : path)}${query}${hash}`;
   }
-  return `${withLocalePrefix(path, localeFromPathname(pathname, languages), languages)}${query}${hash}`;
+  return `${inMarket(withLocalePrefix(path, localeFromPathname(pathname, languages), languages))}${query}${hash}`;
 }
 
 /**

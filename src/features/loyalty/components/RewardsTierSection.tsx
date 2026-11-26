@@ -1,7 +1,7 @@
 "use client";
 
 import { useMarketCurrency } from "@/features/markets/hooks/useMarketCurrency";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { knownText } from "@/lib/i18n/formErrors";
 import type { Translator } from "@/lib/i18n/messages";
 import { isRtl } from "@/lib/i18n/locales";

@@ -1,4 +1,4 @@
-import { hostFromSiteKey } from "@/lib/site/siteKey";
+import { parseSiteKey } from "@/lib/site/siteKey";
 import { withSiteHost } from "@/lib/site/siteScope";
 import { siteSitemap, sitemapXml } from "@/lib/seo/siteSitemap";
 
@@ -15,9 +15,14 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ site: string }> },
 ) {
-  const host = hostFromSiteKey((await params).site);
-  if (!host) return new Response("Not found", { status: 404 });
-  const body = await withSiteHost(host, async () => sitemapXml(await siteSitemap()));
+  // `swissarabian.com~KWT`: the sitemap of a market the shared address serves (/~KWT/sitemap.xml).
+  const key = parseSiteKey((await params).site);
+  if (!key) return new Response("Not found", { status: 404 });
+  const body = await withSiteHost(
+    key.host,
+    async () => sitemapXml(await siteSitemap()),
+    key.marketCode,
+  );
   return new Response(body, {
     headers: { "content-type": "application/xml; charset=utf-8" },
   });

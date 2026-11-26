@@ -5,7 +5,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { PageLoading } from "@/components/ui/PageLoading";
 import { AccountPageShell } from "@/features/account/components/AccountPageShell";
 import { accountContainer } from "@/features/account/constants/accountLayout";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { formatOrderDate } from "@/features/orders/utils/orderStatus";
 import { LocaleLink } from "@/lib/i18n/LocaleLink";
 import { useShopLocale } from "@/lib/i18n/ShopLocaleProvider";

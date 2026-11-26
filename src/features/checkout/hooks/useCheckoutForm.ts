@@ -17,6 +17,7 @@ import { type CatalogProduct } from "@/features/catalog/constants/catalogProduct
 import { MERCH_RAIL_SLUGS, useMerchRail } from "@/features/merchandising";
 import {
   amountPayableFrom,
+  payableRoundingFrom,
   checkoutQuoteSnapshot,
   shippingDiscountAmount,
   visibleGiftCards,
@@ -258,6 +259,10 @@ export function useCheckoutForm() {
     session ? checkoutQuoteSnapshot(session, null) : null,
     [estimate?.amountPayable],
   );
+  const payableRounding = payableRoundingFrom(
+    session ? checkoutQuoteSnapshot(session, null) : null,
+    [estimate?.payableRounding],
+  );
   const warnings = checkoutWarningMessages(session?.validationIssues);
   const earnPreview = useEarnPreview({
     checkoutSessionId: session?.checkoutSessionId,
@@ -424,6 +429,7 @@ export function useCheckoutForm() {
     shipDiscount,
     giftCards,
     amountPayable,
+    payableRounding,
     warnings,
     earnPreview,
     selectedPayment,

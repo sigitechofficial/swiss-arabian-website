@@ -8,7 +8,7 @@ import type { ProductSummary } from "@/features/catalog/types/product";
 import { chromeNavLinks, useNavigation } from "@/features/navigation";
 import { useMarket } from "@/providers/MarketProvider";
 import { useHomeCollectionProducts } from "../../hooks/useHomeCollectionProducts";
-import { formatMoney } from "../../utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { giftSetsHref } from "../../utils/giftSetsHref";
 import { pillSolid, visuallyHidden } from "@/styles/siteChrome";
 
@@ -249,7 +249,7 @@ export function LandingBundles({
                   ) : null}
                 </span>
                 <span className={shopPrice}>
-                  {formatMoney(product.price, product.currency)}
+                  {product.price == null ? t("cart.unavailable.UNAVAILABLE") : formatMoney(product.price, product.currency)}
                 </span>
               </LocaleLink>
             </li>

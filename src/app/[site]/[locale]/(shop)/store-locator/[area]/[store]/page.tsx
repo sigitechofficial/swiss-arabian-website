@@ -6,7 +6,7 @@ import { loadStore } from "@/features/stores/routes/storeRouteData";
 import { storePageJsonLd } from "@/features/stores/utils/storeJsonLd";
 import { storeAreaPath, storePath, storesPath } from "@/features/stores/utils/storeLinks";
 import { pageMetadata } from "@/lib/seo/pageSeo";
-import { absoluteUrl, requestOrigin } from "@/lib/seo/requestOrigin";
+import { absoluteUrl, requestSiteBase } from "@/lib/seo/requestOrigin";
 import { routeTranslator } from "@/lib/i18n/routeLocale";
 import { withLocalePrefix } from "@/lib/i18n/localePath";
 import { CatalogJsonLd, StorePageView } from "@brand-ui";
@@ -41,7 +41,7 @@ export default async function StorePage({ params }: Params) {
   if (store.areaSlug !== area) permanentRedirect(withLocalePrefix(storePath(store), locale, localeConfig));
 
   const { t, brandName } = await routeTranslator();
-  const origin = await requestOrigin();
+  const origin = await requestSiteBase();
   const url = (path: string) => absoluteUrl(origin, withLocalePrefix(path, locale, localeConfig));
   return (
     <>

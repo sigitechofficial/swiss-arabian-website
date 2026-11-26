@@ -2,7 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import type { CancelItemInput } from "@/features/account/api/customerOrders.service";
-import { formatMoney } from "@/features/home/utils/formatMoney";
+import { formatMoney } from "@/lib/format/money";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
 import { orderCancelBtn, orderCancelConfirm, orderLineMeta } from "@/styles/accountChrome";
 import { useCancelItemsSelection } from "../hooks/useCancelItemsSelection";
