@@ -143,7 +143,7 @@ describe("tracker", () => {
     expect(getTrackingConsent()).toBe("GRANTED");
   });
 
-  it("before a choice: records anonymously with per-page ids and stores nothing", () => {
+  it("before a choice: records anonymously with the tab's ids, kept in sessionStorage only", () => {
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
@@ -151,7 +151,7 @@ describe("tracker", () => {
     expect(track("page_viewed")).toBe(true);
     expect(track("catalog_product_viewed")).toBe(true);
     const [a, b] = queuedEventsForTests();
-    // One visit: the same in-memory ids on every event of the page.
+    // One visit: the same ids on every event of the tab.
     expect(a.visitorId).toMatch(UUID_V4);
     expect(b.visitorId).toBe(a.visitorId);
     expect(b.sessionId).toBe(a.sessionId);
@@ -159,8 +159,64 @@ describe("tracker", () => {
     const visitor = getVisitorId();
     expect(getVisitorId()).toBe(visitor);
     getSessionId();
+    // Nothing lasting (no localStorage, no cookie); this tab only.
     expect(localStorage.getItem("sa_visitor_id")).toBeNull();
+    expect(sessionStorage.getItem("sa_anon_visitor")).toBe(a.visitorId);
+    expect(JSON.parse(sessionStorage.getItem("sa_session") ?? "{}").id).toBe(a.sessionId);
+  });
+
+  it("before a choice: a refresh or full page load keeps the same session and visitor", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    track("page_viewed");
+    const before = queuedEventsForTests()[0];
+    // A full page load: the tracker module starts again, the tab's sessionStorage stays.
+    resetTrackerForTests();
+    setFirstPartyTracking(true);
+    track("page_viewed");
+    const after = queuedEventsForTests()[0];
+    expect(after.sessionId).toBe(before.sessionId);
+    expect(after.visitorId).toBe(before.visitorId);
+  });
+
+  it("before a choice: a new tab (empty sessionStorage) is a new anonymous visitor and session", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    track("page_viewed");
+    const first = queuedEventsForTests()[0];
+    sessionStorage.clear();
+    resetTrackerForTests();
+    setFirstPartyTracking(true);
+    track("page_viewed");
+    const other = queuedEventsForTests()[0];
+    expect(other.visitorId).not.toBe(first.visitorId);
+    expect(other.sessionId).not.toBe(first.sessionId);
+  });
+
+  it("refusing analytics removes the tab's anonymous ids", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    track("page_viewed");
+    expect(sessionStorage.getItem("sa_anon_visitor")).not.toBeNull();
+    setTrackingConsent("denied");
+    expect(sessionStorage.getItem("sa_anon_visitor")).toBeNull();
     expect(sessionStorage.getItem("sa_session")).toBeNull();
+    expect(localStorage.getItem("sa_visitor_id")).toBeNull();
+  });
+
+  it("allowing analytics moves the tab's anonymous visitor id to the lasting one", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    track("page_viewed");
+    const anon = queuedEventsForTests()[0].visitorId;
+    setTrackingConsent("granted");
+    expect(getVisitorId()).toBe(anon);
+    expect(localStorage.getItem("sa_visitor_id")).toBe(anon);
+    expect(sessionStorage.getItem("sa_anon_visitor")).toBeNull();
   });
 
   it("removes the stored visitor id when analytics is refused later", () => {
@@ -201,7 +257,7 @@ describe("tracker", () => {
     expect(getSessionId(t0 + 41 * 60_000)).toBe(rotated);
   });
 
-  it("API calls before a choice carry the page's anonymous ids without consent; none after refusal or with tracking off", () => {
+  it("API calls before a choice carry the tab's anonymous ids without consent; none after refusal or with tracking off", () => {
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
@@ -212,7 +268,6 @@ describe("tracker", () => {
       "x-behavior-session": page.sessionId,
     });
     expect(localStorage.getItem("sa_visitor_id")).toBeNull();
-    expect(sessionStorage.getItem("sa_session")).toBeNull();
     setTrackingConsent("denied");
     expect(behaviorIdentityHeaders()).toBeNull();
     setTrackingConsent("granted");

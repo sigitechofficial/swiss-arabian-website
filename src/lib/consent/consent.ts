@@ -34,7 +34,8 @@ const OPEN_EVENT = "sa-consent-open";
 
 /** Browser data that belongs to an optional category, removed when that category is refused. */
 const CATEGORY_STORAGE: Record<ConsentCategory, { local: string[]; session: string[] }> = {
-  analytics: { local: ["sa_visitor_id"], session: ["sa_session"] },
+  // sa_anon_visitor: the tab's anonymous visitor id before any choice (tracker, §5.13 G4).
+  analytics: { local: ["sa_visitor_id"], session: ["sa_session", "sa_anon_visitor"] },
   marketing: { local: ["sa_insider_uuid", "sa_insider_user"], session: [] },
 };
 
