@@ -23,6 +23,7 @@ import { AfterSalesCards } from "./AfterSalesCards";
 import { AssistantAvatar, SuggestionIcon } from "./AssistantAvatar";
 import { ReplyText } from "./ReplyText";
 import { AssistantReturnFlow } from "./AssistantReturnFlow";
+import { GuestReturnForm, type GuestReturnValues } from "./GuestReturnForm";
 import type {
   AssistantAction,
   AssistantBubble,
@@ -228,6 +229,10 @@ export function AssistantWidget({
   const [flow, setFlow] = useState<AssistantFlowView | null>(null);
   const [flowBusy, setFlowBusy] = useState(false);
   const [flowProblem, setFlowProblem] = useState<string | null>(null);
+  // A guest's proof of the order (number and email code): in memory only, sent with each request, never saved here.
+  const [guestProof, setGuestProof] = useState<{ orderNumber: string; code: string } | null>(null);
+  const [guestFormOpen, setGuestFormOpen] = useState(false);
+  const [retentionDays, setRetentionDays] = useState<number | null>(null);
   const panelId = useId();
   const [open, setOpen] = useState(false);
   // A pop-up rule's "chat with us" button asks the widget to open.
@@ -239,7 +244,7 @@ export function AssistantWidget({
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState("");
   const [bubbles, setBubbles] = useState<AssistantBubble[]>([]);
-  // Only a signed-in customer has a saved chat. A guest's chat lives in this page and nowhere else.
+  // A signed-in customer's chat is saved; a guest's is saved too, under a chat key kept in this browser.
   const [signedIn, setSignedIn] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -269,6 +274,7 @@ export function AssistantWidget({
     try {
       const history = await loadHistory(zoneCode);
       setSignedIn(history.signedIn);
+      setRetentionDays(history.retentionDays ?? null);
       if (history.messages.length > 0) {
         setBubbles(history.messages.map((m) => ({ id: nextId(), role: m.role, text: m.text })));
       } else {
@@ -294,6 +300,7 @@ export function AssistantWidget({
   const clearChat = async () => {
     try {
       await clearHistory(zoneCode);
+      setFlow(null);
       setBubbles([welcomeBubble()]);
     } catch {
       setBubbles((current) => [
@@ -339,7 +346,7 @@ export function AssistantWidget({
   const say = (text: string, isError = false) =>
     setBubbles((current) => [...current, { id: nextId(), role: "assistant", text, isError }]);
 
-  const flowScope = { zoneCode, locale };
+  const flowScope = { zoneCode, locale, ...(!signedIn && guestProof ? { code: guestProof.code } : {}) };
 
   /** Runs one flow request: the server answers with what to draw next. A failure can be retried. */
   const runFlow = async (request: () => Promise<AssistantFlowView | null>) => {
@@ -364,6 +371,16 @@ export function AssistantWidget({
   };
   const startFlow = (kind: "RETURN" | "EXCHANGE", orderId?: string) =>
     flow ? undefined : void runFlow(() => returnFlow.start(flowScope, kind, orderId));
+  const startGuestFlow = (values: GuestReturnValues) => {
+    if (flow) return;
+    const proof = { orderNumber: values.orderNumber, code: values.code };
+    setGuestProof(proof);
+    void runFlow(async () => {
+      const view = await returnFlow.start({ zoneCode, locale, ...proof }, values.kind);
+      setGuestFormOpen(false);
+      return view;
+    });
+  };
   const stepReturn = (action: AssistantFlowAction) =>
     flow?.flowId ? void runFlow(() => returnFlow.step(flowScope, flow.flowId as string, action)) : undefined;
   const confirmReturn = (token: string) =>
@@ -527,7 +544,7 @@ export function AssistantWidget({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              {signedIn && bubbles.some((bubble) => bubble.role === "user") ? (
+              {bubbles.some((bubble) => bubble.role === "user") ? (
                 <button
                   type="button"
                   onClick={() => void clearChat()}
@@ -561,7 +578,17 @@ export function AssistantWidget({
 
           {historyLoaded && !signedIn ? (
             <p className="m-0 border-b border-black/10 bg-black/[0.03] px-4 py-2 text-[11.5px] leading-snug text-sa-primary/70" data-assistant-guest-note>
-              {copy("assistant.guestNote")}
+              {retentionDays ? copy("assistant.guestNoteSaved", { days: retentionDays }) : copy("assistant.guestNote")}
+              {!flow && !guestFormOpen ? (
+                <button
+                  type="button"
+                  data-assistant-guest-return-open
+                  onClick={() => setGuestFormOpen(true)}
+                  className="ms-2 cursor-pointer font-medium underline underline-offset-2"
+                >
+                  {copy("assistant.guestReturn.open")}
+                </button>
+              ) : null}
             </p>
           ) : null}
 
@@ -697,6 +724,14 @@ export function AssistantWidget({
                 </div>
               </div>
             ))}
+            {!signedIn && guestFormOpen && !flow ? (
+              <div className="sa-assistant-rise flex items-start gap-2">
+                <AssistantAvatar size={26} accent={accent} />
+                <div className="min-w-0 flex-1">
+                  <GuestReturnForm busy={flowBusy} onStart={startGuestFlow} onCancel={() => setGuestFormOpen(false)} />
+                </div>
+              </div>
+            ) : null}
             {flow ? (
               <div className="sa-assistant-rise flex items-start gap-2">
                 <AssistantAvatar size={26} accent={accent} />
