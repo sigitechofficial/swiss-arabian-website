@@ -206,6 +206,49 @@ describe("tracker", () => {
     expect(behaviorIdentityHeaders()).toBeNull();
   });
 
+  it("the first event after landing carries where the visit came from; later events do not", () => {
+    window.history.replaceState(null, "", "/products/oud-1?utm_source=facebook&utm_medium=paid_social&utm_campaign=ramadan&fbclid=IwAR0secret");
+    resetTrackerForTests();
+    setFirstPartyTracking(true);
+    track("page_viewed");
+    // Client-side navigation drops the tags; the landing's acquisition was read before that.
+    window.history.replaceState(null, "", "/cart");
+    track("cart_viewed");
+    const [first, second] = queuedEventsForTests();
+    expect(first.acquisition).toEqual({
+      source: "facebook",
+      medium: "paid_social",
+      campaign: "ramadan",
+      landingPath: "/products/oud-1",
+      fbclid: "1",
+    });
+    expect(second.acquisition).toBeUndefined();
+    expect(JSON.stringify(queuedEventsForTests())).not.toContain("IwAR0secret");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("keeps the landing's acquisition until the shopper allows analytics, and never stores it", () => {
+    window.history.replaceState(null, "", "/?utm_source=snapchat&utm_medium=paid");
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    resetTrackerForTests();
+    setFirstPartyTracking(true);
+    expect(track("page_viewed")).toBe(false);
+    window.history.replaceState(null, "", "/collections/oud");
+    setTrackingConsent("granted");
+    track("page_viewed");
+    expect(queuedEventsForTests()[0].acquisition).toMatchObject({ source: "snapchat", medium: "paid", landingPath: "/" });
+    expect(JSON.stringify({ ...localStorage })).not.toContain("snapchat");
+    expect(JSON.stringify({ ...sessionStorage })).not.toContain("snapchat");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("a visit with no campaign and no other site sends no acquisition (Direct)", () => {
+    track("page_viewed");
+    expect(queuedEventsForTests()[0].acquisition).toBeUndefined();
+  });
+
   it("sends an identical keyed event once inside the dedupe window", () => {
     expect(track("catalog_product_viewed", {}, { dedupeKey: "p1" })).toBe(true);
     expect(track("catalog_product_viewed", {}, { dedupeKey: "p1" })).toBe(false);

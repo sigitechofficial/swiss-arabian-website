@@ -4,6 +4,7 @@ import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { env } from "@/lib/config/env";
 import { storefrontContextQuery } from "@/lib/storefront/context";
 import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
+import { readAcquisition, type AcquisitionContext } from "./acquisition";
 
 /**
  * First-party behavior tracker. Sends browser events to our own backend
@@ -27,6 +28,8 @@ export type BehaviorEventV1 = {
   sessionId: string;
   sequence: number;
   properties: Record<string, string | number | boolean>;
+  /** Where the visit came from: only on the first event after landing (see ./acquisition). */
+  acquisition?: AcquisitionContext;
 };
 
 const VISITOR_KEY = "sa_visitor_id";
@@ -43,6 +46,26 @@ let sequence = 0;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let listenersBound = false;
 const recentSignatures = new Map<string, number>();
+
+/**
+ * The landing address's acquisition, read when the page loads (the address still has its campaign
+ * tags; client-side navigation drops them) and kept in memory until the first event takes it. The
+ * shopper may allow analytics a few pages later: the first event then still carries it. Never stored.
+ * `undefined`: not read yet; `null`: none, or already sent.
+ */
+let landingAcquisition: AcquisitionContext | null | undefined;
+
+function captureLandingAcquisition(): void {
+  if (landingAcquisition !== undefined || typeof window === "undefined") return;
+  try {
+    landingAcquisition = readAcquisition(window.location, document.referrer);
+  } catch {
+    landingAcquisition = null;
+  }
+}
+
+// Read at the start of the page, before the router changes the address.
+captureLandingAcquisition();
 
 export function uuidv4(): string {
   const c = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
@@ -211,7 +234,10 @@ export function track(
   properties: TrackProperties = {},
   options: TrackOptions = {},
 ): boolean {
-  if (typeof window === "undefined" || !trackingEnabled()) return false;
+  if (typeof window === "undefined") return false;
+  // Reading the address stores nothing; it must happen before the router drops the campaign tags.
+  captureLandingAcquisition();
+  if (!trackingEnabled()) return false;
   // Nothing is queued or sent until the shopper allowed analytics in the cookie banner.
   if (getTrackingConsent() !== "GRANTED") return false;
 
@@ -229,6 +255,8 @@ export function track(
   }
 
   sequence += 1;
+  const acquisition = landingAcquisition ?? undefined;
+  landingAcquisition = null;
   const event: BehaviorEventV1 = {
     contractVersion: "behavior_event_v1",
     eventId: uuidv4(),
@@ -243,6 +271,7 @@ export function track(
       captureSource: "browser",
       ...properties,
     }),
+    ...(acquisition ? { acquisition } : {}),
   };
   queue.push(event);
   if (queue.length > MAX_QUEUE) queue = queue.slice(queue.length - MAX_QUEUE);
@@ -337,6 +366,9 @@ async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
 
 export function resetTrackerForTests(): void {
   firstPartyTracking = null;
+  // A fresh page: read the test's address again.
+  landingAcquisition = undefined;
+  captureLandingAcquisition();
   queue = [];
   sequence = 0;
   recentSignatures.clear();
