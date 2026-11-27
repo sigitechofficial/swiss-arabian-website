@@ -89,6 +89,33 @@ export interface CheckoutValidationIssue {
   fieldPath: string | null;
 }
 
+/** How a checkout question is answered (one line of text, a date `YYYY-MM-DD`, one option, or a tick). */
+export type CheckoutQuestionType = "SELECT" | "TEXT" | "DATE" | "CHECKBOX";
+
+export interface CheckoutQuestionOption {
+  /** Stored answer. */
+  value: string;
+  /** In the shopper's language (the backend picks it). */
+  label: string;
+}
+
+/** A question the market asks at checkout (admin: Checkout questions). */
+export interface CheckoutQuestion {
+  /** Stable id, e.g. "nationality"; the answers are keyed by it. */
+  key: string;
+  type: CheckoutQuestionType;
+  /** In the shopper's language (the backend picks it). */
+  label: string;
+  /** Optional hint, in the shopper's language. */
+  help: string | null;
+  required: boolean;
+  /** SELECT only, in display order. */
+  options?: CheckoutQuestionOption[];
+}
+
+/** Answers by question key; an empty string is no answer. CHECKBOX answers are "true" / "false". */
+export type CheckoutAnswers = Record<string, string>;
+
 export interface CheckoutTotalsEstimate {
   subtotal: string;
   discount: string;
@@ -129,6 +156,10 @@ export interface CheckoutSessionResponse {
   staffPurchase?: unknown;
   /** @deprecated Prefer `staffPurchase`. Legacy Backend envelope. */
   employeeCheckout?: unknown;
+  /** Questions this market asks at checkout; empty (or absent from an older backend) when it asks none. */
+  questions?: CheckoutQuestion[];
+  /** Answers saved on the session so far. */
+  answers?: CheckoutAnswers;
 }
 
 // ─── Available methods ───────────────────────────────────────────────────────

@@ -27,6 +27,10 @@ const ISSUE_TYPES = new Set([
   "PAYMENT_METHOD_UNAVAILABLE",
   "DELIVERY_METHOD_UNAVAILABLE",
   "MANUAL_REVIEW_REQUIRED",
+  // Checkout questions (issueType CHECKOUT_QUESTION): worded by code, since the
+  // shopper needs to know whether an answer is missing or not valid.
+  "CHECKOUT_ANSWER_REQUIRED",
+  "CHECKOUT_ANSWER_INVALID",
 ]);
 
 function isError(issue: CheckoutValidationIssue): boolean {

@@ -9,6 +9,8 @@ import { SapilInlinePayment, SapilTabbyCard, SapilTamaraCard } from "../../compo
 import { SapilPointsBox } from "../../components/checkout/SapilPointsBox";
 import { applyGooglePlace, useCheckoutForm } from "@/features/checkout/hooks/useCheckoutForm";
 import { usePaymentOptions } from "@/features/checkout/hooks/usePaymentOptions";
+import type { CheckoutAnswers, CheckoutQuestion } from "@/features/checkout/types/checkout";
+import { isAnswerMissing } from "@/features/checkout/utils/checkoutQuestions";
 import { deliveryOptionTitles, paymentStepKinds } from "@/features/checkout/utils/methodLabels";
 import type { PayRow } from "@/features/checkout/utils/paymentOptions";
 import { useSiteIntegrations } from "@/lib/site/SiteIntegrationsProvider";
@@ -39,7 +41,9 @@ import {
   CheckoutTop,
   DeliverySection,
   PaymentSection,
+  QuestionsSection,
   ShippingMethodSection,
+  questionFieldId,
   etaText,
   feeText,
   isCashMethod,
@@ -75,6 +79,18 @@ function validateAddress(
   if (address.address1.trim().length < 3) errors.address1 = t("checkout.streetError");
   if (!address.city.trim()) errors.city = t("checkout.cityError");
   if (!address.emirate) errors.emirate = regionKey === "emirate" ? t("checkout.emirateError") : t("checkout.regionError");
+  return errors;
+}
+
+type QuestionErrors = Record<string, string | undefined>;
+
+/** Client check of the market's checkout questions (inline message under each one that needs an answer). */
+function validateQuestions(questions: readonly CheckoutQuestion[], answers: CheckoutAnswers, t: SapilTranslator): QuestionErrors {
+  const errors: QuestionErrors = {};
+  for (const question of questions) {
+    if (!isAnswerMissing(question, answers[question.key])) continue;
+    errors[question.key] = question.type === "CHECKBOX" ? t("checkout.questionTickError") : t("checkout.questionRequiredError");
+  }
   return errors;
 }
 
@@ -122,6 +138,7 @@ export function SapilCheckoutPage() {
 
   const [errors, setErrors] = useState<AddressErrors>({});
   const [billingErrors, setBillingErrors] = useState<AddressErrors>({});
+  const [questionErrors, setQuestionErrors] = useState<QuestionErrors>({});
 
   const regionKey = f.countryCode === "AE" ? "emirate" : "region";
   const region = {
@@ -151,7 +168,7 @@ export function SapilCheckoutPage() {
   // Tamara widget key: the method's own (backend metadata), else the address's promo key.
   const tamaraSiteKey = useSiteIntegrations().paymentPromos.tamara?.publicKey ?? "";
 
-  /** Delivery and (when separate) billing; focuses the first field to fix. */
+  /** Delivery, the checkout questions and (when separate) billing; focuses the first field to fix. */
   function checkFields(): boolean {
     const shipFound = validateAddress(f.email, f.shipping, t, regionKey, f.countryCode);
     const billFound = f.billingSame
@@ -159,8 +176,14 @@ export function SapilCheckoutPage() {
       : validateAddress(f.email, { ...f.billing, phone: f.shipping.phone }, t, regionKey, f.countryCode, false);
     setErrors(shipFound);
     setBillingErrors(billFound);
+    const questionsFound = validateQuestions(f.questions, f.answers, t);
+    setQuestionErrors(questionsFound);
+    const firstQuestion = f.questions.find((question) => questionsFound[question.key]);
+    // Page order: delivery, questions, then billing.
     const first =
-      SHIP_FIELDS.find(([key]) => shipFound[key])?.[1] ?? BILL_FIELDS.find(([key]) => billFound[key])?.[1];
+      SHIP_FIELDS.find(([key]) => shipFound[key])?.[1] ??
+      (firstQuestion ? questionFieldId(firstQuestion.key) : undefined) ??
+      BILL_FIELDS.find(([key]) => billFound[key])?.[1];
     if (first) {
       window.requestAnimationFrame(() => focusField(first));
       return false;
@@ -179,6 +202,10 @@ export function SapilCheckoutPage() {
   const setShippingField = (field: keyof CheckoutAddress, value: string) => {
     f.setShipping((prev) => ({ ...prev, [field]: value }));
     if (errors[field as keyof AddressErrors]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+  const setAnswer = (key: string, value: string) => {
+    f.setAnswer(key, value);
+    if (questionErrors[key]) setQuestionErrors((prev) => ({ ...prev, [key]: undefined }));
   };
   const setBillingField = (field: keyof CheckoutAddress, value: string) => {
     f.setBilling((prev) => ({ ...prev, [field]: value }));
@@ -427,6 +454,7 @@ export function SapilCheckoutPage() {
                 }
                 {...region}
               />
+              <QuestionsSection questions={f.questions} answers={f.answers} onAnswer={setAnswer} errors={questionErrors} />
               <ShippingMethodSection
                 options={deliveryOptions}
                 value={checkout.selectedDeliveryId}

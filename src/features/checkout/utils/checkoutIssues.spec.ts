@@ -29,6 +29,15 @@ describe("checkoutIssueMessage", () => {
     ).toBe(ar["checkout.issue.ADDRESS_INVALID"]);
   });
 
+  it("words checkout-question issues by their code", () => {
+    const issue = (code: string) =>
+      [{ issueType: "CHECKOUT_QUESTION", severity: "ERROR", code, message: "raw", fieldPath: "answers.nationality" }] as never;
+    expect(checkoutIssueMessage(issue("CHECKOUT_ANSWER_REQUIRED"))).toBe("Please answer all required questions.");
+    expect(checkoutIssueMessage(issue("CHECKOUT_ANSWER_INVALID"))).toBe(
+      "One of your answers is not valid. Please check it.",
+    );
+  });
+
   it("an issue the shop does not word reads as the general sentence, never its raw text", () => {
     expect(checkoutIssueMessage([{ issueType: "UNKNOWN", severity: "ERROR", message: "raw" }] as never)).toBe(
       "Some details need attention before we can place your order.",
