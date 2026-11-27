@@ -98,7 +98,7 @@ export function AssistantReturnFlow({ view, busy, problem, locale, accent, onSte
     );
   }
 
-  const back = view.step !== "PICK_ORDER" ? (
+  const back = view.step !== "PICK_ORDER" && !(view.guest && view.step === "PICK_ITEMS") ? (
     <button type="button" className={quiet} disabled={busy} onClick={() => onStep({ type: "BACK" })}>
       {copy("assistant.returnFlow.back")}
     </button>
@@ -659,6 +659,8 @@ function refusalText(code: string, copy: ReturnType<typeof useShopCopy>, exchang
       return copy(exchange ? "assistant.exchangeFlow.refusal.off" : "assistant.returnFlow.refusal.off");
     case "NO_ELIGIBLE_ORDER":
       return copy(exchange ? "assistant.exchangeFlow.refusal.noOrder" : "assistant.returnFlow.refusal.noOrder");
+    case "GUEST_ORDER_NOT_FOUND":
+      return copy("assistant.guestReturn.notFound");
     case "FLOW_ALREADY_OPEN":
       return copy("assistant.returnFlow.refusal.alreadyOpen");
     case "DAILY_FLOW_LIMIT":

@@ -93,8 +93,10 @@ export type AssistantReply = {
 };
 
 export type AssistantChatResponse = {
-  /** Null for guests: their chat is never saved. */
+  /** A guest's chat is saved too (under a chat key kept in their browser). */
   conversationId: string | null;
+  /** Only the first time a guest chats: the chat key to keep in this browser. */
+  guestId?: string;
   /** The language of the reply: "en", "ar", "ur", "fr", or another language code when it was translated. */
   lang: string;
   reply: AssistantReply;
@@ -105,6 +107,10 @@ export type AssistantHistory = {
   signedIn: boolean;
   conversationId: string | null;
   messages: Array<{ role: "user" | "assistant"; text: string; at: string }>;
+  /** Whether this chat is saved (a customer's, or a guest's under their chat key). */
+  saved?: boolean;
+  /** How many days a guest's chat is kept (the admin sets it). */
+  retentionDays?: number;
 };
 
 /** One bubble in the chat window. */
@@ -223,6 +229,8 @@ export type AssistantFlowView = {
   review?: AssistantFlowReview;
   result?: { requestNumber: string; status: string; statusMessage: string };
   refusal?: { code: string };
+  /** A guest's request: the order was proved by number and code; there is no order list and no way back to one. */
+  guest?: boolean;
 };
 
 export type AssistantFlowAction =
