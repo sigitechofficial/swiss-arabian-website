@@ -321,6 +321,41 @@ describe("tracker", () => {
     expect(queuedEventsForTests()[0].acquisition).toBeUndefined();
   });
 
+  it("with consent, a new tab (or a typed address) is the same session and visitor, like Shopify's cookies", () => {
+    track("page_viewed");
+    const tab1 = queuedEventsForTests()[0];
+    // A new tab: empty sessionStorage, a fresh tracker; localStorage is shared.
+    sessionStorage.clear();
+    resetTrackerForTests();
+    setFirstPartyTracking(true);
+    track("catalog_product_viewed");
+    const tab2 = queuedEventsForTests()[0];
+    expect(tab2.sessionId).toBe(tab1.sessionId);
+    expect(tab2.visitorId).toBe(tab1.visitorId);
+  });
+
+  it("with consent, the shared session ends after 30 minutes without activity in any tab", () => {
+    const t0 = Date.now();
+    const s1 = getSessionId(t0);
+    expect(getSessionId(t0 + 29 * 60_000)).toBe(s1);
+    expect(getSessionId(t0 + 29 * 60_000 + 30 * 60_000)).not.toBe(s1);
+  });
+
+  it("a consented session kept per tab by older code goes on as the shared one", () => {
+    sessionStorage.setItem("sa_session", JSON.stringify({ id: "4a1b2c3d-1111-4222-8333-444455556666", last: Date.now() }));
+    localStorage.removeItem("sa_session");
+    expect(getSessionId()).toBe("4a1b2c3d-1111-4222-8333-444455556666");
+    expect(sessionStorage.getItem("sa_session")).toBeNull();
+    expect(JSON.parse(localStorage.getItem("sa_session") ?? "{}").id).toBe("4a1b2c3d-1111-4222-8333-444455556666");
+  });
+
+  it("refusing analytics removes the shared session too", () => {
+    getSessionId();
+    expect(localStorage.getItem("sa_session")).not.toBeNull();
+    setTrackingConsent("denied");
+    expect(localStorage.getItem("sa_session")).toBeNull();
+  });
+
   it("sends an identical keyed event once inside the dedupe window", () => {
     expect(track("catalog_product_viewed", {}, { dedupeKey: "p1" })).toBe(true);
     expect(track("catalog_product_viewed", {}, { dedupeKey: "p1" })).toBe(false);
@@ -384,9 +419,10 @@ describe("tracker", () => {
     const after = queuedEventsForTests()[1];
     expect(after.sessionId).toBe(before.sessionId);
     expect(after.visitorId).toBe(before.visitorId);
-    // Now stored, so the next page keeps them.
+    // Now lasting and shared by every tab.
     expect(localStorage.getItem("sa_visitor_id")).toBe(before.visitorId);
-    expect(JSON.parse(sessionStorage.getItem("sa_session") ?? "{}").id).toBe(before.sessionId);
+    expect(JSON.parse(localStorage.getItem("sa_session") ?? "{}").id).toBe(before.sessionId);
+    expect(sessionStorage.getItem("sa_session")).toBeNull();
     await flushNow();
     const bodies = fetchMock.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)));
     expect(bodies.map((b) => [b.events.map((e: { eventName: string }) => e.eventName), b.consentStatus ?? null])).toEqual([

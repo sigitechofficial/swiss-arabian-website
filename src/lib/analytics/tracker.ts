@@ -130,8 +130,9 @@ export function clearTrackingQueue(): void {
 
 /**
  * Where the visitor and session ids are kept (§5.13 G4, client decision 2026-11-27):
- * - LASTING: analytics or marketing allowed: the visitor id in localStorage (a returning visitor is
- *   known; on-site messages need it), the session id in sessionStorage.
+ * - LASTING: analytics or marketing allowed: the visitor id and the session id in localStorage, shared
+ *   by every tab like Shopify's visitor and session cookies (a returning visitor is known; a session
+ *   is 30 minutes rolling across all tabs; on-site messages need the visitor id).
  * - TAB: no choice made yet: both in sessionStorage only, so they last for this tab (through
  *   refreshes and full page loads) and go when the tab closes; nothing in localStorage, no cookie.
  * - MEMORY: analytics refused: per-page ids that are never stored (nothing is sent then anyway).
@@ -184,7 +185,7 @@ export function getVisitorId(): string {
   }
 }
 
-/** One session id per tab, rotated after 30 minutes without an event. */
+/** The session id: rotated after 30 minutes without an event (shared by all tabs with consent). */
 let pageSessionId: string | null = null;
 /** Last event of the in-memory session (before consent): the same 30-minute rule as a stored one. */
 let pageSessionLast = 0;
@@ -200,30 +201,37 @@ export function getSessionId(now = Date.now()): string {
  */
 function sessionIdAt(now: number, touch: boolean): string {
   if (typeof window === "undefined") return uuidv4();
-  // Same rule as the visitor id: in sessionStorage with consent and before any choice (this tab
-  // only); in memory after a refusal.
-  if (idStore() === "MEMORY") {
-    // In memory, rotated after the same 30 idle minutes as a stored one.
+  const store = idStore();
+  if (store === "MEMORY") {
+    // After a refusal: in memory, rotated after the same 30 idle minutes as a stored one.
     if (pageSessionId === null || now - pageSessionLast >= SESSION_IDLE_MS) pageSessionId = uuidv4();
     if (touch || pageSessionLast === 0) pageSessionLast = now;
     return pageSessionId;
   }
   try {
-    const raw = window.sessionStorage.getItem(SESSION_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw) as { id: string; last: number };
-      if (saved.id && now - saved.last < SESSION_IDLE_MS) {
-        if (touch) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: saved.id, last: now }));
-        return saved.id;
-      }
-    }
-    // An id this page held in memory (storage was not allowed) goes on in storage (one session, not
-    // two), unless it is idle too long already.
-    const carried = pageSessionId !== null && now - pageSessionLast < SESSION_IDLE_MS ? pageSessionId : null;
+    // With consent the session is shared by every tab of the browser (localStorage), 30 minutes
+    // rolling, as Shopify's session cookie: opening products in new tabs is one session. Before any
+    // choice it stays in this tab (sessionStorage, client decision for anonymous counting).
+    const shared = store === "LASTING";
+    const home = shared ? window.localStorage : window.sessionStorage;
+    const live = (raw: string | null): string | null => {
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { id?: string; last?: number };
+      return saved.id && typeof saved.last === "number" && now - saved.last < SESSION_IDLE_MS ? saved.id : null;
+    };
+    // The shared session; else (consent just given, or a session from before it was shared) this
+    // tab's own one goes on as the shared one: one session, not two.
+    const current = live(home.getItem(SESSION_KEY));
+    const result =
+      current ??
+      (shared ? live(window.sessionStorage.getItem(SESSION_KEY)) : null) ??
+      (pageSessionId !== null && now - pageSessionLast < SESSION_IDLE_MS ? pageSessionId : null) ??
+      uuidv4();
     pageSessionId = null;
-    const id = carried ?? uuidv4();
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id, last: now }));
-    return id;
+    // An event keeps it alive; an API call only reads it (but a new or carried id is saved).
+    if (touch || result !== current) home.setItem(SESSION_KEY, JSON.stringify({ id: result, last: now }));
+    if (shared) window.sessionStorage.removeItem(SESSION_KEY);
+    return result;
   } catch {
     return uuidv4();
   }
