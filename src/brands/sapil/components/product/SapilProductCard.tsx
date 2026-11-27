@@ -62,7 +62,7 @@ function EyeIcon() {
  * - tile: the API's `tileColor`, else the neutral sand tile
  * - −% badge from `compareAtPrice`; "Out of stock" pill when it can't be bought
  * - tags: kind (EDP / Extrait) + who it's for
- * - + button (phones, as v9) adds one to the bag through `useAddToCart` (the bag opens)
+ * - + button (phones, as v9) adds one to the bag through `useAddToCart` (an "Added to your bag" message with View bag)
  * - wishlist heart (shared wishlist hooks; wrap a grid in `WishlistStatusScope`)
  *   and a quick-view dialog, both at the tile's top corner, shown on hover/focus
  *   on hover screens and always on touch screens

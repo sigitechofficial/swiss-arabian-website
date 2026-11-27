@@ -1,5 +1,5 @@
-import { act, render, renderHook, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { Toaster, toast, useToastFeed } from "./Toaster";
 
 describe("toast hosts", () => {
@@ -20,5 +20,22 @@ describe("toast hosts", () => {
     unmount();
     act(() => toast("Back to default"));
     expect(screen.getByText("Back to default")).toBeInTheDocument();
+  });
+
+  it("shows a toast's button and closes the toast before running it", () => {
+    render(<Toaster />);
+    const onClick = vi.fn();
+    act(() => toast("Added to your bag", "success", { label: "View bag", onClick }));
+    fireEvent.click(screen.getByRole("button", { name: "View bag" }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Added to your bag")).toBeNull();
+  });
+
+  it("passes the button to a brand host", () => {
+    const { result, unmount } = renderHook(() => useToastFeed());
+    const onClick = vi.fn();
+    act(() => toast("Added to your bag", "success", { label: "View bag", onClick }));
+    expect(result.current.action?.label).toBe("View bag");
+    unmount();
   });
 });
