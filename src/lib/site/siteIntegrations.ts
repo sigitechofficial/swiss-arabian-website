@@ -61,6 +61,7 @@ const responseSchema = z.object({
   accountVerification: z.boolean(),
   onsiteMessages: z.boolean(),
   firstPartyTracking: z.boolean(),
+  consentRequired: z.boolean(),
 });
 
 /**
@@ -99,6 +100,8 @@ export function parseSiteIntegrations(raw: unknown): SiteIntegrations {
     // Fail-closed: missing or not a boolean (older backend) = off.
     onsiteMessages: pick(shape.onsiteMessages, data.onsiteMessages, false),
     firstPartyTracking: pick(shape.firstPartyTracking, data.firstPartyTracking, false),
+    // Fail-safe the other way: missing (older backend) = consent required, as before.
+    consentRequired: pick(shape.consentRequired, data.consentRequired, true),
   };
 }
 

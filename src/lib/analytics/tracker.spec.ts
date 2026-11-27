@@ -14,7 +14,14 @@ vi.mock("@/lib/auth/token", () => ({ getAccessToken: () => "tok" }));
 vi.mock("@/lib/api/storefrontHost", () => ({ resolveStorefrontHost: async () => "sa.test" }));
 vi.mock("@/lib/storefront/context", () => ({ storefrontContextQuery: () => "zoneCode=KSA" }));
 
-import { resetConsentCacheForTests, setConsent } from "@/lib/consent/consent";
+import {
+  consentBannerNeeded,
+  consentSettingsOffered,
+  getEffectiveConsent,
+  resetConsentCacheForTests,
+  setConsent,
+  setMarketConsentRequired,
+} from "@/lib/consent/consent";
 import {
   behaviorIdentityHeaders,
   requestBody,
@@ -354,6 +361,58 @@ describe("tracker", () => {
     expect(localStorage.getItem("sa_session")).not.toBeNull();
     setTrackingConsent("denied");
     expect(localStorage.getItem("sa_session")).toBeNull();
+  });
+
+  describe("a market that does not require consent (as the live Shopify stores)", () => {
+    const noChoice = () => {
+      localStorage.clear();
+      sessionStorage.clear();
+      resetConsentCacheForTests();
+      setMarketConsentRequired(false);
+      resetTrackerForTests();
+      setFirstPartyTracking(true);
+    };
+
+    it("no banner; analytics and marketing run from the first page; Cookie settings still offered", () => {
+      noChoice();
+      const integrations = { analytics: null, insiderTag: null, onsiteMessages: true, firstPartyTracking: true };
+      expect(consentBannerNeeded({ ...integrations, consentRequired: false })).toBe(false);
+      expect(consentBannerNeeded({ ...integrations, consentRequired: true })).toBe(true);
+      expect(consentSettingsOffered(integrations)).toBe(true);
+      expect(getEffectiveConsent()).toEqual({ analytics: true, marketing: true });
+      expect(getTrackingConsent()).toBe("NOT_REQUIRED");
+      expect(trackingMode()).toBe("IDENTIFIED");
+    });
+
+    it("counts like Shopify: lasting visitor and one session shared by every tab, sent as NOT_REQUIRED", async () => {
+      noChoice();
+      const fetchMock = vi.fn(async () => ({ status: 202 }));
+      vi.stubGlobal("fetch", fetchMock);
+      track("page_viewed");
+      const first = queuedEventsForTests()[0];
+      expect(localStorage.getItem("sa_visitor_id")).toBe(first.visitorId);
+      expect(JSON.parse(localStorage.getItem("sa_session") ?? "{}").id).toBe(first.sessionId);
+      expect(behaviorIdentityHeaders()).toMatchObject({ "x-behavior-consent": "NOT_REQUIRED" });
+      await flushNow();
+      const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+      expect(body.consentStatus).toBe("NOT_REQUIRED");
+      // A new tab: same session and visitor.
+      sessionStorage.clear();
+      resetTrackerForTests();
+      setFirstPartyTracking(true);
+      track("catalog_product_viewed");
+      expect(queuedEventsForTests()[0]).toMatchObject({ sessionId: first.sessionId, visitorId: first.visitorId });
+    });
+
+    it("a refusal from Cookie settings still stops everything and removes the ids", () => {
+      noChoice();
+      track("page_viewed");
+      setTrackingConsent("denied");
+      expect(trackingMode()).toBe("OFF");
+      expect(track("page_viewed")).toBe(false);
+      expect(localStorage.getItem("sa_visitor_id")).toBeNull();
+      expect(localStorage.getItem("sa_session")).toBeNull();
+    });
   });
 
   it("sends an identical keyed event once inside the dedupe window", () => {

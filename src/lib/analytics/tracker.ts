@@ -3,7 +3,7 @@ import { withoutMarketSegment } from "@/lib/site/marketLink";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { env } from "@/lib/config/env";
 import { storefrontContextQuery } from "@/lib/storefront/context";
-import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
+import { getConsent, hasConsent, isMarketConsentRequired, setConsent } from "@/lib/consent/consent";
 import { readAcquisition, type AcquisitionContext } from "./acquisition";
 
 /**
@@ -25,7 +25,8 @@ import { readAcquisition, type AcquisitionContext } from "./acquisition";
  *   words; or drops it when the market says so);
  * - analytics refused: nothing is sent, and what was waiting is dropped.
  */
-export type TrackingConsent = "GRANTED" | "DENIED" | "UNKNOWN";
+/** NOT_REQUIRED: no choice made in a market that does not ask for consent (as Shopify there). */
+export type TrackingConsent = "GRANTED" | "DENIED" | "UNKNOWN" | "NOT_REQUIRED";
 export type TrackProperties = Record<string, string | number | boolean | null | undefined>;
 
 export type BehaviorEventV1 = {
@@ -96,20 +97,25 @@ export function uuidv4(): string {
 }
 
 /**
- * How the tracker may record this shopper (§5.13 G4): IDENTIFIED with analytics consent, ANONYMOUS
- * before any choice (per-page ids, nothing stored), OFF once analytics was refused.
+ * How the tracker may record this shopper (§5.13 G4): IDENTIFIED with analytics consent, or with no
+ * choice in a market that does not require consent (as Shopify there); ANONYMOUS before any choice
+ * where consent is required (this tab's ids only); OFF once analytics was refused.
  */
 export type TrackingMode = "IDENTIFIED" | "ANONYMOUS" | "OFF";
 
 export function trackingMode(): TrackingMode {
   const consent = getTrackingConsent();
-  return consent === "GRANTED" ? "IDENTIFIED" : consent === "UNKNOWN" ? "ANONYMOUS" : "OFF";
+  if (consent === "GRANTED" || consent === "NOT_REQUIRED") return "IDENTIFIED";
+  return consent === "UNKNOWN" ? "ANONYMOUS" : "OFF";
 }
 
-/** The shopper's analytics choice from the cookie banner (`@/lib/consent`). */
+/**
+ * The shopper's analytics choice from the cookie banner (`@/lib/consent`); with no choice, what the
+ * market's rule says (NOT_REQUIRED where it does not ask, UNKNOWN where it does).
+ */
 export function getTrackingConsent(): TrackingConsent {
   const choices = getConsent();
-  if (!choices) return "UNKNOWN";
+  if (!choices) return isMarketConsentRequired() ? "UNKNOWN" : "NOT_REQUIRED";
   return choices.analytics ? "GRANTED" : "DENIED";
 }
 
@@ -259,7 +265,8 @@ export function behaviorIdentityHeaders(now = Date.now()): Record<string, string
   return {
     [BEHAVIOR_VISITOR_HEADER]: getVisitorId(),
     [BEHAVIOR_SESSION_HEADER]: sessionIdAt(now, false),
-    ...(mode === "IDENTIFIED" ? { [BEHAVIOR_CONSENT_HEADER]: "GRANTED" } : {}),
+    // GRANTED, or NOT_REQUIRED (the backend honours it only where its own setting says so).
+    ...(mode === "IDENTIFIED" ? { [BEHAVIOR_CONSENT_HEADER]: getTrackingConsent() } : {}),
   };
 }
 

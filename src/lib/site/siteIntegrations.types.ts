@@ -39,6 +39,13 @@ export type SiteIntegrations = {
    * "First-party tracking"; was NEXT_PUBLIC_TRACKING_ENABLED). Sent only after analytics consent.
    */
   firstPartyTracking: boolean;
+  /**
+   * The market asks for the shopper's consent before analytics and marketing run (admin, per market).
+   * As Shopify: where it is not required there is no cookie banner and analytics/marketing run from
+   * the first page (the footer "Cookie settings" still lets a shopper refuse); where it is required,
+   * nothing optional runs before a choice. Fail-safe: unknown = required.
+   */
+  consentRequired: boolean;
 };
 
 /** Everything off: no answer from the backend never means "use some default". */
@@ -52,6 +59,7 @@ export const SITE_INTEGRATIONS_OFF: SiteIntegrations = {
   accountVerification: false,
   onsiteMessages: false,
   firstPartyTracking: false,
+  consentRequired: true,
 };
 
 /** Cache tag of an address's settings; the backend's refresh call names the address. */
