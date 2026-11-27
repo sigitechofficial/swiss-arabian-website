@@ -5,6 +5,7 @@ import { storefrontContextQuery } from "@/lib/storefront/context";
 import { getOrCreateGuestToken } from "@/features/cart/utils/guestToken";
 import type {
   CheckoutAddressSnapshot,
+  CheckoutAnswers,
   CheckoutSessionResponse,
   DeliveryMethodOption,
   GuestContact,
@@ -171,6 +172,21 @@ export async function setCheckoutAddress(
   return apiPost<CheckoutSessionResponse>(
     `/storefront/checkout/${checkoutSessionId}/address?${buildGuestParam().toString()}`,
     dto,
+  );
+}
+
+/**
+ * POST …/answers — saves the shopper's answers to the market's checkout
+ * questions (values are trimmed; an empty string clears an answer). A missing
+ * required or invalid answer comes back as a validation issue, not an error.
+ */
+export async function setCheckoutAnswers(
+  checkoutSessionId: string,
+  answers: CheckoutAnswers,
+): Promise<CheckoutSessionResponse> {
+  return apiPost<CheckoutSessionResponse>(
+    `/storefront/checkout/${checkoutSessionId}/answers?${buildGuestParam().toString()}`,
+    { answers },
   );
 }
 

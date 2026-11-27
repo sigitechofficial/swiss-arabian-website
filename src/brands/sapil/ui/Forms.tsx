@@ -56,6 +56,8 @@ type FieldShell = {
   optional?: string;
   /** error message; shows it and marks the control invalid (v9 `.fld.err`) */
   error?: ReactNode;
+  /** hint under the control, read with it by screen readers */
+  help?: ReactNode;
   /** spans both grid columns (v9 `.fld.wide`) */
   wide?: boolean;
   className?: string;
@@ -66,7 +68,12 @@ export function fieldControlClass(invalid?: boolean): string {
   return cx(CONTROL, "rounded-[14px]", invalid ? "border-sapil-sale" : "border-sapil-line-2");
 }
 
-/** v9 `.fld` shell (label, optional mark, error line) around any control whose id is `id`. */
+/** The control's `aria-describedby`: its hint, its error, then any ids the caller gave. */
+export function fieldDescribedBy(id: string, help: ReactNode, error: ReactNode, own?: string): string | undefined {
+  return [help ? `${id}-help` : null, error ? `${id}-err` : null, own].filter(Boolean).join(" ") || undefined;
+}
+
+/** v9 `.fld` shell (label, optional mark, hint, error line) around any control whose id is `id`. */
 export function FieldFrame(props: FieldShell & { id: string; errorId: string; children: ReactNode }) {
   return <Shell {...props} />;
 }
@@ -76,6 +83,7 @@ function Shell({
   label,
   optional,
   error,
+  help,
   errorId,
   wide,
   className,
@@ -95,6 +103,11 @@ function Shell({
         )}
       </label>
       {children}
+      {help && (
+        <small id={`${id}-help`} className="block font-[400] text-[13px] text-sapil-ink-2">
+          {help}
+        </small>
+      )}
       {error && (
         <em id={errorId} className="block not-italic text-[13px] text-sapil-sale">
           {error}
@@ -106,7 +119,7 @@ function Shell({
 
 export type FieldProps = FieldShell &
   Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className" | "prefix"> & {
-    type?: "text" | "email" | "tel" | "number" | "password" | "search";
+    type?: "text" | "email" | "tel" | "number" | "password" | "search" | "date";
     /** fixed prefix box, e.g. "+971" (v9 `.phone b`) */
     prefix?: ReactNode;
     inputClassName?: string;
@@ -115,7 +128,7 @@ export type FieldProps = FieldShell &
   };
 
 /** v9 `.fld`: label above a 50px input; optional prefix (`.phone`) and error line. */
-export function Field({ label, optional, error, wide, className, prefix, inputClassName, id, type = "text", ...input }: FieldProps) {
+export function Field({ label, optional, error, help, wide, className, prefix, inputClassName, id, type = "text", ...input }: FieldProps) {
   const auto = useId();
   const fid = id ?? auto;
   const errorId = `${fid}-err`;
@@ -125,7 +138,7 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
       id={fid}
       type={type}
       aria-invalid={error ? true : undefined}
-      aria-describedby={error ? errorId : input["aria-describedby"]}
+      aria-describedby={fieldDescribedBy(fid, help, error, input["aria-describedby"])}
       className={cx(
         CONTROL,
         error ? "border-sapil-sale" : "border-sapil-line-2",
@@ -135,7 +148,7 @@ export function Field({ label, optional, error, wide, className, prefix, inputCl
     />
   );
   return (
-    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
+    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} help={help} wide={wide} className={className}>
       {prefix ? (
         <span className="flex items-stretch">
           <b className="grid place-items-center px-[12px] border border-sapil-line-2 border-e-0 rounded-s-[14px] bg-sapil-paper text-[15px] font-[600]">
@@ -157,18 +170,18 @@ export type TextAreaFieldProps = FieldShell &
   };
 
 /** v9 `.fld` for several lines of text: same shell and border as Field. */
-export function TextAreaField({ label, optional, error, wide, className, id, rows = 3, ...area }: TextAreaFieldProps) {
+export function TextAreaField({ label, optional, error, help, wide, className, id, rows = 3, ...area }: TextAreaFieldProps) {
   const auto = useId();
   const fid = id ?? auto;
   const errorId = `${fid}-err`;
   return (
-    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
+    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} help={help} wide={wide} className={className}>
       <textarea
         {...area}
         id={fid}
         rows={rows}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : area["aria-describedby"]}
+        aria-describedby={fieldDescribedBy(fid, help, error, area["aria-describedby"])}
         className={cx(CONTROL, "h-auto py-[12px] rounded-[14px] resize-y", error ? "border-sapil-sale" : "border-sapil-line-2")}
       />
     </Shell>
@@ -185,17 +198,17 @@ const SELECT_ARROW_IMAGE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e1b18' stroke-width='1.6'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E\")";
 
 /** v9 `.fld select`: same shell as Field, custom chevron. */
-export function SelectField({ label, optional, error, wide, className, id, children, ...select }: SelectFieldProps) {
+export function SelectField({ label, optional, error, help, wide, className, id, children, ...select }: SelectFieldProps) {
   const auto = useId();
   const fid = id ?? auto;
   const errorId = `${fid}-err`;
   return (
-    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} wide={wide} className={className}>
+    <Shell id={fid} errorId={errorId} label={label} optional={optional} error={error} help={help} wide={wide} className={className}>
       <select
         {...select}
         id={fid}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : select["aria-describedby"]}
+        aria-describedby={fieldDescribedBy(fid, help, error, select["aria-describedby"])}
         style={{ backgroundImage: SELECT_ARROW_IMAGE, ...select.style }}
         className={cx(CONTROL, "rounded-[14px]", SELECT_ARROW, error ? "border-sapil-sale" : "border-sapil-line-2")}
       >

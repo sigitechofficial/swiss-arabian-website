@@ -31,6 +31,7 @@ import { GooglePlacesProvider } from "@/lib/google/GooglePlacesProvider";
 import { CheckoutBilling } from "./checkout/CheckoutBilling";
 import { CheckoutDelivery } from "./checkout/CheckoutDelivery";
 import { CheckoutPayment } from "./checkout/CheckoutPayment";
+import { CheckoutQuestions } from "./checkout/CheckoutQuestions";
 import { OrderChangedModal } from "./OrderChangedModal";
 import { CheckoutShippingMethod } from "./checkout/CheckoutShippingMethod";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
@@ -54,6 +55,9 @@ export function CheckoutPageView() {
     setBilling,
     billingSame,
     setBillingSame,
+    questions,
+    answers,
+    setAnswer,
     summaryOpen,
     setSummaryOpen,
     summaryLines,
@@ -189,6 +193,11 @@ export function CheckoutPageView() {
                         </div>
                       ) : null
                     }
+                  />
+                  <CheckoutQuestions
+                    questions={questions}
+                    answers={answers}
+                    onAnswer={setAnswer}
                   />
                   <CheckoutShippingMethod
                     methods={checkout.deliveryMethods}

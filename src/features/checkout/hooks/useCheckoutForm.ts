@@ -49,6 +49,10 @@ import type { AddressFields } from "../utils/addressSnapshot";
 import { checkoutWarningMessages } from "../utils/checkoutIssues";
 import { isStripePaymentMethod } from "../utils/methodLabels";
 import { checkoutTestDataFor } from "../utils/checkoutTestData";
+import { questionSetKey, reconcileAnswers } from "../utils/checkoutQuestions";
+import type { CheckoutAnswers, CheckoutQuestion } from "../types/checkout";
+
+const NO_QUESTIONS: CheckoutQuestion[] = [];
 
 export const EMPTY_ADDRESS: AddressFields = {
   fullName: "",
@@ -230,6 +234,22 @@ export function useCheckoutForm() {
   const missThis = upsells.slice(0, 4);
 
   const session = checkout.session;
+
+  // The market's checkout questions. Answers are re-read from the session when
+  // it first arrives and whenever the session or its questions change (a
+  // rebuilt session, another market) — during render, like the profile
+  // prefill, and never over anything the shopper has already entered.
+  const questions = session?.questions ?? NO_QUESTIONS;
+  const [answers, setAnswers] = useState<CheckoutAnswers>({});
+  const questionsKey = session ? questionSetKey(session.checkoutSessionId, questions) : null;
+  const [answersFor, setAnswersFor] = useState<string | null>(null);
+  if (questionsKey !== null && questionsKey !== answersFor) {
+    setAnswersFor(questionsKey);
+    setAnswers((prev) => reconcileAnswers(questions, session?.answers, prev));
+  }
+  const setAnswer = (key: string, value: string) =>
+    setAnswers((prev) => ({ ...prev, [key]: value }));
+
   const checkoutTracked = useRef("");
   useEffect(() => {
     const id = session?.checkoutSessionId;
@@ -364,6 +384,7 @@ export function useCheckoutForm() {
       billingSameAsShipping: billingSame,
       // Billing has no phone field of its own — reuse the delivery contact.
       billing: billingSame ? undefined : { ...billing, phone: shipping.phone },
+      answers,
     });
   }
 
@@ -409,6 +430,9 @@ export function useCheckoutForm() {
     setBilling,
     billingSame,
     setBillingSame,
+    questions,
+    answers,
+    setAnswer,
     summaryOpen,
     setSummaryOpen,
     savedAddresses,

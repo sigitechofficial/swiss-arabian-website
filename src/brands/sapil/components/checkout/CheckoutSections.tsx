@@ -2,9 +2,10 @@
 
 import { useId, type ReactNode } from "react";
 import { regionLabel as regionName } from "@/features/account/utils/addressDisplay";
-import type { DeliveryMethodOption } from "@/features/checkout/types/checkout";
+import type { CheckoutAnswers, CheckoutQuestion, DeliveryMethodOption } from "@/features/checkout/types/checkout";
 import type { PaymentStepKind } from "@/features/checkout/utils/methodLabels";
 import { usesHostedRedirect } from "@/features/checkout/utils/methodLabels";
+import { TEXT_ANSWER_MAX } from "@/features/checkout/utils/checkoutQuestions";
 import type { PayGroup, PayRow } from "@/features/checkout/utils/paymentOptions";
 import { isTabbyPaymentMethod } from "@/features/checkout/utils/tabby";
 import { isTamaraPaymentMethod } from "@/features/checkout/utils/tamara";
@@ -326,6 +327,125 @@ export function DeliverySection({
           value={address.postalCode ?? ""}
           onChange={(event) => onField("postalCode", event.target.value)}
         />
+      </FieldGrid>
+    </CheckoutBox>
+  );
+}
+
+/* ——— Checkout questions (admin: Checkout questions) ——— */
+
+/** The field id of a question, for focusing the first one to fix. */
+export function questionFieldId(key: string): string {
+  return `co-q-${key}`;
+}
+
+/**
+ * The market's checkout questions, between Delivery and Shipping method.
+ * Labels, options and hints arrive in the shopper's language and are shown as
+ * given. Nothing renders when the market asks nothing.
+ */
+export function QuestionsSection({
+  questions,
+  answers,
+  onAnswer,
+  errors,
+}: {
+  questions: readonly CheckoutQuestion[];
+  answers: CheckoutAnswers;
+  onAnswer: (key: string, value: string) => void;
+  /** inline errors by question key */
+  errors: Readonly<Record<string, string | undefined>>;
+}) {
+  const t = useSapilCopy();
+  if (questions.length === 0) return null;
+  return (
+    <CheckoutBox title={t("checkout.sectionQuestions")}>
+      <FieldGrid>
+        {questions.map((question) => {
+          const id = questionFieldId(question.key);
+          const name = `question-${question.key}`;
+          const value = answers[question.key] ?? "";
+          const error = errors[question.key];
+          const optional = question.required ? undefined : t("checkout.optional");
+          const help = question.help ?? undefined;
+          if (question.type === "CHECKBOX") {
+            const errorId = `${id}-err`;
+            const helpId = `${id}-help`;
+            return (
+              <div key={question.key} className="col-span-full flex flex-col gap-[6px]">
+                <Checkbox
+                  id={id}
+                  name={name}
+                  required={question.required}
+                  checked={value === "true"}
+                  onChange={(event) => onAnswer(question.key, event.target.checked ? "true" : "false")}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={[help ? helpId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined}
+                  className="!mt-0"
+                >
+                  {question.label}
+                  {optional ? (
+                    <>
+                      {" "}
+                      <small className="[font-size:smaller] text-sapil-muted">{optional}</small>
+                    </>
+                  ) : null}
+                </Checkbox>
+                {help ? (
+                  <small id={helpId} className="block text-[13px] text-sapil-ink-2">
+                    {help}
+                  </small>
+                ) : null}
+                {error ? (
+                  <em id={errorId} className="block not-italic text-[13px] text-sapil-sale">
+                    {error}
+                  </em>
+                ) : null}
+              </div>
+            );
+          }
+          if (question.type === "SELECT") {
+            return (
+              <SelectField
+                key={question.key}
+                id={id}
+                name={name}
+                wide
+                label={question.label}
+                optional={optional}
+                help={help}
+                value={value}
+                onChange={(event) => onAnswer(question.key, event.target.value)}
+                error={error}
+                required={question.required}
+              >
+                <option value="">{t("checkout.questionChoose")}</option>
+                {(question.options ?? []).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </SelectField>
+            );
+          }
+          return (
+            <Field
+              key={question.key}
+              id={id}
+              name={name}
+              wide
+              type={question.type === "DATE" ? "date" : "text"}
+              maxLength={question.type === "TEXT" ? TEXT_ANSWER_MAX : undefined}
+              label={question.label}
+              optional={optional}
+              help={help}
+              value={value}
+              onChange={(event) => onAnswer(question.key, event.target.value)}
+              error={error}
+              required={question.required}
+            />
+          );
+        })}
       </FieldGrid>
     </CheckoutBox>
   );

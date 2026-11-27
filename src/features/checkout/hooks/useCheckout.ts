@@ -19,17 +19,20 @@ import {
   selectDeliveryMethod,
   selectPaymentMethod,
   setCheckoutAddress,
+  setCheckoutAnswers,
   validateCheckout,
   type SetAddressDto,
 } from "../api/checkout.service";
 import { readEmployeeCheckout, staffDiscountPaymentBlocked } from "@/features/employeeBenefits/types/employeeCheckout";
 import { placeOrder } from "../api/orders.service";
 import type {
+  CheckoutAnswers,
   CheckoutSessionResponse,
   DeliveryMethodOption,
   PaymentMethodOption,
 } from "../types/checkout";
 import { buildAddressSnapshot, type AddressFields } from "../utils/addressSnapshot";
+import { answersForSubmit } from "../utils/checkoutQuestions";
 import { ApiClientError } from "@/lib/api/apiError";
 import { checkoutErrorMessage, checkoutIssueMessage } from "../utils/checkoutIssues";
 import { useShopCopy } from "@/lib/i18n/useShopCopy";
@@ -91,6 +94,8 @@ export type CheckoutSubmitValues = {
   shipping: AddressFields;
   billingSameAsShipping: boolean;
   billing?: AddressFields;
+  /** Answers to the market's checkout questions, by question key. */
+  answers?: CheckoutAnswers;
 };
 
 function commerceSignature(lines: CartLine[]): string {
@@ -602,6 +607,14 @@ export function useCheckout() {
                 }),
               };
         await setCheckoutAddress(id, addressDto);
+
+        // The market's checkout questions: only sent when it asks some, so a
+        // market without questions makes exactly the calls it always made.
+        // Only this session's questions are sent (the backend refuses others).
+        const questions = session.questions ?? [];
+        if (questions.length > 0) {
+          await setCheckoutAnswers(id, answersForSubmit(questions, values.answers));
+        }
 
         // Re-assert both choices right before validating: the background
         // selections from the method-loading effect may still be in flight.
