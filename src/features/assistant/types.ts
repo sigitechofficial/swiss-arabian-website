@@ -29,6 +29,8 @@ export type AssistantAction =
       cancelLabel: string;
     }
   | { type: "HANDOFF"; label: string }
+  /** A guest asked to return or exchange: opens the order check (order number and email code). */
+  | { type: "GUEST_RETURN"; label: string }
   /** A button to one of the shop's own pages (the full policy). The path is checked again before it is drawn. */
   | { type: "OPEN_PAGE"; label: string; path: string };
 

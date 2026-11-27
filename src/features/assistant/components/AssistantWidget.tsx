@@ -668,6 +668,20 @@ export function AssistantWidget({
                               {action.label}
                             </button>
                           )
+                        ) : action.type === "GUEST_RETURN" ? (
+                          // Only a guest sees it; a signed-in customer starts from their own order cards.
+                          signedIn ? null : (
+                            <button
+                              key="guest-return-button"
+                              type="button"
+                              data-assistant-guest-return-action
+                              disabled={Boolean(flow) || flowBusy}
+                              onClick={() => setGuestFormOpen(true)}
+                              className={`w-fit cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${accent}`}
+                            >
+                              {action.label}
+                            </button>
+                          )
                         ) : action.type === "OPEN_PAGE" ? (
                           // Only our own policy and page paths become a button, whatever the server sends.
                           isOwnPagePath(action.path) ? (

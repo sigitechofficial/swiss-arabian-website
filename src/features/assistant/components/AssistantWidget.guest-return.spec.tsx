@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AssistantWidget } from "./AssistantWidget";
 import type { AssistantReturnFlowApi } from "../api/assistant.service";
-import type { AssistantFlowView, AssistantHistory } from "../types";
+import type { AssistantChatResponse, AssistantFlowView, AssistantHistory } from "../types";
 
 vi.mock("@/lib/i18n/LocaleLink", () => ({
   LocaleLink: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -31,7 +31,7 @@ const notFound: AssistantFlowView = {
   refusal: { code: "GUEST_ORDER_NOT_FOUND" },
 };
 
-function setup(start: AssistantReturnFlowApi["start"]) {
+function setup(start: AssistantReturnFlowApi["start"], send: () => Promise<AssistantChatResponse> = vi.fn()) {
   const flow: AssistantReturnFlowApi = {
     start,
     active: vi.fn(async () => null),
@@ -44,7 +44,7 @@ function setup(start: AssistantReturnFlowApi["start"]) {
     <AssistantWidget
       zoneCode="UAE"
       locale="en"
-      send={vi.fn()}
+      send={send}
       loadHistory={async () => history}
       clearHistory={async () => undefined}
       addToBag={vi.fn(async () => true)}
@@ -103,5 +103,26 @@ describe("a guest's return in the chat", () => {
     expect(screen.queryByRole("button", { name: /back/i })).toBeNull();
     await user.click(screen.getByRole("button", { name: /stop/i }));
     expect(flow.cancel).toHaveBeenCalledWith(expect.objectContaining({ code: "secret-code" }), "g1");
+  });
+
+  it("opens the same form from the button in a reply when a guest asks to return", async () => {
+    const reply: AssistantChatResponse = {
+      conversationId: "c1",
+      lang: "en",
+      reply: {
+        intent: "RETURN_ELIGIBILITY",
+        text: "Ordered as a guest? I can help you start it here.",
+        cards: [],
+        quickReplies: [],
+        handoff: false,
+        actions: [{ type: "GUEST_RETURN", label: "Return or exchange my order" }],
+      },
+    };
+    const { user } = setup(vi.fn(async () => items), vi.fn(async () => reply));
+    await user.click(screen.getByRole("button", { name: /chat with our shopping assistant/i }));
+    await user.type(await screen.findByLabelText("Your message"), "I want to return my order");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(await screen.findByRole("button", { name: "Return or exchange my order" }));
+    expect(await screen.findByLabelText("Order number")).toBeInTheDocument();
   });
 });

@@ -5,3 +5,5 @@
 - Guest return or exchange: the "Return or exchange an order" link in the guest note opens `GuestReturnForm` (kind, order number, code from the confirmation email). The code stays in the open widget's memory and goes with every flow request (`start`, `step`, `confirm`, `cancel`); it is never stored in the browser or by the server. A wrong number or code shows one neutral message (`assistant.guestReturn.notFound`). A guest request cannot be picked up again after the chat is closed.
 - Messages: `assistant.guestNoteSaved`, `assistant.guestReturn.*` in `src/messages/en.json`.
 - Full design: backend repo `docs/ai-assistant/ASSISTANT_RETURNS_EXCHANGES_PLAN.md`, section 18.
+
+- Typed trigger: when a guest asks to return or exchange in a message, the reply carries a `GUEST_RETURN` button that opens the same form (only where the market has returns or exchanges in chat on).
