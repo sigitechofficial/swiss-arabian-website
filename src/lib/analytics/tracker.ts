@@ -106,6 +106,15 @@ export function getVisitorId(): string {
 let pageSessionId: string | null = null;
 
 export function getSessionId(now = Date.now()): string {
+  return sessionIdAt(now, true);
+}
+
+/**
+ * The tab's session id. `touch`: an event of the shopper (the tracker) keeps the session alive; an
+ * API call only reads it (rotating it, as the next event would, when it has expired), so background
+ * requests never stretch a session the shopper left.
+ */
+function sessionIdAt(now: number, touch: boolean): string {
   if (typeof window === "undefined") return uuidv4();
   // Same rule as the visitor id: nothing stored before the shopper allowed analytics or marketing.
   if (!hasConsent("analytics") && !hasConsent("marketing")) {
@@ -117,7 +126,7 @@ export function getSessionId(now = Date.now()): string {
     if (raw) {
       const saved = JSON.parse(raw) as { id: string; last: number };
       if (saved.id && now - saved.last < SESSION_IDLE_MS) {
-        window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: saved.id, last: now }));
+        if (touch) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: saved.id, last: now }));
         return saved.id;
       }
     }
@@ -127,6 +136,31 @@ export function getSessionId(now = Date.now()): string {
   } catch {
     return uuidv4();
   }
+}
+
+/** Headers carrying the shopper's behaviour ids on storefront API calls (backend behavior-request-identity). */
+export const BEHAVIOR_VISITOR_HEADER = "x-behavior-visitor";
+export const BEHAVIOR_SESSION_HEADER = "x-behavior-session";
+export const BEHAVIOR_CONSENT_HEADER = "x-behavior-consent";
+
+/**
+ * The tracker's current visitor and session ids for a storefront API call, so what the server
+ * observes while answering it (a search, an add to bag, a payment request) belongs to the shopper's
+ * own session in the reports instead of getting random ids of its own.
+ *
+ * Exactly the tracker's consent rule: only when the tracker itself would send events (the shopper
+ * allowed analytics, first-party tracking not switched off). Before that nothing is sent (and,
+ * as always, nothing is stored): the server keeps fresh random ids and counts the call anonymously.
+ * Server-side rendering has no shopper ids and sends none.
+ */
+export function behaviorIdentityHeaders(now = Date.now()): Record<string, string> | null {
+  if (typeof window === "undefined" || !trackingEnabled()) return null;
+  if (getTrackingConsent() !== "GRANTED") return null;
+  return {
+    [BEHAVIOR_VISITOR_HEADER]: getVisitorId(),
+    [BEHAVIOR_SESSION_HEADER]: sessionIdAt(now, false),
+    [BEHAVIOR_CONSENT_HEADER]: "GRANTED",
+  };
 }
 
 function cleanProperties(input: TrackProperties): Record<string, string | number | boolean> {

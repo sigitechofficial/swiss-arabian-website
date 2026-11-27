@@ -16,6 +16,7 @@ vi.mock("@/lib/storefront/context", () => ({ storefrontContextQuery: () => "zone
 
 import { resetConsentCacheForTests } from "@/lib/consent/consent";
 import {
+  behaviorIdentityHeaders,
   flushNow,
   getSessionId,
   getTrackingConsent,
@@ -167,6 +168,42 @@ describe("tracker", () => {
     const session = getSessionId(t0);
     expect(getSessionId(t0 + 5 * 60_000)).toBe(session);
     expect(getSessionId(t0 + 5 * 60_000 + 31 * 60_000)).not.toBe(session);
+  });
+
+  it("API calls carry the tracker's visitor and session ids with analytics consent", () => {
+    const t0 = Date.now();
+    const session = getSessionId(t0);
+    expect(behaviorIdentityHeaders(t0 + 60_000)).toEqual({
+      "x-behavior-visitor": getVisitorId(),
+      "x-behavior-session": session,
+      "x-behavior-consent": "GRANTED",
+    });
+  });
+
+  it("an API call reads the session without keeping it alive; an expired one rotates as the next event would", () => {
+    const t0 = Date.now();
+    const session = getSessionId(t0);
+    // Background calls 20 and 40 minutes later: the first still reads it, neither stretches it.
+    expect(behaviorIdentityHeaders(t0 + 20 * 60_000)?.["x-behavior-session"]).toBe(session);
+    const rotated = behaviorIdentityHeaders(t0 + 40 * 60_000)?.["x-behavior-session"];
+    expect(rotated).not.toBe(session);
+    expect(rotated).toMatch(UUID_V4);
+    // The next event uses the rotated id: the server's observation and the page share it.
+    expect(getSessionId(t0 + 41 * 60_000)).toBe(rotated);
+  });
+
+  it("API calls carry no ids before consent, after refusal, or with tracking switched off; nothing is stored", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    expect(behaviorIdentityHeaders()).toBeNull();
+    expect(localStorage.getItem("sa_visitor_id")).toBeNull();
+    expect(sessionStorage.getItem("sa_session")).toBeNull();
+    setTrackingConsent("denied");
+    expect(behaviorIdentityHeaders()).toBeNull();
+    setTrackingConsent("granted");
+    setFirstPartyTracking(false);
+    expect(behaviorIdentityHeaders()).toBeNull();
   });
 
   it("sends an identical keyed event once inside the dedupe window", () => {

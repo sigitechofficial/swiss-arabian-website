@@ -8,6 +8,7 @@ import {
 } from "@/lib/storefront/brand";
 import { ApiClientError, CLIENT_ERROR_CODES, type ApiErrorBody } from "./apiError";
 import { resolveStorefrontHost } from "./storefrontHost";
+import { behaviorIdentityHeaders } from "@/lib/analytics/tracker";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -111,6 +112,9 @@ async function request<T>(
   if (storefrontHost) headers.set("x-storefront-host", storefrontHost);
   const language = pageLanguage();
   if (language) headers.set("x-storefront-language", language);
+  // The shopper's behaviour ids (only with analytics consent), so the server's observations of this
+  // call join their session in the reports (tracker.behaviorIdentityHeaders).
+  for (const [name, value] of Object.entries(behaviorIdentityHeaders() ?? {})) headers.set(name, value);
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, {
     method,
