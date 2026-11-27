@@ -14,9 +14,11 @@ vi.mock("@/lib/auth/token", () => ({ getAccessToken: () => "tok" }));
 vi.mock("@/lib/api/storefrontHost", () => ({ resolveStorefrontHost: async () => "sa.test" }));
 vi.mock("@/lib/storefront/context", () => ({ storefrontContextQuery: () => "zoneCode=KSA" }));
 
-import { resetConsentCacheForTests } from "@/lib/consent/consent";
+import { resetConsentCacheForTests, setConsent } from "@/lib/consent/consent";
 import {
   behaviorIdentityHeaders,
+  requestBody,
+  trackingMode,
   flushNow,
   getSessionId,
   getTrackingConsent,
@@ -82,8 +84,8 @@ describe("tracker", () => {
     const fetchMock = vi.fn().mockResolvedValue({ status: 202 });
     vi.stubGlobal("fetch", fetchMock);
     track("page_viewed");
-    localStorage.clear();
-    resetConsentCacheForTests();
+    // Refused in another tab: the stored choice changes without this tab's tracker being told.
+    setConsent({ analytics: false, marketing: false });
     await flushNow();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(queuedEventsForTests()).toHaveLength(0);
@@ -141,12 +143,19 @@ describe("tracker", () => {
     expect(getTrackingConsent()).toBe("GRANTED");
   });
 
-  it("sends nothing and stores no ids before the shopper has chosen", () => {
+  it("before a choice: records anonymously with per-page ids and stores nothing", () => {
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
-    expect(track("page_viewed")).toBe(false);
-    expect(queuedEventsForTests()).toHaveLength(0);
+    expect(trackingMode()).toBe("ANONYMOUS");
+    expect(track("page_viewed")).toBe(true);
+    expect(track("catalog_product_viewed")).toBe(true);
+    const [a, b] = queuedEventsForTests();
+    // One visit: the same in-memory ids on every event of the page.
+    expect(a.visitorId).toMatch(UUID_V4);
+    expect(b.visitorId).toBe(a.visitorId);
+    expect(b.sessionId).toBe(a.sessionId);
+    expect(requestBody([a], true)).toEqual({ events: [a] });
     const visitor = getVisitorId();
     expect(getVisitorId()).toBe(visitor);
     getSessionId();
@@ -192,11 +201,16 @@ describe("tracker", () => {
     expect(getSessionId(t0 + 41 * 60_000)).toBe(rotated);
   });
 
-  it("API calls carry no ids before consent, after refusal, or with tracking switched off; nothing is stored", () => {
+  it("API calls before a choice carry the page's anonymous ids without consent; none after refusal or with tracking off", () => {
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
-    expect(behaviorIdentityHeaders()).toBeNull();
+    track("page_viewed");
+    const page = queuedEventsForTests()[0];
+    expect(behaviorIdentityHeaders()).toEqual({
+      "x-behavior-visitor": page.visitorId,
+      "x-behavior-session": page.sessionId,
+    });
     expect(localStorage.getItem("sa_visitor_id")).toBeNull();
     expect(sessionStorage.getItem("sa_session")).toBeNull();
     setTrackingConsent("denied");
@@ -227,18 +241,21 @@ describe("tracker", () => {
     window.history.replaceState(null, "", "/");
   });
 
-  it("keeps the landing's acquisition until the shopper allows analytics, and never stores it", () => {
+  it("the landing's acquisition goes with the first anonymous event and again after consent, never stored", () => {
     window.history.replaceState(null, "", "/?utm_source=snapchat&utm_medium=paid");
     localStorage.clear();
     sessionStorage.clear();
     resetConsentCacheForTests();
     resetTrackerForTests();
     setFirstPartyTracking(true);
-    expect(track("page_viewed")).toBe(false);
+    track("page_viewed");
     window.history.replaceState(null, "", "/collections/oud");
+    track("catalog_product_list_viewed");
     setTrackingConsent("granted");
     track("page_viewed");
-    expect(queuedEventsForTests()[0].acquisition).toMatchObject({ source: "snapchat", medium: "paid", landingPath: "/" });
+    track("catalog_product_viewed");
+    expect(queuedEventsForTests().map((e) => e.acquisition?.source ?? null)).toEqual(["snapchat", null, "snapchat", null]);
+    expect(queuedEventsForTests()[2].acquisition).toMatchObject({ source: "snapchat", medium: "paid", landingPath: "/" });
     expect(JSON.stringify({ ...localStorage })).not.toContain("snapchat");
     expect(JSON.stringify({ ...sessionStorage })).not.toContain("snapchat");
     window.history.replaceState(null, "", "/");
@@ -286,14 +303,63 @@ describe("tracker", () => {
     expect(queuedEventsForTests()).toHaveLength(0);
   });
 
-  it("posts nothing while the shopper has not chosen", async () => {
+  it("before a choice: posts the anonymous events without any consent state", async () => {
     localStorage.clear();
     resetConsentCacheForTests();
     const fetchMock = vi.fn(async () => ({ status: 202 }));
     vi.stubGlobal("fetch", fetchMock);
     track("page_viewed");
     await flushNow();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body.events).toHaveLength(1);
+    expect(body).not.toHaveProperty("consentStatus");
+  });
+
+  it("allowing analytics mid-visit keeps one session and visitor; what was recorded before still goes anonymously", async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    resetConsentCacheForTests();
+    const fetchMock = vi.fn(async () => ({ status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    track("page_viewed");
+    const before = queuedEventsForTests()[0];
+    setTrackingConsent("granted");
+    track("catalog_product_viewed");
+    const after = queuedEventsForTests()[1];
+    expect(after.sessionId).toBe(before.sessionId);
+    expect(after.visitorId).toBe(before.visitorId);
+    // Now stored, so the next page keeps them.
+    expect(localStorage.getItem("sa_visitor_id")).toBe(before.visitorId);
+    expect(JSON.parse(sessionStorage.getItem("sa_session") ?? "{}").id).toBe(before.sessionId);
+    await flushNow();
+    const bodies = fetchMock.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)));
+    expect(bodies.map((b) => [b.events.map((e: { eventName: string }) => e.eventName), b.consentStatus ?? null])).toEqual([
+      [["page_viewed"], null],
+      [["catalog_product_viewed"], "GRANTED"],
+    ]);
+  });
+
+  it("refusing analytics drops what was recorded anonymously and stops recording", async () => {
+    localStorage.clear();
+    resetConsentCacheForTests();
+    const fetchMock = vi.fn(async () => ({ status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    track("page_viewed");
+    setTrackingConsent("denied");
+    expect(trackingMode()).toBe("OFF");
+    expect(track("page_viewed")).toBe(false);
+    await flushNow();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("an in-memory session rotates after 30 idle minutes, like a stored one", () => {
+    localStorage.clear();
+    resetConsentCacheForTests();
+    const t0 = Date.now();
+    const first = getSessionId(t0);
+    expect(getSessionId(t0 + 10 * 60_000)).toBe(first);
+    expect(getSessionId(t0 + 10 * 60_000 + 31 * 60_000)).not.toBe(first);
   });
 
   it("splits large queues into batches of 20", async () => {
