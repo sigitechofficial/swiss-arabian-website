@@ -34,7 +34,8 @@ const OPEN_EVENT = "sa-consent-open";
 
 /** Browser data that belongs to an optional category, removed when that category is refused. */
 const CATEGORY_STORAGE: Record<ConsentCategory, { local: string[]; session: string[] }> = {
-  analytics: { local: ["sa_visitor_id"], session: ["sa_session"] },
+  // sa_anon_visitor: the tab's anonymous visitor id before any choice (tracker, §5.13 G4).
+  analytics: { local: ["sa_visitor_id", "sa_session"], session: ["sa_session", "sa_anon_visitor"] },
   marketing: { local: ["sa_insider_uuid", "sa_insider_user"], session: [] },
 };
 
@@ -73,8 +74,39 @@ export function getConsent(): ConsentChoices | null {
   return cachedValue;
 }
 
+/**
+ * The market's rule (switchboard `consentRequired`, as Shopify's "region requires consent"): where
+ * consent is not required, a shopper who made no choice counts as allowing analytics and marketing
+ * (no banner, as the live Shopify stores); a stored choice always wins, so a refusal from Cookie
+ * settings still stops everything. Browser only: the server never decides consent.
+ */
+let marketConsentRequired = true;
+const ALLOWED_BY_MARKET: ConsentChoices = Object.freeze({ analytics: true, marketing: true });
+
+/** Sets the rule from the site integrations (browser only). Returns whether it changed. */
+export function setMarketConsentRequired(required: boolean): boolean {
+  const next = required !== false;
+  if (typeof window === "undefined" || next === marketConsentRequired) return false;
+  marketConsentRequired = next;
+  return true;
+}
+
+/** Tells consent readers (useConsent) to read again, e.g. after the market's rule became known. */
+export function notifyConsentReaders(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
+}
+
+export function isMarketConsentRequired(): boolean {
+  return marketConsentRequired;
+}
+
+/** What may run now: the stored choice, else what the market allows without one (null = ask first). */
+export function getEffectiveConsent(): ConsentChoices | null {
+  return getConsent() ?? (marketConsentRequired ? null : ALLOWED_BY_MARKET);
+}
+
 export function hasConsent(category: ConsentCategory): boolean {
-  return getConsent()?.[category] === true;
+  return getEffectiveConsent()?.[category] === true;
 }
 
 /** True once the shopper has answered the current banner. */
@@ -176,14 +208,23 @@ export function consentCategoriesInUse(
   return { analytics, marketing };
 }
 
-/** The banner is needed only when something optional is switched on for this address. */
-export function consentBannerNeeded(integrations: ConsentIntegrations): boolean {
+/** The footer "Cookie settings" is offered whenever something optional runs (also without a banner). */
+export function consentSettingsOffered(integrations: ConsentIntegrations): boolean {
   const used = consentCategoriesInUse(integrations);
   return used.analytics || used.marketing;
+}
+
+/**
+ * The banner asks first only where the market requires consent (as Shopify: no banner where it is
+ * not required) and something optional is switched on for this address.
+ */
+export function consentBannerNeeded(integrations: ConsentIntegrations & { consentRequired?: boolean }): boolean {
+  return integrations.consentRequired !== false && consentSettingsOffered(integrations);
 }
 
 /** Test helper: forget the cached reading. */
 export function resetConsentCacheForTests(): void {
   cachedRaw = undefined;
   cachedValue = null;
+  marketConsentRequired = true;
 }

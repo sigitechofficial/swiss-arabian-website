@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/token";
 import { apiGet } from "./apiClient";
+import { getVisitorId, setTrackingConsent } from "@/lib/analytics/tracker";
 
 describe("api client storefront host", () => {
   afterEach(() => {
@@ -79,5 +80,42 @@ describe("api client session refresh", () => {
     await expect(apiGet("/storefront/customer/me")).rejects.toMatchObject({ status: 503 });
     expect(getAccessToken()).toBe("old");
     expect(getRefreshToken()).toBe("refresh");
+  });
+});
+
+describe("api client behaviour ids", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  async function headersOf(): Promise<Headers> {
+    const calls: Array<RequestInit | undefined> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: string, init?: RequestInit) => {
+        calls.push(init);
+        return new Response(JSON.stringify({ success: true, data: {} }), { status: 200 });
+      }),
+    );
+    await apiGet("/storefront/catalog/search?q=oud");
+    return new Headers(calls[0]?.headers);
+  }
+
+  it("sends the tracker's ids once the shopper allowed analytics", async () => {
+    setTrackingConsent("granted");
+    const headers = await headersOf();
+    expect(headers.get("x-behavior-visitor")).toBe(getVisitorId());
+    expect(headers.get("x-behavior-session")).toMatch(/^[0-9a-f-]{36}$/);
+    expect(headers.get("x-behavior-consent")).toBe("GRANTED");
+  });
+
+  it("sends none without analytics consent", async () => {
+    setTrackingConsent("denied");
+    const headers = await headersOf();
+    expect(headers.has("x-behavior-visitor")).toBe(false);
+    expect(headers.has("x-behavior-session")).toBe(false);
   });
 });

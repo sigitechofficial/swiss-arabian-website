@@ -28,6 +28,7 @@ const full = {
   accountVerification: true,
   onsiteMessages: true,
   firstPartyTracking: false,
+  consentRequired: false,
 };
 
 describe("parseSiteIntegrations (backend answer → what the page may load)", () => {
@@ -35,6 +36,13 @@ describe("parseSiteIntegrations (backend answer → what the page may load)", ()
     const { host: _h, brandCode: _b, ...expected } = full;
     expect(parseSiteIntegrations({ success: true, data: full })).toEqual(expected);
     expect(parseSiteIntegrations(full)).toEqual(expected);
+  });
+
+  it("an older backend without the consent rule means consent required (fail-safe)", () => {
+    const { consentRequired: _c, ...older } = full;
+    expect(parseSiteIntegrations(older).consentRequired).toBe(true);
+    expect(parseSiteIntegrations({ ...full, consentRequired: "no" }).consentRequired).toBe(true);
+    expect(SITE_INTEGRATIONS_OFF.consentRequired).toBe(true);
   });
 
   it("drops each malformed integration on its own, never rendering a bad value into a tag", () => {

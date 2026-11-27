@@ -3,7 +3,8 @@ import { withoutMarketSegment } from "@/lib/site/marketLink";
 import { resolveStorefrontHost } from "@/lib/api/storefrontHost";
 import { env } from "@/lib/config/env";
 import { storefrontContextQuery } from "@/lib/storefront/context";
-import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
+import { getConsent, hasConsent, isMarketConsentRequired, setConsent } from "@/lib/consent/consent";
+import { readAcquisition, type AcquisitionContext } from "./acquisition";
 
 /**
  * First-party behavior tracker. Sends browser events to our own backend
@@ -14,8 +15,18 @@ import { getConsent, hasConsent, setConsent } from "@/lib/consent/consent";
  *
  * Privacy: only the pathname is sent (never the query string or full URL), no e-mail/phone/name, and
  * a client-side DENIED consent drops every event before it is queued.
+ *
+ * Consent (REPORTING_PIPELINE_DESIGN.md §5.12 / §5.13 G4), see `trackingMode()`:
+ * - analytics allowed: events with the stored visitor and session ids (a returning visitor is known);
+ * - no choice made yet: events are still sent, anonymously: ids kept for this tab only (sessionStorage,
+ *   gone when the tab closes; nothing in localStorage, no cookie; client decision 2026-11-27) and no
+ *   consent state, so the backend applies the market's policy (by default it counts
+ *   the visit with a visitor id that lasts one store day, never linked to a customer, no plain search
+ *   words; or drops it when the market says so);
+ * - analytics refused: nothing is sent, and what was waiting is dropped.
  */
-export type TrackingConsent = "GRANTED" | "DENIED" | "UNKNOWN";
+/** NOT_REQUIRED: no choice made in a market that does not ask for consent (as Shopify there). */
+export type TrackingConsent = "GRANTED" | "DENIED" | "UNKNOWN" | "NOT_REQUIRED";
 export type TrackProperties = Record<string, string | number | boolean | null | undefined>;
 
 export type BehaviorEventV1 = {
@@ -27,6 +38,8 @@ export type BehaviorEventV1 = {
   sessionId: string;
   sequence: number;
   properties: Record<string, string | number | boolean>;
+  /** Where the visit came from: only on the first event after landing (see ./acquisition). */
+  acquisition?: AcquisitionContext;
 };
 
 const VISITOR_KEY = "sa_visitor_id";
@@ -43,6 +56,33 @@ let sequence = 0;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let listenersBound = false;
 const recentSignatures = new Map<string, number>();
+/**
+ * Events recorded before the shopper chose (anonymous). They are sent without a consent state even if
+ * the shopper allows analytics before they leave: consent is not given backwards.
+ */
+const anonymousEvents = new WeakSet<BehaviorEventV1>();
+
+/**
+ * The landing address's acquisition, read when the page loads (the address still has its campaign
+ * tags; client-side navigation drops them) and kept in memory for the page, never stored. It goes
+ * with the first anonymous event and again with the first event after the shopper allows analytics
+ * (a market may drop visits without consent; the session then still knows where it came from; when
+ * both arrive, the session takes the first, same values). `undefined`: not read yet; `null`: none.
+ */
+let landingAcquisition: AcquisitionContext | null | undefined;
+const acquisitionSentAs = new Set<TrackingMode>();
+
+function captureLandingAcquisition(): void {
+  if (landingAcquisition !== undefined || typeof window === "undefined") return;
+  try {
+    landingAcquisition = readAcquisition(window.location, document.referrer);
+  } catch {
+    landingAcquisition = null;
+  }
+}
+
+// Read at the start of the page, before the router changes the address.
+captureLandingAcquisition();
 
 export function uuidv4(): string {
   const c = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
@@ -56,10 +96,26 @@ export function uuidv4(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/** The shopper's analytics choice from the cookie banner (`@/lib/consent`). */
+/**
+ * How the tracker may record this shopper (§5.13 G4): IDENTIFIED with analytics consent, or with no
+ * choice in a market that does not require consent (as Shopify there); ANONYMOUS before any choice
+ * where consent is required (this tab's ids only); OFF once analytics was refused.
+ */
+export type TrackingMode = "IDENTIFIED" | "ANONYMOUS" | "OFF";
+
+export function trackingMode(): TrackingMode {
+  const consent = getTrackingConsent();
+  if (consent === "GRANTED" || consent === "NOT_REQUIRED") return "IDENTIFIED";
+  return consent === "UNKNOWN" ? "ANONYMOUS" : "OFF";
+}
+
+/**
+ * The shopper's analytics choice from the cookie banner (`@/lib/consent`); with no choice, what the
+ * market's rule says (NOT_REQUIRED where it does not ask, UNKNOWN where it does).
+ */
 export function getTrackingConsent(): TrackingConsent {
   const choices = getConsent();
-  if (!choices) return "UNKNOWN";
+  if (!choices) return isMarketConsentRequired() ? "UNKNOWN" : "NOT_REQUIRED";
   return choices.analytics ? "GRANTED" : "DENIED";
 }
 
@@ -78,55 +134,140 @@ export function clearTrackingQueue(): void {
   queue = [];
 }
 
-/** Used only until the shopper allows analytics or marketing: lives in memory, never stored. */
+/**
+ * Where the visitor and session ids are kept (§5.13 G4, client decision 2026-11-27):
+ * - LASTING: analytics or marketing allowed: the visitor id and the session id in localStorage, shared
+ *   by every tab like Shopify's visitor and session cookies (a returning visitor is known; a session
+ *   is 30 minutes rolling across all tabs; on-site messages need the visitor id).
+ * - TAB: no choice made yet: both in sessionStorage only, so they last for this tab (through
+ *   refreshes and full page loads) and go when the tab closes; nothing in localStorage, no cookie.
+ * - MEMORY: analytics refused: per-page ids that are never stored (nothing is sent then anyway).
+ */
+type IdStore = "LASTING" | "TAB" | "MEMORY";
+
+function idStore(): IdStore {
+  if (hasConsent("analytics") || hasConsent("marketing")) return "LASTING";
+  return getConsent() === null ? "TAB" : "MEMORY";
+}
+
+/** The anonymous visitor id of this tab before any choice (sessionStorage; removed on refusal). */
+const TAB_VISITOR_KEY = "sa_anon_visitor";
+
+/** Per-page fallback when nothing may be stored, or storage is blocked. */
 let pageVisitorId: string | null = null;
 
 /**
- * The browser's visitor id. Stored only once the shopper allowed analytics or marketing (on-site
- * messages need it for "once per visit / per day"); before that, a per-page id that is never saved.
+ * The browser's visitor id: lasting once the shopper allowed analytics or marketing; for this tab
+ * before any choice; per page after a refusal.
  */
 export function getVisitorId(): string {
   if (typeof window === "undefined") return uuidv4();
-  if (!hasConsent("analytics") && !hasConsent("marketing")) {
+  const store = idStore();
+  if (store === "MEMORY") {
     pageVisitorId ??= uuidv4();
     return pageVisitorId;
   }
   try {
+    if (store === "TAB") {
+      const tab = window.sessionStorage.getItem(TAB_VISITOR_KEY);
+      if (tab) return tab;
+      const created = pageVisitorId ?? uuidv4();
+      window.sessionStorage.setItem(TAB_VISITOR_KEY, created);
+      pageVisitorId = null;
+      return created;
+    }
     const existing = window.localStorage.getItem(VISITOR_KEY);
     if (existing) return existing;
-    const created = uuidv4();
+    // Consent given during the visit: keep the id the anonymous part of the visit used.
+    const created = window.sessionStorage.getItem(TAB_VISITOR_KEY) ?? pageVisitorId ?? uuidv4();
+    window.sessionStorage.removeItem(TAB_VISITOR_KEY);
+    pageVisitorId = null;
     window.localStorage.setItem(VISITOR_KEY, created);
     return created;
+  } catch {
+    // Storage blocked: a per-page id, never stored.
+    pageVisitorId ??= uuidv4();
+    return pageVisitorId;
+  }
+}
+
+/** The session id: rotated after 30 minutes without an event (shared by all tabs with consent). */
+let pageSessionId: string | null = null;
+/** Last event of the in-memory session (before consent): the same 30-minute rule as a stored one. */
+let pageSessionLast = 0;
+
+export function getSessionId(now = Date.now()): string {
+  return sessionIdAt(now, true);
+}
+
+/**
+ * The tab's session id. `touch`: an event of the shopper (the tracker) keeps the session alive; an
+ * API call only reads it (rotating it, as the next event would, when it has expired), so background
+ * requests never stretch a session the shopper left.
+ */
+function sessionIdAt(now: number, touch: boolean): string {
+  if (typeof window === "undefined") return uuidv4();
+  const store = idStore();
+  if (store === "MEMORY") {
+    // After a refusal: in memory, rotated after the same 30 idle minutes as a stored one.
+    if (pageSessionId === null || now - pageSessionLast >= SESSION_IDLE_MS) pageSessionId = uuidv4();
+    if (touch || pageSessionLast === 0) pageSessionLast = now;
+    return pageSessionId;
+  }
+  try {
+    // With consent the session is shared by every tab of the browser (localStorage), 30 minutes
+    // rolling, as Shopify's session cookie: opening products in new tabs is one session. Before any
+    // choice it stays in this tab (sessionStorage, client decision for anonymous counting).
+    const shared = store === "LASTING";
+    const home = shared ? window.localStorage : window.sessionStorage;
+    const live = (raw: string | null): string | null => {
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { id?: string; last?: number };
+      return saved.id && typeof saved.last === "number" && now - saved.last < SESSION_IDLE_MS ? saved.id : null;
+    };
+    // The shared session; else (consent just given, or a session from before it was shared) this
+    // tab's own one goes on as the shared one: one session, not two.
+    const current = live(home.getItem(SESSION_KEY));
+    const result =
+      current ??
+      (shared ? live(window.sessionStorage.getItem(SESSION_KEY)) : null) ??
+      (pageSessionId !== null && now - pageSessionLast < SESSION_IDLE_MS ? pageSessionId : null) ??
+      uuidv4();
+    pageSessionId = null;
+    // An event keeps it alive; an API call only reads it (but a new or carried id is saved).
+    if (touch || result !== current) home.setItem(SESSION_KEY, JSON.stringify({ id: result, last: now }));
+    if (shared) window.sessionStorage.removeItem(SESSION_KEY);
+    return result;
   } catch {
     return uuidv4();
   }
 }
 
-/** One session id per tab, rotated after 30 minutes without an event. */
-let pageSessionId: string | null = null;
+/** Headers carrying the shopper's behaviour ids on storefront API calls (backend behavior-request-identity). */
+export const BEHAVIOR_VISITOR_HEADER = "x-behavior-visitor";
+export const BEHAVIOR_SESSION_HEADER = "x-behavior-session";
+export const BEHAVIOR_CONSENT_HEADER = "x-behavior-consent";
 
-export function getSessionId(now = Date.now()): string {
-  if (typeof window === "undefined") return uuidv4();
-  // Same rule as the visitor id: nothing stored before the shopper allowed analytics or marketing.
-  if (!hasConsent("analytics") && !hasConsent("marketing")) {
-    pageSessionId ??= uuidv4();
-    return pageSessionId;
-  }
-  try {
-    const raw = window.sessionStorage.getItem(SESSION_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw) as { id: string; last: number };
-      if (saved.id && now - saved.last < SESSION_IDLE_MS) {
-        window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: saved.id, last: now }));
-        return saved.id;
-      }
-    }
-    const id = uuidv4();
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id, last: now }));
-    return id;
-  } catch {
-    return uuidv4();
-  }
+/**
+ * The tracker's current visitor and session ids for a storefront API call, so what the server
+ * observes while answering it (a search, an add to bag, a payment request) belongs to the shopper's
+ * own session in the reports instead of getting random ids of its own.
+ *
+ * Exactly the tracker's consent rule (`trackingMode()`): with analytics consent the lasting ids and
+ * GRANTED; before any choice the tab's anonymous ids and no consent state, so the server counts the
+ * call anonymously in the same anonymous session as the page's own events; after a refusal (or with
+ * first-party tracking off) nothing. Server-side rendering has no shopper ids and sends none.
+ */
+export function behaviorIdentityHeaders(now = Date.now()): Record<string, string> | null {
+  if (typeof window === "undefined" || !trackingEnabled()) return null;
+  const mode = trackingMode();
+  if (mode === "OFF") return null;
+  return {
+    [BEHAVIOR_VISITOR_HEADER]: getVisitorId(),
+    [BEHAVIOR_SESSION_HEADER]: sessionIdAt(now, false),
+    // GRANTED, or NOT_REQUIRED (the backend honours it only where its own setting says so).
+    ...(mode === "IDENTIFIED" ? { [BEHAVIOR_CONSENT_HEADER]: getTrackingConsent() } : {}),
+  };
 }
 
 function cleanProperties(input: TrackProperties): Record<string, string | number | boolean> {
@@ -177,9 +318,12 @@ export function track(
   properties: TrackProperties = {},
   options: TrackOptions = {},
 ): boolean {
-  if (typeof window === "undefined" || !trackingEnabled()) return false;
-  // Nothing is queued or sent until the shopper allowed analytics in the cookie banner.
-  if (getTrackingConsent() !== "GRANTED") return false;
+  if (typeof window === "undefined") return false;
+  // Reading the address stores nothing; it must happen before the router drops the campaign tags.
+  captureLandingAcquisition();
+  if (!trackingEnabled()) return false;
+  // Refused analytics: nothing. Before a choice: anonymous (per-page ids, nothing stored).
+  if (trackingMode() === "OFF") return false;
 
   const now = Date.now();
   const signature = `${eventName}|${options.dedupeKey ?? ""}`;
@@ -195,6 +339,9 @@ export function track(
   }
 
   sequence += 1;
+  const mode = trackingMode();
+  const acquisition = acquisitionSentAs.has(mode) ? undefined : (landingAcquisition ?? undefined);
+  acquisitionSentAs.add(mode);
   const event: BehaviorEventV1 = {
     contractVersion: "behavior_event_v1",
     eventId: uuidv4(),
@@ -209,7 +356,9 @@ export function track(
       captureSource: "browser",
       ...properties,
     }),
+    ...(acquisition ? { acquisition } : {}),
   };
+  if (mode === "ANONYMOUS") anonymousEvents.add(event);
   queue.push(event);
   if (queue.length > MAX_QUEUE) queue = queue.slice(queue.length - MAX_QUEUE);
   bindListeners();
@@ -243,18 +392,23 @@ export async function flushNow(): Promise<void> {
     flushTimer = null;
   }
   // Checked again at send time: the switch may be unknown or off by now, or analytics refused
-  // since the events were queued (the banner, another tab). Nothing leaves without both.
+  // since the events were queued (the banner, another tab). Nothing leaves unless the switch is on
+  // and analytics was not refused.
   if (firstPartyTracking !== true) {
     if (firstPartyTracking === false) queue = [];
     return;
   }
-  if (getTrackingConsent() !== "GRANTED") {
+  if (trackingMode() === "OFF") {
     queue = [];
     return;
   }
   while (queue.length > 0) {
-    const batch = queue.splice(0, BATCH_SIZE);
-    const outcome = await sendBatch(batch);
+    // A batch holds events of one kind: anonymous (recorded before a choice) or with consent.
+    const anonymous = anonymousEvents.has(queue[0]);
+    let size = 0;
+    while (size < queue.length && size < BATCH_SIZE && anonymousEvents.has(queue[size]) === anonymous) size += 1;
+    const batch = queue.splice(0, size);
+    const outcome = await sendBatch(batch, anonymous);
     if (outcome === "retry") {
       queue = [...batch, ...queue].slice(-MAX_QUEUE);
       scheduleFlush();
@@ -264,19 +418,23 @@ export async function flushNow(): Promise<void> {
 }
 
 /**
- * The consent field is sent only when the shopper made a choice. An explicit UNKNOWN would make the
- * backend discard the batch even where its policy needs no consent; omitting it lets the backend
- * apply its own policy (stored when consent is not required, refused when it is).
+ * The consent field is sent only when the shopper made a choice, and never for events recorded before
+ * it (`anonymous`). Omitting it lets the backend apply the market's policy: stored when consent is not
+ * required; otherwise counted anonymously (visitor id for one store day, no customer) or dropped, as
+ * the market's "without consent" setting says.
  */
-export function requestBody(events: BehaviorEventV1[]): {
+export function requestBody(
+  events: BehaviorEventV1[],
+  anonymous = false,
+): {
   events: BehaviorEventV1[];
   consentStatus?: TrackingConsent;
 } {
   const consent = getTrackingConsent();
-  return consent === "UNKNOWN" ? { events } : { events, consentStatus: consent };
+  return anonymous || consent === "UNKNOWN" ? { events } : { events, consentStatus: consent };
 }
 
-async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
+async function sendBatch(events: BehaviorEventV1[], anonymous: boolean): Promise<"sent" | "retry"> {
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     const token = getAccessToken();
@@ -290,7 +448,7 @@ async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
         method: "POST",
         headers,
         keepalive: true,
-        body: JSON.stringify(requestBody(events)),
+        body: JSON.stringify(requestBody(events, anonymous)),
       },
     );
     // 4xx means the batch is invalid or refused; retrying cannot help.
@@ -303,6 +461,13 @@ async function sendBatch(events: BehaviorEventV1[]): Promise<"sent" | "retry"> {
 
 export function resetTrackerForTests(): void {
   firstPartyTracking = null;
+  pageVisitorId = null;
+  pageSessionId = null;
+  pageSessionLast = 0;
+  // A fresh page: read the test's address again.
+  landingAcquisition = undefined;
+  acquisitionSentAs.clear();
+  captureLandingAcquisition();
   queue = [];
   sequence = 0;
   recentSignatures.clear();

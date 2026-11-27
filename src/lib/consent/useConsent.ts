@@ -1,15 +1,17 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getConsent, subscribeConsent, type ConsentCategory, type ConsentChoices } from "./consent";
+import { getEffectiveConsent, subscribeConsent, type ConsentCategory, type ConsentChoices } from "./consent";
 
 /**
- * The shopper's cookie choices, updated as soon as they choose (in this tab or another).
+ * What may run: the shopper's cookie choices, or, where the market does not require consent and no
+ * choice was made, both categories allowed (as Shopify). Updated as soon as they choose (in this tab
+ * or another) or the market's rule is known.
  * The server render and the first client render see "not chosen", so markup always matches;
  * the stored choice is read right after.
  */
 export function useConsent(): ConsentChoices | null {
-  return useSyncExternalStore(subscribeConsent, getConsent, () => null);
+  return useSyncExternalStore(subscribeConsent, getEffectiveConsent, () => null);
 }
 
 /** True once the shopper allowed this category. */
