@@ -28,7 +28,7 @@ const answer = (over: Partial<AssistantChatResponse["reply"]> = {}): AssistantCh
   },
 });
 
-const guestHistory: AssistantHistory = { signedIn: false, conversationId: null, messages: [] };
+const guestHistory: AssistantHistory = { signedIn: false, conversationId: null, messages: [], saved: true, retentionDays: 30 };
 
 function setup(
   options: {
@@ -202,14 +202,14 @@ describe("AssistantWidget: saved chat", () => {
     expect(loadHistory).toHaveBeenCalledWith("UAE");
   });
 
-  it("shows a guest that their chat is not saved, with no clear button", async () => {
+  it("tells a guest how long their chat is kept, and lets them clear it", async () => {
     const { user } = setup({ history: guestHistory });
     await open(user);
-    expect(await screen.findByText(/This chat is not saved/i)).toBeInTheDocument();
+    expect(await screen.findByText(/saved on this device for 30 days/i)).toBeInTheDocument();
     await user.type(screen.getByLabelText("Your message"), "hello");
     await user.click(screen.getByRole("button", { name: "Send" }));
     await screen.findByText("These are our current bestsellers.");
-    expect(screen.queryByRole("button", { name: "Clear chat" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Clear chat" })).toBeInTheDocument();
   });
 
   it("brings a signed-in customer's earlier chat back instead of the greeting", async () => {

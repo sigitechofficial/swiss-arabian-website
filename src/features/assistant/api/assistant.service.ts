@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api/apiClient";
+import { guestHeaders, rememberGuestId } from "./assistantGuest";
 import type { AssistantChatResponse, AssistantFlowAction, AssistantFlowView, AssistantHistory } from "../types";
 
 export type AssistantSendInput = {
@@ -37,33 +38,39 @@ export async function fetchAssistantEnabled(zoneCode: string): Promise<boolean> 
 
 /**
  * Sends one message. The brand comes from the storefront host and the customer from the login
- * token the API client attaches; neither is sent in the body. Nothing identifies a guest: their
- * chat is not saved on the server.
+ * token the API client attaches; neither is sent in the body. A guest is known by a random chat key
+ * kept in this browser (header), so their chat is saved for a limited time.
  */
 export async function sendAssistantMessage(input: AssistantSendInput): Promise<AssistantChatResponse> {
-  return apiPost<AssistantChatResponse>("/storefront/assistant/chat", {
-    message: input.message,
-    zoneCode: input.zoneCode,
-    locale: input.locale,
-    ...(input.recentProductIds?.length ? { recentProductIds: input.recentProductIds } : {}),
-  });
+  const result = await apiPost<AssistantChatResponse>(
+    "/storefront/assistant/chat",
+    {
+      message: input.message,
+      zoneCode: input.zoneCode,
+      locale: input.locale,
+      ...(input.recentProductIds?.length ? { recentProductIds: input.recentProductIds } : {}),
+    },
+    { headers: guestHeaders() },
+  );
+  rememberGuestId(result.guestId);
+  return result;
 }
 
 /** Sends the chat to customer care as a support ticket. */
 export async function sendAssistantHandoff(input: AssistantHandoffInput): Promise<{ ticketNumber: string }> {
-  return apiPost<{ ticketNumber: string }>("/storefront/assistant/handoff", input);
+  return apiPost<{ ticketNumber: string }>("/storefront/assistant/handoff", input, { headers: guestHeaders() });
 }
 
-/** The signed-in customer's earlier chat. Guests get an empty list: their chat is never saved. */
+/** The earlier chat of the signed-in customer, or of this browser's guest chat key. */
 export async function fetchAssistantHistory(zoneCode: string): Promise<AssistantHistory> {
   const params = new URLSearchParams({ zoneCode });
-  return apiGet<AssistantHistory>(`/storefront/assistant/history?${params}`);
+  return apiGet<AssistantHistory>(`/storefront/assistant/history?${params}`, { headers: guestHeaders() });
 }
 
-/** Clears the signed-in customer's saved chat. */
+/** Clears the saved chat (the customer's, or this browser's guest chat). */
 export async function clearAssistantHistory(zoneCode: string): Promise<void> {
   const params = new URLSearchParams({ zoneCode });
-  await apiDelete(`/storefront/assistant/history?${params}`);
+  await apiDelete(`/storefront/assistant/history?${params}`, { headers: guestHeaders() });
 }
 
 /**
@@ -78,20 +85,32 @@ export type AssistantReturnFlowApi = {
   cancel: (scope: AssistantFlowScope, flowId: string) => Promise<AssistantFlowView>;
 };
 
-export type AssistantFlowScope = { zoneCode: string; locale: string };
+/**
+ * A guest also sends the code from their confirmation email with every request (never stored by the
+ * server), and their order number when they start.
+ */
+export type AssistantFlowScope = { zoneCode: string; locale: string; code?: string; orderNumber?: string };
 
 const FLOW = "/storefront/assistant/after-sales";
 
 export const assistantReturnFlowApi: AssistantReturnFlowApi = {
-  start: (scope, kind = "RETURN", orderId) =>
-    apiPost<AssistantFlowView>(`${FLOW}/start`, { ...scope, kind, ...(orderId ? { orderId } : {}) }),
+  start: async (scope, kind = "RETURN", orderId) => {
+    const view = await apiPost<AssistantFlowView & { guestId?: string }>(
+      `${FLOW}/start`,
+      { ...scope, kind, ...(orderId ? { orderId } : {}) },
+      { headers: guestHeaders() },
+    );
+    rememberGuestId(view.guestId);
+    return view;
+  },
   active: async (scope) => {
-    const params = new URLSearchParams(scope);
-    const data = await apiGet<{ flow: AssistantFlowView | null }>(`${FLOW}/active?${params}`);
+    const params = new URLSearchParams({ zoneCode: scope.zoneCode, locale: scope.locale });
+    const data = await apiGet<{ flow: AssistantFlowView | null }>(`${FLOW}/active?${params}`, { headers: guestHeaders() });
     return data.flow;
   },
-  step: (scope, flowId, action) => apiPost<AssistantFlowView>(`${FLOW}/${flowId}/step`, { ...scope, ...action }),
+  step: (scope, flowId, action) =>
+    apiPost<AssistantFlowView>(`${FLOW}/${flowId}/step`, { ...scope, ...action }, { headers: guestHeaders() }),
   confirm: (scope, flowId, reviewToken) =>
-    apiPost<AssistantFlowView>(`${FLOW}/${flowId}/confirm`, { ...scope, reviewToken }),
-  cancel: (scope, flowId) => apiPost<AssistantFlowView>(`${FLOW}/${flowId}/cancel`, scope),
+    apiPost<AssistantFlowView>(`${FLOW}/${flowId}/confirm`, { ...scope, reviewToken }, { headers: guestHeaders() }),
+  cancel: (scope, flowId) => apiPost<AssistantFlowView>(`${FLOW}/${flowId}/cancel`, scope, { headers: guestHeaders() }),
 };
